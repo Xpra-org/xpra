@@ -267,7 +267,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         process = getattr(conn, "process", None)        #ie: ssh is handled by anotherprocess
         if process:
             proc, name, command = process
-            getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
+            if proc:
+                getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
         netlog("setup_connection(%s) protocol=%s", conn, self._protocol)
 
     def _process_udp_control(self, packet):

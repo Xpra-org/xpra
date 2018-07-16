@@ -261,6 +261,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 #internal / network:
                 ("network"      , "All network code"),
                 ("bandwidth"    , "Bandwidth detection and management"),
+                ("ssh"          , "SSH connections"),
                 ("http"         , "HTTP requests"),
                 ("rfb"          , "RFB Protocol"),
                 ("mmap"         , "mmap transfers"),

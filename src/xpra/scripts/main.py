@@ -20,7 +20,7 @@ import traceback
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_STR
-from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, WIN32, OSX, POSIX
+from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, osexpand, WIN32, OSX, POSIX
 from xpra.scripts.parsing import info, warn, error, \
     parse_vsock, parse_env, is_local, \
     fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help, \
@@ -29,6 +29,7 @@ from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_O
     InitException, InitInfo, InitExit, \
     fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, has_sound_support, name_to_field
+from xpra.net.common import ConnectionClosedException
 assert info and warn and error, "used by modules importing those from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
@@ -613,8 +614,11 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         #maybe restrict to win32 only?
         ssh_cmd = ssh[0].lower()
         is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-        desc["is_putty"] = is_putty
+        is_paramiko = ssh_cmd=="paramiko"
+        if is_paramiko:
+            desc["is_paramiko"] = is_paramiko
         if is_putty:
+            desc["is_putty"] = True
             #special env used by plink:
             env = os.environ.copy()
             env["PLINK_PROTOCOL"] = "ssh"
@@ -625,16 +629,18 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         if username:
             desc["username"] = username
             opts.username = username
-            full_ssh += ["-l", username]
+            if not is_paramiko:
+                full_ssh += ["-l", username]
         if ssh_port and ssh_port!=22:
             #grr why bother doing it different?
             desc["ssh-port"] = ssh_port
             if is_putty:
                 full_ssh += ["-P", str(ssh_port)]
-            else:
+            elif not is_paramiko:
                 full_ssh += ["-p", str(ssh_port)]
 
-        full_ssh += ["-T", host]
+        if not is_paramiko:
+            full_ssh += ["-T", host]
         desc.update({
                      "host"     : host,
                      "full_ssh" : full_ssh
@@ -814,16 +820,6 @@ def single_display_match(dir_servers, error_cb, nomatch="cannot find any live se
     return sockdir, name, path
 
 
-def _socket_connect(sock, endpoint, description, dtype, info={}):
-    from xpra.net.bytestreams import SocketConnection, pretty_socket
-    try:
-        sock.connect(endpoint)
-    except Exception as e:
-        get_util_logger().debug("failed to connect using %s%s", sock.connect, endpoint, exc_info=True)
-        raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(endpoint), e))
-    sock.settimeout(None)
-    return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype, info)
-
 def connect_or_fail(display_desc, opts):
     try:
         return connect_to(display_desc, opts)
@@ -845,170 +841,349 @@ def ssh_connect_failed(message):
         gtk_main_quit_really()
 
 
+def ssh_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
+    sshpass_command = None
+    try:
+        cmd = display_desc["full_ssh"]
+        kwargs = {}
+        env = display_desc.get("env")
+        kwargs["stderr"] = sys.stderr
+        if WIN32:
+            from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
+            flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
+            kwargs["creationflags"] = flags
+            kwargs["stderr"] = PIPE
+        elif not display_desc.get("exit_ssh", False) and not OSX:
+            kwargs["preexec_fn"] = setsid
+        remote_xpra = display_desc["remote_xpra"]
+        assert len(remote_xpra)>0
+        socket_dir = display_desc.get("socket_dir")
+        proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
+        display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
+        remote_cmd = ""
+        for x in remote_xpra:
+            if not remote_cmd:
+                check = "if"
+            else:
+                check = "elif"
+            if x=="xpra":
+                #no absolute path, so use "type" to check that the command exists:
+                pc = ['%s type "%s" > /dev/null 2>&1; then' % (check, x)]
+            else:
+                pc = ['%s [ -x %s ]; then' % (check, x)]
+            pc += [x] + proxy_command + display_as_args
+            if socket_dir:
+                pc.append("--socket-dir=%s" % socket_dir)
+            remote_cmd += " ".join(pc)+";"
+        remote_cmd += "else echo \"no run-xpra command found\"; exit 1; fi"
+        if INITENV_COMMAND:
+            remote_cmd = INITENV_COMMAND + ";" + remote_cmd
+        #putty gets confused if we wrap things in shell command:
+        if display_desc.get("is_putty", False):
+            cmd.append(remote_cmd)
+        else:
+            #openssh doesn't have this problem,
+            #and this gives us better compatibility with weird login shells
+            cmd.append("sh -c '%s'" % remote_cmd)
+        if debug_cb:
+            debug_cb("starting %s tunnel" % str(cmd[0]))
+            #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
+        #non-string arguments can make Popen choke,
+        #instead of lazily converting everything to a string, we validate the command:
+        for x in cmd:
+            if type(x)!=str:
+                raise InitException("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
+        password = display_desc.get("password")
+        if password:
+            from xpra.platform.paths import get_sshpass_command
+            sshpass_command = get_sshpass_command()
+            if sshpass_command:
+                #sshpass -e ssh ...
+                cmd.insert(0, sshpass_command)
+                cmd.insert(1, "-e")
+                if env is None:
+                    env = os.environ.copy()
+                env["SSHPASS"] = password
+                #the password will be used by ssh via sshpass,
+                #don't try to authenticate again over the ssh-proxy connection,
+                #which would trigger warnings if the server does not require
+                #authentication over unix-domain-sockets:
+                opts.password = None
+                del display_desc["password"]
+        if env:
+            kwargs["env"] = env
+        if SSH_DEBUG:
+            sys.stdout.write("executing ssh command: %s\n" % (" ".join("\"%s\"" % x for x in cmd)))
+        child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
+    except OSError as e:
+        raise InitExit(EXIT_SSH_FAILURE, "Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))
+    def abort_test(action):
+        """ if ssh dies, we don't need to try to read/write from its sockets """
+        e = child.poll()
+        if e is not None:
+            had_connected = conn.input_bytecount>0 or conn.output_bytecount>0
+            if had_connected:
+                error_message = "cannot %s using SSH" % action
+            else:
+                error_message = "SSH connection failure"
+            sshpass_error = None
+            if sshpass_command:
+                sshpass_error = {
+                                 1  : "Invalid command line argument",
+                                 2  : "Conflicting arguments given",
+                                 3  : "General runtime error",
+                                 4  : "Unrecognized response from ssh (parse error)",
+                                 5  : "Invalid/incorrect password",
+                                 6  : "Host public key is unknown. sshpass exits without confirming the new key.",
+                                 }.get(e)
+                if sshpass_error:
+                    error_message += ": %s" % sshpass_error
+            if debug_cb:
+                debug_cb(error_message)
+            if ssh_fail_cb:
+                ssh_fail_cb(error_message)
+            if "ssh_abort" not in display_desc:
+                display_desc["ssh_abort"] = True
+                log = get_util_logger()
+                if not had_connected:
+                    log.error("Error: SSH connection to the xpra server failed")
+                    if sshpass_error:
+                        log.error(" %s", sshpass_error)
+                    else:
+                        log.error(" check your username, hostname, display number, firewall, etc")
+                    display_name = display_desc["display_name"]
+                    log.error(" for server: %s", display_name)
+                else:
+                    log.error("The SSH process has terminated with exit code %s", e)
+                cmd_info = " ".join(display_desc["full_ssh"])
+                log.error(" the command line used was:")
+                log.error(" %s", cmd_info)
+            raise ConnectionClosedException(error_message)
+    def stop_tunnel():
+        if POSIX:
+            #on posix, the tunnel may be shared with other processes
+            #so don't kill it... which may leave it behind after use.
+            #but at least make sure we close all the pipes:
+            for name,fd in {
+                            "stdin" : child.stdin,
+                            "stdout" : child.stdout,
+                            "stderr" : child.stderr,
+                            }.items():
+                try:
+                    if fd:
+                        fd.close()
+                except Exception as e:
+                    print("error closing ssh tunnel %s: %s" % (name, e))
+            if not display_desc.get("exit_ssh", False):
+                #leave it running
+                return
+        try:
+            if child.poll() is None:
+                child.terminate()
+        except Exception as e:
+            print("error trying to stop ssh tunnel process: %s" % e)
+    info = {
+        "host"  : display_desc["host"],
+        "port"  : display_desc.get("ssh-port", 22),
+        }
+    from xpra.net.bytestreams import TwoFileConnection
+    target = ssh_target_string(display_desc)
+    conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=target, socktype="ssh", close_cb=stop_tunnel, info=info)
+    conn.timeout = 0            #taken care of by abort_test
+    conn.process = (child, "ssh", cmd)
+    return conn
+
+def ssh_target_string(display_desc):
+    target = "ssh://"
+    username = display_desc.get("username")
+    if username:
+        target += "%s@" % username
+    host = display_desc.get("host")
+    target += host
+    ssh_port = display_desc.get("ssh-port")
+    if ssh_port:
+        target += ":%i" % ssh_port
+    display = display_desc.get("display")
+    target += "/%s" % (display or "")
+    return target
+
+def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
+    from xpra.log import Logger
+    log = Logger("ssh")
+    display_name = display_desc["display_name"]
+    dtype = display_desc["type"]
+    host = display_desc["host"]
+    port = display_desc.get("ssh-port", 22)
+    username = display_desc.get("username")
+    if not username:
+        import getpass
+        username = getpass.getuser()
+    password = display_desc.get("password")
+    ipv6 = display_desc.get("ipv6", False)
+    sock = socket_connect(dtype, host, port, ipv6)
+    from paramiko import SSHException, Transport, Agent, RSAKey, PasswordRequiredException
+    from paramiko.util import load_host_keys
+    from binascii import hexlify
+    transport = Transport(sock)
+    log("SSH transport %s", transport)
+    try:
+        transport.start_client()
+    except SSHException:
+        raise InitException("SSH negotiation failed")
+    keys = {}
+    for known_hosts in ("~/.ssh/known_hosts", "~/ssh/known_hosts"):
+        try:
+            keys = load_host_keys(os.path.expanduser(known_hosts))
+            log("load_host_keys(%s)=%s", known_hosts, keys)
+            break
+        except IOError:
+            log("load_host_keys(%s)", known_hosts, exc_info=True)
+
+    key = transport.get_remote_server_key()
+    assert key, "no remote server key"
+    log("remote_server_key=%s", hexlify(key.get_fingerprint()))
+    if envbool("XPRA_SSH_VERIFY_HOSTKEY", True):
+        if host not in keys:
+            log.warn("Warning: unknown host")
+            log.warn(" for host '%s'", host)
+            log.warn(" key fingerprint: '%s'", hexlify(key.get_fingerprint()))
+        elif key.get_name() not in keys[host]:
+            log.warn("Warning: unknown '%s' host key", key.get_name())
+            log.warn(" for host '%s'", host)
+            log.warn(" key fingerprint: '%s'", hexlify(key.get_fingerprint()))
+        elif keys[host][key.get_name()] != key:
+            log("SSH server key mismatch")
+            log(" for host '%s'", host)
+            log(" expected '%s'", hexlify(keys[host][key.get_name()].get_fingerprint()))
+            log(" got '%s'", hexlify(key.get_fingerprint()))
+            raise InitExit("SSH Host key has changed")
+        else:
+            log("host key '%s' OK for host '%s'", key, host)
+
+    if not transport.is_authenticated() and envbool("XPRA_SSH_AGENT_AUTH", True):
+        agent = Agent()
+        agent_keys = agent.get_keys()
+        log("agent keys: %s", agent_keys)
+        for key in agent_keys:
+            log("trying ssh-agent key '%s'" % hexlify(key.get_fingerprint()))
+            try:
+                transport.auth_publickey(username, key)
+                if transport.is_authenticated():
+                    log("authenticated")
+                    break
+            except SSHException:
+                log("agent key '%s' rejected", key, exc_info=True)
+
+    if not transport.is_authenticated() and password and envbool("XPRA_SSH_PASSWORD_AUTH", True):
+        log("trying password authentication")
+        transport.auth_password(username, password)
+
+    if not transport.is_authenticated() and envbool("XPRA_SSH_KEY_AUTH", True):
+        log("trying pulic key authentication")
+        for keyfile in ("id_rsa", "id_dsa"):
+            keyfile_path = osexpand(os.path.join("~/", ".ssh", keyfile))
+            if not os.path.exists(keyfile_path):
+                log("no keyfile at '%s'", keyfile_path)
+                continue
+            try:
+                key = RSAKey.from_private_key_file(keyfile_path)
+            except PasswordRequiredException:
+                #TODO: ask for passphrase
+                log("%s keyfile requires a passphrase", keyfile_path)
+                #key = paramiko.RSAKey.from_private_key_file(path, password)
+                continue
+            else:
+                transport.auth_publickey(username, key)
+
+    if not transport.is_authenticated():
+        transport.close()
+        raise InitException("SSH Authentication failed")
+
+    #todo: parse full_ssh for attributes like timeout, key_filename
+    #pkey=None, key_filename=None, timeout=None, allow_agent=True, look_for_keys=True, compress=False, sock=None, gss_auth=False, gss_kex=False, gss_deleg_creds=True, gss_host=None, banner_timeout=None, auth_timeout=None, gss_trust_dns=True, passphrase=None)
+    remote_xpra = display_desc["remote_xpra"]
+    assert len(remote_xpra)>0
+    proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
+    socket_dir = display_desc.get("socket_dir")
+    display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
+    log("will try to run xpra from: %s", remote_xpra)
+    for x in remote_xpra:
+        cmd = "%s %s" % (x, " ".join(proxy_command))
+        if socket_dir:
+            cmd += " --socket-dir=%s" % socket_dir
+        if display_as_args:
+            cmd += " "
+            cmd += " ".join("'%s'" % x for x in display_as_args)
+
+        log("trying to open SSH session")
+        try:
+            chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
+            chan.set_name("run-xpra")
+        except SSHException as e:
+            log("open_session", exc_info=True)
+            log.error("Error: failed to open SSH session:")
+            log.error(" %s", e)
+            continue
+        else:
+            log("channel exec_command(%s)" % cmd)
+            chan.exec_command(cmd)
+            target = ssh_target_string(display_desc)
+            from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
+            info = {
+                "host"  : host,
+                "port"  : port,
+                }
+            conn = SocketConnection(chan, sock.getsockname(), sock.getpeername(), target, "ssh", info)
+            conn.timeout = SOCKET_TIMEOUT
+            #TODO: fake a process
+            child = None
+            conn.process = (child, "ssh", cmd)
+            return conn
+    raise Exception("all SSH remote proxy commands have failed")
+
+def socket_connect(dtype, host, port, ipv6=False):
+    from xpra.net.bytestreams import SOCKET_TIMEOUT
+    if ipv6:
+        assert socket.has_ipv6, "no IPv6 support"
+        family = socket.AF_INET6
+    else:
+        family = socket.AF_INET
+    info = {
+        "host" : host,
+        "port" : port,
+        }
+    try:
+        addrinfo = socket.getaddrinfo(host, port, family)
+    except Exception as e:
+        raise InitException("cannot get %s address of %s: %s" % ({
+            socket.AF_INET6 : "IPv6",
+            socket.AF_INET  : "IPv4",
+            }.get(family, family), (host, port), e))
+    sockaddr = addrinfo[0][-1]
+    if dtype=="udp":
+        sock = socket.socket(family, socket.SOCK_DGRAM)
+    else:
+        sock = socket.socket(family, socket.SOCK_STREAM)
+        sock.settimeout(SOCKET_TIMEOUT)
+    try:
+        sock.connect(sockaddr)
+    except Exception as e:
+        get_util_logger().debug("failed to connect using %s%s", sock.connect, sockaddr, exc_info=True)
+        from xpra.net.bytestreams import pretty_socket
+        raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(sockaddr), e))
+    sock.settimeout(None)
+    return sock
+
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT
-    from xpra.net.common import ConnectionClosedException
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     conn = None
     if dtype == "ssh":
-        sshpass_command = None
-        try:
-            cmd = display_desc["full_ssh"]
-            kwargs = {}
-            env = display_desc.get("env")
-            kwargs["stderr"] = sys.stderr
-            if WIN32:
-                from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
-                flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
-                kwargs["creationflags"] = flags
-                kwargs["stderr"] = PIPE
-            elif not display_desc.get("exit_ssh", False) and not OSX:
-                kwargs["preexec_fn"] = setsid
-            remote_xpra = display_desc["remote_xpra"]
-            assert len(remote_xpra)>0
-            socket_dir = display_desc.get("socket_dir")
-            proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
-            display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
-            remote_cmd = ""
-            for x in remote_xpra:
-                if not remote_cmd:
-                    check = "if"
-                else:
-                    check = "elif"
-                if x=="xpra":
-                    #no absolute path, so use "type" to check that the command exists:
-                    pc = ['%s type "%s" > /dev/null 2>&1; then' % (check, x)]
-                else:
-                    pc = ['%s [ -x %s ]; then' % (check, x)]
-                pc += [x] + proxy_command + display_as_args
-                if socket_dir:
-                    pc.append("--socket-dir=%s" % socket_dir)
-                remote_cmd += " ".join(pc)+";"
-            remote_cmd += "else echo \"no run-xpra command found\"; exit 1; fi"
-            if INITENV_COMMAND:
-                remote_cmd = INITENV_COMMAND + ";" + remote_cmd
-            #putty gets confused if we wrap things in shell command:
-            if display_desc.get("is_putty", False):
-                cmd.append(remote_cmd)
-            else:
-                #openssh doesn't have this problem,
-                #and this gives us better compatibility with weird login shells
-                cmd.append("sh -c '%s'" % remote_cmd)
-            if debug_cb:
-                debug_cb("starting %s tunnel" % str(cmd[0]))
-                #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
-            #non-string arguments can make Popen choke,
-            #instead of lazily converting everything to a string, we validate the command:
-            for x in cmd:
-                if type(x)!=str:
-                    raise InitException("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
-            password = display_desc.get("password")
-            if password:
-                from xpra.platform.paths import get_sshpass_command
-                sshpass_command = get_sshpass_command()
-                if sshpass_command:
-                    #sshpass -e ssh ...
-                    cmd.insert(0, sshpass_command)
-                    cmd.insert(1, "-e")
-                    if env is None:
-                        env = os.environ.copy()
-                    env["SSHPASS"] = password
-                    #the password will be used by ssh via sshpass,
-                    #don't try to authenticate again over the ssh-proxy connection,
-                    #which would trigger warnings if the server does not require
-                    #authentication over unix-domain-sockets:
-                    opts.password = None
-                    del display_desc["password"]
-            if env:
-                kwargs["env"] = env
-            if SSH_DEBUG:
-                sys.stdout.write("executing ssh command: %s\n" % (" ".join("\"%s\"" % x for x in cmd)))
-            child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
-        except OSError as e:
-            raise InitExit(EXIT_SSH_FAILURE, "Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))
-        def abort_test(action):
-            """ if ssh dies, we don't need to try to read/write from its sockets """
-            e = child.poll()
-            if e is not None:
-                had_connected = conn.input_bytecount>0 or conn.output_bytecount>0
-                if had_connected:
-                    error_message = "cannot %s using SSH" % action
-                else:
-                    error_message = "SSH connection failure"
-                sshpass_error = None
-                if sshpass_command:
-                    sshpass_error = {
-                                     1  : "Invalid command line argument",
-                                     2  : "Conflicting arguments given",
-                                     3  : "General runtime error",
-                                     4  : "Unrecognized response from ssh (parse error)",
-                                     5  : "Invalid/incorrect password",
-                                     6  : "Host public key is unknown. sshpass exits without confirming the new key.",
-                                     }.get(e)
-                    if sshpass_error:
-                        error_message += ": %s" % sshpass_error
-                if debug_cb:
-                    debug_cb(error_message)
-                if ssh_fail_cb:
-                    ssh_fail_cb(error_message)
-                if "ssh_abort" not in display_desc:
-                    display_desc["ssh_abort"] = True
-                    log = get_util_logger()
-                    if not had_connected:
-                        log.error("Error: SSH connection to the xpra server failed")
-                        if sshpass_error:
-                            log.error(" %s", sshpass_error)
-                        else:
-                            log.error(" check your username, hostname, display number, firewall, etc")
-                        log.error(" for server: %s", display_name)
-                    else:
-                        log.error("The SSH process has terminated with exit code %s", e)
-                    cmd_info = " ".join(display_desc["full_ssh"])
-                    log.error(" the command line used was:")
-                    log.error(" %s", cmd_info)
-                raise ConnectionClosedException(error_message)
-        def stop_tunnel():
-            if POSIX:
-                #on posix, the tunnel may be shared with other processes
-                #so don't kill it... which may leave it behind after use.
-                #but at least make sure we close all the pipes:
-                for name,fd in {
-                                "stdin" : child.stdin,
-                                "stdout" : child.stdout,
-                                "stderr" : child.stderr,
-                                }.items():
-                    try:
-                        if fd:
-                            fd.close()
-                    except Exception as e:
-                        print("error closing ssh tunnel %s: %s" % (name, e))
-                if not display_desc.get("exit_ssh", False):
-                    #leave it running
-                    return
-            try:
-                if child.poll() is None:
-                    child.terminate()
-            except Exception as e:
-                print("error trying to stop ssh tunnel process: %s" % e)
-        from xpra.net.bytestreams import TwoFileConnection
-        info = {}
-        target = "ssh://"
-        username = display_desc.get("username")
-        if username:
-            target += "%s@" % username
-        host = display_desc.get("host")
-        info["host"] = host
-        target += host
-        ssh_port = display_desc.get("ssh-port")
-        if ssh_port:
-            info["port"] = ssh_port
-            target += ":%i" % ssh_port
-        display = display_desc.get("display")
-        target += "/%s" % (display or "")
-        conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=target, socktype=dtype, close_cb=stop_tunnel, info=info)
-        conn.timeout = 0            #taken care of by abort_test
-        conn.process = (child, "ssh", cmd)
+        if display_desc.get("is_paramiko", False):
+            conn = paramiko_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
+        else:
+            conn = ssh_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
 
     elif dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
@@ -1020,15 +1195,15 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         sockpath = get_sockpath(display_desc, sockpathfail_cb)
         display_desc["socket_path"] = sockpath
         try:
-            conn = _socket_connect(sock, sockpath, display_name, dtype)
-            #now that we know it:
-            if "socket_dir" not in display_desc:
-                display_desc["socket_dir"] = os.path.dirname(sockpath)
-        except (InitException, InitExit, InitInfo) as e:
-            raise
+            sock.connect(sockpath)
         except Exception as e:
-            raise InitException("cannot connect to %s: %s" % (sockpath, e))
+            get_util_logger().debug("failed to connect using %s%s", sock.connect, sockpath, exc_info=True)
+            raise InitException("failed to connect to '%s':\n %s" % (sockpath, e))
+        sock.settimeout(None)
+        from xpra.net.bytestreams import SocketConnection
+        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype, info)
         conn.timeout = SOCKET_TIMEOUT
+        return conn
 
     elif dtype == "named-pipe":
         pipe_name = display_desc["named-pipe"]
@@ -1060,45 +1235,29 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         sock = connect_vsocket(cid=cid, port=iport)
         sock.timeout = VSOCK_TIMEOUT
         sock.settimeout(None)
-        from xpra.net.bytestreams import SocketConnection
         return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
 
     elif dtype in ("tcp", "ssl", "ws", "wss", "udp"):
-        if display_desc.get("ipv6"):
-            assert socket.has_ipv6, "no IPv6 support"
-            family = socket.AF_INET6
-        else:
-            family = socket.AF_INET
+        ipv6 = display_desc.get("ipv6", False)
         host = display_desc["host"]
         port = display_desc["port"]
-        info = {
-            "host" : host,
-            "port" : port,
-            }
-        try:
-            addrinfo = socket.getaddrinfo(host, port, family)
-        except Exception as e:
-            raise InitException("cannot get %s address of %s: %s" % ({
-                socket.AF_INET6 : "IPv6",
-                socket.AF_INET  : "IPv4",
-                }.get(family, family), (host, port), e))
-        sockaddr = addrinfo[0][-1]
+        sock = socket_connect(dtype, host, port, ipv6)
+        sock.settimeout(None)
+        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype, info)
+
         if dtype=="udp":
+            #mmap mode requires all packets to be received,
+            #so we can free up the mmap chunks regularly
             opts.mmap = False
-            sock = socket.socket(family, socket.SOCK_DGRAM)
-        else:
-            sock = socket.socket(family, socket.SOCK_STREAM)
-            sock.settimeout(SOCKET_TIMEOUT)
         strict_host_check = display_desc.get("strict-host-check")
         if strict_host_check is False:
             opts.ssl_server_verify_mode = "none"
-        conn = _socket_connect(sock, sockaddr, display_name, dtype, info)
         if dtype in ("ssl", "wss"):
             wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
             sock = wrap_socket(sock)
             assert sock, "failed to wrap socket %s" % sock
             conn._socket = sock
-        conn.timeout = SOCKET_TIMEOUT
+            conn.timeout = SOCKET_TIMEOUT
 
         #wrap in a websocket:
         if dtype in ("ws", "wss"):
