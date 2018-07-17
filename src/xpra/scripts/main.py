@@ -19,7 +19,7 @@ import traceback
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
-from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_STR
+from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_SSH_KEY_FAILURE, EXIT_STR
 from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, osexpand, WIN32, OSX, POSIX
 from xpra.scripts.parsing import info, warn, error, \
     parse_vsock, parse_env, is_local, \
@@ -1008,6 +1008,8 @@ def ssh_target_string(display_desc):
     return target
 
 def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
+    #TODO: parse full_ssh for attributes like timeout, key_filename
+    import time
     from xpra.log import Logger
     log = Logger("ssh")
     display_name = display_desc["display_name"]
@@ -1047,16 +1049,21 @@ def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
             log.warn("Warning: unknown host")
             log.warn(" for host '%s'", host)
             log.warn(" key fingerprint: '%s'", hexlify(key.get_fingerprint()))
+            transport.close()
+            raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
         elif key.get_name() not in keys[host]:
             log.warn("Warning: unknown '%s' host key", key.get_name())
             log.warn(" for host '%s'", host)
             log.warn(" key fingerprint: '%s'", hexlify(key.get_fingerprint()))
+            transport.close()
+            raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host key for host '%s'" % host)
         elif keys[host][key.get_name()] != key:
             log("SSH server key mismatch")
             log(" for host '%s'", host)
             log(" expected '%s'", hexlify(keys[host][key.get_name()].get_fingerprint()))
             log(" got '%s'", hexlify(key.get_fingerprint()))
-            raise InitExit("SSH Host key has changed")
+            transport.close()
+            raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
         else:
             log("host key '%s' OK for host '%s'", key, host)
 
@@ -1099,21 +1106,41 @@ def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
         transport.close()
         raise InitException("SSH Authentication failed")
 
-    #todo: parse full_ssh for attributes like timeout, key_filename
-    #pkey=None, key_filename=None, timeout=None, allow_agent=True, look_for_keys=True, compress=False, sock=None, gss_auth=False, gss_kex=False, gss_deleg_creds=True, gss_host=None, banner_timeout=None, auth_timeout=None, gss_trust_dns=True, passphrase=None)
     remote_xpra = display_desc["remote_xpra"]
     assert len(remote_xpra)>0
     proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
     socket_dir = display_desc.get("socket_dir")
     display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
     log("will try to run xpra from: %s", remote_xpra)
-    for x in remote_xpra:
-        cmd = "%s %s" % (x, " ".join(proxy_command))
+    for xpra_cmd in remote_xpra:
+        try:
+            chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
+            chan.set_name("find %s" % xpra_cmd)
+        except SSHException as e:
+            log("open_session", exc_info=True)
+            raise InitException("failed to open SSH session: %s" % e)
+        cmd = "type %s" % xpra_cmd
+        log("exec_command('%s')", cmd)
+        chan.exec_command(cmd)
+        #poll until the command terminates:
+        start = monotonic_time()
+        while not chan.exit_status_ready():
+            if monotonic_time()-start>10:
+                chan.close()
+                raise InitException("SSH test command '%s' timed out" % cmd)
+            log("exit status is not ready yet, sleeping")
+            time.sleep(0.01)
+        r = chan.recv_exit_status()
+        log("exec_command('%s')=%s", cmd, r)
+        chan.close()
+        if r!=0:
+            continue
+        cmd = xpra_cmd + " " + " ".join("\"%s\"" % x for x in proxy_command)
         if socket_dir:
-            cmd += " --socket-dir=%s" % socket_dir
+            cmd += " \"--socket-dir=%s\"" % socket_dir
         if display_as_args:
             cmd += " "
-            cmd += " ".join("'%s'" % x for x in display_as_args)
+            cmd += " ".join("\"%s\"" % x for x in display_as_args)
 
         log("trying to open SSH session")
         try:
@@ -1121,21 +1148,19 @@ def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
             chan.set_name("run-xpra")
         except SSHException as e:
             log("open_session", exc_info=True)
-            log.error("Error: failed to open SSH session:")
-            log.error(" %s", e)
-            continue
+            raise InitException("failed to open SSH session: %s" % e)
         else:
             log("channel exec_command(%s)" % cmd)
             chan.exec_command(cmd)
             target = ssh_target_string(display_desc)
-            from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
+            from xpra.net.bytestreams import SSHSocketConnection, SOCKET_TIMEOUT
             info = {
                 "host"  : host,
                 "port"  : port,
                 }
-            conn = SocketConnection(chan, sock.getsockname(), sock.getpeername(), target, "ssh", info)
+            conn = SSHSocketConnection(chan, sock, target, info)
             conn.timeout = SOCKET_TIMEOUT
-            #TODO: fake a process
+            conn.start_stderr_reader()
             child = None
             conn.process = (child, "ssh", cmd)
             return conn

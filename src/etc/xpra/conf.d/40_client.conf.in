@@ -24,6 +24,7 @@ title = @title@ on @client-machine@
 #ssh = /usr/bin/ssh
 #ssh = ssh -o ControlMaster=no -o ConnectTimeout=20
 #ssh = ssh -x
+#ssh = paramiko
 ssh = %(ssh_command)s
 
 # Mouse wheel:

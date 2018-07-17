@@ -347,10 +347,9 @@ class SocketConnection(Connection):
         return d
 
     def get_socket_info(self):
-        return self.do_get_socket_info()
+        return self.do_get_socket_info(self._socket)
 
-    def do_get_socket_info(self):
-        s = self._socket
+    def do_get_socket_info(self, s):
         if not s:
             return None
         info = {}
@@ -403,6 +402,44 @@ class SocketConnection(Connection):
         # IPV6_RTHDRDSTOPTS, IPV6_TCLASS, IPV6_UNICAST_HOPS, IPV6_USE_MIN_MTU, IPV6_V6ONLY
         info["options"] = opts
         return info
+
+class SSHSocketConnection(SocketConnection):
+
+    def __init__(self, ssh_channel, sock, target, info={}):
+        SocketConnection.__init__(self, ssh_channel, sock.getsockname(), sock.getpeername(), target, "ssh", info)
+        self._raw_socket = sock
+
+    def start_stderr_reader(self):
+        from xpra.make_thread import start_thread
+        start_thread(self._stderr_reader, "ssh-stderr-reader", daemon=True)
+
+    def _stderr_reader(self):
+        #stderr = self._socket.makefile_stderr(mode="rb", bufsize=1)
+        chan = self._socket
+        stderr = chan.makefile_stderr("rb", 1)
+        while self.active:
+            v = stderr.readline()
+            if not v:
+                log("SSH EOF on stderr of %s", chan.get_name())
+                return
+            log.warn("SSH stderr: %s", v)
+
+    def peek(self, n):
+        return self._raw_socket.recv(n, socket.MSG_PEEK)
+
+    def get_socket_info(self):
+        return self.do_get_socket_info(self._raw_socket)
+
+    def get_info(self):
+        i = SocketConnection.get_info(self)
+        s = self._socket
+        if s:
+            i["ssh-channel"] = {
+                "id"    : s.get_id(),
+                "name"  : s.get_name(),
+                }
+        return i
+
 
 def get_socket_options(sock, level, options):
     opts = {}
