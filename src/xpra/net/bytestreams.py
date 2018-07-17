@@ -390,12 +390,12 @@ class SocketConnection(Connection):
             log.error("Error querying socket speed:")
             log.error(" %s", e)
         opts = {
-                "SOCKET" : get_socket_options(self._socket, socket.SOL_SOCKET, SOCKET_OPTIONS),
+                "SOCKET" : get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),
                 }
         if self.socktype in ("tcp", "udp", "ws", "wss", "ssl"):
-                opts["IP"] = get_socket_options(self._socket, socket.SOL_IP, IP_OPTIONS)
+                opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
         if self.socktype in ("tcp", "ws", "wss", "ssl"):
-            opts["TCP"] = get_socket_options(self._socket, socket.IPPROTO_TCP, TCP_OPTIONS)
+            opts["TCP"] = get_socket_options(s, socket.IPPROTO_TCP, TCP_OPTIONS)
         #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
         # IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP, IPV6_PATHMTU,
         # IPV6_PKTINFO, IPV6_PREFER_TEMPADDR, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT, IPV6_RECVHOPOPTS,
@@ -425,7 +425,7 @@ def get_socket_options(sock, level, options):
         log.error("Error querying socket options:")
         log.error(" %s", e)
     return opts
-    
+
 
 SSLSocket = None
 if SSL_PEEK:
