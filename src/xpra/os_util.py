@@ -421,6 +421,11 @@ def close_all_fds(exceptions=[]):
             # by listdir() is already closed.
             pass
 
+def use_tty():
+    from xpra.util import envbool
+    NOTTY = envbool("XPRA_NOTTY", False)
+    return not os.environ.get("MSYSCON") and not NOTTY and sys.stdin.isatty()
+
 
 def shellsub(s, subs={}):
     """ shell style string substitution using the dictionary given """

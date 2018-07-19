@@ -9,7 +9,7 @@ import glob
 import os.path
 
 from xpra.util import engs
-from xpra.os_util import hexstr, osexpand, load_binary_file
+from xpra.os_util import hexstr, osexpand, load_binary_file, use_tty
 from xpra.platform.paths import get_user_conf_dirs
 
 from xpra.log import Logger
@@ -21,8 +21,7 @@ APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
 def main():
     from xpra.platform import program_context
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
-        gui = not sys.stdin.isatty() or os.environ.get("MSYSCON")
-        if gui:
+        if not use_tty():
             from xpra.gtk_common.gobject_compat import import_gtk, import_glib
             gtk = import_gtk()
             glib = import_glib()

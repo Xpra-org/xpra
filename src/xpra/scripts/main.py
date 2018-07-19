@@ -18,7 +18,7 @@ import shlex
 import traceback
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import csv, envbool, envint, DEFAULT_PORT
+from xpra.util import csv, envbool, envint, engs, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_SSH_KEY_FAILURE, EXIT_STR
 from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, osexpand, WIN32, OSX, POSIX
 from xpra.scripts.parsing import info, warn, error, \
@@ -28,7 +28,8 @@ from xpra.scripts.parsing import info, warn, error, \
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_options, dict_to_validated_config, \
-    make_defaults_struct, parse_bool, has_sound_support, name_to_field
+    make_defaults_struct, parse_bool, has_sound_support, name_to_field,\
+    TRUE_OPTIONS
 from xpra.net.common import ConnectionClosedException
 assert info and warn and error, "used by modules importing those from here"
 
@@ -1007,6 +1008,37 @@ def ssh_target_string(display_desc):
     target += "/%s" % (display or "")
     return target
 
+def keymd5(k):
+    import binascii
+    f = binascii.hexlify(k.get_fingerprint())
+    s = "MD5"
+    while f:
+        s += ":"+f[:2]
+        f = f[2:]
+    return s
+
+def confirm_key():
+    SKIP_UI = envbool("XPRA_SKIP_UI", False)
+    if SKIP_UI:
+        return False
+    from xpra.os_util import use_tty
+    if not use_tty():
+        #TODO!
+        return False
+    v = sys.stdin.readline().rstrip("\n\r")
+    return v and v.lower() in ("y", "yes")
+
+def input_pass(prompt):
+    SKIP_UI = envbool("XPRA_SKIP_UI", False)
+    if SKIP_UI:
+        return None
+    from xpra.os_util import use_tty
+    if not use_tty():
+        #TODO!
+        return None
+    from getpass import getpass
+    return getpass(prompt)
+
 def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
     #TODO: parse full_ssh for attributes like timeout, key_filename
     import time
@@ -1024,83 +1056,163 @@ def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
     ipv6 = display_desc.get("ipv6", False)
     sock = socket_connect(dtype, host, port, ipv6)
     from paramiko import SSHException, Transport, Agent, RSAKey, PasswordRequiredException
-    from paramiko.util import load_host_keys
-    from binascii import hexlify
+    from paramiko.hostkeys import HostKeys
     transport = Transport(sock)
     log("SSH transport %s", transport)
     try:
         transport.start_client()
     except SSHException:
         raise InitException("SSH negotiation failed")
-    keys = {}
-    for known_hosts in ("~/.ssh/known_hosts", "~/ssh/known_hosts"):
-        try:
-            keys = load_host_keys(os.path.expanduser(known_hosts))
-            log("load_host_keys(%s)=%s", known_hosts, keys)
-            break
-        except IOError:
-            log("load_host_keys(%s)", known_hosts, exc_info=True)
 
-    key = transport.get_remote_server_key()
-    assert key, "no remote server key"
-    log("remote_server_key=%s", hexlify(key.get_fingerprint()))
+    host_key = transport.get_remote_server_key()
+    assert host_key, "no remote server key"
+    log("remote_server_key=%s", keymd5(host_key))
     if envbool("XPRA_SSH_VERIFY_HOSTKEY", True):
-        if host not in keys:
-            log.warn("Warning: unknown host")
-            log.warn(" for host '%s'", host)
-            log.warn(" key fingerprint: '%s'", hexlify(key.get_fingerprint()))
-            transport.close()
-            raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
-        elif key.get_name() not in keys[host]:
-            log.warn("Warning: unknown '%s' host key", key.get_name())
-            log.warn(" for host '%s'", host)
-            log.warn(" key fingerprint: '%s'", hexlify(key.get_fingerprint()))
-            transport.close()
-            raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host key for host '%s'" % host)
-        elif keys[host][key.get_name()] != key:
-            log("SSH server key mismatch")
-            log(" for host '%s'", host)
-            log(" expected '%s'", hexlify(keys[host][key.get_name()].get_fingerprint()))
-            log(" got '%s'", hexlify(key.get_fingerprint()))
-            transport.close()
-            raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
-        else:
-            log("host key '%s' OK for host '%s'", key, host)
+        host_keys = HostKeys()
+        host_keys_filename = None
+        for known_hosts in ("~/.ssh/known_hosts", "~/ssh/known_hosts"):
+            host_keys.clear()
+            try:
+                path = os.path.expanduser(known_hosts)
+                if os.path.exists(path):
+                    host_keys.load(path)
+                    log("HostKeys.load(%s) successful", known_hosts)
+                    host_keys_filename = path
+                    break
+            except IOError:
+                log("HostKeys.load(%s)", known_hosts, exc_info=True)
 
-    if not transport.is_authenticated() and envbool("XPRA_SSH_AGENT_AUTH", True):
+        log("host keys=%s", host_keys)
+        keys = host_keys.lookup(host)
+        known_host_key = (keys or {}).get(host_key.get_name())
+        def keyname():
+            return host_key.get_name().replace("ssh-", "")
+        if host_key==known_host_key:
+            assert host_key
+            log("%s host key '%s' OK for host '%s'", keyname(), keymd5(host_key), host)
+        else:
+            if known_host_key:
+                log.warn("Warning: SSH server key mismatch")
+                sys.stderr.write(
+"""@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!\n
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!\n
+It is also possible that a host key has just been changed.\n
+The fingerprint for the %s key sent by the remote host is\n
+%s\n
+""" % (keyname(), keymd5(host_key)))
+                if envbool("XPRA_SSH_VERIFY_STRICT", False):
+                    log.warn("Please contact your system administrator.")
+                    log.warn("Add correct host key in %s to get rid of this message.")
+                    log.warn("Offending %s key in %s", keyname(), host_keys_filename)
+                    log.warn("ECDSA host key for %s has changed and you have requested strict checking.", keyname())
+                    log.warn("Host key verification failed.")
+                    transport.close()
+                    raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
+                sys.stderr.write("Are you sure you want to continue connecting (yes/no)?")
+                if not confirm_key():
+                    transport.close()
+                    raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
+
+            else:
+                assert (not keys) or (host_key.get_name() not in keys)
+                if not keys:
+                    log.warn("Warning: unknown host")
+                else:
+                    log.warn("Warning: unknown %s host key", keyname())                        
+                sys.stderr.write("The authenticity of host '%s' can't be established.\n" % (host,))
+                sys.stderr.write("%s key fingerprint is %s\n" % (keyname(), keymd5(host_key)))
+                sys.stderr.write("Are you sure you want to continue connecting (yes/no)?")
+                if not confirm_key():
+                    transport.close()
+                    raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
+
+            log("adding %s key for host '%s' to '%s'", keyname(), host, host_keys_filename)
+            try:
+                host_keys.add(host, host_key.get_name(), host_key)
+                host_keys.save(host_keys_filename)
+            except OSError as e:
+                log("failed to add key to '%s'", host_keys_filename)
+                log.error("Error adding key to '%s'", host_keys_filename)
+                log.error(" %s", e)
+
+
+    def auth_agent():
         agent = Agent()
         agent_keys = agent.get_keys()
         log("agent keys: %s", agent_keys)
-        for key in agent_keys:
-            log("trying ssh-agent key '%s'" % hexlify(key.get_fingerprint()))
-            try:
-                transport.auth_publickey(username, key)
-                if transport.is_authenticated():
-                    log("authenticated")
-                    break
-            except SSHException:
-                log("agent key '%s' rejected", key, exc_info=True)
+        if agent_keys:
+            for agent_key in agent_keys:
+                log("trying ssh-agent key '%s'", keymd5(agent_key))
+                try:
+                    transport.auth_publickey(username, agent_key)
+                    if transport.is_authenticated():
+                        log("authenticated using agent and key '%s'", keymd5(agent_key))
+                        break
+                except SSHException:
+                    log("agent key '%s' rejected", agent_key, exc_info=True)
+            if not transport.is_authenticated():
+                log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
 
-    if not transport.is_authenticated() and password and envbool("XPRA_SSH_PASSWORD_AUTH", True):
-        log("trying password authentication")
-        transport.auth_password(username, password)
-
-    if not transport.is_authenticated() and envbool("XPRA_SSH_KEY_AUTH", True):
-        log("trying pulic key authentication")
+    def auth_pulickey():
+        log("trying public key authentication")
         for keyfile in ("id_rsa", "id_dsa"):
             keyfile_path = osexpand(os.path.join("~/", ".ssh", keyfile))
             if not os.path.exists(keyfile_path):
                 log("no keyfile at '%s'", keyfile_path)
                 continue
+            key = None
             try:
                 key = RSAKey.from_private_key_file(keyfile_path)
             except PasswordRequiredException:
-                #TODO: ask for passphrase
                 log("%s keyfile requires a passphrase", keyfile_path)
-                #key = paramiko.RSAKey.from_private_key_file(path, password)
-                continue
-            else:
-                transport.auth_publickey(username, key)
+                passphrase = input_pass("please enter the passphrase for %s:" % (keyfile_path,))
+                if passphrase:
+                    try:
+                        key = RSAKey.from_private_key_file(keyfile_path, passphrase)
+                    except SSHException as e:
+                        log("from_private_key_file", exc_info=True)
+                        log.info("cannot load key from file '%s':", keyfile_path)
+                        log.info(" %s", e)
+            if key:
+                log("auth_publickey using %s: %s", keyfile_path, keymd5(key))
+                try:
+                    transport.auth_publickey(username, key)
+                except SSHException as e:
+                    log("key '%s' rejected", keyfile_path, exc_info=True)
+                    log.info("SSH authentication using key '%s' failed:", keyfile_path)
+                    log.info(" %s", e)
+                else:
+                    break
+
+    def auth_password():
+        log("trying password authentication")
+        try:
+            transport.auth_password(username, password)
+        except SSHException as e:
+            log("auth_password(..)", exc_info=True)
+            log.info("SSH password authentication failed: %s", e)
+
+
+    if not transport.is_authenticated() and envbool("XPRA_SSH_PASSWORD_AUTH", True) and password:
+        auth_password()
+
+    if not transport.is_authenticated() and envbool("XPRA_SSH_AGENT_AUTH", True):
+        auth_agent()
+
+    if not transport.is_authenticated() and envbool("XPRA_SSH_KEY_AUTH", True):
+        auth_pulickey()
+
+    if not transport.is_authenticated() and envbool("XPRA_SSH_PASSWORD_AUTH", True) and not password:
+        password = input_pass("please enter the SSH password for %s@%s" % (username, host))
+        if password:
+            auth_password()
+            if not transport.is_authenticated():
+                #prompt for password again?
+                #only if password auth is accepted?
+                pass
 
     if not transport.is_authenticated():
         transport.close()

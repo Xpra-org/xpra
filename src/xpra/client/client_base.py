@@ -29,7 +29,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, choose_
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, osexpand, BITS, WIN32, OSX
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, osexpand, use_tty, BITS, WIN32, OSX
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc, first_time
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
@@ -49,7 +49,6 @@ DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 
-NOTTY = envbool("XPRA_NOTTY", False)
 
 
 """ Base class for Xpra clients.
@@ -643,8 +642,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return self.do_process_challenge_prompt(packet, prompt)
 
     def do_process_challenge_prompt(self, packet, prompt="password"):
-        authlog("do_process_challenge_prompt() isatty=%s", sys.stdin.isatty())
-        if sys.stdin.isatty() and not os.environ.get("MSYSCON") and not NOTTY:
+        authlog("do_process_challenge_prompt() use_tty=%s", use_tty())
+        if use_tty():
             import getpass
             authlog("stdin isatty, using password prompt")
             password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
