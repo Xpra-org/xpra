@@ -158,7 +158,7 @@ def configure_logging(options, mode):
                 enable_debug_for(cat)
 
     #always log debug level, we just use it selectively (see above)
-    logging.root.setLevel(logging.DEBUG)
+    logging.root.setLevel(logging.INFO)
 
     #register posix signals for debugging:
     if POSIX:
