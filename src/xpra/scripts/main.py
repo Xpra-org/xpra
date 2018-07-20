@@ -1129,14 +1129,15 @@ The fingerprint for the %s key sent by the remote host is\n
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
 
-            log("adding %s key for host '%s' to '%s'", keyname(), host, host_keys_filename)
-            try:
-                host_keys.add(host, host_key.get_name(), host_key)
-                host_keys.save(host_keys_filename)
-            except OSError as e:
-                log("failed to add key to '%s'", host_keys_filename)
-                log.error("Error adding key to '%s'", host_keys_filename)
-                log.error(" %s", e)
+            if envbool("XPRA_SSH_ADD_KEY", True):
+                log("adding %s key for host '%s' to '%s'", keyname(), host, host_keys_filename)
+                try:
+                    host_keys.add(host, host_key.get_name(), host_key)
+                    host_keys.save(host_keys_filename)
+                except OSError as e:
+                    log("failed to add key to '%s'", host_keys_filename)
+                    log.error("Error adding key to '%s'", host_keys_filename)
+                    log.error(" %s", e)
 
 
     def auth_agent():
@@ -1338,7 +1339,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             raise InitException("failed to connect to '%s':\n %s" % (sockpath, e))
         sock.settimeout(None)
         from xpra.net.bytestreams import SocketConnection
-        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype, info)
+        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
         return conn
 
@@ -1380,7 +1381,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         port = display_desc["port"]
         sock = socket_connect(dtype, host, port, ipv6)
         sock.settimeout(None)
-        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype, info)
+        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
 
         if dtype=="udp":
             #mmap mode requires all packets to be received,
