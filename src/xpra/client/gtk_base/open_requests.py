@@ -20,13 +20,12 @@ glib = import_glib()
 pango = import_pango()
 
 
-from xpra.os_util import monotonic_time, bytestostr
+from xpra.os_util import monotonic_time, bytestostr, get_util_logger
 from xpra.simple_stats import std_unit_dec
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, \
                                     TableBuilder, WIN_POS_CENTER, window_defaults
 from xpra.platform.paths import get_icon_dir
-from xpra.log import Logger, enable_debug_for
-log = Logger("util")
+log = get_util_logger()
 
 
 _instance = None
@@ -233,6 +232,7 @@ def main():
     with program_context("Start-New-Command", "Start New Command"):
         #logging init:
         if "-v" in sys.argv:
+            from xpra.log import enable_debug_for
             enable_debug_for("util")
 
         from xpra.os_util import SIGNAMES
