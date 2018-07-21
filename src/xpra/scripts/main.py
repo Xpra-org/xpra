@@ -18,7 +18,7 @@ import shlex
 import traceback
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import csv, envbool, envint, engs, DEFAULT_PORT
+from xpra.util import csv, envbool, envint, engs, nonl, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_SSH_KEY_FAILURE, EXIT_STR
 from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, osexpand, WIN32, OSX, POSIX
 from xpra.scripts.parsing import info, warn, error, \
@@ -28,9 +28,9 @@ from xpra.scripts.parsing import info, warn, error, \
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_options, dict_to_validated_config, \
-    make_defaults_struct, parse_bool, has_sound_support, name_to_field,\
-    TRUE_OPTIONS
+    make_defaults_struct, parse_bool, has_sound_support, name_to_field
 from xpra.net.common import ConnectionClosedException
+from xpra.platform.paths import get_xpra_command
 assert info and warn and error, "used by modules importing those from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
@@ -132,7 +132,7 @@ def configure_logging(options, mode):
     #the logging system every time, and just undo things here..
     from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
     setloghandler(logging.StreamHandler(to))
-    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start", "request-start-desktop", "request-shadow"):
+    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start", "request-start-desktop", "request-shadow", "_dialog"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
@@ -400,6 +400,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 error_cb("no sound support!")
             from xpra.sound.wrapper import run_sound
             return run_sound(mode, error_cb, options, args)
+        elif mode in ("_dialog"):
+            return run_dialog(args)
         elif mode=="opengl":
             return run_glcheck(options)
         elif mode == "initenv":
@@ -1017,15 +1019,47 @@ def keymd5(k):
         f = f[2:]
     return s
 
-def confirm_key():
+def dialog_confirm(title, prompt, qinfo="", icon="", buttons=[("OK", 1)]):
+    cmd = get_xpra_command()+["_dialog", nonl(title), nonl(prompt), nonl("\\n".join(qinfo)), icon]
+    for label, code in buttons:
+        cmd.append(nonl(label))
+        cmd.append(str(code))
+    import subprocess
+    env = os.environ.copy()
+    log = get_util_logger()
+    try:
+        log("dialog_confirm command: %s", cmd)
+        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, env=env)
+        stdout, stderr = proc.communicate()
+        if stderr:
+            log.warn("Warning: dialog process error output:")
+            for x in stderr.splitlines():
+                log.warn(" %s", x)
+        return proc.returncode, stdout
+    except Exception as e:
+        log("dialog_confirm(..)", exc_info=True)
+        log.error("Error: failed to execute the dialog subcommand")
+        log.error(" %s", e)
+        return -1, ""
+
+def confirm_key(info=[]):
     SKIP_UI = envbool("XPRA_SKIP_UI", False)
     if SKIP_UI:
         return False
+    from xpra.platform.paths import get_icon_filename
     from xpra.os_util import use_tty
     if not use_tty():
-        #TODO!
-        return False
-    v = sys.stdin.readline().rstrip("\n\r")
+        icon = get_icon_filename("authentication", "png")
+        prompt = "Are you sure you want to continue connecting?"
+        code, out = dialog_confirm("Confirm Key", prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
+        log = get_util_logger()
+        log.debug("dialog output: '%s', return code=%s", nonl(out), code)
+        r = code==200
+        log.info("host key %sconfirmed", ["not ", ""][r])
+        return r
+    prompt = "Are you sure you want to continue connecting (yes/NO)?"
+    sys.stderr.write(os.linesep.join(info)+os.linesep+prompt)
+    v = sys.stdin.readline().rstrip(os.linesep)
     return v and v.lower() in ("y", "yes")
 
 def input_pass(prompt):
@@ -1093,39 +1127,42 @@ def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
         else:
             if known_host_key:
                 log.warn("Warning: SSH server key mismatch")
-                sys.stderr.write(
-"""@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n
-@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n
-IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!\n
-Someone could be eavesdropping on you right now (man-in-the-middle attack)!\n
-It is also possible that a host key has just been changed.\n
-The fingerprint for the %s key sent by the remote host is\n
-%s\n
-""" % (keyname(), keymd5(host_key)))
+                qinfo = [
+"WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
+"IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!",
+"Someone could be eavesdropping on you right now (man-in-the-middle attack)!",
+"It is also possible that a host key has just been changed.",
+"The fingerprint for the %s key sent by the remote host is" % keyname(),
+keymd5(host_key),
+]
                 if envbool("XPRA_SSH_VERIFY_STRICT", False):
-                    log.warn("Please contact your system administrator.")
-                    log.warn("Add correct host key in %s to get rid of this message.")
-                    log.warn("Offending %s key in %s", keyname(), host_keys_filename)
-                    log.warn("ECDSA host key for %s has changed and you have requested strict checking.", keyname())
                     log.warn("Host key verification failed.")
+                    #TODO: show alert with no option to accept key
+                    qinfo += [
+                        "Please contact your system administrator.",
+                        "Add correct host key in %s to get rid of this message.",
+                        "Offending %s key in %s" % (keyname(), host_keys_filename),
+                        "ECDSA host key for %s has changed and you have requested strict checking." % keyname(),
+                        ]
+                    sys.stderr.write(os.linesep.join(qinfo))
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
-                sys.stderr.write("Are you sure you want to continue connecting (yes/no)?")
-                if not confirm_key():
+                if not confirm_key(qinfo):
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
 
             else:
                 assert (not keys) or (host_key.get_name() not in keys)
                 if not keys:
-                    log.warn("Warning: unknown host")
+                    log.warn("Warning: unknown SSH host")
                 else:
-                    log.warn("Warning: unknown %s host key", keyname())                        
-                sys.stderr.write("The authenticity of host '%s' can't be established.\n" % (host,))
-                sys.stderr.write("%s key fingerprint is %s\n" % (keyname(), keymd5(host_key)))
-                sys.stderr.write("Are you sure you want to continue connecting (yes/no)?")
-                if not confirm_key():
+                    log.warn("Warning: unknown %s SSH host key", keyname())                        
+                qinfo = [
+                    "The authenticity of host '%s' can't be established." % (host,),
+                    "%s key fingerprint is" % keyname(),
+                    keymd5(host_key),
+                    ]
+                if not confirm_key(qinfo):
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
 
@@ -1596,6 +1633,11 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     return do_wrap_socket
 
 
+def run_dialog(extra_args):
+    from xpra.client.gtk_base.confirm_dialog import show_confirm_dialog
+    return show_confirm_dialog(extra_args)
+
+
 def get_sockpath(display_desc, error_cb):
     #if the path was specified, use that:
     sockpath = display_desc.get("socket_path")
@@ -1780,10 +1822,11 @@ def make_client(error_cb, opts):
         for mod in modules:
             try:
                 __import__("xpra.%s" % mod, {}, {}, [])
-            except ImportError as e:
+            except ImportError:
                 if mod not in impwarned:
                     impwarned.append(mod)
                     log = get_util_logger()
+                    log("impcheck%s", modules, exc_info=True)
                     log.warn("Warning: missing %s module", mod)
                 return False
         return True
