@@ -36,7 +36,8 @@ COMMAND_SIGNALS = ()
 
 DEFAULT_ENV = []
 
-DEFAULT_SSH_COMMAND = "ssh -x"
+#DEFAULT_SSH_COMMAND = "ssh -x"
+DEFAULT_SSH_COMMAND = "paramiko"
 DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = [
                                          ["pactl", "set-default-sink", "Xpra-Speaker"],
                                          ["pactl", "set-default-source", "Xpra-Microphone.monitor"],

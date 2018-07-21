@@ -612,7 +612,15 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             #ssh:HOST or ssh/HOST
             host = parts[0]
         #ie: ssh=["/usr/bin/ssh", "-v"]
-        ssh = shlex.split(opts.ssh)
+        ssh = opts.ssh
+        if ssh=="auto":
+            try:
+                import paramiko
+                assert paramiko
+                ssh = "paramiko"
+            except ImportError as e:
+                ssh = "ssh -x"
+        ssh = shlex.split(ssh)
         desc["ssh"] = ssh
         full_ssh = ssh
 

@@ -123,15 +123,17 @@ Recommends:
         ,python-pyinotify
         ,python-opencv
         ,v4l2loopback-dkms
+#for ssh transport:
+        ,python-paramiko
         ,openssh-client
         ,ssh-askpass
+#for using SSH passwords from the GUI launcher:
+        ,sshpass
 #for html5 support:
         ,websockify
         ,libjs-jquery
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
-#for using SSH passwords from the GUI launcher:
-        ,sshpass
 Suggests: openssh-server
 # to make the system tray work again (sigh):
 		,gnome-shell-extension-top-icons-plus

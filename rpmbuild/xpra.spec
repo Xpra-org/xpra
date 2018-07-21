@@ -189,6 +189,7 @@ Requires:			python2-numpy
 %if 0%{?run_tests}
 BuildRequires:		python2-numpy
 %endif
+Recommends:			python2-paramiko
 Recommends:			python2-lzo
 Recommends:         python2-kerberos
 Recommends:         python2-gssapi
@@ -353,6 +354,7 @@ Recommends:			python3-netifaces
 Recommends:			python3-dbus
 Recommends:			python3-avahi
 %if 0%{?fedora}
+Recommends:			python3-paramiko
 Recommends:			python3-lzo
 Recommends:         python3-kerberos
 Recommends:         python3-gssapi
