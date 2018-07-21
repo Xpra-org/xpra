@@ -1014,7 +1014,7 @@ def ssh_target_string(display_desc):
 
 def keymd5(k):
     import binascii
-    f = binascii.hexlify(k.get_fingerprint())
+    f = bytestostr(binascii.hexlify(k.get_fingerprint()))
     s = "MD5"
     while f:
         s += ":"+f[:2]
