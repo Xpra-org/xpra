@@ -132,7 +132,7 @@ def configure_logging(options, mode):
     #the logging system every time, and just undo things here..
     from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
     setloghandler(logging.StreamHandler(to))
-    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start", "request-start-desktop", "request-shadow", "_dialog"):
+    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start", "request-start-desktop", "request-shadow", "_dialog", "_pass"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
@@ -400,8 +400,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 error_cb("no sound support!")
             from xpra.sound.wrapper import run_sound
             return run_sound(mode, error_cb, options, args)
-        elif mode in ("_dialog"):
+        elif mode=="_dialog":
             return run_dialog(args)
+        elif mode=="_pass":
+            return run_pass(args)
         elif mode=="opengl":
             return run_glcheck(options)
         elif mode == "initenv":
@@ -1019,28 +1021,39 @@ def keymd5(k):
         f = f[2:]
     return s
 
-def dialog_confirm(title, prompt, qinfo="", icon="", buttons=[("OK", 1)]):
-    cmd = get_xpra_command()+["_dialog", nonl(title), nonl(prompt), nonl("\\n".join(qinfo)), icon]
-    for label, code in buttons:
-        cmd.append(nonl(label))
-        cmd.append(str(code))
+def get_ssh_logger():
+    from xpra.log import Logger
+    return Logger("ssh")
+
+def exec_dialog_subprocess(cmd):
     import subprocess
-    env = os.environ.copy()
-    log = get_util_logger()
+    log = get_ssh_logger()
     try:
-        log("dialog_confirm command: %s", cmd)
-        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, env=env)
+        log("exec_dialog_subprocess(%s)", cmd)
+        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdout, stderr = proc.communicate()
+        log("exec_dialog_subprocess(%s)", cmd)
         if stderr:
             log.warn("Warning: dialog process error output:")
             for x in stderr.splitlines():
                 log.warn(" %s", x)
         return proc.returncode, stdout
     except Exception as e:
-        log("dialog_confirm(..)", exc_info=True)
+        log("exec_dialog_subprocess(..)", exc_info=True)
         log.error("Error: failed to execute the dialog subcommand")
         log.error(" %s", e)
-        return -1, ""
+        return -1, None
+
+def dialog_pass(title="Password Input", prompt="enter password", icon=""):
+    cmd = get_xpra_command()+["_pass", nonl(title), nonl(prompt), icon]
+    return exec_dialog_subprocess(cmd)
+
+def dialog_confirm(title, prompt, qinfo="", icon="", buttons=[("OK", 1)]):
+    cmd = get_xpra_command()+["_dialog", nonl(title), nonl(prompt), nonl("\\n".join(qinfo)), icon]
+    for label, code in buttons:
+        cmd.append(nonl(label))
+        cmd.append(str(code))
+    return exec_dialog_subprocess(cmd)
 
 def confirm_key(info=[]):
     SKIP_UI = envbool("XPRA_SKIP_UI", False)
@@ -1052,12 +1065,12 @@ def confirm_key(info=[]):
         icon = get_icon_filename("authentication", "png")
         prompt = "Are you sure you want to continue connecting?"
         code, out = dialog_confirm("Confirm Key", prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
-        log = get_util_logger()
+        log = get_ssh_logger()
         log.debug("dialog output: '%s', return code=%s", nonl(out), code)
         r = code==200
         log.info("host key %sconfirmed", ["not ", ""][r])
         return r
-    prompt = "Are you sure you want to continue connecting (yes/NO)?"
+    prompt = "Are you sure you want to continue connecting (yes/NO)? "
     sys.stderr.write(os.linesep.join(info)+os.linesep+prompt)
     v = sys.stdin.readline().rstrip(os.linesep)
     return v and v.lower() in ("y", "yes")
@@ -1066,18 +1079,23 @@ def input_pass(prompt):
     SKIP_UI = envbool("XPRA_SKIP_UI", False)
     if SKIP_UI:
         return None
+    from xpra.platform.paths import get_icon_filename
     from xpra.os_util import use_tty
     if not use_tty():
-        #TODO!
-        return None
+        icon = get_icon_filename("authentication", "png")
+        code, out = dialog_pass("Password Input", prompt, icon)
+        log = get_ssh_logger()
+        log.debug("pass dialog output return code=%s", code)
+        if code!=0:
+            return None
+        return out
     from getpass import getpass
     return getpass(prompt)
 
 def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
     #TODO: parse full_ssh for attributes like timeout, key_filename
     import time
-    from xpra.log import Logger
-    log = Logger("ssh")
+    log = get_ssh_logger()
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     host = display_desc["host"]
@@ -1636,6 +1654,10 @@ def ssl_wrap_socket_fn(opts, server_side=True):
 def run_dialog(extra_args):
     from xpra.client.gtk_base.confirm_dialog import show_confirm_dialog
     return show_confirm_dialog(extra_args)
+
+def run_pass(extra_args):
+    from xpra.client.gtk_base.pass_dialog import show_pass_dialog
+    return show_pass_dialog(extra_args)
 
 
 def get_sockpath(display_desc, error_cb):
