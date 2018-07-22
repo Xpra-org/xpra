@@ -1118,6 +1118,7 @@ def paramiko_connect_to(display_desc, opts, debug_cb, ssh_connect_failed):
     from paramiko import SSHException, Transport, Agent, RSAKey, PasswordRequiredException
     from paramiko.hostkeys import HostKeys
     transport = Transport(sock)
+    transport.use_compression(False)
     log("SSH transport %s", transport)
     try:
         transport.start_client()
@@ -1318,9 +1319,13 @@ keymd5(host_key),
             cmd += " "
             cmd += " ".join("\"%s\"" % x for x in display_as_args)
 
-        log("trying to open SSH session")
+        #see https://github.com/paramiko/paramiko/issues/175
+        #WINDOW_SIZE = 2097152
+        WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2**27-1)
+        TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
+        log("trying to open SSH session, window-size=%i, timeout=%i", WINDOW_SIZE, TIMEOUT)
         try:
-            chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
+            chan = transport.open_session(window_size=WINDOW_SIZE, max_packet_size=0, timeout=TIMEOUT)
             chan.set_name("run-xpra")
         except SSHException as e:
             log("open_session", exc_info=True)
