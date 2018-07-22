@@ -1153,7 +1153,14 @@ class ServerCore(object):
     def start_tcp_proxy(self, conn, frominfo):
         proxylog("start_tcp_proxy(%s, %s)", conn, frominfo)
         #connect to web server:
-        host, port = self._tcp_proxy.split(":", 1)
+        try:
+            host, port = self._tcp_proxy.split(":", 1)
+            port = int(port)
+        except ValueError as e:
+            proxylog.error("Error: invalid tcp proxy value '%s'", self._tcp_proxy)
+            proxylog.error(" %s", e)
+            conn.close()
+            return
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(10)
