@@ -1252,6 +1252,13 @@ keymd5(host_key),
                 else:
                     break
 
+    def auth_none():
+        log("trying none authentication")
+        try:
+            transport.auth_none(username)
+        except SSHException as e:
+            log("auth_none()", exc_info=True)
+
     def auth_password():
         log("trying password authentication")
         try:
@@ -1260,6 +1267,15 @@ keymd5(host_key),
             log("auth_password(..)", exc_info=True)
             log.info("SSH password authentication failed: %s", e)
 
+    banner = transport.get_banner()
+    if banner:
+        log.info("SSH server banner:")
+        for x in banner.splitlines():
+            log.info(" %s", x)
+
+    log("starting authentication")
+    if not transport.is_authenticated() and envbool("XPRA_SSH_NONE_AUTH", True):
+        auth_none()
 
     if not transport.is_authenticated() and envbool("XPRA_SSH_PASSWORD_AUTH", True) and password:
         auth_password()
