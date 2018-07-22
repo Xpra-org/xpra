@@ -1155,13 +1155,15 @@ class ServerCore(object):
         #connect to web server:
         host, port = self._tcp_proxy.split(":", 1)
         try:
-            from xpra.scripts.main import _socket_connect
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(10)
-            host, port = self._tcp_proxy.split(":", 1)
-            tcp_server_connection = _socket_connect(sock, (host, int(port)), "web-proxy-for-%s" % frominfo, "tcp")
-        except:
-            proxylog.warn("failed to connect to proxy: %s:%s", host, port)
+            sock.connect((host, int(port)))
+            sock.settimeout(None)
+            tcp_server_connection = SocketConnection(sock, sock.getsockname(), sock.getpeername(), "tcp-proxy-for-%s" % frominfo, "tcp")
+        except Exception as e:
+            proxylog("start_tcp_proxy(%s, %s)", conn, frominfo, exc_info=True)
+            proxylog.error("Error: failed to connect to TCP proxy endpoint: %s:%s", host, port)
+            proxylog.error(" %s", e)
             conn.close()
             return
         proxylog("proxy connected to tcp server at %s:%s : %s", host, port, tcp_server_connection)
