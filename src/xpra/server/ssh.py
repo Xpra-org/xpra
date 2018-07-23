@@ -16,11 +16,12 @@ log = Logger("network", "ssh")
 
 from xpra.net.ssh import SSHSocketConnection
 from xpra.util import csv, envint
-from xpra.os_util import osexpand, WIN32
+from xpra.os_util import osexpand, getuid, WIN32, POSIX
 
 
 SSH_KEY_DIRS = "/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh/"
 SERVER_WAIT = envint("XPRA_SSH_SERVER_WAIT", 20)
+AUTHORIZED_KEYS = "~/.ssh/authorized_keys"
 
 
 class SSHServer(paramiko.ServerInterface):
@@ -65,7 +66,40 @@ class SSHServer(paramiko.ServerInterface):
         log("check_auth_publickey(%s, %r) pubkey_auth=%s", username, key, self.pubkey_auth)
         if not self.pubkey_auth:
             return paramiko.AUTH_FAILED
-        #TODO: verify key
+        if not POSIX or getuid()!=0:
+            import getpass
+            sysusername = getpass.getuser()
+            if sysusername!=username:
+                log.warn("Warning: ssh password authentication failed")
+                log.warn(" username does not match: expected '%s', got '%s'", sysusername, username)
+                return paramiko.AUTH_FAILED
+        authorized_keys_filename = osexpand(AUTHORIZED_KEYS)
+        if not os.path.exists(authorized_keys_filename) or not os.path.isfile(authorized_keys_filename):
+            log("file '%s' does not exist", authorized_keys_filename)
+            return paramiko.AUTH_FAILED
+        import base64
+        import binascii
+        fingerprint = key.get_fingerprint()
+        hex_fingerprint = binascii.hexlify(fingerprint)
+        log("looking for key fingerprint '%s' in '%s'", hex_fingerprint, authorized_keys_filename)
+        count = 0
+        with open(authorized_keys_filename, "rb") as f:
+            for line in f:
+                if line.startswith("#"):
+                    continue
+                line = line.strip("\n\r")
+                try:
+                    key = base64.b64decode(line.strip().split()[1].encode('ascii'))
+                except Exception as e:
+                    log("ignoring line '%s': %s", line, e)
+                    continue
+                import hashlib
+                fp_plain = hashlib.md5(key).hexdigest()
+                log("key(%s)=%s", line, fp_plain)
+                if fp_plain==hex_fingerprint:
+                    return paramiko.OPEN_SUCCEEDED
+                count += 1
+        log("no match in %i keys from '%s'", count, authorized_keys_filename)
         return paramiko.AUTH_FAILED
 
     def check_auth_gssapi_keyex(self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None):

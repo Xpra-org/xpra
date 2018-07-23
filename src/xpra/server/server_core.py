@@ -36,8 +36,7 @@ from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, strtobytes, bytestostr, get_hex_uuid, \
-    getuid, monotonic_time, get_peercred, hexstr, \
-    SIGNAMES, WIN32, POSIX, PYTHON3, BITS, get_username_for_uid
+    getuid, monotonic_time, get_peercred, hexstr, SIGNAMES, WIN32, POSIX, PYTHON3, BITS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import start_thread
 from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat, \
@@ -934,8 +933,9 @@ class ServerCore(object):
         socktype = conn.socktype_wrapped
         sshlog("handle_ssh_connection(%s) socktype wrapped=%s", conn, socktype)
         def ssh_password_authenticate(username, password):
-            if POSIX and getuid()!=0:
-                sysusername = get_username_for_uid(os.getuid())
+            if not POSIX or getuid()!=0:
+                import getpass
+                sysusername = getpass.getuser()
                 if sysusername!=username:
                     sshlog.warn("Warning: ssh password authentication failed")
                     sshlog.warn(" username does not match: expected '%s', got '%s'", sysusername, username)
