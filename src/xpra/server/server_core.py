@@ -10,6 +10,7 @@ import os
 import sys
 import socket
 import signal
+import binascii
 import threading
 import traceback
 from weakref import WeakKeyDictionary
@@ -257,6 +258,7 @@ class ServerCore(object):
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
         self.ssl_mode = opts.ssl
+        self.ssh_upgrade = opts.ssh_upgrade
         self.dbus_control = opts.dbus_control
         self.init_html_proxy(opts)
         self.init_auth(opts)
@@ -480,7 +482,7 @@ class ServerCore(object):
             self.auth_classes["named-pipe"] = auth
         else:
             self.auth_classes["unix-domain"] = auth
-        for x in ("tcp", "ws", "wss", "ssl", "rfb", "vsock", "udp"):
+        for x in ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "udp"):
             opts_value = getattr(opts, "%s_auth" % x)
             self.auth_classes[x] = self.get_auth_modules(x, opts_value, opts)
         authlog("init_auth(..) auth=%s", self.auth_classes)
@@ -823,12 +825,10 @@ class ServerCore(object):
         netlog("handle_new_connection%s sockname=%s, target=%s", (conn, sock, address, socktype, peername, socket_info), sockname, target)
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
-        if socktype=="rfb":
-            #rfb does not send any data, waits for a server packet
-            poll_timeout = 0
-        else:
-            poll_timeout = PEEK_TIMEOUT
-        peek_data, line1 = self.peek_connection(conn, poll_timeout)
+        peek_data, line1 = None, None
+        #rfb does not send any data, waits for a server packet
+        if socktype!="rfb":
+            peek_data, line1 = self.peek_connection(conn, PEEK_TIMEOUT)
 
         def ssl_wrap():
             ssl_sock = self._ssl_wrap_socket(sock)
@@ -893,7 +893,13 @@ class ServerCore(object):
             self.handle_rfb_connection(conn)
             return
 
-        elif (socktype=="tcp" and (self._tcp_proxy or self._ssl_wrap_socket)) or \
+        elif socktype=="ssh":
+            conn = self.handle_ssh_connection(conn)
+            if not conn:
+                return
+            peek_data = None
+
+        elif (socktype=="tcp" and (self._tcp_proxy or self._ssl_wrap_socket or self.ssh_upgrade)) or \
             (socktype in ("tcp", "unix-domain", "named-pipe") and self._html):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
@@ -919,6 +925,21 @@ class ServerCore(object):
         if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
+
+    def handle_ssh_connection(self, conn):
+        from xpra.server.ssh import make_ssh_server_connection, log as sshlog
+        socktype = conn.socktype_wrapped
+        sshlog("handle_ssh_connection(%s) socktype wrapped=%s", conn, socktype)
+        def ssh_password_authenticate(username, password):
+            auth_modules = self.make_authenticators(socktype, username, conn)
+            sshlog("ssh_password_authenticate auth_modules(%s, %s)=%s", username, "*"*len(password), auth_modules)
+            for mod in auth_modules:
+                r = mod.authenticate(username, password)
+                sshlog("%s.authenticate(..)=%s", mod, r)
+                if not r:
+                    return False
+            return True
+        return make_ssh_server_connection(conn, ssh_password_authenticate)
 
     def try_upgrade_to_rfb(self, proto):
         if proto._closed:
@@ -993,7 +1014,11 @@ class ServerCore(object):
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
-        if self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
+        netlog("may_wrap_socket(..) peek_data=%s from %s", binascii.hexlify(peek_data), frominfo)
+        if self.ssh_upgrade and peek_data[:4]=="SSH-":
+            conn = self.handle_ssh_connection(conn)
+            return conn!=None, conn, None
+        elif self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
             sock = self._ssl_wrap_socket(sock)
             if sock is None:
@@ -1043,7 +1068,6 @@ class ServerCore(object):
             c = ord(v[0])
         except:
             c = int(v[0])
-        import binascii
         netlog("guess_header_protocol(%s)", binascii.hexlify(strtobytes(v)))
         if c==0x16:
             return "ssl", "SSL packet?"
@@ -1174,7 +1198,6 @@ class ServerCore(object):
             conn.close()
             return
         proxylog("proxy connected to tcp server at %s:%s : %s", host, port, tcp_server_connection)
-        sock = tcp_server_connection._socket
         sock.settimeout(self._socket_timeout)
 
         #we can use blocking sockets for the client:

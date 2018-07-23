@@ -488,6 +488,11 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="[HOST]:PORT",
                           help="Listen for connections over SSL. Use --ssl-auth to secure it."
                             + " You may specify this option multiple times with different host and port combinations")
+        group.add_option("--bind-ssh", action="append",
+                          dest="bind_ssh", default=list(defaults.bind_ssh or []),
+                          metavar="[HOST]:PORT",
+                          help="Listen for connections using SSH transport. Use --ssh-auth to secure it."
+                            + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-rfb", action="append",
                           dest="bind_rfb", default=list(defaults.bind_rfb or []),
                           metavar="[HOST]:PORT",
@@ -501,6 +506,7 @@ def do_parse_cmdline(cmdline, defaults):
             "bind-ws"   : defaults.bind_ws,
             "bind-wss"  : defaults.bind_wss,
             "bind-ssl"  : defaults.bind_ssl,
+            "bind-ssh"  : defaults.bind_ssh,
             "bind-rfb"  : defaults.bind_rfb,
             })
     try:
@@ -920,6 +926,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--system-proxy-socket", action="store",
                       dest="system_proxy_socket", default=defaults.system_proxy_socket,
                       help="The socket path to use to contact the system-wide proxy server. Default: '%default'.")
+    group.add_option("--ssh-upgrade", action="store",
+                      dest="ssh_upgrade", default=defaults.ssh_upgrade,
+                      help="Upgrade TCP sockets to handle SSH connections. Default: '%default'.")
     group.add_option("--rfb-upgrade", action="store",
                       dest="rfb_upgrade", default=defaults.rfb_upgrade,
                       help="Upgrade TCP sockets to send a RFB handshake after this delay (in seconds). Default: '%default'.")
@@ -954,6 +963,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--ssl-auth", action="append",
                       dest="ssl_auth", default=list(defaults.ssl_auth or []),
                       help="The authentication module to use for SSL sockets (default: '%default')")
+    group.add_option("--ssh-auth", action="append",
+                      dest="ssh_auth", default=list(defaults.ssh_auth or []),
+                      help="The authentication module to use for SSH sockets (default: '%default')")
     group.add_option("--rfb-auth", action="append",
                       dest="rfb_auth", default=list(defaults.rfb_auth or []),
                       help="The authentication module to use for RFB sockets (default: '%default')")

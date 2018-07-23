@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -576,6 +576,7 @@ OPTION_TYPES = {
                     "forward-xdg-open"  : bool,
                     "modal-windows"     : bool,
                     "bandwidth-detection" : bool,
+                    "ssh-upgrade"       : bool,
                     #arrays of strings:
                     "pulseaudio-configure-commands" : list,
                     "socket-dirs"       : list,
@@ -603,6 +604,7 @@ OPTION_TYPES = {
                     "bind-ws"           : list,
                     "bind-wss"          : list,
                     "bind-ssl"          : list,
+                    "bind-ssh"          : list,
                     "bind-rfb"          : list,
                     "auth"              : list,
                     "vsock-auth"        : list,
@@ -611,6 +613,7 @@ OPTION_TYPES = {
                     "ws-auth"           : list,
                     "wss-auth"          : list,
                     "ssl-auth"          : list,
+                    "ssh-auth"          : list,
                     "rfb-auth"          : list,
                     "password-file"     : list,
                     "start-env"         : list,
@@ -636,6 +639,7 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 #so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "open-url", "pixel-depth", "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit",
                     "forward-xdg-open", "modal-windows", "bandwidth-detection",
+                    "bind-ssh", "ssh-auth", "ssh-upgrade",
                           ]
 
 CLIENT_OPTIONS = ["title", "username", "password", "session-name",
@@ -696,10 +700,11 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "terminate-children", "exit-with-children", "exit-with-client",
     "av-sync", "global-menus",
     "forward-xdg-open", "modal-windows", "bandwidth-detection",
+    "ssh-upgrade",
     "printing", "file-transfer", "open-command", "open-files", "open-url", "start-new-commands",
     "mmap", "mmap-group", "mdns",
-    "auth", "vsock-auth", "tcp-auth", "udp-auth", "ws-auth", "wss-auth", "ssl-auth", "rfb-auth",
-    "bind", "bind-vsock", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-rfb",
+    "auth", "vsock-auth", "tcp-auth", "udp-auth", "ws-auth", "wss-auth", "ssl-auth", "ssh-auth", "rfb-auth",
+    "bind", "bind-vsock", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-ssh", "bind-rfb",
     "rfb-upgrade", "bandwidth-limit",
     "start", "start-child",
     "start-after-connect", "start-child-after-connect",
@@ -962,6 +967,7 @@ def get_defaults():
                     "forward-xdg-open"  : True,
                     "modal-windows"     : True,
                     "bandwidth-detection" : True,
+                    "ssh-upgrade"       : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
                     "socket-dirs"       : [],
                     "remote-xpra"       : get_remote_run_xpra_scripts(),
@@ -982,6 +988,7 @@ def get_defaults():
                     "bind-ws"           : [],
                     "bind-wss"          : [],
                     "bind-ssl"          : [],
+                    "bind-ssh"          : [],
                     "bind-rfb"          : [],
                     "auth"              : [],
                     "vsock-auth"        : [],
@@ -990,6 +997,7 @@ def get_defaults():
                     "ws-auth"           : [],
                     "wss-auth"          : [],
                     "ssl-auth"          : [],
+                    "ssh-auth"          : [],
                     "rfb-auth"          : [],
                     "password-file"     : [],
                     "start"             : [],

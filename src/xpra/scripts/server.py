@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -395,6 +395,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_udp = parse_bind_ip(opts.bind_udp)
     bind_ssl = parse_bind_ip(opts.bind_ssl)
+    bind_ssh = parse_bind_ip(opts.bind_ssh)
     bind_ws  = parse_bind_ip(opts.bind_ws)
     bind_wss = parse_bind_ip(opts.bind_wss)
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
@@ -663,11 +664,23 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
     ws_upgrades = opts.html and (os.path.isabs(opts.html) or opts.html.lower() in TRUE_OPTIONS+["auto"])
+    ssh_upgrades = opts.ssh_upgrade
+    if ssh_upgrades:
+        try:
+            import paramiko
+            assert paramiko
+        except ImportError as e:
+            netlog("import paramiko", exc_info=True)
+            netlog.error("Error: cannot enable SSH socket upgrades:")
+            netlog.error(" %s", e)
     netlog("setting up SSL sockets: %s", csv(bind_ssl))
     for host, iport in bind_ssl:
         add_tcp_socket("ssl", host, iport)
         if ws_upgrades:
             add_tcp_socket("wss", host, iport)
+    netlog("setting up SSH sockets: %s", csv(bind_ssh))
+    for host, iport in bind_ssh:
+        add_tcp_socket("ssh", host, iport)
     netlog("setting up https / wss (secure websockets): %s", csv(bind_wss))
     for host, iport in bind_wss:
         add_tcp_socket("wss", host, iport)
@@ -681,6 +694,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             add_mdns("ws", host, iport)
         if ws_upgrades and tcp_ssl:
             add_mdns("wss", host, iport)
+        if ssh_upgrades:
+            add_mdns("ssh", host, iport)
     netlog("setting up UDP sockets: %s", csv(bind_udp))
     for host, iport in bind_udp:
         add_udp_socket("udp", host, iport)
