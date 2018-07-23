@@ -59,7 +59,7 @@ def choose_digest(options):
         return "xor"
     if "des" in options:
         return "des"
-    raise Exception("no known digest options found in '%s'" % csv(options))
+    raise ValueError("no known digest options found in '%s'" % csv(options))
 
 def gendigest(digest, password, salt):
     assert digest and password and salt

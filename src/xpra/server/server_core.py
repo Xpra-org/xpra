@@ -33,8 +33,11 @@ from xpra.scripts.config import InitException, parse_bool, python_platform, pars
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.net.protocol import Protocol, sanity_checks
+from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, strtobytes, bytestostr, get_hex_uuid, monotonic_time, get_peercred, hexstr, SIGNAMES, WIN32, POSIX, PYTHON3, BITS
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, strtobytes, bytestostr, get_hex_uuid, \
+    getuid, monotonic_time, get_peercred, hexstr, \
+    SIGNAMES, WIN32, POSIX, PYTHON3, BITS, get_username_for_uid
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import start_thread
 from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat, \
@@ -931,13 +934,34 @@ class ServerCore(object):
         socktype = conn.socktype_wrapped
         sshlog("handle_ssh_connection(%s) socktype wrapped=%s", conn, socktype)
         def ssh_password_authenticate(username, password):
+            if POSIX and getuid()!=0:
+                sysusername = get_username_for_uid(os.getuid())
+                if sysusername!=username:
+                    sshlog.warn("Warning: ssh password authentication failed")
+                    sshlog.warn(" username does not match: expected '%s', got '%s'", sysusername, username)
+                    return False
             auth_modules = self.make_authenticators(socktype, username, conn)
             sshlog("ssh_password_authenticate auth_modules(%s, %s)=%s", username, "*"*len(password), auth_modules)
-            for mod in auth_modules:
-                r = mod.authenticate(username, password)
-                sshlog("%s.authenticate(..)=%s", mod, r)
-                if not r:
+            for auth in auth_modules:
+                #mimic a client challenge:
+                digests = ["xor"]
+                try:
+                    salt, digest = auth.get_challenge(digests)
+                    salt_digest = auth.choose_salt_digest(digests)
+                    assert digest=="xor" and salt_digest=="xor"
+                except ValueError as e:
+                    sshlog("authentication with %s", auth, exc_info=True)
+                    sshlog.warn("Warning: ssh transport cannot use %r authentication:", auth)
+                    sshlog.warn(" %s", e)
                     return False
+                else:
+                    client_salt = get_salt(len(salt))
+                    combined_salt = gendigest("xor", client_salt, salt)
+                    xored_password = gendigest("xor", password, combined_salt)
+                    r = auth.authenticate(xored_password, client_salt)
+                    sshlog("%s.authenticate(..)=%s", auth, r)
+                    if not r:
+                        return False
             return True
         return make_ssh_server_connection(conn, ssh_password_authenticate)
 
@@ -1446,7 +1470,6 @@ class ServerCore(object):
 
         def send_fake_challenge():
             #fake challenge so the client will send the real hello:
-            from xpra.net.digest import get_salt, choose_digest
             salt = get_salt()
             digest = choose_digest(digest_modes)
             salt_digest = choose_digest(salt_digest_modes)

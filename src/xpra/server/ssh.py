@@ -41,7 +41,7 @@ class SSHServer(paramiko.ServerInterface):
             mods.append("publickey")
         if self.password_auth:
             mods.append("password")
-        return csv(mods)
+        return ",".join(mods)
 
     def check_channel_request(self, kind, chanid):
         log("check_channel_request(%s, %s)", kind, chanid)
