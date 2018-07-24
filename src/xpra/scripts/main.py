@@ -880,7 +880,7 @@ def socket_connect(dtype, host, port, ipv6=False):
     return sock
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
-    from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT
+    from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT, SocketConnection
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     conn = None
@@ -906,7 +906,6 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             get_util_logger().debug("failed to connect using %s%s", sock.connect, sockpath, exc_info=True)
             raise InitException("failed to connect to '%s':\n %s" % (sockpath, e))
         sock.settimeout(None)
-        from xpra.net.bytestreams import SocketConnection
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
         return conn
