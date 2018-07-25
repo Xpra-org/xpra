@@ -472,6 +472,8 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         remote_cmd += "else echo \"no run-xpra command found\"; exit 1; fi"
         if INITENV_COMMAND:
             remote_cmd = INITENV_COMMAND + ";" + remote_cmd
+        remote_args = " ".join(proxy_command + display_as_args)
+        remote_cmd = "#run-xpra %s\n%s" % (remote_args, remote_cmd)
         #putty gets confused if we wrap things in shell command:
         if display_desc.get("is_putty", False):
             cmd.append(remote_cmd)

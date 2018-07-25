@@ -144,22 +144,66 @@ class SSHServer(paramiko.ServerInterface):
         elif cmd[0].endswith("xpra") and len(cmd)>=2:
             subcommand = cmd[1].strip("\"'")
             log("ssh xpra subcommand: %s", subcommand)
-            if subcommand=="_proxy":
-                #we're ready to use this socket as an xpra channel
-                pc = self.proxy_channel
-                if pc:
-                    self.proxy_channel = None
-                    pc.close()
-                self.proxy_channel = channel
-                self.event.set()
-            else:
+            if subcommand!="_proxy":
                 log.warn("Warning: unsupported xpra subcommand '%s'", cmd[1])
                 return False
+            #we're ready to use this socket as an xpra channel
+            self._run_proxy(channel)
         else:
-            log.warn("Warning: unsupported ssh command:")
-            log.warn(" %s", cmd)
-            return False
+            #plain 'ssh' clients execute a long command with if+else statements,
+            #try to detect it and extract the actual command the client is trying to run.
+            #ie:
+            #['sh', '-c',
+            # '#run-xpra _proxy\nxpra initenv;\
+            #  if [ -x $XDG_RUNTIME_DIR/xpra/run-xpra ]; then $XDG_RUNTIME_DIR/xpra/run-xpra _proxy;\
+            #  elif [ -x ~/.xpra/run-xpra ]; then ~/.xpra/run-xpra _proxy;\
+            #  elif type "xpra" > /dev/null 2>&1; then xpra _proxy;\
+            #  elif [ -x /usr/local/bin/xpra ]; then /usr/local/bin/xpra _proxy;\
+            #  else echo "no run-xpra command found"; exit 1; fi']
+            #if .* ; then .*/run-xpra _proxy;
+            log("parse cmd=%s (len=%i)", cmd, len(cmd))
+            if len(cmd)==1:         #ie: 'thelongcommand'
+                parse_cmd = cmd[0]
+            elif len(cmd)==3 and cmd[:2]==["sh", "-c"]:     #ie: 'sh' '-c' 'thelongcommand'
+                parse_cmd = cmd[2]
+            else:
+                parse_cmd = ""
+            if parse_cmd.startswith("#run-xpra "):
+                #newer versions make it easy,
+                #the first line contains a comment which gives us the actual arguments for run-xpra:
+                args = parse_cmd.splitlines()[0].split("#run-xpra ")[1]
+                if args=="_proxy":
+                    self._run_proxy(channel)
+                    return True
+            #for older clients, try to parse the long command
+            #and identify the subcommands from there
+            subcommands = []
+            for s in parse_cmd.split("if "):
+                if s.startswith("type \"xpra\"") or s.startswith("[ -x") and s.find("then ")>0:
+                    then_str = s.split("then ")[1]
+                    #ie: then_str="$XDG_RUNTIME_DIR/xpra/run-xpra _proxy; el"
+                    if then_str.find(";")>0:
+                        then_str = then_str.split(";")[0]
+                    parts = shlex.split(then_str)
+                    if len(parts)>=2:
+                        subcommand = parts[1]       #ie: "_proxy"
+                        subcommands.append(subcommand)
+            log("subcommands=%s", subcommands)
+            if subcommands and tuple(set(subcommands))[0]=="_proxy":
+                self._run_proxy(channel)
+            else:
+                log.warn("Warning: unsupported ssh command:")
+                log.warn(" %s", cmd)
+                return False
         return True
+
+    def _run_proxy(self, channel):
+        pc = self.proxy_channel
+        if pc:
+            self.proxy_channel = None
+            pc.close()
+        self.proxy_channel = channel
+        self.event.set()
 
     def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
         log("check_channel_pty_request%s", (channel, term, width, height, pixelwidth, pixelheight, modes))
@@ -174,6 +218,17 @@ def make_ssh_server_connection(conn, password_auth=None):
     log("make_ssh_server_connection(%s)", conn)
     ssh_server = SSHServer(password_auth=password_auth)
     DoGSSAPIKeyExchange = False
+    t = None
+    def close():
+        if t:
+            try:
+                t.close()
+            except Exception:
+                log("%s.close()", t, exc_info=True)
+        try:
+            conn.close()
+        except Exception:
+            log("%s.close()", conn)
     try:
         t = paramiko.Transport(conn._socket, gss_kex=DoGSSAPIKeyExchange)
         t.set_gss_host(socket.getfqdn(""))
@@ -215,8 +270,7 @@ def make_ssh_server_connection(conn, password_auth=None):
             log.error("Error: cannot start SSH server,")
             log.error(" no SSH host keys found in:")
             log.error(" %s", csv(SSH_KEY_DIRS))
-            t.close()
-            conn.close()
+            close()
             return None
         log("loaded host keys: %s", tuple(host_keys.values()))
         t.start_server(server=ssh_server)
@@ -224,30 +278,28 @@ def make_ssh_server_connection(conn, password_auth=None):
         log("failed to start ssh server", exc_info=True)
         log.error("Error handling SSH connection:")
         log.error(" %s", e)
-        t.close()
-        conn.close()
+        close()
         return None
     try:
         chan = t.accept(SERVER_WAIT)
         if chan is None:
             log.warn("Warning: SSH channel setup failed")
-            t.close()
-            conn.close()
+            close()
             return None
     except paramiko.SSHException as e:
         log("failed to open ssh channel", exc_info=True)
         log.error("Error opening channel:")
         log.error(" %s", e)
-        t.close()
-        conn.close()
+        close()
         return None
     log("client authenticated, channel=%s", chan)
     ssh_server.event.wait(SERVER_WAIT)
     log("proxy channel=%s", ssh_server.proxy_channel)
     if not ssh_server.event.is_set() or not ssh_server.proxy_channel:
-        log.error("Error: timeout waiting for xpra SSH subcommand")
-        t.close()
-        conn.close()
+        from xpra.net.bytestreams import pretty_socket
+        log.warn("Warning: timeout waiting for xpra SSH subcommand,")
+        log.warn(" closing connection from %s", pretty_socket(conn.target))
+        close()
         return None
     #log("client authenticated, channel=%s", chan)
     return SSHSocketConnection(ssh_server.proxy_channel, conn._socket, target="ssh client")
