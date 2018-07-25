@@ -333,6 +333,11 @@ class RFBProtocol(object):
         self.invalid(err, data)
 
 
+    def gibberish(self, msg, data):
+        log("gibberish(%s, %r)", msg, data)
+        self.close()
+
+
     def close(self):
         log("RFBProtocol.close() closed=%s, connection=%s", self._closed, self._conn)
         if self._closed:
