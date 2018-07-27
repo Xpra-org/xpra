@@ -601,7 +601,7 @@ the server and the client:
 all require their respective shared libraries,
 as well as the xpra codec that uses them.
 
-Note: when selecting a video encoding (usually \fBh264\fP, \fBvp8\fP or fBvp9\fP),
+Note: when selecting a video encoding (usually \fBh264\fP, \fBvp8\fP or \fBvp9\fP),
 it will only be used if the screen is updating quickly enough,
 some of the smaller screen updates will also be sent using
 one of the other non-video encodings.
@@ -809,7 +809,7 @@ The server will terminate when the last client disconnects.
 .TP
 \fB\-\-env\fP=\fIKEY=VALUE\fP
 Extra environment variables which will only affect commands started using
-fB\-\-start\fP or fB\-\-start\-child\fP.
+fB\-\-start\fP or \fB\-\-start\-child\fP.
 .TP
 \fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.
