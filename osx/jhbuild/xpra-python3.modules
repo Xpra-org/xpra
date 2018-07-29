@@ -523,7 +523,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-macholib" python3="1">
+	<distutils id="python3-macholib" python3="1">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/e0/8f/07468a7f51c055d771cb01fcb19092bdaa5327ccd201ffeb534a164ec62a/macholib-1.10.tar.gz"
 			hash="sha256:9485686b89d357f4a99fda5a12349b261ecf2baedd526d2c9b6397167a507e90"
@@ -536,7 +536,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-modulegraph" python3="1">
+	<distutils id="python3-modulegraph" python3="1">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/64/76/0af68379caf5cc5a7757a3874c136327ef213aefe808fb50fa8860c36940/modulegraph-0.17.tar.gz"
 			hash="sha256:d2824588c489c0ba6f815c066950400755e8e287da64bcddae4c0d6e76f8f5f3"
@@ -549,7 +549,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-altgraph" python3="1">
+	<distutils id="python3-altgraph" python3="1">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/da/a4/6c508ac94d7a65859a7a47e6fbde4aa6b81d0f0863aa45861241e782391c/altgraph-0.16.1.tar.gz"
 			hash="sha256:ddf5320017147ba7b810198e0b6619bd7b5563aa034da388cea8546b877f9b0c"
