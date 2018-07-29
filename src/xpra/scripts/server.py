@@ -667,10 +667,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     ssh_upgrades = opts.ssh_upgrade
     if ssh_upgrades:
         try:
-            try:
-                import paramiko
-            except AttributeError:
-                sys.modules['gssapi'] = None
+            from xpra.net.ssh import nogssapi_context
+            with nogssapi_context():
                 import paramiko
             assert paramiko
         except ImportError as e:

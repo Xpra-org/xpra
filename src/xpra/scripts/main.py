@@ -612,10 +612,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         ssh = opts.ssh
         if ssh=="auto":
             try:
-                try:
-                    import paramiko
-                except AttributeError:
-                    sys.modules['gssapi'] = None
+                from xpra.net.ssh import nogssapi_context
+                with nogssapi_context():
                     import paramiko
                 assert paramiko
                 ssh = "paramiko"

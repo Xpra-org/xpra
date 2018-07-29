@@ -181,7 +181,24 @@ def ssh_paramiko_connect_to(display_desc):
     proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
     socket_dir = display_desc.get("socket_dir")
     display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
-    return do_ssh_paramiko_connect_to(sock, host, port, username, password, proxy_command, remote_xpra, socket_dir, display_as_args, target)
+    with nogssapi_context:
+        return do_ssh_paramiko_connect_to(sock, host, port, username, password, proxy_command, remote_xpra, socket_dir, display_as_args, target)
+
+
+#workaround incompatibility between paramiko and gssapi:
+class nogssapi_context(object):
+
+    def __init__(self):
+        self.gssapi = sys.modules.get("gssapi")
+        sys.modules["gssapi"] = None
+    def __enter__(self):
+        pass
+    def __exit__(self, *_args):
+        if sys.modules["gssapi"] == None:
+            sys.modules["gssapi"] = self.gssapi
+    def __repr__(self):
+        return "nogssapi_context"
+
 
 def do_ssh_paramiko_connect_to(sock, host, port, username, password, proxy_command, remote_xpra, socket_dir, display_as_args, target):
     from paramiko import SSHException, Transport, Agent, RSAKey, PasswordRequiredException
