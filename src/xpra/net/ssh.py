@@ -181,7 +181,7 @@ def ssh_paramiko_connect_to(display_desc):
     proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
     socket_dir = display_desc.get("socket_dir")
     display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
-    with nogssapi_context:
+    with nogssapi_context():
         return do_ssh_paramiko_connect_to(sock, host, port, username, password, proxy_command, remote_xpra, socket_dir, display_as_args, target)
 
 
