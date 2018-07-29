@@ -265,6 +265,19 @@
 		</after>
 	</distutils>
 
+	<distutils id="python-nacl">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/08/19/cf56e60efd122fa6d2228118a9b345455b13ffe16a14be81d025b03b261f/PyNaCl-1.2.1.tar.gz"
+			hash="sha256:e0d38fa0a75f65f556fb912f2c6790d1fa29b7dd27a1d9cc5591b281321eaaa9"
+			version="1.2.1"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 	<distutils id="python-paramiko">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/29/65/83181630befb17cd1370a6abb9a87957947a43c2332216e5975353f61d64/paramiko-2.4.1.tar.gz"
@@ -273,6 +286,7 @@
 		<dependencies>
 			<dep package="python"/>
 			<dep package="python-bcrypt"/>
+			<dep package="python-nacl"/>
 		</dependencies>
 		<after>
 			<dep package="python"/>
