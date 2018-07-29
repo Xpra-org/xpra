@@ -723,7 +723,7 @@
 		  <dep package="python3-pycups"/>
 		  <dep package="python3-websockify"/>
 		  <dep package="python3-websocket-client"/>
-		  <dep package="python3-twisted"/>
+		  <dep package="python3-parmiko"/>
 		  <dep package="python3-nose"/>
 		  <dep package="python3-setuptools-scm"/>
 		  <dep package="python3-test-runner"/>

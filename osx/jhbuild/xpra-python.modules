@@ -724,7 +724,7 @@
 		  <dep package="python-websockify"/>
 		  <dep package="python-websocket-client"/>
 		  <dep package="python-paramiko"/>
-		  <dep package="python-twisted"/>
+		  <dep package="python-parmiko"/>
 		  <dep package="python-nose"/>
 		  <dep package="python-setuptools-scm"/>
 		  <dep package="python-test-runner"/>
