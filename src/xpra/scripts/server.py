@@ -667,7 +667,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     ssh_upgrades = opts.ssh_upgrade
     if ssh_upgrades:
         try:
-            import paramiko
+            try:
+                import paramiko
+            except AttributeError:
+                sys.modules['gssapi'] = None
+                import paramiko
             assert paramiko
         except ImportError as e:
             netlog("import paramiko", exc_info=True)

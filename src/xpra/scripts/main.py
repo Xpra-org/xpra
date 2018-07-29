@@ -612,7 +612,11 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         ssh = opts.ssh
         if ssh=="auto":
             try:
-                import paramiko
+                try:
+                    import paramiko
+                except AttributeError:
+                    sys.modules['gssapi'] = None
+                    import paramiko
                 assert paramiko
                 ssh = "paramiko"
             except ImportError as e:
