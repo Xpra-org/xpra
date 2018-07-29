@@ -212,12 +212,11 @@
 		</after>
 	</distutils>
 
-	<!-- py2app versions newer than this have regressions, see #1404 -->
 	<distutils id="python3-py2app" python3="1">
-		<branch repo="pypi.python.org"
-			module="/packages/65/ea/b8e5a4f41fd65e35c10b41ff68e776baeb07143983f484f1d9005a7ab36a/py2app-0.14.tar.gz"
-			hash="sha256:4dadf15d078a1748acba483c1abbb69a144a059e0c335a5e2a17b070d4cc938a"
-			version="0.14"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/26/3b/c1db5c32b9fa1feb3e75ea363d4af1640699a26a2e30fd77c8286866ed1b/py2app-0.15.tar.gz"
+			hash="sha256:4c1b74daab023f37aea132e6b124522bbf4704414a80ed299361c48c70a83989"
+			version="0.15"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -510,11 +509,11 @@
 		</after>
 	</distutils>
 
-	<distutils id="python3-macholib" python3="1">
-		<branch repo="pypi.python.org"
-			module="https://pypi.python.org/packages/70/54/12d547ebb73de8412120a293ab013e61caef36bf712d76c9a574020d2796/macholib-1.9.tar.gz"
-			hash="sha256:9aeec52d7da59912b15445d08b08d95cee48414f01dd035be06f04a825973c08"
-			version="1.9"/>
+	<distutils id="python-macholib" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/e0/8f/07468a7f51c055d771cb01fcb19092bdaa5327ccd201ffeb534a164ec62a/macholib-1.10.tar.gz"
+			hash="sha256:9485686b89d357f4a99fda5a12349b261ecf2baedd526d2c9b6397167a507e90"
+			version="1.10"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -523,11 +522,11 @@
 		</after>
 	</distutils>
 
-	<distutils id="python3-modulegraph" python3="1">
-		<branch repo="pypi.python.org"
-			module="https://pypi.python.org/packages/de/4e/91327287864f179be193e9d1fcb957b0e3d4d5f2ef38f6ac95897f4e4a4e/modulegraph-0.16.tar.gz"
-			hash="sha256:0ba04a67b65c936f707c76ffd819a52f370ff2bd36664338d53a9b271f23d1e4"
-			version="0.16"/>
+	<distutils id="python-modulegraph" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/64/76/0af68379caf5cc5a7757a3874c136327ef213aefe808fb50fa8860c36940/modulegraph-0.17.tar.gz"
+			hash="sha256:d2824588c489c0ba6f815c066950400755e8e287da64bcddae4c0d6e76f8f5f3"
+			version="0.17"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -536,11 +535,11 @@
 		</after>
 	</distutils>
 
-	<distutils id="python3-altgraph" python3="1">
-		<branch repo="pypi.python.org"
-			module="/packages/ff/e5/c4d83ca50043951eec43449aa74f4aa4fde1695f901dcf9d213efea3abb1/altgraph-0.15.tar.gz"
-			hash="sha256:fc28b986a68fde8d3ff0e6d6ba3fbdd2cd562d11d45ef7c7735fbd826c9eec2e"
-			version="0.15"/>
+	<distutils id="python-altgraph" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/da/a4/6c508ac94d7a65859a7a47e6fbde4aa6b81d0f0863aa45861241e782391c/altgraph-0.16.1.tar.gz"
+			hash="sha256:ddf5320017147ba7b810198e0b6619bd7b5563aa034da388cea8546b877f9b0c"
+			version="0.16.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
