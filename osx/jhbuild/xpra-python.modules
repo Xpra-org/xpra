@@ -252,6 +252,19 @@
 		</after>
 	</distutils>
 
+	<distutils id="python-bcrypt">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/f3/ec/bb6b384b5134fd881b91b6aa3a88ccddaad0103857760711a5ab8c799358/bcrypt-3.1.4.tar.gz"
+			hash="sha256:67ed1a374c9155ec0840214ce804616de49c3df9c5bc66740687c1c9b1cd9e8d"
+			version="3.1.4"/>
+		<dependencies>
+			<dep package="python"/>
+		</dependencies>
+		<after>
+			<dep package="python"/>
+		</after>
+	</distutils>
+
 	<distutils id="python-paramiko">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/29/65/83181630befb17cd1370a6abb9a87957947a43c2332216e5975353f61d64/paramiko-2.4.1.tar.gz"
@@ -259,6 +272,7 @@
 			version="2.4.1"/>
 		<dependencies>
 			<dep package="python"/>
+			<dep package="python-bcrypt"/>
 		</dependencies>
 		<after>
 			<dep package="python"/>
@@ -722,6 +736,7 @@
 		  <dep package="python-pycups"/>
 		  <dep package="python-websockify"/>
 		  <dep package="python-websocket-client"/>
+		  <dep package="python-bcrypt"/>
 		  <dep package="python-paramiko"/>
 		  <dep package="python-parmiko"/>
 		  <dep package="python-nose"/>
