@@ -253,11 +253,11 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-twisted">
-		<branch repo="pypi.python.org"
-			module="/packages/source/T/Twisted/Twisted-15.5.0.tar.bz2"
-			hash="md5:0831d7c90d0020062de0f7287530a285"
-			version="12.3.0"/>
+	<distutils id="python-paramiko">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/29/65/83181630befb17cd1370a6abb9a87957947a43c2332216e5975353f61d64/paramiko-2.4.1.tar.gz"
+			hash="sha256:33e36775a6c71790ba7692a73f948b329cf9295a72b0102144b031114bd2a4f3"
+			version="2.4.1"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -723,6 +723,7 @@
 		  <dep package="python-pycups"/>
 		  <dep package="python-websockify"/>
 		  <dep package="python-websocket-client"/>
+		  <dep package="python-paramiko"/>
 		  <dep package="python-twisted"/>
 		  <dep package="python-nose"/>
 		  <dep package="python-setuptools-scm"/>
