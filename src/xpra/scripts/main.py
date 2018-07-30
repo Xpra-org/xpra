@@ -1478,7 +1478,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         app.hello_extra = {"connect" : False}
     else:
         app = make_client(error_cb, opts)
-        app.init(opts, args)
+        app.init(opts)
         app.init_ui(opts)
         app.hello_extra = hello_extra
         app.setup_connection(connect())
