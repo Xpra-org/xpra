@@ -970,68 +970,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         if dtype in ("ws", "wss"):
             host = display_desc["host"]
             port = display_desc.get("port", 0)
-            if port>0:
-                host += ":%i" % port
-            import websocket
-            if envbool("XPRA_WEBSOCKET_DEBUG"):
-                websocket.enableTrace(True)
-            url = "%s://%s/" % (dtype, host)
-            from xpra.net.bytestreams import Connection, log as connlog
-            subprotocols = ["binary", "base64"]
-            try:
-                ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=subprotocols, socket=sock)
-            except (IndexError, ValueError) as e:
-                connlog("websocket.create_connection%s", (url, SOCKET_TIMEOUT, subprotocols, sock), exc_info=True)
-                raise InitException("websocket connection failed, not a websocket capable server port: %s" % e)
-            class WebSocketClientConnection(Connection):
-                def __init__(self, ws, target, socktype, info):
-                    Connection.__init__(self, target, socktype, info)
-                    self._socket = ws
-
-                def peek(self, _n):
-                    return None
-
-                def untilConcludes(self, *args):
-                    try:
-                        return Connection.untilConcludes(self, *args)
-                    except websocket.WebSocketTimeoutException as e:
-                        raise ConnectionClosedException(e)
-
-                def read(self, n):
-                    #FIXME: we should try to honour n
-                    return self._read(self._socket.recv)
-
-                def write(self, buf):
-                    return self._write(self._socket.send, buf)
-
-                def close(self):
-                    try:
-                        i = self.get_socket_info()
-                    except:
-                        i = self._socket
-                    connlog("%s.close() for socket=%s", self, i)
-                    Connection.close(self)
-                    self._socket.close()
-                    self._socket = None
-                    connlog("%s.close() done", self)
-
-                def __repr__(self):
-                    return "%s %s" % (self.socktype, self.target)
-
-                def get_info(self):
-                    d = Connection.get_info(self)
-                    d["protocol-type"] = "websocket"
-                    ws = self._socket
-                    if ws:
-                        d.update({
-                                  "sub-protocol"    : ws.getsubprotocol() or "",
-                                  "headers"         : ws.getheaders() or {},
-                                  "fileno"          : ws.fileno(),
-                                  "status"          : ws.getstatus(),
-                                  "connected"       : ws.connected,
-                                  })
-                    return d
-            return WebSocketClientConnection(ws, conn.target, {"ws" : "websocket", "wss" : "secure websocket"}.get(dtype, dtype), info)
+            from xpra.net.websocket_connection import websocket_client_connection
+            return websocket_client_connection(host, port, conn, dtype)
     else:
         raise InitException("unsupported display type: %s" % dtype)
     return conn
