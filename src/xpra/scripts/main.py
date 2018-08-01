@@ -52,6 +52,11 @@ def nox():
 
 
 def main(script_file, cmdline):
+    ml = envint("XPRA_MEM_USAGE_LOGGER")
+    if ml>0:
+        from xpra.util import start_mem_watcher
+        start_mem_watcher(ml)
+
     from xpra.platform import clean as platform_clean, command_error, command_info, get_main_fallback
     if len(cmdline)==1:
         fm = get_main_fallback(cmdline[0])

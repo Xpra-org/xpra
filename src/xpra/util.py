@@ -607,6 +607,19 @@ def detect_leaks():
         return True
     return print_leaks
 
+def start_mem_watcher(ms):
+    from xpra.make_thread import start_thread
+    start_thread(mem_watcher, name="mem-watcher", daemon=True, args=(ms,))
+
+def mem_watcher(ms):
+    import time
+    import psutil
+    process = psutil.Process(os.getpid())
+    while True:
+        mem = process.memory_full_info()
+        #get_util_logger().info("memory usage: %s", mem.mem//1024//1024)
+        get_util_logger().info("memory usage: %s", mem)
+        time.sleep(ms/1000.0)
 
 def repr_ellipsized(obj, limit=100):
     if (isinstance(obj, str) or isinstance(obj, unicode)) and len(obj) > limit:
