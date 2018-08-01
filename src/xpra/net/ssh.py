@@ -375,13 +375,12 @@ keymd5(host_key),
         auth_pulickey()
 
     if not transport.is_authenticated() and PASSWORD_AUTH and not password:
-        password = input_pass("please enter the SSH password for %s@%s" % (username, host))
-        if password:
-            auth_password()
-            if not transport.is_authenticated():
-                #prompt for password again?
-                #only if password auth is accepted?
-                pass
+        for _ in range(3):
+            password = input_pass("please enter the SSH password for %s@%s" % (username, host))
+            if password:
+                auth_password()
+                if transport.is_authenticated():
+                    break
 
     if not transport.is_authenticated():
         transport.close()
