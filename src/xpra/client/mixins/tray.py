@@ -126,8 +126,11 @@ class TrayClient(StubClientMixin):
         t = []
         if self.session_name or self.server_session_name:
             t.append(self.session_name or self.server_session_name)
-        if self._protocol and self._protocol._conn:
-            t.append(bytestostr(self._protocol._conn.target))
+        p = self._protocol
+        if p:
+            conn = getattr(p, "_conn", None)
+            if conn:
+                t.append(bytestostr(conn.target))
         if len(t)==0:
             t.insert(0, u"Xpra")
         v = u"\n".join(t)
