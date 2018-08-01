@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 
+import sys
 import binascii
 
 from xpra.util import csv
@@ -29,6 +30,10 @@ TEST_COMPRESSED_DATA = {
 }
 
 def makebuf(size):
+    numpy = sys.modules.get("numpy")
+    if numpy is None and size<64*1024:
+        #small enough, don't bother importing numpy
+        return "\0"*size
     import numpy
     a = numpy.empty(size, dtype=numpy.byte)
     return a.data

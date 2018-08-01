@@ -198,8 +198,6 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("dec_avcodec2", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
         add_codec_version("avcodec2", "xpra.codecs.dec_avcodec2.decoder")
 
-    #not really a codec, but gets used by codecs, so include version info:
-    add_codec_version("numpy", "numpy")
     try:
         from xpra.codecs.argb.argb import buffer_api_version            #@UnresolvedImport
         codec_versions["buffer_api"] = buffer_api_version()
@@ -321,6 +319,8 @@ def main():
             log.enable_debug()
 
         load_codecs()
+        #not really a codec, but gets used by codecs, so include version info:
+        add_codec_version("numpy", "numpy")
         print("codecs and csc modules found:")
         #print("codec_status=%s" % codecs)
         for name in sorted(ALL_CODECS):
