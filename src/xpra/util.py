@@ -621,6 +621,13 @@ def mem_watcher(ms):
         get_util_logger().info("memory usage: %s", mem)
         time.sleep(ms/1000.0)
 
+def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
+    import psutil
+    process = psutil.Process(pid)
+    mem = process.memory_full_info()
+    print("%s%s" % (prefix, mem))
+
+
 def repr_ellipsized(obj, limit=100):
     if (isinstance(obj, str) or isinstance(obj, unicode)) and len(obj) > limit:
         try:
