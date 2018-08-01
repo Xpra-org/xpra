@@ -1064,15 +1064,22 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def paint_spinner(self, context, area):
         log("%s.paint_spinner(%s, %s)", self, context, area)
+        c = self._client
+        if not c:
+            return
+        ww, wh = self.get_size()
+        w = c.cx(ww)
+        h = c.cy(wh)
         #add grey semi-opaque layer on top:
         context.set_operator(cairo.OPERATOR_OVER)
         context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
-        context.rectangle(area)
-        #w, h = self._size
-        #context.rectangle(gdk.Rectangle(0, 0, w, h))
+        #we can't use the area as rectangle with:
+        #context.rectangle(area)
+        #because those would be unscaled dimensions
+        #it's easier and safer to repaint the whole window:
+        context.rectangle(gdk.Rectangle(0, 0, w, h))
         context.fill()
         #add spinner:
-        w, h = self.get_size()
         dim = min(w/3.0, h/3.0, 100.0)
         context.set_line_width(dim/10.0)
         context.set_line_cap(cairo.LINE_CAP_ROUND)
@@ -1087,7 +1094,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             context.stroke()
 
     def spinner(self, ok):
-        if not self.can_have_spinner():
+        c = self._client
+        if not self.can_have_spinner() or not c:
             return
         #with normal windows, we just queue a draw request
         #and let the expose event paint the spinner
