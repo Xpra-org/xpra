@@ -311,11 +311,16 @@
 			    	sns = {
 			    			"mode" 	: action,
 			    	};
-	    			if(start) {
-	    				sns["start"] = [start];
-	    			}
     				if (exit_with_children) {
     					sns["exit-with-children"] = true;
+    	    			if(start) {
+    	    				sns["start-child"] = [start];
+    	    			}
+    				}
+    				else {
+		    			if(start) {
+		    				sns["start"] = [start];
+		    			}
     				}
     				if (exit_with_client) {
     					sns["exit-with-client"] = true;
