@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,9 +14,25 @@ from xpra.log import Logger
 log = Logger("network", "websocket")
 
 from xpra.util import envbool, std, AdHocStruct
-from xpra.os_util import memoryview_to_bytes, PYTHON2
+from xpra.os_util import memoryview_to_bytes, nomodule_context, PYTHON2, Queue
 from xpra.net.bytestreams import SocketConnection
-from websockify.websocket import WebSocketRequestHandler
+
+
+WEBSOCKIFY_NUMPY = envbool("XPRA_WEBSOCKIFY_NUMPY", False)
+log("WEBSOCKIFY_NUMPY=%s", WEBSOCKIFY_NUMPY)
+if WEBSOCKIFY_NUMPY:
+    from websockify.websocket import WebSocketRequestHandler    #@UnusedImport
+else:
+    from xpra.codecs.xor.cyxor import hybi_unmask
+    with nomodule_context("numpy"):
+        from websockify.websocket import WebSocketRequestHandler    #@Reimport
+        def unmask(buf, hlen, plen):
+            pstart = hlen + 4
+            pend = pstart + plen
+            mask = buf[hlen:hlen+4]
+            data = buf[pstart:pend]
+            return hybi_unmask(mask, data)
+        WebSocketRequestHandler.unmask = staticmethod(unmask)
 
 WEBSOCKET_TCP_NODELAY = envbool("WEBSOCKET_TCP_NODELAY", True)
 WEBSOCKET_TCP_KEEPALIVE = envbool("WEBSOCKET_TCP_KEEPALIVE", True)
@@ -274,18 +290,27 @@ class WebSocketConnection(SocketConnection):
         SocketConnection.__init__(self, socket, local, remote, target, socktype)
         self.protocol_type = "websocket"
         self.ws_handler = ws_handler
+        self.pending_read = Queue()
+
+    def close(self):
+        self.pending_read = Queue()
+        SocketConnection.close(self)
 
     def read(self, n):
         #FIXME: we should try to honour n
         while self.is_active():
+            if self.pending_read.qsize():
+                buf = self.pending_read.get()
+                self.input_bytecount += len(buf)
+                return buf
             bufs, closed_string = self.ws_handler.recv_frames()
             if closed_string:
                 self.active = False
-            if len(bufs) == 1:
-                self.input_bytecount += len(bufs[0])
-                return bufs[0]
-            elif len(bufs) > 1:
-                buf = b''.join(bufs)
+            if bufs:
+                buf = bufs[0]
+                if len(bufs) > 1:
+                    for v in bufs[1:]:
+                        self.pending_read.put(v)
                 self.input_bytecount += len(buf)
                 return buf
 

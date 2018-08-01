@@ -17,7 +17,7 @@ from xpra.scripts.main import InitException, InitExit
 from xpra.platform.paths import get_xpra_command
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
-from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, WIN32, OSX, POSIX
+from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, WIN32, OSX, POSIX
 from xpra.util import envint, envbool, nonl, engs
 
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
@@ -188,18 +188,10 @@ def ssh_paramiko_connect_to(display_desc):
 
 
 #workaround incompatibility between paramiko and gssapi:
-class nogssapi_context(object):
+class nogssapi_context(nomodule_context):
 
     def __init__(self):
-        self.gssapi = sys.modules.get("gssapi")
-        sys.modules["gssapi"] = None
-    def __enter__(self):
-        pass
-    def __exit__(self, *_args):
-        if sys.modules["gssapi"] == None:
-            sys.modules["gssapi"] = self.gssapi
-    def __repr__(self):
-        return "nogssapi_context"
+        nomodule_context.__init__(self, "gssapi")
 
 
 def do_ssh_paramiko_connect_to(sock, host, port, username, password, proxy_command, remote_xpra, socket_dir, display_as_args, target):
