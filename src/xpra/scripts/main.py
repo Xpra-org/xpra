@@ -29,7 +29,6 @@ from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_O
     InitException, InitInfo, InitExit, \
     fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, has_sound_support, name_to_field
-from xpra.net.common import ConnectionClosedException
 assert info and warn and error, "used by modules importing those from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)

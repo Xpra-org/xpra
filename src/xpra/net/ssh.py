@@ -145,7 +145,7 @@ class SSHSocketConnection(SocketConnection):
             if not v:
                 log("SSH EOF on stderr of %s", chan.get_name())
                 return
-            log.warn("SSH stderr: %s", v)
+            log.warn("remote SSH stderr: %s", v.rstrip("\n\r"))
 
     def peek(self, n):
         return self._raw_socket.recv(n, socket.MSG_PEEK)
