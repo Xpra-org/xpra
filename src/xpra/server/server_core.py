@@ -442,7 +442,7 @@ class ServerCore(object):
         httplog("init_html_proxy(..) html=%s", self._html)
         if self._html is not False:
             try:
-                from xpra.net.websocket import WebSocketConnection
+                from xpra.server.websocket import WebSocketConnection
                 assert WebSocketConnection
                 self._html = True
             except ImportError as e:
