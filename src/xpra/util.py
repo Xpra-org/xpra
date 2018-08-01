@@ -611,21 +611,21 @@ def start_mem_watcher(ms):
     from xpra.make_thread import start_thread
     start_thread(mem_watcher, name="mem-watcher", daemon=True, args=(ms,))
 
-def mem_watcher(ms):
+def mem_watcher(ms, pid=os.getpid()):
     import time
     import psutil
-    process = psutil.Process(os.getpid())
+    process = psutil.Process(pid)
     while True:
         mem = process.memory_full_info()
         #get_util_logger().info("memory usage: %s", mem.mem//1024//1024)
-        get_util_logger().info("memory usage: %s", mem)
+        get_util_logger().info("memory usage for %s: %s", pid, mem)
         time.sleep(ms/1000.0)
 
 def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
     import psutil
     process = psutil.Process(pid)
     mem = process.memory_full_info()
-    print("%s%s" % (prefix, mem))
+    print("%i %s%s" % (pid, prefix, mem))
 
 
 def repr_ellipsized(obj, limit=100):
