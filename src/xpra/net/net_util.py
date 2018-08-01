@@ -407,6 +407,11 @@ def get_info():
     if s:
         i["system"] = s
     i["config"] = get_net_config()
+    paramiko = sys.modules.get("paramiko")
+    if paramiko:
+        i["paramiko"] = {
+            "version"   : paramiko.__version_info__,
+            }
     return i
 
 
