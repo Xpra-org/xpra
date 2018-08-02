@@ -89,6 +89,10 @@ def can_retry(e):
         if can_continue:
             return can_continue
 
+        #SSL pollution - see ticket #1927
+        if code=="The read operation timed out":
+            return str(code)
+
         if isinstance(e, CAN_RETRY_EXCEPTIONS):
             return str(e)
 
