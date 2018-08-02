@@ -29,7 +29,7 @@ dbuslog = Logger("dbus")
 
 from xpra.version_util import XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.scripts.server import deadly_signal
-from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS
+from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.net.protocol import Protocol, sanity_checks
@@ -862,7 +862,7 @@ class ServerCore(object):
             http = False
             if socktype=="wss" or self.ssl_mode=="www":
                 http = True
-            elif self.ssl_mode=="auto":
+            elif self.ssl_mode=="auto" or self.ssl_mode in TRUE_OPTIONS:
                 #look for HTTPS request to handle:
                 if line1.find("HTTP/")>0 or peek_data.find("\x08http/1.1")>0:
                     http = True
@@ -870,7 +870,7 @@ class ServerCore(object):
                     ssl_conn.enable_peek()
                     peek_data, line1 = self.peek_connection(ssl_conn, PEEK_TIMEOUT)
                     http = line1.find("HTTP/")>0
-            if http:
+            if http and self._html:
                 self.start_http_socket(socktype, ssl_conn, True, peek_data)
             else:
                 log_new_connection(conn, socket_info)
@@ -1054,11 +1054,12 @@ class ServerCore(object):
             conn.socktype_wrapped = socktype
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             netlog("may_wrap_socket SSL: %s, ssl mode=%s", conn, self.ssl_mode)
+            http = False
             if self.ssl_mode=="tcp":
                 http = False
             elif self.ssl_mode=="www":
                 http = True
-            else:   #ie: auto
+            elif self.ssl_mode=="auto" or self.ssl_mode in TRUE_OPTIONS:
                 http = False
                 #use the header to guess:
                 if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
