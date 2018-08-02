@@ -1061,12 +1061,8 @@ class ServerCore(object):
             else:   #ie: auto
                 http = False
                 #use the header to guess:
-                if line1:
-                    for s in (b"HTTP/", b"\x08http/1.1"):
-                        if line1.find(s)>0:
-                            netlog("found HTTP magic string in SSL header: '%s'", s)
-                            http = True
-                            break
+                if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
+                    http = True
                 else:
                     conn.enable_peek()
                     peek_data, line1 = self.peek_connection(conn, PEEK_TIMEOUT)
