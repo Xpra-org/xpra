@@ -782,7 +782,7 @@ class ServerCore(object):
         if peek_data:
             line1 = peek_data.splitlines()[0]
             netlog("socket peek=%s", repr_ellipsized(peek_data, limit=512))
-            netlog("socket peek hex=%s", hexstr(peek_data))
+            netlog("socket peek hex=%s", hexstr(peek_data[:128]))
             netlog("socket peek line1=%s", repr_ellipsized(line1))
         return peek_data, line1
 
@@ -907,6 +907,7 @@ class ServerCore(object):
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
                 cont, conn, peek_data = self.may_wrap_socket(conn, socktype, peek_data, line1)
+                netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, peek_data)
                 if not cont:
                     return
             except IOError as e:
@@ -1060,8 +1061,12 @@ class ServerCore(object):
             else:   #ie: auto
                 http = False
                 #use the header to guess:
-                if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
-                    http = True
+                if line1:
+                    for s in (b"HTTP/", b"\x08http/1.1"):
+                        if line1.find(s)>0:
+                            netlog("found HTTP magic string in SSL header: '%s'", s)
+                            http = True
+                            break
                 else:
                     conn.enable_peek()
                     peek_data, line1 = self.peek_connection(conn, PEEK_TIMEOUT)
@@ -1117,6 +1122,7 @@ class ServerCore(object):
         if peek_data:
             line1 = peek_data.splitlines()[0]
         http_proto = "http"+["","s"][int(is_ssl)]
+        netlog("start_http_socket(%s, %s, %s, ..) http proto=%s, line1=%r", socktype, conn, is_ssl, http_proto, line1)
         if line1.startswith(b"GET ") or line1.startswith(b"POST "):
             parts = bytestostr(line1).split(" ")
             httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])

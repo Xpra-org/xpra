@@ -301,11 +301,14 @@ class WebSocketConnection(SocketConnection):
         while self.is_active():
             if self.pending_read.qsize():
                 buf = self.pending_read.get()
+                log("read() returning pending read buffer, len=%i", len(buf))
                 self.input_bytecount += len(buf)
                 return buf
             bufs, closed_string = self.ws_handler.recv_frames()
             if closed_string:
+                log("read() closed_string: %s", closed_string)
                 self.active = False
+            log("read() got %i ws frames", len(bufs))
             if bufs:
                 buf = bufs[0]
                 if len(bufs) > 1:
