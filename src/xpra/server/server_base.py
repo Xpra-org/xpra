@@ -794,9 +794,11 @@ class ServerBase(ServerBaseClass):
 
     def last_client_exited(self):
         #must run from the UI thread (modifies focus and keys)
+        netlog("last_client_exited() exit_with_client=%s", self.exit_with_client)
         if self.exit_with_client:
-            netlog.info("Last client has disconnected, terminating")
-            self.clean_quit(False)
+            if not self._closing:
+                netlog.info("Last client has disconnected, terminating")
+                self.clean_quit(False)
         else:
             self.reset_server_timeout(True)
             for c in SERVER_BASES:
