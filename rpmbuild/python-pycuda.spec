@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,13 +15,13 @@
 %global debug_package %{nil}
 
 Name:           python2-pycuda
-Version:        2017.1.1
+Version:        2018.1
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source:        	https://pypi.python.org/packages/b3/30/9e1c0a4c10e90b4c59ca7aa3c518e96f37aabcac73ffe6b5d9658f6ef843/pycuda-2017.1.1.tar.gz
+Source:        	https://files.pythonhosted.org/packages/09/69/333ff751d1012f7add7488c91352e08a364b1534a5a33b278c9590415d27/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pycuda
 Obsoletes:      python-pycuda
@@ -130,6 +130,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Aug 02 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.1-1
+- new upstream release
+
 * Wed Aug 09 2017 Antoine Martin <antoine@devloop.org.uk> - 2017.1.1-1
 - new upstream release
 

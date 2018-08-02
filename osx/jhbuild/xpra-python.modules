@@ -159,10 +159,10 @@
 	</distutils>
 
 	<distutils id="python-cryptography">
-		<branch repo="pypi.python.org"
-			module="/packages/ec/b2/faa78c1ab928d2b2c634c8b41ff1181f0abdd9adf9193211bd606ffa57e2/cryptography-2.2.2.tar.gz"
-			hash="sha256:9fc295bf69130a342e7a19a39d7bbeb15c0bcaabc7382ec33ef3b2b7d18d2f63"
-			version="2.2.2"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/79/a2/61c8625f96c8582d3053f89368c483ba62e56233d055e58e372f94a393f0/cryptography-2.3.tar.gz"
+			hash="sha256:c132bab45d4bd0fff1d3fe294d92b0a6eb8404e93337b3127bdec9f21de117e6"
+			version="2.3"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="openssl"/>
@@ -227,9 +227,9 @@
 
 	<distutils id="python-cython">
 		<branch repo="files.pythonhosted.org"
-			module="packages/b3/ae/971d3b936a7ad10e65cb7672356cff156000c5132cf406cb0f4d7a980fd3/Cython-0.28.3.tar.gz"
-			hash="sha256:1aae6d6e9858888144cea147eb5e677830f45faaff3d305d77378c3cba55f526"
-			version="0.28.3"/>
+			module="/packages/d2/12/8ef44cede251b93322e8503fd6e1b25a0249fa498bebec191a5a06adbe51/Cython-0.28.4.tar.gz"
+			hash="sha256:76ac2b08d3d956d77b574bb43cbf1d37bd58b9d50c04ba281303e695854ebc46"
+			version="0.28.4"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -389,9 +389,9 @@
 
 	<distutils id="python-lz4">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/b8/fc/cc8a6a5685fe9989726b433703b622a4fa05ea101ade46018b38ee0dc86d/lz4-2.0.2.tar.gz"
-			hash="sha256:1b039a3ca91945062503c0c934fe18131d4997f7becfa3020bf93c56a1c4a0e8"
-			version="2.0.2"/>
+			module="/packages/13/3f/8b3e574344c7ed9fb76c240f8fe96a95648762dce3bb481527d3a414670c/lz4-2.1.0.tar.gz"
+			hash="sha256:166aff2fbb2fee39f4ed58e8e7c1ed8a8ce72915832a100ced7a1634ac655a6f"
+			version="2.1.0"/>
 		<dependencies>
 			<dep package="lz4"/>
 			<dep package="python"/>
@@ -683,11 +683,10 @@
 	</distutils>
 
 	<distutils id="python-yaml">
-		<branch repo="pyyaml.org"
-			module="/download/pyyaml/PyYAML-3.12.tar.gz"
-			checkoutdir="PyYAML-3.12"
-			hash="sha256:592766c6303207a20efc445587778322d7f73b161bd994f227adaa341ba212ab"
-			version="3.12"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/9e/a3/1d13970c3f36777c583f136c136f804d70f500168edc1edea6daa7200769/PyYAML-3.13.tar.gz"
+			hash="sha256:3ef3092145e9b70e3ddd2c7ad59bdd0252a94dfe3949721633e41344de00a6bf"
+			version="3.13"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
