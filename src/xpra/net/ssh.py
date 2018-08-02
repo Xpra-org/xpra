@@ -35,6 +35,8 @@ PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
 AGENT_AUTH = envbool("XPRA_SSH_AGENT_AUTH", True)
 KEY_AUTH = envbool("XPRA_SSH_KEY_AUTH", True)
 PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
+PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
+assert PASSWORD_RETRY>=0
 
 
 def ssh_target_string(display_desc):
@@ -367,7 +369,7 @@ keymd5(host_key),
         auth_pulickey()
 
     if not transport.is_authenticated() and PASSWORD_AUTH and not password:
-        for _ in range(3):
+        for _ in range(1+PASSWORD_RETRY):
             password = input_pass("please enter the SSH password for %s@%s" % (username, host))
             if password:
                 auth_password()
