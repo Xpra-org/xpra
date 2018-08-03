@@ -33,7 +33,7 @@ def makebuf(size):
     numpy = sys.modules.get("numpy")
     if numpy is None and size<64*1024:
         #small enough, don't bother importing numpy
-        return "\0"*size
+        return b"\0"*size
     import numpy
     a = numpy.empty(size, dtype=numpy.byte)
     return a.data
