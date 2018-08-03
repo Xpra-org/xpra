@@ -299,7 +299,7 @@ keymd5(host_key),
                         log("authenticated using agent and key '%s'", keymd5(agent_key))
                         break
                 except SSHException:
-                    log("agent key '%s' rejected", agent_key, exc_info=True)
+                    log("agent key '%s' rejected", keymd5(agent), exc_info=True)
             if not transport.is_authenticated():
                 log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
 
