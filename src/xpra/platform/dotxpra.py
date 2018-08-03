@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import socket
 import errno
 import stat
 
-from xpra.os_util import get_util_logger, osexpand
+from xpra.os_util import get_util_logger, osexpand, umask_context
 from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE
 
 
@@ -51,11 +51,8 @@ class DotXpra(object):
                 uid = self.uid
             if gid is None:
                 gid = self.gid
-            try:
-                umask = os.umask(0)
+            with umask_context(0):
                 os.mkdir(d, mode)
-            finally:
-                os.umask(umask)
             if uid!=os.getuid() or gid!=os.getgid():
                 os.lchown(d, uid, gid)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -578,6 +578,17 @@ class nomodule_context(object):
             sys.modules[self.module_name] = self.saved_module
     def __repr__(self):
         return "nomodule_context(%s)" % self.module_name
+
+class umask_context(object):
+
+    def __init__(self, umask):
+        self.umask = umask        
+    def __enter__(self):
+        self.orig_umask = os.umask(self.umask)
+    def __exit__(self, *_args):
+        os.umask(self.orig_umask)
+    def __repr__(self):
+        return "umask_context(%s)" % self.umask
 
 
 def disable_stdout_buffering():

@@ -7,7 +7,7 @@ import os.path
 import socket
 
 from xpra.scripts.config import InitException
-from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, path_permission_info, monotonic_time, WIN32, OSX, POSIX
+from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 
@@ -33,15 +33,12 @@ def get_network_logger():
 
 def create_unix_domain_socket(sockpath, socket_permissions=0o600):
     #convert this to a umask!
-    umask = 0o777-socket_permissions
+    umask = (0o777-socket_permissions) & 0o777
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
-    orig_umask = os.umask(umask)
-    try:
+    with umask_context(umask):
         listener.bind(sockpath)
-    finally:
-        os.umask(orig_umask)
     try:
         inode = os.stat(sockpath).st_ino
     except:

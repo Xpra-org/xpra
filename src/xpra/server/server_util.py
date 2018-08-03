@@ -7,7 +7,7 @@ import sys
 import os.path
 
 from xpra.util import envbool
-from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid, get_util_logger, osexpand
+from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid, get_util_logger, osexpand, umask_context
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
 
@@ -122,12 +122,9 @@ def write_runner_shell_scripts(contents, overwrite=True):
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
         try:
-            with open(scriptpath, "w") as scriptfile:
-                # Unix is a little silly sometimes:
-                umask = os.umask(0)
-                os.umask(umask)
-                os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
-                scriptfile.write(contents)
+            with umask_context(0o077):
+                with open(scriptpath, "w") as scriptfile:
+                    scriptfile.write(contents)
         except Exception as e:
             log.error("Error: failed to write script file '%s':", scriptpath)
             log.error(" %s\n", e)
