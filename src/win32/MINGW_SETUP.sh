@@ -38,7 +38,7 @@ $PACMAN --noconfirm -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi ${XPKG}gss ${XPKG}openldap
 #python libraries and install and packaging tools:
-$PACMAN --noconfirm -S ${XPKG}python2-numpy ${XPKG}python2-pillow ${XPKG}cython2 ${XPKG}python2-setuptools ${XPKG}python2-cx_Freeze zip
+$PACMAN --noconfirm -S ${XPKG}python2-numpy ${XPKG}python2-pillow ${XPKG}cython2 ${XPKG}python2-setuptools ${XPKG}python2-cx_Freeze ${XPKG}python3-cx_Freeze zip
 #python3 versions (not all are really needed if just using python3 for sound):
 $PACMAN --noconfirm -S ${XPKG}python3-numpy ${XPKG}python3-pillow ${XPKG}cython
 #using easy-install for python libraries which are not packaged by mingw:
@@ -49,18 +49,6 @@ for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenG
     easy_install-2.7 -U -Z $x
     easy_install-3.7 -U -Z $x
 done
-
-#this would install cx_Freeze 5.x - which is broken in many ways,
-#$PACMAN --noconfirm -S ${XPKG}python2-cx_Freeze
-#$PACMAN --noconfirm -S ${XPKG}python3-cx_Freeze
-#we could install version 4 via setuptools instead:
-#easy_install-2.7 -U -Z cx_Freeze==4.3.4
-#easy_install-3.5 -U -Z cx_Freeze==4.3.4
-#but using an archive of the known good version is safer:
-wget http://xpra.org/pkg/${XPKG}-python2-cx_Freeze-4.3.3-7-any.pkg.tar.xz
-pacman -U ${XPKG}-python2-cx_Freeze-4.3.3-7-any.pkg.tar.xz
-wget http://xpra.org/pkg/${XPKG}-python3-cx_Freeze-4.3.3-7-any.pkg.tar.xz
-pacman -U ${XPKG}-python3-cx_Freeze-4.3.3-7-any.pkg.tar.xz
 
 #for webcam support:
 $PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
