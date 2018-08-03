@@ -142,7 +142,7 @@ class SSHServer(paramiko.ServerInterface):
                 else:
                     chan_send(channel.send_stderr, "type: %s: not found" % xpra_cmd)
                     channel.send_exit_status(1)
-                return
+                return True
             #we don't want to use a shell,
             #but we need to expand the file argument:
             cmd[1] = osexpand(xpra_cmd)
