@@ -42,7 +42,7 @@ for writing Python extension modules.
 
 
 %prep
-%setup -q
+%setup -q -n Cython-%{version}
 
 %if %{with_python3}
 rm -rf %{py3dir}
@@ -95,14 +95,14 @@ rm -rf %{buildroot}
 %{_bindir}/cythonize
 %{_bindir}/cygdb
 %{python_sitearch}/*
-%doc *.txt Demos Doc Tools
+%doc *.txt Demos Tools
 %if %{with_python3}
 %files -n python3-Cython
 %{python3_sitearch}/*
 %{_bindir}/cython3
 %{_bindir}/cygdb3
 %{python3_sitearch}/Cython*egg-info
-%doc *.txt Demos Doc Tools
+%doc *.txt Demos Tools
 %endif
 
 
@@ -131,7 +131,7 @@ rm -rf %{buildroot}
 * Thu Nov 09 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27.3-1
 - new upstream release
 
-* Sun Oct 22 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27.2-1
+* Sun Oct 23 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27.2-1
 - new upstream release
 
 * Sun Oct 02 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27.1-1
