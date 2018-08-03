@@ -5,14 +5,14 @@
 %define with_python3 0%{?fedora}
 
 Name:		python2-Cython
-Version:	0.28.4
+Version:	0.28.5
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source:		https://github.com/cython/cython/archive/%{version}.tar.gz
+Source:		https://files.pythonhosted.org/packages/21/89/ca320e5b45d381ae0df74c4b5694f1471c1b2453c5eb4bac3449f5970481/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python
 Conflicts:	Cython < %{version}-%{release}
@@ -42,7 +42,7 @@ for writing Python extension modules.
 
 
 %prep
-%setup -q -n cython-%{version}
+%setup -q
 
 %if %{with_python3}
 rm -rf %{py3dir}
@@ -107,6 +107,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Aug 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.5-1
+- new upstream release
+
 * Fri Aug 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.4-1
 - new upstream release
 
