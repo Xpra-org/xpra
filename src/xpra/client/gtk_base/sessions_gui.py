@@ -259,7 +259,7 @@ class SessionsGUI(gtk.Window):
         display = tt.strget("display", "")
         username = tt.strget("username", "")
         mode = tt.strget("mode", "")
-        if display.startswith(":"):
+        if display and display.startswith(":"):
             dstr = display[1:]
         #append interface to IPv6 host URI for link local addresses ("fe80:"):
         if interface and if_indextoname and address.lower().startswith("fe80:"):

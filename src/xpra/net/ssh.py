@@ -50,7 +50,7 @@ def ssh_target_string(display_desc):
     if ssh_port:
         target += ":%i" % ssh_port
     display = display_desc.get("display")
-    if display.startswith(":"):
+    if display and display.startswith(":"):
         display = display[1:]
     target += "/%s" % (display or "")
     return target

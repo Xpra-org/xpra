@@ -1937,7 +1937,7 @@ def run_list_mdns(error_cb, extra_args):
             for i, rec in enumerate(recs):
                 iface, _, _, host, address, port, text = rec
                 uuid = text.get("uuid")
-                display = text.get("display")
+                display = text.get("display", "")
                 mode = text.get("mode", "")
                 username = text.get("username", "")
                 session = text.get("session")
