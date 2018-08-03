@@ -16,7 +16,8 @@ log = Logger("network", "ssh")
 
 from xpra.net.ssh import SSHSocketConnection
 from xpra.util import csv, envint
-from xpra.os_util import osexpand, getuid, WIN32, POSIX
+from xpra.os_util import osexpand, getuid, bytestostr, WIN32, POSIX,\
+    monotonic_time
 from xpra.platform.paths import get_ssh_conf_dirs
 
 
@@ -115,31 +116,46 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
     def check_channel_exec_request(self, channel, command):
+        def chan_send(send_fn, data, timeout=5):
+            start = monotonic_time()
+            while data and monotonic_time()-start<timeout:
+                sent = send_fn(data)
+                if not sent:
+                    break
+                data = data[sent:]
         #TODO: close channel after use? when?
         log("check_channel_exec_request(%s, %s)", channel, command)
-        cmd = shlex.split(command)
+        try:
+            cmd = shlex.split(command.decode("utf8"))
+        except UnicodeDecodeError:
+            cmd = shlex.split(bytestostr(command))            
         if cmd[0]=="type" and len(cmd)==2:
+            xpra_cmd = cmd[1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
+            if not POSIX:
+                assert WIN32
+                #we can't execute "type" on win32,
+                #so we just answer as best we can
+                #and only accept "xpra" as argument:
+                if xpra_cmd.strip("\"")=="xpra":
+                    chan_send(channel.send, "xpra is xpra")
+                    channel.send_exit_status(0)
+                else:
+                    chan_send(channel.send_stderr, "type: %s: not found" % xpra_cmd)
+                    channel.send_exit_status(1)
+                return
             #we don't want to use a shell,
             #but we need to expand the file argument:
-            cmd[1] = osexpand(cmd[1])
+            cmd[1] = osexpand(xpra_cmd)
             try:
                 proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, close_fds=not WIN32, shell=False)
                 out, err = proc.communicate()
             except Exception as e:
                 log("check_channel_exec_request(%s, %s)", channel, command, exc_info=True)
-                channel.send_stderr("failed to execute command: %s", e)
+                chan_send(channel.send_stderr, "failed to execute command: %s" % e)
                 channel.send_exit_status(1)
             else:
-                while out:
-                    sent = channel.send(out)
-                    if not sent:
-                        break
-                    out = out[sent:]
-                while err:
-                    sent = channel.send_stderr(err)
-                    if not sent:
-                        break
-                    err = err[sent:]
+                chan_send(channel.send, out)
+                chan_send(channel.send_stderr, err)
                 channel.send_exit_status(proc.returncode)
         elif cmd[0].endswith("xpra") and len(cmd)>=2:
             subcommand = cmd[1].strip("\"'")
