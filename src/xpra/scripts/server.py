@@ -672,9 +672,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 import paramiko
             assert paramiko
         except ImportError as e:
-            netlog("import paramiko", exc_info=True)
-            netlog.error("Error: cannot enable SSH socket upgrades:")
-            netlog.error(" %s", e)
+            from xpra.log import Logger
+            sshlog = Logger("ssh")
+            sshlog("import paramiko", exc_info=True)
+            sshlog.error("Error: cannot enable SSH socket upgrades:")
+            sshlog.error(" %s", e)
     netlog("setting up SSL sockets: %s", csv(bind_ssl))
     for host, iport in bind_ssl:
         add_tcp_socket("ssl", host, iport)
