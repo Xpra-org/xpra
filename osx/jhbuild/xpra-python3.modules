@@ -240,10 +240,10 @@
 
 	<distutils id="python3-numpy" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip"
-			checkoutdir="numpy-1.14.3"
-			version="1.14.3"
-			hash="sha256:9016692c7d390f9d378fc88b7a799dc9caa7eb938163dda5276d3f3d6f75debf"/>
+			module="/packages/3a/20/c81632328b1a4e1db65f45c0a1350a9c5341fd4bbb8ea66cdd98da56fe2e/numpy-1.15.0.zip"
+			checkoutdir="numpy-1.15.0"
+			version="1.15.0"
+			hash="sha256:f28e73cf18d37a413f7d5de35d024e6b98f14566a10d82100f9dc491a7d449f9"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
