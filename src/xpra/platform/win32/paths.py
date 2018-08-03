@@ -7,6 +7,7 @@
 import os.path
 import sys
 import ctypes
+from xpra.os_util import get_util_logger
 
 shell32 = ctypes.WinDLL("shell32", use_last_error=True)
 SHGetFolderPath = shell32.SHGetFolderPathW
@@ -57,17 +58,35 @@ def do_get_icon_dir():
     return os.path.join(get_resources_dir(), "icons")
 
 
-def do_get_system_conf_dirs():
-    #ie: "C:\Documents and Settings\All Users\Application Data\Xpra" with XP
-    #or: "C:\ProgramData\Xpra" with Vista onwards
+def get_program_data_dir():
+    #ie: "C:\ProgramData"
     try:
         buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
         SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
         if buf.value:
-            return [os.path.join(buf.value, "Xpra")]
+            return buf.value
     except:
-        pass
-    return []
+        get_util_logger().log("get_program_data_dir()", exc_info=True)
+    return "C:\\ProgramData"
+
+def do_get_system_conf_dirs():
+    return [os.path.join(get_program_data_dir(), "Xpra")]
+
+def do_get_ssh_conf_dirs():
+    from xpra.scripts.config import python_platform
+    if python_platform.architecture()[0]=="32bit":
+        system32 = "SysNative"
+    else:
+        system32 = "System32"
+    windows_dir = os.environ.get("SystemRoot", os.environ.get("WINDIR", "C:\\Windows"))
+    openssh_dir = os.path.join(windows_dir, system32, "OpenSSH")
+    return [
+        os.path.join(get_program_data_dir(), "ssh"),    #C:\ProgramData\ssh
+        openssh_dir,    #C:\Windows\system32\OpenSSH
+        "~/.ssh",
+        "~/ssh",
+        ]
+
 
 def do_get_default_conf_dirs():
     #ie: C:\Program Files\Xpra\

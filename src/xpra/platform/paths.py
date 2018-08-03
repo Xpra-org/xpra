@@ -37,10 +37,16 @@ def do_get_install_prefix():
 
 
 def get_system_conf_dirs():
-    return envaslist_or_delegate("XPRA_SYSCONF_DIRS", do_get_system_conf_dirs)
+    return envaslist_or_delegate("XPRA_SYSTEM_CONF_DIRS", do_get_system_conf_dirs)
 def do_get_system_conf_dirs():
     #overriden in all platforms
     return []
+
+
+def get_ssh_conf_dirs():
+    return envaslist_or_delegate("XPRA_SSH_CONF_DIRS", do_get_ssh_conf_dirs)
+def do_get_ssh_conf_dirs():
+    return ["/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh"]
 
 
 def get_user_conf_dirs(uid=None):
@@ -261,6 +267,7 @@ platform_import(globals(), "paths", False,
                 "do_get_install_prefix",
                 "do_get_default_conf_dirs",
                 "do_get_system_conf_dirs",
+                "do_get_ssh_conf_dirs",
                 "do_get_user_conf_dirs",
                 "do_get_socket_dirs",
                 "do_get_default_log_dirs",
@@ -275,6 +282,7 @@ def get_info():
             "install"           : {"prefix" : get_install_prefix()},
             "default_conf"      : {"dirs"   : get_default_conf_dirs()},
             "system_conf"       : {"dirs"   : get_system_conf_dirs()},
+            "ssh_conf"          : {"dirs"   : get_ssh_conf_dirs()},
             "user_conf"         : {"dirs"   : get_user_conf_dirs()},
             "socket"            : {"dirs"   : get_socket_dirs()},
             "log"               : {"dirs"   : get_default_log_dirs()},

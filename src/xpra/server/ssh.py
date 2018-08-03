@@ -17,9 +17,9 @@ log = Logger("network", "ssh")
 from xpra.net.ssh import SSHSocketConnection
 from xpra.util import csv, envint
 from xpra.os_util import osexpand, getuid, WIN32, POSIX
+from xpra.platform.paths import get_ssh_conf_dirs
 
 
-SSH_KEY_DIRS = "/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh/"
 SERVER_WAIT = envint("XPRA_SSH_SERVER_WAIT", 20)
 AUTHORIZED_KEYS = "~/.ssh/authorized_keys"
 
@@ -229,12 +229,14 @@ def make_ssh_server_connection(conn, password_auth=None):
             conn.close()
         except Exception:
             log("%s.close()", conn)
+    ssh_key_dirs = get_ssh_conf_dirs()
+    log("ssh key dirs=%s", ssh_key_dirs)
     try:
         t = paramiko.Transport(conn._socket, gss_kex=DoGSSAPIKeyExchange)
         t.set_gss_host(socket.getfqdn(""))
         host_keys = {}
-        log("trying to load ssh host keys from: %s", csv(SSH_KEY_DIRS))
-        for d in SSH_KEY_DIRS:
+        log("trying to load ssh host keys from: %s", csv(ssh_key_dirs))
+        for d in ssh_key_dirs:
             fd = osexpand(d)
             log("osexpand(%s)=%s", d, fd)
             if not os.path.exists(fd) or not os.path.isdir(fd):
@@ -269,12 +271,12 @@ def make_ssh_server_connection(conn, password_auth=None):
         if not host_keys:
             log.error("Error: cannot start SSH server,")
             log.error(" no SSH host keys found in:")
-            log.error(" %s", csv(SSH_KEY_DIRS))
+            log.error(" %s", csv(ssh_key_dirs))
             close()
             return None
         log("loaded host keys: %s", tuple(host_keys.values()))
         t.start_server(server=ssh_server)
-    except paramiko.SSHException as e:
+    except (paramiko.SSHException, EOFError) as e:
         log("failed to start ssh server", exc_info=True)
         log.error("Error handling SSH connection:")
         log.error(" %s", e)
