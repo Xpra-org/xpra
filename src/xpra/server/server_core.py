@@ -17,6 +17,7 @@ from weakref import WeakKeyDictionary
 from time import sleep
 
 from xpra.log import Logger
+from xpra.platform.paths import get_app_dir
 log = Logger("server")
 netlog = Logger("network")
 httplog = Logger("http")
@@ -459,9 +460,13 @@ class ServerCore(object):
         if www_dir:
             self._www_dir = www_dir
         else:
-            for d in ("www", "html5"):
-                self._www_dir = os.path.abspath(os.path.join(get_resources_dir(), d))
+            for ad,d in (
+                (get_resources_dir(), "html5"),
+                (get_app_dir(), "www"),
+                ):
+                self._www_dir = os.path.abspath(os.path.join(ad, d))
                 if os.path.exists(self._www_dir):
+                    httplog("found html5 client in '%s'", self._www_dir)
                     break
         self._http_headers_dir = os.path.abspath(os.path.join(self._www_dir, "../http-headers"))
         if not os.path.exists(self._www_dir) and self._html:
@@ -1040,7 +1045,7 @@ class ServerCore(object):
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
         netlog("may_wrap_socket(..) peek_data=%s from %s", binascii.hexlify(peek_data), frominfo)
-        if self.ssh_upgrade and peek_data[:4]=="SSH-":
+        if self.ssh_upgrade and peek_data[:4]==b"SSH-":
             conn = self.handle_ssh_connection(conn)
             return conn!=None, conn, None
         elif self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
