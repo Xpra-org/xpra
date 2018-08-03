@@ -32,7 +32,7 @@ $PACMAN --noconfirm -S ${XPKG}python2 ${XPKG}python2-pygtk ${XPKG}gtkglext ${XPK
 #media libraries (more than we actually need):
 $PACMAN --noconfirm -S ${XPKG}ffmpeg ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
-$PACMAN --noconfirm -S ${XPKG}lz4 ${XPKG}lzo2 ${XPKG}xxhash
+$PACMAN --noconfirm -S ${XPKG}lz4 ${XPKG}lzo2 ${XPKG}xxhash ${XPKG}libsodium
 #python3 GStreamer bindings:
 $PACMAN --noconfirm -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
@@ -42,6 +42,8 @@ $PACMAN --noconfirm -S ${XPKG}python2-numpy ${XPKG}python2-pillow ${XPKG}cython2
 #python3 versions (not all are really needed if just using python3 for sound):
 $PACMAN --noconfirm -S ${XPKG}python3-numpy ${XPKG}python3-pillow ${XPKG}cython
 #using easy-install for python libraries which are not packaged by mingw:
+#build pynacl against the system library:
+export SODIUM_INSTALL=system
 easy_install-2.7 -U -Z enum34 enum-compat
 for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py appdirs setproctitle pyu2f python-ldap ldap3 bcrypt pynacl paramiko; do
     easy_install-2.7 -U -Z $x
