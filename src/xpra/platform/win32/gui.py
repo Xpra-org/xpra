@@ -39,7 +39,7 @@ from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWin
                                         GetMonitorInfo,
                                         user32)
 from xpra.util import AdHocStruct, csv, envint, envbool
-from xpra.os_util import PYTHON2, PYTHON3
+from xpra.os_util import PYTHON2, PYTHON3, get_util_logger
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
@@ -175,7 +175,13 @@ def get_native_system_tray_classes(*_args):
 def gl_check():
     #This is supposed to help py2exe
     #(must be done after we setup the sys.path in platform.win32.paths):
-    from OpenGL.platform import win32   #@UnresolvedImport @UnusedImport
+    try:
+        from OpenGL.platform import win32   #@UnresolvedImport @UnusedImport
+    except ImportError as e:
+        get_util_logger().warn("gl_check()", exc_info=True)
+        get_util_logger().warn("Warning: OpenGL bindings are missing")
+        get_util_logger().warn(" %s", e)
+        return False
     from xpra.platform.win32 import is_wine
     if is_wine():
         return "disabled when running under wine"
