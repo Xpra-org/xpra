@@ -53,5 +53,12 @@ for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenG
     easy_install-3.7 -U -Z $x
 done
 
+#cx_Freeze gets very confused about sqlite DLL location
+#don't fight it and just symlink it where it will be found:
+mkdir /mingw64/DLLs
+pushd /mingw64/DLLs
+ln -sf /mingw64/lib/sqlite3*/sqlite3*.dll sqlite3.dll
+popd
+
 #for webcam support:
 #$PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
