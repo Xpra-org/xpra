@@ -33,11 +33,11 @@ try:
     try:
         from lz4.version import version as lz4_version
     except ImportError as e:
-        log("outdated version of python-lz4: %s", e)
+        log("outdated version of python-lz4", exc_info=True)
         try:
             from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
         except Exception as e:
-            log("really outdated version of python-lz4: %s", e)
+            log("really outdated version of python-lz4", exc_info=True)
     try:
         from lz4.block import compress, decompress
         LZ4_uncompress = decompress
@@ -50,7 +50,7 @@ try:
                 return flag, compress(packet, mode="fast", acceleration=8-level*2)
             return flag, compress(packet)
     except ImportError as e:
-        log("outdated version of python-lz4: %s", e)
+        log("outdated version of python-lz4", exc_info=True)
         #LZ4_compress_fast is 0.8 or later
         from lz4 import LZ4_compress, LZ4_uncompress, compressHC        #@UnresolvedImport
         if hasattr(lz4, "LZ4_compress_fast"):
@@ -66,7 +66,7 @@ try:
                     return level | LZ4_FLAG, LZ4_compress_fast(packet, accel)
                 return level | LZ4_FLAG, LZ4_compress(packet)
 except Exception as e:
-    log("lz4 not found: %s", e)
+    log("lz4 not found", exc_info=True)
     del e
     LZ4_uncompress = None
 
