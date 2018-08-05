@@ -19,7 +19,7 @@
 
 
 Name:           python2-xxhash
-Version:        1.0.1
+Version:        1.2.0
 Release:        1%{?dist}
 URL:            https://github.com/ifduyue/python-xxhash
 Summary:        xxhash Bindings for Python
@@ -84,6 +84,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Aug 05 2018 Antoine Martin <antoine@nagafix.co.uk> - 1.2.0-1
+- new upstream release
+
 * Thu Mar 02 2017 Antoine Martin <antoine@nagafix.co.uk> - 1.0.1-1
 - new upstream release
 
