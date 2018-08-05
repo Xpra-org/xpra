@@ -1233,6 +1233,10 @@ if WIN32:
                         },
                     },
                 })
+            if opengl_ENABLED:
+                add_DLLs("gtkglext-win32", "gdkglext-win32")
+            add_DLLs("gtk-win32", "gdk-win32",
+                     "gdk_pixbuf", "pyglib-2.0-python2")
 
         if sound_ENABLED:
             add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
@@ -1300,15 +1304,9 @@ if WIN32:
                             "include_msvcr"     : True,
                             "bin_excludes"      : bin_excludes,
                             }
-        if not CX5:
-            cx_freeze_options.update({
-                            "compressed"        : True,
-                            "create_shared_zip" : zip_ENABLED,
-                            })
-        else:
-            #cx_Freeze v5 workarounds:
-            if opengl_ENABLED or nvenc_ENABLED or nvfbc_ENABLED:
-                add_packages("numpy.core._methods", "numpy.lib.format")
+        #cx_Freeze v5 workarounds:
+        if opengl_ENABLED or nvenc_ENABLED or nvfbc_ENABLED:
+            add_packages("numpy.core._methods", "numpy.lib.format")
 
         setup_options["options"] = {"build_exe" : cx_freeze_options}
         executables = []

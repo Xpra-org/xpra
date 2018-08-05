@@ -50,9 +50,12 @@ else
 	fi
 fi
 
-SIGNTOOL="${PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool"
+SIGNTOOL="${PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe"
 if [ ! -e "${SIGNTOOL}" ]; then
-	SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool"
+	SIGNTOOL="${PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe"
+	if [ ! -e "${SIGNTOOL}" ]; then
+		SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
+	fi
 fi
 
 ################################################################################
@@ -226,40 +229,47 @@ fi
 #fixup cx freeze wrongly including an empty dir:
 rm -fr "${DIST}/lib/comtypes/gen"
 #fixup tons of duplicated DLLs, thanks cx_Freeze!
+pushd ${DIST} > /dev/null
+#why is it shipping those files??
+find lib/ -name "*dll.a" -exec rm {} \;
+#only keep the actual loaders, not all the other crap cx_Freeze put there:
+mkdir lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp
+mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp/
+rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
+mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
+#move libs that are likely to be common to the lib dir:
+for prefix in lib avcodec avformat avutil swscale swresample xvidcore zlib1; do
+	find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
+done
+for x in openblas gfortran quadmath; do
+	mv -f ./lib/numpy/core/lib$x*.dll ./lib/
+	mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/
+done
+mv lib/nacl/libsodium*dll ./lib/
+#gstreamer uses its own lib dir, so this does not belong in the root:
+mv ./libgst*.dll ./lib/gstreamer-1.0/
+#but the main gstreamer lib does:
+mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
+#and the gstreamer support libraries look like plugins but those are actual DLLs:
+mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-	pushd ${DIST} > /dev/null
-	#why is it shipping those files??
-	find lib/ -name "*dll.a" -exec rm {} \;
-	#only keep the actual loaders, not all the other crap cx_Freeze put there:
-	mkdir lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp
-	mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp/
-	rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
-	mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
-	#move libs that are likely to be common to the lib dir:
-	for prefix in lib avcodec avformat avutil swscale swresample xvidcore zlib1; do
-		find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
-	done
-	for x in openblas gfortran quadmath; do
-		mv -f ./lib/numpy/core/lib$x*.dll ./lib/
-		mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/
-	done
-	#gstreamer uses its own lib dir, so this does not belong in the root:
-	mv ./libgst*.dll ./lib/gstreamer-1.0/
-	#but the main gstreamer lib does:
-	mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
-	#and the gstreamer support libraries look like plugins but those are actual DLLs:
-	mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
-	#remove all the pointless duplication:
+	#move most DLLs to /lib
 	mv *dll lib/
 	#but keep the core DLLs (python, gcc, etc):
 	cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
 	pushd lib > /dev/null
-	for x in `ls *dll`; do
-		find ./ -mindepth 2 -name "${x}" -exec rm {} \;
-	done
-	popd > /dev/null
-	popd > /dev/null
+else
+	mv lib/PIL/*dll ./lib/
+	mv lib/*dll ./ > /dev/null
+	pushd .
 fi
+#remove all the pointless duplication:
+for x in `ls *dll`; do
+	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
+done
+popd > /dev/null
+popd > /dev/null
+
 
 echo "* Generating gdk pixbuf loaders.cache"
 gdk-pixbuf-query-loaders.exe "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders/*" | sed 's+".*dist/+"+g' > dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
