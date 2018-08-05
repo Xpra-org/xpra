@@ -18,6 +18,7 @@ RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
+BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
 PYTHON=${PYTHON:-python2}
@@ -290,6 +291,12 @@ if [ "${BUNDLE_PUTTY}" == "1" ]; then
 	cp -fn "${TORTOISESVN}/bin/TortoisePlink.exe" "${DIST}/Plink.exe"
 	#are we meant to include those DLLs?
 	#rsync -rplogt "${TORTOISESVN}/bin/"*dll "${DIST}/"
+fi
+
+if [ "${BUNDLE_OPENSSH}" == "1" ]; then
+	echo "* Adding OpenSSH"
+	cp -fn "/usr/bin/ssh.exe" "${DIST}/"
+	cp -fn "/usr/bin/ssh-keygen.exe" "${DIST}/"
 fi
 
 if [ "${BUNDLE_OPENSSL}" == "1" ]; then
