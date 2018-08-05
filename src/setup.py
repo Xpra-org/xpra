@@ -1068,10 +1068,8 @@ if WIN32:
     if "install_exe" in sys.argv:
         #with cx_freeze, we don't use py_modules
         del setup_options["py_modules"]
-        import cx_Freeze                            #@UnresolvedImport
         from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
-        CX5 = cx_Freeze.version>="5"
-        if CX5 and not hasattr(sys, "base_prefix"):
+        if not hasattr(sys, "base_prefix"):
             #workaround for broken sqlite hook with python 2.7, see:
             #https://github.com/anthony-tuininga/cx_Freeze/pull/272
             sys.base_prefix = sys.prefix
@@ -1313,14 +1311,6 @@ if WIN32:
         setup_options["executables"] = executables
 
         def add_exe(script, icon, base_name, base="Console"):
-            kwargs = {}
-            if not CX5:
-                kwargs = {
-                    "compress"              : True,
-                    "copyDependentFiles"    : True,
-                    "appendScriptToExe"     : False,
-                    "appendScriptToLibrary" : True,
-                    }
             executables.append(Executable(
                         script                  = script,
                         initScript              = None,
