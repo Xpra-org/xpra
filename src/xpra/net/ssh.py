@@ -456,7 +456,11 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         env = display_desc.get("env")
         kwargs["stderr"] = sys.stderr
         if WIN32:
-            from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
+            from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW
+            startupinfo = STARTUPINFO()
+            startupinfo.dwFlags |= STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
+            kwargs["startupinfo"] = startupinfo
             flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
             kwargs["creationflags"] = flags
             kwargs["stderr"] = PIPE
@@ -486,7 +490,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         if INITENV_COMMAND:
             remote_cmd = INITENV_COMMAND + ";" + remote_cmd
         remote_args = " ".join(proxy_command + display_as_args)
-        remote_cmd = "#run-xpra %s\n%s" % (remote_args, remote_cmd)
+        remote_cmd = "#run-xpra %s;%s" % (remote_args, remote_cmd)
         #putty gets confused if we wrap things in shell command:
         if display_desc.get("is_putty", False):
             cmd.append(remote_cmd)
@@ -522,7 +526,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         if env:
             kwargs["env"] = env
         if SSH_DEBUG:
-            sys.stdout.write("executing ssh command: %s\n" % (" ".join("\"%s\"" % x for x in cmd)))
+            log.info("executing ssh command: %s" % (" ".join("\"%s\"" % x for x in cmd)))
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
         raise InitExit(EXIT_SSH_FAILURE, "Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))

@@ -18,7 +18,7 @@ RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
-BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-1}
+BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-0}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
 PYTHON=${PYTHON:-python2}
@@ -211,10 +211,6 @@ if [ "${DO_TESTS}" == "1" ]; then
 	fi
 fi
 
-# For building Python 3.x Sound sub-app (broken because of cx_Freeze bugs)
-#echo "* Building Python 3.4 Cython modules (see win32/Python${PYTHON_MAJOR_VERSION}-build.log)"
-#${PYTHON} ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& win32/Python${PYTHON_MAJOR_VERSION}-build.log
-
 echo "* Generating installation directory"
 CX_FREEZE_LOG="win32/cx_freeze-install.log"
 ${PYTHON} ./setup.py install_exe ${BUILD_OPTIONS} --install=${DIST} >& ${CX_FREEZE_LOG}
@@ -261,8 +257,8 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	pushd lib > /dev/null
 else
 	mv lib/PIL/*dll ./lib/
-	mv lib/*dll ./ > /dev/null
-	pushd .
+	mv lib/*dll ./
+	pushd . > /dev/null
 fi
 #remove all the pointless duplication:
 for x in `ls *dll`; do
@@ -296,7 +292,11 @@ fi
 if [ "${BUNDLE_OPENSSH}" == "1" ]; then
 	echo "* Adding OpenSSH"
 	cp -fn "/usr/bin/ssh.exe" "${DIST}/"
+	cp -fn "/usr/bin/sshpass.exe" "${DIST}/"
 	cp -fn "/usr/bin/ssh-keygen.exe" "${DIST}/"
+	for x in 2.0 gcc_s-seh crypto z gssapi asn1 com_err roken crypt heimntlm krb5 heimbase wind hx509 hcrypto sqlite3; do
+		cp -fn /usr/bin/msys-$x*.dll "${DIST}/"
+	done
 fi
 
 if [ "${BUNDLE_OPENSSL}" == "1" ]; then

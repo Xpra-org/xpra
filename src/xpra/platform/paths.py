@@ -116,9 +116,14 @@ def do_get_sshpass_command():
     import os.path
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-    for path in os.environ["PATH"].split(os.pathsep):
+    SSHPASS = "sshpass"
+    from xpra.platform.features import EXECUTABLE_EXTENSION
+    if EXECUTABLE_EXTENSION:
+        SSHPASS = "sshpass.%s" % EXECUTABLE_EXTENSION
+    paths = os.environ["PATH"].split(os.pathsep)
+    for path in paths:
         path = path.strip('"')
-        exe_file = os.path.join(path, "sshpass")
+        exe_file = os.path.join(path, SSHPASS)
         if is_exe(exe_file):
             return exe_file
     return None
