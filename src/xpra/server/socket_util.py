@@ -434,7 +434,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
             from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
     except ImportError as e:
         MDNS_WARNING = True
-        from xpra.util import Logger
+        from xpra.log import Logger
         log = Logger("mdns")
         log("mdns import failure", exc_info=True)
         log.warn("Warning: failed to load the mdns publisher")
