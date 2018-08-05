@@ -9,7 +9,6 @@
 # currently disabled, build from patched source only: websockify
 export SODIUM_INSTALL=system
 for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenGL PyOpenGL_accelerate websockify nvidia-ml-py setproctitle pyu2f python-ldap ldap3 bcrypt pynacl paramiko; do
-do
     easy_install-2.7 -U -Z $x
     easy_install-3.7 -U -Z $x
 done
