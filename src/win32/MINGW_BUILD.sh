@@ -17,7 +17,6 @@ CLIENT_ONLY=${CLIENT_ONLY:-0}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
-BUNDLE_OPENGL=${BUNDLE_OPENGL:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
@@ -260,21 +259,6 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	done
 	popd > /dev/null
 	popd > /dev/null
-fi
-
-
-if [ "${BUNDLE_OPENGL}" == "1" ]; then
-	if [ -e "${DIST}/OpenGL" ]; then
-		pushd "${DIST}" >& /dev/null
-		if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-			echo "* Adding PyOpenGL to lib dir"
-			mv "OpenGL" "lib/"
-		else
-			echo "* Adding PyOpenGL to library.zip"
-			zip -qmor "library.zip" OpenGL
-		fi
-		popd >& /dev/null
-	fi
 fi
 
 echo "* Generating gdk pixbuf loaders.cache"

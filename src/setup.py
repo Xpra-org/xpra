@@ -1481,7 +1481,7 @@ if WIN32:
         try:
             import OpenGL_accelerate        #@UnresolvedImport
         except ImportError as e:
-            print("Warning: missing OpenGL module")
+            print("Warning: missing OpenGL_accelerate module")
             print(" %s" % e)
         else:
             glmodules["OpenGL_accelerate"] = OpenGL_accelerate
@@ -1489,9 +1489,10 @@ if WIN32:
             module_dir = os.path.dirname(module.__file__ )
             try:
                 shutil.copytree(
-                    module_dir, os.path.join(install, module_name),
+                    module_dir, os.path.join(install, "lib", module_name),
                     ignore = shutil.ignore_patterns("Tk", "AGL", "EGL", "GLX", "GLX.*", "_GLX.*", "GLE", "GLES1", "GLES2", "GLES3")
                 )
+                print("copied %s to %s/%s" % (module_dir, install, module_name))
             except Exception as e:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
