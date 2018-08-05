@@ -371,10 +371,11 @@ keymd5(host_key),
     if not transport.is_authenticated() and PASSWORD_AUTH and not password:
         for _ in range(1+PASSWORD_RETRY):
             password = input_pass("please enter the SSH password for %s@%s" % (username, host))
-            if password:
-                auth_password()
-                if transport.is_authenticated():
-                    break
+            if not password:
+                break
+            auth_password()
+            if transport.is_authenticated():
+                break
 
     if not transport.is_authenticated():
         transport.close()
