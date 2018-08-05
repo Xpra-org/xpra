@@ -1318,7 +1318,7 @@ if WIN32:
                         icon                    = "icons/%s" % icon,
                         targetName              = "%s.exe" % base_name,
                         base                    = base,
-                        **kwargs))
+                        ))
 
         def add_console_exe(script, icon, base_name):
             add_exe(script, icon, base_name)
