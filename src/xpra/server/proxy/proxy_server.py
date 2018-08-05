@@ -416,6 +416,9 @@ class ProxyServer(ServerCore):
         cwd = None
         if uid>0:
             cwd = get_home_for_uid(uid) or None
+            if not cwd or not os.path.exists(cwd):
+                import tempfile
+                cwd = tempfile.gettempdir()
         log("starting new server subprocess: options=%s", opts)
         log("env=%s", env)
         log("args=%s", args)
