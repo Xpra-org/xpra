@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
+from numpy import isin
 log = Logger("network", "protocol")
 from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
 
@@ -180,6 +181,8 @@ def decode(data, protocol_flags):
             raise InvalidPacketEncodingException("bencode is not available")
         if not use_bencode:
             raise InvalidPacketEncodingException("bencode is disabled")
+        if isinstance(data, memoryview):
+            data = data.tobytes()
         packet, l = bdecode(data)
         assert l==len(data)
         return packet
