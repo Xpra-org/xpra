@@ -115,6 +115,8 @@ class UIXpraClient(ClientBaseClass):
         self.readonly = False
         self.xsettings_enabled = False
         self.server_start_new_commands = False
+        self.start_new_commands  = []
+        self.start_child_new_commands  = []
 
         #in WindowClient - should it be?
         #self.server_is_desktop = False
@@ -180,6 +182,12 @@ class UIXpraClient(ClientBaseClass):
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self, opts)
 
+        if opts.start or opts.start_child:
+            from xpra.scripts.main import strip_defaults_start_child
+            from xpra.scripts.config import make_defaults_struct
+            defaults = make_defaults_struct()
+            self.start_new_commands  = strip_defaults_start_child(opts.start, defaults.start)
+            self.start_child_new_commands  = strip_defaults_start_child(opts.start_child, defaults.start_child)
 
         if MOUSE_DELAY_AUTO:
             try:
@@ -260,10 +268,18 @@ class UIXpraClient(ClientBaseClass):
         raise NotImplementedError()
 
 
+    def send_start_new_commands(self):
+        import shlex
+        for cmd in self.start_new_commands:
+            cmd_parts = shlex.split(cmd)
+            self.send_start_command(cmd_parts[0], cmd, True)
+        for cmd in self.start_child_new_commands:
+            cmd_parts = shlex.split(cmd)
+            self.send_start_command(cmd_parts[0], cmd, False)
+
     def send_start_command(self, name, command, ignore, sharing=True):
         log("send_start_command(%s, %s, %s, %s)", name, command, ignore, sharing)
         self.send("start-command", name, command, ignore, sharing)
-
 
     def get_version_info(self):
         return get_version_info_full()
@@ -334,6 +350,12 @@ class UIXpraClient(ClientBaseClass):
         self.server_keyboard = c.boolget("keyboard", True)
         self.server_pointer = c.boolget("pointer", True)
         self.server_start_new_commands = c.boolget("start-new-commands")
+        if self.start_new_commands or self.start_child_new_commands:
+            if self.server_start_new_commands:
+                self.after_handshake(self.send_start_new_commands)
+            else:
+                log.warn("Warning: cannot start new commands")
+                log.warn(" the feature is currently disabled on the server")
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strlistget("server-commands-signals")
         self.server_readonly = c.boolget("readonly")
