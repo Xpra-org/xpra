@@ -729,10 +729,12 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--packet-encoders", action="store",
                       dest="packet_encoders", default=csv(defaults.packet_encoders),
                       help="The packet encoders to enable. Default: %default.")
-    group.add_option("-z", "--compress", action="store",
+    replace_option("--compression-level", "--compression_level")
+    replace_option("--compress", "--compression_level")
+    group.add_option("-z", "--compression_level", action="store",
                       dest="compression_level", type="int", default=defaults.compression_level,
                       metavar="LEVEL",
-                      help="How hard to work on compressing data."
+                      help="How hard to work on compressing packet data."
                       + " You generally do not need to use this option,"
                       + " the default value should be adequate,"
                       + " picture data is compressed separately (see --encoding)."
