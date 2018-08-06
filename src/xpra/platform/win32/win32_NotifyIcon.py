@@ -227,6 +227,7 @@ class win32NotifyIcon(object):
         self.exit_callback = exit_callback
         self.command_callback = command_callback
         self.reset_function = None
+        self.image_cache = {}
 
     def __repr__(self):
         return "win32NotifyIcon(%#x)" % self.app_id
@@ -338,6 +339,13 @@ class win32NotifyIcon(object):
     def LoadImage(self, iconPathName):
         if not iconPathName:
             return None
+        image = self.image_cache.get(iconPathName)
+        if not image:
+            image = self.doLoadImage(iconPathName)
+            self.image_cache[iconPathName] = image
+        return image
+
+    def doLoadImage(self, iconPathName):
         mingw_prefix = os.environ.get("MINGW_PREFIX")
         if mingw_prefix and iconPathName.find(mingw_prefix)>=0:
             #python can deal with mixed win32 and unix paths,
