@@ -123,7 +123,6 @@ class WindowClient(StubClientMixin):
         self._window_with_grab = None
         self._suspended_at = 0
         self._button_state = {}
-        self._on_handshake = []
 
     def init(self, opts, extra_args=[]):
         if opts.system_tray and SYSTEM_TRAY_SUPPORTED:
