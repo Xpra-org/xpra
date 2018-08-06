@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
-from numpy import isin
 log = Logger("network", "protocol")
 from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
 
