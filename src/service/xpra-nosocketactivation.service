@@ -17,6 +17,7 @@ SuccessExitStatus=0 143
 Restart=on-abnormal
 PIDFile=/run/xpra.pid
 ProtectSystem=strict
+ReadWritePaths=/run /tmp
 #PrivateDevices=true
 
 [Install]
