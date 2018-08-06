@@ -187,7 +187,7 @@ class SSHServer(paramiko.ServerInterface):
             if parse_cmd.startswith("#run-xpra "):
                 #newer versions make it easy,
                 #the first line contains a comment which gives us the actual arguments for run-xpra:
-                args = parse_cmd.split(";")[0].split("#run-xpra ")[1]
+                args = parse_cmd.splitlines()[0].split("#run-xpra ")[1]
                 if args=="_proxy":
                     self._run_proxy(channel)
                     return True
