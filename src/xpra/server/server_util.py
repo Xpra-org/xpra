@@ -122,9 +122,12 @@ def write_runner_shell_scripts(contents, overwrite=True):
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
         try:
-            with umask_context(0o077):
-                with open(scriptpath, "w") as scriptfile:
-                    scriptfile.write(contents)
+            with umask_context(0o022):
+                h = os.open(scriptpath, os.O_WRONLY|os.O_CREAT|os.O_TRUNC, 0o700)
+                try:
+                    os.write(h, contents)
+                finally:
+                    os.close(h)
         except Exception as e:
             log.error("Error: failed to write script file '%s':", scriptpath)
             log.error(" %s\n", e)
