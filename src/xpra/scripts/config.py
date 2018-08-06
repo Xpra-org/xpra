@@ -641,6 +641,9 @@ OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "open-url", "pixel-depth", "ui
                     "forward-xdg-open", "modal-windows", "bandwidth-detection",
                     "bind-ssh", "ssh-auth", "ssh-upgrade",
                           ]
+OPTIONS_COMPAT_NAMES = {
+    "--compression_level=" : "-z"
+    }
 
 CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "dock-icon", "tray-icon", "window-icon",

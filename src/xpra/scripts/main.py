@@ -25,7 +25,7 @@ from xpra.scripts.parsing import info, warn, error, \
     parse_vsock, parse_env, is_local, \
     fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help, \
     supports_shadow, supports_server, supports_proxy, supports_mdns
-from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
+from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, OPTIONS_COMPAT_NAMES, \
     InitException, InitInfo, InitExit, \
     fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, has_sound_support, name_to_field
@@ -1665,6 +1665,9 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
         dv = getattr(defaults, fn)
         if ov==dv:
             continue    #same as the default
+        argname = "--%s=" % x
+        if compat:
+            argname = OPTIONS_COMPAT_NAMES.get(argname, argname)
         #lists are special cased depending on how OptionParse will be parsing them:
         if ftype==list:
             #warn("%s: %s vs %s\n" % (x, ov, dv))
@@ -1676,10 +1679,10 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
                      ]:
                 #individual arguments (ie: "--start=xterm" "--start=gedit" ..)
                 for e in ov:
-                    args.append("--%s=%s" % (x, e))
+                    args.append("%s%s" % (argname, e))
             else:
                 #those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
-                args.append("--%s=%s" % (x, ",".join(str(x) for x in ov)))
+                args.append("%s%s" % (argname, ",".join(str(v) for v in ov)))
         elif ftype==bool:
             if compat and x in ("exit-with-children", "use-display", "mmap-group"):
                 #older servers don't take a bool value for those options,
@@ -1687,9 +1690,9 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
                 if ov:
                     args.append("--%s" % x)
             else:
-                args.append("--%s=%s" % (x, ["no", "yes"][int(ov)]))
+                args.append("%s%s" % (argname, ["no", "yes"][int(ov)]))
         elif ftype in (int, float, str):
-            args.append("--%s=%s" % (x, ov))
+            args.append("%s%s" % (argname, ov))
         else:
             raise InitException("unknown option type '%s' for '%s'" % (ftype, x))
     return args
