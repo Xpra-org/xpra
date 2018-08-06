@@ -1385,7 +1385,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         proxy_args = []
         if params.get("display") is not None:
             proxy_args.append(params["display"])
-        for x in get_start_server_args(opts, True):
+        for x in get_start_server_args(opts, compat=True):
             proxy_args.append(shellquote(x))
         params["display_as_args"] = proxy_args
         #and use a proxy subcommand to start the server:
