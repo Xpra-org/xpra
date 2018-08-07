@@ -1,18 +1,21 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 assert init and log #tests will disable logging from here
 
+PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")
+
 
 def check(username, password):
     log("pam check(%s, [..])", username)
     from xpra.server.pam import pam_session #@UnresolvedImport
-    session = pam_session(username, password, "login")
+    session = pam_session(username, password, PAM_AUTH_SERVICE)
     if not session.start(password):
         return False
     success = session.authenticate()
