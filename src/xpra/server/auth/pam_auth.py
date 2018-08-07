@@ -12,10 +12,10 @@ assert init and log #tests will disable logging from here
 PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")
 
 
-def check(username, password):
+def check(username, password, service=PAM_AUTH_SERVICE):
     log("pam check(%s, [..])", username)
     from xpra.server.pam import pam_session #@UnresolvedImport
-    session = pam_session(username, password, PAM_AUTH_SERVICE)
+    session = pam_session(username, password, service)
     if not session.start(password):
         return False
     success = session.authenticate()
@@ -26,11 +26,15 @@ def check(username, password):
 
 class Authenticator(SysAuthenticator):
 
+    def __init__(self, username, **kwargs):
+        self.service = kwargs.pop("service", PAM_AUTH_SERVICE)
+        SysAuthenticator.__init__(self, username, **kwargs)
+
     def check(self, password):
         log("pam.check(..) pw=%s", self.pw)
         if self.pw is None:
             return False
-        return check(self.username, password)
+        return check(self.username, password, self.service)
 
     def get_challenge(self, digests):
         if "xor" not in digests:
