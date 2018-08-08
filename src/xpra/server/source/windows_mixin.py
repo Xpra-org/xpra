@@ -49,7 +49,7 @@ class WindowsMixin(StubSourceMixin):
         self.get_focus          = server.get_focus
         self.get_cursor_data_cb = server.get_cursor_data
         self.get_window_id      = server.get_window_id
-        self.window_filters     = list(server.window_filters)
+        self.window_filters     = server.window_filters
 
     def init_state(self):
         #WindowSource for each Window ID
