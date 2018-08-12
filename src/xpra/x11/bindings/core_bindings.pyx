@@ -13,7 +13,7 @@ from libc.stdlib cimport malloc, free
 from libc.stdint cimport uintptr_t
 
 from xpra.util import dump_exc, envbool
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, is_Wayland, PYTHON2
 from xpra.log import Logger
 log = Logger("x11", "bindings", "core")
 
@@ -80,6 +80,7 @@ def set_context_check(fn):
 cdef class _X11CoreBindings:
 
     def __cinit__(self):
+        assert not is_Wayland() or PYTHON2, "cannot load X11 bindings with wayland under python3 / GTK3"
         self.display = get_display()
         assert self.display!=NULL, "display is not set!"
         dn = get_display_name()

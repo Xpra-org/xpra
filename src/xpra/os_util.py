@@ -259,6 +259,11 @@ try:
 except Exception as e:
     pass
 
+
+def is_Wayland():
+    return os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE")=="wayland"
+
+
 def is_distribution_variant(variant=b"Debian", os_file="/etc/os-release"):
     if not POSIX:
         return False

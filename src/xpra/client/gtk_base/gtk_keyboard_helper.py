@@ -9,6 +9,7 @@ from xpra.client.keyboard_helper import KeyboardHelper, log
 from xpra.gtk_common.gobject_compat import import_gdk, import_glib
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import display_get_default, keymap_get_for_display
+from xpra.os_util import is_Wayland, PYTHON2
 gdk = import_gdk()
 glib = import_glib()
 
@@ -56,11 +57,12 @@ class GTKKeyboardHelper(KeyboardHelper):
     def update(self):
         old_hash = self.hash
         self.query_xkbmap()
-        try:
-            self.keyboard.update_modifier_map(display_get_default(), self.xkbmap_mod_meanings)
-        except:
-            log.error("error querying modifier map", exc_info=True)
-        log("do_keys_changed() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
+        if not is_Wayland() or PYTHON2:
+            try:
+                self.keyboard.update_modifier_map(display_get_default(), self.xkbmap_mod_meanings)
+            except:
+                log.error("error querying modifier map", exc_info=True)
+        log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
         return old_hash!=self.hash
 
     def get_full_keymap(self):

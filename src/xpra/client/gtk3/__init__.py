@@ -6,8 +6,8 @@
 from xpra.log import Logger
 log = Logger("gtk", "client")
 
-from xpra.os_util import OSX, POSIX
-if POSIX and not OSX:
+from xpra.os_util import OSX, POSIX, PYTHON2, is_Wayland
+if POSIX and not OSX and (not is_Wayland() or PYTHON2):
     try:
         from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()

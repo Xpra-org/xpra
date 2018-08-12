@@ -21,7 +21,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, selection_owner_set, selection_add_target, selectiondata_get_selection, selectiondata_get_target, selectiondata_get_data, selectiondata_get_data_type, selectiondata_get_format, selectiondata_set, clipboard_request_contents, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
-from xpra.os_util import WIN32, POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid
+from xpra.os_util import WIN32, POSIX, PYTHON2, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid, is_Wayland
 from xpra.util import csv, envint, envbool, repr_ellipsized, typedict
 from xpra.platform.features import CLIPBOARD_GREEDY
 
@@ -614,11 +614,12 @@ class ClipboardProxy(gtk.Invisible):
         self._request_contents_events = 0
         self._last_targets = ()
 
-        try:
-            from xpra.x11.gtk_x11.prop import prop_get
-            self.prop_get = prop_get
-        except ImportError:
-            self.prop_get = None
+        if not is_Wayland() or PYTHON2:
+            try:
+                from xpra.x11.gtk_x11.prop import prop_get
+                self.prop_get = prop_get
+            except ImportError:
+                self.prop_get = None
 
         self._loop_uuid = ""
         self._clipboard.connect("owner-change", self.do_owner_changed)

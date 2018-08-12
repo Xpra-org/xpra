@@ -6,7 +6,7 @@
 
 import os.path
 import array
-from xpra.util import iround
+from xpra.util import iround, first_time
 from xpra.os_util import strtobytes, bytestostr, WIN32
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_pixbufloader, import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3
 gtk     = import_gtk()
@@ -153,9 +153,10 @@ if is_gtk3():
             root = get_default_root_window()
             w, h = root.get_geometry()[2:4]
         if w<=0 or h<=0 or w>32768 or h>32768:
-            log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
-            w, h = 1920, 1080
-            log.warn(" using %ix%i instead", w, h)
+            if first_time("Gtk root window dimensions"):
+                log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
+                w, h = 1920, 1080
+                log.warn(" using %ix%i instead", w, h)
         return w, h
 
     keymap_get_for_display  = gdk.Keymap.get_for_display

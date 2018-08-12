@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@
 # the core X11 bindings.
 from __future__ import absolute_import
 
+from xpra.os_util import is_Wayland, PYTHON3
 from xpra.x11.bindings.display_source cimport set_display
 from xpra.x11.bindings.display_source import set_display_name
 
@@ -40,8 +41,12 @@ gi.require_version('GdkX11', '3.0')
 from gi.repository import GdkX11
 
 def init_gdk_display_source():
+    if is_Wayland() and PYTHON3:
+        from xpra.scripts.config import InitException
+        raise InitException("cannot use X11 bindings with Wayland and GTK3 (buggy)")
     cdef GdkDisplay* gdk_display
     cdef Display * x11_display
+    #from gi.repository import GdkX11
     from gi.repository import Gdk
     gdk_display = gdk_display_get_default()
     if not gdk_display:

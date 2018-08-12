@@ -22,15 +22,17 @@ from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.gtk_common.gobject_compat import is_gtk3
+from xpra.os_util import is_Wayland, PYTHON2
 
-try:
-    from xpra.x11.bindings.window_bindings import X11WindowBindings
-    from xpra.x11.bindings.xi2_bindings import X11XI2Bindings   #@UnresolvedImport
-except Exception as e:
-    log.error("no X11 bindings", exc_info=True)
-    del e
-    X11WindowBindings = None
-    X11XI2Bindings = None
+X11WindowBindings = None
+X11XI2Bindings = None
+if not is_Wayland() or PYTHON2:
+    try:
+        from xpra.x11.bindings.window_bindings import X11WindowBindings
+        from xpra.x11.bindings.xi2_bindings import X11XI2Bindings   #@UnresolvedImport
+    except Exception as e:
+        log.error("no X11 bindings", exc_info=True)
+        del e
 
 device_bell = None
 GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
@@ -39,6 +41,12 @@ XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
 DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
+
+
+def gl_check():
+    if is_Wayland() and not PYTHON2:
+        return "disabled under wayland with GTK3 (buggy)"
+    return None
 
 
 def get_native_system_tray_classes():
@@ -54,17 +62,18 @@ def get_native_system_tray_classes():
 
 def get_wm_name():
     wm_name = os.environ.get("XDG_CURRENT_DESKTOP", "")
-    try:
-        wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
-        if wm_check:
-            xid = struct.unpack("=I", wm_check)[0]
-            traylog("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
-            wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
-            traylog("_NET_WM_NAME=%s", wm_name)
-            return wm_name.decode("utf-8")
-    except Exception as e:
-        traylog.error("Error accessing window manager information:")
-        traylog.error(" %s", e)
+    if not is_Wayland():
+        try:
+            wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
+            if wm_check:
+                xid = struct.unpack("=I", wm_check)[0]
+                traylog("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
+                wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
+                traylog("_NET_WM_NAME=%s", wm_name)
+                return wm_name.decode("utf-8")
+        except Exception as e:
+            traylog.error("Error accessing window manager information:")
+            traylog.error(" %s", e)
     return wm_name
 
 def get_native_tray_classes():
@@ -122,6 +131,7 @@ def _get_X11_root_property(name, req_type):
         root_xid = X11Window.getDefaultRootWindow()
         return _get_X11_window_property(root_xid, name, req_type)
     except Exception as e:
+        log("_get_X11_root_property(%s, %s)", name, req_type, exc_info=True)
         log.warn("Warning: failed to get X11 root property '%s'", name)
         log.warn(" %s", e)
     return None
@@ -207,7 +217,7 @@ def _get_xsettings_dict():
 
 
 def _get_xsettings_dpi():
-    if XSETTINGS_DPI:
+    if XSETTINGS_DPI and (not is_Wayland() or PYTHON2):
         from xpra.x11.xsettings_prop import XSettingsTypeInteger
         d = _get_xsettings_dict()
         for k,div in {
@@ -225,7 +235,7 @@ def _get_xsettings_dpi():
     return -1
 
 def _get_randr_dpi():
-    if RANDR_DPI:
+    if RANDR_DPI and not is_Wayland():
         try:
             from xpra.gtk_common.error import xsync
             from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
@@ -255,27 +265,28 @@ def get_ydpi():
 
 
 def get_icc_info():
-    try:
-        data = _get_X11_root_property("_ICC_PROFILE", "CARDINAL")
-        if data:
-            screenlog("_ICC_PROFILE=%s (%s)", type(data), len(data))
-            version = _get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
-            screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", hexstr(version or ""), hexstr(data))
-            icc = {
-                    "source"    : "_ICC_PROFILE",
-                    "data"      : data,
-                    }
-            if version:
-                try:
-                    version = ord(version)
-                except:
-                    pass
-                icc["version"] = version
-            return icc
-    except Exception as e:
-        screenlog.error("Error: cannot access _ICC_PROFILE X11 window property")
-        screenlog.error(" %s", e)
-        screenlog("get_icc_info()", exc_info=True)
+    if not is_Wayland():
+        try:
+            data = _get_X11_root_property("_ICC_PROFILE", "CARDINAL")
+            if data:
+                screenlog("_ICC_PROFILE=%s (%s)", type(data), len(data))
+                version = _get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
+                screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", hexstr(version or ""), hexstr(data))
+                icc = {
+                        "source"    : "_ICC_PROFILE",
+                        "data"      : data,
+                        }
+                if version:
+                    try:
+                        version = ord(version)
+                    except:
+                        pass
+                    icc["version"] = version
+                return icc
+        except Exception as e:
+            screenlog.error("Error: cannot access _ICC_PROFILE X11 window property")
+            screenlog.error(" %s", e)
+            screenlog("get_icc_info()", exc_info=True)
     return {}
 
 
@@ -316,104 +327,111 @@ def get_antialias_info():
 
 def get_current_desktop():
     v = -1
-    d = None
-    try:
-        d = _get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")
-        if d:
-            v = struct.unpack("=I", d)[0]
-    except Exception as e:
-        log.warn("failed to get current desktop: %s", e)
-    log("get_current_desktop() %s=%s", hexstr(d or ""), v)
+    if not is_Wayland():
+        d = None
+        try:
+            d = _get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")
+            if d:
+                v = struct.unpack("=I", d)[0]
+        except Exception as e:
+            log.warn("failed to get current desktop: %s", e)
+        log("get_current_desktop() %s=%s", hexstr(d or ""), v)
     return v
 
 def get_workarea():
-    try:
-        d = get_current_desktop()
-        if d<0:
-            return None
-        workarea = _get_X11_root_property("_NET_WORKAREA", "CARDINAL")
-        if not workarea:
-            return None
-        screenlog("get_workarea()=%s, len=%s", type(workarea), len(workarea))
-        #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
-        if len(workarea)<(d+1)*4*4:
-            screenlog.warn("get_workarea() invalid _NET_WORKAREA value")
-        else:
-            cur_workarea = workarea[d*4*4:(d+1)*4*4]
-            v = struct.unpack("=IIII", cur_workarea)
-            screenlog("get_workarea() %s=%s", hexstr(cur_workarea), v)
-            return v
-    except Exception as e:
-        screenlog.warn("failed to get workarea: %s", e)
+    if not is_Wayland():
+        try:
+            d = get_current_desktop()
+            if d<0:
+                return None
+            workarea = _get_X11_root_property("_NET_WORKAREA", "CARDINAL")
+            if not workarea:
+                return None
+            screenlog("get_workarea()=%s, len=%s", type(workarea), len(workarea))
+            #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
+            if len(workarea)<(d+1)*4*4:
+                screenlog.warn("get_workarea() invalid _NET_WORKAREA value")
+            else:
+                cur_workarea = workarea[d*4*4:(d+1)*4*4]
+                v = struct.unpack("=IIII", cur_workarea)
+                screenlog("get_workarea() %s=%s", hexstr(cur_workarea), v)
+                return v
+        except Exception as e:
+            screenlog.warn("failed to get workarea: %s", e)
     return None
 
 
 def get_number_of_desktops():
-    v = 1
-    d = None
-    try:
-        d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
-        if d:
-            v = struct.unpack("=I", d)[0]
-    except Exception as e:
-        screenlog.warn("failed to get number of desktop: %s", e)
-    v = max(1, v)
-    screenlog("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
+    v = 0
+    if not is_Wayland():
+        d = None
+        try:
+            d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
+            if d:
+                v = struct.unpack("=I", d)[0]
+        except Exception as e:
+            screenlog.warn("failed to get number of desktop: %s", e)
+        v = max(1, v)
+        screenlog("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
     return v
 
 def get_desktop_names():
-    v = ["Main"]
-    d = None
-    try:
-        d = _get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
-        if d:
-            v = d.split(b"\0")
-            if len(v)>1 and v[-1]=="":
-                v = v[:-1]
-    except Exception as e:
-        screenlog.warn("failed to get desktop names: %s", e)
-    screenlog("get_desktop_names() %s=%s", hexstr(d or ""), v)
+    v = []
+    if not is_Wayland():
+        v = ["Main"]
+        d = None
+        try:
+            d = _get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
+            if d:
+                v = d.split(b"\0")
+                if len(v)>1 and v[-1]=="":
+                    v = v[:-1]
+        except Exception as e:
+            screenlog.warn("failed to get desktop names: %s", e)
+        screenlog("get_desktop_names() %s=%s", hexstr(d or ""), v)
     return v
 
 
 def get_vrefresh():
-    try:
-        from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
-        randr = RandRBindings()
-        v = randr.get_vrefresh()
-    except Exception as e:
-        log("get_vrefresh()", exc_info=True)
-        log.warn("Warning: failed to query the display vertical refresh rate:")
-        log.warn(" %s", e)
-        v = -1
-    screenlog("get_vrefresh()=%s", v)
+    v = -1
+    if not is_Wayland():
+        try:
+            from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
+            randr = RandRBindings()
+            v = randr.get_vrefresh()
+        except Exception as e:
+            log("get_vrefresh()", exc_info=True)
+            log.warn("Warning: failed to query the display vertical refresh rate:")
+            log.warn(" %s", e)
+        screenlog("get_vrefresh()=%s", v)
     return v
 
 
 def _get_xresources():
-    try:
-        from xpra.x11.gtk_x11.prop import prop_get
-        from xpra.gtk_common.gtk_util import get_default_root_window
-        root = get_default_root_window()
-        v = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
-        log("RESOURCE_MANAGER=%s", v)
-        if v is None:
-            return None
-        value = v.decode("utf-8")
-        #parse the resources into a dict:
-        values={}
-        options = value.split("\n")
-        for option in options:
-            if not option:
-                continue
-            parts = option.split(":\t", 1)
-            if len(parts)!=2:
-                log("skipped invalid option: '%s'", option)
-                continue
-            values[parts[0]] = parts[1]
-        return values
-    except Exception as e:
-        log("_get_xresources error: %s", e)
+    if not is_Wayland():
+        try:
+            from xpra.x11.gtk_x11.prop import prop_get
+            from xpra.gtk_common.gtk_util import get_default_root_window
+            root = get_default_root_window()
+            v = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
+            log("RESOURCE_MANAGER=%s", v)
+            if v is None:
+                return None
+            value = v.decode("utf-8")
+            #parse the resources into a dict:
+            values={}
+            options = value.split("\n")
+            for option in options:
+                if not option:
+                    continue
+                parts = option.split(":\t", 1)
+                if len(parts)!=2:
+                    log("skipped invalid option: '%s'", option)
+                    continue
+                values[parts[0]] = parts[1]
+            return values
+        except Exception as e:
+            log("_get_xresources error: %s", e)
     return None
 
 def get_cursor_size():
@@ -874,7 +892,8 @@ class ClientExtras(object):
 
     def setup_xprops(self):
         #wait for handshake to complete:
-        self.client.after_handshake(self.do_setup_xprops)
+        if not is_Wayland():
+            self.client.after_handshake(self.do_setup_xprops)
 
     def do_setup_xprops(self, *args):
         log("do_setup_xprops(%s)", args)

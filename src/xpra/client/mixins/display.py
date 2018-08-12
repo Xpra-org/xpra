@@ -98,9 +98,11 @@ class DisplayClient(StubClientMixin):
 
         self._last_screen_settings = self.get_screen_settings()
         root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, _, _ = self._last_screen_settings
-        caps["desktop_size"] = self.cp(u_root_w, u_root_h)
-        caps["desktops"] = ndesktops
-        caps["desktop.names"] = desktop_names
+        if u_root_w and u_root_h:
+            caps["desktop_size"] = self.cp(u_root_w, u_root_h)
+        if ndesktops:
+            caps["desktops"] = ndesktops
+            caps["desktop.names"] = desktop_names
 
         ss = self.get_screen_sizes()
         self._current_screen_sizes = ss
