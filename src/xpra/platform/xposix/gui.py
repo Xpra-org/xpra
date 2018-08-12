@@ -467,11 +467,13 @@ def get_window_frame_sizes():
 
 
 def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name):
-    from xpra.gtk_common.error import XError
     global device_bell
+    if is_Wayland() and not PYTHON2:
+        device_bell = False
     if device_bell is False:
         #failed already
         return False
+    from xpra.gtk_common.error import XError
     def x11_bell():
         global device_bell
         if device_bell is None:
