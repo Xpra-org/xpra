@@ -1233,7 +1233,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
         app.hello_extra = {"connect" : False}
         app.start_new_session = sns
     else:
-        if PYTHON3 and os.environ.get("GDK_BACKEND") is None:
+        if PYTHON3 and POSIX and os.environ.get("GDK_BACKEND") is None:
             os.environ["GDK_BACKEND"] = "x11"
         try:
             from xpra.platform.gui import init as gui_init
