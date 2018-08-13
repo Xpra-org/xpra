@@ -267,7 +267,6 @@ def is_X11():
         return False
     from xpra.x11.gtk3.gdk_bindings import is_X11_Display
     x11 = is_X11_Display()
-    print("x11=%s" % (x11,))
     return x11
 
 def is_Wayland():
