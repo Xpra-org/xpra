@@ -8,7 +8,7 @@
 # the core X11 bindings.
 from __future__ import absolute_import
 
-from xpra.os_util import is_Wayland, PYTHON3
+from xpra.os_util import is_X11
 from xpra.x11.bindings.display_source cimport set_display
 from xpra.x11.bindings.display_source import set_display_name
 
@@ -41,7 +41,7 @@ gi.require_version('GdkX11', '3.0')
 from gi.repository import GdkX11
 
 def init_gdk_display_source():
-    if is_Wayland() and PYTHON3:
+    if not is_X11():
         from xpra.scripts.config import InitException
         raise InitException("cannot use X11 bindings with Wayland and GTK3 (buggy)")
     cdef GdkDisplay* gdk_display

@@ -9,7 +9,7 @@ from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.log import Logger
-from xpra.os_util import is_Wayland
+from xpra.os_util import is_X11
 log = Logger("keyboard", "posix")
 
 
@@ -86,7 +86,7 @@ class Keyboard(KeyboardBase):
         #parses the "_XKB_RULES_NAMES" X11 property
         #FIXME: a bit ugly to call gtk here...
         #but otherwise we have to call XGetWindowProperty and deal with X11 errors..
-        if is_Wayland():
+        if not is_X11():
             return ""
         xkb_rules_names = ""
         from xpra.platform.xposix.gui import _get_X11_root_property

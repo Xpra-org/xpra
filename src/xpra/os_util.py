@@ -260,6 +260,16 @@ except Exception as e:
     pass
 
 
+def is_X11():
+    if PYTHON2:
+        return True
+    if OSX or WIN32:
+        return False
+    from xpra.x11.gtk3.gdk_bindings import is_X11_Display
+    x11 = is_X11_Display()
+    print("x11=%s" % (x11,))
+    return x11
+
 def is_Wayland():
     return os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE")=="wayland"
 

@@ -9,7 +9,7 @@ from xpra.client.keyboard_helper import KeyboardHelper, log
 from xpra.gtk_common.gobject_compat import import_gdk, import_glib
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import display_get_default, keymap_get_for_display
-from xpra.os_util import is_Wayland, PYTHON2
+from xpra.os_util import is_X11
 gdk = import_gdk()
 glib = import_glib()
 
@@ -57,7 +57,7 @@ class GTKKeyboardHelper(KeyboardHelper):
     def update(self):
         old_hash = self.hash
         self.query_xkbmap()
-        if not is_Wayland() or PYTHON2:
+        if is_X11():
             try:
                 self.keyboard.update_modifier_map(display_get_default(), self.xkbmap_mod_meanings)
             except:

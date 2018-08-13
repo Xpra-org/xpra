@@ -42,6 +42,15 @@ def get_display_name(display):
 REPR_FUNCTIONS[Gdk.Display] = get_display_name
 
 
+cdef extern from "gdk_x11_macros.h":
+    int is_x11_display(void *)
+
+def is_X11_Display(display=None):
+    if display is None:
+        manager = Gdk.DisplayManager.get()
+        display = manager.get_default_display()
+    return bool(is_x11_display(get_raw_display_for(display)))
+
 ###################################
 # Headers, python magic
 ###################################

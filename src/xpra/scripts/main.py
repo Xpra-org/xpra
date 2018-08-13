@@ -20,7 +20,7 @@ import traceback
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR
-from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, WIN32, OSX, POSIX
+from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, WIN32, OSX, POSIX, PYTHON3
 from xpra.scripts.parsing import info, warn, error, \
     parse_vsock, parse_env, is_local, \
     fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help, \
@@ -1233,6 +1233,8 @@ def get_client_app(error_cb, opts, extra_args, mode):
         app.hello_extra = {"connect" : False}
         app.start_new_session = sns
     else:
+        if PYTHON3 and os.environ.get("GDK_BACKEND") is None:
+            os.environ["GDK_BACKEND"] = "x11"
         try:
             from xpra.platform.gui import init as gui_init
             gui_init()

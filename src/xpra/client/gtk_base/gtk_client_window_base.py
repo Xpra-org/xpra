@@ -31,7 +31,7 @@ grablog = Logger("grab")
 draglog = Logger("dragndrop")
 
 
-from xpra.os_util import bytestostr, is_Wayland, WIN32, OSX, POSIX, PYTHON3, PYTHON2
+from xpra.os_util import bytestostr, is_X11, WIN32, OSX, POSIX, PYTHON3
 from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl, csv,
                        WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
@@ -58,7 +58,7 @@ cairo   = import_cairo()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
-USE_X11_BINDINGS = envbool("XPRA_USE_X11_BINDINGS", not is_Wayland or PYTHON2)
+USE_X11_BINDINGS = envbool("XPRA_USE_X11_BINDINGS", is_X11())
 SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
 if POSIX and USE_X11_BINDINGS:
     try:

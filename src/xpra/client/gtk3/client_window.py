@@ -178,6 +178,7 @@ class ClientWindow(GTKClientWindowBase):
         self.queue_draw_area(x, y, width, height)
 
     def do_draw(self, context):
+        #Gtk.Window.do_draw(self, context)
         paintlog("do_draw(%s)", context)
         backing = self._backing
         if self.get_mapped() and backing:

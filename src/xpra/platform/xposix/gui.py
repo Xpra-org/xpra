@@ -22,14 +22,14 @@ from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.gtk_common.gobject_compat import is_gtk3
-from xpra.os_util import is_Wayland, PYTHON2
+from xpra.os_util import is_X11, is_Wayland
 
 X11WindowBindings = None
 X11XI2Bindings = None
-if not is_Wayland() or PYTHON2:
+if is_X11():
     try:
-        from xpra.x11.bindings.window_bindings import X11WindowBindings
-        from xpra.x11.bindings.xi2_bindings import X11XI2Bindings   #@UnresolvedImport
+        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+        from xpra.x11.bindings.xi2_bindings import X11XI2Bindings       #@UnresolvedImport
     except Exception as e:
         log.error("no X11 bindings", exc_info=True)
         del e
@@ -44,7 +44,7 @@ DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
 
 def gl_check():
-    if is_Wayland() and not PYTHON2:
+    if not is_X11() and is_Wayland():
         return "disabled under wayland with GTK3 (buggy)"
     return None
 
@@ -62,7 +62,7 @@ def get_native_system_tray_classes():
 
 def get_wm_name():
     wm_name = os.environ.get("XDG_CURRENT_DESKTOP", "")
-    if not is_Wayland():
+    if is_X11():
         try:
             wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
             if wm_check:
@@ -217,7 +217,7 @@ def _get_xsettings_dict():
 
 
 def _get_xsettings_dpi():
-    if XSETTINGS_DPI and (not is_Wayland() or PYTHON2):
+    if XSETTINGS_DPI and is_X11():
         from xpra.x11.xsettings_prop import XSettingsTypeInteger
         d = _get_xsettings_dict()
         for k,div in {
@@ -467,9 +467,9 @@ def get_window_frame_sizes():
 
 
 def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name):
+    if not is_X11():
+        return False
     global device_bell
-    if is_Wayland() and not PYTHON2:
-        device_bell = False
     if device_bell is False:
         #failed already
         return False
