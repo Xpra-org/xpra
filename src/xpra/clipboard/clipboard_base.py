@@ -21,8 +21,8 @@ from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, selection_owner_set, selection_add_target, selectiondata_get_selection, selectiondata_get_target, selectiondata_get_data, selectiondata_get_data_type, selectiondata_get_format, selectiondata_set, clipboard_request_contents, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
-from xpra.os_util import WIN32, POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid, is_X11
-from xpra.util import csv, envint, envbool, repr_ellipsized, typedict
+from xpra.os_util import WIN32, POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid, is_X11, is_Wayland
+from xpra.util import csv, envint, envbool, repr_ellipsized, typedict, first_time
 from xpra.platform.features import CLIPBOARD_GREEDY
 
 
@@ -786,7 +786,17 @@ class ClipboardProxy(gtk.Invisible):
             nodata()
             return
         if not self._have_token:
-            return gtk.Invisible.do_selection_get(self, selection_data, info, time)
+            try:
+                return gtk.Invisible.do_selection_get(self, selection_data, info, time)
+            except NotImplementedError as e:
+                log("gtk.Invisible.do_selection_get", exc_info=True)
+                if first_time("selection-%s-not-implemented" % self._selection):
+                    log.warn("Warning: limited clipboard support for %s", self._selection)
+                    if is_Wayland():
+                        log.warn(" looks like a Wayland implementation limitation")
+                    log.warn(" %s", e)
+                nodata()
+                return
         selection = selectiondata_get_selection(selection_data)
         target = selectiondata_get_target(selection_data)
         log("do_selection_get(%s, %s, %s) selection=%s", selection_data, info, time, selection)
