@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,6 +29,7 @@ from xpra.gtk_common.gtk2.gdk_bindings import (
                 get_display_for,                            #@UnresolvedImport
                 calc_constrained_size,                      #@UnresolvedImport
                )
+from xpra.gtk_common.gtk_util import get_default_root_window
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -73,6 +74,11 @@ CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP>=0
 
 
+#aliases to reduce the number of pydev warnings:
+PARAM_READABLE = gobject.PARAM_READABLE
+PARAM_READWRITE = gobject.PARAM_READWRITE
+
+
 class WindowModel(BaseWindowModel):
     """This represents a managed client window.  It allows one to produce
     widgets that view that client window in various ways."""
@@ -87,19 +93,19 @@ class WindowModel(BaseWindowModel):
     __gproperties__.update({
         "owner": (gobject.TYPE_PYOBJECT,
                   "Owner", "",
-                  gobject.PARAM_READABLE),
+                  PARAM_READABLE),
         # Interesting properties of the client window, that will be
         # automatically kept up to date:
         "requested-position": (gobject.TYPE_PYOBJECT,
                                "Client-requested position on screen", "",
-                               gobject.PARAM_READABLE),
+                               PARAM_READABLE),
         "requested-size": (gobject.TYPE_PYOBJECT,
                            "Client-requested size on screen", "",
-                           gobject.PARAM_READABLE),
+                           PARAM_READABLE),
         "set-initial-position": (gobject.TYPE_BOOLEAN,
                                  "Should the requested position be honoured?", "",
                                  False,
-                                 gobject.PARAM_READWRITE),
+                                 PARAM_READWRITE),
         # Toggling this property does not actually make the window iconified,
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
@@ -107,28 +113,28 @@ class WindowModel(BaseWindowModel):
         "iconic": (gobject.TYPE_BOOLEAN,
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
-                   gobject.PARAM_READWRITE),
+                   PARAM_READWRITE),
         #from WM_NORMAL_HINTS
         "size-hints": (gobject.TYPE_PYOBJECT,
                        "Client hints on constraining its size", "",
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
         #from _NET_WM_ICON_NAME or WM_ICON_NAME
         "icon-title": (gobject.TYPE_PYOBJECT,
                        "Icon title (unicode or None)", "",
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
         #from _NET_WM_ICON
         "icon": (gobject.TYPE_PYOBJECT,
                  "Icon (local Cairo surface)", "",
-                 gobject.PARAM_READABLE),
+                 PARAM_READABLE),
         #from _NET_WM_ICON
         "icon-pixmap": (gobject.TYPE_PYOBJECT,
                         "Icon (server Pixmap)", "",
-                        gobject.PARAM_READABLE),
+                        PARAM_READABLE),
         #from _MOTIF_WM_HINTS.decorations
         "decorations": (gobject.TYPE_INT,
                        "Should the window decorations be shown", "",
                        -1, 65535, -1,
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
         })
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__.update({
@@ -307,7 +313,7 @@ class WindowModel(BaseWindowModel):
                 for prop in WindowModel.SCRUB_PROPERTIES:
                     X11Window.XDeleteProperty(self.xid, prop)
             if self.client_reparented:
-                self.client_window.reparent(gdk.get_default_root_window(), 0, 0)
+                self.client_window.reparent(get_default_root_window(), 0, 0)
                 self.client_reparented = False
             self.client_window.set_events(self.client_window_saved_events)
             #it is now safe to destroy the corral window:
