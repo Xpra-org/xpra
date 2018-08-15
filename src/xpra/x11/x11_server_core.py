@@ -103,6 +103,11 @@ class X11ServerCore(GTKServerBase):
         self.current_keyboard_group = None
         with xsync:
             self.x11_init()
+        from xpra.server import server_features
+        if server_features.windows:
+            from xpra.x11.x11_window_filters import init_x11_window_filters
+            init_x11_window_filters()
+
 
     def x11_init(self):
         clean_keyboard_state()
@@ -273,11 +278,6 @@ class X11ServerCore(GTKServerBase):
 
     def init_virtual_devices(self, _devices):
         self.input_devices = "xtest"
-
-
-    def get_server_source_class(self):
-        from xpra.x11.x11_source import X11ServerSource
-        return X11ServerSource
 
 
     def get_child_env(self):

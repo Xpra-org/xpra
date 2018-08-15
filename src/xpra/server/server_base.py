@@ -314,8 +314,8 @@ class ServerBase(ServerBaseClass):
 
         def drop_client(reason="unknown", *args):
             self.disconnect_client(proto, reason, *args)
-        ClientConnectionClass = self.get_server_source_class()
-        ss = ClientConnectionClass(proto, drop_client,
+        from xpra.server.source.client_connection import ClientConnection
+        ss = ClientConnection(proto, drop_client,
                           self.session_name, self,
                           self.idle_add, self.timeout_add, self.source_remove,
                           self.setting_changed,
@@ -334,10 +334,6 @@ class ServerBase(ServerBaseClass):
         send_ui = ui_client and not is_request
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
-
-    def get_server_source_class(self):
-        from xpra.server.source.client_connection import ClientConnection
-        return ClientConnection
 
     def reset_window_filters(self):
         self.window_filters = []

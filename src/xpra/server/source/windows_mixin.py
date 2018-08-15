@@ -303,34 +303,31 @@ class WindowsMixin(StubSourceMixin):
     def get_all_window_filters(self):
         return [f for uuid, f in self.window_filters if uuid==self.uuid]
 
-    def get_window_filter(self, object_name, property_name, operator, value):
-        if object_name!="window":
-            raise ValueError("invalid object name")
-        from xpra.server.window.filters import WindowPropertyIn, WindowPropertyNotIn
-        if operator=="=":
-            return WindowPropertyIn(property_name, [value])
-        elif operator=="!=":
-            return WindowPropertyNotIn(property_name, [value])
-        raise ValueError("unknown filter operator: %s" % operator)
-
     def add_window_filter(self, object_name, property_name, operator, value):
-        window_filter = self.get_window_filter(object_name, property_name, operator, value)
+        from xpra.server.window.filters import get_window_filter
+        window_filter = get_window_filter(object_name, property_name, operator, value)
         assert window_filter
-        self.window_filters.append((self.uuid, window_filter.show))
+        self.do_add_window_filter(window_filter)
+
+    def do_add_window_filter(self, window_filter):
+        #(reminder: filters are shared between all sources)
+        self.window_filters.append((self.uuid, window_filter))
 
     def can_send_window(self, window):
-        if not self.hello_sent:
+        if not self.hello_sent or not (self.send_windows or self.system_tray):
             return False
-        for uuid,x in self.window_filters:
-            v = x(window)
-            if v is True:
-                return uuid==self.uuid
+        #we could also allow filtering for system tray windows?
+        if self.window_filters and self.send_windows and not window.is_tray():
+            for uuid, window_filter in self.window_filters:
+                if window_filter.matches(window):
+                    return uuid=="*" or uuid==self.uuid
         if self.send_windows and self.system_tray:
             #common case shortcut
             return True
         if window.is_tray():
             return self.system_tray
-        return self.send_windows
+        else:
+            return self.send_windows
 
 
     ######################################################################
@@ -409,9 +406,7 @@ class WindowsMixin(StubSourceMixin):
             ws.send_window_icon()
 
 
-    def lost_window(self, wid, window):
-        if not self.can_send_window(window):
-            return
+    def lost_window(self, wid, _window):
         self.send("lost-window", wid)
 
     def move_resize_window(self, wid, window, x, y, ww, wh, resize_counter=0):

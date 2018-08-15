@@ -98,6 +98,8 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("reset-video-region",    "reset video region heuristics",    min_args=1, max_args=1, validation=[int]),
             ArgsControlCommand("lock-batch-delay",      "set a specific batch delay for a window",       min_args=2, max_args=2, validation=[int, int]),
             ArgsControlCommand("unlock-batch-delay",    "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",  min_args=1, max_args=1, validation=[int]),
+            ArgsControlCommand("remove-window-filters", "remove all window filters",        min_args=0, max_args=1),
+            ArgsControlCommand("add-window-filter",     "add a window filter",              min_args=4, max_args=5),
             ):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
             self.control_commands[cmd.name] = cmd
@@ -279,6 +281,26 @@ class ServerBaseControlCommands(StubServerMixin):
             else:
                 ss.send_file(filename, "", data, file_size, *send_file_args)
         return "%s of '%s' to %s initiated" % (command_type, filename, client_uuids)
+
+
+    def control_command_remove_window_filters(self, client_uuids=""):
+        #modify the existing list object,
+        #which is referenced by all the sources
+        l = len(self.window_filters)
+        self.window_filters[:] = []
+        return "removed %i window-filters" % l
+
+    def control_command_add_window_filter(self, object_name, property_name, operator, value, client_uuids=""):
+        from xpra.server.window import filters
+        window_filter = filters.get_window_filter(object_name, property_name, operator, value)
+        #log("%s%s=%s", filters.get_window_filter, (object_name, property_name, operator, value), window_filter)
+        if client_uuids=="*":
+            #applies to all sources:
+            self.window_filters.append(("*", window_filter))
+        else:
+            for client_uuid in client_uuids.split(","):
+                self.window_filters.append((client_uuid, window_filter))
+        return "added window-filter: %s" % window_filter
 
 
     def control_command_compression(self, compression):

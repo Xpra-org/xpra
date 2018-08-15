@@ -984,13 +984,13 @@ cdef class _X11WindowBindings(_X11CoreBindings):
                                      xreq_type, &xactual_type,
                                      &actual_format, &nitems, &bytes_after, &prop)
         if status != Success:
-            raise None
+            raise XError("XGetWindowProperty status: %s" % status)
         if xactual_type == XNone:
-            raise None
+            raise BadPropertyType("None type")
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
         if bytes_after:
-            raise None
+            raise BadPropertyType("incomplete data: %i bytes after" % bytes_after)
         assert actual_format in (8, 16, 32)
         XFree(prop)
         return self.XGetAtomName(xactual_type)
