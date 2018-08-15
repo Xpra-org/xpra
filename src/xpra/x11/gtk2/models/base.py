@@ -1,16 +1,18 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import gobject
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.x11.gtk2.models.core import CoreX11WindowModel, gobject, xswallow, gdk
+from xpra.x11.gtk2.models.core import CoreX11WindowModel, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.x11.gtk2.gdk_bindings import get_pywindow, get_pyatom                 #@UnresolvedImport
+from xpra.gtk_common.gtk_util import atom_intern
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -65,6 +67,10 @@ WORKSPACE_STR = {WORKSPACE_UNSET    : "UNSET",
 def workspacestr(w):
     return WORKSPACE_STR.get(w, w)
 
+#aliases to reduce the number of pydev warnings:
+PARAM_READABLE = gobject.PARAM_READABLE
+PARAM_READWRITE = gobject.PARAM_READWRITE
+
 
 class BaseWindowModel(CoreX11WindowModel):
     """
@@ -77,103 +83,103 @@ class BaseWindowModel(CoreX11WindowModel):
         #from WM_TRANSIENT_FOR
         "transient-for": (gobject.TYPE_PYOBJECT,
                           "Transient for (or None)", "",
-                          gobject.PARAM_READABLE),
+                          PARAM_READABLE),
         #from _NET_WM_WINDOW_OPACITY
         "opacity": (gobject.TYPE_INT64,
                 "Opacity", "",
                 -1, 0xffffffff, -1,
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #from WM_HINTS.window_group
         "group-leader": (gobject.TYPE_PYOBJECT,
                          "Window group leader as a pair: (xid, gdk window)", "",
-                         gobject.PARAM_READABLE),
+                         PARAM_READABLE),
         #from WM_HINTS.urgency or _NET_WM_STATE
         "attention-requested": (gobject.TYPE_BOOLEAN,
                                 "Urgency hint from client, or us", "",
                                 False,
-                                gobject.PARAM_READWRITE),
+                                PARAM_READWRITE),
         #from WM_HINTS.input or WM_TAKE_FOCUS
         "can-focus": (gobject.TYPE_BOOLEAN,
                       "Does this window ever accept keyboard input?", "",
                       True,
-                      gobject.PARAM_READWRITE),
+                      PARAM_READWRITE),
         #from _NET_WM_BYPASS_COMPOSITOR
         "bypass-compositor": (gobject.TYPE_INT,
                        "hint that the window would benefit from running uncomposited ", "",
                        0, 2, 0,
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
         #from _NET_WM_FULLSCREEN_MONITORS
         "fullscreen-monitors": (gobject.TYPE_PYOBJECT,
                          "List of 4 monitor indices indicating the top, bottom, left, and right edges of the window when the fullscreen state is enabled", "",
-                         gobject.PARAM_READABLE),
+                         PARAM_READABLE),
         #from _NET_WM_STRUT_PARTIAL or _NET_WM_STRUT
         "strut": (gobject.TYPE_PYOBJECT,
                   "Struts requested by window, or None", "",
-                  gobject.PARAM_READABLE),
+                  PARAM_READABLE),
         #from _GTK_*MENU*
         "menu": (gobject.TYPE_PYOBJECT,
                   "Application menu, or None", "",
-                  gobject.PARAM_READABLE),
+                  PARAM_READABLE),
         #from _NET_WM_DESKTOP
         "workspace": (gobject.TYPE_UINT,
                 "The workspace this window is on", "",
                 0, 2**32-1, WORKSPACE_UNSET,
-                gobject.PARAM_READWRITE),
+                PARAM_READWRITE),
         #set initially only by the window model class
         #(derived from XGetWindowAttributes.override_redirect)
         "override-redirect": (gobject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        False,
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
         #from _NET_WM_WINDOW_TYPE
         "window-type": (gobject.TYPE_PYOBJECT,
                         "Window type",
                         "NB, most preferred comes first, then fallbacks",
-                        gobject.PARAM_READABLE),
+                        PARAM_READABLE),
         #this value is synced to "_NET_WM_STATE":
         "state": (gobject.TYPE_PYOBJECT,
                   "State, as per _NET_WM_STATE", "",
-                  gobject.PARAM_READABLE),
+                  PARAM_READABLE),
         #all the attributes below are virtual attributes from WM_STATE:
         "modal": (gobject.TYPE_PYOBJECT,
                           "Modal (boolean)", "",
-                          gobject.PARAM_READWRITE),
+                          PARAM_READWRITE),
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "focused": (gobject.TYPE_BOOLEAN,
                        "Is the window focused", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "maximized": (gobject.TYPE_BOOLEAN,
                        "Is the window maximized", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "above": (gobject.TYPE_BOOLEAN,
                        "Is the window on top of most windows", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "below": (gobject.TYPE_BOOLEAN,
                        "Is the window below most windows", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "shaded": (gobject.TYPE_BOOLEAN,
                        "Is the window shaded", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "skip-taskbar": (gobject.TYPE_BOOLEAN,
                        "Should the window be included on a taskbar", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "skip-pager": (gobject.TYPE_BOOLEAN,
                        "Should the window be included on a pager", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "sticky": (gobject.TYPE_BOOLEAN,
                        "Is the window's position fixed on the screen", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         })
     _property_names = CoreX11WindowModel._property_names + [
                       "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut", "opacity",
@@ -313,7 +319,7 @@ class BaseWindowModel(CoreX11WindowModel):
         if not window_types:
             window_type = self._guess_window_type()
             metalog("guessed window type=%s", window_type)
-            window_types = [gdk.atom_intern(window_type)]
+            window_types = [atom_intern(window_type)]
         #normalize them (hide _NET_WM_WINDOW_TYPE prefix):
         window_types = [str(wt).replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for wt in window_types]
         self._updateprop("window-type", window_types)
