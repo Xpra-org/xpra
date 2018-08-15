@@ -160,9 +160,9 @@
 
 	<distutils id="python-cryptography">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/79/a2/61c8625f96c8582d3053f89368c483ba62e56233d055e58e372f94a393f0/cryptography-2.3.tar.gz"
-			hash="sha256:c132bab45d4bd0fff1d3fe294d92b0a6eb8404e93337b3127bdec9f21de117e6"
-			version="2.3"/>
+			module="/packages/22/21/233e38f74188db94e8451ef6385754a98f3cad9b59bedf3a8e8b14988be4/cryptography-2.3.1.tar.gz"
+			hash="sha256:8d10113ca826a4c29d5b85b2c4e045ffa8bad74fb525ee0eceb1d38d4c70dfd6"
+			version="2.3.1"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="openssl"/>
@@ -309,9 +309,9 @@
 
 	<distutils id="python-websocket-client">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/28/85/df04ec21c622728316b591c2852fd20a0e74324eeb6ca26f351844ba815f/websocket_client-0.48.0.tar.gz"
-			hash="sha256:18f1170e6a1b5463986739d9fd45c4308b0d025c1b2f9b88788d8f69e8a5eb4a"
-			version="0.48.0"/>
+			module="/packages/72/5a/8b6ce52468708a725c4b32b18cacad63150be0f523490bc888e27a795e4a/websocket_client-0.49.0.tar.gz"
+			hash="sha256:bf36b4b4726cab3bf93e842deef3c5bf12bd9c134e45e9a852c76140309f5ae2"
+			version="0.49.0"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
