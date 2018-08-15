@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -73,6 +73,10 @@ PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DE
 def sanestr(s):
     return (s or "").strip("\0").replace("\0", " ")
 
+#aliases to reduce the number of pydev warnings:
+PARAM_READABLE = gobject.PARAM_READABLE
+PARAM_READWRITE = gobject.PARAM_READWRITE
+
 
 class CoreX11WindowModel(WindowModelStub):
     """
@@ -87,67 +91,67 @@ class CoreX11WindowModel(WindowModelStub):
         #the actual X11 client window
         "client-window": (gobject.TYPE_PYOBJECT,
                 "gtk.gdk.Window representing the client toplevel", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #the X11 window id
         "xid": (gobject.TYPE_INT,
                 "X11 window id", "",
                 -1, 65535, -1,
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #FIXME: this is an ugly virtual property
         "geometry": (gobject.TYPE_PYOBJECT,
                 "current coordinates (x, y, w, h, border) for the window", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #bits per pixel
         "depth": (gobject.TYPE_INT,
                 "window bit depth", "",
                 -1, 64, -1,
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #if the window depth is 32 bit
         "has-alpha": (gobject.TYPE_BOOLEAN,
                 "Does the window use transparency", "",
                 False,
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #from WM_CLIENT_MACHINE
         "client-machine": (gobject.TYPE_PYOBJECT,
                 "Host where client process is running", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #from _NET_WM_PID
         "pid": (gobject.TYPE_INT,
                 "PID of owning process", "",
                 -1, 65535, -1,
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #from _NET_WM_NAME or WM_NAME
         "title": (gobject.TYPE_PYOBJECT,
                 "Window title (unicode or None)", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #from WM_WINDOW_ROLE
         "role" : (gobject.TYPE_PYOBJECT,
                 "The window's role (ICCCM session management)", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #from WM_PROTOCOLS via XGetWMProtocols
         "protocols": (gobject.TYPE_PYOBJECT,
                 "Supported WM protocols", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #from WM_COMMAND
         "command": (gobject.TYPE_PYOBJECT,
                 "Command used to start or restart the client", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #from WM_CLASS via getClassHint
         "class-instance": (gobject.TYPE_PYOBJECT,
                 "Classic X 'class' and 'instance'", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #ShapeNotify events will populate this using XShapeQueryExtents
         "shape": (gobject.TYPE_PYOBJECT,
                 "Window XShape data", "",
-                gobject.PARAM_READABLE),
+                PARAM_READABLE),
         #synced to "_NET_FRAME_EXTENTS"
         "frame": (gobject.TYPE_PYOBJECT,
                 "Size of the window frame, as per _NET_FRAME_EXTENTS", "",
-                gobject.PARAM_READWRITE),
+                PARAM_READWRITE),
         #synced to "_NET_WM_ALLOWED_ACTIONS"
         "allowed-actions": (gobject.TYPE_PYOBJECT,
                 "Supported WM actions", "",
-                gobject.PARAM_READWRITE),
+                PARAM_READWRITE),
            }
 
     __common_signals__ = {
