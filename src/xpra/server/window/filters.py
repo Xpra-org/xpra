@@ -15,10 +15,9 @@ class WindowPropertyFilter(object):
         self.recurse = recurse
 
     def get_window(self, window):
-        return window.get_property("client-window")
+        return window
 
     def get_window_value(self, window):
-        assert window
         return window.get_property(self.property_name)
 
     def matches(self, window):
@@ -41,6 +40,10 @@ class WindowPropertyFilter(object):
 class WindowPropertyIn(WindowPropertyFilter):
 
     def evaluate(self, window_value):
+        vtypes = set([type(x) for x in self.value])
+        if len(vtypes)==1 and list(vtypes)[0]==str:
+            #coerce value to match:
+            window_value = str(window_value)
         return window_value in self.value
 
     def __repr__(self):

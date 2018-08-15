@@ -14,7 +14,6 @@ window_bindings = X11WindowBindings()
 
 from xpra.log import Logger
 log = Logger("x11", "server")
-log.enable_debug()
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
