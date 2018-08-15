@@ -4,7 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk
+from gtk import gdk
+
 import gobject
 import os
 
@@ -13,7 +14,7 @@ from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.gtk_util import get_xwindow
+from xpra.gtk_common.gtk_util import get_xwindow, get_default_root_window, display_get_default
 
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk2.selection import ManagerSelection
@@ -223,7 +224,7 @@ class Wm(gobject.GObject):
         gobject.GObject.__init__(self)
 
         if display is None:
-            display = gtk.gdk.display_manager_get().get_default_display()
+            display = display_get_default()
         self._display = display
         self._root = self._display.get_default_screen().get_root_window()
         self._wm_name = wm_name
@@ -253,7 +254,7 @@ class Wm(gobject.GObject):
         self.set_desktop_list((u"Main", ))
         self.set_current_desktop(0)
         # Start with the full display as workarea:
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        root_w, root_h = get_default_root_window().get_size()
         self.root_set("_NET_SUPPORTED", ["atom"], NET_SUPPORTED)
         self.set_workarea(0, 0, root_w, root_h)
         self.set_desktop_geometry(root_w, root_h)
@@ -274,7 +275,7 @@ class Wm(gobject.GObject):
             # Checking for FOREIGN here filters out anything that we've
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.
-            if (w.get_window_type() == gtk.gdk.WINDOW_FOREIGN
+            if (w.get_window_type() == gdk.WINDOW_FOREIGN
                 and not X11Window.is_override_redirect(w.xid)
                 and X11Window.is_mapped(w.xid)):
                 log("Wm managing pre-existing child window %#x", w.xid)
@@ -495,12 +496,12 @@ class Wm(gobject.GObject):
         # clobber any XSelectInput calls that *we* might have wanted to make
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
-        self._ewmh_window = gtk.gdk.Window(self._root,
+        self._ewmh_window = gdk.Window(self._root,
                                            width=1,
                                            height=1,
-                                           window_type=gtk.gdk.WINDOW_TOPLEVEL,
+                                           window_type=gdk.WINDOW_TOPLEVEL,
                                            event_mask=0, # event mask
-                                           wclass=gtk.gdk.INPUT_ONLY,
+                                           wclass=gdk.INPUT_ONLY,
                                            title=self._wm_name)
         prop_set(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
