@@ -736,7 +736,6 @@
 
 	<metamodule id="meta-osx-xpra-python-deps">
 		<dependencies>
-		  <dep package="gst-python"/>
 		  <dep package="python-setuptools"/>
 		  <dep package="python-zeroconf"/>
 		  <dep package="python-netifaces"/>
@@ -751,7 +750,6 @@
 		  <dep package="python-websocket-client"/>
 		  <dep package="python-bcrypt"/>
 		  <dep package="python-paramiko"/>
-		  <dep package="python-parmiko"/>
 		  <dep package="python-nose"/>
 		  <dep package="python-setuptools-scm"/>
 		  <dep package="python-test-runner"/>
