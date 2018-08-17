@@ -91,10 +91,10 @@
 	</distutils>
 
 	<distutils id="python-cffi">
-		<branch repo="pypi.python.org"
-			module="/packages/c9/70/89b68b6600d479034276fed316e14b9107d50a62f5627da37fafe083fde3/cffi-1.11.2.tar.gz"
-			hash="sha256:ab87dd91c0c4073758d07334c1e5f712ce8fe48f007b86f8238773963ee700a6"
-			version="1.11.2"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/e7/a7/4cd50e57cc6f436f1cc3a7e8fa700ff9b8b4d471620629074913e3735fb2/cffi-1.11.5.tar.gz"
+			hash="sha256:e90f17980e6ab0f3c2f3730e56d1fe9bcba1891eeea58966e89d352492cc74f4"
+			version="1.11.5"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="python-cparser"/>
