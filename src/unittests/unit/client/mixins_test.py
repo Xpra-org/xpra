@@ -23,6 +23,7 @@ class MixinsTest(unittest.TestCase):
 		opts = AdHocStruct()
 		opts.pings = True
 		opts.bandwidth_limit = 0
+		opts.bandwidth_detection = True
 		x.init(opts)
 		assert x.get_caps() is not None
 		x.server_capabilities = typedict({"start_time" : monotonic_time()})
