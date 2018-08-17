@@ -222,8 +222,8 @@
 
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.22/gtk+-3.22.30.tar.xz" version="3.22.30"
-            hash="sha256:a1a4a5c12703d4e1ccda28333b87ff462741dc365131fbc94c218ae81d9a6567">
+    <branch module="gtk+/3.22/gtk+-3.22.29.tar.xz" version="3.22.29"
+            hash="sha256:a07d64b939fcc034a066b7723fdf9b24e92c9cfb6a8497593f3471fe56fbbbf8">
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -242,7 +242,10 @@
              autogen-sh="configure">
     <branch version="0.34.0" module="pixman-0.34.0.tar.gz"
             repo="cairographics"
-            hash="sha1:a1b1683c1a55acce9d928fea1ab6ceb79142ddc7"/>
+            hash="sha1:a1b1683c1a55acce9d928fea1ab6ceb79142ddc7">
+      <!-- The patch can be removed at update to 0.34.1 or later, if there ever is one. At this writing 0.34.0 is 2 years old. -->
+      <patch file="https://gitlab.freedesktop.org/pixman/pixman/uploads/1e170b5ee9a319118a2239189a0c4d7d/clang.patch" strip="1"/>
+    </branch>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>

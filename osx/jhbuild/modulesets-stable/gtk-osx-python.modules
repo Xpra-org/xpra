@@ -149,9 +149,9 @@
     </after>
   </autotools>
 
-   <autotools id="pygobject3" autogen-sh="configure" >
-    <branch version="3.24.1" module="pygobject/3.24/pygobject-3.24.1.tar.xz"
-	    hash="sha256:a628a95aa0909e13fb08230b1b98fc48adef10b220932f76d62f6821b3fdbffd"/>
+  <distutils id="pygobject3" >
+    <branch version="3.28.3" module="pygobject/3.28/pygobject-3.28.3.tar.xz"
+	    hash="sha256:3dd3e21015d06e00482ea665fc1733b77e754a6ab656a5db5d7f7bfaf31ad0b0"/>
     <dependencies>
       <dep package="pycairo"/>
     </dependencies>
@@ -159,7 +159,7 @@
       <dep package="python"/>
       <dep package="python3"/>
     </after>
-  </autotools>
+  </distutils>
 
 <!-- Pygtk is discontinued, this is the last release -->
  <autotools id="pygtk" autogen-sh="configure"
