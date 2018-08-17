@@ -360,13 +360,14 @@ class WindowsMixin(StubSourceMixin):
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
-    def _make_metadata(self, window, propname):
+    def _make_metadata(self, window, propname, skip_defaults=False):
         if propname not in self.metadata_supported:
             metalog("make_metadata: client does not support '%s'", propname)
             return {}
         return make_window_metadata(window, propname,
                                         get_transient_for=self.get_transient_for,
-                                        get_window_id=self.get_window_id)
+                                        get_window_id=self.get_window_id,
+                                        skip_defaults=skip_defaults)
 
     def new_tray(self, wid, window, w, h):
         assert window.is_tray()
@@ -374,7 +375,7 @@ class WindowsMixin(StubSourceMixin):
             return
         metadata = {}
         for propname in list(window.get_property_names()):
-            metadata.update(self._make_metadata(window, propname))
+            metadata.update(self._make_metadata(window, propname, skip_defaults=True))
         self.send_async("new-tray", wid, w, h, metadata)
 
     def new_window(self, ptype, wid, window, x, y, w, h, client_properties):
@@ -386,7 +387,7 @@ class WindowsMixin(StubSourceMixin):
             send_props.remove("icon")
         metadata = {}
         for prop in send_props:
-            v = self._make_metadata(window, prop)
+            v = self._make_metadata(window, prop, skip_defaults=True)
             if prop in PROPERTIES_DEBUG:
                 metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
             else:

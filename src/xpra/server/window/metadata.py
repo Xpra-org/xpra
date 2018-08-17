@@ -16,7 +16,7 @@ from xpra.util import WORKSPACE_UNSET
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 
-def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
+def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None, skip_defaults=False):
     if propname in SKIP_METADATA:
         return {}
     #note: some of the properties handled here aren't exported to the clients,
@@ -26,13 +26,17 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     if propname in ("title", "icon-title", "command", "content-type"):
         v = raw()
         if v is None:
+            if skip_defaults:
+                return {}
             return {propname: ""}
         return {propname: v.encode("utf-8")}
-    elif propname in ("pid", "workspace", "bypass-compositor", "depth"):
+    elif propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity"):
         v = raw()
         assert v is not None, "%s is None!" % propname
-        if v<0 or (v==WORKSPACE_UNSET and propname=="workspace"):
-            #meaningless
+        if ((v<0) or
+            (v==WORKSPACE_UNSET and propname=="workspace") or
+            (v==0 and propname=="bypass-compositor")) and skip_defaults:
+            #unset, so don't bother sending anything
             return {}
         return {propname : v}
     elif propname == "size-hints":
@@ -46,6 +50,8 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             strut = {}
         else:
             strut = strut.todict()
+        if not strut and skip_defaults:
+            return {}
         return {"strut": strut}
     elif propname == "class-instance":
         c_i = raw()
@@ -68,6 +74,9 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             return {"transient-for" : wid}
         return {}
     elif propname in ("window-type", "shape", "menu"):
+        v = raw()
+        if not v and skip_defaults:
+            return {}
         #always send unchanged:
         return {propname : raw()}
     elif propname in ("decorations", ):
@@ -77,15 +86,20 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             return {}
         return {propname : v}
     elif propname in ("iconic", "fullscreen", "maximized", "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager", "modal", "focused"):
+        v = raw()
+        if v is False and skip_defaults:
+            #we can skip those when the window is first created,
+            #but not afterwards when those attributes are toggled
+            return {}
         #always send these when requested
         return {propname : bool(raw())}
     elif propname in ("has-alpha", "override-redirect", "tray", "shadow", "set-initial-position"):
         v = raw()
-        if v is False:
+        if v is False and skip_defaults:
             #save space: all these properties are assumed false if unspecified
             return {}
         return {propname : v}
-    elif propname in ("role", "opacity", "fullscreen-monitors"):
+    elif propname in ("role", "fullscreen-monitors"):
         v = raw()
         if v is None or v=="":
             return {}
