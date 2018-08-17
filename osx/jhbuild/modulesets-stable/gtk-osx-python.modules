@@ -95,7 +95,9 @@
   </autotools>
 
   <autotools id="python3" autogenargs="--enable-shared" autogen-sh="configure">
-    <branch repo="python" module="3.6.6/Python-3.6.6.tar.xz" version="3.6.6" />
+    <branch repo="python" module="/3.7.0/Python-3.7.0.tar.xz" version="3.7.0"
+    	hash="sha256:0382996d1ee6aafe59763426cf0139ffebe36984474d0ec4126dd1c40a8b3549"
+    	/>
     <dependencies>
       <dep package="gettext-runtime"/>
       <dep package='readline'/>
