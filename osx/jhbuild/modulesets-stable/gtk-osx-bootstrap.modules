@@ -27,6 +27,7 @@
               href="http://download.icu-project.org/files/"/>
   <repository type="tarball" name="ragel"
               href="http://www.colm.net/files/ragel/"/>
+  <repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
 
   <autotools id='readline' autogen-sh="configure">
     <branch repo="ftp.gnu.org" module="readline/readline-7.0.tar.gz"
@@ -44,9 +45,9 @@
   </autotools>
 
   <autotools id="libjpeg" autogen-sh="configure" autogenargs="--with-jpeg8">
-    <branch module="/projects/libjpeg-turbo/files/2.0.0/libjpeg-turbo-2.0.0.tar.gz/download" version="2.0.0"
-    		hash="sha256:778876105d0d316203c928fd2a0374c8c01f755d0a00b12a1c8934aeccff8868"
-            repo="sourceforge" />
+    <branch module="/libjpeg-turbo/libjpeg-turbo/archive/2.0.0.tar.gz" version="2.0.0" checkoutdir="libjpeg-turbo-2.0.0"
+    		hash="sha256:f892fff427ab3adffc289363eac26d197ce3ccacefe5f5822377348a8166069b"
+            repo="github.com" />
     <dependencies>
       <dep package="nasm"/>
     </dependencies>
