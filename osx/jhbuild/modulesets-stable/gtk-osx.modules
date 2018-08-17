@@ -95,6 +95,7 @@
       <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/glib-2.52-Fallback-to-CFStringGetCSTring-if-CFStringGetC.patch" strip="1"/>
     </branch>
     <dependencies>
+    	<dep package="python-six"/>
         <dep package="libffi"/>
     </dependencies>
     <after>
