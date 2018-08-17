@@ -44,7 +44,8 @@
     </dependencies>
   </autotools>
 
-  <autotools id="libjpeg" autogen-sh="configure" autogenargs="--with-jpeg8">
+  <cmake id="libjpeg"
+         cmakeargs="cmake -DCMAKE_ASM_NASM_COMPILER=/Users/osx/gtk/inst/bin/nasm -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX .">
     <branch module="/libjpeg-turbo/libjpeg-turbo/archive/2.0.0.tar.gz" version="2.0.0" checkoutdir="libjpeg-turbo-2.0.0"
     		hash="sha256:f892fff427ab3adffc289363eac26d197ce3ccacefe5f5822377348a8166069b"
             repo="github.com" />
