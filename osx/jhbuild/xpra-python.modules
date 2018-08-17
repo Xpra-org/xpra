@@ -271,10 +271,10 @@
 			hash="sha256:e0d38fa0a75f65f556fb912f2c6790d1fa29b7dd27a1d9cc5591b281321eaaa9"
 			version="1.2.1"/>
 		<dependencies>
-			<dep package="python3"/>
+			<dep package="python"/>
 		</dependencies>
 		<after>
-			<dep package="python3"/>
+			<dep package="python"/>
 		</after>
 	</distutils>
 
