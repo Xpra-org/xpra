@@ -12,9 +12,9 @@
 
 
 	<distutils id="python3-setuptools" python3="1">
-		<branch repo="github.com"
-			module="https://github.com/pypa/setuptools/archive/v40.0.0.tar.gz" checkoutdir="setuptools-40.0.0"
-			hash="sha256:327e232b1809c9481256408fe9233bcf6a27f9f63ddbbadc526f451e5027aad5"
+		<branch repo="files.pythonhosted.org"
+			module="/packages/d3/3e/1d74cdcb393b68ab9ee18d78c11ae6df8447099f55fe86ee842f9c5b166c/setuptools-40.0.0.zip"
+			hash="sha256:012adb8e25fbfd64c652e99e7bab58799a3aaf05d39ab38561f69190a909015f"
 			version="40.0.0"/>
 		<dependencies>
 			<dep package="python3"/>
