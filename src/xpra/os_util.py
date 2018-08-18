@@ -170,8 +170,11 @@ def platform_release(release):
         SYSTEMVERSION_PLIST = "/System/Library/CoreServices/SystemVersion.plist"
         try:
             import plistlib
-            with open(SYSTEMVERSION_PLIST, "rb") as f:
-                pl = plistlib.load(f)           #@UndefinedVariable
+            if PYTHON2:
+                pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist')
+            else:
+                with open(SYSTEMVERSION_PLIST, "rb") as f:
+                    pl = plistlib.load(f)           #@UndefinedVariable
             return pl['ProductUserVisibleVersion']
         except Exception as e:
             get_util_logger().debug("platform_release(%s)", release, exc_info=True)
