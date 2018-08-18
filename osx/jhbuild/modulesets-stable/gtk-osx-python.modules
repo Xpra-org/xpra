@@ -185,6 +185,8 @@
     <branch module="gtk-mac-integration/2.1/gtk-mac-integration-2.1.2.tar.xz"
             version="2.1.2"
             hash="sha256:68e682a3ba952e7d4b1cfa2c7147c5fcd76f8bd9792a567e175a619af5954af1">
+      <patch file="https://github.com/jralls/gtk-mac-integration/commit/365bfefab6ad5900f28cb92711f3425bb496c310.patch" strip="1"/>
+      <patch file="https://github.com/jralls/gtk-mac-integration/commit/3646b6658ae8c263746409e3dc752c51e64cab4d.patch" strip="1"/>
     </branch>
     <dependencies>
     </dependencies>
