@@ -256,7 +256,7 @@ class NetworkState(StubClientMixin):
 
     def send_bandwidth_limit(self):
         bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
-        assert self.server_bandwidth_limit_change
+        assert self.server_bandwidth_limit_change, self.bandwidth_limit is not None
         self.send("bandwidth-limit", self.bandwidth_limit)
 
 

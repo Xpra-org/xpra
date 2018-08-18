@@ -810,6 +810,8 @@ class GTKTrayMenuBase(object):
         c.set_active(False)
         set_sensitive(c, False)
         def activate_cb(item, *args):
+            if not c.get_active():
+                return
             bandwidthlog("activate_cb(%s, %s) bwlimit=%s", item, args, bwlimit)
             ensure_item_selected(menu, item)
             if (self.client.bandwidth_limit or 0)!=bwlimit:
