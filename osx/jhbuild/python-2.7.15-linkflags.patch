@@ -1,0 +1,25 @@
+--- a/configure.ac	2018-08-18 16:37:20.000000000 +0700
++++ b/configure.ac	2018-08-18 16:38:57.000000000 +0700
+@@ -541,6 +541,8 @@
+ CONFIGURE_MACOSX_DEPLOYMENT_TARGET=
+ EXPORT_MACOSX_DEPLOYMENT_TARGET='#'
+ 
++LDFLAGS="${LDFLAGS} -Wl,-search_paths_first"
++
+ # checks for alternative programs
+ 
+ # compiler flags are generated in two sets, BASECFLAGS and OPT.  OPT is just
+--- a/Makefile.pre.in	2018-08-18 16:37:20.000000000 +0700
++++ b/Makefile.pre.in	2018-08-18 16:37:38.000000000 +0700
+@@ -487,9 +487,9 @@
+ 
+ # Build the interpreter
+ $(BUILDPYTHON):	Modules/python.o $(LIBRARY) $(LDLIBRARY)
+-		$(LINKCC) $(LDFLAGS) $(LINKFORSHARED) -o $@ \
++		$(LINKCC) $(LINKFORSHARED) -o $@ \
+ 			Modules/python.o \
+-			$(BLDLIBRARY) $(LIBS) $(MODLIBS) $(SYSLIBS) $(LDLAST)
++			$(BLDLIBRARY) $(LDFLAGS) $(LIBS) $(MODLIBS) $(SYSLIBS) $(LDLAST)
+ 
+ platform: $(BUILDPYTHON) pybuilddir.txt
+ 	$(RUNSHARED) $(PYTHON_FOR_BUILD) -c 'import sys ; from sysconfig import get_platform ; print get_platform()+"-"+sys.version[0:3]' >platform
