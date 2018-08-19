@@ -6,9 +6,8 @@
 import os
 
 from xpra.log import Logger
-log = Logger("client")
+log = Logger("screen")
 workspacelog = Logger("client", "workspace")
-screenlog = Logger("client", "screen")
 scalinglog = Logger("scaling")
 
 
@@ -143,7 +142,7 @@ class DisplayClient(StubClientMixin):
             #platforms may also provide per-axis dpi (later win32 versions do)
             xdpi = self.get_xdpi()
             ydpi = self.get_ydpi()
-            screenlog("xdpi=%i, ydpi=%i", xdpi, ydpi)
+            log("xdpi=%i, ydpi=%i", xdpi, ydpi)
             if xdpi>0 and ydpi>0:
                 xdpi = self.cx(xdpi)
                 ydpi = self.cy(ydpi)
@@ -154,7 +153,7 @@ class DisplayClient(StubClientMixin):
                     }
         if dpi:
             caps[""] = dpi
-        screenlog("dpi: %i", dpi)
+        log("dpi: %i", dpi)
         return caps
 
     def get_scaling_caps(self):
@@ -291,7 +290,7 @@ class DisplayClient(StubClientMixin):
 
     def _process_desktop_size(self, packet):
         root_w, root_h, max_w, max_h = packet[1:5]
-        screenlog("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
+        log("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
         self.server_max_desktop_size = max_w, max_h
         self.server_actual_desktop_size = root_w, root_h
         if self.can_scale:
@@ -384,7 +383,7 @@ class DisplayClient(StubClientMixin):
             win.workspace_changed()
 
     def screen_size_changed(self, *args):
-        screenlog("screen_size_changed(%s) timer=%s", args, self.screen_size_change_timer)
+        log("screen_size_changed(%s) timer=%s", args, self.screen_size_change_timer)
         if self.screen_size_change_timer:
             return
         #update via timer so the data is more likely to be final (up to date) when we query it,
@@ -401,11 +400,11 @@ class DisplayClient(StubClientMixin):
     def do_process_screen_size_change(self):
         self.screen_size_change_timer = None
         self.update_screen_size()
-        screenlog("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s", MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
+        log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s", MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
         if MONITOR_CHANGE_REINIT and MONITOR_CHANGE_REINIT=="0":
             return
         if MONITOR_CHANGE_REINIT or REINIT_WINDOWS:
-            screenlog.info("screen size change: will reinit the windows")
+            log.info("screen size change: will reinit the windows")
             self.reinit_windows()
             self.reinit_window_icons()
 
@@ -417,7 +416,7 @@ class DisplayClient(StubClientMixin):
         sss = self.get_screen_sizes(self.xscale, self.yscale)
         ndesktops = get_number_of_desktops()
         desktop_names = get_desktop_names()
-        screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
+        log("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
         if self.dpi>0:
             #use command line value supplied, but scale it:
             xdpi = ydpi = self.dpi
@@ -427,19 +426,19 @@ class DisplayClient(StubClientMixin):
             ydpi = self.get_ydpi()
         xdpi = self.cx(xdpi)
         ydpi = self.cy(ydpi)
-        screenlog("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
+        log("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
         return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
 
     def update_screen_size(self):
         self.screen_size_change_timer = None
         screen_settings = self.get_screen_settings()
-        screenlog("update_screen_size()     new settings=%s", screen_settings)
-        screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
+        log("update_screen_size()     new settings=%s", screen_settings)
+        log("update_screen_size() current settings=%s", self._last_screen_settings)
         if self._last_screen_settings==screen_settings:
             log("screen size unchanged")
             return
         root_w, root_h, sss = screen_settings[:3]
-        screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
+        log.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
         log_screen_sizes(root_w, root_h, sss)
         self.send("desktop_size", *screen_settings)
         self._last_screen_settings = screen_settings
