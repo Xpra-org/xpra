@@ -235,9 +235,10 @@ class DisplayClient(StubClientMixin):
                     self.can_scale = False
         if self.can_scale:
             self.may_adjust_scaling()
-        if not self.server_is_desktop and not skip_vfb_size_check and server_desktop_size:
-            avail_w, avail_h = server_desktop_size
+        if not self.server_is_desktop and not skip_vfb_size_check and self.server_max_desktop_size:
+            avail_w, avail_h = self.server_max_desktop_size
             root_w, root_h = self.get_root_size()
+            log("validating server_max_desktop_size=%s vs root size %s scaled to %s", self.server_max_desktop_size, (root_w, root_h), (self.cx(root_w), self.cy(root_h)))
             if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
                 log.warn("Server's virtual screen is too small")
                 log.warn(" server: %sx%s vs client: %sx%s", avail_w, avail_h, self.cx(root_w), self.cy(root_h))
