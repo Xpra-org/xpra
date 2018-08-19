@@ -14,9 +14,7 @@ from gi.repository import GLib                  #@UnresolvedImport
 from xpra.os_util import OSX, POSIX
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk3.client_window import ClientWindow
-from xpra.client.gtk3.tray_menu import GTK3TrayMenu
-from xpra.log import Logger
-log = Logger("gtk", "client")
+from xpra.platform.gui import get_xdpi, get_ydpi
 
 
 class XpraClient(GTKXpraClient):
@@ -48,25 +46,28 @@ class XpraClient(GTKXpraClient):
                 from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
                 ncs.append(GTK3_Notifier)
             except Exception as e:
+                from xpra.log import Logger
+                log = Logger("gtk", "client")
                 log.warn("Warning: failed to load the GTK3 notification class")
                 log.warn(" %s", e)
         return ncs
 
 
     def get_xdpi(self):
-        xdpi = GTKXpraClient.get_xdpi(self)
+        xdpi = get_xdpi()
         if xdpi>0:
             return xdpi
         return Gdk.Screen.get_default().get_resolution()
 
     def get_ydpi(self):
-        ydpi = GTKXpraClient.get_ydpi(self)
+        ydpi = get_ydpi()
         if ydpi>0:
             return ydpi
         return Gdk.Screen.get_default().get_resolution()
 
 
     def get_tray_menu_helper_class(self):
+        from xpra.client.gtk3.tray_menu import GTK3TrayMenu
         return GTK3TrayMenu
 
 
