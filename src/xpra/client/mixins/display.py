@@ -324,8 +324,9 @@ class DisplayClient(StubClientMixin):
             if iround(v)*1000==iround(v*1000):
                 return int(v)
             return v
-        self.xscale = mint(x)
-        self.yscale = mint(y)
+        mscale = max(mint(x), mint(y))
+        self.xscale = mscale
+        self.yscale = mscale
         #to use the same scale for both axes:
         #self.xscale = mint(max(x, y))
         #self.yscale = self.xscale
