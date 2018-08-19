@@ -33,11 +33,8 @@ from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, rep
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
-from xpra.net.compression import Compressible
-from xpra.net.file_transfer import FileTransferHandler
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.client.window_border import WindowBorder
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, color_parse, gtk_main, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -49,7 +46,6 @@ from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
-from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_fixed_cursor_size, get_menu_support_function, get_wm_name
 
@@ -206,7 +202,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #subclasses may add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
-        ncs = UIXpraClient.get_notifier_classes(self)
+        from xpra.client import mixin_features
+        assert mixin_features.notifications
+        from xpra.client.mixins.notifications import NotificationClient
+        assert isinstance(self, NotificationClient)
+        ncs = NotificationClient.get_notifier_classes(self)
         try:
             from xpra.gtk_common.gtk_notifier import GTK_Notifier
             ncs.append(GTK_Notifier)
@@ -318,6 +318,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if size>=45:
                 log.warn("border size is too high: %s, clipping it", size)
                 size = 45
+        from xpra.client.window_border import WindowBorder
         self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
         log("parse_border(%s)=%s", border_str, self.border)
 
@@ -389,6 +390,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 filelog.warn(" received data type=%s, url=%s, print=%s, open=%s", dtype, url, printit, openit)
                 return False
             return True
+        from xpra.net.file_transfer import FileTransferHandler
         return FileTransferHandler.accept_data(self, send_id, dtype, url, printit, openit)
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
@@ -487,6 +489,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         p = self._protocol
         if p:
             conn = p._conn
+        from xpra.client.gtk_base.session_info import SessionInfo
         self.session_info = SessionInfo(self, self.session_name, pixbuf, conn, self.get_pixbuf)
         self.session_info.set_args(*args)
         self.session_info.show_all()
@@ -1264,6 +1267,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 clipboardlog("clipboard is disabled, not sending clipboard packet")
                 return
             #handle clipboard compression if needed:
+            from xpra.net.compression import Compressible
             packet = list(parts)
             for i in range(len(packet)):
                 v = packet[i]
