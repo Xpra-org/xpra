@@ -28,7 +28,7 @@ def errwrite(msg):
         pass
 
 
-class GObjectXpraClient(XpraClientBase, gobject.GObject):
+class GObjectXpraClient(gobject.GObject, XpraClientBase):
     """
         Utility superclass for GObject clients
     """
