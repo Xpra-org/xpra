@@ -62,10 +62,7 @@ SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
-    __gsignals__ = {
-        "first-ui-received"         : no_arg_signal,
-        "keyboard-sync-toggled"     : no_arg_signal,
-        }
+    __gsignals__ = {}
     #add signals from super classes (all no-arg signals)
     for signal_name in UIXpraClient.__signals__:
         __gsignals__[signal_name] = no_arg_signal
