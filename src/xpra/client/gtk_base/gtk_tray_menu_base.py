@@ -912,7 +912,9 @@ class GTKTrayMenuBase(object):
             self.client.scaleset(item.scalingvalue, item.scalingvalue)
         c.connect('activate', scaling_activated)
         def set_active_state():
+            scaling_submenu.updating = True
             c.set_active(scalecmp(scalingvalue))
+            scaling_submenu.updating = False
         self.client.after_handshake(set_active_state)
         return c
 
