@@ -143,7 +143,7 @@ end;
 
 procedure PostInstall();
 var
-  cert, config, saved_config, args, cmd: string;
+  cert, config, saved_config, args, openssl, ssh_keygen, rsa_key: string;
   ResultCode: integer;
 begin
   cert := ExpandConstant('{commonappdata}\Xpra\ssl-cert.pem');
@@ -151,8 +151,8 @@ begin
   begin
     config := ExpandConstant('{app}\openssl.cfg');
     args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -config "'+config+'" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -out "'+cert+'" -keyout "'+cert+'"';
-    cmd := ExpandConstant('{app}\OpenSSL.exe');
-	Exec(cmd, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    openssl := ExpandConstant('{app}\OpenSSL.exe');
+    Exec(openssl, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   end;
   // move old config file:
   config := ExpandConstant('{app}\xpra.conf');
@@ -160,6 +160,18 @@ begin
   if (FileExists(config)) then
   begin
 	RenameFile(config, saved_config);
+  end;
+  //ssh host key:
+  ssh_keygen := ExpandConstant('{app}\ssh-keygen.exe');
+  if (FileExists(ssh_keygen)) then
+  begin
+    CreateDir(ExpandConstant('{commonappdata}\SSH'));
+    rsa_key := ExpandConstant('{commonappdata}\SSH\ssh_host_rsa_key');
+    if (NOT FileExists(rsa_key)) then
+    begin
+      args := '-P "" -t rsa -b 4096 -f "'+rsa_key+'"';
+      Exec(ssh_keygen, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    end;
   end;
 end;
 

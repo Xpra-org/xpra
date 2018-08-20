@@ -1,7 +1,7 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,7 @@ RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
-BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-0}
+BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
 PYTHON=${PYTHON:-python2}
@@ -294,7 +294,7 @@ if [ "${BUNDLE_OPENSSH}" == "1" ]; then
 	cp -fn "/usr/bin/ssh.exe" "${DIST}/"
 	cp -fn "/usr/bin/sshpass.exe" "${DIST}/"
 	cp -fn "/usr/bin/ssh-keygen.exe" "${DIST}/"
-	for x in 2.0 gcc_s-seh crypto z gssapi asn1 com_err roken crypt heimntlm krb5 heimbase wind hx509 hcrypto sqlite3; do
+	for x in 2.0 gcc_s crypto z gssapi asn1 com_err roken crypt heimntlm krb5 heimbase wind hx509 hcrypto sqlite3; do
 		cp -fn /usr/bin/msys-$x*.dll "${DIST}/"
 	done
 fi
