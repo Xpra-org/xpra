@@ -204,8 +204,9 @@ def do_ssh_paramiko_connect_to(sock, host, port, username, password, proxy_comma
     log("SSH transport %s", transport)
     try:
         transport.start_client()
-    except SSHException:
-        raise InitException("SSH negotiation failed")
+    except SSHException as e:
+        log("start_client()", exc_info=True)
+        raise InitException("SSH negotiation failed: %s" % e)
 
     host_key = transport.get_remote_server_key()
     assert host_key, "no remote server key"
