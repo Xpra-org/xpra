@@ -17,4 +17,4 @@ CLIPBOARD_NATIVE_CLASS = "xpra.platform.darwin.osx_clipboard.OSXClipboardProtoco
 OPEN_COMMAND = ["open"]
 UI_THREAD_POLLING = 500    #poll every 500 ms
 
-DEFAULT_SSH_COMMAND = "ssh"
+#DEFAULT_SSH_COMMAND = "ssh"
