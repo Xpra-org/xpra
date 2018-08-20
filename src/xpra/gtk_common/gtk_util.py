@@ -14,6 +14,7 @@ gdk     = import_gdk()
 pango   = import_pango()
 cairo   = import_cairo()
 gobject = import_gobject()
+glib    = import_glib()
 PixbufLoader = import_pixbufloader()
 Pixbuf = import_pixbuf()
 
@@ -41,7 +42,6 @@ def get_gtk_version_info():
 
     if not GTK_VERSION_INFO:
         V("gobject",    gobject,    "pygobject_version")
-        glib = import_glib()
 
         if is_gtk3():
             #this isn't the actual version, (only shows as "3.0")
@@ -700,8 +700,7 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
             if state is not None and state==self.get_active():
                 #toggle did not fire after the button release, so force it:
                 self.set_active(not state)
-        gobject.idle_add(recheck)
-
+        glib.idle_add(recheck)
 
 class TrayImageMenuItem(gtk.ImageMenuItem):
     """ We add a button handler to catch clicks that somehow do not
@@ -729,7 +728,7 @@ class TrayImageMenuItem(gtk.ImageMenuItem):
                 self.activate()
                 #not essential since we'll clear it before calling recheck again:
                 self._activated = False
-        gobject.idle_add(recheck)
+        glib.idle_add(recheck)
 
 
 ImageMenuItemClass = gtk.ImageMenuItem
