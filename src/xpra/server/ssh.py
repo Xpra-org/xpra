@@ -286,7 +286,7 @@ def make_ssh_server_connection(conn, password_auth=None):
                             log.error(" %s", e)
         if not host_keys:
             log.error("Error: cannot start SSH server,")
-            log.error(" no SSH host keys found in:")
+            log.error(" no readable SSH host keys found in:")
             log.error(" %s", csv(ssh_key_dirs))
             close()
             return None

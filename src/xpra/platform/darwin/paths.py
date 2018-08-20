@@ -92,6 +92,9 @@ def do_get_system_conf_dirs():
     dirs.append("/etc/xpra")
     return dirs
 
+def do_get_ssh_conf_dirs():
+    return ["/private/etc", "/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh"]
+
 def do_get_user_conf_dirs(_uid):
     #the system wide configuration directory
     dirs = []
