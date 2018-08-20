@@ -33,6 +33,8 @@ class InitExit(Exception):
         Exception.__init__(self, msg)
 
 
+DEBUG_CONFIG_PROPERTIES = os.environ.get("XPRA_DEBUG_CONFIG_PROPERTIES", "").split()
+
 DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
 DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
@@ -315,6 +317,8 @@ def read_config(conf_file):
         else:
             debug("assigned (new): %s='%s'", name, value)
             d[name] = value
+        if name in DEBUG_CONFIG_PROPERTIES:
+            print("%s=%s (was %s), from %s" % (name, d[name], current_value, conf_file))
     return  d
 
 
