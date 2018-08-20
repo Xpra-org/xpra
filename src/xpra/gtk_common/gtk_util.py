@@ -7,7 +7,7 @@
 import os.path
 import array
 from xpra.util import iround, first_time
-from xpra.os_util import strtobytes, bytestostr, WIN32
+from xpra.os_util import strtobytes, bytestostr, WIN32, PYTHON2
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_pixbufloader, import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -714,7 +714,7 @@ def set_use_tray_workaround(enabled):
         CheckMenuItemClass = TrayCheckMenuItem
     else:
         CheckMenuItemClass = gtk.CheckMenuItem
-set_use_tray_workaround(True)
+set_use_tray_workaround(PYTHON2)
 
 
 
