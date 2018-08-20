@@ -224,7 +224,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
             log("encoding_changed(%s) enc=%s, current=%s", item, enc, encodings_submenu.get_current_encoding())
             if enc is not None and encodings_submenu.get_current_encoding()!=enc:
                 encodings_submenu.set_encoding(enc)
-        log("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
+        log("populate_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
         encoding_item.set_active(encoding==get_current_encoding())
         sensitive = encoding in server_encodings
         if not sensitive and HIDE_DISABLED_MENU_ENTRIES:
@@ -249,7 +249,12 @@ class GTKTrayMenuBase(object):
     def build(self):
         if self.menu is None:
             show_close = True #or WIN32
-            self.menu = self.setup_menu(show_close)
+            try:
+                self.menu = self.setup_menu(show_close)
+            except Exception as e:
+                log("build()", exc_info=True)
+                log.error("Error: failed to setup menu")
+                log.error(" %s", e)
         return self.menu
 
     def show_session_info(self, *args):
