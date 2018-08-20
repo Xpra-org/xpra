@@ -462,6 +462,7 @@ class ServerCore(object):
         else:
             for ad,d in (
                 (get_resources_dir(), "html5"),
+                (get_resources_dir(), "www"),
                 (get_app_dir(), "www"),
                 ):
                 self._www_dir = os.path.abspath(os.path.join(ad, d))
