@@ -835,15 +835,18 @@ class ApplicationWindow:
         address, props = parse_URL(url)
         pa = address.split("://")
         if pa[0] in ("tcp", "ssh", "ssl", "ws", "wss") and len(pa)>=2:
-            props["mode"] = pa
+            props["mode"] = pa[0]
             host = pa[1]
-            ph = host.split("@", 1)
-            if len(ph)==2:
-                username, host = ph
+            if host.find("@")>0:
+                username, host = host.rsplit("@", 1)
+                if username.find(":")>0:
+                    username, password = username.rsplit(":", 1)
+                    props["password"] = password
                 props["username"] = username
+            if host.find(":")>0:
+                host, port = host.rsplit(":", 1)
+                props["port"] = int(port)
             props["host"] = host
-            if len(pa)>=3:
-                props["port"] = pa[2]
         self._apply_props(props)
 
     def update_options_from_file(self, filename):
