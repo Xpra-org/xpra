@@ -10,8 +10,8 @@ import ctypes
 from ctypes.wintypes import RECT, POINT, BYTE, MAX_PATH
 
 from xpra.log import Logger
-from xpra.os_util import strtobytes, hexstr
-from xpra.util import envbool, prettify_plug_name, csv, repr_ellipsized
+from xpra.os_util import strtobytes
+from xpra.util import envbool, prettify_plug_name, csv
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
