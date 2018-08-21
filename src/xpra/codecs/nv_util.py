@@ -44,7 +44,7 @@ def get_nvml_driver_version():
     except ImportError as e:
         log("cannot use nvml to query the kernel module version:")
         log(" %s", e)
-    return ""
+    return ()
 
 
 def get_proc_driver_version():
@@ -54,7 +54,7 @@ def get_proc_driver_version():
     if not v:
         log.warn("Warning: NVidia kernel module not installed?")
         log.warn(" cannot open '%s'", proc_file)
-        return ""
+        return ()
     KSTR = b"Kernel Module"
     p = v.find(KSTR)
     if not p:
@@ -78,10 +78,10 @@ def identify_nvidia_module_version():
                     raise
         if numver:
             log.info("NVidia driver version %s", pver(numver))
-            return numver
+            return tuple(numver)
     except Exception as e:
         log.warn("failed to parse Nvidia driver version '%s': %s", v, e)
-    return []
+    return ()
 
 nvidia_module_version = None
 def get_nvidia_module_version(probe=True):
