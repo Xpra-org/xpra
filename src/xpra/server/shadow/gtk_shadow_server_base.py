@@ -8,6 +8,7 @@ from xpra.log import Logger
 traylog = Logger("tray")
 mouselog = Logger("mouse")
 notifylog = Logger("notify")
+screenlog = Logger("screen")
 log = Logger("shadow")
 
 from xpra.util import envbool
@@ -131,26 +132,27 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             try:
                 scale_factor = screen.get_monitor_scale_factor(i)
             except Exception as e:
-                log("no scale factor: %s", e)
+                screenlog("no scale factor: %s", e)
             else:
-                log("scale factor for monitor %i: %i", i, scale_factor)
+                screenlog("scale factor for monitor %i: %i", i, scale_factor)
             model = RootWindowModel(self.root, self.capture)
             if hasattr(screen, "get_monitor_plug_name"):
                 plug_name = screen.get_monitor_plug_name(i)
                 if plug_name or n>1:
                     model.title = plug_name or str(i)
             model.geometry = (x, y, width, height)
+            screenlog("monitor %i: %10s geometry=%s", i, model.title, model.geometry)
             models.append(model)
         log("makeRootWindowModels()=%s", models)
         return models
 
 
-    def _adjust_pointer(self, proto, wid, pointer):
+    def _adjust_pointer(self, proto, wid, opointer):
         window = self._id_to_window.get(wid)
         if not window:
             self.suspend_cursor(proto)
             return None
-        pointer = super(GTKShadowServerBase, self)._adjust_pointer(proto, wid, pointer)
+        pointer = super(GTKShadowServerBase, self)._adjust_pointer(proto, wid, opointer)
         #the window may be at an offset (multi-window for multi-monitor):
         wx, wy, ww, wh = window.geometry
         #or maybe the pointer is off-screen:
