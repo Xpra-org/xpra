@@ -1890,7 +1890,7 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
     if state in clean_states:
         try:
             stat_info = os.stat(sockpath)
-            if stat_info.st_uid==os.getuid():
+            if stat_info.st_uid==getuid():
                 os.unlink(sockpath)
                 sys.stdout.write(" (cleaned up)")
         except OSError as e:
@@ -2008,7 +2008,7 @@ def run_list(error_cb, opts, extra_args):
     for x in unknown:
         try:
             stat_info = os.stat(x[2])
-            if stat_info.st_uid==os.getuid():
+            if stat_info.st_uid==getuid():
                 reprobe.append(x)
         except OSError:
             pass
