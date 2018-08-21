@@ -944,8 +944,9 @@ class ServerCore(object):
                 import getpass
                 sysusername = getpass.getuser()
                 if sysusername!=username:
-                    sshlog.warn("Warning: ssh password authentication failed")
-                    sshlog.warn(" username does not match: expected '%s', got '%s'", sysusername, username)
+                    sshlog.warn("Warning: ssh password authentication failed,")
+                    sshlog.warn(" username does not match:")
+                    sshlog.warn(" expected '%s', got '%s'", sysusername, username)
                     return False
             auth_modules = self.make_authenticators(socktype, username, conn)
             sshlog("ssh_password_authenticate auth_modules(%s, %s)=%s", username, "*"*len(password), auth_modules)
