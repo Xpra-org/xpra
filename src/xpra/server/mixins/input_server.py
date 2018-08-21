@@ -343,8 +343,8 @@ class InputServer(StubServerMixin):
                         return ax, ay
         return pointer
 
-    def _process_mouse_common(self, proto, wid, pointer, *args):
-        pointer = self._adjust_pointer(proto, wid, pointer)
+    def _process_mouse_common(self, proto, wid, opointer, *args):
+        pointer = self._adjust_pointer(proto, wid, opointer)
         if not pointer:
             return None
         #TODO: adjust args too
@@ -374,7 +374,7 @@ class InputServer(StubServerMixin):
         pass
 
     def _process_pointer_position(self, proto, packet):
-        mouselog("_process_pointer_position(%s, %s)", proto, packet)
+        mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s", proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
         ss = self._server_sources.get(proto)
