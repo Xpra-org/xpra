@@ -71,8 +71,9 @@ class SSHServer(paramiko.ServerInterface):
             import getpass
             sysusername = getpass.getuser()
             if sysusername!=username:
-                log.warn("Warning: ssh password authentication failed")
-                log.warn(" username does not match: expected '%s', got '%s'", sysusername, username)
+                log.warn("Warning: ssh password authentication failed,")
+                log.warn(" username does not match:")
+                log.warn(" expected '%s', got '%s'", sysusername, username)
                 return paramiko.AUTH_FAILED
         authorized_keys_filename = osexpand(AUTHORIZED_KEYS)
         if not os.path.exists(authorized_keys_filename) or not os.path.isfile(authorized_keys_filename):
