@@ -18,6 +18,7 @@ shapelog = Logger("shape")
 cursorlog = Logger("cursor")
 netlog = Logger("network")
 keylog = Logger("keyboard")
+screenlog = Logger("screen")
 
 from collections import namedtuple
 from xpra.util import XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
@@ -416,15 +417,16 @@ class ShadowServer(GTKShadowServerBase):
             return (RootWindowModel(self.root, self.capture),)
         models = []
         monitors = get_monitors()
-        for monitor in monitors:
+        for i, monitor in enumerate(monitors):
             geom = monitor["Monitor"]
             x1, y1, x2, y2 = geom
             assert x1<x2 and y1<y2
             model = RootWindowModel(self.root, self.capture)
             model.title = monitor["Device"].lstrip("\\\\.\\")
             model.geometry = x1, y1, x2-x1, y2-y1
+            screenlog("monitor %i: %10s geometry=%s (from %s)", i, model.title, model.geometry, geom)
             models.append(model)
-            log("makeRootWindowModels: model(%s)=%s", monitor, model)
+            screenlog("makeRootWindowModels: model(%s)=%s", monitor, model)
         log("makeRootWindowModels()=%s", models)
         return models
 
@@ -471,7 +473,7 @@ class ShadowServer(GTKShadowServerBase):
         #adjust pointer position for offset in client:
         try:
             x, y = pointer
-            SetPhysicalCursorPos(x, y)
+            assert SetPhysicalCursorPos(x, y)
         except Exception as e:
             log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
             log.error("Error: failed to move the cursor:")
