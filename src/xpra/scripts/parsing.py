@@ -169,7 +169,7 @@ def parse_env(env):
     return d
 
 
-def parse_URL(url, default_mode="tcp"):
+def parse_URL(url):
     try:
         #py2:
         from urlparse import urlparse, parse_qs
@@ -189,7 +189,7 @@ def parse_URL(url, default_mode="tcp"):
                 v = v[0]
             f_params[k] = v
         options = validate_config(f_params)
-    mode = default_mode
+    mode = "tcp"
     if up.scheme.startswith("xpra+"):
         mode = up.scheme[len("xpra+"):]
     if mode in ("tcp", "ssl", "ssh", "ws", "wss"):
@@ -1103,8 +1103,8 @@ def do_parse_cmdline(cmdline, defaults):
             url = args[1]
             fullprefix = "%s://" % prefix
             if url.startswith(fullprefix):
-                url = "xpra://%s" % url[len(fullprefix):]
-                address, params = parse_URL(url, mode)
+                url = "%s://%s" % (mode, url[len(fullprefix):])
+                address, params = parse_URL(url)
                 for k,v in validate_config(params).items():
                     setattr(options, k.replace("-", "_"), v)
                 #replace with our standard URL format,
