@@ -309,9 +309,9 @@
 
 	<distutils id="python-websocket-client">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/72/5a/8b6ce52468708a725c4b32b18cacad63150be0f523490bc888e27a795e4a/websocket_client-0.49.0.tar.gz"
-			hash="sha256:bf36b4b4726cab3bf93e842deef3c5bf12bd9c134e45e9a852c76140309f5ae2"
-			version="0.49.0"/>
+			module="/packages/bb/ae/4ff2ae1f722d0c23dc4cdf74a4e05b0d1bbe752dc28620b9fe05c53e61aa/websocket_client-0.51.0.tar.gz"
+			hash="sha256:030bbfbf29ac9e315ffb207ed5ed42b6981b5038ea00d1e13b02b872cc95e8f6"
+			version="0.51.0"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
