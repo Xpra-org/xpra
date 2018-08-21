@@ -238,10 +238,12 @@ def make_ssh_server_connection(conn, password_auth=None):
     t = None
     def close():
         if t:
+            log("close() closing %s", t)
             try:
                 t.close()
             except Exception:
                 log("%s.close()", t, exc_info=True)
+        log("close() closing %s", conn)
         try:
             conn.close()
         except Exception:
@@ -303,6 +305,8 @@ def make_ssh_server_connection(conn, password_auth=None):
         chan = t.accept(SERVER_WAIT)
         if chan is None:
             log.warn("Warning: SSH channel setup failed")
+            #prevent errors trying to access this connection, now likely dead:
+            conn.set_active(False)
             close()
             return None
     except paramiko.SSHException as e:
