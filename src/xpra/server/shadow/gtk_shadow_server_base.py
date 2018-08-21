@@ -155,12 +155,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         wx, wy, ww, wh = window.geometry
         #or maybe the pointer is off-screen:
         x, y = pointer
-        ax = x+wx
-        ay = y+wy
-        if ax<0 or ax>=ww or ay<0 or ay>=wh:
+        if x<0 or x>=ww or y<0 or y>=wh:
             self.suspend_cursor(proto)
             return None
         self.restore_cursor(proto)
+        ax = x+wx
+        ay = y+wy
         return ax, ay
 
     def get_pointer_position(self):
