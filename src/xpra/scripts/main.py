@@ -997,19 +997,19 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     ssl_ca_certs = opts.ssl_ca_certs
     if ssl_ca_certs=="default":
         ssl_ca_certs = None
-    ssllog("ssl_wrap_socket_fn: ssl_ca_certs=%s", ssl_ca_certs)
+    ssllog("ssl_wrap_socket_fn: ca_certs=%s", ssl_ca_certs)
     #parse verify-mode:
     ssl_cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
     if ssl_cert_reqs is None:
         values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
         raise InitException("invalid ssl-server-verify-mode '%s', must be one of: %s" % (verify_mode, csv(values)))
-    ssllog("ssl_wrap_socket_fn: ssl_cert_reqs=%s", ssl_cert_reqs)
+    ssllog("ssl_wrap_socket_fn: cert_reqs=%#x", ssl_cert_reqs)
     #parse protocol:
     ssl_protocol = getattr(ssl, "PROTOCOL_%s" % (opts.ssl_protocol.upper().replace("V", "v")), None)
     if ssl_protocol is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
         raise InitException("invalid ssl-protocol '%s', must be one of: %s" % (opts.ssl_protocol, csv(values)))
-    ssllog("ssl_wrap_socket_fn: ssl_protocol=%s", ssl_protocol)
+    ssllog("ssl_wrap_socket_fn: protocol=%#x", ssl_protocol)
     #cadata may be hex encoded:
     cadata = opts.ssl_ca_data
     if cadata:
@@ -1035,7 +1035,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         if v is None:
             raise InitException("invalid ssl verify-flag: %s" % x)
         ssl_verify_flags |= v
-    ssllog("ssl_wrap_socket_fn: ssl_verify_flags=%s", ssl_verify_flags)
+    ssllog("ssl_wrap_socket_fn: verify_flags=%#x", ssl_verify_flags)
     #parse ssl-options as CSV:
     ssl_options = 0
     for x in opts.ssl_options.split(","):
@@ -1046,16 +1046,17 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         if v is None:
             raise InitException("invalid ssl option: %s" % x)
         ssl_options |= v
-    ssllog("ssl_wrap_socket_fn: ssl_options=%s", ssl_options)
+    ssllog("ssl_wrap_socket_fn: options=%#x", ssl_options)
 
     context = ssl.SSLContext(ssl_protocol)
     context.set_ciphers(opts.ssl_ciphers)
     context.verify_mode = ssl_cert_reqs
     context.verify_flags = ssl_verify_flags
     context.options = ssl_options
-    ssllog("ssl_wrap_socket_fn: ssl_cert=%s", opts.ssl_cert)
+    ssllog("ssl_wrap_socket_fn: cert=%s, key=%s", opts.ssl_cert, opts.ssl_key)
     if opts.ssl_cert:
-        context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=None)
+        SSL_KEY_PASSWORD = os.environ.get("XPRA_SSL_KEY_PASSWORD")
+        context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=SSL_KEY_PASSWORD)
     if ssl_cert_reqs!=ssl.CERT_NONE:
         if server_side:
             purpose = ssl.Purpose.CLIENT_AUTH   #@UndefinedVariable
