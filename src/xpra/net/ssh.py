@@ -221,7 +221,7 @@ def do_ssh_paramiko_connect_to(sock, host, port, username, password, proxy_comma
                 path = os.path.expanduser(known_hosts)
                 if os.path.exists(path):
                     host_keys.load(path)
-                    log("HostKeys.load(%s) successful", known_hosts)
+                    log("HostKeys.load(%s) successful", path)
                     host_keys_filename = path
                     break
             except IOError:
