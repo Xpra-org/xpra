@@ -1506,7 +1506,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             context.restore()
 
 
-    def paint_spinner(self, context, area):
+    def paint_spinner(self, context, area=None):
         log("%s.paint_spinner(%s, %s)", self, context, area)
         c = self._client
         if not c:
@@ -1521,7 +1521,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #context.rectangle(area)
         #because those would be unscaled dimensions
         #it's easier and safer to repaint the whole window:
-        context.rectangle(gdk.Rectangle(0, 0, w, h))
+        if is_gtk3():
+            context.rectangle(0, 0, w, h)
+        else:
+            context.rectangle(gdk.Rectangle(0, 0, w, h))
         context.fill()
         #add spinner:
         dim = min(w/3.0, h/3.0, 100.0)

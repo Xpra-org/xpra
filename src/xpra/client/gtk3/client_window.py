@@ -186,6 +186,8 @@ class ClientWindow(GTKClientWindowBase):
             self.clip_to_backing(backing, context)
             backing.cairo_draw(context)
         self.cairo_paint_border(context, None)
+        if not self._client.server_ok():
+            self.paint_spinner(context)
 
 
 GObject.type_register(ClientWindow)
