@@ -129,6 +129,9 @@
 	<data>
 		${prefix}/etc/pango/
 	</data>
+	<data dest="${bundle}/Contents/Resources/share/glib-2.0/schemas">
+		${prefix}/share/glib-2.0/schemas
+	</data>
 
 	<data dest="${bundle}/Contents/Resources/etc/gtk-2.0/gtkrc">
 		${project}/gtkrc
