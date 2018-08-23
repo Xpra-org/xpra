@@ -87,6 +87,10 @@ def do_get_ssh_conf_dirs():
         "~/ssh",
         ]
 
+def do_get_ssh_known_hosts_files():
+    #reverse the order (avoid dotfiles on win32):
+    return ("~/ssh/known_hosts", "~/.ssh/known_hosts")
+
 
 def do_get_default_conf_dirs():
     #ie: C:\Program Files\Xpra\

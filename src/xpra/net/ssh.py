@@ -14,10 +14,10 @@ from xpra.log import Logger
 log = Logger("network", "ssh")
 
 from xpra.scripts.main import InitException, InitExit
-from xpra.platform.paths import get_xpra_command
+from xpra.platform.paths import get_xpra_command, get_ssh_known_hosts_files
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
-from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, WIN32, OSX, POSIX
+from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, umask_context, WIN32, OSX, POSIX
 from xpra.util import envint, envbool, nonl, engs
 
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
@@ -214,7 +214,8 @@ def do_ssh_paramiko_connect_to(sock, host, port, username, password, proxy_comma
     if VERIFY_HOSTKEY:
         host_keys = HostKeys()
         host_keys_filename = None
-        for known_hosts in ("~/.ssh/known_hosts", "~/ssh/known_hosts"):
+        KNOWN_HOSTS = get_ssh_known_hosts_files()
+        for known_hosts in KNOWN_HOSTS:
             host_keys.clear()
             try:
                 path = os.path.expanduser(known_hosts)
@@ -277,14 +278,33 @@ keymd5(host_key),
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
 
             if ADD_KEY:
-                log("adding %s key for host '%s' to '%s'", keyname(), host, host_keys_filename)
                 try:
+                    if not host_keys_filename:
+                        #the first one is the default,
+                        #ie: ~/.ssh/known_hosts on posix
+                        host_keys_filename = os.path.expanduser(KNOWN_HOSTS[0])
+                    log("adding %s key for host '%s' to '%s'", keyname(), host, host_keys_filename)
+                    if not os.path.exists(host_keys_filename):
+                        keys_dir = os.path.dirname(host_keys_filename)
+                        if not os.path.exists(keys_dir):
+                            log("creating keys directory '%s'", keys_dir)
+                            os.mkdir(keys_dir, 0o700)
+                        elif not os.path.isdir(keys_dir):
+                            log.warn("Warning: '%s' is not a directory")
+                            log.warn(" key not saved")
+                        if os.path.exists(keys_dir) and os.path.isdir(keys_dir):
+                            log("creating known host file '%s'", host_keys_filename)
+                            with umask_context(0o133):
+                                with open(host_keys_filename, 'a+'):
+                                    pass
                     host_keys.add(host, host_key.get_name(), host_key)
                     host_keys.save(host_keys_filename)
                 except OSError as e:
                     log("failed to add key to '%s'", host_keys_filename)
                     log.error("Error adding key to '%s'", host_keys_filename)
                     log.error(" %s", e)
+                except Exception as e:
+                    log.error("cannot add key", exc_info=True)
 
 
     def auth_agent():

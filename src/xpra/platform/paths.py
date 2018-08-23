@@ -48,6 +48,11 @@ def get_ssh_conf_dirs():
 def do_get_ssh_conf_dirs():
     return ["/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh"]
 
+def get_ssh_known_hosts_files():
+    return envaslist_or_delegate("XPRA_SSH_KNOWN_HOSTS", do_get_ssh_known_hosts_files)
+def do_get_ssh_known_hosts_files():
+    return ("~/.Xssh/known_hosts", "~/Xssh/known_hosts")
+
 
 def get_user_conf_dirs(uid=None):
     return envaslist_or_delegate("XPRA_USER_CONF_DIRS", do_get_user_conf_dirs, uid)
@@ -275,6 +280,7 @@ platform_import(globals(), "paths", False,
                 "do_get_default_conf_dirs",
                 "do_get_system_conf_dirs",
                 "do_get_ssh_conf_dirs",
+                "do_get_ssh_known_hosts_files",
                 "do_get_user_conf_dirs",
                 "do_get_socket_dirs",
                 "do_get_default_log_dirs",
