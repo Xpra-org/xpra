@@ -1017,7 +1017,8 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             import binascii
             cadata = binascii.unhexlify(cadata)
         except:
-            pass
+            import base64
+            cadata = base64.b64decode(cadata)
     ssllog("ssl_wrap_socket_fn: cadata=%s", repr_ellipsized(cadata))
 
     kwargs = {
@@ -1073,12 +1074,15 @@ def ssl_wrap_socket_fn(opts, server_side=True):
 
         ssl_ca_certs = opts.ssl_ca_certs
         if not ssl_ca_certs or ssl_ca_certs.lower()=="default":
+            ssllog("ssl_wrap_socket_fn: loading default verify paths")
             context.set_default_verify_paths()
         elif not os.path.exists(ssl_ca_certs):
             raise InitException("invalid ssl-ca-certs file or directory: %s" % ssl_ca_certs)
         elif os.path.isdir(ssl_ca_certs):
+            ssllog("ssl_wrap_socket_fn: loading ca certs from directory '%s'", ssl_ca_certs)
             context.load_verify_locations(capath=ssl_ca_certs)
         else:
+            ssllog("ssl_wrap_socket_fn: loading ca certs from file '%s'", ssl_ca_certs)
             assert os.path.isfile(ssl_ca_certs), "'%s' is not a valid ca file" % ssl_ca_certs
             context.load_verify_locations(cafile=ssl_ca_certs)
         #handle cadata:
@@ -1086,11 +1090,12 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             #PITA: because of a bug in the ssl module, we can't pass cadata,
             #so we use a temporary file instead:
             import tempfile
-            f = tempfile.NamedTemporaryFile(prefix='cadata')
-            f.file.write(cadata)
-            f.file.flush()
-            context.load_verify_locations(cafile=f.name)
-            f.close()
+            with tempfile.NamedTemporaryFile(prefix='cadata') as f:
+                ssllog("ssl_wrap_socket_fn: loading cadata '%s'", repr_ellipsized(cadata))
+                ssllog(" using temporary file '%s'", f.name)
+                f.file.write(cadata)
+                f.file.flush()
+                context.load_verify_locations(cafile=f.name)
     elif opts.ssl_check_hostname and not server_side:
         raise InitException("cannot check hostname with verify mode %s" % verify_mode)
     wrap_socket = context.wrap_socket
