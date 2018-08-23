@@ -1278,7 +1278,7 @@ class TableBuilder(object):
         self.add_row(row_label, value1, value2, **kwargs)
 
 
-def choose_file(parent_window, title, action, action_button, callback, file_filter=None):
+def choose_file(parent_window, title, action, action_button, callback=None, file_filter=None):
     log("choose_file%s", (parent_window, title, action, action_button, callback, file_filter))
     chooser = gtk.FileChooserDialog(title,
                                 parent=parent_window, action=action,
@@ -1294,8 +1294,9 @@ def choose_file(parent_window, title, action, action_button, callback, file_filt
     if response!=RESPONSE_OK or len(filenames)!=1:
         return
     filename = filenames[0]
-    callback(filename)
-
+    if callback:
+        callback(filename)
+    return filename
 
 
 def main():
