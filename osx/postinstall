@@ -20,14 +20,17 @@ if [ -d "$APP_ROOT" ]; then
 		fi
 	fi
 
-	if [ ! -e "/Library/Application Support/Xpra/ssl-cert.pem" ]; then
-		mkdir "/Library/Application Support/Xpra" 2> /dev/null
-		chmod 755 "/Library/Application Support/Xpra"
+	LAS_XPRA="/Library/Application Support/Xpra"
+	if [ ! -e "${LAS_XPRA}/ssl-cert.pem" ]; then
+		mkdir "${LAS_XPRA}" 2> /dev/null
+		chmod 755 "${LAS_XPRA}"
 		umask=`umask`
 		umask 077
 		openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
 			-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
-			-keyout "/Library/Application Support/Xpra/ssl-cert.pem" -out "/Library/Application Support/Xpra/ssl-cert.pem" 2> /dev/null
+			-keyout "${LAS_XPRA}/key.pem" \
+			-out "${LAS_XPRA}/cert.pem" 2> /dev/null
+		cat "${LAS_XPRA}/key.pem" "${LAS_XPRA}/cert.pem" > "${LAS_XPRA}/ssl-cert.pem"
 		umask $umask
 	fi
 
