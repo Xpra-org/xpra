@@ -1905,7 +1905,8 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             import binascii
             cadata = binascii.unhexlify(cadata)
         except:
-            pass
+            import base64
+            cadata = base64.b64decode(cadata)
 
     kwargs = {
               "server_side"             : server_side,
