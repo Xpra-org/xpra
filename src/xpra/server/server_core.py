@@ -20,6 +20,7 @@ from xpra.log import Logger
 from xpra.platform.paths import get_app_dir
 log = Logger("server")
 netlog = Logger("network")
+ssllog = Logger("ssl")
 httplog = Logger("http")
 wslog = Logger("websocket")
 proxylog = Logger("proxy")
@@ -840,13 +841,13 @@ class ServerCore(object):
 
         def ssl_wrap():
             ssl_sock = self._ssl_wrap_socket(sock)
-            netlog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
+            ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
-                netlog("ignoring SSL EOF error")
+                ssllog("ignoring SSL EOF error")
                 return None
             ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype)
-            netlog("ssl_wrap()=%s", ssl_conn)
+            ssllog("ssl_wrap()=%s", ssl_conn)
             return ssl_conn
 
         if socktype=="ssl" or socktype=="wss":
@@ -889,7 +890,7 @@ class ServerCore(object):
                     if not self._ssl_wrap_socket:
                         netlog.warn("Warning: cannot upgrade to SSL socket")
                         return None
-                    netlog("ws socket receiving ssl, upgrading")
+                    ssllog("ws socket receiving ssl, upgrading")
                     conn = ssl_wrap()
                 elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
                     self.new_conn_err(conn, sock, socktype, socket_info, "xpra", "packet looks like a plain xpra packet")
@@ -1055,12 +1056,12 @@ class ServerCore(object):
             sock = self._ssl_wrap_socket(sock)
             if sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
-                netlog("ignoring SSL EOF error")
+                ssllog("ignoring SSL EOF error")
                 return False, None, None
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl")
             conn.socktype_wrapped = socktype
             #we cannot peek on SSL sockets, just clear the unencrypted data:
-            netlog("may_wrap_socket SSL: %s, ssl mode=%s", conn, self.ssl_mode)
+            ssllog("may_wrap_socket SSL: %s, ssl mode=%s", conn, self.ssl_mode)
             http = False
             if self.ssl_mode=="tcp":
                 http = False

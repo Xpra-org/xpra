@@ -479,10 +479,11 @@ if SSL_PEEK:
                 return "SSLSocket(%s)" % self._sock
 
     except Exception as e:
-        log("ssl peek", exc_info=True)
-        log.warn("Warning: unable to override socket object")
-        log.warn(" SSL peek support will not be available")
-        log.warn(" %s", e)
+        ssllog = Logger("ssl")
+        ssllog("ssl peek", exc_info=True)
+        ssllog.warn("Warning: unable to override socket object")
+        ssllog.warn(" SSL peek support will not be available")
+        ssllog.warn(" %s", e)
 
 
 class SSLSocketConnection(SocketConnection):
