@@ -233,6 +233,8 @@ def get_xpra_command():
         return shlex.split(envvalue)
     return do_get_xpra_command()
 def do_get_xpra_command():
+    return default_do_get_xpra_command()
+def default_do_get_xpra_command():
     #try to use the same "xpra" executable that launched this server:
     if sys.argv and sys.argv[0].lower().endswith("/xpra"):
         return [sys.argv[0]]

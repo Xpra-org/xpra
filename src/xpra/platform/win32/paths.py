@@ -179,5 +179,5 @@ def do_get_xpra_command():
         py = os.path.join(mingw, "bin", "python%i.exe" % sys.version_info[0])
         if os.path.exists(xpra_script) and os.path.exists(py):
             return [py, xpra_script]
-    from xpra.platform.paths import do_get_xpra_command as default_do_get_xpra_command
+    from xpra.platform.paths import default_do_get_xpra_command
     return default_do_get_xpra_command()
