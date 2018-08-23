@@ -69,7 +69,10 @@ def keymd5(k):
 def exec_dialog_subprocess(cmd):
     try:
         log("exec_dialog_subprocess(%s)", cmd)
-        proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, close_fds=True)
+        kwargs = {}
+        if POSIX:
+            kwargs["close_fds"] = True
+        proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, **kwargs)
         stdout, stderr = proc.communicate()
         log("exec_dialog_subprocess(%s)", cmd)
         if stderr:
