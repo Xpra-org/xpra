@@ -130,11 +130,11 @@ class SSHServer(paramiko.ServerInterface):
             cmd = shlex.split(command.decode("utf8"))
         except UnicodeDecodeError:
             cmd = shlex.split(bytestostr(command))            
-        if cmd[0]=="type" and len(cmd)==2:
+        if cmd[0] in ("type", "which") and len(cmd)==2:
             xpra_cmd = cmd[1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             if not POSIX:
                 assert WIN32
-                #we can't execute "type" on win32,
+                #we can't execute "type" or "which" on win32,
                 #so we just answer as best we can
                 #and only accept "xpra" as argument:
                 if xpra_cmd.strip("\"")=="xpra":
@@ -159,7 +159,7 @@ class SSHServer(paramiko.ServerInterface):
                 chan_send(channel.send_stderr, err)
                 channel.send_exit_status(proc.returncode)
         elif cmd[0].endswith("xpra") and len(cmd)>=2:
-            subcommand = cmd[1].strip("\"'")
+            subcommand = cmd[1].strip("\"'").rstrip(";")
             log("ssh xpra subcommand: %s", subcommand)
             if subcommand!="_proxy":
                 log.warn("Warning: unsupported xpra subcommand '%s'", cmd[1])
