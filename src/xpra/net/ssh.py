@@ -414,7 +414,7 @@ keymd5(host_key),
         except SSHException as e:
             log("open_session", exc_info=True)
             raise InitException("failed to open SSH session: %s" % e)
-        cmd = "type %s" % xpra_cmd
+        cmd = "which %s" % xpra_cmd
         log("exec_command('%s')", cmd)
         chan.exec_command(cmd)
         #poll until the command terminates:
@@ -502,8 +502,8 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             else:
                 check = "elif"
             if x=="xpra":
-                #no absolute path, so use "type" to check that the command exists:
-                pc = ['%s type "%s" > /dev/null 2>&1; then' % (check, x)]
+                #no absolute path, so use "which" to check that the command exists:
+                pc = ['%s which "%s" > /dev/null 2>&1; then' % (check, x)]
             else:
                 pc = ['%s [ -x %s ]; then' % (check, x)]
             pc += [x] + proxy_command + display_as_args

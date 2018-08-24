@@ -196,8 +196,8 @@ class SSHServer(paramiko.ServerInterface):
             #and identify the subcommands from there
             subcommands = []
             for s in parse_cmd.split("if "):
-                if s.startswith("type \"xpra\"") or s.startswith("[ -x") and s.find("then ")>0:
-                    then_str = s.split("then ")[1]
+                if (s.startswith("type \"xpra\"") or s.startswith("which \"xpra\"") or s.startswith("[ -x")) and s.find("then ")>0:
+                    then_str = s.split("then ", 1)[1]
                     #ie: then_str="$XDG_RUNTIME_DIR/xpra/run-xpra _proxy; el"
                     if then_str.find(";")>0:
                         then_str = then_str.split(";")[0]
