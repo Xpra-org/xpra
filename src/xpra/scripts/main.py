@@ -458,6 +458,37 @@ def find_session_by_name(opts, session_name):
         raise InitException("more than one session found matching '%s'" % session_name)
     return "socket://%s" % tuple(session_uuid_to_path.values())[0]
 
+def parse_ssh_string(ssh):
+    if ssh=="auto":
+        try:
+            from xpra.net.ssh import nogssapi_context
+            with nogssapi_context():
+                import paramiko
+            assert paramiko
+            ssh = "paramiko"
+        except ImportError:
+            if WIN32:
+                ssh = "plink -ssh -agent"
+            else:
+                ssh = "ssh -x"
+    return shlex.split(ssh)
+
+def add_ssh_args(username, password, host, ssh_port, is_putty=False, is_paramiko=False):
+    args = []
+    if password and is_putty:
+        args += ["-pw", password]
+    if username and not is_paramiko:
+        args += ["-l", username]
+    if ssh_port and ssh_port!=22:
+        #grr why bother doing it different?
+        if is_putty:
+            args += ["-P", str(ssh_port)]
+        elif not is_paramiko:
+            args += ["-p", str(ssh_port)]
+    if not is_paramiko:
+        args += ["-T", host]
+    return args
+
 def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     desc = {"display_name" : display_name}
     #split the display name on ":" or "/"
@@ -613,17 +644,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             #ssh:HOST or ssh/HOST
             host = parts[0]
         #ie: ssh=["/usr/bin/ssh", "-v"]
-        ssh = opts.ssh
-        if ssh=="auto":
-            try:
-                from xpra.net.ssh import nogssapi_context
-                with nogssapi_context():
-                    import paramiko
-                assert paramiko
-                ssh = "paramiko"
-            except ImportError as e:
-                ssh = "ssh -x"
-        ssh = shlex.split(ssh)
+        ssh = parse_ssh_string(opts.ssh)
         desc["ssh"] = ssh
         full_ssh = ssh
 
@@ -640,23 +661,13 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             env["PLINK_PROTOCOL"] = "ssh"
 
         username, password, host, ssh_port = parse_host_string(host, 22)
-        if password and is_putty:
-            full_ssh += ["-pw", password]
         if username:
+            #TODO: let parse_host_string set it?
             desc["username"] = username
             opts.username = username
-            if not is_paramiko:
-                full_ssh += ["-l", username]
         if ssh_port and ssh_port!=22:
-            #grr why bother doing it different?
             desc["ssh-port"] = ssh_port
-            if is_putty:
-                full_ssh += ["-P", str(ssh_port)]
-            elif not is_paramiko:
-                full_ssh += ["-p", str(ssh_port)]
-
-        if not is_paramiko:
-            full_ssh += ["-T", host]
+        full_ssh += add_ssh_args(username, password, host, ssh_port, is_putty, is_paramiko)
         desc.update({
                      "host"     : host,
                      "full_ssh" : full_ssh

@@ -1331,6 +1331,7 @@ if WIN32:
         if (client_ENABLED or server_ENABLED) and (gtk2_ENABLED or gtk3_ENABLED):
             add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
+            add_console_exe("scripts/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")

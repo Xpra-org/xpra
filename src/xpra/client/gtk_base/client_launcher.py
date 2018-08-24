@@ -12,7 +12,6 @@ This is a simple GUI for starting the xpra client.
 
 import os.path
 import sys
-import shlex
 import signal
 import traceback
 
@@ -40,7 +39,7 @@ from xpra.os_util import thread, WIN32, OSX, PYTHON3
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.gtk_common.about import about
-from xpra.scripts.main import connect_to, make_client, configure_network, is_local
+from xpra.scripts.main import connect_to, make_client, configure_network, is_local, add_ssh_args, parse_ssh_string
 from xpra.platform.paths import get_icon_dir
 from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
@@ -580,10 +579,12 @@ class ApplicationWindow:
             else:
                 params["display"] = "auto"
                 params["display_as_args"] = []
-            full_ssh = shlex.split(self.config.ssh)
+            full_ssh = parse_ssh_string(self.config.ssh)
             ssh_cmd = full_ssh[0].lower()
             is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
+            is_paramiko = ssh_cmd=="paramiko"
             params["is_putty"] = is_putty
+            params["is_paramiko"] = is_paramiko
             password = self.config.password
             host = self.config.host
             upos = host.find("@")
@@ -596,19 +597,11 @@ class ApplicationWindow:
                     #found separator: username:password@host
                     password = username[ppos+1:]
                     username = username[:ppos]
-            if password and is_putty:
-                full_ssh += ["-pw", password]
+            full_ssh += add_ssh_args(username, password, host, self.config.ssh_port, is_putty, is_paramiko)
             if username:
                 params["username"] = username
-                full_ssh += ["-l", username]
-            full_ssh += ["-T", host]
             if self.nostrict_host_check.get_active():
                 full_ssh += ["-o", "StrictHostKeyChecking=no"]
-            if str(self.config.ssh_port)!="22":
-                if is_putty:
-                    full_ssh += ["-P", str(self.config.ssh_port)]
-                else:
-                    full_ssh += ["-p", str(self.config.ssh_port)]
             params["host"] = host
             params["local"] = is_local(self.config.host)
             params["full_ssh"] = full_ssh
