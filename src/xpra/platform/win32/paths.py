@@ -70,6 +70,7 @@ def get_program_data_dir():
     return "C:\\ProgramData"
 
 def do_get_system_conf_dirs():
+    #ie: C:\ProgramData\Xpra
     return [os.path.join(get_program_data_dir(), "Xpra")]
 
 def do_get_ssh_conf_dirs():
@@ -81,8 +82,9 @@ def do_get_ssh_conf_dirs():
     windows_dir = os.environ.get("SystemRoot", os.environ.get("WINDIR", "C:\\Windows"))
     openssh_dir = os.path.join(windows_dir, system32, "OpenSSH")
     return [
-        os.path.join(get_program_data_dir(), "ssh"),    #C:\ProgramData\ssh
-        openssh_dir,    #C:\Windows\system32\OpenSSH
+        os.path.join(get_program_data_dir(), "ssh"),    #ie: C:\ProgramData\ssh
+        "%APPDATA\\ssh",    #ie: C:\Users\Username\AppData\Roaming\ssh
+        openssh_dir,        #ie: C:\Windows\system32\OpenSSH
         "~/.ssh",
         "~/ssh",
         ]
@@ -98,8 +100,7 @@ def do_get_default_conf_dirs():
     return [os.path.join(get_app_dir(), "etc", "xpra")]
 
 def do_get_user_conf_dirs(_uid):
-    #ie: "C:\Documents and Settings\<user name>\Application Data\Xpra" with XP
-    #or: "C:\Users\<user name>\AppData\Roaming" with Visa onwards
+    #ie: "C:\Users\<user name>\AppData\Roaming"
     return [_get_data_dir()]
 
 
