@@ -13,6 +13,7 @@ PY3 = sys.version_info[0]==3
 if PY3:
     long = int          #@ReservedAssignment
     basestring = str    #@ReservedAssignment
+    unicode = str       #@ReservedAssignment
 
 
 def dbus_to_native(value):
