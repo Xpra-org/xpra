@@ -26,7 +26,8 @@ class Proxy_DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}')
     def GetInfo(self):
-        i = self.server.get_info(None)
+        #full info is available by calling get_info()
+        i = self.server.get_minimal_server_info()
         self.log(".GetInfo()=%s", i)
         try:
             v =  dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in i.items())

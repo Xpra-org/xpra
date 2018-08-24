@@ -1760,6 +1760,35 @@ class ServerCore(object):
     def get_thread_info(self, proto):
         return get_thread_info(proto)
 
+    def get_minimal_server_info(self):
+        info = {
+            "mode"              : self.get_server_mode(),
+            "session-type"      : self.session_type,
+            "type"              : "Python",
+            "python"            : {"version" : python_platform.python_version()},
+            "start_time"        : int(self.start_time),
+            "uuid"              : self.uuid,
+            }
+        return info
+
+    def get_server_info(self):
+        #this function is for non UI thread info
+        si = {}
+        si.update(self.get_minimal_server_info())
+        si.update(get_server_info())
+        si.update({
+            "argv"              : sys.argv,
+            "path"              : sys.path,
+            "exec_prefix"       : sys.exec_prefix,
+            "executable"        : sys.executable,
+            "idle-timeout"      : int(self.server_idle_timeout),
+            })
+        if POSIX:
+            si["load"] = tuple(int(x*1000) for x in os.getloadavg())
+        if self.original_desktop_display:
+            si["original-desktop-display"] = self.original_desktop_display
+        return si
+
     def get_info(self, proto, *_args):
         start = monotonic_time()
         #this function is for non UI thread info
@@ -1772,25 +1801,9 @@ class ServerCore(object):
         if filtered_env.get('XPRA_ENCRYPTION_KEY'):
             filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
 
-        si = get_server_info()
-        si.update({
-                   "mode"              : self.get_server_mode(),
-                   "session-type"      : self.session_type,
-                   "type"              : "Python",
-                   "python"            : {"version" : python_platform.python_version()},
-                   "start_time"        : int(self.start_time),
-                   "idle-timeout"      : int(self.server_idle_timeout),
-                   "argv"              : sys.argv,
-                   "path"              : sys.path,
-                   "exec_prefix"       : sys.exec_prefix,
-                   "executable"        : sys.executable,
-                   "uuid"              : self.uuid,
-                })
-        if POSIX:
-            si["load"] = tuple(int(x*1000) for x in os.getloadavg())
-        if self.original_desktop_display:
-            si["original-desktop-display"] = self.original_desktop_display
+        si = self.get_server_info()
         up("server", si)
+
         ni = get_net_info()
         ni.update({
                    "sockets"        : self.get_socket_info(),
