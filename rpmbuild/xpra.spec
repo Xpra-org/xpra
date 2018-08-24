@@ -61,7 +61,7 @@ Version:			%{version}
 Release:			0%{?revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
-License:			GPL
+License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
 URL:				http://xpra.org/
 Packager:			Antoine Martin <antoine@devloop.org.uk>
 Vendor:				http://xpra.org/
