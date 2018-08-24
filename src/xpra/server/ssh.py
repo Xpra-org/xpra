@@ -34,7 +34,6 @@ class SSHServer(paramiko.ServerInterface):
         self.proxy_channel = None
 
     def get_allowed_auths(self, username):
-        log("get_allowed_auths(%s)", username)
         #return "gssapi-keyex,gssapi-with-mic,password,publickey"
         mods = []
         if self.none_auth:
@@ -43,6 +42,7 @@ class SSHServer(paramiko.ServerInterface):
             mods.append("publickey")
         if self.password_auth:
             mods.append("password")
+        log("get_allowed_auths(%s)=%s", username, mods)
         return ",".join(mods)
 
     def check_channel_request(self, kind, chanid):
