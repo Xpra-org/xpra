@@ -533,16 +533,19 @@ class ApplicationWindow:
 
     def reset_client(self):
         #lose current client class and make a new one:
+        log("reset_client() client=%s", self.client)
         if self.client:
             self.client.cleanup()
             self.client = None
         self.client = make_client(Exception, self.config)
         self.client.init(self.config)
+        log("reset_client() new client=%s", self.client)
 
 
     def handle_exception(self, e):
         log("handle_exception(%s)", e)
         t = str(e)
+        log("handle_exception: %s", traceback.format_exc())
         if self.config.debug:
             #in debug mode, include the full stacktrace:
             t = traceback.format_exc()
@@ -642,11 +645,13 @@ class ApplicationWindow:
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
         try:
+            log("calling %s%s", connect_to, (display_desc, self.config, self.set_info_text, self.ssh_failed))
             conn = connect_to(display_desc, opts=self.config, debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
         except Exception as e:
-            log.error("failed to connect", exc_info=True)
+            log.error("Error: failed to connect", exc_info=True)
             self.handle_exception(e)
             return
+        log("connect_to(..)=%s, hiding launcher window, starting client", conn)
         glib.idle_add(self.window.hide)
         glib.idle_add(self.start_XpraClient, conn, display_desc)
 
@@ -675,7 +680,8 @@ class ApplicationWindow:
         #override exit code:
         warn_and_quit_save = self.client.warn_and_quit
         quit_save = self.client.quit
-        def do_quit(*_args):
+        def do_quit(*args):
+            log("do_quit%s", args)
             self.client.warn_and_quit = warn_and_quit_save
             self.client.quit = quit_save
             self.client.cleanup()
@@ -695,6 +701,7 @@ class ApplicationWindow:
                 self.set_info_text(warning)
             if err:
                 def ignore_further_quit_events(*args):
+                    log("ignore_further_quit_events%s", args)
                     pass
                 if self.client:
                     self.client.cleanup()
@@ -722,9 +729,11 @@ class ApplicationWindow:
         self.client.quit = quit_override
         try:
             self.client.run()
+            log("client.run() returned")
         except Exception as e:
             log.error("client error", exc_info=True)
             self.handle_exception(e)
+        log("exit_launcher=%s", self.exit_launcher)
         #if we're using "autoconnect",
         #the main loop was running from here,
         #so we have to force exit if the launcher window had been closed:
