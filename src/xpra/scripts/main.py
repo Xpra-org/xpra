@@ -900,13 +900,12 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT, SocketConnection
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
-    conn = None
     if dtype == "ssh":
         from xpra.net.ssh import ssh_paramiko_connect_to, ssh_exec_connect_to
         if display_desc.get("is_paramiko", False):
-            conn = ssh_paramiko_connect_to(display_desc)
+            return ssh_paramiko_connect_to(display_desc)
         else:
-            conn = ssh_exec_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
+            return ssh_exec_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
 
     elif dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
@@ -950,6 +949,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             raise InitException("failed to connect to the named pipe '%s':\n %s" % (pipe_name, e))
         conn = NamedPipeConnection(pipe_name, pipe_handle)
         conn.timeout = SOCKET_TIMEOUT
+        return conn
 
     elif dtype == "vsock":
         cid, iport = display_desc["vsock"]
@@ -987,9 +987,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             port = display_desc.get("port", 0)
             from xpra.net.websocket_connection import websocket_client_connection
             return websocket_client_connection(host, port, conn, dtype)
-    else:
-        raise InitException("unsupported display type: %s" % dtype)
-    return conn
+        return conn
+    raise InitException("unsupported display type: %s" % dtype)
 
 
 def ssl_wrap_socket_fn(opts, server_side=True):
