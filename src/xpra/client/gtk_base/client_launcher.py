@@ -376,12 +376,12 @@ class ApplicationWindow:
         self.load_btn.connect("clicked", self.load_clicked)
         hbox.pack_start(self.load_btn)
         # Connect button:
-        self.button = gtk.Button("Connect")
-        self.button.connect("clicked", self.connect_clicked)
+        self.connect_btn = gtk.Button("Connect")
+        self.connect_btn.connect("clicked", self.connect_clicked)
         connect_icon = self.get_icon("retry.png")
         if connect_icon:
-            self.button.set_image(scaled_image(connect_icon, 24))
-        hbox.pack_start(self.button)
+            self.connect_btn.set_image(scaled_image(connect_icon, 24))
+        hbox.pack_start(self.connect_btn)
 
         add_close_accel(self.window, self.accel_close)
         vbox.show_all()
@@ -423,12 +423,13 @@ class ApplicationWindow:
         log("validate(%s) err_text=%s, errs=%s", args, err_text, errs)
         self.set_info_text(csv(err_text))
         self.set_info_color(len(err_text)>0)
-        self.button.set_sensitive(len(err_text)==0)
+        self.connect_btn.set_sensitive(len(err_text)==0)
         return errs
 
     def show(self):
         self.window.show()
         self.window.present()
+        self.connect_btn.grab_focus()
 
     def run(self):
         gtk_main()
