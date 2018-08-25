@@ -21,7 +21,7 @@ from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
-from xpra.util import std, envbool, typedict, updict, XPRA_AUDIO_NOTIFICATION_ID
+from xpra.util import std, envbool, typedict, updict, repr_ellipsized, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 
 
@@ -424,7 +424,7 @@ class UIXpraClient(ClientBaseClass):
                 log.error("Error processing handshake callback %s", cb, exc_info=True)
 
     def after_handshake(self, cb, *args):
-        log("after_handshake(%s, %s) on_handshake=%s", cb, args, self._on_handshake)
+        log("after_handshake(%s, %s) on_handshake=%s", cb, args, repr_ellipsized(str(self._on_handshake)))
         if self._on_handshake is None:
             #handshake has already occurred, just call it:
             self.idle_add(cb, *args)
