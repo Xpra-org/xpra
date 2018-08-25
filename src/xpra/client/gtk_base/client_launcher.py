@@ -225,22 +225,26 @@ class ApplicationWindow:
         self.username_entry.set_max_length(128)
         self.username_entry.set_width_chars(16)
         self.username_entry.connect("changed", self.validate)
+        self.username_entry.connect("activate", self.connect_clicked)
         self.username_entry.set_tooltip_text("username")
         self.username_label = gtk.Label("@")
         self.host_entry = gtk.Entry()
         self.host_entry.set_max_length(128)
         self.host_entry.set_width_chars(24)
         self.host_entry.connect("changed", self.validate)
+        self.host_entry.connect("activate", self.connect_clicked)
         self.host_entry.set_tooltip_text("hostname")
         self.ssh_port_entry = gtk.Entry()
         self.ssh_port_entry.set_max_length(5)
         self.ssh_port_entry.set_width_chars(5)
         self.ssh_port_entry.connect("changed", self.validate)
+        self.ssh_port_entry.connect("activate", self.connect_clicked)
         self.ssh_port_entry.set_tooltip_text("SSH port")
         self.port_entry = gtk.Entry()
         self.port_entry.set_max_length(5)
         self.port_entry.set_width_chars(5)
         self.port_entry.connect("changed", self.validate)
+        self.port_entry.connect("activate", self.connect_clicked)
         self.port_entry.set_tooltip_text("port/display")
 
         hbox.pack_start(self.username_entry)
@@ -527,7 +531,8 @@ class ApplicationWindow:
     def set_sensitive(self, s):
         glib.idle_add(self.window.set_sensitive, s)
 
-    def connect_clicked(self, *_args):
+    def connect_clicked(self, *args):
+        log("connect_clicked%s", args)
         self.update_options_from_gui()
         self.do_connect()
 
