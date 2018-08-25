@@ -465,13 +465,15 @@ class ApplicationWindow:
             self.username_entry.set_tooltip_text("Session Username (optional)")
             if self.config.port>0:
                 self.port_entry.set_text("%s" % self.config.port)
-        can_use_password = not ssh
+        can_use_password = True
         if ssh:
-            if WIN32:
-                #plink can use password
-                pass
+            ssh_cmd = parse_ssh_string(self.config.ssh)[0].strip().lower()
+            is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
+            is_paramiko = ssh_cmd=="paramiko"
+            if is_putty or is_paramiko:
+                can_use_password = True
             else:
-                #can use password if sshpass is installed:
+                #we can also use password if sshpass is installed:
                 from xpra.platform.paths import get_sshpass_command
                 sshpass = get_sshpass_command()
                 can_use_password = bool(sshpass)
