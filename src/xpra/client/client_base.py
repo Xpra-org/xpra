@@ -228,6 +228,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.timeout_add(1000, self.quit, exit_code)
 
     def exit(self):
+        log("XpraClientBase.exit() calling %s", sys.exit)
         sys.exit()
 
 
