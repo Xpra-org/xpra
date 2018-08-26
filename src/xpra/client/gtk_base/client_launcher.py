@@ -547,6 +547,8 @@ class ApplicationWindow:
             self.client = None
             def noop(*args):
                 pass
+            c.disconnect_and_quit = noop
+            c.quit = noop
             c.exit = noop
             c.cleanup()
         self.client = make_client(Exception, self.config)
