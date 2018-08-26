@@ -269,6 +269,7 @@ class UIXpraClient(ClientBaseClass):
 
 
     def send_start_new_commands(self):
+        log("send_start_new_commands() start_new_commands=%s, start_child_new_commands=%s", self.start_new_commands, self.start_child_new_commands)
         import shlex
         for cmd in self.start_new_commands:
             cmd_parts = shlex.split(cmd)
