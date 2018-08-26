@@ -98,6 +98,7 @@ class PasswordInputDialogWindow(object):
         log("show()")
         self.window.show_all()
         glib.idle_add(self.window.present)
+        glib.idle_add(self.password_input.grab_focus)
 
     def destroy(self, *args):
         log("destroy%s", args)
