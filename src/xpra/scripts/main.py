@@ -1311,6 +1311,9 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 "start-new-session" : sns,
                 "connect"           : True,
                 }
+            #we have consumed the start[-child] options
+            app.start_child_new_commands = []
+            app.start_new_commands = []
         try:
             conn, display_desc = connect()
             #UGLY warning: connect will parse the display string,
@@ -1419,6 +1422,9 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
             proxy_args.append(params["display"])
         for x in get_start_server_args(opts, compat=True):
             proxy_args.append(shellquote(x))
+        #we have consumed the start[-child] options
+        opts.start_child = []
+        opts.start = []
         params["display_as_args"] = proxy_args
         #and use a proxy subcommand to start the server:
         params["proxy_command"] = [{
