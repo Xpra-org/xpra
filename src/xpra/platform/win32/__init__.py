@@ -293,13 +293,14 @@ def do_init():
         #figure out if we want to wait for input at the end:
         set_wait_for_input()
         return
-    from xpra.platform import get_prgname
-    LOG_FILENAME = (get_prgname() or "Xpra")+".log"
-    from xpra.platform.win32.paths import _get_data_dir
-    d = _get_data_dir()
-    log_file = os.path.join(d, LOG_FILENAME)
-    sys.stdout = open(log_file, "a")
-    sys.stderr = sys.stdout
+    if envbool("XPRA_LOG_TO_FILE", True):
+        from xpra.platform import get_prgname
+        LOG_FILENAME = (get_prgname() or "Xpra")+".log"
+        from xpra.platform.win32.paths import _get_data_dir
+        d = _get_data_dir()
+        log_file = os.path.join(d, LOG_FILENAME)
+        sys.stdout = open(log_file, "a")
+        sys.stderr = sys.stdout
 
 
 MB_ICONEXCLAMATION  = 0x00000030

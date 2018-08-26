@@ -72,6 +72,12 @@ def exec_dialog_subprocess(cmd):
         kwargs = {}
         if POSIX:
             kwargs["close_fds"] = True
+        else:
+            #win32 platform code would create a log file for the command's output,
+            #tell it not to do that:
+            env = os.environ.copy()
+            env["XPRA_LOG_TO_FILE"] = "0"
+            kwargs["env"] = env
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, **kwargs)
         stdout, stderr = proc.communicate()
         log("exec_dialog_subprocess(%s)", cmd)
