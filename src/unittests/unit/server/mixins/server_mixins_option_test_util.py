@@ -15,6 +15,7 @@ from xpra.net.net_util import get_free_tcp_port
 
 
 TEST_RFB = envbool("XPRA_TEST_RFB", not WIN32 and not OSX)
+#TEST_RFB = envbool("XPRA_TEST_RFB", False)
 
 
 OPTIONS = (
@@ -73,8 +74,10 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         ServerTestUtil.tearDownClass()
         if cls.xvfb:
             cls.xvfb.terminate()
+            cls.xvfb = None
         if cls.client_xvfb:
             cls.client_xvfb.terminate()
+            cls.client_xvfb = None
 
     def _test(self, subcommand="start", options={}):
         log("starting test server with options=%s", options)
@@ -126,9 +129,9 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 if vncviewer:
                     rfb_cmd = [vncviewer, "localhost::%i" % tcp_port]
                     rfb_client = self.run_command(rfb_cmd, **client_kwargs)
-                    r = pollwait(rfb_client, 5)
+                    r = pollwait(rfb_client, 10)
                     assert r is None, "rfb client terminated early and returned %i for server with args=%s" % (r, args)
-                
+
             #connect a gui client:
             if WIN32 or (self.client_display and self.client_xvfb):
                 xpra_args = [
