@@ -34,7 +34,7 @@ from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pi
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
-from xpra.util import DEFAULT_PORT, csv
+from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
 from xpra.os_util import thread, WIN32, OSX, PYTHON3
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
@@ -542,9 +542,13 @@ class ApplicationWindow:
     def reset_client(self):
         #lose current client class and make a new one:
         log("reset_client() client=%s", self.client)
-        if self.client:
-            self.client.cleanup()
+        c = self.client
+        if c:
             self.client = None
+            def noop(*args):
+                pass
+            c.exit = noop
+            c.cleanup()
         self.client = make_client(Exception, self.config)
         self.client.init(self.config)
         log("reset_client() new client=%s", self.client)
@@ -608,6 +612,8 @@ class ApplicationWindow:
                     #found separator: username:password@host
                     password = username[ppos+1:]
                     username = username[:ppos]
+            if self.config.ssh_port and self.config.ssh_port!=22:
+                params["ssh-port"] = self.config.ssh_port
             full_ssh += add_ssh_args(username, password, host, self.config.ssh_port, is_putty, is_paramiko)
             if username:
                 params["username"] = username
@@ -653,7 +659,7 @@ class ApplicationWindow:
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
         try:
-            log("calling %s%s", connect_to, (display_desc, self.config, self.set_info_text, self.ssh_failed))
+            log("calling %s%s", connect_to, (display_desc, repr_ellipsized(str(self.config)), self.set_info_text, self.ssh_failed))
             conn = connect_to(display_desc, opts=self.config, debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
         except Exception as e:
             log.error("Error: failed to connect", exc_info=True)

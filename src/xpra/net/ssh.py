@@ -72,7 +72,7 @@ def exec_dialog_subprocess(cmd):
         kwargs = {}
         if POSIX:
             kwargs["close_fds"] = True
-        proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, **kwargs)
+        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, **kwargs)
         stdout, stderr = proc.communicate()
         log("exec_dialog_subprocess(%s)", cmd)
         if stderr:
