@@ -27,7 +27,7 @@ ArchitecturesAllowed=
 Name: {app}; Flags: uninsalwaysuninstall;
 
 [Files]
-Source: dist\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs;
+Source: dist\*; Excludes: "etc\xpra"; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs;
 Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall; AfterInstall: PostInstall()
 
 [Icons]
