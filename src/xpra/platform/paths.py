@@ -94,7 +94,8 @@ def do_get_libexec_dir():
 def get_mmap_dir():
     return env_or_delegate("XPRA_MMAP_DIR", do_get_mmap_dir)
 def do_get_mmap_dir():
-    return os.getenv("TMPDIR", "/tmp")
+    import tempfile
+    return tempfile.gettempdir()
 
 
 def get_xpra_tmp_dir():
