@@ -551,9 +551,11 @@ class ApplicationWindow:
             c.quit = noop
             c.exit = noop
             c.cleanup()
-        self.client = make_client(Exception, self.config)
-        self.client.init(self.config)
-        log("reset_client() new client=%s", self.client)
+        def make_new_client():
+            self.client = make_client(Exception, self.config)
+            self.client.init(self.config)
+            log("make_new_client() new client=%s", self.client)
+        glib.idle_add(make_new_client)
 
 
     def handle_exception(self, e):
