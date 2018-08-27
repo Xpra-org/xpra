@@ -64,10 +64,10 @@ def get_program_data_dir():
         buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
         SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
         if buf.value:
-            return buf.value
+            return buf.value.encode()
     except:
         get_util_logger().log("get_program_data_dir()", exc_info=True)
-    return "C:\\ProgramData"
+    return b"C:\\ProgramData"
 
 def do_get_system_conf_dirs():
     #ie: C:\ProgramData\Xpra
@@ -83,7 +83,7 @@ def do_get_ssh_conf_dirs():
     openssh_dir = os.path.join(windows_dir, system32, "OpenSSH")
     return [
         os.path.join(get_program_data_dir(), "ssh"),    #ie: C:\ProgramData\ssh
-        "%APPDATA\\ssh",    #ie: C:\Users\Username\AppData\Roaming\ssh
+        "%APPDATA%\\ssh",   #ie: C:\Users\Username\AppData\Roaming\ssh
         openssh_dir,        #ie: C:\Windows\system32\OpenSSH
         "~/.ssh",
         "~/ssh",
@@ -133,8 +133,7 @@ def do_get_script_bin_dirs():
     return []
 
 def do_get_socket_dirs():
-    #ie: C:\Documents and Settings\Username\Application Data\Xpra
-    return [_get_data_dir()]
+    return []
 
 
 APP_DIR = None
