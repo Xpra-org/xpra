@@ -401,11 +401,11 @@ class GTKTrayMenuBase(object):
     def make_bugreportmenuitem(self):
         def show_bug_report_cb(*_args):
             self.show_bug_report()
-        return  self.handshake_menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
+        return  self.menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
 
 
     def make_featuresmenuitem(self):
-        features_menu_item = self.menuitem("Features", "features.png")
+        features_menu_item = self.handshake_menuitem("Features", "features.png")
         menu = gtk.Menu()
         self.append_featuresmenuitems(menu)
         features_menu_item.set_submenu(menu)
@@ -734,14 +734,18 @@ class GTKTrayMenuBase(object):
         modal = self.checkitem("Modal Windows")
         modal.set_tooltip_text("honour modal windows")
         modal.set_active(self.client.modal_windows)
+        set_sensitive(modal, False)
         def modal_toggled(*args):
             self.client.modal_windows = modal.get_active()
             log("modal_toggled%s modal_windows=%s", args, self.client.modal_windows)
+        def set_modal_menuitem(*args):
+            set_sensitive(modal, True)
+        self.client.after_handshake(set_modal_menuitem)
         modal.connect("toggled", modal_toggled)
         return modal
 
     def make_picturemenuitem(self):
-        picture_menu_item = self.menuitem("Picture", "picture.png")
+        picture_menu_item = self.handshake_menuitem("Picture", "picture.png")
         menu = gtk.Menu()
         picture_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -1017,7 +1021,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_audiomenuitem(self):
-        audio_menu_item = self.menuitem("Audio", "audio.png")
+        audio_menu_item = self.handshake_menuitem("Audio", "audio.png")
         menu = gtk.Menu()
         audio_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -1372,7 +1376,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_windowsmenuitem(self):
-        windows_menu_item = self.menuitem("Windows", "windows.png")
+        windows_menu_item = self.handshake_menuitem("Windows", "windows.png")
         menu = gtk.Menu()
         windows_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -1405,7 +1409,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_servermenuitem(self):
-        server_menu_item = self.menuitem("Server", "server.png")
+        server_menu_item = self.handshake_menuitem("Server", "server.png")
         menu = gtk.Menu()
         server_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
