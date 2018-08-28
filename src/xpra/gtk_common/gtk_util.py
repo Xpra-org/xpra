@@ -739,13 +739,13 @@ def CheckMenuItem(*args, **kwargs):
 
 def set_use_tray_workaround(enabled):
     global CheckMenuItemClass, ImageMenuItemClass
-    if enabled:
+    if enabled and PYTHON2:
         CheckMenuItemClass = TrayCheckMenuItem
         ImageMenuItemClass = TrayImageMenuItem
     else:
         CheckMenuItemClass = gtk.CheckMenuItem
         ImageMenuItemClass = gtk.ImageMenuItem
-set_use_tray_workaround(PYTHON2)
+set_use_tray_workaround(True)
 
 
 
