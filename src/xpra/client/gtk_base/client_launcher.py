@@ -120,8 +120,7 @@ class ApplicationWindow:
         self.config_keys = set(SAVED_FIELDS)
         def raise_exception(*args):
             raise Exception(*args)
-        self.client = make_client(raise_exception, self.config)
-        self.client.init(self.config)
+        self.client = None
         self.exit_launcher = False
         self.exit_code = None
         self.current_error = None
@@ -157,7 +156,16 @@ class ApplicationWindow:
         icon.set_from_pixbuf(icon_pixbuf)
         return imagebutton(label, icon, tooltip, clicked_cb, icon_size=None)
 
-    def create_window(self):
+    def create_window_with_config(self):
+        #suspend tray workaround for our window widgets:
+        try:
+            set_use_tray_workaround(False)
+            self.do_create_window()
+        finally:
+            set_use_tray_workaround(True)
+        self.update_gui_from_config()
+
+    def do_create_window(self):
         self.window = gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.destroy)
@@ -319,7 +327,7 @@ class ApplicationWindow:
                 return self.config.encoding
             def set_new_encoding(e):
                 self.config.encoding = e
-            encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+            encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER]
             server_encodings = encodings
             es = make_encodingsmenu(get_current_encoding, set_new_encoding, encodings, server_encodings)
             self.encoding_combo.set_menu(es)
@@ -544,18 +552,14 @@ class ApplicationWindow:
         self.do_connect()
 
 
-    def reset_client(self):
-        #lose current client class and make a new one:
-        log("reset_client() client=%s", self.client)
+    def clean_client(self):
         c = self.client
         if c:
-            self.client = None
+            c.disconnect_and_quit = noop
+            c.warn_and_quit = noop
+            c.quit = noop
+            c.exit = noop
             c.cleanup()
-        def make_new_client():
-            self.client = make_client(Exception, self.config)
-            self.client.init(self.config)
-            log("make_new_client() new client=%s", self.client)
-        glib.idle_add(make_new_client)
 
 
     def handle_exception(self, e):
@@ -566,7 +570,7 @@ class ApplicationWindow:
             #in debug mode, include the full stacktrace:
             t = traceback.format_exc()
         def ui_handle_exception():
-            self.reset_client()
+            self.clean_client()
             self.set_sensitive(True)
             if not self.current_error:
                 self.current_error = t
@@ -645,6 +649,10 @@ class ApplicationWindow:
         #or the config file may contain a username which is different from the default one
         #which is used for initializing the client during init,
         #so update the client now:
+        def raise_exception(*args):
+            raise Exception(*args)
+        self.client = make_client(raise_exception, self.config)
+        self.client.init(self.config)
         self.client.username = username
         self.set_info_text("Connecting...")
         thread.start_new_thread(self.do_connect_builtin, (params,))
@@ -673,6 +681,7 @@ class ApplicationWindow:
         glib.idle_add(self.window.hide)
         glib.idle_add(self.start_XpraClient, conn, display_desc)
 
+
     def start_XpraClient(self, conn, display_desc):
         try:
             self.do_start_XpraClient(conn, display_desc)
@@ -688,23 +697,31 @@ class ApplicationWindow:
         #but calling client.init will do it again - so we have to clear it:
         from xpra.codecs.video_helper import getVideoHelper
         getVideoHelper().cleanup()
-        self.client.init(self.config)
         self.client.init_ui(self.config)
         self.client.setup_connection(conn)
         log("start_XpraClient() client initialized")
 
         if self.config.password:
             self.client.password = self.config.password
-        #override exit code:
-        warn_and_quit_save = self.client.warn_and_quit
-        quit_save = self.client.quit
+
         def do_quit(*args):
             log("do_quit%s", args)
-            self.client.warn_and_quit = warn_and_quit_save
-            self.client.quit = quit_save
-            self.client.cleanup()
+            self.clean_client()
             self.destroy()
             gtk_main_quit_really()
+
+        def handle_client_quit(exit_launcher=False):
+            w = self.window
+            log("handle_quit(%s) window=%s", exit_launcher, w)
+            self.clean_client()
+            if exit_launcher:
+                #give time for the main loop to run once after calling cleanup
+                glib.timeout_add(100, do_quit)
+            else:
+                if w:
+                    self.set_sensitive(True)
+                    glib.idle_add(w.show)
+
         def warn_and_quit_override(exit_code, warning):
             log("warn_and_quit_override(%s, %s)", exit_code, warning)
             if self.exit_code == None:
@@ -717,36 +734,13 @@ class ApplicationWindow:
                 self.current_error = warning
                 self.set_info_color(err)
                 self.set_info_text(warning)
-            if err:
-                def ignore_further_quit_events(*args):
-                    log("ignore_further_quit_events%s", args)
-                    pass
-                if self.client:
-                    self.client.cleanup()
-                    self.client.warn_and_quit = ignore_further_quit_events
-                    self.client.quit = ignore_further_quit_events
-                w = self.window
-                if w:
-                    self.set_sensitive(True)
-                    self.reset_client()
-                    glib.idle_add(w.show)
-            else:
-                do_quit()
+            handle_client_quit(not err)
 
         def quit_override(exit_code):
             log("quit_override(%s)", exit_code)
             if self.exit_code == None:
                 self.exit_code = exit_code
-
-            self.client.disconnect_and_quit = noop
-            self.client.quit = noop
-            self.client.exit = noop
-            self.client.cleanup()
-            if self.exit_code==0:
-                #give time for the main loop to run once after calling cleanup
-                glib.timeout_add(100, do_quit)
-            else:
-                self.reset_client()
+            handle_client_quit(self.exit_code==0)
 
         self.client.warn_and_quit = warn_and_quit_override
         self.client.quit = quit_override
@@ -852,6 +846,7 @@ class ApplicationWindow:
     def destroy(self, *args):
         log("destroy%s", args)
         self.exit_launcher = True
+        self.clean_client()
         self.close_window()
         gtk_main_quit_really()
 
@@ -986,13 +981,7 @@ def do_main():
         if debug:
             for x in debug.split(","):
                 enable_debug_for(x)
-        #suspend tray workaround for our window widgets:
-        try:
-            set_use_tray_workaround(False)
-            app.create_window()
-        finally:
-            set_use_tray_workaround(True)
-        app.update_gui_from_config()
+        app.create_window_with_config()
     except Exception:
         exception_dialog("Error creating launcher form")
         return 1
