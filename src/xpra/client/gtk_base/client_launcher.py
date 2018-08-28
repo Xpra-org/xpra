@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2009-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2009-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-from xpra.gtk_common.quit import gtk_main_quit_really
 
 """ client_launcher.py
 
@@ -30,6 +29,7 @@ gui_init()
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
                                     OptionMenu, choose_file, set_use_tray_workaround, window_defaults, imagebutton, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
@@ -400,7 +400,7 @@ class ApplicationWindow:
 
     def accel_close(self, *args):
         log("accel_close%s", args)
-        gtk.main_quit()
+        gtk_main_quit_really()
 
     def validate(self, *args):
         ssh = self.mode_combo.get_active_text()=="SSH"
@@ -853,7 +853,7 @@ class ApplicationWindow:
         log("destroy%s", args)
         self.exit_launcher = True
         self.close_window()
-        gtk.main_quit()
+        gtk_main_quit_really()
 
     def update_options_from_URL(self, url):
         from xpra.scripts.parsing import parse_URL
@@ -919,7 +919,7 @@ def exception_dialog(title):
     md.show_all()
     def close_dialog(*_args):
         md.destroy()
-        gtk.main_quit()
+        gtk_main_quit_really()
     md.connect("response", close_dialog)
     md.connect("close", close_dialog)
     gtk_main()
