@@ -3,6 +3,7 @@
 # Copyright (C) 2009-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+from xpra.gtk_common.quit import gtk_main_quit_really
 
 """ client_launcher.py
 
@@ -101,6 +102,10 @@ def has_mdns():
     except ImportError as e:
         log("no mdns support: %s", e)
     return False
+
+def noop(*args):
+    log("noop%s", args)
+    pass
 
 
 class ApplicationWindow:
@@ -545,11 +550,6 @@ class ApplicationWindow:
         c = self.client
         if c:
             self.client = None
-            def noop(*args):
-                pass
-            c.disconnect_and_quit = noop
-            c.quit = noop
-            c.exit = noop
             c.cleanup()
         def make_new_client():
             self.client = make_client(Exception, self.config)
@@ -704,7 +704,7 @@ class ApplicationWindow:
             self.client.quit = quit_save
             self.client.cleanup()
             self.destroy()
-            gtk.main_quit()
+            gtk_main_quit_really()
         def warn_and_quit_override(exit_code, warning):
             log("warn_and_quit_override(%s, %s)", exit_code, warning)
             if self.exit_code == None:
@@ -737,9 +737,14 @@ class ApplicationWindow:
             log("quit_override(%s)", exit_code)
             if self.exit_code == None:
                 self.exit_code = exit_code
+
+            self.client.disconnect_and_quit = noop
+            self.client.quit = noop
+            self.client.exit = noop
             self.client.cleanup()
             if self.exit_code==0:
-                do_quit()
+                #give time for the main loop to run once after calling cleanup
+                glib.timeout_add(100, do_quit)
             else:
                 self.reset_client()
 
