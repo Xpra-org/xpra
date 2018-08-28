@@ -208,7 +208,7 @@ class win32NotifyIcon(object):
     instances = {}
 
     def __init__(self, app_id=0, title="", move_callbacks=None, click_callback=None, exit_callback=None, command_callback=None, iconPathName=None):
-        log("win32NotifyIcon: app_id=%i, title='%s'", app_id, title)
+        log("win32NotifyIcon: app_id=%i, title='%s'", app_id, nonl(title))
         self.app_id = app_id
         self.title = title
         self.current_icon = None
@@ -233,6 +233,7 @@ class win32NotifyIcon(object):
         return "win32NotifyIcon(%#x)" % self.app_id
 
     def create_tray_window(self):
+        log("create_tray_window()")
         self.create_window()
         self.register_tray()
 
@@ -244,7 +245,7 @@ class win32NotifyIcon(object):
             0, 0, NIwc.hInstance, None)
         if self.hwnd==0:
             raise ctypes.WinError(ctypes.get_last_error())
-        log("hwnd=%#x", self.hwnd)
+        log("create_window() hwnd=%#x", self.hwnd)
         UpdateWindow(self.hwnd)
 
     def register_tray(self):
@@ -286,12 +287,14 @@ class win32NotifyIcon(object):
         try:
             nid = self.make_nid(0)
             log("delete_tray_window(..) calling Shell_NotifyIconW(NIM_DELETE, %s)", nid)
-            Shell_NotifyIconW(NIM_DELETE, nid)
+            if not Shell_NotifyIconW(NIM_DELETE, nid):
+                log.warn("Warning: failed to remove system tray")
+            else:
+                self.hwnd = 0
         except Exception as e:
             log("delete_tray_window()", exc_info=True)
             log.error("Error: failed to delete tray window")
             log.error(" %s", e)
-        self.hwnd = 0
 
 
     def set_blinking(self, on):
