@@ -150,7 +150,7 @@ class FakeApplication:
         log("xpra_tray_mouseover(%s)", args)
 
     def xpra_tray_exit(self, *args):
-        log("xpra_tray_exit(%s)", args)
+        log("xpra_tray_exit%s", args)
         gtk.main_quit()
 
     def xpra_tray_geometry(self, *args):

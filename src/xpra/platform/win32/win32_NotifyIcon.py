@@ -254,6 +254,7 @@ class win32NotifyIcon(object):
             raise Exception("Shell_NotifyIconW failed to ADD")
 
     def make_nid(self, flags):
+        assert self.hwnd
         nid = NOTIFYICONDATA()
         nid.cbSize = sizeof(NOTIFYICONDATA)
         nid.hWnd = self.hwnd
@@ -287,6 +288,7 @@ class win32NotifyIcon(object):
             log("delete_tray_window(..) calling Shell_NotifyIconW(NIM_DELETE, %s)", nid)
             Shell_NotifyIconW(NIM_DELETE, nid)
         except Exception as e:
+            log("delete_tray_window()", exc_info=True)
             log.error("Error: failed to delete tray window")
             log.error(" %s", e)
         self.hwnd = 0
@@ -297,11 +299,13 @@ class win32NotifyIcon(object):
         pass
 
     def set_tooltip(self, tooltip):
+        log("set_tooltip(%s)", tooltip)
         self.title = tooltip
         Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
 
 
     def set_icon(self, iconPathName):
+        log("set_icon(%s)", iconPathName)
         hicon = self.LoadImage(iconPathName) or FALLBACK_ICON
         self.do_set_icon(hicon)
         Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON))

@@ -98,9 +98,9 @@ class TrayClient(StubClientMixin):
             elif button==3 and not pressed:
                 self.idle_add(self.menu_helper.popup, button, time)
         def xpra_tray_mouseover(*args):
-            log("xpra_tray_mouseover(%s)", args)
+            log("xpra_tray_mouseover%s", args)
         def xpra_tray_exit(*args):
-            log("xpra_tray_exit(%s)", args)
+            log("xpra_tray_exit%s", args)
             self.disconnect_and_quit(0, CLIENT_EXIT)
         def xpra_tray_geometry(*args):
             if tray:
