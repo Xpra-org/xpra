@@ -46,6 +46,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
+from xpra.client.mixins.window_manager import WindowClient
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_fixed_cursor_size, get_menu_support_function, get_wm_name
 
@@ -613,10 +614,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return tray_list
 
     def get_tray_classes(self):
-        return self._add_statusicon_tray(UIXpraClient.get_tray_classes(self))
+        from xpra.client.mixins.tray import TrayClient
+        return self._add_statusicon_tray(TrayClient.get_tray_classes(self))
 
     def get_system_tray_classes(self):
-        return self._add_statusicon_tray(UIXpraClient.get_system_tray_classes(self))
+        return self._add_statusicon_tray(WindowClient.get_system_tray_classes(self))
 
 
     def supports_system_tray(self):
@@ -1171,7 +1173,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def destroy_window(self, wid, window):
         #override so we can cleanup the group-leader if needed,
-        UIXpraClient.destroy_window(self, wid, window)
+        WindowClient.destroy_window(self, wid, window)
         group_leader = window.group_leader
         if group_leader is None or len(self._group_leader_wids)==0:
             return
