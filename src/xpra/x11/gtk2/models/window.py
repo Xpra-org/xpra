@@ -460,12 +460,12 @@ class WindowModel(BaseWindowModel):
 
     def _do_update_client_geometry(self, window_size_cb, window_position_cb):
         allocated_w, allocated_h = window_size_cb()
-        geomlog("_do_update_client_geometry: allocated %ix%i", allocated_w, allocated_h)
+        geomlog("_do_update_client_geometry: allocated %ix%i (from %s)", allocated_w, allocated_h, window_size_cb)
         hints = self.get_property("size-hints")
         w, h = calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
         x, y = window_position_cb(w, h)
-        geomlog("_do_update_client_geometry: position=%ix%i", x, y)
+        geomlog("_do_update_client_geometry: position=%ix%i (from %s)", x, y, window_position_cb)
         self.corral_window.move_resize(x, y, w, h)
         self._updateprop("geometry", (x, y, w, h))
         with xswallow:
@@ -492,36 +492,35 @@ class WindowModel(BaseWindowModel):
         try:
             #workaround applications whose windows disappear from underneath us:
             with xsync:
-                self.resize_corral_window(event.x, event.y, event.width, event.height, event.border_width)
+                #event.border_width unused
+                self.resize_corral_window(event.x, event.y, event.width, event.height)
         except XError as e:
             geomlog("do_xpra_configure_event(%s)", event, exc_info=True)
             geomlog.warn("Warning: failed to resize corral window %#x", self.corral_window.xid)
             geomlog.warn(" %s", e)
 
-    def resize_corral_window(self, x, y, w, h, _border):
+    def resize_corral_window(self, x, y, w, h):
         #the client window may have been resized or moved (generally programmatically)
         #so we may need to update the corral_window to match
         cox, coy, cow, coh = self.corral_window.get_geometry()[:4]
         #size changes (and position if any):
         hints = self.get_property("size-hints")
         w, h = calc_constrained_size(w, h, hints)
-        geomlog("resize_corral_window() new constrained size=%ix%i", w, h)
         cx, cy, cw, ch = self.get_property("geometry")
-        if cow!=w or coh!=h:
-            #at least resized, check for move:
-            if (x, y) != (0, 0):
+        resized = cow!=w or coh!=h
+        moved = (x, y) != (0, 0)
+        if resized:
+            if moved:
                 self._internal_set_property("set-initial-position", True)
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
                 self.client_window.move(0, 0)
                 self._updateprop("geometry", (x, y, w, h))
             else:
-                #just resize:
                 geomlog("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
                 self.corral_window.resize(w, h)
                 self._updateprop("geometry", (cx, cy, w, h))
-        #just position change:
-        elif (x, y) != (0, 0):
+        elif moved:
             self._internal_set_property("set-initial-position", True)
             geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
