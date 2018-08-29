@@ -161,11 +161,18 @@ class WindowServer(StubServerMixin):
                     parent_ws = ss.get_window_source(transient_for)
                     pos = self.get_window_position(parent)
                     geomlog("transient-for=%s : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
-                    if parent and parent_ws and parent_ws.mapped_at and pos:
-                        cx, cy = parent_ws.mapped_at[:2]
-                        px, py = pos
-                        x += cx-px
-                        y += cy-py
+                    if parent and parent_ws:
+                        mapped_at = parent_ws.mapped_at
+                        delta = parent_ws.mapped_delta
+                        dx, dy = 0, 0
+                        if delta:
+                            dx, dy = delta
+                        elif mapped_at:
+                            cx, cy = mapped_at[:2]
+                            px, py = pos
+                            dx, dy = cx-px, cy-py
+                        x += dx
+                        y += dy
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
     def _process_damage_sequence(self, proto, packet):
@@ -242,14 +249,14 @@ class WindowServer(StubServerMixin):
         #where the window is actually mapped on the server screen:
         return None
 
-    def _window_mapped_at(self, proto, wid, window, coords=None):
+    def _window_mapped_at(self, proto, wid, window, coords=None, delta=None):
         #record where a window is mapped by a client
         #(in order to support multiple clients and different offsets)
         ss = self._server_sources.get(proto)
         if not ss:
             return
         if coords:
-            ss.map_window(wid, window, coords)
+            ss.map_window(wid, window, coords, delta)
         else:
             ss.unmap_window(wid, window)
 

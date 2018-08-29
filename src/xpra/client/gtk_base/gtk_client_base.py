@@ -715,6 +715,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         updict(capabilities, "window", {
                "initiate-moveresize"    : True,
                "configure.pointer"      : True,
+               "configure.delta"        : True,
                "frame_sizes"            : self.get_window_frame_sizes()
                })
         updict(capabilities, "encoding", {
@@ -1033,7 +1034,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 window = None
                 try:
                     w, h = 50, 50
-                    window = self.GLClientWindowClass(self, None, None, 2**32-1, -100, -100, w, h, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
+                    window = self.GLClientWindowClass(self, None, None, 2**32-1, -100, -100, w, h, -100, -100, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
                     window.realize()
                     pixel_format = "BGRX"
                     bpp = len(pixel_format)

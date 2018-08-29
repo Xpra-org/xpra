@@ -367,7 +367,10 @@ class ShadowServerBase(RFBServer):
     def _process_map_window(self, proto, packet):
         wid, x, y, width, height = packet[1:6]
         window = self._process_window_common(wid)
-        self._window_mapped_at(proto, wid, window, (x, y, width, height))
+        delta = None
+        if len(packet)>=9:
+            delta = packet[8]
+        self._window_mapped_at(proto, wid, window, (x, y, width, height), delta)
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
@@ -376,7 +379,7 @@ class ShadowServerBase(RFBServer):
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
         window = self._process_window_common(wid)
-        self._window_mapped_at(proto, wid, window, None)
+        self._window_mapped_at(proto, wid, window)
         #TODO: deal with more than one window / more than one client
         #and stop refresh if all the windows are unmapped everywhere
         if len(self._server_sources)<=1 and len(self._id_to_window)<=1:
@@ -385,7 +388,10 @@ class ShadowServerBase(RFBServer):
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
         window = self._process_window_common(wid)
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
+        delta = None
+        if len(packet)>=14:
+            delta = packet[13]
+        self._window_mapped_at(proto, wid, window, (x, y, w, h), delta)
         self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])

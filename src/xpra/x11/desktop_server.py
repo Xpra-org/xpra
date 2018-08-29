@@ -395,6 +395,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
                 "resize-counter"         : True,
                 "configure.skip-geometry": True,
                 "configure.pointer"      : True,
+                "configure.delta"        : True,
                 "states"                 : ["iconified", "focused"],
                 })
         return capabilities
@@ -481,8 +482,11 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         if not window:
             windowlog("cannot map window %s: already removed!", wid)
             return
-        geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
+        delta = None
+        if len(packet)>=9:
+            delta = packet[8]
+        geomlog("client mapped window %s - %s, at: %s (delta=%s)", wid, window, (x, y, w, h), delta)
+        self._window_mapped_at(proto, wid, window, (x, y, w, h), delta)
         if len(packet)>=8:
             self._set_window_state(proto, wid, window, packet[7])
         if len(packet)>=7:
@@ -501,7 +505,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
             #during iconification events:
             self._set_window_state(proto, wid, window, packet[3])
         assert not window.is_OR()
-        self._window_mapped_at(proto, wid, window, None)
+        self._window_mapped_at(proto, wid, window)
         #TODO: handle inconification?
         #iconified = len(packet)>=3 and bool(packet[2])
 
@@ -534,7 +538,10 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
             if cprops:
                 metadatalog("window client properties updates: %s", cprops)
                 self._set_client_properties(proto, wid, window, cprops)
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
+        delta = None
+        if len(packet)>=14:
+            delta = packet[13]
+        self._window_mapped_at(proto, wid, window, (x, y, w, h), delta)
         if damage:
             self._damage(window, 0, 0, w, h)
 
