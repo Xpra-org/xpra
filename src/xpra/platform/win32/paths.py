@@ -64,14 +64,14 @@ def get_program_data_dir():
         buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
         SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
         if buf.value:
-            return buf.value.encode()
+            return buf.value
     except:
         get_util_logger().log("get_program_data_dir()", exc_info=True)
-    return b"C:\\ProgramData"
+    return u"C:\\ProgramData"
 
 def do_get_system_conf_dirs():
     #ie: C:\ProgramData\Xpra
-    return [os.path.join(get_program_data_dir(), "Xpra")]
+    return [os.path.join(get_program_data_dir(), u"Xpra")]
 
 def do_get_ssh_conf_dirs():
     from xpra.scripts.config import python_platform
