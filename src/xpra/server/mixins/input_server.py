@@ -343,9 +343,10 @@ class InputServer(StubServerMixin):
                     if wx!=cx or wy!=cy:
                         dx, dy = wx-cx, wy-cy
                 px, py = pointer
-                ax, ay = px+dx, py+dy
-                mouselog("client %2i: server window position: %12s, client window position: %24s (delta=%12s), pointer=%s, adjusted: %s", ss.counter, pos, mapped_at, delta, pointer, (ax, ay))
-                return ax, ay
+                if dx!=0 or dy!=0:
+                    ax, ay = px+dx, py+dy
+                    mouselog("client %2i: server window position: %12s, client window position: %24s (delta=%12s), pointer=%s, adjusted: %s", ss.counter, pos, mapped_at, delta, pointer, (ax, ay))
+                    return ax, ay
         return pointer
 
     def _process_mouse_common(self, proto, wid, opointer, *args):
