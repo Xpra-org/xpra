@@ -8,9 +8,6 @@ from __future__ import absolute_import
 
 from libc.time cimport time_t
 
-from xpra.log import Logger
-log = Logger("util")
-
 
 cdef extern from "monotonic_ctime.h":
     double get_monotonic_time()
