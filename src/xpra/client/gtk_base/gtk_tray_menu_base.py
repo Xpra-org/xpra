@@ -1383,6 +1383,7 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_raisewindowsmenuitem())
         menu.append(self.make_minimizewindowsmenuitem())
         menu.append(self.make_refreshmenuitem())
+        menu.append(self.make_reinitmenuitem())
         windows_menu_item.show_all()
         return windows_menu_item
 
@@ -1390,7 +1391,15 @@ class GTKTrayMenuBase(object):
         def force_refresh(*_args):
             log("force refresh")
             self.client.send_refresh_all()
+            self.client.reinit_window_icons()
         return self.handshake_menuitem("Refresh", "retry.png", None, force_refresh)
+
+    def make_reinitmenuitem(self):
+        def force_reinit(*_args):
+            log("force reinit")
+            self.client.reinit_windows()
+            self.client.reinit_window_icons()
+        return self.handshake_menuitem("Re-initialize", "reinitialize.png", None, force_reinit)
 
     def make_raisewindowsmenuitem(self):
         def raise_windows(*_args):
