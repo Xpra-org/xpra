@@ -11,8 +11,8 @@ log-dir = %(log_dir)s
 log-file = $DISPLAY.log
 
 # Delegate "start" and "start-desktop" subcommands to the system-wide proxy server instance
-#start-via-proxy = no
-start-via-proxy = auto
+#start-via-proxy = auto
+start-via-proxy = no
 
 # Environment variables for children started
 # with 'start-child' or 'start':

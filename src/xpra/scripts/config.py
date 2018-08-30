@@ -932,7 +932,7 @@ def get_defaults():
                     "rfb-upgrade"       : 5,
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
-                    "start-via-proxy"   : None,
+                    "start-via-proxy"   : False,
                     "attach"            : None,
                     "use-display"       : False,
                     "fake-xinerama"     : not OSX and not WIN32,
