@@ -1331,7 +1331,7 @@ class WindowVideoSource(WindowSource):
         #but to make the code less dense:
         ve = self._video_encoder
         csce = self._csc_encoder
-        if ve is None:
+        if ve is None or ve.is_closed() or (csce and csce.is_closed()):
             return False
 
         if csce:
@@ -1346,8 +1346,12 @@ class WindowVideoSource(WindowSource):
                                     csce.get_src_width(), csce.get_src_height(), csc_width, csc_height, csce.get_info())
                 return False
             elif csce.get_dst_format()!=ve.get_src_format():
-                csclog.error("Error: CSC intermediate format mismatch: %s vs %s, csc info=%s",
-                                    csce.get_dst_format(), ve.get_src_format(), csce.get_info())
+                csclog.error("Error: CSC intermediate format mismatch,")
+                csclog.error(" %s outputs %s but %s expects %sw", csce.get_type(), csce.get_dst_format(), ve.get_type(), ve.get_src_format())
+                csclog.error(" %s:", csce)
+                print_nested_dict(csce.get_info(), "  ", print_fn=csclog.error)
+                csclog.error(" %s:", ve)
+                print_nested_dict(ve.get_info(), "  ", print_fn=csclog.error)
                 return False
 
             #encoder will take its input from csc:
