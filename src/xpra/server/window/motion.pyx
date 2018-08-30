@@ -143,8 +143,6 @@ cdef class ScrollData:
         with nogil:
             for i in range(height):
                 a2[i] = <uint64_t> xxh64(buf, row_len, seed)
-                #import xxhash
-                #a2[i] = <uint64_t> abs(xxhash.xxh64(buf[:row_len]).intdigest())
                 buf += rowstride
 
     def calculate(self, uint16_t max_distance=1000):

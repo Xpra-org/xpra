@@ -48,7 +48,7 @@ $PACMAN --noconfirm -S ${XPKG}cython
 #build pynacl against the system library:
 export SODIUM_INSTALL=system
 easy_install-2.7 -U -Z enum34 enum-compat
-for x in rencode xxhash lz4 websocket-client netifaces comtypes PyOpenGL PyOpenGL_accelerate websockify nvidia-ml-py setproctitle pyu2f python-ldap ldap3 bcrypt pynacl paramiko; do
+for x in rencode lz4 websocket-client netifaces comtypes PyOpenGL PyOpenGL_accelerate websockify nvidia-ml-py setproctitle pyu2f python-ldap ldap3 bcrypt pynacl paramiko; do
     easy_install-2.7 -U -Z $x
     easy_install-3.7 -U -Z $x
 done
