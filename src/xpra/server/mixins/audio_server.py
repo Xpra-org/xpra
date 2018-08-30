@@ -116,7 +116,7 @@ class AudioServer(StubServerMixin):
             else:
                 xpra_rd = _get_xpra_runtime_dir()
                 assert xpra_rd, "bug: no xpra runtime dir"
-                display = os.environ.get("DISPLAY")
+                display = os.environ.get("DISPLAY", "").lstrip(":")
                 self.pulseaudio_private_dir = osexpand(os.path.join(xpra_rd, "pulse-%s" % display))
                 if not os.path.exists(self.pulseaudio_private_dir):
                     os.mkdir(self.pulseaudio_private_dir, 0o700)
@@ -212,28 +212,43 @@ class AudioServer(StubServerMixin):
                 #only log the full stacktrace if the process failed to terminate:
                 if self.is_child_alive(proc):
                     soundlog.error("Error: stopping pulseaudio: %s", e, exc_info=True)
-        if self.pulseaudio_private_socket and os.path.exists(self.pulseaudio_private_socket):
-            try:
-                os.unlink(self.pulseaudio_private_socket)
-            except OSError as e:
-                soundlog("failed to remove private socket '%s'", self.pulseaudio_private_socket, exc_info=True)
-                soundlog.error("Error: failed to remove '%s'", self.pulseaudio_private_socket)
-        if self.pulseaudio_private_dir and not os.path.exists(self.pulseaudio_private_socket):
-            pulse = os.path.join(self.pulseaudio_private_dir, "pulse")
-            native = os.path.join(pulse, "native")
-            try:
-                for x in (native, pulse, self.pulseaudio_private_dir):
-                    soundlog("removing private directory '%s'", x)
-                    if os.path.exists(x) and os.path.isdir(x):
-                        os.rmdir(x)
-            except OSError as e:
-                soundlog("cleanup_pulseaudio() error removing '%s'", x, exc_info=True)
-                soundlog.error("Error: failed to cleanup the pulseaudio private directory")
-                soundlog.error(" '%s'", self.pulseaudio_private_dir)
+            if self.pulseaudio_private_socket and self.is_child_alive(proc):
+                #wait for the pulseaudio process to exit,
+                #it will delete the socket:
+                soundlog("pollwait()=%s", pollwait(proc))
+        if self.pulseaudio_private_socket and not self.is_child_alive(proc):
+            #wait for the socket to get cleaned up
+            #(it should be removed by the pulseaudio server as it exits)
+            import time
+            now = monotonic_time()
+            while (monotonic_time()-now)<1 and os.path.exists(self.pulseaudio_private_socket):
+                time.sleep(0.1)
+        if self.pulseaudio_private_dir:
+            if os.path.exists(self.pulseaudio_private_socket):
+                log.warn("Warning: the pulseaudio private socket file still exists:")
+                log.warn(" '%s'", self.pulseaudio_private_socket)
+                log.warn(" the private pulseaudio directory containing it will not be removed")
+            else:
+                pulse = os.path.join(self.pulseaudio_private_dir, "pulse")
+                native = os.path.join(pulse, "native")
+                path = None
                 try:
-                    soundlog(" files found in %s: %s", os.listdir(x))
-                except OSError:
-                    pass
+                    for d in (native, pulse, self.pulseaudio_private_dir):
+                        path = os.path.abspath(d)
+                        soundlog("removing private directory '%s'", path)
+                        if os.path.exists(path) and os.path.isdir(path):
+                            os.rmdir(path)
+                except OSError as e:
+                    soundlog("cleanup_pulseaudio() error removing '%s'", path, exc_info=True)
+                    soundlog.error("Error: failed to cleanup the pulseaudio private directory")
+                    soundlog.error(" '%s'", self.pulseaudio_private_dir)
+                    soundlog.error(" %s", e)
+                    try:
+                        files = os.listdir(path)
+                        if files:
+                            soundlog.error(" found some files in '%s': %s", path, files)
+                    except OSError:
+                        pass
             
 
     def init_sound_options(self):
