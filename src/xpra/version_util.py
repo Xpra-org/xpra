@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,12 +10,16 @@ import sys
 import os
 
 import xpra
-from xpra.util import updict, envbool
+from xpra.util import updict, envbool, get_util_logger
 from xpra.os_util import get_linux_distribution, PYTHON3, BITS
-from xpra.log import Logger
-log = Logger("util")
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
+
+
+def log(msg, *args):
+    get_util_logger().debug(msg, *args)
+def warn(msg, *args):
+    get_util_logger().warn(msg, *args)
 
 
 def full_version_str():
@@ -87,7 +91,7 @@ def get_version_info():
         props["local_modifications"]    = LOCAL_MODIFICATIONS
         props["revision"]               = REVISION
     except ImportError as e:
-        log.warn("missing some source information: %s", e)
+        warn("missing some source information: %s", e)
     return props
 
 def get_version_info_full():
@@ -114,7 +118,7 @@ def get_version_info_full():
         d = dict((k.lstrip("lib_"), getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_"))
         updict(props, "lib", d)
     except Exception as e:
-        log.warn("missing some build information: %s", e)
+        warn("missing some build information: %s", e)
     log("get_version_info_full()=%s", props)
     return props
 
