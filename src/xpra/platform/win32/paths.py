@@ -137,9 +137,8 @@ def do_get_socket_dirs():
 
 
 APP_DIR = None
-if getattr(sys, 'frozen', False) in (True, "windows_exe", "console_exe"):    #@UndefinedVariable
+if getattr(sys, 'frozen', False) is True:
     #cx_freeze = sys.frozen == True
-    #py2exe =  sys.frozen in ("windows_exe", "console_exe")
     if sys.version_info >= (3,0):
         APP_DIR = os.path.dirname(sys.executable)
     else:

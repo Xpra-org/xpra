@@ -301,7 +301,7 @@ fi
 
 if [ "${BUNDLE_OPENSSL}" == "1" ]; then
 	cp -fn "${MINGW_PREFIX}/bin/openssl.exe" "${DIST}/"
-	#use the old filename so we don't have to change the xpra.iss and the py2exe+MSVC build system:
+	#use the old filename so we don't have to change the xpra.iss and the setup.py build system:
 	cp -fn "${MINGW_PREFIX}/ssl/openssl.cnf" "${DIST}/openssl.cfg"
 fi
 
