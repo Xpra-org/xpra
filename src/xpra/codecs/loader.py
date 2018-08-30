@@ -8,18 +8,9 @@ import sys
 import os.path
 
 from xpra.util import envbool, csv
-from xpra.os_util import PYTHON3
 from xpra.log import Logger
 log = Logger("codec", "loader")
-try:
-    #this makes py2exe do the right thing:
-    from xpra.codecs import codec_checks
-    assert codec_checks
-except:
-    pass
 
-if PYTHON3:
-    unicode = str           #@ReservedAssignment
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
