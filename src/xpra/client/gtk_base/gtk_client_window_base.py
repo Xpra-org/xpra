@@ -1624,7 +1624,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #and what we are actually using right now (passed in):
         csx, csy = self._server_geometry[0:2]
         dx, dy = sx-csx, sy-csy
-        geomlog("add_coordinates_delta(.., %s, %s) delta=%s", packet[0], sx, sy, (dx, dy))
+        geomlog("add_coordinates_delta(%s, %s, %s) delta=%s", packet[0], sx, sy, (dx, dy))
         packet.append((dx, dy))
 
 

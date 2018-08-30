@@ -178,8 +178,13 @@ class WindowSource(WindowIconSource):
         self.is_shadow = window.is_shadow()
         self.has_alpha = window.has_alpha()
         self.window_dimensions = ww, wh
-        self.mapped_at = None               #where the window is mapped on the client
-        self.mapped_delta = None            #delta between what the coordinates that the server had requested and what the client actually used
+        #where the window is mapped on the client:
+        self.mapped_at = None
+        #delta between what the coordinates that the server had requested
+        #and what the client actually used.
+        #this is only meaningful if the window is still at an offset:
+        #(if "mapped_at" differs from the window position)
+        self.mapped_delta = None
         self.fullscreen = not self.is_tray and window.get("fullscreen")
         self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ClientConnection sets defaults with the client's scaling.control value
         self.scaling = None
