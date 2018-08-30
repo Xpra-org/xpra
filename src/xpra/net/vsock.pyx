@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,9 +7,6 @@
 from __future__ import absolute_import
 
 import socket as pysocket
-import struct
-from xpra.log import Logger
-log = Logger("network")
 
 
 cdef extern from "string.h":
@@ -77,6 +74,8 @@ SOCK_TYPES = {
 
 
 def bind_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_HOST, port=VMADDR_PORT_ANY):
+    from xpra.log import Logger
+    log = Logger("network")
     log("server_socket(%s)", (SOCK_TYPES.get(sock_type, sock_type), CID_TYPES.get(cid, cid), port))
     assert sock_type in (SOCK_STREAM, SOCK_DGRAM), "invalid socket type %s" % sock_type
     #assert cid in (VMADDR_CID_ANY, VMADDR_CID_HYPERVISOR, VMADDR_CID_HOST), "invalid cid %s" % cid
@@ -132,6 +131,8 @@ class VSocket(object):
 
 
 def connect_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_ANY, port=VMADDR_PORT_ANY):
+    from xpra.log import Logger
+    log = Logger("network")
     log("connect_vsocket(%s)", (cid, port, sock_type))
     assert sock_type in (SOCK_STREAM, SOCK_DGRAM), "invalid socket type %s" % sock_type
     #assert cid in (VMADDR_CID_ANY, VMADDR_CID_HYPERVISOR, VMADDR_CID_HOST), "invalid cid %s" % cid
