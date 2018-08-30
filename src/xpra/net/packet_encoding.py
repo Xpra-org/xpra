@@ -163,6 +163,8 @@ class InvalidPacketEncodingException(Exception):
 
 
 def decode(data, protocol_flags):
+    if isinstance(data, memoryview):
+        data = data.tobytes()
     if protocol_flags & FLAGS_RENCODE:
         if not has_rencode:
             raise InvalidPacketEncodingException("rencode is not available")
@@ -180,8 +182,6 @@ def decode(data, protocol_flags):
             raise InvalidPacketEncodingException("bencode is not available")
         if not use_bencode:
             raise InvalidPacketEncodingException("bencode is disabled")
-        if isinstance(data, memoryview):
-            data = data.tobytes()
         packet, l = bdecode(data)
         assert l==len(data)
         return packet

@@ -295,6 +295,8 @@ def decompress(data, level):
     else:
         if not use_zlib:
             raise InvalidCompressionException("zlib is not enabled")
+        if isinstance(data, memoryview):
+            data = data.tobytes()
         return zlib.decompress(data)
 
 NAME_TO_FLAG = {
