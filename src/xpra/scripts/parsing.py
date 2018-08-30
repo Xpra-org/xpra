@@ -1051,13 +1051,13 @@ def do_parse_cmdline(cmdline, defaults):
                 setattr(options, fieldname, bv)
 
     #process "help" arguments early:
-    from xpra.log import STRUCT_KNOWN_FILTERS
     options.debug = fixup_debug_option(options.debug)
     if options.debug:
         categories = options.debug.split(",")
         for cat in categories:
             if cat=="help":
                 h = []
+                from xpra.log import STRUCT_KNOWN_FILTERS
                 for category, d in STRUCT_KNOWN_FILTERS.items():
                     h.append("%s:" % category)
                     for k,v in d.items():
