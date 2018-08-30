@@ -28,7 +28,7 @@ from xpra.platform.gui import init as gui_init
 gui_init()
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
                                     OptionMenu, choose_file, set_use_tray_workaround, window_defaults, imagebutton, \

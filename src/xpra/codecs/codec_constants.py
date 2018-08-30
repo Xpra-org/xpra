@@ -5,8 +5,18 @@
 # later version. See the file COPYING for details.
 
 import weakref
-from xpra.log import Logger
-log = Logger("util", "encoding")
+
+
+#note: this is just for defining the order of encodings,
+#so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
+PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265", "jpeg2000", "mpeg1", "mpeg2"]
+#encoding order for edges (usually one pixel high or wide):
+EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "webp", "png/P", "png/L", "rgb"]
+
+HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg", "jpeg2000")
+
+#those are currently so useless that we don't want the user to select them by mistake
+PROBLEMATIC_ENCODINGS = ("h265", )
 
 
 #value: how much smaller the output is
@@ -90,6 +100,8 @@ class _codec_spec(object):
 
 
     def make_instance(self):
+        from xpra.log import Logger
+        log = Logger("encoding")
         cur = self.get_instance_count()
         if (self.max_instances>0 and cur>=self.max_instances) or cur>=_codec_spec.WARN_LIMIT:
             log.warn("Warning: already %s active instances of %s: %s", cur, self.codec_class, tuple(self.instances.keys()))
@@ -173,6 +185,8 @@ def main():
     from xpra.platform import program_context
     with program_context("Codec-Constants", "Codec Constants Info"):
         import sys
+        from xpra.log import Logger
+        log = Logger("encoding")
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
         log.info("LOSSY_PIXEL_FORMATS=%s", LOSSY_PIXEL_FORMATS)

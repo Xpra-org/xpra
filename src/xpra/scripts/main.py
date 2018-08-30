@@ -1274,7 +1274,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
             raise InitException(e.message)
         ehelp = "help" in opts.encodings
         if ehelp:
-            from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+            from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
             opts.encodings = PREFERED_ENCODING_ORDER
         app.init(opts)
         if opts.encoding=="auto":

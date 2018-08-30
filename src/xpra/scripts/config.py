@@ -1271,7 +1271,7 @@ def fixup_pings(options):
 
 def fixup_encodings(options):
     try:
-        from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+        from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
     except ImportError:
         return
     RENAME = {"jpg" : "jpeg"}

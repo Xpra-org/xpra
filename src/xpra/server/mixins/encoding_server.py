@@ -8,7 +8,8 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 from xpra.scripts.config import parse_bool_or_int
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, get_codec, has_codec, codec_versions
+from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
+from xpra.codecs.loader import load_codecs, get_codec, has_codec, codec_versions
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 

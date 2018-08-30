@@ -228,12 +228,6 @@ DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2", "dec_jpeg"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 
-#note: this is just for defining the order of encodings,
-#so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265", "jpeg2000", "mpeg1", "mpeg2"]
-#encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "webp", "png/P", "png/L", "rgb"]
-
 
 def get_rgb_compression_options():
     from xpra.net import compression
@@ -280,13 +274,9 @@ def get_encoding_help(encoding):
           "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
           }.get(encoding)
 
-HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg", "jpeg2000")
-
-#those are currently so useless that we don't want the user to select them by mistake
-PROBLEMATIC_ENCODINGS = ("h265", )
-
 
 def encodings_help(encodings):
+    from xpra.codecs.codec_constants import HELP_ORDER
     h = []
     for e in HELP_ORDER:
         if e in encodings:

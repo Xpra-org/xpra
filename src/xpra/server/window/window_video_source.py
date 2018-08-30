@@ -17,7 +17,7 @@ from xpra.server.window.region import merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
+from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict
 from xpra.os_util import monotonic_time, strtobytes, bytestostr, PYTHON3
 from xpra.log import Logger

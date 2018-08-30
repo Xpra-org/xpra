@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -215,7 +215,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         if mixin_features.windows and SHOW_ENCODINGS_MENU:
             encodings_menu = self.make_menu()
             def set_encodings_menu(*_args):
-                from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+                from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
                 server_encodings = list(self.client.server_encodings)
                 encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
                 if self.client.server_auto_video_encoding:

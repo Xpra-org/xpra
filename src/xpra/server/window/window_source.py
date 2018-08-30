@@ -74,8 +74,8 @@ from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
-from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
+from xpra.codecs.loader import get_codec
+from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
 from xpra.net import compression
 
 

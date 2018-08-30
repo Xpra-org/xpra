@@ -107,7 +107,7 @@ class FakeApplication:
         pass
 
     def get_encodings(self):
-        from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+        from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
         return PREFERED_ENCODING_ORDER
 
     def show_start_new_command(self, *_args):

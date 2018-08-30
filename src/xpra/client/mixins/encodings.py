@@ -18,7 +18,8 @@ netlog = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
 
-from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
+from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
+from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.config import parse_bool_or_int
 from xpra.net import compression
