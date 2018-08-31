@@ -95,6 +95,7 @@ class WindowClient(StubClientMixin):
 
         self.server_input_devices = None
         self.server_precise_wheel = False
+        self.server_pointer_relative = False
         self.input_devices = "auto"
 
         self.overlay_image = None
@@ -305,6 +306,7 @@ class WindowClient(StubClientMixin):
         #input devices:
         self.server_input_devices = c.strget("input-devices")
         self.server_precise_wheel = c.boolget("wheel.precise", False)
+        self.server_pointer_relative = c.boolget("pointer.relative", False)
         return True
 
 

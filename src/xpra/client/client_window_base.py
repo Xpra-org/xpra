@@ -687,11 +687,14 @@ class ClientWindowBase(ClientWidgetBase):
     def do_motion_notify_event(self, event):
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
-        pointer, modifiers, buttons = self._pointer_modifiers(event)
+        pointer, relative_pointer, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer)
-        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, wid, self._client._focused, self._id, self._device_info(event), pointer, modifiers, buttons)
-        self._client.send_mouse_position(["pointer-position", wid,
-                                          pointer, modifiers, buttons])
+        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, relative pointer=%s, modifiers=%s, buttons=%s", event, wid, self._client._focused, self._id, self._device_info(event), pointer, relative_pointer, modifiers, buttons)
+        pdata = pointer
+        if self._client.server_pointer_relative:
+            pdata = list(pointer)+list(relative_pointer)
+        packet = ["pointer-position", wid, pdata, modifiers, buttons]
+        self._client.send_mouse_position(packet)
 
     def _device_info(self, event):
         try:
@@ -702,7 +705,7 @@ class ClientWindowBase(ClientWidgetBase):
     def _button_action(self, button, event, depressed, *args):
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
-        pointer, modifiers, buttons = self._pointer_modifiers(event)
+        pointer, relative_pointer, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer)
         mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer, modifiers, buttons)
         #map wheel buttons via translation table to support inverted axes:
@@ -719,8 +722,11 @@ class ClientWindowBase(ClientWidgetBase):
                     continue
                 b = sb
             server_buttons.append(b)
+        pdata = pointer
+        if self._client.server_pointer_relative:
+            pdata = list(pointer)+list(relative_pointer)
         def send_button(pressed):
-            self._client.send_button(wid, server_button, pressed, pointer, modifiers, server_buttons, *args)
+            self._client.send_button(wid, server_button, pressed, pdata, modifiers, server_buttons, *args)
         pressed_state = self.button_state.get(button, False)
         if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
             mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)

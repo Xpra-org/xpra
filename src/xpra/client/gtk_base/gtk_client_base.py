@@ -714,6 +714,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         capabilities["metadata.supported"] = ms
         updict(capabilities, "pointer", {
             "grabs" : True,
+            "relative" : True,
             })
         updict(capabilities, "window", {
                "initiate-moveresize"    : True,

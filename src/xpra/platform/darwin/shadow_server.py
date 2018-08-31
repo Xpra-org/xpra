@@ -162,7 +162,7 @@ class ShadowServer(GTKShadowServerBase):
     def do_process_mouse_common(self, proto, wid, pointer, *args):
         assert proto in self._server_sources
         assert wid in self._id_to_window
-        CG.CGWarpMouseCursorPosition(pointer)
+        CG.CGWarpMouseCursorPosition(pointer[:2])
         return pointer
 
     def fake_key(self, keycode, press):
@@ -187,8 +187,8 @@ class ShadowServer(GTKShadowServerBase):
             args = []
             for i in range(button):
                 args.append(i==(button-1) and pressed)
-            log("CG.CGPostMouseEvent(%s, %s, %s, %s)", pointer, 1, button, args)
-            CG.CGPostMouseEvent(pointer, 1, button, *args)
+            log("CG.CGPostMouseEvent(%s, %s, %s, %s)", pointer[:2], 1, button, args)
+            CG.CGPostMouseEvent(pointer[:2], 1, button, *args)
         else:
             if not pressed:
                 #we don't simulate press/unpress

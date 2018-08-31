@@ -655,7 +655,7 @@ class XI2_Window(object):
         client = window._client
         if client.readonly:
             return
-        pointer, modifiers, buttons = window._pointer_modifiers(event)
+        pointer, relative_pointer, modifiers, buttons = window._pointer_modifiers(event)
         wid = self.window.get_mouse_event_wid(*pointer)
         #log("server_input_devices=%s, server_precise_wheel=%s", client.server_input_devices, client.server_precise_wheel)
         valuators = event.valuators
@@ -701,7 +701,10 @@ class XI2_Window(object):
         #send plain motion first, if any:
         if unused_valuators:
             xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, device, wid, window._client._focused, window._id, event.device, pointer, modifiers, buttons)
-            packet = ["pointer-position", wid, pointer, modifiers, buttons] + self.get_pointer_extra_args(event)
+            pdata = pointer
+            if client.server_pointer_relative:
+                pdata = list(pointer)+list(relative_pointer)
+            packet = ["pointer-position", wid, pdata, modifiers, buttons] + self.get_pointer_extra_args(event)
             client.send_mouse_position(packet)
         #now see if we have anything to send as a wheel event:
         if dx!=0 or dy!=0:

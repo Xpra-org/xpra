@@ -1211,14 +1211,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     else:
                         cr.stroke()
         #FIXME: use server mouse position, and use current cursor shape
-        if ss and ss.mouse_last_position and ss.mouse_last_position!=(0, 0):
-            x, y = ss.mouse_last_position
-            cr.set_source_rgb(1.0, 0.5, 0.7)
-            cr.new_path()
-            cr.arc(x, y, 10.0, 0, 2.0 * math.pi)
-            cr.stroke_preserve()
-            cr.set_source_rgb(0.3, 0.4, 0.6)
-            cr.fill()
+        if ss:
+            mlp = getattr(ss, "mouse_last_position", (0, 0))
+            if mlp!=(0, 0):
+                x, y = mlp
+                cr.set_source_rgb(1.0, 0.5, 0.7)
+                cr.new_path()
+                cr.arc(x, y, 10.0, 0, 2.0 * math.pi)
+                cr.stroke_preserve()
+                cr.set_source_rgb(0.3, 0.4, 0.6)
+                cr.fill()
         return False
 
 

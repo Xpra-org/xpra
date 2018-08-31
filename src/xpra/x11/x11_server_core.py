@@ -868,12 +868,27 @@ class X11ServerCore(GTKServerBase):
         return device
 
 
+    def _get_pointer_abs_coordinates(self, wid, pos):
+        #simple absolute coordinates
+        x, y = pos[:2]
+        from xpra.server.mixins.window_server import WindowServer
+        if len(pos)>=4 and isinstance(self, WindowServer):
+            #relative coordinates
+            model = self._id_to_window.get(wid)
+            if model:
+                rx, ry = pos[2:4]
+                geom = model.get_geometry()
+                x = geom[0]+rx
+                y = geom[1]+ry
+                log("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
+        return x, y
+
     def _move_pointer(self, wid, pos, deviceid=-1, *args):
         #(this is called within an xswallow context)
         screen_no = self.get_screen_number(wid)
         device = self.get_pointer_device(deviceid)
-        mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s", wid, pos, deviceid, screen_no, device)
-        x, y = pos
+        x, y = self._get_pointer_abs_coordinates(wid, pos)
+        mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s", wid, pos, deviceid, screen_no, device, (x, y))
         try:
             device.move_pointer(screen_no, x, y, *args)
         except Exception as e:
@@ -881,7 +896,7 @@ class X11ServerCore(GTKServerBase):
             mouselog.error(" %s", e)
 
     def do_process_mouse_common(self, proto, wid, pointer, deviceid=-1, *args):
-        log("do_process_mouse_common%s", tuple([proto, wid, pointer, deviceid]+list(args)))
+        mouselog("do_process_mouse_common%s", tuple([proto, wid, pointer, deviceid]+list(args)))
         if self.readonly:
             return None
         pos = self.root_window.get_pointer()[-3:-1]
@@ -890,7 +905,7 @@ class X11ServerCore(GTKServerBase):
             ss = self._server_sources.get(proto)
             if ss:
                 uuid = ss.uuid
-        if pos!=pointer or self.input_devices=="xi":
+        if pos!=pointer[:2] or self.input_devices=="xi":
             self.last_mouse_user = uuid
             with xswallow:
                 self._move_pointer(wid, pointer, deviceid, *args)

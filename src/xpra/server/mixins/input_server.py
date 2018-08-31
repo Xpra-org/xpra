@@ -67,10 +67,11 @@ class InputServer(StubServerMixin):
 				}
         return info
 
-    def get_server_features(self, source=None):
+    def get_server_features(self, _source=None):
         return {
             "toggle_keyboard_sync"  : True,
             "input-devices"         : self.input_devices,
+            "pointer.relative"      : True,
             }
 
     def get_caps(self, _source):
@@ -339,7 +340,7 @@ class InputServer(StubServerMixin):
                     if wx!=cx or wy!=cy:
                         dx, dy = wx-cx, wy-cy
                         if dx!=0 or dy!=0:
-                            px, py = pointer
+                            px, py = pointer[:2]
                             ax, ay = px+dx, py+dy
                             mouselog("client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s", ss.counter, pos, mapped_at, pointer, (ax, ay))
                             return ax, ay
@@ -382,12 +383,15 @@ class InputServer(StubServerMixin):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
-        wid, pointer, modifiers = packet[1:4]
+        wid, pdata, modifiers = packet[1:4]
+        pointer = pdata[:2]
+        if ss.pointer_relative and len(pdata)>=4:
+            ss.mouse_last_relative_position = pdata[2:4]
         ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver!=ss.uuid:
             return
         ss.user_event()
-        if self._process_mouse_common(proto, wid, pointer, *packet[5:]):
+        if self._process_mouse_common(proto, wid, pdata, *packet[5:]):
             self._update_modifiers(proto, wid, modifiers)
 
 

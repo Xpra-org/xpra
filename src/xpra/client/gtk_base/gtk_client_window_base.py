@@ -1832,7 +1832,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return True
 
 
-    def _pointer(self, x, y):
+    def _offset_pointer(self, x, y):
         if self.window_offset:
             x -= self.window_offset[0]
             y -= self.window_offset[1]
@@ -1841,13 +1841,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def _get_pointer(self, event):
         return event.x_root, event.y_root
 
+    def _get_relative_pointer(self, event):
+        return event.x, event.y
+
     def _pointer_modifiers(self, event):
         x, y = self._get_pointer(event)
-        pointer = self._pointer(x, y)
+        rx, ry = self._get_relative_pointer(event)
+        #adjust for window offset:
+        pointer = self._offset_pointer(x, y)
+        relative_pointer = self._offset_pointer(rx, ry)
         #FIXME: state is used for both mods and buttons??
         modifiers = self._client.mask_to_names(event.state)
         buttons = self._event_buttons(event)
-        v = pointer, modifiers, buttons
+        v = pointer, relative_pointer, modifiers, buttons
         mouselog("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, window_offset=%s)", event, v, event.x_root, event.y_root, self.window_offset)
         return v
 

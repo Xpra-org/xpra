@@ -54,9 +54,6 @@ class WindowsMixin(StubSourceMixin):
     def init_state(self):
         #WindowSource for each Window ID
         self.window_sources = {}
-        # mouse echo:
-        self.mouse_show = False
-        self.mouse_last_position = None
 
         self.window_frame_sizes = {}
         self.suspended = False
@@ -123,8 +120,6 @@ class WindowsMixin(StubSourceMixin):
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.cursor_encodings = c.strlistget("encodings.cursor")
         self.send_bell = c.boolget("bell")
-        self.mouse_show = c.boolget("mouse.show")
-        self.mouse_last_position = c.intpair("mouse.initial-position")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)

@@ -472,7 +472,7 @@ class ShadowServer(GTKShadowServerBase):
     def do_process_mouse_common(self, proto, wid, pointer, *_args):
         #adjust pointer position for offset in client:
         try:
-            x, y = pointer
+            x, y = pointer[:2]
             assert SetPhysicalCursorPos(x, y)
         except Exception as e:
             log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
@@ -521,7 +521,7 @@ class ShadowServer(GTKShadowServerBase):
         elif event is NOEVENT:
             return
         dwFlags, dwData = event
-        x, y = pointer
+        x, y = pointer[:2]
         mouse_event(dwFlags, x, y, dwData, 0)
 
     def make_hello(self, source):
