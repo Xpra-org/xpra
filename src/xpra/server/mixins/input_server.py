@@ -409,7 +409,6 @@ class InputServer(StubServerMixin):
         pass
 
 
-
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
         capabilities = self.make_hello(server_source)
         if key_repeat:

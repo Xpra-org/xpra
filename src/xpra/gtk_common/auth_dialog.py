@@ -85,11 +85,11 @@ class AuthDialog(gtk.Window):
         self.timeout -= 1
         return True
 
-    def cancel(self, btn):
+    def cancel(self, _btn):
         self.exit_code = 3
         self.quit()
 
-    def accept(self, btn):
+    def accept(self, _btn):
         self.exit_code = 0
         self.quit()
 
