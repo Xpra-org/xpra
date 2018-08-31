@@ -17,16 +17,24 @@ Manage input devices (keyboard, mouse, etc)
 class InputMixin(StubSourceMixin):
 
     def init_state(self):
+        self.pointer_relative = False
         self.keyboard_config = None
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
+        # mouse echo:
+        self.mouse_show = False
+        self.mouse_last_position = None
+        self.mouse_last_relative_position = None
 
     def cleanup(self):
         self.keyboard_config = None
 
     def parse_client_caps(self, c):
+        self.pointer_relative = c.boolget("pointer.relative")
         self.double_click_time = c.intget("double_click.time")
         self.double_click_distance = c.intpair("double_click.distance")
+        self.mouse_show = c.boolget("mouse.show")
+        self.mouse_last_position = c.intpair("mouse.initial-position")
 
 
     def get_info(self):
