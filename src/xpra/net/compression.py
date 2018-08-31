@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 
-from xpra.log import Logger
-log = Logger("network", "protocol")
+def debug(msg, *args, **kwargs):
+    from xpra.log import Logger
+    logger = Logger("network", "protocol")
+    logger.debug(msg, *args, **kwargs)
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
 
 
@@ -33,11 +35,11 @@ try:
     try:
         from lz4.version import version as lz4_version
     except ImportError as e:
-        log("outdated version of python-lz4", exc_info=True)
+        debug("outdated version of python-lz4", exc_info=True)
         try:
             from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
         except Exception as e:
-            log("really outdated version of python-lz4", exc_info=True)
+            debug("really outdated version of python-lz4", exc_info=True)
     try:
         from lz4.block import compress, decompress
         LZ4_uncompress = decompress
@@ -50,7 +52,7 @@ try:
                 return flag, compress(packet, mode="fast", acceleration=8-level*2)
             return flag, compress(packet)
     except ImportError as e:
-        log("outdated version of python-lz4", exc_info=True)
+        debug("outdated version of python-lz4", exc_info=True)
         #LZ4_compress_fast is 0.8 or later
         from lz4 import LZ4_compress, LZ4_uncompress, compressHC        #@UnresolvedImport
         if hasattr(lz4, "LZ4_compress_fast"):
@@ -66,7 +68,7 @@ try:
                     return level | LZ4_FLAG, LZ4_compress_fast(packet, accel)
                 return level | LZ4_FLAG, LZ4_compress(packet)
 except Exception as e:
-    log("lz4 not found", exc_info=True)
+    debug("lz4 not found", exc_info=True)
     del e
     LZ4_uncompress = None
 
@@ -81,7 +83,7 @@ try:
         return level | LZO_FLAG, lzo.compress(packet)
     LZO_decompress = lzo.decompress
 except Exception as e:
-    log("lzo not found: %s", e)
+    debug("lzo not found: %s", e)
     del e
     LZO_decompress = None
     has_lzo = False
@@ -189,13 +191,15 @@ def get_compressor_name(c):
 
 def sanity_checks():
     if not use_lzo and not use_lz4:
+        from xpra.log import Logger
+        logger = Logger("network", "protocol")
         if not use_zlib:
-            log.warn("Warning: all the compressors are disabled,")
-            log.warn(" unless you use mmap or have a gigabit connection or better")
-            log.warn(" performance will suffer")
+            logger.warn("Warning: all the compressors are disabled,")
+            logger.warn(" unless you use mmap or have a gigabit connection or better")
+            logger.warn(" performance will suffer")
         else:
-            log.warn("Warning: zlib is the only compressor enabled")
-            log.warn(" install and enable lzo or lz4 support for better performance")
+            logger.warn("Warning: zlib is the only compressor enabled")
+            logger.warn(" install and enable lzo or lz4 support for better performance")
 
 
 class Compressed(object):
