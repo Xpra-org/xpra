@@ -1146,5 +1146,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     try:
         return r
     finally:
+        run_cleanups()
         import gc
         gc.collect()
