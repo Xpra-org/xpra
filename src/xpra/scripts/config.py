@@ -1242,7 +1242,7 @@ def fixup_video_all_or_none(options):
     options.video_encoders  = getlist(vestr,    "video encoders",   aveco)
     options.csc_modules     = getlist(cscstr,   "csc modules",      acsco)
     options.video_decoders  = getlist(vdstr,    "video decoders",   avedo)
-    options.proxy_video_encoders = getlist(pvestr, "proxy video encoders", avedo)
+    options.proxy_video_encoders = getlist(pvestr, "proxy video encoders", aveco)
 
 def fixup_socketdirs(options, defaults):
     if not options.socket_dirs:
