@@ -56,6 +56,7 @@ METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
 USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", True)
 EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
+CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
 
 
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
@@ -1321,7 +1322,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return helperClass(clipboard_send, clipboard_progress, **kwargs)
 
     def clipboard_notify(self, n):
-        if not self.tray:
+        if not self.tray or not CLIPBOARD_NOTIFY:
             return
         clipboardlog("clipboard_notify(%s)", n)
         if n>0 and self.clipboard_enabled:
