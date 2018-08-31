@@ -413,7 +413,7 @@ EnumDisplayMonitors.restype = BOOL
 _EnumDisplayMonitors = EnumDisplayMonitors
 def EnumDisplayMonitors():
     results = []
-    def _callback(monitor, dc, rect, data):
+    def _callback(monitor, _dc, _rect, _data):
         results.append(monitor)
         return 1
     callback = MonitorEnumProc(_callback)

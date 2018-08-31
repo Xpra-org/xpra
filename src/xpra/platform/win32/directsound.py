@@ -26,7 +26,7 @@ StringFromGUID2 = oledll.ole32.StringFromGUID2
 
 def _enum_devices(fn):
     devices = []
-    def cb_enum(lpGUID, lpszDesc, lpszDrvName, _):
+    def cb_enum(lpGUID, lpszDesc, _lpszDrvName, _):
         dev = ""
         if lpGUID is not None:
             buf = ctypes.create_unicode_buffer(256)

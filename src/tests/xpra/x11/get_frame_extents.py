@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("dbus")
 
 
-def main(args):
+def main():
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("GTK-Menu Info"):
@@ -80,4 +80,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    sys.exit(main())

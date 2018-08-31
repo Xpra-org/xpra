@@ -121,10 +121,10 @@ class FakeClient(FileTransferHandler):
     def window_close_event(self, *args):
         self.log("window_close_event%s", args)
 
-    def mask_to_names(self, *args):
+    def mask_to_names(self, *_args):
         return []
 
-    def get_current_modifiers(self, *args):
+    def get_current_modifiers(self, *_args):
         return []
 
     def get_mouse_position(self):

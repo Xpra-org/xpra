@@ -613,7 +613,7 @@ class ClientWindowBase(ClientWidgetBase):
         if backing:
             backing.eos()
 
-    def spinner(self, ok):
+    def spinner(self, _ok):
         if not self.can_have_spinner():
             return
         log("spinner(%s) queueing redraw")

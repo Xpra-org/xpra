@@ -220,7 +220,7 @@ class TestAuth(unittest.TestCase):
 							assert not a.authenticate(verify, client_salt)
 
 	def test_file(self):
-		def genfiledata(a):
+		def genfiledata(_a):
 			password = uuid.uuid4().hex
 			return password, password
 		self._test_file_auth("file", genfiledata)

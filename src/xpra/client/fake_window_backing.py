@@ -29,7 +29,7 @@ class FakeBacking(object):
     def close(self):
         pass
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+    def draw_region(self, _x, _y, _width, _height, _coding, _img_data, _rowstride, _options, callbacks):
         log("draw_region(..) faking it after %sms", self.fake_delay)
         glib.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
 
