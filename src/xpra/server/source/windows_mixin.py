@@ -435,9 +435,9 @@ class WindowsMixin(StubSourceMixin):
             ws.cancel_damage()
 
 
-    def map_window(self, wid, window, coords=None, delta=None):
+    def map_window(self, wid, window, coords=None):
         ws = self.make_window_source(wid, window)
-        ws.map(coords, delta)
+        ws.map(coords)
 
     def unmap_window(self, wid, _window):
         ws = self.window_sources.get(wid)

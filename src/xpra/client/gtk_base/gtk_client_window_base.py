@@ -1597,8 +1597,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         cy = self._client.cy
         sx, sy, sw, sh = cx(x), cy(y), cx(w), cy(h)
         packet = ["map-window", self._id, sx, sy, sw, sh, props, state]
-        if self._client.window_configure_delta:
-            self.add_coordinates_delta(packet, sx, sy)
         self.send(*packet)
         self._pos = (x, y)
         self._size = (w, h)
@@ -1616,16 +1614,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if wfs:
                 frame = wfs.get("frame")
         return frame
-
-
-    def add_coordinates_delta(self, packet, sx, sy):
-        #tell the server about the difference in coordinates
-        #between what it had sent us last ("server_geometry")
-        #and what we are actually using right now (passed in):
-        csx, csy = self._server_geometry[0:2]
-        dx, dy = sx-csx, sy-csy
-        geomlog("add_coordinates_delta(%s, %s, %s) delta=%s", packet[0], sx, sy, (dx, dy))
-        packet.append((dx, dy))
 
 
     def send_configure(self):
@@ -1690,9 +1678,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             packet.append(self._id)
             packet.append(self._client.get_mouse_position())
             packet.append(self._client.get_current_modifiers())
-        if self._client.window_configure_delta:
-            assert self._client.window_configure_pointer
-            self.add_coordinates_delta(packet, sx, sy)
         geomlog("%s", packet)
         self.send(*packet)
 
@@ -1703,11 +1688,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         else:
             self.new_backing(self._client.cx(ww), self._client.cy(wh))
 
-    def resize(self, w, h, sw, sh, resize_counter=0):
+    def resize(self, w, h, resize_counter=0):
         ww, wh = self.get_size()
         geomlog("resize(%s, %s, %s) current size=%s, fullscreen=%s, maximized=%s", w, h, resize_counter, (ww, wh), self._fullscreen, self._maximized)
         self._resize_counter = resize_counter
-        self._server_geometry[2:4] = (sw, sh)
         if (w, h)==(ww, wh):
             self._backing.offsets = 0, 0, 0, 0
             self.queue_draw(0, 0, w, h)
@@ -1761,7 +1745,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         geomlog("clip_to_backing%s rectangle=%s", (backing, context), clip_rect)
         context.clip()
 
-    def move_resize(self, x, y, w, h, sx, sy, sw, sh, resize_counter=0):
+    def move_resize(self, x, y, w, h, resize_counter=0):
         geomlog("window %i move_resize%s", self._id, (x, y, w, h, resize_counter))
         w = max(1, w)
         h = max(1, h)
@@ -1770,7 +1754,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             y += self.window_offset[1]
             #TODO: check this doesn't move it off-screen!
         self._resize_counter = resize_counter
-        self._server_geometry = [sx, sy, sw, sh]
         window = self.get_window()
         if window.get_position()==(x, y):
             #same location, just resize:

@@ -180,11 +180,6 @@ class WindowSource(WindowIconSource):
         self.window_dimensions = ww, wh
         #where the window is mapped on the client:
         self.mapped_at = None
-        #delta between what the coordinates that the server had requested
-        #and what the client actually used.
-        #this is only meaningful if the window is still at an offset:
-        #(if "mapped_at" differs from the window position)
-        self.mapped_delta = None
         self.fullscreen = not self.is_tray and window.get("fullscreen")
         self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ClientConnection sets defaults with the client's scaling.control value
         self.scaling = None
@@ -457,9 +452,6 @@ class WindowSource(WindowIconSource):
         ma = self.mapped_at
         if ma:
             info["mapped-at"] = ma
-        md = self.mapped_delta
-        if md:
-            info["mapped-delta"] = md
         now = monotonic_time()
         cutoff = now-5
         lde = [x for x in tuple(self.statistics.last_damage_events) if x[0]>=cutoff]
@@ -822,9 +814,8 @@ class WindowSource(WindowIconSource):
         return self.encoding
 
 
-    def map(self, mapped_at, delta):
+    def map(self, mapped_at):
         self.mapped_at = mapped_at
-        self.mapped_delta = delta
         self.no_idle()
 
     def unmap(self):

@@ -395,7 +395,6 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
                 "resize-counter"         : True,
                 "configure.skip-geometry": True,
                 "configure.pointer"      : True,
-                "configure.delta"        : True,
                 "states"                 : ["iconified", "focused"],
                 })
         return capabilities
@@ -482,11 +481,8 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         if not window:
             windowlog("cannot map window %s: already removed!", wid)
             return
-        delta = None
-        if len(packet)>=9:
-            delta = packet[8]
-        geomlog("client mapped window %s - %s, at: %s (delta=%s)", wid, window, (x, y, w, h), delta)
-        self._window_mapped_at(proto, wid, window, (x, y, w, h), delta)
+        geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet)>=8:
             self._set_window_state(proto, wid, window, packet[7])
         if len(packet)>=7:
@@ -538,10 +534,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
             if cprops:
                 metadatalog("window client properties updates: %s", cprops)
                 self._set_client_properties(proto, wid, window, cprops)
-        delta = None
-        if len(packet)>=14:
-            delta = packet[13]
-        self._window_mapped_at(proto, wid, window, (x, y, w, h), delta)
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if damage:
             self._damage(window, 0, 0, w, h)
 

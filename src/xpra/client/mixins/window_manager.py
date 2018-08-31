@@ -284,7 +284,6 @@ class WindowClient(StubClientMixin):
     def parse_server_capabilities(self):
         c = self.server_capabilities
         self.window_configure_pointer = c.boolget("window.configure.pointer")
-        self.window_configure_delta = self.window_configure_pointer and c.boolget("window.configure.delta")
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
@@ -657,16 +656,15 @@ class WindowClient(StubClientMixin):
         wy = self.sy(y)
         ww = max(1, self.sx(w))
         wh = max(1, self.sy(h))
-        #original (server-side) coordinates and backing size:
-        ox, oy = x, y
+        #backing size, same as original (server-side):
         bw, bh = w, h
         client_properties = {}
         if len(packet)>=8:
             client_properties = packet[7]
-        geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s", wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (ox, oy, bw, bh))
-        self.make_new_window(wid, wx, wy, ww, wh, ox, oy, bw, bh, metadata, override_redirect, client_properties)
+        geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s", wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
+        self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
-    def make_new_window(self, wid, wx, wy, ww, wh, ox, oy, bw, bh, metadata, override_redirect, client_properties):
+    def make_new_window(self, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties):
         client_window_classes = self.get_client_window_classes(ww, wh, metadata, override_redirect)
         group_leader_window = self.get_group_leader(wid, metadata, override_redirect)
         #workaround for "popup" OR windows without a transient-for (like: google chrome popups):
@@ -692,7 +690,7 @@ class WindowClient(StubClientMixin):
         log("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, watcher_pid, wid, wx, wy, ww, wh, ox, oy, bw, bh, metadata, override_redirect, client_properties, border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
+                window = cwc(self, group_leader_window, watcher_pid, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
                 break
             except:
                 log.warn("failed to instantiate %s", cwc, exc_info=True)
@@ -821,11 +819,10 @@ class WindowClient(StubClientMixin):
         ww, wh = window._size
         if new_size_fn:
             ww, wh = new_size_fn(ww, wh)
-        ox, oy, bw, bh = window._server_geometry
         try:
             bw, bh = window._backing.size
         except:
-            pass
+            bw, bh = ww, wh
         client_properties = window._client_properties
         resize_counter = window._resize_counter
         metadata = window._metadata
@@ -864,7 +861,7 @@ class WindowClient(StubClientMixin):
             #create the new window,
             #which should honour the new state of the opengl_enabled flag if that's what we changed,
             #or the new dimensions, etc
-            window = self.make_new_window(wid, x, y, ww, wh, ox, oy, bw, bh, metadata, override_redirect, client_properties)
+            window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
             window._resize_counter = resize_counter
             #if we had a backing already,
             #restore the attributes we had saved from it
@@ -933,7 +930,7 @@ class WindowClient(StubClientMixin):
         window = self._id_to_window.get(wid)
         geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s", packet[1:], window, wid, (ax, ay, aw, ah))
         if window:
-            window.move_resize(ax, ay, aw, ah, x, y, w, h, resize_counter)
+            window.move_resize(ax, ay, aw, ah, resize_counter)
 
     def _process_window_resized(self, packet):
         wid, w, h = packet[1:4]
@@ -945,7 +942,7 @@ class WindowClient(StubClientMixin):
         window = self._id_to_window.get(wid)
         geomlog("_process_window_resized%s resizing window %s (id=%s) to %s", packet[1:], window, wid, (aw,ah))
         if window:
-            window.resize(aw, ah, w, h, resize_counter)
+            window.resize(aw, ah, resize_counter)
 
     def _process_raise_window(self, packet):
         #only implemented in gtk2 for now
@@ -960,7 +957,7 @@ class WindowClient(StubClientMixin):
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
         geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s", packet[1:], window, wid, (ax,ay,aw,ah))
-        window.move_resize(ax, ay, aw, ah, x, y, w, h, -1)
+        window.move_resize(ax, ay, aw, ah, -1)
 
 
     def window_close_event(self, wid):

@@ -367,10 +367,7 @@ class ShadowServerBase(RFBServer):
     def _process_map_window(self, proto, packet):
         wid, x, y, width, height = packet[1:6]
         window = self._process_window_common(wid)
-        delta = None
-        if len(packet)>=9:
-            delta = packet[8]
-        self._window_mapped_at(proto, wid, window, (x, y, width, height), delta)
+        self._window_mapped_at(proto, wid, window, (x, y, width, height))
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
@@ -388,10 +385,7 @@ class ShadowServerBase(RFBServer):
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
         window = self._process_window_common(wid)
-        delta = None
-        if len(packet)>=14:
-            delta = packet[13]
-        self._window_mapped_at(proto, wid, window, (x, y, w, h), delta)
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])

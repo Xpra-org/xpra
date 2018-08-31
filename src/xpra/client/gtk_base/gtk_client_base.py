@@ -711,11 +711,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 pass
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
-        capabilities["pointer.grabs"] = True
+        updict(capabilities, "pointer", {
+            "grabs" : True,
+            })
         updict(capabilities, "window", {
                "initiate-moveresize"    : True,
                "configure.pointer"      : True,
-               "configure.delta"        : True,
                "frame_sizes"            : self.get_window_frame_sizes()
                })
         updict(capabilities, "encoding", {

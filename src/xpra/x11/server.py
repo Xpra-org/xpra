@@ -826,11 +826,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
-        delta = None
-        if len(packet)>=9:
-            delta = packet[8]
-        geomlog("client %s mapped window %i - %s, at: %s (delta=%s)", ss, wid, window, (x, y, w, h), delta)
-        self._window_mapped_at(proto, wid, window, (x, y, w, h), delta)
+        geomlog("client %s mapped window %i - %s, at: %s", ss, wid, window, (x, y, w, h))
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
         #if not self.ui_driver:
@@ -900,10 +897,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
         if not skip_geometry:
-            delta = None
-            if len(packet)>=14:
-                delta = packet[13]
-            self._window_mapped_at(proto, wid, window, (x, y, w, h), delta)
+            self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet)>=7:
             cprops = packet[6]
             if cprops:

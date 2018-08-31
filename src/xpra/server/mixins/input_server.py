@@ -337,16 +337,11 @@ class InputServer(StubServerMixin):
                     wx, wy = pos
                     cx, cy = mapped_at[:2]
                     if wx!=cx or wy!=cy:
-                        delta = ws.mapped_delta
-                        if delta:
-                            #prefer delta value if we have it:
-                            dx, dy = delta
-                        else:
-                            dx, dy = wx-cx, wy-cy
+                        dx, dy = wx-cx, wy-cy
                         if dx!=0 or dy!=0:
                             px, py = pointer
                             ax, ay = px+dx, py+dy
-                            mouselog("client %2i: server window position: %12s, client window position: %24s (delta=%12s), pointer=%s, adjusted: %s", ss.counter, pos, mapped_at, delta, pointer, (ax, ay))
+                            mouselog("client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s", ss.counter, pos, mapped_at, pointer, (ax, ay))
                             return ax, ay
         return pointer
 

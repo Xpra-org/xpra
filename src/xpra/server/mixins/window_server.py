@@ -167,12 +167,7 @@ class WindowServer(StubServerMixin):
                             wx, wy = pos
                             cx, cy = mapped_at[:2]
                             if wx!=cx or wy!=cy:
-                                delta = parent_ws.mapped_delta
-                                if delta:
-                                    #prefer delta:
-                                    dx, dy = delta
-                                else:
-                                    dx, dy = cx-wx, cy-wy
+                                dx, dy = cx-wx, cy-wy
                                 if dx or dy:
                                     geomlog("adjusting new window position for client window offset: %s", (dx, dy))
                                     x += dx
@@ -253,14 +248,14 @@ class WindowServer(StubServerMixin):
         #where the window is actually mapped on the server screen:
         return None
 
-    def _window_mapped_at(self, proto, wid, window, coords=None, delta=None):
+    def _window_mapped_at(self, proto, wid, window, coords=None):
         #record where a window is mapped by a client
         #(in order to support multiple clients and different offsets)
         ss = self._server_sources.get(proto)
         if not ss:
             return
         if coords:
-            ss.map_window(wid, window, coords, delta)
+            ss.map_window(wid, window, coords)
         else:
             ss.unmap_window(wid, window)
 
