@@ -519,16 +519,10 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         remote_cmd += "else echo \"no run-xpra command found\"; exit 1; fi"
         if INITENV_COMMAND:
             remote_cmd = INITENV_COMMAND + ";" + remote_cmd
-        #putty gets confused if we wrap things in shell command:
-        if display_desc.get("is_putty", False):
-            cmd.append(remote_cmd)
-        else:
-            #openssh doesn't have this problem,
-            #and this gives us better compatibility with weird login shells
-            cmd.append("sh -c '%s'" % remote_cmd)
+        #this gives us better compatibility with weird login shells:
+        cmd.append("sh -c '%s'" % remote_cmd)
         if debug_cb:
             debug_cb("starting %s tunnel" % str(cmd[0]))
-            #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
         #non-string arguments can make Popen choke,
         #instead of lazily converting everything to a string, we validate the command:
         for x in cmd:
