@@ -171,7 +171,7 @@ class SSHServer(paramiko.ServerInterface):
             #try to detect it and extract the actual command the client is trying to run.
             #ie:
             #['sh', '-c',
-            # '#run-xpra _proxy;xpra initenv;\
+            # ': run-xpra _proxy;xpra initenv;\
             #  if [ -x $XDG_RUNTIME_DIR/xpra/run-xpra ]; then $XDG_RUNTIME_DIR/xpra/run-xpra _proxy;\
             #  elif [ -x ~/.xpra/run-xpra ]; then ~/.xpra/run-xpra _proxy;\
             #  elif type "xpra" > /dev/null 2>&1; then xpra _proxy;\
@@ -185,13 +185,6 @@ class SSHServer(paramiko.ServerInterface):
                 parse_cmd = cmd[2]
             else:
                 parse_cmd = ""
-            if parse_cmd.startswith("#run-xpra "):
-                #newer versions make it easy,
-                #the first line contains a comment which gives us the actual arguments for run-xpra:
-                args = parse_cmd.splitlines()[0].split("#run-xpra ")[1]
-                if args=="_proxy":
-                    self._run_proxy(channel)
-                    return True
             #for older clients, try to parse the long command
             #and identify the subcommands from there
             subcommands = []
