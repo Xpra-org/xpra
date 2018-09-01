@@ -42,14 +42,14 @@
 
 
 Name:           python2-pillow
-Version:        4.3.0
+Version:        3.4.2
 Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
-Source:         https://pypi.python.org/packages/source/P/Pillow/Pillow-%{version}.tar.gz
+Source:         https://files.pythonhosted.org/packages/46/4f/94f6165052774839b4a4af0c72071aa528d5dc8cb8bc6bb43e24a55c10cc/Pillow-%{version}.tar.gz
 Provides:       python-pillow
 Obsoletes:      python-pillow
 Patch0:         python-pillow-py26.patch
@@ -301,9 +301,6 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-1
-- update to last version supported with python 2.6 (with patch)
-
 * Wed Oct 19 2016 Antoine Martin <antoine@devloop.org.uk> - 3.4.2-1
 - new upstream release
 
