@@ -52,7 +52,6 @@ URL:            http://python-imaging.github.com/Pillow/
 Source:         https://files.pythonhosted.org/packages/46/4f/94f6165052774839b4a4af0c72071aa528d5dc8cb8bc6bb43e24a55c10cc/Pillow-%{version}.tar.gz
 Provides:       python-pillow
 Obsoletes:      python-pillow
-Patch0:         python-pillow-py26.patch
 
 %if 0%{?suse_version}
 BuildRequires:  python-devel
@@ -204,9 +203,6 @@ PIL image wrapper for Qt.
 
 %prep
 %setup -q -n Pillow-%{version}
-%if 0%{?el6}
-%patch0 -p1
-%endif
 %if %{with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
