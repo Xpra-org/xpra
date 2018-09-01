@@ -535,7 +535,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             if type(x)!=str:
                 raise InitException("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
         password = display_desc.get("password")
-        if password:
+        if password and not display_desc.get("is_putty", False):
             from xpra.platform.paths import get_sshpass_command
             sshpass_command = get_sshpass_command()
             if sshpass_command:
