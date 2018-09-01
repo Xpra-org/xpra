@@ -70,11 +70,12 @@ class AudioClient(StubClientMixin):
             return []
         if self.speaker_allowed or self.microphone_allowed:
             try:
-                from xpra import sound
-                assert sound
+                from xpra.sound import common
+                assert common
             except ImportError as e:
-                log.warn("Warning: sound module is not installed")
-                log.warn(" speaker and microphone are disabled")
+                self.may_notify_audio("No Audio",
+                                      "audio subsystem is not installed\n" +
+                                      " speaker and microphone forwarding are disabled")
                 self.speaker_allowed = False
                 self.microphone_allowed = False
             else:
