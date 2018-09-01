@@ -113,7 +113,7 @@ def do_get_script_bin_dirs():
 def get_remote_run_xpra_scripts():
     return envaslist_or_delegate("XPRA_REMOTE_RUN_XPRA_SCRIPTS", do_get_remote_run_xpra_scripts)
 def do_get_remote_run_xpra_scripts():
-    return ["$XDG_RUNTIME_DIR/xpra/run-xpra", "~/.xpra/run-xpra", "xpra", "/usr/local/bin/xpra"]
+    return ["$XDG_RUNTIME_DIR/xpra/run-xpra", "xpra", "/usr/local/bin/xpra", "~/.xpra/run-xpra"]
 
 
 def get_sshpass_command():
