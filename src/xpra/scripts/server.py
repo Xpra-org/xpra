@@ -1023,18 +1023,23 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 os.environ.update(dbus_env)
                 os.environ.update(protected_env)
 
-        if POSIX and opts.forward_xdg_open:
-            #find one xdg-open can use to talk back to us:
-            udpaths = [sockpath for (stype, _, sockpath), _ in local_sockets if stype=="unix-domain"]
-            if udpaths:
-                for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
-                    xdg_override = os.path.join(x, "xdg-open")
-                    if os.path.exists(xdg_override):
-                        os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
-                        os.environ["XPRA_XDG_OPEN_SERVER_SOCKET"] = udpaths[0]
-                        break
+        if POSIX:
+            #all unix domain sockets:
+            ud_paths = [sockpath for (stype, _, sockpath), _ in local_sockets if stype=="unix-domain"]
+            if ud_paths:
+                #choose one so our xdg-open override script can use to talk back to us:
+                if opts.forward_xdg_open:
+                    for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
+                        xdg_override = os.path.join(x, "xdg-open")
+                        if os.path.exists(xdg_override):
+                            os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
+                            os.environ["XPRA_XDG_OPEN_SERVER_SOCKET"] = ud_paths[0]
+                            break
             else:
-                log.warn("Warning: no local server sockets, forward-xdg-open disabled")
+                log.warn("Warning: no local server sockets,")
+                if opts.forward_xdg_open:
+                    log.warn(" forward-xdg-open cannot be enabled")
+                log.warn(" ssh connections will not be available")
 
         log("env=%s", os.environ)
         try:
