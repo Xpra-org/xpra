@@ -26,6 +26,12 @@ FAKE_CRASH = envbool("XPRA_SOUND_FAKE_CRASH", False)
 SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 5000)
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 
+DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS", "--windows=no --video-encoders=none --csc-modules=none --video-decoders=none --proxy-video-encoders=none").split(" ")
+
+
+def get_full_sound_command():
+    return get_sound_command()+DEFAULT_SOUND_COMMAND_ARGS
+
 
 def get_sound_wrapper_env():
     env = {
@@ -306,7 +312,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
     def __init__(self, plugin, options, codecs, volume, element_options):
         sound_subprocess_wrapper.__init__(self, "sound source")
         self.large_packets = ["new-buffer"]
-        self.command = get_sound_command()+["_sound_record", "-", "-", plugin or "", format_element_options(element_options), ",".join(codecs), "", str(volume)]
+        self.command = get_full_sound_command()+["_sound_record", "-", "-", plugin or "", format_element_options(element_options), ",".join(codecs), "", str(volume)]
         _add_debug_args(self.command)
 
     def __repr__(self):
@@ -322,7 +328,7 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
         sound_subprocess_wrapper.__init__(self, "sound output")
         self.large_packets = ["add_data"]
         self.codec = codec
-        self.command = get_sound_command()+["_sound_play", "-", "-", plugin or "", format_element_options(element_options), codec, "", str(volume)]
+        self.command = get_full_sound_command()+["_sound_play", "-", "-", plugin or "", format_element_options(element_options), codec, "", str(volume)]
         _add_debug_args(self.command)
 
     def add_data(self, data, metadata={}, packet_metadata=()):
@@ -368,11 +374,7 @@ def start_receiving_sound(codec):
 
 def query_sound():
     import subprocess
-    command = get_sound_command()+[
-        "_sound_query",
-        #make it skip loading the codecs:
-        "--windows=no", "--video-encoders=none", "--csc-modules=none", "--video-decoders=none", "--proxy-video-encoders=none"
-        ]
+    command = get_full_sound_command()+["_sound_query"]
     _add_debug_args(command)
     kwargs = exec_kwargs()
     env = exec_env()
