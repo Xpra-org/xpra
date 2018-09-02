@@ -189,11 +189,11 @@ def parse_URL(url):
                 v = v[0]
             f_params[k] = v
         options = validate_config(f_params)
-    mode = "tcp"
-    if up.scheme.startswith("xpra+"):
-        mode = up.scheme[len("xpra+"):]
-    if mode in ("tcp", "ssl", "ssh", "ws", "wss"):
-        address = "%s://%s" % (mode, address)
+    scheme = up.scheme
+    if scheme.startswith("xpra+"):
+        scheme = scheme[len("xpra+"):]
+    if scheme in ("tcp", "ssl", "ssh", "ws", "wss"):
+        address = "%s://%s" % (scheme, address)
     return address, options
 
 
