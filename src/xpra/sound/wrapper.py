@@ -368,7 +368,11 @@ def start_receiving_sound(codec):
 
 def query_sound():
     import subprocess
-    command = get_sound_command()+["_sound_query"]
+    command = get_sound_command()+[
+        "_sound_query",
+        #make it skip loading the codecs:
+        "--windows=no", "--video-encoders=none", "--csc-modules=none", "--video-decoders=none", "--proxy-video-encoders=none"
+        ]
     _add_debug_args(command)
     kwargs = exec_kwargs()
     env = exec_env()

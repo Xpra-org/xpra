@@ -691,7 +691,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--video-encoders", action="store",
                       dest="video_encoders", default=defaults.video_encoders,
                       help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
-    hidden_options["proxy-video-encoders"] =  defaults.proxy_video_encoders
+    group.add_option("--proxy-video-encoders", action="store",
+                      dest="proxy_video_encoders", default=defaults.proxy_video_encoders,
+                      help="Specify which video encoders to enable when running a proxy server, to get a list of all the options specify 'help'")
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
                       help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help'. Default: %default.")

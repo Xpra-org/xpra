@@ -1220,29 +1220,35 @@ def _nodupes(s):
     return remove_dupes(x.strip().lower() for x in s.split(","))
 
 def fixup_video_all_or_none(options):
-    try:
-        from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
-        from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
-        from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
-    except ImportError:
-        return
+    #we import below, but only if we really need to access
+    #one of the lists, because those are expensive to probe
+    #(we have to load the codec, which may load other libraries)
+    #
+    #from xpra.codecs.video_helper import (
+    # ALL_VIDEO_ENCODER_OPTIONS,
+    # ALL_CSC_MODULE_OPTIONS,
+    # ALL_VIDEO_DECODER_OPTIONS,
+    # HARDWARE_ENCODER_OPTIONS,
+    #)
+    def getlist(strarg, help_txt, all_list_name):
+        if strarg=="help":
+            from xpra.codecs import video_helper
+            raise InitInfo("the following %s may be available: %s" % (help_txt, csv(getattr(video_helper, all_list_name))))
+        elif strarg=="none":
+            return []
+        elif strarg=="all":
+            from xpra.codecs import video_helper    #@Reimport
+            return getattr(video_helper, all_list_name)
+        else:
+            return [x for x in _nodupes(strarg) if x]
     vestr   = _csvstr(options.video_encoders)
     cscstr  = _csvstr(options.csc_modules)
     vdstr   = _csvstr(options.video_decoders)
     pvestr  = _csvstr(options.proxy_video_encoders)
-    def getlist(strarg, help_txt, all_list):
-        if strarg=="help":
-            raise InitInfo("the following %s may be available: %s" % (help_txt, csv(all_list)))
-        elif strarg=="none":
-            return []
-        elif strarg=="all":
-            return all_list
-        else:
-            return [x for x in _nodupes(strarg) if x]
-    options.video_encoders  = getlist(vestr,    "video encoders",   aveco)
-    options.csc_modules     = getlist(cscstr,   "csc modules",      acsco)
-    options.video_decoders  = getlist(vdstr,    "video decoders",   avedo)
-    options.proxy_video_encoders = getlist(pvestr, "proxy video encoders", aveco)
+    options.video_encoders  = getlist(vestr,    "video encoders",   "ALL_VIDEO_ENCODER_OPTIONS")
+    options.csc_modules     = getlist(cscstr,   "csc modules",      "ALL_CSC_MODULE_OPTIONS")
+    options.video_decoders  = getlist(vdstr,    "video decoders",   "ALL_VIDEO_DECODER_OPTIONS")
+    options.proxy_video_encoders = getlist(pvestr, "proxy video encoders", "HARDWARE_ENCODER_OPTIONS")
 
 def fixup_socketdirs(options, defaults):
     if not options.socket_dirs:
