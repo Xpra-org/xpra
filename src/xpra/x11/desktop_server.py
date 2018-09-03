@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,11 +13,9 @@ from xpra.os_util import get_generic_os_name, PYTHON3
 if PYTHON3:
     raise ImportError("desktop server needs porting to python3 / gtk3")
 from xpra.util import updict, log_screen_sizes
-from xpra.scripts.config import parse_bool, parse_number
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
-from xpra.server.rfb.rfb_server import RFBServer
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.error import xswallow
@@ -253,11 +251,22 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
 gobject.type_register(DesktopModel)
 
 
+
+DESKTOPSERVER_BASES = [gobject.GObject]
+if server_features.rfb:
+    from xpra.server.rfb.rfb_server import RFBServer
+    DESKTOPSERVER_BASES.append(RFBServer)
+DESKTOPSERVER_BASES.append(X11ServerBase)
+DESKTOPSERVER_BASES = tuple(DESKTOPSERVER_BASES)
+DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
+log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
+
+
 """
     A server class for RFB / VNC-like desktop displays,
     used with the "start-desktop" subcommand.
 """
-class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
+class XpraDesktopServer(DesktopServerBaseClass):
     __gsignals__ = {
         "xpra-xkb-event"        : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
@@ -265,19 +274,16 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         }
 
     def __init__(self):
-        gobject.GObject.__init__(self)
-        RFBServer.__init__(self)
-        X11ServerBase.__init__(self)
+        for c in DESKTOPSERVER_BASES:
+            c.__init__(self)
         self.session_type = "desktop"
         self.resize_timer = None
         self.resize_value = None
 
     def init(self, opts):
-        X11ServerBase.init(self, opts)
-        if not parse_bool("rfb-upgrade", opts.rfb_upgrade):
-            self._rfb_upgrade = 0
-        else:
-            self._rfb_upgrade = parse_number(int, "rfb-upgrade", opts.rfb_upgrade, 0)
+        for c in DESKTOPSERVER_BASES:
+            if c!=gobject.GObject:
+                c.init(self, opts)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)

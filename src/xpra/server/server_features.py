@@ -22,3 +22,4 @@ logging         = True
 network_state   = True
 display         = True
 windows         = True
+rfb             = True

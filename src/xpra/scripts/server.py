@@ -962,6 +962,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     #server_features.network_state   = ??
     server_features.display         = opts.windows
     server_features.windows         = opts.windows and impcheck("codecs")
+    server_features.rfb             = b(opts.rfb_upgrade) and impcheck("server.rfb")
 
     kill_dbus = None
     if shadowing:

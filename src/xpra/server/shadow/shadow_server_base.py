@@ -14,7 +14,6 @@ cursorlog = Logger("cursor")
 
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.shadow.root_window_model import RootWindowModel
-from xpra.server.rfb.rfb_server import RFBServer
 from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
@@ -28,10 +27,17 @@ CURSORS = envbool("XPRA_CURSORS", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
-class ShadowServerBase(RFBServer):
+SHADOWSERVER_BASE_CLASS = object
+from xpra.server import server_features
+if server_features.rfb:
+    from xpra.server.rfb.rfb_server import RFBServer
+    SHADOWSERVER_BASE_CLASS = RFBServer
+
+
+class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def __init__(self, root_window, capture=None):
-        RFBServer.__init__(self)
+        SHADOWSERVER_BASE_CLASS.__init__(self)
         self.capture = capture
         self.root = root_window
         self.mapped = []
@@ -48,7 +54,9 @@ class ShadowServerBase(RFBServer):
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
 
     def init(self, opts):
-        self._rfb_upgrade = int(opts.rfb_upgrade)
+        if SHADOWSERVER_BASE_CLASS!=object:
+            #RFBServer:
+            SHADOWSERVER_BASE_CLASS.init(self, opts)
         self.notifications = bool(opts.notifications)
         if self.notifications:
             self.make_notifier()
@@ -210,7 +218,6 @@ class ShadowServerBase(RFBServer):
         raise NotImplementedError()
 
     def start_poll_pointer(self):
-        from xpra.server import server_features
         if server_features.input_devices and POLL_POINTER>0:
             self.pointer_poll_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
 

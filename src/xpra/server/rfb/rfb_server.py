@@ -11,6 +11,7 @@ from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
 from xpra.server import server_features
+from xpra.scripts.config import parse_bool, parse_number
 
 from xpra.log import Logger
 log = Logger("rfb")
@@ -23,12 +24,20 @@ class RFBServer(object):
 
     def __init__(self):
         self._window_to_id = {}
+        self._rfb_upgrade = 0
         self.readonly = False
         self.rfb_buttons = 0
         self.x11_keycodes_for_keysym = {}
         if POSIX and not OSX:
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
             self.X11Keyboard = X11KeyboardBindings()
+
+    def init(self, opts):
+        if not parse_bool("rfb-upgrade", opts.rfb_upgrade):
+            self._rfb_upgrade = 0
+        else:
+            self._rfb_upgrade = parse_number(int, "rfb-upgrade", opts.rfb_upgrade, 0)
+        log("init(..) rfb-upgrade=%i", self._rfb_upgrade)
 
 
     def _get_rfb_desktop_model(self):
