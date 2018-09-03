@@ -517,11 +517,19 @@ class ApplicationWindow:
 
     def reset_client(self):
         #lose current client class and make a new one:
-        if self.client:
-            self.client.cleanup()
+        log("reset_client() client=%s", self.client)
+        c = self.client
+        if c:
             self.client = None
+            def noop(*args):
+                pass
+            c.disconnect_and_quit = noop
+            c.quit = noop
+            c.exit = noop
+            c.cleanup()
         self.client = make_client(Exception, self.config)
         self.client.init(self.config)
+        log("reset_client() new client=%s", self.client)
 
 
     def handle_exception(self, e):
