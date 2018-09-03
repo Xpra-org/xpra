@@ -1,3 +1,19 @@
+xpra (1.0.13-1) UNRELEASED; urgency=low
+  * fix painting of spinners with desktop-scaling and non-opengl backends
+  * fix command line backwards compatibility
+  * fix man page typos
+  * fix RPM license information
+  * fix proxy-video-encoders=all substitution (generally should not be used)
+  * fix handling of tray geometry and keyboard detection failures
+  * fix connection errors causing the client launcher to exit
+  * fix spurious error messages caused by video pipeline changes
+  * fix handling of mixed clicks on system tray and the menu entries
+  * fix URL parsing from launcher (ie: MacOS URL association)
+  * use free colour profiles in all icon files
+  * support base64 encoded SSL certificate data
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 03 Sep 2018 10:41:23 +0700
+
 xpra (1.0.12-2) UNRELEASED; urgency=low
   * python 2.6 compatibility fixup
 

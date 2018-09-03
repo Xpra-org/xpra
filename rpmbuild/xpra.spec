@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.12
+%define version 1.0.13
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -612,6 +612,20 @@ fi
 
 
 %changelog
+* Mon Sep 03 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.13-2
+- fix painting of spinners with desktop-scaling and non-opengl backends
+- fix command line backwards compatibility
+- fix man page typos
+- fix RPM license information
+- fix proxy-video-encoders=all substitution (generally should not be used)
+- fix handling of tray geometry and keyboard detection failures
+- fix connection errors causing the client launcher to exit
+- fix spurious error messages caused by video pipeline changes
+- fix handling of mixed clicks on system tray and the menu entries
+- fix URL parsing from launcher (ie: MacOS URL association)
+- use free colour profiles in all icon files
+- support base64 encoded SSL certificate data
+
 * Sun Jul 01 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-2
 - python 2.6 compatibility fixup
 
@@ -662,7 +676,7 @@ fi
 - remove outdated option from the man page, fix missing paragraphs
 - disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
 
-* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-1
+* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.13-1
 - fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
 - fix errors with some unauthenticated connections
