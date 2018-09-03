@@ -496,8 +496,7 @@ def set_use_tray_workaround(enabled):
     else:
         CheckMenuItemClass = gtk.CheckMenuItem
         ImageMenuItemClass = gtk.ImageMenuItem
-PYTHON2 = sys.version_info[0] == 3
-set_use_tray_workaround(PYTHON2)
+set_use_tray_workaround(True)
 
 
 def get_screens_info():
