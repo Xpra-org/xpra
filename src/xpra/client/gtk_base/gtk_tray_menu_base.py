@@ -11,7 +11,7 @@ glib = import_glib()
 
 from xpra.util import CLIENT_EXIT, iround, envbool
 from xpra.os_util import bytestostr
-from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem
+from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItemClass
 from xpra.client.client_base import EXIT_OK
 from xpra.gtk_common.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
@@ -112,7 +112,7 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
             options[value] = "%s%%" % value
         for s in sorted(options.keys()):
             t = options.get(s)
-            qi = CheckMenuItem(t)
+            qi = CheckMenuItemClass(t)
             qi.set_draw_as_radio(True)
             candidate_match = s>=max(0, value)
             qi.set_active(not found_match and candidate_match)
@@ -195,7 +195,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
         name = ENCODINGS_TO_NAME.get(encoding, encoding)
         descr = ENCODINGS_HELP.get(encoding)
         NAME_TO_ENCODING[name] = encoding
-        encoding_item = CheckMenuItem(name)
+        encoding_item = CheckMenuItemClass(name)
         if descr:
             if encoding not in server_encodings:
                 descr += "\n(not available on this server)"
@@ -206,7 +206,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
             log("encoding_changed(%s) enc=%s, current=%s", item, enc, encodings_submenu.get_current_encoding())
             if enc is not None and encodings_submenu.get_current_encoding()!=enc:
                 encodings_submenu.set_encoding(enc)
-        log("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
+        log("populate_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
         encoding_item.set_active(encoding==get_current_encoding())
         sensitive = encoding in server_encodings
         if not sensitive and HIDE_DISABLED_MENU_ENTRIES:
@@ -232,7 +232,12 @@ class GTKTrayMenuBase(object):
     def build(self):
         if self.menu is None:
             show_close = True #or sys.platform.startswith("win")
-            self.menu = self.setup_menu(show_close)
+            try:
+                self.menu = self.setup_menu(show_close)
+            except Exception as e:
+                log("build()", exc_info=True)
+                log.error("Error: failed to setup menu")
+                log.error(" %s", e)
         return self.menu
 
     def show_session_info(self, *args):
@@ -351,7 +356,7 @@ class GTKTrayMenuBase(object):
 
     def checkitem(self, title, cb=None, active=False):
         """ Utility method for easily creating a CheckMenuItem """
-        check_item = CheckMenuItem(title)
+        check_item = CheckMenuItemClass(title)
         check_item.set_active(active)
         if cb:
             check_item.connect("toggled", cb)
@@ -510,7 +515,7 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(selection_submenu)
         for label in CLIPBOARD_LABELS:
             remote_clipboard = CLIPBOARD_LABEL_TO_NAME[label]
-            selection_item = CheckMenuItem(label)
+            selection_item = CheckMenuItemClass(label)
             active = getattr(ch, "remote_clipboard", "CLIPBOARD")==remote_clipboard
             selection_item.set_active(active)
             selection_item.set_draw_as_radio(True)
@@ -571,7 +576,7 @@ class GTKTrayMenuBase(object):
             except:
                 clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
             for label in CLIPBOARD_DIRECTION_LABELS:
-                direction_item = CheckMenuItem(label)
+                direction_item = CheckMenuItemClass(label)
                 d = CLIPBOARD_DIRECTION_LABEL_TO_NAME.get(label)
                 direction_item.set_active(d==self.client.client_clipboard_direction)
                 direction_item.connect("toggled", self.clipboard_direction_changed, clipboard_submenu)
@@ -687,7 +692,7 @@ class GTKTrayMenuBase(object):
         def scalingitem(scalingvalue=1.0):
             pct = iround(100.0*scalingvalue)
             label = {100 : "None"}.get(pct, "%i%%" % pct)
-            c = CheckMenuItem(label)
+            c = CheckMenuItemClass(label)
             c.scalingvalue = scalingvalue
             c.set_draw_as_radio(True)
             c.set_active(scalecmp(scalingvalue))
@@ -869,7 +874,7 @@ class GTKTrayMenuBase(object):
         menu = gtk.Menu()
         menu.ignore_events = False
         def onoffitem(label, active, cb):
-            c = CheckMenuItem(label)
+            c = CheckMenuItemClass(label)
             c.set_draw_as_radio(True)
             c.set_active(active)
             set_sensitive(c, True)
@@ -912,7 +917,7 @@ class GTKTrayMenuBase(object):
         #so we can toggle the menu items without causing yet more events and infinite loops:
         menu.ignore_events = False
         def deviceitem(label, cb, device_no=0):
-            c = CheckMenuItem(label)
+            c = CheckMenuItemClass(label)
             c.set_draw_as_radio(True)
             c.set_active(get_active_device_no()==device_no)
             c.device_no = device_no

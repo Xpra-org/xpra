@@ -426,12 +426,11 @@ GRAB_STATUS_STRING = {
                       GRAB_FROZEN           : "FROZEN",
                       }
 
-
 class TrayCheckMenuItem(gtk.CheckMenuItem):
     """ We add a button handler to catch clicks that somehow do not
         trigger the "toggled" signal on some platforms (win32?) when we
         show the tray menu with a right click and click on the item with the left click.
-        (or the other way around?)
+        (or the other way around)
     """
     def __init__(self, label, tooltip=None):
         gtk.CheckMenuItem.__init__(self, label)
@@ -453,19 +452,52 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
                 self.set_active(not state)
         gobject.idle_add(recheck)
 
+
+class TrayImageMenuItem(gtk.ImageMenuItem):
+    """ We add a button handler to catch clicks that somehow do not
+        trigger the "activate" signal on some platforms (win32?) when we
+        show the tray menu with a right click and click on the item with the left click.
+        (or the other way around)
+    """
+    def __init__(self):
+        gtk.ImageMenuItem.__init__(self)
+        self.add_events(BUTTON_RELEASE_MASK | BUTTON_PRESS_MASK)
+        self.connect("button-release-event", self.on_button_release_event)
+        self.connect("activate", self.record_activated)
+        self._activated = False
+
+    def record_activated(self, *args):
+        traylog("record_activated%s", args)
+        self._activated = True
+
+    def on_button_release_event(self, *args):
+        traylog("TrayImageMenuItem.on_button_release_event(%s) label=%s", args, self.get_label())
+        self._activated = False
+        def recheck():
+            traylog("TrayImageMenuItem: recheck() already activated=%s", self._activated)
+            if not self._activated:
+                self.activate()
+                #not essential since we'll clear it before calling recheck again:
+                self._activated = False
+        gobject.idle_add(recheck)
+
+
+ImageMenuItemClass = gtk.ImageMenuItem
 CheckMenuItemClass = gtk.CheckMenuItem
 def CheckMenuItem(*args, **kwargs):
     global CheckMenuItemClass
     return CheckMenuItemClass(*args, **kwargs)
 
 def set_use_tray_workaround(enabled):
-    global CheckMenuItemClass
+    global CheckMenuItemClass, ImageMenuItemClass
     if enabled:
         CheckMenuItemClass = TrayCheckMenuItem
+        ImageMenuItemClass = TrayImageMenuItem
     else:
         CheckMenuItemClass = gtk.CheckMenuItem
-set_use_tray_workaround(True)
-
+        ImageMenuItemClass = gtk.ImageMenuItem
+PYTHON2 = sys.version_info[0] == 3
+set_use_tray_workaround(PYTHON2)
 
 
 def get_screens_info():
@@ -815,7 +847,7 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
 
 def menuitem(title, image=None, tooltip=None, cb=None):
     """ Utility method for easily creating an ImageMenuItem """
-    menu_item = gtk.ImageMenuItem(title)
+    menu_item = ImageMenuItemClass(title)
     if image:
         menu_item.set_image(image)
         #override gtk defaults: we *want* icons:
