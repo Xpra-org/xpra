@@ -141,7 +141,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 if plug_name or n>1:
                     model.title = plug_name or str(i)
             model.geometry = (x, y, width, height)
-            screenlog("monitor %i: %10s geometry=%s", i, model.title, model.geometry)
+            screenlog("monitor %i: %10s geometry=%s", i, model.get_property("title"), model.get_property("geometry"))
             models.append(model)
         log("makeRootWindowModels()=%s", models)
         return models
