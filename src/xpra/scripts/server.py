@@ -1563,6 +1563,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             log.info("exiting: not cleaning up Xvfb")
         else:
             log.info("upgrading: not cleaning up Xvfb")
-        log("cleanups=%s", _cleanups)
         e = 0
-    return e
+    log("cleanups=%s", _cleanups)
+    try:
+        return e
+    finally:
+        run_cleanups()
+        import gc
+        gc.collect()
+
