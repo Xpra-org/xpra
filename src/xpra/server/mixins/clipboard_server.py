@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("clipboard")
 
 from xpra.platform.features import CLIPBOARDS
-from xpra.util import csv
+from xpra.util import csv, nonl, XPRA_CLIPBOARD_NOTIFICATION_ID
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
@@ -94,7 +94,7 @@ class ClipboardServer(StubServerMixin):
                         clipboard_filter_res.append(line.strip())
                     log("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), self.clipboard_filter_file)
             except:
-                log.error("error reading clipboard filter file %s - clipboard disabled!", self.clipboard_filter_file, exc_info=True)
+                log.error("Error: reading clipboard filter file %s - clipboard disabled!", self.clipboard_filter_file, exc_info=True)
                 return
         try:
             from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
@@ -176,7 +176,8 @@ class ClipboardServer(StubServerMixin):
         if not ss.clipboard_enabled:
             #this can happen when we disable clipboard in the middle of transfers
             #(especially when there is a clipboard loop)
-            log.warn("received a clipboard packet from a source which does not have clipboard enabled!")
+            log.warn("Warning: unexpected clipboard packet")
+            log.warn(" clipboard is disabled for %s", nonl(ss.uuid))
             return
         ch = self._clipboard_helper
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
@@ -202,6 +203,9 @@ class ClipboardServer(StubServerMixin):
             #if we can, tell the client to do the same:
             if ss.clipboard_set_enabled:
                 ss.send_clipboard_enabled("probable clipboard loop detected")
+                body = "Too many clipboard requests,\n"+\
+                       "a clipboard synchronization loop is likely to be causing this problem"
+                ss.may_notify(XPRA_CLIPBOARD_NOTIFICATION_ID, "Clipboard synchronization is now disabled", body, icon_name="clipboard")
             return  False
         return True
 
