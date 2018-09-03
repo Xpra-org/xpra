@@ -1269,7 +1269,7 @@ class WindowVideoSource(WindowSource):
         #but to make the code less dense:
         ve = self._video_encoder
         csce = self._csc_encoder
-        if ve is None:
+        if ve is None or ve.is_closed() or (csce and csce.is_closed()):
             return False
 
         if csce:
