@@ -6,7 +6,7 @@
 import struct
 
 #merge header and packet if packet is smaller than:
-PIXEL_FORMAT = "BBBBHHHBBBBBB"
+PIXEL_FORMAT = b"BBBBHHHBBBBBB"
 
 
 class RFBClientMessage(object):

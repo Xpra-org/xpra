@@ -9,7 +9,7 @@ from socket import error as socket_error
 from xpra.log import Logger
 log = Logger("network", "protocol", "rfb")
 
-from xpra.os_util import Queue, hexstr
+from xpra.os_util import Queue, hexstr, strtobytes
 from xpra.util import repr_ellipsized, envint, nonl
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue
@@ -141,11 +141,11 @@ class RFBProtocol(object):
 
     def _parse_security_result(self, packet):
         self.share  = packet != b"\0"
-        log("parse_security_result: sharing=%s, sending ClientInit", self.share)
+        log("parse_security_result: sharing=%s, sending ClientInit with session-name=%s", self.share, self.session_name)
         #send ClientInit
         self._packet_parser = self._parse_rfb
         w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = self._get_rfb_pixelformat()
-        packet =  struct.pack("!HH"+PIXEL_FORMAT+"I", w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift, 0, 0, 0, len(self.session_name))+self.session_name
+        packet =  struct.pack(b"!HH"+PIXEL_FORMAT+b"I", w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift, 0, 0, 0, len(self.session_name))+strtobytes(self.session_name)
         self.send(packet)
         self._process_packet_cb(self, [b"authenticated"])
         return 1
