@@ -64,7 +64,7 @@ class Keyboard(KeyboardBase):
     def get_keymap_spec(self):
         log("get_keymap_spec() keyboard_bindings=%s", self.keyboard_bindings)
         if not self.keyboard_bindings:
-            return None
+            return None, None, {}
         _query_struct = self.keyboard_bindings.getXkbProperties()
         _query = xkbmap_query_tostring(_query_struct)
         log("get_keymap_spec() Xkb query tostring(%s)=%s", _query_struct, _query)

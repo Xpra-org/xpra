@@ -108,7 +108,7 @@ class GTKStatusIconTray(TrayBase):
             #probably win32 or OSX, gnome-shell or KDE5..
             self.may_guess()
             log("GTKStatusIconTray.get_geometry() no geometry value available, returning guess: %s", self.geometry_guess)
-            return self.geometry_guess
+            return self.geometry_guess or (0, 0, 0, 0)
         #gtk3 adds an extra argument.. at the beginning!
         _, geom, _ = ag[-3:]
         x, y, w, h = geom.x, geom.y, geom.width, geom.height
