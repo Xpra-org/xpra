@@ -168,6 +168,7 @@ class RFBServer(object):
     def _process_rfb_FramebufferUpdateRequest(self, _proto, packet):
         #pressed, _, _, keycode = packet[1:5]
         inc, x, y, w, h = packet[1:6]
+        log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
         if not inc:
             model = self._get_rfb_desktop_model()
             self._damage(model, x, y, w, h)
