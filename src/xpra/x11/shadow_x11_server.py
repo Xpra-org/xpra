@@ -150,7 +150,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
             classes.append(GTKStatusIconTray)
         except:
-            pass
+            traylog("no GTKStatusIconTray", exc_info=True)
         traylog("tray classes: %s", classes)
         if not classes:
             traylog.error("Error: no system tray implementation available")
