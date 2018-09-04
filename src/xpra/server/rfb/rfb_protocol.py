@@ -356,6 +356,7 @@ class RFBProtocol(object):
                 log.error("error closing %s", self._conn, exc_info=True)
             self._conn = None
         self.terminate_queue_threads()
+        self._process_packet_cb(self, [RFBProtocol.CONNECTION_LOST])
         self.idle_add(self.clean)
         log("RFBProtocol.close() done")
 

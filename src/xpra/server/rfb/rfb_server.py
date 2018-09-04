@@ -72,7 +72,7 @@ class RFBServer(object):
 
     def process_rfb_packet(self, proto, packet):
         #log("RFB packet: '%s'", nonl(packet))
-        fn_name = "_process_rfb_%s" % packet[0]
+        fn_name = "_process_rfb_%s" % packet[0].replace("-", "_")
         fn = getattr(self, fn_name, None)
         if not fn:
             log.warn("Warning: no RFB handler for %s", fn_name)
@@ -88,6 +88,9 @@ class RFBServer(object):
 
     def _process_rfb_invalid(self, proto, packet):
         self.disconnect_protocol(proto, "invalid packet: %s" % (packet[1:]))
+
+    def _process_rfb_connection_lost(self, proto, packet):
+        self._process_connection_lost(proto, packet)
 
     def _process_rfb_authenticated(self, proto, _packet):
         model = self._get_rfb_desktop_model()
