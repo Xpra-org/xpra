@@ -890,7 +890,8 @@ class X11ServerCore(GTKServerBase):
         x, y = self._get_pointer_abs_coordinates(wid, pos)
         mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s", wid, pos, deviceid, screen_no, device, (x, y))
         try:
-            device.move_pointer(screen_no, x, y, *args)
+            with xsync:
+                device.move_pointer(screen_no, x, y, *args)
         except Exception as e:
             mouselog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
             mouselog.error(" %s", e)
