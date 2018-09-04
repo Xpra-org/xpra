@@ -1514,7 +1514,7 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
                 warn("failure on %s: %s" % (socket_path, e))
     return displays
 
-def guess_X11_display(dotxpra, uid=getuid(), gid=getgid()):
+def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
     displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_uid=uid, match_gid=gid)]
     if len(displays)!=1:
         #try without uid match:
@@ -1533,6 +1533,8 @@ def guess_X11_display(dotxpra, uid=getuid(), gid=getgid()):
         displays = list(set(displays)-set(xpra_displays))
         if len(displays)==0:
             raise InitExit(1, "could not detect any live plain X11 displays, only multiple xpra displays: %s" % csv(xpra_displays))
+    if current_display and current_display in displays:
+        return current_display
     if len(displays)!=1:
         raise InitExit(1, "too many live X11 displays to choose from: %s" % csv(displays))
     return displays[0]
@@ -1594,7 +1596,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                 #display_name was provided:
                 display_name = args[0]
             else:
-                display_name = guess_X11_display(dotxpra, uid, gid)
+                display_name = guess_X11_display(dotxpra, None, uid, gid)
             #we now know the display name, so add it:
             args = [display_name]
         opts.exit_with_client = True
