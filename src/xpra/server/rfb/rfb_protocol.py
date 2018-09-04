@@ -219,10 +219,13 @@ class RFBProtocol(object):
 
 
     def send(self, packet):
-        log("send(%i bytes: %s..)", len(packet), hexstr(packet[:16]))
         if self._closed:
             log("connection is closed already, not sending packet")
             return
+        if len(packet)<=16:
+            log("send(%i bytes: %s)", len(packet), hexstr(packet))
+        else:
+            log("send(%i bytes: %s..)", len(packet), hexstr(packet[:16]))
         if self._write_thread is None:
             self.start_write_thread()
         self._write_queue.put(packet)
