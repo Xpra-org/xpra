@@ -570,6 +570,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/appdata/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 %{_datadir}/icons/xpra-mdns.png
+%{_datadir}/icons/xpra-shadow.png
 %dir %{_sysconfdir}/xpra
 %config %{_sysconfdir}/xpra/xpra.conf
 %config %{_sysconfdir}/xpra/conf.d/05_features.conf
