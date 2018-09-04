@@ -129,6 +129,9 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         except:
             pass
     add_cleanup(cleanup_tcp_socket)
+    if iport==0:
+        iport = tcp_socket.getsockname()[1]
+        log.info("allocated %s port %i on %s", socktype, iport, host)
     log("%s: %s:%s : %s", socktype, host, iport, socket)
     return socktype, tcp_socket, (host, iport)
 
@@ -158,6 +161,9 @@ def setup_udp_socket(host, iport, socktype="udp"):
         except:
             pass
     add_cleanup(cleanup_udp_socket)
+    if iport==0:
+        iport = udp_socket.getsockname()[1]
+        log.info("allocated UDP port %i for %s", iport, host)
     log("%s: %s:%s : %s", socktype, host, iport, socket)
     return socktype, udp_socket, (host, iport)
 
@@ -173,6 +179,8 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
                 host = "127.0.0.1"
             if not port:
                 iport = default_port
+            elif port=="0":
+                iport = 0
             else:
                 try:
                     iport = int(port)

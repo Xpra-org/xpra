@@ -439,17 +439,19 @@ def create_sockets(opts, error_cb):
 
     min_port = int(opts.min_port)
     def add_tcp_socket(socktype, host_str, iport):
-        if iport<min_port:
+        if iport!=0 and iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
         for host in hosts(host_str):
             socket = setup_tcp_socket(host, iport, socktype)
+            host, iport = socket[2]
             sockets.append(socket)
             add_mdns(mdns_recs, socktype, host, iport)
     def add_udp_socket(socktype, host_str, iport):
-        if iport<min_port:
+        if iport!=0 and iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
         for host in hosts(host_str):
             socket = setup_udp_socket(host, iport, socktype)
+            host, iport = socket[2]
             sockets.append(socket)
             add_mdns(mdns_recs, socktype, host, iport)
     # Initialize the TCP sockets before the display,
