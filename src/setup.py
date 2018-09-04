@@ -1510,9 +1510,9 @@ else:
     if OPENBSD:
         man_path = "man"
     add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
-    add_data_files("share/applications",  ["xdg/xpra-launcher.desktop", "xdg/xpra-browser.desktop", "xdg/xpra.desktop"])
+    add_data_files("share/applications",  ["xdg/xpra-shadow.desktop", "xdg/xpra-launcher.desktop", "xdg/xpra-browser.desktop", "xdg/xpra.desktop"])
     add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
-    add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png"])
+    add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png", "xdg/xpra-shadow.png"])
     add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
 
     #here, we override build and install so we can
