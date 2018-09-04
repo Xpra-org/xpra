@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.log import Logger
 traylog = Logger("tray")
 mouselog = Logger("mouse")
@@ -201,8 +203,18 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             gtk = import_gtk()
             from xpra.gtk_common.gtk_util import popup_menu_workaround
             #menu:
-            self.tray_menu = gtk.Menu()
-            self.tray_menu.set_title("Xpra Server")
+            if not OSX:
+                label = u"Xpra Shadow Server"
+                display = os.environ.get("DISPLAY")
+                if POSIX and display:
+                    label = u"Xpra %s Shadow Server" % display
+                self.tray_menu = gtk.Menu()
+                self.tray_menu.set_title(label)
+                title_item = gtk.MenuItem()
+                title_item.set_label(label)
+                title_item.set_sensitive(False)
+                title_item.show()
+                self.tray_menu.append(title_item)
             from xpra.gtk_common.about import about
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", None, about))
             self.tray_menu.append(self.traymenuitem("Exit", "quit.png", None, self.tray_exit_callback))
