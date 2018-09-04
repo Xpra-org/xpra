@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import struct
 from threading import Event
 
+from xpra.net.protocol import PACKET_JOIN_SIZE
 from xpra.os_util import memoryview_to_bytes
+from xpra.util import AtomicInteger
 from xpra.log import Logger
 log = Logger("rfb")
+
+counter = AtomicInteger()
 
 
 class RFBSource(object):
@@ -22,7 +26,7 @@ class RFBSource(object):
         self.ui_client = True
         self.counter = 0
         self.share = share
-        self.uuid = "todo: use protocol?"
+        self.uuid = "RFB%5i" % counter.increase()
         self.lock = False
 
     def get_info(self):
@@ -59,11 +63,10 @@ class RFBSource(object):
         log("update_mouse%s", args)
 
     def damage(self, _wid, window, x, y, w, h, _options=None):
-        from xpra.net.protocol import PACKET_JOIN_SIZE
         img = window.get_image(x, y, w, h)
         window.acknowledge_changes()
         log("damage: %s", img)
-        if not img:
+        if not img or self.is_closed():
             return
         fbupdate = struct.pack("!BBH", 0, 0, 1)
         encoding = 0    #Raw
