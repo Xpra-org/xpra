@@ -381,6 +381,152 @@ def make_proxy_server():
     return ProxyServer()
 
 
+def hosts(host_str):
+    if host_str=="*":
+        from xpra.server.socket_util import has_dual_stack
+        if has_dual_stack():
+            #IPv6 will also listen for IPv4:
+            return ["::"]
+        #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
+        return ["0.0.0.0", "::"]
+    return [host_str]
+
+def add_mdns(mdns_recs, socktype, host_str, port):
+    recs = mdns_recs.setdefault(socktype.lower(), [])
+    for host in hosts(host_str):
+        rec = (host, port)
+        if rec not in recs:
+            recs.append(rec)
+
+def create_sockets(opts, error_cb):
+    from xpra.server.socket_util import parse_bind_ip, parse_bind_vsock, get_network_logger, setup_tcp_socket, setup_udp_socket, setup_vsock_socket
+    log = get_network_logger()
+
+    bind_tcp = parse_bind_ip(opts.bind_tcp)
+    bind_udp = parse_bind_ip(opts.bind_udp)
+    bind_ssl = parse_bind_ip(opts.bind_ssl)
+    bind_ssh = parse_bind_ip(opts.bind_ssh)
+    bind_ws  = parse_bind_ip(opts.bind_ws)
+    bind_wss = parse_bind_ip(opts.bind_wss)
+    bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
+    bind_vsock = parse_bind_vsock(opts.bind_vsock)
+
+    mdns_recs = {}
+    sockets = []
+
+    #SSL sockets:
+    wrap_socket_fn = None
+    need_ssl = False
+    ssl_opt = opts.ssl.lower()
+    if ssl_opt in TRUE_OPTIONS or bind_ssl or bind_wss:
+        need_ssl = True
+    if opts.bind_tcp or opts.bind_ws:
+        if ssl_opt=="auto" and opts.ssl_cert:
+            need_ssl = True
+        elif ssl_opt=="tcp" and opts.bind_tcp:
+            need_ssl = True
+        elif ssl_opt=="www":
+            need_ssl = True
+    if need_ssl:
+        from xpra.scripts.main import ssl_wrap_socket_fn
+        try:
+            wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
+            log("wrap_socket_fn=%s", wrap_socket_fn)
+        except Exception as e:
+            log("SSL error", exc_info=True)
+            cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
+            raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
+
+    min_port = int(opts.min_port)
+    def add_tcp_socket(socktype, host_str, iport):
+        if iport<min_port:
+            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
+        for host in hosts(host_str):
+            socket = setup_tcp_socket(host, iport, socktype)
+            sockets.append(socket)
+            add_mdns(mdns_recs, socktype, host, iport)
+    def add_udp_socket(socktype, host_str, iport):
+        if iport<min_port:
+            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
+        for host in hosts(host_str):
+            socket = setup_udp_socket(host, iport, socktype)
+            sockets.append(socket)
+            add_mdns(mdns_recs, socktype, host, iport)
+    # Initialize the TCP sockets before the display,
+    # That way, errors won't make us kill the Xvfb
+    # (which may not be ours to kill at that point)
+    ws_upgrades = opts.html and (os.path.isabs(opts.html) or opts.html.lower() in TRUE_OPTIONS+["auto"])
+    ssh_upgrades = opts.ssh_upgrade
+    if ssh_upgrades:
+        try:
+            from xpra.net.ssh import nogssapi_context
+            with nogssapi_context():
+                import paramiko
+            assert paramiko
+        except ImportError as e:
+            from xpra.log import Logger
+            sshlog = Logger("ssh")
+            sshlog("import paramiko", exc_info=True)
+            sshlog.error("Error: cannot enable SSH socket upgrades:")
+            sshlog.error(" %s", e)
+    log("setting up SSL sockets: %s", csv(bind_ssl))
+    for host, iport in bind_ssl:
+        add_tcp_socket("ssl", host, iport)
+        if ws_upgrades:
+            add_tcp_socket("wss", host, iport)
+    log("setting up SSH sockets: %s", csv(bind_ssh))
+    for host, iport in bind_ssh:
+        add_tcp_socket("ssh", host, iport)
+    log("setting up https / wss (secure websockets): %s", csv(bind_wss))
+    for host, iport in bind_wss:
+        add_tcp_socket("wss", host, iport)
+    tcp_ssl = ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert)
+    log("setting up TCP sockets: %s", csv(bind_tcp))
+    for host, iport in bind_tcp:
+        add_tcp_socket("tcp", host, iport)
+        if tcp_ssl:
+            add_mdns(mdns_recs, "ssl", host, iport)
+        if ws_upgrades:
+            add_mdns(mdns_recs, "ws", host, iport)
+        if ws_upgrades and tcp_ssl:
+            add_mdns(mdns_recs, "wss", host, iport)
+        if ssh_upgrades:
+            add_mdns(mdns_recs, "ssh", host, iport)
+    log("setting up UDP sockets: %s", csv(bind_udp))
+    for host, iport in bind_udp:
+        add_udp_socket("udp", host, iport)
+    log("setting up http / ws (websockets): %s", csv(bind_ws))
+    for host, iport in bind_ws:
+        add_tcp_socket("ws", host, iport)
+        if tcp_ssl:
+            add_mdns(mdns_recs, "wss", host, iport)
+    log("setting up rfb sockets: %s", csv(bind_rfb))
+    for host, iport in bind_rfb:
+        add_tcp_socket("rfb", host, iport)
+    log("setting up vsock sockets: %s", csv(bind_vsock))
+    for cid, iport in bind_vsock:
+        socket = setup_vsock_socket(cid, iport)
+        sockets.append(socket)
+        #add_mdns(mdns_recs, "vsock", str(cid), iport)
+
+    # systemd socket activation:
+    if POSIX:
+        try:
+            from xpra.platform.xposix.sd_listen import get_sd_listen_sockets
+        except ImportError:
+            pass
+        else:
+            sd_sockets = get_sd_listen_sockets()
+            log("systemd sockets: %s", sd_sockets)
+            for stype, socket, addr in sd_sockets:
+                sockets.append((stype, socket, addr))
+                log("%s : %s", (stype, [addr]), socket)
+                if stype=="tcp":
+                    host, iport = addr
+                    add_mdns(mdns_recs, "tcp", host, iport)
+    return sockets, mdns_recs, wrap_socket_fn
+
+
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     try:
         cwd = os.getcwd()
@@ -391,16 +537,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.encoding=="help" or "help" in opts.encodings:
         return show_encoding_help(opts)
 
-    from xpra.server.socket_util import parse_bind_ip, parse_bind_vsock, get_network_logger
-    bind_tcp = parse_bind_ip(opts.bind_tcp)
-    bind_udp = parse_bind_ip(opts.bind_udp)
-    bind_ssl = parse_bind_ip(opts.bind_ssl)
-    bind_ssh = parse_bind_ip(opts.bind_ssh)
-    bind_ws  = parse_bind_ip(opts.bind_ws)
-    bind_wss = parse_bind_ip(opts.bind_wss)
-    bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
-    bind_vsock = parse_bind_vsock(opts.bind_vsock)
-
     assert mode in ("start", "start-desktop", "upgrade", "shadow", "proxy")
     starting  = mode == "start"
     starting_desktop = mode == "start-desktop"
@@ -409,6 +545,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     proxying  = mode == "proxy"
     clobber   = upgrading or opts.use_display
     start_vfb = not shadowing and not proxying and not clobber
+
+    if opts.bind_rfb and (proxying or starting):
+        get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
+        opts.bind_rfb = ""
 
     if upgrading or shadowing:
         #there should already be one running
@@ -602,138 +742,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         print_DE_warnings()
 
     log = get_util_logger()
-    netlog = get_network_logger()
-
-    mdns_recs = {}
-    sockets = []
-
-    #SSL sockets:
-    wrap_socket_fn = None
-    need_ssl = False
-    ssl_opt = opts.ssl.lower()
-    if ssl_opt in TRUE_OPTIONS or bind_ssl or bind_wss:
-        need_ssl = True
-    if opts.bind_tcp or opts.bind_ws:
-        if ssl_opt=="auto" and opts.ssl_cert:
-            need_ssl = True
-        elif ssl_opt=="tcp" and opts.bind_tcp:
-            need_ssl = True
-        elif ssl_opt=="www":
-            need_ssl = True
-    if need_ssl:
-        from xpra.scripts.main import ssl_wrap_socket_fn
-        try:
-            wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
-            netlog("wrap_socket_fn=%s", wrap_socket_fn)
-        except Exception as e:
-            netlog("SSL error", exc_info=True)
-            cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
-            raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
-
-    from xpra.server.socket_util import setup_tcp_socket, setup_udp_socket, setup_vsock_socket, setup_local_sockets, has_dual_stack
-    min_port = int(opts.min_port)
-    def hosts(host_str):
-        if host_str=="*":
-            if has_dual_stack():
-                #IPv6 will also listen for IPv4:
-                return ["::"]
-            #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
-            return ["0.0.0.0", "::"]
-        return [host_str]
-    def add_mdns(socktype, host_str, port):
-        recs = mdns_recs.setdefault(socktype.lower(), [])
-        for host in hosts(host_str):
-            rec = (host, port)
-            if rec not in recs:
-                recs.append(rec)
-    def add_tcp_socket(socktype, host_str, iport):
-        if iport<min_port:
-            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
-        for host in hosts(host_str):
-            socket = setup_tcp_socket(host, iport, socktype)
-            sockets.append(socket)
-            add_mdns(socktype, host, iport)
-    def add_udp_socket(socktype, host_str, iport):
-        if iport<min_port:
-            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
-        for host in hosts(host_str):
-            socket = setup_udp_socket(host, iport, socktype)
-            sockets.append(socket)
-            add_mdns(socktype, host, iport)
-    # Initialize the TCP sockets before the display,
-    # That way, errors won't make us kill the Xvfb
-    # (which may not be ours to kill at that point)
-    ws_upgrades = opts.html and (os.path.isabs(opts.html) or opts.html.lower() in TRUE_OPTIONS+["auto"])
-    ssh_upgrades = opts.ssh_upgrade
-    if ssh_upgrades:
-        try:
-            from xpra.net.ssh import nogssapi_context
-            with nogssapi_context():
-                import paramiko
-            assert paramiko
-        except ImportError as e:
-            from xpra.log import Logger
-            sshlog = Logger("ssh")
-            sshlog("import paramiko", exc_info=True)
-            sshlog.error("Error: cannot enable SSH socket upgrades:")
-            sshlog.error(" %s", e)
-    netlog("setting up SSL sockets: %s", csv(bind_ssl))
-    for host, iport in bind_ssl:
-        add_tcp_socket("ssl", host, iport)
-        if ws_upgrades:
-            add_tcp_socket("wss", host, iport)
-    netlog("setting up SSH sockets: %s", csv(bind_ssh))
-    for host, iport in bind_ssh:
-        add_tcp_socket("ssh", host, iport)
-    netlog("setting up https / wss (secure websockets): %s", csv(bind_wss))
-    for host, iport in bind_wss:
-        add_tcp_socket("wss", host, iport)
-    tcp_ssl = ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert)
-    netlog("setting up TCP sockets: %s", csv(bind_tcp))
-    for host, iport in bind_tcp:
-        add_tcp_socket("tcp", host, iport)
-        if tcp_ssl:
-            add_mdns("ssl", host, iport)
-        if ws_upgrades:
-            add_mdns("ws", host, iport)
-        if ws_upgrades and tcp_ssl:
-            add_mdns("wss", host, iport)
-        if ssh_upgrades:
-            add_mdns("ssh", host, iport)
-    netlog("setting up UDP sockets: %s", csv(bind_udp))
-    for host, iport in bind_udp:
-        add_udp_socket("udp", host, iport)
-    netlog("setting up http / ws (websockets): %s", csv(bind_ws))
-    for host, iport in bind_ws:
-        add_tcp_socket("ws", host, iport)
-        if tcp_ssl:
-            add_mdns("wss", host, iport)
-    if bind_rfb and (proxying or starting):
-        log.warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
-    else:
-        netlog("setting up rfb sockets: %s", csv(bind_rfb))
-        for host, iport in bind_rfb:
-            add_tcp_socket("rfb", host, iport)
-    netlog("setting up vsock sockets: %s", csv(bind_vsock))
-    for cid, iport in bind_vsock:
-        socket = setup_vsock_socket(cid, iport)
-        sockets.append(socket)
-        #add_mdns("vsock", str(cid), iport)
-
-    # systemd socket activation:
-    try:
-        from xpra.platform.xposix.sd_listen import get_sd_listen_sockets
-    except ImportError:
-        pass
-    else:
-        sd_sockets = get_sd_listen_sockets()
-        netlog("systemd sockets: %s", sd_sockets)
-        for stype, socket, addr in sd_sockets:
-            sockets.append((stype, socket, addr))
-            netlog("%s : %s", (stype, [addr]), socket)
-            if stype=="tcp":
-                host, iport = addr
-                add_mdns("tcp", host, iport)
+    sockets, mdns_recs, wrap_socket_fn = create_sockets(opts, error_cb)
 
     sanitize_env()
     if POSIX:
@@ -913,6 +922,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         gui_init()
 
     #setup unix domain socket:
+    from xpra.server.socket_util import get_network_logger, setup_local_sockets
+    netlog = get_network_logger()
     if not opts.socket_dir and not opts.socket_dirs:
         #we always need at least one valid socket dir
         from xpra.platform.paths import get_socket_dirs
@@ -929,7 +940,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             ssh_port = get_ssh_port()
             netlog("ssh %s:%s : %s", "", ssh_port, socket)
             if ssh_port:
-                add_mdns("ssh", "", ssh_port)
+                add_mdns(mdns_recs, "ssh", "", ssh_port)
 
     def b(v):
         return str(v).lower() not in FALSE_OPTIONS
