@@ -60,11 +60,13 @@ class XTestPointerDevice(object):
 
     def move_pointer(self, screen_no, x, y, *_args):
         mouselog("xtest_fake_motion(%i, %s, %s)", screen_no, x, y)
-        X11Keyboard.xtest_fake_motion(screen_no, x, y)
+        with xsync:
+            X11Keyboard.xtest_fake_motion(screen_no, x, y)
 
     def click(self, button, pressed, *_args):
         mouselog("xtest_fake_button(%i, %s)", button, pressed)
-        X11Keyboard.xtest_fake_button(button, pressed)
+        with xsync:
+            X11Keyboard.xtest_fake_button(button, pressed)
 
     def close(self):
         pass
@@ -890,8 +892,7 @@ class X11ServerCore(GTKServerBase):
         x, y = self._get_pointer_abs_coordinates(wid, pos)
         mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s", wid, pos, deviceid, screen_no, device, (x, y))
         try:
-            with xsync:
-                device.move_pointer(screen_no, x, y, *args)
+            device.move_pointer(screen_no, x, y, *args)
         except Exception as e:
             mouselog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
             mouselog.error(" %s", e)
