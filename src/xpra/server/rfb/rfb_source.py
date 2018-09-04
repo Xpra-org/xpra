@@ -55,6 +55,9 @@ class RFBSource(object):
         pass
 
 
+    def update_mouse(self, *args):
+        log("update_mouse%s", args)
+
     def damage(self, _wid, window, x, y, w, h, _options=None):
         from xpra.net.protocol import PACKET_JOIN_SIZE
         img = window.get_image(x, y, w, h)
