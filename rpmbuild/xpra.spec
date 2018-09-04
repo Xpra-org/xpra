@@ -714,6 +714,7 @@ if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 		-keyout "/etc/xpra/key.pem" -out "/etc/xpra/cert.pem" 2> /dev/null
 	cat "/etc/xpra/key.pem" "/etc/xpra/cert.pem" > "/etc/xpra/ssl-cert.pem"
 	umask $umask
+	chmod 644 /etc/xpra/cert.pem
 fi
 %if 0%{update_firewall}
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
