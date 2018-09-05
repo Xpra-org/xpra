@@ -457,7 +457,7 @@ def create_sockets(opts, error_cb):
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
-    ws_upgrades = opts.html and (os.path.isabs(opts.html) or opts.html.lower() in TRUE_OPTIONS+["auto"])
+    ws_upgrades = opts.html and (os.path.isabs(opts.html) or opts.html.lower() in list(TRUE_OPTIONS)+["auto"])
     ssh_upgrades = opts.ssh_upgrade
     if ssh_upgrades:
         try:
