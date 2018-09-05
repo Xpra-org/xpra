@@ -415,7 +415,6 @@ def do_parse_cmdline(cmdline, defaults):
     hidden_options["postscript-printer"] = defaults.postscript_printer
     hidden_options["add-printer-options"] = defaults.add_printer_options
     hidden_options["file-size-limit"] = defaults.file_size_limit
-    hidden_options["open-command"] = defaults.open_command
 
     legacy_bool_parse("exit-with-client")
     if (supports_server or supports_shadow):
@@ -905,6 +904,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--forward-xdg-open", action="store",
                       dest="forward_xdg_open", default=defaults.forward_xdg_open,
                       help="Intercept calls to xdg-open and forward them to the client. Default: '%default'.")
+    group.add_option("--open-command", action="store",
+                      dest="open_command", default=defaults.open_command,
+                      help="Command to use to open files and URLs. Default: '%default'.")
     legacy_bool_parse("modal-windows")
     group.add_option("--modal-windows", action="store",
                       dest="modal_windows", default=defaults.modal_windows,
