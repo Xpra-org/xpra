@@ -446,7 +446,7 @@ class SessionInfo(gtk.Window):
         self.populate_all()
         glib.timeout_add(1000, self.populate)
         glib.timeout_add(100, self.populate_tab)
-        if SHOW_SOUND_STATS:
+        if mixin_features.audio and SHOW_SOUND_STATS:
             glib.timeout_add(100, self.populate_sound_stats)
         add_close_accel(self, self.destroy)
 
@@ -572,7 +572,7 @@ class SessionInfo(gtk.Window):
         #record bytecount every second:
         self.net_in_bytecount.append(self.connection.input_bytecount)
         self.net_out_bytecount.append(self.connection.output_bytecount)
-        if SHOW_SOUND_STATS:
+        if mixin_features.audio and SHOW_SOUND_STATS:
             if self.client.sound_in_bytecount>0:
                 self.sound_in_bitcount.append(self.client.sound_in_bytecount * 8)
             if self.client.sound_out_bytecount>0:
@@ -744,10 +744,11 @@ class SessionInfo(gtk.Window):
             if not enabled:
                 return "n/a"
             return ", ".join(codecs or [])
-        self.server_speaker_codecs_label.set_text(codec_info(scaps.boolget("sound.send", False), scaps.strlistget("sound.encoders", [])))
-        self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
-        self.server_microphone_codecs_label.set_text(codec_info(scaps.boolget("sound.receive", False), scaps.strlistget("sound.decoders", [])))
-        self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
+        if mixin_features.audio:
+            self.server_speaker_codecs_label.set_text(codec_info(scaps.boolget("sound.send", False), scaps.strlistget("sound.encoders", [])))
+            self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
+            self.server_microphone_codecs_label.set_text(codec_info(scaps.boolget("sound.receive", False), scaps.strlistget("sound.decoders", [])))
+            self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
         def encliststr(v):
             v = list(v)
             try:
@@ -797,32 +798,33 @@ class SessionInfo(gtk.Window):
         self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
         self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
 
-        def get_sound_info(supported, prop):
-            if not supported:
-                return {"state" : "disabled"}
-            if prop is None:
-                return {"state" : "inactive"}
-            return prop.get_info()
-        def set_sound_info(label, details, supported, prop):
-            d = typedict(get_sound_info(supported, prop))
-            state = d.strget("state", "")
-            codec_descr = d.strget("codec") or d.strget("codec_description")
-            container_descr = d.strget("container_description", "")
-            if state=="active" and codec_descr:
-                if codec_descr.find(container_descr)>=0:
-                    descr = codec_descr
-                else:
-                    descr = csv(x for x in (codec_descr, container_descr) if x)
-                state = "%s: %s" % (state, descr)
-            label.set_text(state)
-            if details:
-                s = ""
-                bitrate = d.intget("bitrate", 0)
-                if bitrate>0:
-                    s = "%sbit/s" % std_unit(bitrate)
-                details.set_text(s)
-        set_sound_info(self.speaker_label, self.speaker_details, self.client.speaker_enabled, self.client.sound_sink)
-        set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
+        if mixin_features.audio:
+            def get_sound_info(supported, prop):
+                if not supported:
+                    return {"state" : "disabled"}
+                if prop is None:
+                    return {"state" : "inactive"}
+                return prop.get_info()
+            def set_sound_info(label, details, supported, prop):
+                d = typedict(get_sound_info(supported, prop))
+                state = d.strget("state", "")
+                codec_descr = d.strget("codec") or d.strget("codec_description")
+                container_descr = d.strget("container_description", "")
+                if state=="active" and codec_descr:
+                    if codec_descr.find(container_descr)>=0:
+                        descr = codec_descr
+                    else:
+                        descr = csv(x for x in (codec_descr, container_descr) if x)
+                    state = "%s: %s" % (state, descr)
+                label.set_text(state)
+                if details:
+                    s = ""
+                    bitrate = d.intget("bitrate", 0)
+                    if bitrate>0:
+                        s = "%sbit/s" % std_unit(bitrate)
+                    details.set_text(s)
+            set_sound_info(self.speaker_label, self.speaker_details, self.client.speaker_enabled, self.client.sound_sink)
+            set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
 
         self.connection_type_label.set_text(c.socktype)
         protocol_info = p.get_info()
@@ -1126,7 +1128,7 @@ class SessionInfo(gtk.Window):
         self.latency_graph.set_size_request(W, H)
         self.latency_graph.set_from_pixmap(pixmap, None)
 
-        if SHOW_SOUND_STATS and self.client.sound_sink:
+        if mixin_features.audio and SHOW_SOUND_STATS and self.client.sound_sink:
             #sound queue graph:
             queue_values, queue_labels = norm_lists((
                                  (self.sound_out_queue_max, "Max"),
