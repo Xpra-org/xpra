@@ -216,7 +216,7 @@ class ChildCommandServer(StubServerMixin):
             log("still not terminated: %s", wait_for)
         log("done waiting for child commands")
 
-    def guess_session_name(self, procs):
+    def guess_session_name(self, procs=None):
         if not procs:
             return
         #use the commands to define the session name:

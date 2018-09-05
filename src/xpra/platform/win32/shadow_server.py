@@ -386,7 +386,7 @@ class ShadowServer(GTKShadowServerBase):
             log.info("WM_POWERBROADCAST: PBT_APMRESUMEAUTOMATIC")
 
 
-    def guess_session_name(self, _procs):
+    def guess_session_name(self, _procs=None):
         desktop_name = get_desktop_name()
         if desktop_name:
             self.session_name = desktop_name
