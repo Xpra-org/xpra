@@ -26,7 +26,8 @@ from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
-from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS
+from xpra.scripts.parsing import parse_bool
+from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
 from xpra.scripts.main import parse_display_name, connect_to, start_server_subprocess
 from xpra.make_thread import start_thread
 
@@ -405,6 +406,20 @@ class ProxyServer(ServerCore):
             if k not in PROXY_START_OVERRIDABLE_OPTIONS:
                 log.warn("Warning: ignoring invalid start override")
                 log.warn(" %s=%s", k, v)
+                continue
+            try:
+                vt = OPTION_TYPES[k]
+                if vt==str:
+                    v = bytestostr(v)
+                elif vt==bool:
+                    v = parse_bool(k, v)
+                elif vt==int:
+                    v = int(v)
+                elif vt==list:
+                    v = list(bytestostr(x) for x in v)
+            except ValueError:
+                log("start_new_session: override option %s", k, exc_info=True)
+                log.warn("Warning: ignoring invalid value %s for %s (%s)", v, k, vt)
                 continue
             log("start override: %s=%s", k, v)
             if v is not None:
