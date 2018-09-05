@@ -94,7 +94,7 @@ def get_icc_info():
                 "source"    : "environment-override",
                 "data"      : binascii.unhexlify(ENV_ICC_DATA),
                 }
-    from xpra.os_util import get_util_logger
+    from xpra.os_util import get_util_logger, bytestostr
     log = get_util_logger()
     info = {}
     try:
@@ -129,7 +129,7 @@ def get_icc_info():
                     continue
                 try:
                     v = m(p)
-                    info[k] = v
+                    info[k] = bytestostr(v).rstrip("\n\r")
                 except Exception as e:
                     log("ICC profile error on %s using %s: %s", k, fn, e)
     except Exception as e:
