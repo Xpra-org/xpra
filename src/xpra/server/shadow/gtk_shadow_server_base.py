@@ -13,7 +13,7 @@ notifylog = Logger("notify")
 screenlog = Logger("screen")
 log = Logger("shadow")
 
-from xpra.util import envbool
+from xpra.util import envbool, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
 from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -232,8 +232,30 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         except Exception as e:
             traylog.error("Error setting up system tray", exc_info=True)
 
+
     def make_tray_widget(self):
-        raise NotImplementedError()
+        from xpra.platform.xposix.gui import get_native_system_tray_classes
+        classes = get_native_system_tray_classes()
+        try:
+            from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+            classes.append(GTKStatusIconTray)
+        except:
+            traylog("no GTKStatusIconTray", exc_info=True)
+        traylog("tray classes: %s", classes)
+        if not classes:
+            traylog.error("Error: no system tray implementation available")
+            return None
+        errs = []
+        for c in classes:
+            try:
+                w = c(self, XPRA_APP_ID, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
+                return w
+            except Exception as e:
+                errs.append((c, e))
+        traylog.error("Error: all system tray implementations have failed")
+        for c, e in errs:
+            traylog.error(" %s: %s", c, e)
+        return None
 
 
     def set_tray_icon(self, filename):

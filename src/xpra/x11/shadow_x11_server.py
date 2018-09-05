@@ -9,7 +9,7 @@ init_display_source()
 from xpra.x11.x11_server_core import X11ServerCore
 
 from xpra.os_util import monotonic_time
-from xpra.util import envbool, envint, XPRA_APP_ID
+from xpra.util import envbool, envint
 from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
@@ -142,30 +142,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def setup_capture(self):
         return setup_capture(self.root)
-
-    def make_tray_widget(self):
-        from xpra.platform.xposix.gui import get_native_system_tray_classes
-        classes = get_native_system_tray_classes()
-        try:
-            from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
-            classes.append(GTKStatusIconTray)
-        except:
-            traylog("no GTKStatusIconTray", exc_info=True)
-        traylog("tray classes: %s", classes)
-        if not classes:
-            traylog.error("Error: no system tray implementation available")
-            return None
-        errs = []
-        for c in classes:
-            try:
-                w = c(self, XPRA_APP_ID, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
-                return w
-            except Exception as e:
-                errs.append((c, e))
-        traylog.error("Error: all system tray implementations have failed")
-        for c, e in errs:
-            traylog.error(" %s: %s", c, e)
-        return None
 
 
     def last_client_exited(self):
