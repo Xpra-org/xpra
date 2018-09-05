@@ -73,12 +73,12 @@ class RFBClientMessage(object):
         QEMUCLIENTMESSAGE            : "QEMUClientMessage",
     }
     PACKET_FMT = {
-        SETPIXELFORMAT               : "!BBBB"+PIXEL_FORMAT,
-        SETENCODINGS                 : "!BBH",
-        FRAMEBUFFERUPDATEREQUEST     : "!BBHHHH",
-        KEYEVENT                     : "!BBBBi",
-        POINTEREVENT                 : "!BBHH",
-        CLIENTCUTTEXT                : "!BBBBi",
+        SETPIXELFORMAT               : b"!BBBB"+PIXEL_FORMAT,
+        SETENCODINGS                 : b"!BBH",
+        FRAMEBUFFERUPDATEREQUEST     : b"!BBHHHH",
+        KEYEVENT                     : b"!BBBBi",
+        POINTEREVENT                 : b"!BBHH",
+        CLIENTCUTTEXT                : b"!BBBBi",
         }
     PACKET_STRUCT = {}
     for ptype, fmt in PACKET_FMT.items():

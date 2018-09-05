@@ -70,7 +70,7 @@ class RFBSource(object):
             return
         fbupdate = struct.pack("!BBH", 0, 0, 1)
         encoding = 0    #Raw
-        rect = struct.pack("!HHHHi", x, y, w, h, encoding)
+        rect = struct.pack(b"!HHHHi", x, y, w, h, encoding)
         if img.get_rowstride()!=w*4:
             img.restride(w*4)
         pixels = img.get_pixels()

@@ -67,12 +67,12 @@ class RFBProtocol(object):
             self._invalid_header(packet, "invalid RFB protocol handshake packet header")
             return 0
         #ie: packet==b'RFB 003.008\n'
-        self._protocol_version = tuple(int(x) for x in packet[4:11].split("."))
-        log.info("RFB version %s connection from %s", b".".join(str(x) for x in self._protocol_version), self._conn.target)
+        self._protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
+        log.info("RFB version %s connection from %s", ".".join(str(x) for x in self._protocol_version), self._conn.target)
         if self._protocol_version!=(3, 8):
             msg = "unsupported protocol version"
             log.error("Error: %s", msg)
-            self.send(struct.pack("!BI", 0, len(msg))+msg)
+            self.send(struct.pack(b"!BI", 0, len(msg))+msg)
             self.invalid(msg, packet)
             return 0
         #reply with Security Handshake:
@@ -81,16 +81,16 @@ class RFBProtocol(object):
             security_types = [RFBAuth.VNC]
         else:
             security_types = [RFBAuth.NONE]
-        packet = struct.pack("B", len(security_types))
+        packet = struct.pack(b"B", len(security_types))
         for x in security_types:
-            packet += struct.pack("B", x)
+            packet += struct.pack(b"B", x)
         self.send(packet)
         return 12
 
     def _parse_security_handshake(self, packet):
         log("parse_security_handshake(%s)", hexstr(packet))
         try:
-            auth = struct.unpack("B", packet)[0]
+            auth = struct.unpack(b"B", packet)[0]
         except:
             self._internal_error(packet, "cannot parse security handshake response '%s'" % hexstr(packet))
             return 0
@@ -111,7 +111,7 @@ class RFBProtocol(object):
         log("parse_security_handshake: auth=%s, sending SecurityResult", auth_str)
         #Security Handshake, send SecurityResult Handshake
         self._packet_parser = self._parse_security_result
-        self.send(struct.pack("!I", 0))
+        self.send(struct.pack(b"!I", 0))
         return 1
 
     def _parse_challenge(self, response):
@@ -123,7 +123,7 @@ class RFBProtocol(object):
             #log("padded password=%s", password)
             if self._authenticator.authenticate(hex_response):
                 log("challenge authentication succeeded")
-                self.send(struct.pack("!I", 0))
+                self.send(struct.pack(b"!I", 0))
                 self._packet_parser = self._parse_security_result
                 return 16
             log.warn("Warning: authentication challenge response failure")
@@ -171,7 +171,7 @@ class RFBProtocol(object):
         #some packets require parsing extra data:
         if ptype==RFBClientMessage.SETENCODINGS:
             N = values[2]
-            estruct = struct.Struct("!"+"i"*N)
+            estruct = struct.Struct(b"!"+b"i"*N)
             size += estruct.size
             if len(packet)<size:
                 return 0

@@ -6,7 +6,7 @@
 
 
 from xpra.util import nonl, csv, typedict
-from xpra.os_util import POSIX, OSX
+from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
@@ -72,7 +72,7 @@ class RFBServer(object):
 
     def process_rfb_packet(self, proto, packet):
         #log("RFB packet: '%s'", nonl(packet))
-        fn_name = "_process_rfb_%s" % packet[0].replace("-", "_")
+        fn_name = "_process_rfb_%s" % bytestostr(packet[0]).replace("-", "_")
         fn = getattr(self, fn_name, None)
         if not fn:
             log.warn("Warning: no RFB handler for %s", fn_name)
