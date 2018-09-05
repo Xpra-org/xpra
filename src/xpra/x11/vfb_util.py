@@ -28,7 +28,7 @@ XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
 
 vfb_logger = None
-def _vfb_logger():
+def get_vfb_logger():
     global vfb_logger
     if not vfb_logger:
         from xpra.log import Logger
@@ -37,7 +37,7 @@ def _vfb_logger():
 
 
 def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
-    log = _vfb_logger()
+    log = get_vfb_logger()
     log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
     cleanups = []
     if not device_uuid:
@@ -130,7 +130,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
         raise InitException("the 'xvfb' command is not defined")
 
     cleanups = []
-    log = _vfb_logger()
+    log = get_vfb_logger()
     log("start_Xvfb%s", (xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid))
     xauthority = get_xauthority_path(display_name, username, uid, gid)
     os.environ["XAUTHORITY"] = xauthority
@@ -167,16 +167,17 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
 
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
+        assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last (found at index %i)" % logfile_argindex
+        xorg_log_file = xvfb_cmd[logfile_argindex+1]
     except ValueError:
-        logfile_argindex = -1
-    assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last (found at index %i)" % logfile_argindex
+        xorg_log_file = None
     tmp_xorg_log_file = None
-    if logfile_argindex>0:
+    if xorg_log_file:
         if use_display_fd:
             #keep track of it so we can rename it later:
-            tmp_xorg_log_file = xvfb_cmd[logfile_argindex+1]
+            tmp_xorg_log_file = xorg_log_file
         #make sure the Xorg log directory exists:
-        xorg_log_dir = os.path.dirname(pathexpand(xvfb_cmd[logfile_argindex+1]))
+        xorg_log_dir = os.path.dirname(xorg_log_file)
         if not os.path.exists(xorg_log_dir):
             try:
                 log("creating Xorg log dir '%s'", xorg_log_dir)
@@ -247,8 +248,9 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                 try:
                     os.rename(f0, f1)
                 except Exception as e:
-                    sys.stderr.write("failed to rename Xorg log file from '%s' to '%s'\n" % (f0, f1))
-                    sys.stderr.write(" %s\n" % e)
+                    log.warn("Warning: failed to rename Xorg log file,")
+                    log.warn(" from '%s' to '%s'" % (f0, f1))
+                    log.warn(" %s" % e)
         display_name = new_display_name
     else:
         # use display specified
@@ -270,7 +272,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
 
 def set_initial_resolution(desktop=False):
     try:
-        log = _vfb_logger()
+        log = get_vfb_logger()
         log("set_initial_resolution")
         if desktop:
             res = DEFAULT_DESKTOP_VFB_RESOLUTION
@@ -310,20 +312,22 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
         code = subprocess.call(xauth_cmd, preexec_fn=preexec, close_fds=True)
         end = monotonic_time()
         if code!=0 and (end-start>=10):
-            sys.stderr.write("Warning: xauth command took %i seconds and failed\n" % (end-start))
+            log = get_vfb_logger()
+            log.warn("Warning: xauth command took %i seconds and failed" % (end-start))
             #took more than 10 seconds to fail, check for stale locks:
             import glob
             if glob.glob("%s-*" % filename):
-                sys.stderr.write("Warning: trying to clean some stale xauth locks\n")
+                log.warn("Warning: trying to clean some stale xauth locks")
                 xauth_cmd = ["xauth", "-b"]+xauth_args
                 code = subprocess.call(xauth_cmd, preexec_fn=preexec, close_fds=True)
         if code!=0:
             raise OSError("non-zero exit code: %s" % code)
     except OSError as e:
         #trying to continue anyway!
-        sys.stderr.write("Error adding xauth entry for %s\n" % display_name)
-        sys.stderr.write(" using command \"%s\"\n" % (" ".join(xauth_cmd)))
-        sys.stderr.write(" %s\n" % (e,))
+        log = get_vfb_logger()
+        log.error("Error adding xauth entry for %s" % display_name)
+        log.error(" using command \"%s\":" % (" ".join(xauth_cmd)))
+        log.error(" %s" % (e,))
 
 def check_xvfb_process(xvfb=None, cmd="Xvfb"):
     if xvfb is None:
@@ -332,7 +336,7 @@ def check_xvfb_process(xvfb=None, cmd="Xvfb"):
     if xvfb.poll() is None:
         #process is running
         return True
-    log = _vfb_logger()
+    log = get_vfb_logger()
     log.error("")
     log.error("%s command has terminated! xpra cannot continue", cmd)
     log.error(" if the display is already running, try a different one,")
@@ -347,14 +351,14 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True):
     try:
         wait_for_x_server(strtobytes(display_name), VFB_WAIT)
     except Exception as e:
-        log = _vfb_logger()
+        log = get_vfb_logger()
         log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)
         log.error("Error: failed to connect to display %s" % display_name)
         log.error(" %s", e)
         return False
     if shadowing_check and not check_xvfb_process(xvfb):
         #if we're here, there is an X11 server, but it isn't the one we started!
-        log = _vfb_logger()
+        log = get_vfb_logger()
         log.error("There is an X11 server already running on display %s:" % display_name)
         log.error("You may want to use:")
         log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
