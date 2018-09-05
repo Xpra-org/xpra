@@ -15,6 +15,7 @@ log = Logger("shadow")
 
 from xpra.util import envbool, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
+from xpra.server import server_features
 from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
@@ -105,7 +106,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def send_updated_screen_size(self):
         log("send_updated_screen_size")
         super(GTKShadowServerBase, self).send_updated_screen_size()
-        from xpra.server import server_features
         if server_features.windows:
             self.recreate_window_models()
 
@@ -218,6 +218,15 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 self.tray_menu.append(title_item)
             from xpra.gtk_common.about import about
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", None, about))
+            if server_features.windows:
+                def readonly_toggled(menuitem):
+                    log("readonly_toggled(%s)", menuitem)
+                    ro = menuitem.get_active()
+                    if ro!=self.readonly:
+                        self.readonly = ro
+                        self.setting_changed("readonly", ro)
+                readonly_menuitem = self.checkitem("Read-only", cb=readonly_toggled, active=self.readonly)
+                self.tray_menu.append(readonly_menuitem)
             self.tray_menu.append(self.traymenuitem("Exit", "quit.png", None, self.tray_exit_callback))
             self.tray_menu.append(self.traymenuitem("Close Menu", "close.png", None, self.close_tray_menu))
             #maybe add: session info, clipboard, sharing, etc
@@ -277,6 +286,15 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             icon_size = get_icon_size()
             image = self.get_image(icon_name, icon_size)
         return menuitem(title, image, tooltip, cb)
+
+    def checkitem(self, title, cb=None, active=False):
+        from xpra.gtk_common.gtk_util import CheckMenuItemClass
+        check_item = CheckMenuItemClass(title)
+        check_item.set_active(active)
+        if cb:
+            check_item.connect("toggled", cb)
+        check_item.show()
+        return check_item
 
     def get_pixbuf(self, icon_name):
         from xpra.platform.paths import get_icon_filename
