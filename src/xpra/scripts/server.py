@@ -932,7 +932,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         opts.socket_dirs = get_socket_dirs()
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions, username, uid, gid)
     netlog("setting up local sockets: %s", local_sockets)
-    ssh_access = opts.ssh.lower().strip() not in FALSE_OPTIONS
+    ssh_port = get_ssh_port()
+    ssh_access = ssh_port>0 and opts.ssh.lower().strip() not in FALSE_OPTIONS
     for rec, cleanup_socket in local_sockets:
         socktype, socket, sockpath = rec
         #ie: ("unix-domain", sock, sockpath), cleanup_socket
@@ -940,10 +941,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         netlog("%s %s : %s", socktype, sockpath, socket)
         add_cleanup(cleanup_socket)
         if opts.mdns and ssh_access:
-            ssh_port = get_ssh_port()
             netlog("ssh %s:%s : %s", "", ssh_port, socket)
-            if ssh_port:
-                add_mdns(mdns_recs, "ssh", "", ssh_port)
+            add_mdns(mdns_recs, "ssh", "", ssh_port)
 
     def b(v):
         return str(v).lower() not in FALSE_OPTIONS
