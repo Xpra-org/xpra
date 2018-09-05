@@ -178,7 +178,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     # refresh
 
     def start_refresh(self, wid):
-        log("start_refresh(%i)", wid)
+        log("start_refresh(%i) mapped=%s, timer=%s", wid, self.mapped, self.refresh_timer)
         if wid not in self.mapped:
             self.mapped.append(wid)
         if not self.refresh_timer:
@@ -222,11 +222,15 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         raise NotImplementedError()
 
     def start_poll_pointer(self):
+        log("start_poll_pointer() pointer_poll_timer=%s, input_devices=%s, POLL_POINTER=%s", self.pointer_poll_timer, server_features.input_devices, POLL_POINTER)
+        if self.pointer_poll_timer:
+            self.cancel_poll_pointer()
         if server_features.input_devices and POLL_POINTER>0:
             self.pointer_poll_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
 
     def cancel_poll_pointer(self):
         ppt = self.pointer_poll_timer
+        log("cancel_poll_pointer() pointer_poll_timer=%s", ppt)
         if ppt:
             self.pointer_poll_timer = None
             self.source_remove(ppt)
