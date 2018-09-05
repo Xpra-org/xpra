@@ -1527,6 +1527,8 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
 
 def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
     displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_uid=uid, match_gid=gid)]
+    if current_display and current_display not in displays:
+        displays.append(current_display)
     if len(displays)!=1:
         #try without uid match:
         displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_gid=gid)]
@@ -1544,7 +1546,7 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
         displays = list(set(displays)-set(xpra_displays))
         if len(displays)==0:
             raise InitExit(1, "could not detect any live plain X11 displays, only multiple xpra displays: %s" % csv(xpra_displays))
-    if current_display and current_display in displays:
+    if current_display:
         return current_display
     if len(displays)!=1:
         raise InitExit(1, "too many live X11 displays to choose from: %s" % csv(displays))
