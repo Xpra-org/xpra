@@ -828,7 +828,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         try:
             from xpra.net.bytestreams import pretty_socket
             conn = self._protocol._conn
-            text += " for %s server %s" % (conn.socktype, pretty_socket(conn.remote))
+            text += " for user '%s',\n connecting to %s server %s" % (self.username, conn.socktype, pretty_socket(conn.remote))
         except:
             pass
         return text
