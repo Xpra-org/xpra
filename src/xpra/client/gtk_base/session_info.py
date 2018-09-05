@@ -11,19 +11,20 @@ gdk = import_gdk()
 glib = import_glib()
 import sys
 import datetime
+from collections import deque
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monotonic_time
 from xpra.util import prettify_plug_name, typedict, csv, engs
 from xpra.gtk_common.graph import make_graph_pixmap
-from collections import deque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.scripts.config import python_platform
-from xpra.log import Logger
+from xpra.client import mixin_features
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, \
                         TableBuilder, imagebutton, scaled_image, get_preferred_size, get_gtk_version_info, \
                         RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER
 from xpra.net.net_util import get_network_caps
+from xpra.log import Logger
 log = Logger("info")
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
@@ -303,7 +304,7 @@ class SessionInfo(gtk.Window):
         tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
         if self.connection:
             tb.new_row("Server Endpoint", slabel(self.connection.target))
-        if self.client.server_display:
+        if mixin_features.display and self.client.server_display:
             tb.new_row("Server Display", slabel(prettify_plug_name(self.client.server_display)))
         hostname = scaps.strget("hostname")
         if hostname:
@@ -358,7 +359,7 @@ class SessionInfo(gtk.Window):
         self.client_latency_labels = maths_labels()
         tb.add_row(slabel("Client Latency (ms)", "The time it takes for the client to respond to pings, as measured by the server"),
                    *self.client_latency_labels)
-        if self.client.windows_enabled:
+        if mixin_features.windows and self.client.windows_enabled:
             self.batch_labels = maths_labels()
             tb.add_row(slabel("Batch Delay (ms)", "How long the server waits for new screen updates to accumulate before processing them"),
                        *self.batch_labels)
@@ -577,10 +578,11 @@ class SessionInfo(gtk.Window):
             if self.client.sound_out_bytecount>0:
                 self.sound_out_bitcount.append(self.client.sound_out_bytecount * 8)
 
-        #count pixels in the last second:
-        since = monotonic_time()-1
-        decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
-        self.pixel_in_data.append(sum(decoded))
+        if mixin_features.windows:
+            #count pixels in the last second:
+            since = monotonic_time()-1
+            decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
+            self.pixel_in_data.append(sum(decoded))
         #update latency values
         #there may be more than one record for each second
         #so we have to average them to prevent the graph from "jumping":
@@ -620,7 +622,7 @@ class SessionInfo(gtk.Window):
                 spl = [1000.0*x for _,x in tuple(self.client.server_ping_latency)]
                 cpl = [1000.0*x for _,x in tuple(self.client.client_ping_latency)]
                 self.avg_ping_latency.append(sum(spl+cpl)/len(spl+cpl))
-            if len(self.client.pixel_counter)>0:
+            if mixin_features.windows and len(self.client.pixel_counter)>0:
                 tsize = 0
                 ttime = 0
                 for start_time, end_time, size in self.client.pixel_counter:
@@ -682,6 +684,8 @@ class SessionInfo(gtk.Window):
         self.opengl_buffering.set_text(" ".join(info))
 
     def show_window_renderers(self):
+        if not mixin_features.windows:
+            return
         wr = []
         renderers = {}
         for wid, window in tuple(self.client._id_to_window.items()):
@@ -692,15 +696,21 @@ class SessionInfo(gtk.Window):
 
     def populate_features(self):
         size_info = ""
-        if self.client.server_actual_desktop_size:
-            w,h = self.client.server_actual_desktop_size
-            size_info = "%sx%s" % (w,h)
-            if self.client.server_randr and self.client.server_max_desktop_size:
-                size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
-        self.bool_icon(self.server_randr_icon, self.client.server_randr)
+        if mixin_features.windows:
+            if self.client.server_actual_desktop_size:
+                w,h = self.client.server_actual_desktop_size
+                size_info = "%sx%s" % (w,h)
+                if self.client.server_randr and self.client.server_max_desktop_size:
+                    size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
+                self.bool_icon(self.server_randr_icon, self.client.server_randr)
+        else:
+            size_info = "unknown"
+            unknown = self.get_pixbuf("unknown.png")
+            if unknown:
+                self.server_randr_icon.set_from_pixbuf(unknown)
         self.server_randr_label.set_text("%s" % size_info)
         root_w, root_h = self.client.get_root_size()
-        if self.client.xscale!=1 or self.client.yscale!=1:
+        if mixin_features.windows and (self.client.xscale!=1 or self.client.yscale!=1):
             sw, sh = self.client.cp(root_w, root_h)
             display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
         else:
@@ -747,7 +757,10 @@ class SessionInfo(gtk.Window):
             return csv(sorted(v))
         se = scaps.strlistget("encodings.core", scaps.strlistget("encodings"))
         self.server_encodings_label.set_text(encliststr(se))
-        self.client_encodings_label.set_text(encliststr(self.client.get_core_encodings()))
+        if mixin_features.encoding:
+            self.client_encodings_label.set_text(encliststr(self.client.get_core_encodings()))
+        else:
+            self.client_encodings_label.set_text("n/a")
 
         def get_encoder_list(caps):
             from xpra.net import packet_encoding
@@ -917,7 +930,7 @@ class SessionInfo(gtk.Window):
         if len(self.client.client_ping_latency)>0:
             cpl = [1000.0*x for _,x in tuple(self.client.client_ping_latency)]
             setlabels(self.client_latency_labels, cpl)
-        if self.client.windows_enabled:
+        if mixin_features.windows and self.client.windows_enabled:
             setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
             setall(self.damage_labels, self.values_from_info("damage_out_latency", "damage.out_latency"))
             setall(self.quality_labels, self.all_values_from_info("quality", "encoding.quality"))
@@ -1060,15 +1073,15 @@ class SessionInfo(gtk.Window):
             else:
                 labels += ["recv %sB/s" % unit(net_in_scale)]
                 datasets += [net_in_data]
-        if SHOW_PIXEL_STATS and self.client.windows_enabled:
+        if mixin_features.windows and SHOW_PIXEL_STATS and self.client.windows_enabled:
             pixel_scale, in_pixels = values_to_scaled_values(tuple(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
             datasets.append(in_pixels)
             labels.append("%s pixels/s" % unit(pixel_scale))
-        if SHOW_SOUND_STATS and self.sound_in_bitcount:
+        if mixin_features.audio and SHOW_SOUND_STATS and self.sound_in_bitcount:
             sound_in_scale, sound_in_data = values_to_diff_scaled_values(tuple(self.sound_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(sound_in_data)
             labels.append("Speaker %sb/s" % unit(sound_in_scale))
-        if SHOW_SOUND_STATS and self.sound_out_bitcount:
+        if mixin_features.audio and SHOW_SOUND_STATS and self.sound_out_bitcount:
             sound_out_scale, sound_out_data = values_to_diff_scaled_values(tuple(self.sound_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(sound_out_data)
             labels.append("Mic %sb/s" % unit(sound_out_scale))
