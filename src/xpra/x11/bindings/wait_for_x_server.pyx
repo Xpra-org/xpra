@@ -9,6 +9,7 @@
 from __future__ import absolute_import
 
 from time import sleep
+from xpra.os_util import bytestostr
 from xpra.monotonic_time cimport monotonic_time
 
 cdef extern from "X11/Xlib.h":
@@ -33,4 +34,4 @@ def wait_for_x_server(display_name, int timeout):
         if d is not NULL:
             XCloseDisplay(d)
             return
-    raise RuntimeError("could not connect to X server on display '%s' after %i seconds" % (display_name, timeout))
+    raise RuntimeError("could not connect to X server on display '%s' after %i seconds" % (bytestostr(display_name), timeout))
