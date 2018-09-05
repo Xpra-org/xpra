@@ -1324,6 +1324,17 @@ def get_client_app(error_cb, opts, extra_args, mode):
             app.display_desc = display_desc
             app.setup_connection(conn)
         except Exception as e:
+            may_notify = getattr(app, "may_notify", None)
+            if may_notify:
+                from xpra.util import XPRA_FAILURE_NOTIFICATION_ID
+                body = str(e)
+                if body.startswith("failed to connect to"):
+                    lines = body.split("\n")
+                    summary = "Xpra client %s" % lines[0]
+                    body = "\n".join(lines[1:])
+                else:
+                    summary = "Xpra client failed to connect"
+                may_notify(XPRA_FAILURE_NOTIFICATION_ID, summary, body, icon_name="disconnected")
             app.cleanup()
             raise
     return app
