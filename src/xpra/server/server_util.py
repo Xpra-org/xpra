@@ -111,7 +111,8 @@ def write_runner_shell_scripts(contents, overwrite=True):
             try:
                 os.mkdir(scriptdir, 0o700)
             except Exception as e:
-                log.warn("Warning: failed to write script file in '%s':", scriptdir)
+                log("os.mkdir(%s, 0o700)", scriptdir, exc_info=True)
+                log.warn("Warning: failed to create script directory '%s':", scriptdir)
                 log.warn(" %s", e)
                 if scriptdir.startswith("/var/run/user") or scriptdir.startswith("/run/user"):
                     log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
@@ -125,10 +126,11 @@ def write_runner_shell_scripts(contents, overwrite=True):
             with umask_context(0o022):
                 h = os.open(scriptpath, os.O_WRONLY|os.O_CREAT|os.O_TRUNC, 0o700)
                 try:
-                    os.write(h, contents)
+                    os.write(h, contents.encode())
                 finally:
                     os.close(h)
         except Exception as e:
+            log("writing to %s", scriptpath, exc_info=True)
             log.error("Error: failed to write script file '%s':", scriptpath)
             log.error(" %s\n", e)
 
