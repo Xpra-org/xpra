@@ -10,7 +10,7 @@ from xpra.notifications.notifier_base import NotifierBase
 
 class PyNotify_Notifier(NotifierBase):
 
-    def show_notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
+    def show_notify(self, dbus_id, _tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
@@ -45,7 +45,7 @@ def main():
     import gtk
     def show():
         n = PyNotify_Notifier()
-        n.show_notify("", 0, "Test", 0, "", "Summary", "Body...", ["0", "Hello", "1", "Bye"], {}, 0, "")
+        n.show_notify("", None, 0, "Test", 0, "", "Summary", "Body...", ["0", "Hello", "1", "Bye"], {}, 0, "")
         return False
     glib.idle_add(show)
     glib.timeout_add(20000, gtk.main_quit)
