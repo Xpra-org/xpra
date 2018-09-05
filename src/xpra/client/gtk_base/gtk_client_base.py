@@ -958,9 +958,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             for x in str(e).split("\n"):
                 opengllog.error(" %s", x)
             self.opengl_props["info"] = str(e)
-            summary = "OpenGL Setup Failure"
+            summary = "Xpra OpenGL Acceleration Failure"
             body = str(e)
-            self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, icon_name="opengl")
+            def delayed_notify():
+                if self.exit_code is None:
+                    self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, icon_name="opengl")
+            self.timeout_add(2*1000, delayed_notify)
 
         if warnings:
             if enable_option in ("", "auto"):
