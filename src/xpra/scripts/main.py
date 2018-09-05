@@ -1340,9 +1340,11 @@ def get_client_app(error_cb, opts, extra_args, mode):
     return app
 
 def make_client(error_cb, opts):
-    from xpra.scripts.config import FALSE_OPTIONS
+    from xpra.scripts.config import FALSE_OPTIONS, OFF_OPTIONS
     def b(v):
         return str(v).lower() not in FALSE_OPTIONS
+    def bo(v):
+        return str(v).lower() not in FALSE_OPTIONS or str(v).lower() in OFF_OPTIONS
     impwarned = []
     def impcheck(*modules):
         for mod in modules:
@@ -1359,8 +1361,8 @@ def make_client(error_cb, opts):
     from xpra.client import mixin_features
     mixin_features.display          = opts.windows
     mixin_features.windows          = opts.windows
-    mixin_features.audio            = (b(opts.speaker) or b(opts.microphone)) and impcheck("sound")
-    mixin_features.webcam           = b(opts.webcam) and impcheck("codecs")
+    mixin_features.audio            = (bo(opts.speaker) or bo(opts.microphone)) and impcheck("sound")
+    mixin_features.webcam           = bo(opts.webcam) and impcheck("codecs")
     mixin_features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
     mixin_features.notifications    = opts.notifications and impcheck("notifications")
     mixin_features.dbus             = opts.dbus_proxy and impcheck("dbus")

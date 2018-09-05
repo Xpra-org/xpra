@@ -1024,8 +1024,9 @@ CLONES = {}
 NO_FILE_OPTIONS = ["daemon"]
 
 
-TRUE_OPTIONS = ["yes", "true", "1", "on", True]
-FALSE_OPTIONS = ["no", "false", "0", "off", False]
+TRUE_OPTIONS = ("yes", "true", "1", "on", True)
+FALSE_OPTIONS = ("no", "false", "0", "off", False)
+OFF_OPTIONS = ("off", )
 def parse_bool(k, v, auto=None):
     if type(v)==str:
         v = v.lower().strip()
