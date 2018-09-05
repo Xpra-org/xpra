@@ -202,3 +202,19 @@ class DBUS_Notifier(NotifierBase):
         self.dbusnotify.CloseNotification(actual_id,
              reply_handler = CloseNotificationReply,
              error_handler = CloseNotificationError)
+
+
+def main():
+    import glib
+    import gtk
+    def show():
+        n = DBUS_Notifier_factory()
+        n.show_notify("", None, 0, "Test", 0, "", "Summary", "Body line1\nline2...", ["0", "Hello", "1", "Bye"], {}, 0, "")
+        return False
+    glib.idle_add(show)
+    glib.timeout_add(20000, gtk.main_quit)
+    gtk.main()
+
+
+if __name__ == "__main__":
+    main()
