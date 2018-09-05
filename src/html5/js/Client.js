@@ -645,7 +645,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		keyname = keyname.replace("_L", "_R")
 
 	var raw_modifiers = get_event_modifiers(event);
-	var modifiers = this.translate_modifiers(raw_modifiers);
+	var modifiers = this._keyb_get_modifiers(event);
 	var keyval = keycode;
 	var group = 0;
 
