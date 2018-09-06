@@ -218,6 +218,9 @@ class RFBProtocol(object):
         self.close()
 
 
+    def queue_size(self):
+        return self._write_queue.qsize()
+
     def send(self, packet):
         if self._closed:
             log("connection is closed already, not sending packet")

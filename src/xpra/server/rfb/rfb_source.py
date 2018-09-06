@@ -68,7 +68,14 @@ class RFBSource(object):
     def update_mouse(self, *args):
         log("update_mouse%s", args)
 
-    def damage(self, _wid, window, x, y, w, h, _options=None):
+    def damage(self, _wid, window, x, y, w, h, options={}):
+        polling = options.get("polling", False)
+        p = self.protocol
+        if polling and p is None or p.queue_size()>=2:
+            #very basic RFB update rate control,
+            #if there are packets waiting already
+            #we'll just process the next polling update instead:
+            return
         img = window.get_image(x, y, w, h)
         window.acknowledge_changes()
         log("damage: %s", img)
