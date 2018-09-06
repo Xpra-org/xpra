@@ -8,14 +8,6 @@ import os
 
 from xpra.log import Logger
 log = Logger("client")
-traylog = Logger("client", "tray")
-keylog = Logger("client", "keyboard")
-workspacelog = Logger("client", "workspace")
-iconlog = Logger("client", "icon")
-screenlog = Logger("client", "screen")
-scalinglog = Logger("scaling")
-netlog = Logger("network")
-bandwidthlog = Logger("bandwidth")
 
 
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
