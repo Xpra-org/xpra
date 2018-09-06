@@ -28,6 +28,7 @@ class RFBSource(object):
         self.share = share
         self.uuid = "RFB%5i" % counter.increase()
         self.lock = False
+        self.keyboard_config = None
 
     def get_info(self):
         return {
@@ -51,6 +52,11 @@ class RFBSource(object):
     def keys_changed(self):
         pass
 
+    def set_default_keymap(self):
+        log("set_default_keymap() keyboard_config=%s", self.keyboard_config)
+        if self.keyboard_config:
+            self.keyboard_config.set_default_keymap()
+        return self.keyboard_config
 
     def send_server_event(self, *_args):
         pass

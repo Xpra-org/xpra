@@ -22,7 +22,7 @@ from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.os_util import StringIOClass, monotonic_time, PYTHON3
-from xpra.util import engs, csv
+from xpra.util import engs, csv, typedict
 from xpra.net.compression import Compressed
 
 set_context_check(verify_sync)
@@ -415,7 +415,7 @@ class X11ServerCore(GTKServerBase):
         return info
 
 
-    def get_keyboard_config(self, props):
+    def get_keyboard_config(self, props=typedict()):
         from xpra.x11.server_keyboard_config import KeyboardConfig
         keyboard_config = KeyboardConfig()
         keyboard_config.enabled = props.boolget("keyboard", True)

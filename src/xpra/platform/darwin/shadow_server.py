@@ -89,7 +89,7 @@ class ShadowServer(GTKShadowServerBase):
         #printing fails silently on OSX
         self.printing = False
 
-    def get_keyboard_config(self, props):
+    def get_keyboard_config(self, _props=None):
         return KeyboardConfig()
 
     def make_tray_widget(self):

@@ -106,7 +106,9 @@ class RFBServer(object):
         if not accepted:
             return
         source = RFBSource(proto, self._get_rfb_desktop_model(), proto.share)
-        source.keyboard_config = self.get_keyboard_config(typedict())
+        if server_features.input_devices:
+            source.keyboard_config = self.get_keyboard_config()
+            self.set_keymap(source)
         self._server_sources[proto] = source
         w, h = model.get_dimensions()
         source.damage(self._window_to_id[model], model, 0, 0, w, h)

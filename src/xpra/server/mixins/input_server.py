@@ -310,7 +310,7 @@ class InputServer(StubServerMixin):
     def clear_keys_pressed(self):
         pass
 
-    def get_keyboard_config(self, _props):
+    def get_keyboard_config(self, _props=None):
         return None
 
     def set_keyboard_repeat(self, key_repeat):
