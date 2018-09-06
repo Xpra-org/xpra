@@ -172,6 +172,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         raise Exception("override me!")
 
 
+    def may_notify(self, nid, summary, body, *args, **kwargs):
+        notifylog = Logger("notify")
+        notifylog("may_notify(%s, %s, %s, %s, %s)", nid, summary, body, args, kwargs)
+        log.info("%s", summary)
+        if body:
+            for x in body.splitlines():
+                log.info("%s", x)
+
+
     def handle_deadly_signal(self, signum, _frame=None):
         sys.stderr.write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
         sys.stderr.flush()
