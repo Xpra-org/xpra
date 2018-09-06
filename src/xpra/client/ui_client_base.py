@@ -81,7 +81,7 @@ class UIXpraClient(ClientBaseClass):
     #does not extend GObject,
     #the gtk client subclasses will take care of it.
     #these are all "no-arg" signals
-    __signals__ = ["first-ui-received", "keyboard-sync-toggled"]
+    __signals__ = ["first-ui-received",]
     for c in CLIENT_BASES:
         if c!=XpraClientBase:
             __signals__ += c.__signals__
@@ -126,6 +126,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_lock_toggle = False
         self.server_window_filters = False
         self.server_keyboard = True
+        self.server_toggle_keyboard_sync = False
         self.server_pointer = True
 
         self.client_supports_opengl = False
@@ -349,6 +350,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_lock = c.boolget("lock")
         self.server_lock_toggle = c.boolget("lock-toggle")
         self.server_keyboard = c.boolget("keyboard", True)
+        self.server_toggle_keyboard_sync = self.server_keyboard and c.boolget("toggle_keyboard_sync", True)
         self.server_pointer = c.boolget("pointer", True)
         self.server_start_new_commands = c.boolget("start-new-commands")
         if self.start_new_commands or self.start_child_new_commands:
@@ -402,7 +404,6 @@ class UIXpraClient(ClientBaseClass):
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))
-        self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.handshake_complete()
 
 
@@ -554,6 +555,7 @@ class UIXpraClient(ClientBaseClass):
         self.send("force-ungrab", wid)
 
     def send_keyboard_sync_enabled_status(self, *_args):
+        assert self.server_toggle_keyboard_sync
         self.send("set-keyboard-sync-enabled", self.keyboard_sync)
 
 
