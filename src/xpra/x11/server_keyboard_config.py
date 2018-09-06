@@ -397,10 +397,11 @@ class KeyboardConfig(KeyboardConfigBase):
         if keycode is None:
             if bool(self.xkbmap_query):
                 keycode = client_keycode
+                log("get_keycode(%s, %s, %s) native keymap, using client keycode %s", client_keycode, keyname, modifiers, client_keycode)
             else:
                 #non-native: try harder to find matching keysym
                 keycode = self.keycode_translation.get(keyname, client_keycode)
-            log("get_keycode(%s, %s, %s) keyname lookup: %s", client_keycode, keyname, modifiers, keycode)
+                log("get_keycode(%s, %s, %s) keyname lookup: %s", client_keycode, keyname, modifiers, keycode)
         else:
             log("get_keycode(%s, %s, %s) keyname+keycode lookup: %s", client_keycode, keyname, modifiers, keycode)
         return keycode
