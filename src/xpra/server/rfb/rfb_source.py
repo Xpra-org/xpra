@@ -8,7 +8,7 @@ import struct
 from threading import Event
 
 from xpra.net.protocol import PACKET_JOIN_SIZE
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.util import AtomicInteger
 from xpra.log import Logger
 log = Logger("rfb")
@@ -83,12 +83,12 @@ class RFBSource(object):
             self.send(pixels)
 
     def send_clipboard(self, text):
-        nocr = text.replace("\r", "")
-        msg = struct.pack("!BBBBI", 3, 0, 0, 0, len(nocr))+nocr
+        nocr = strtobytes(text.replace("\r", ""))
+        msg = struct.pack(b"!BBBBI", 3, 0, 0, 0, len(nocr))+nocr
         self.send(msg)
 
     def bell(self, *_args):
-        msg = struct.pack("!B", 2)
+        msg = struct.pack(b"!B", 2)
         self.send(msg)
 
     def send(self, msg):
