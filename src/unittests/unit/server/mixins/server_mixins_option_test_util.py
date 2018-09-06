@@ -126,7 +126,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 env["DISPLAY"] = self.client_display
                 client_kwargs = {"env" : env}
 
-            if subcommand in ("shadow", "start-desktop") and TEST_RFB:
+            if subcommand in ("shadow", "start-desktop") and TEST_RFB and options.get("windows", True):
                 vncviewer = which("vncviewer")
                 log("testing RFB clients with vncviewer '%s'", vncviewer)
                 if vncviewer:

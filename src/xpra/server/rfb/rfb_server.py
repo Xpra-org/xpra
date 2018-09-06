@@ -42,7 +42,10 @@ class RFBServer(object):
 
     def _get_rfb_desktop_model(self):
         models = tuple(self._window_to_id.keys())
-        if len(models)!=1:
+        if not models:
+            log.error("RFB: no window models to export, dropping connection")
+            return None
+        elif len(models)!=1:
             log.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
             return None
         return models[0]
