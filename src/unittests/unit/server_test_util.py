@@ -117,7 +117,7 @@ class ServerTestUtil(unittest.TestCase):
 		stdout_file = stderr_file = None
 		strcommand = " ".join("'%s'" % x for x in command)
 		if XPRA_TEST_DEBUG:
-			log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
+			log("run_command(%s, %s)", " ".join('"%s"' % x for x in command), repr_ellipsized(str(env), 40))
 		else:
 			if "stdout" not in kwargs:
 				stdout_file = cls._temp_file(prefix="xpra-stdout-")
