@@ -30,7 +30,7 @@ class EncodingServer(StubServerMixin):
         self.lossless_encodings = []
         self.lossless_mode_encodings = []
         self.default_encoding = None
-        self.scaling_control = False
+        self.scaling_control = None
 
     def init(self, opts):
         self.encoding = opts.encoding
@@ -39,7 +39,8 @@ class EncodingServer(StubServerMixin):
         self.default_min_quality = opts.min_quality
         self.default_speed = opts.speed
         self.default_min_speed = opts.min_speed
-        self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
+        if opts.video_scaling.lower() not in ("auto", "on"):
+            self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
         getVideoHelper().set_modules(video_encoders=opts.video_encoders, csc_modules=opts.csc_modules)
 
     def setup(self):

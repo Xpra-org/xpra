@@ -37,7 +37,9 @@ def load_content_type_dir(d):
                 try:
                     load_content_type_file(ct_file)
                 except Exception as e:
-                    log.error("load_content_type_file(%s)", ct_file, exc_info=True)
+                    log("load_content_type_file(%s)", ct_file, exc_info=True)
+                    log.error("Error loading content-type data from '%s'", ct_file)
+                    log.error(" %s", e)
 
 def load_content_type_file(ct_file):
     global content_type_defs

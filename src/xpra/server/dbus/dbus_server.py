@@ -205,10 +205,13 @@ class DBUS_Server(DBUS_Server_Base):
         s = parse_scaling_value(ns(scaling))
         self.server.control_command_scaling(s, ni(wid))
 
-    @dbus.service.method(INTERFACE, in_signature='ii')
+    @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowScalingControl(self, wid, scaling_control):
-        self.log(".SetWindowScalingControl(%i, %i)", wid, scaling_control)
-        sc = from0to100(ni(scaling_control))
+        self.log(".SetWindowScalingControl(%i, %s)", wid, scaling_control)
+        if scaling_control.lower() in ("auto", "on"):
+            sc = None
+        else:
+            sc = from0to100(int(ns(scaling_control)))
         self.server.control_command_scaling_control(sc, ni(wid))
 
     @dbus.service.method(INTERFACE, in_signature='is')

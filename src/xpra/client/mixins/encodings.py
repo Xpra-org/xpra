@@ -39,7 +39,7 @@ class Encodings(StubClientMixin):
         self.min_quality = 0
         self.speed = 0
         self.min_speed = -1
-        self.video_scaling = 0
+        self.video_scaling = None
         self.video_max_size = VIDEO_MAX_SIZE
 
         self.server_encodings = []
@@ -57,7 +57,10 @@ class Encodings(StubClientMixin):
     def init(self, opts, _extra_args=[]):
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
-        self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
+        if opts.video_scaling.lower() in ("auto", "on"):
+            self.video_scaling = None
+        else:
+            self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.quality = opts.quality
         self.min_quality = opts.min_quality
         self.speed = opts.speed
@@ -130,7 +133,6 @@ class Encodings(StubClientMixin):
             video_b_frames = []
         caps = {
             "flush"                     : PAINT_FLUSH,
-            "scaling.control"           : self.video_scaling,
             "client_options"            : True,
             "csc_atoms"                 : True,
             #TODO: check for csc support (swscale only?)
@@ -145,6 +147,8 @@ class Encodings(StubClientMixin):
             "send-timestamps"           : SEND_TIMESTAMPS,
             "supports_delta"            : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()),
             }
+        if self.video_scaling is not None:
+            caps["scaling.control"] = self.video_scaling
         if self.encoding:
             caps[""] = self.encoding
         for k,v in codec_versions.items():

@@ -39,10 +39,11 @@ video-decoders = all
 # Automatic video downscaling:
 # video-scaling = 0		#same as off
 # video-scaling = off
-# video-scaling = on
+# video-scaling = auto		#use quality and speed settings
+# video-scaling = on		#same as auto
 # video-scaling = 10		#mild automatic downscaling
 # video-scaling = 100		#very aggressive downscaling
-video-scaling = on
+video-scaling = auto
 
 # Use fixed quality
 # (value is a percentage or "auto"):

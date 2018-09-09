@@ -181,7 +181,10 @@ class WindowSource(WindowIconSource):
         #where the window is mapped on the client:
         self.mapped_at = None
         self.fullscreen = not self.is_tray and window.get("fullscreen")
-        self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ClientConnection sets defaults with the client's scaling.control value
+        if default_encoding_options.get("scaling.control") is None:
+            self.scaling_control = None     #means "auto"
+        else:
+            self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ClientConnection sets defaults with the client's scaling.control value
         self.scaling = None
         self.maximized = False          #set by the client!
         self.iconic = False
@@ -314,7 +317,7 @@ class WindowSource(WindowIconSource):
         self.has_alpha = False
         self.window_dimensions = 0, 0
         self.fullscreen = False
-        self.scaling_control = 0
+        self.scaling_control = None
         self.scaling = None
         self.maximized = False
         #
@@ -542,7 +545,10 @@ class WindowSource(WindowIconSource):
 
     def set_scaling_control(self, scaling_control):
         scalinglog("set_scaling_control(%s)", scaling_control)
-        self.scaling_control = max(0, min(100, scaling_control))
+        if scaling_control is None:
+            self.scaling_control = None
+        else:
+            self.scaling_control = max(0, min(100, scaling_control))
         self.reconfigure(True)
 
     def _fullscreen_changed(self, _window, *_args):
