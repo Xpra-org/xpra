@@ -51,7 +51,7 @@ def do_get_ssh_conf_dirs():
 def get_ssh_known_hosts_files():
     return envaslist_or_delegate("XPRA_SSH_KNOWN_HOSTS", do_get_ssh_known_hosts_files)
 def do_get_ssh_known_hosts_files():
-    return ("~/.Xssh/known_hosts", "~/Xssh/known_hosts")
+    return ("~/.ssh/known_hosts", "~/ssh/known_hosts")
 
 
 def get_user_conf_dirs(uid=None):
