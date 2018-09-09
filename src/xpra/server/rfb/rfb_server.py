@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.util import nonl, csv, typedict
+from xpra.util import nonl, csv
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
