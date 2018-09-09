@@ -63,7 +63,7 @@ HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 from xpra.server.window.windowicon_source import WindowIconSource
 from xpra.os_util import memoryview_to_bytes
-from xpra.server.window.content_guesser import guess_content_type
+from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.simple_stats import get_list_stats
@@ -187,10 +187,12 @@ class WindowSource(WindowIconSource):
         self.iconic = False
         self.content_type = ""
         self.window_signal_handlers = []
-        if "class-instance" in window.get_dynamic_property_names():
-            sid = window.connect("notify::class-instance", self._class_changed)
-            self.window_signal_handlers.append(sid)
-        self._class_changed(window)
+        #watch for changes to properties that are used to derive the content-type: 
+        for x in get_content_type_properties():
+            if x in window.get_dynamic_property_names():
+                sid = window.connect("notify::%s" % x, self.content_type_changed)
+                self.window_signal_handlers.append(sid)
+        self.content_type_changed(window)
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
             sid = window.connect("notify::iconic", self._iconic_changed)
@@ -555,7 +557,7 @@ class WindowSource(WindowIconSource):
         else:
             self.no_idle()
 
-    def _class_changed(self, window, *_args):
+    def content_type_changed(self, window, *_args):
         self.content_type = window.get("content-type") or guess_content_type(window)
         log("class-changed(%s, %s) content-type=%s", window, _args, self.content_type)
 

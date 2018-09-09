@@ -598,6 +598,7 @@ rm -rf $RPM_BUILD_ROOT
 /lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
+%{_datadir}/xpra/content-type
 %{_libexecdir}/xpra/xdg-open
 %{_libexecdir}/xpra/gnome-open
 %{_libexecdir}/xpra/gvfs-open
