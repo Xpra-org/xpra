@@ -61,6 +61,7 @@ class win32NotifyIcon(object):
         self.exit_callback = exit_callback
         self.command_callback = command_callback
         self.reset_function = None
+        self.image_cache = {}
 
     def create_tray_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
@@ -172,6 +173,13 @@ class win32NotifyIcon(object):
             self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
         except:
             log.error("error setting icon", exc_info=True)
+        image = self.image_cache.get(iconPathName)
+        if not image:
+            image = self.doLoadImage(iconPathName)
+            self.image_cache[iconPathName] = image
+        return image
+
+    def doLoadImage(self, iconPathName):
         finally:
             #DeleteDC(dc)
             if hicon!=FALLBACK_ICON:
