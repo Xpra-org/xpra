@@ -19,6 +19,7 @@ SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
+FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 TEXTURE_CURSOR = envbool("XPRA_OPENGL_TEXTURE_CURSOR", False)
@@ -988,7 +989,7 @@ class GLWindowBackingBase(WindowBackingBase):
         fire_paint_callbacks(callbacks, False, message)
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
-        if not zerocopy_upload:
+        if not zerocopy_upload or FORCE_CLONE:
             #copy so the data will be usable (usually a str)
             img.clone_pixel_data()
         pixel_format = img.get_pixel_format()
