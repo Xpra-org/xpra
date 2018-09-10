@@ -988,8 +988,9 @@ class GLWindowBackingBase(WindowBackingBase):
         fire_paint_callbacks(callbacks, False, message)
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
-        #copy so the data will be usable (usually a str)
-        img.clone_pixel_data()
+        if not zerocopy_upload:
+            #copy so the data will be usable (usually a str)
+            img.clone_pixel_data()
         pixel_format = img.get_pixel_format()
         if pixel_format=="GBRP":
             shader = RGBP2RGB_SHADER
