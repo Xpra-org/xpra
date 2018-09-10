@@ -693,6 +693,8 @@ class WindowSource(WindowIconSource):
     def update_encoding_options(self, force_reload=False):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         self._lossless_threshold_base = min(90, 60+self._current_speed//5)
+        if self.content_type=="text":
+            self._lossless_threshold_base -= 20
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         #calculate the threshold for using rgb
         #if speed is high, assume we have bandwidth to spare
@@ -1042,8 +1044,13 @@ class WindowSource(WindowIconSource):
             min_delay = max(min_delay, 1000*1000*1000//bwl)
         max_delay = int(1000*cf)
         raw_delay = int(sizef * qf * sf * cf)
+        if self.content_type=="text":
+            raw_delay = raw_delay*2//3
+        elif self.content_type=="video":
+            raw_delay = raw_delay*3//2
         delay = max(min_delay, min(max_delay, raw_delay))
-        refreshlog("update_refresh_attributes() wid=%i, sizef=%.2f, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i", self.wid, sizef, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
+        refreshlog("update_refresh_attributes() wid=%i, sizef=%.2f, content-type=%s, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i",
+                   self.wid, sizef, self.content_type, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
         self.do_set_auto_refresh_delay(min_delay, delay)
         rs = AUTO_REFRESH_SPEED
         rq = AUTO_REFRESH_QUALITY

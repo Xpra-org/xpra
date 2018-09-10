@@ -1288,6 +1288,9 @@ class WindowVideoSource(WindowSource):
                     if self.is_shadow:
                         #shadow servers look ugly when scaled:
                         target *= 2
+                    elif self.content_type=="text":
+                        #try to avoid scaling:
+                        target *= 4
                     elif video:
                         #we can downscale video content more:
                         target //= 2
