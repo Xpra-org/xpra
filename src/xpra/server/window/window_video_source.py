@@ -1279,8 +1279,8 @@ class WindowVideoSource(WindowSource):
                     scaling = get_min_required_scaling()
                 else:
                     sscaling = {}
-                    pps = ffps*width*height             #Pixels/s
-                    target = self.bandwidth_limit//24   #assume 24 bits per pixel    
+                    pps = ffps*width*height                 #Pixels/s
+                    target = self.bandwidth_limit//24*10    #assume 24 bits per pixel, compressed by 90%
                     if target==0:
                         target = SCALING_PPS_TARGET             #ie: 1080p
                     else:
