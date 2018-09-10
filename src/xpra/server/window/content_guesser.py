@@ -13,6 +13,8 @@ from xpra.platform.paths import get_app_dir, get_user_conf_dirs
 from xpra.log import Logger
 log = Logger("window", "util")
 
+DEFAULT_CONTENT_TYPE = os.environ.get("XPRA_DEFAULT_CONTENT_TYPE", "")
+
 
 content_type_defs = None
 def load_content_type_defs():
@@ -107,4 +109,4 @@ def guess_content_type(window):
                     regex_str, content_type = match_data
                     log("guess_content_type(%s) found match: property=%s, regex=%s, content-type=%s", window, prop_name, regex_str, content_type)
                     return content_type
-    return ""
+    return DEFAULT_CONTENT_TYPE
