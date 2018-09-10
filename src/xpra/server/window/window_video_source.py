@@ -12,7 +12,7 @@ from math import sqrt
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
-from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
+from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB
 from xpra.server.window.region import merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
@@ -468,7 +468,7 @@ class WindowVideoSource(WindowSource):
         if "webp" in options and pixel_count>=16384 and ww>=2 and wh>=2 and depth in (24, 32):
             return "webp"
         #lossless options:
-        if speed>95 or depth>24:
+        if (speed>95 and pixel_count<MAX_RGB) or depth>24:
             if depth>24 and "rgb32" in options:
                 return "rgb32"
             if "rgb24" in options:
