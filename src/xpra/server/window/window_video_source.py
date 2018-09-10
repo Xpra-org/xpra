@@ -50,6 +50,8 @@ if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not i
 FORCE_CSC = bool(FORCE_CSC_MODE) or envbool("XPRA_FORCE_CSC", False)
 SCALING = envbool("XPRA_SCALING", True)
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
+SCALING_PPS_TARGET = envint("XPRA_SCALING_PPS_TARGET", 25*1920*1080)
+SCALING_MIN_PPS = envint("XPRA_SCALING_MIN_PPS", 25*320*240)
 
 FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
@@ -1254,7 +1256,7 @@ class WindowVideoSource(WindowSource):
             #use heuristics to choose the best scaling ratio:
             mvsub = self.matches_video_subregion(width, height)
             vs = self.video_subregion
-            video = bool(mvsub) or self.content_type=="video"
+            video = (bool(mvsub) and self.subregion_is_video()) or self.content_type=="video"
             def getfps():
                 if vs and mvsub:
                     return self.video_subregion.fps
@@ -1277,8 +1279,12 @@ class WindowVideoSource(WindowSource):
                     scaling = get_min_required_scaling()
                 else:
                     sscaling = {}
-                    pps = ffps*width*height         #Pixels/s
-                    target = 25*1920*1080
+                    pps = ffps*width*height             #Pixels/s
+                    target = self.bandwidth_limit//24   #assume 24 bits per pixel    
+                    if target==0:
+                        target = SCALING_PPS_TARGET             #ie: 1080p
+                    else:
+                        target = max(SCALING_MIN_PPS, target)   #ie: 240p minimum target
                     if self.is_shadow:
                         #shadow servers look ugly when scaled:
                         target *= 2
@@ -1295,13 +1301,15 @@ class WindowVideoSource(WindowSource):
                         #scaled pixels per second value:
                         spps = pps*num/denom
                         ratio = float(target)/spps
+                        #ideal ratio is 1, measure distance from 1:
                         score = int(abs(1-ratio)*100)
                         if self.actual_scaling and self.actual_scaling==(num, denom) and (num!=1 or denom!=1):
                             #if we are already downscaling,
                             #try to stick to the same value longer:
-                            score //= 2
+                            #give it a score boost (lowest score wins):
+                            score = int(score/1.5)
                         sscaling[score] = (num, denom)
-                    scalinglog("calculate_scaling%s wid=%i, pps=%s, scores=%s", (width, height, max_w, max_h), self.wid, pps, sscaling)
+                    scalinglog("calculate_scaling%s wid=%i, pps=%s, target=%s, scores=%s", (width, height, max_w, max_h), self.wid, pps, target, sscaling)
                     if sscaling:
                         highscore = sorted(sscaling.keys())[0]
                         scaling = sscaling[highscore]
@@ -1312,7 +1320,7 @@ class WindowVideoSource(WindowSource):
                 #which is named "scaling_control" here.
                 #(from 1 to 100, from least to most aggressive)
                 if mvsub:
-                    if video or self.subregion_is_video():
+                    if video:
                         #enable scaling more aggressively
                         sc = (self.scaling_control+50)*2
                     else:
