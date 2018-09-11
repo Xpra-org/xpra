@@ -125,6 +125,8 @@ class MotifWMHints(object):
     PRIMARY_APPLICATION_MODAL = 1
     SYSTEM_MODAL    = 2
     FULL_APPLICATION_MODAL = 3
+    # "status":
+    TEAROFF_WINDOW  = 0
 
     FLAGS_STR = {
                  FUNCTIONS_BIT      : "functions",
@@ -161,6 +163,11 @@ class MotifWMHints(object):
                  SYSTEM_MODAL               : "system-modal",
                  FULL_APPLICATION_MODAL     : "full-application-modal",
                  }
+
+    STATUS_STR = {
+        TEAROFF_WINDOW : "tearoff",
+        }
+
     def bits_to_strs(self, int_val, flag_bit, dict_str):
         if flag_bit and not (self.flags & (2**flag_bit)):
             #the bit is not set, ignore this attribute
@@ -179,15 +186,21 @@ class MotifWMHints(object):
                                  MotifWMHints.DECORATIONS_BIT,
                                  MotifWMHints.DECORATIONS_STR)
     def input_strs(self):
+        if self.flags & (2**MotifWMHints.INPUT_MODE_BIT):
+            return MotifWMHints.INPUT_STR.get(self.input_mode, "unknown mode: %i" % self.input_mode)
+        return "modeless"
+    def status_strs(self):
         return self.bits_to_strs(self.input_mode,
-                                 MotifWMHints.INPUT_MODE_BIT,
-                                 MotifWMHints.INPUT_STR)
+                                 MotifWMHints.STATUS_BIT,
+                                 MotifWMHints.STATUS_STR)
+
     def __str__(self):
         return "MotifWMHints(%s)" % {"flags"        : self.flags_strs(),
                                      "functions"    : self.functions_strs(),
                                      "decorations"  : self.decorations_strs(),
                                      "input_mode"   : self.input_strs(),
-                                     "status"       : self.status}
+                                     "status"       : self.status_strs(),
+                                     }
 
 
 def _read_image(_disp, stream):
