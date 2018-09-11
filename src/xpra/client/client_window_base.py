@@ -26,6 +26,7 @@ iconlog = Logger("icon")
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
+AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -478,6 +479,14 @@ class ClientWindowBase(ClientWidgetBase):
     def set_window_type(self, window_types):
         hints = 0
         for window_type in window_types:
+            #win32 workaround:
+            if AWT_DIALOG_WORKAROUND and window_type=="DIALOG" and self._metadata.get("skip-taskbar"):
+                wm_class = self._metadata.get("class-instance")
+                if wm_class and len(wm_class)==2 and wm_class[0].startswith("sun-awt-X11"):
+                    #replace "DIALOG" with "NORMAL":
+                    if "NORMAL" in window_types:
+                        continue
+                    window_type = "NORMAL"
             hint = self.NAME_TO_HINT.get(window_type, None)
             if hint is not None:
                 hints |= hint
