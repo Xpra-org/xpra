@@ -161,16 +161,27 @@ class MotifWMHints(object):
                  SYSTEM_MODAL               : "system-modal",
                  FULL_APPLICATION_MODAL     : "full-application-modal",
                  }
-    def bits_to_strs(self, int_val, dict_str):
+    def bits_to_strs(self, int_val, flag_bit, dict_str):
+        if flag_bit and not (self.flags & (2**flag_bit)):
+            #the bit is not set, ignore this attribute
+            return[]
         return [v for k,v in dict_str.items() if (int_val & (2**k))]
     def flags_strs(self):
-        return self.bits_to_strs(self.flags, MotifWMHints.FLAGS_STR)
+        return self.bits_to_strs(self.flags,
+                                 0,
+                                 MotifWMHints.FLAGS_STR)
     def functions_strs(self):
-        return self.bits_to_strs(self.functions, MotifWMHints.FUNCTIONS_STR)
+        return self.bits_to_strs(self.functions,
+                                 MotifWMHints.FUNCTIONS_BIT,
+                                 MotifWMHints.FUNCTIONS_STR)
     def decorations_strs(self):
-        return self.bits_to_strs(self.decorations, MotifWMHints.DECORATIONS_STR)
+        return self.bits_to_strs(self.decorations,
+                                 MotifWMHints.DECORATIONS_BIT,
+                                 MotifWMHints.DECORATIONS_STR)
     def input_strs(self):
-        return self.bits_to_strs(self.input_mode, MotifWMHints.INPUT_STR)
+        return self.bits_to_strs(self.input_mode,
+                                 MotifWMHints.INPUT_MODE_BIT,
+                                 MotifWMHints.INPUT_STR)
     def __str__(self):
         return "MotifWMHints(%s)" % {"flags"        : self.flags_strs(),
                                      "functions"    : self.functions_strs(),
