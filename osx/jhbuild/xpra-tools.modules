@@ -28,8 +28,8 @@
 	<autotools id="openssl" autogen-sh="./config" autogenargs="shared"
 		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl"
 		makeinstallargs="install_sw" supports-non-srcdir-builds="no">
-	    <branch module="openssl-1.1.0h.tar.gz" version="1.1.0h"
-			hash="sha256:5835626cde9e99656585fc7aaa2302a73a7e1340bf8c14fd635a62c66802a517" repo="openssl"/>
+	    <branch module="openssl-1.1.1.tar.gz" version="1.1.1"
+			hash="sha256:2836875a0f89c03d0fdf483941512613a50cfb421d6fd94b9f41d7279d586a3d" repo="openssl"/>
 	</autotools>
 
 
