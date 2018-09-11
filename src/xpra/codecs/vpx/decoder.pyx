@@ -39,6 +39,9 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 
+cdef extern from "stdlib.h":
+    void* malloc(size_t __size)
+
 cdef extern from "string.h":
     void *memcpy(void * destination, void * source, size_t num) nogil
     void *memset(void * ptr, int value, size_t num) nogil
@@ -204,7 +207,7 @@ cdef class Decoder:
             self.max_threads = max(0, min(int(VPX_THREADS), roundup(height, 32)//32*2))
         except:
             self.max_threads = 1
-        self.context = <vpx_codec_ctx_t *> memalign(sizeof(vpx_codec_ctx_t))
+        self.context = <vpx_codec_ctx_t *> malloc(sizeof(vpx_codec_ctx_t))
         assert self.context!=NULL
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
         cdef vpx_codec_dec_cfg_t dec_cfg

@@ -16,7 +16,7 @@ log = Logger("encoder", "vpx")
 from xpra.codecs.codec_constants import video_spec
 from xpra.os_util import bytestostr, WIN32, OSX, POSIX
 from xpra.util import AtomicInteger, envint, envbool
-from xpra.buffers.membuf cimport memalign, object_as_buffer
+from xpra.buffers.membuf cimport object_as_buffer
 
 from libc.stdint cimport uint8_t
 from xpra.monotonic_time cimport monotonic_time
@@ -55,9 +55,12 @@ cdef inline int MAX(int a, int b):
 
 from libc.stdint cimport int64_t
 
+cdef extern from "stdlib.h":
+    void* malloc(size_t __size)
+
 cdef extern from "string.h":
-    void *memset(void *ptr, int value, size_t num) nogil
-    void free(void *ptr) nogil
+    void *memset(void *ptr, int value, size_t num)
+    void free(void *ptr)
 
 
 ctypedef long vpx_img_fmt_t
@@ -404,7 +407,7 @@ cdef class Encoder:
         self.cfg.kf_min_dist = 999999
         self.cfg.kf_max_dist = 999999
 
-        self.context = <vpx_codec_ctx_t *> memalign(sizeof(vpx_codec_ctx_t))
+        self.context = <vpx_codec_ctx_t *> malloc(sizeof(vpx_codec_ctx_t))
         if self.context==NULL:
             raise Exception("failed to allocate memory for vpx encoder context")
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
@@ -581,7 +584,7 @@ cdef class Encoder:
         cdef vpx_codec_err_t i                          #@DuplicatedSignature
 
         cdef double start, end
-        image = <vpx_image_t *> memalign(sizeof(vpx_image_t))
+        image = <vpx_image_t *> malloc(sizeof(vpx_image_t))
         memset(image, 0, sizeof(vpx_image_t))
         image.w = self.width
         image.h = self.height
