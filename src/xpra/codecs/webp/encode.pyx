@@ -10,7 +10,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
-from xpra.buffers.membuf cimport memalign, object_as_buffer
+from xpra.buffers.membuf cimport object_as_buffer
 from xpra.os_util import bytestostr
 
 from xpra.util import envbool, envint
