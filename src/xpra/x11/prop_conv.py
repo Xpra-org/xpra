@@ -166,11 +166,11 @@ class MotifWMHints(object):
     def flags_strs(self):
         return self.bits_to_strs(self.flags, MotifWMHints.FLAGS_STR)
     def functions_strs(self):
-        return self.bits_to_strs(self.flags, MotifWMHints.FUNCTIONS_STR)
+        return self.bits_to_strs(self.functions, MotifWMHints.FUNCTIONS_STR)
     def decorations_strs(self):
-        return self.bits_to_strs(self.flags, MotifWMHints.DECORATIONS_STR)
+        return self.bits_to_strs(self.decorations, MotifWMHints.DECORATIONS_STR)
     def input_strs(self):
-        return self.bits_to_strs(self.flags, MotifWMHints.INPUT_STR)
+        return self.bits_to_strs(self.input_mode, MotifWMHints.INPUT_STR)
     def __str__(self):
         return "MotifWMHints(%s)" % {"flags"        : self.flags_strs(),
                                      "functions"    : self.functions_strs(),
