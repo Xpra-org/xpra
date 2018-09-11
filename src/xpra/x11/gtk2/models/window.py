@@ -614,7 +614,7 @@ class WindowModel(BaseWindowModel):
             if motif_hints.flags & (2**MotifWMHints.DECORATIONS_BIT):
                 self._updateprop("decorations", motif_hints.decorations)
             if motif_hints.flags & (2**MotifWMHints.INPUT_MODE_BIT):
-                self._updateprop("modal", bool(motif_hints.input_mode))
+                self._updateprop("modal", int(motif_hints.input_mode))
 
 
     def _handle_wm_normal_hints_change(self):

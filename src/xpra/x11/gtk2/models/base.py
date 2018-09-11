@@ -142,7 +142,7 @@ class BaseWindowModel(CoreX11WindowModel):
                   PARAM_READABLE),
         #all the attributes below are virtual attributes from WM_STATE:
         "modal": (gobject.TYPE_PYOBJECT,
-                          "Modal (boolean)", "",
+                          "Modal", "",
                           PARAM_READWRITE),
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
