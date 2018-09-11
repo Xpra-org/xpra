@@ -414,6 +414,7 @@ def create_sockets(opts, error_cb):
     mdns_recs = {}
     sockets = []
 
+    rfb_upgrades = int(opts.rfb_upgrade)>0
     #SSL sockets:
     wrap_socket_fn = None
     need_ssl = False
@@ -494,6 +495,8 @@ def create_sockets(opts, error_cb):
             add_mdns(mdns_recs, "wss", host, iport)
         if ssh_upgrades:
             add_mdns(mdns_recs, "ssh", host, iport)
+        if rfb_upgrades:
+            add_mdns(mdns_recs, "rfb", host, iport)
     log("setting up UDP sockets: %s", csv(bind_udp))
     for host, iport in bind_udp:
         add_udp_socket("udp", host, iport)
@@ -505,6 +508,7 @@ def create_sockets(opts, error_cb):
     log("setting up rfb sockets: %s", csv(bind_rfb))
     for host, iport in bind_rfb:
         add_tcp_socket("rfb", host, iport)
+        add_mdns(mdns_recs, "rfb", host, iport)
     log("setting up vsock sockets: %s", csv(bind_vsock))
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
@@ -551,6 +555,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.bind_rfb and (proxying or starting):
         get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
         opts.bind_rfb = ""
+
+    if not shadowing and not starting_desktop:
+        opts.rfb_upgrade = 0
 
     if upgrading or shadowing:
         #there should already be one running
@@ -1121,6 +1128,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                      "platform" : sys.platform,
                      "type"     : app.session_type,
                      }
+        if mode!="rfb":
+            
         MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
         if MDNS_EXPOSE_NAME and app.session_name:
             mdns_info["name"] = app.session_name

@@ -432,6 +432,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
     try:
         from xpra.net import mdns
         assert mdns
+        from xpra.net.mdns import XPRA_MDNS_TYPE, RFB_MDNS_TYPE
         PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or WIN32 or OSX
         PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", False)
         if PREFER_PYBONJOUR:
@@ -461,9 +462,10 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         name = "Xpra"
     if display_name and not (OSX or WIN32):
         name += " %s" % display_name
-    if mode!="tcp":
+    if mode not in ("tcp", "rfb"):
         name += " (%s)" % mode
-    ap = MDNSPublishers(f_listen_on.values(), name, text_dict=d)
+    service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)        
+    ap = MDNSPublishers(f_listen_on.values(), name, service_type=service_type, text_dict=d)
     from xpra.scripts.server import add_when_ready, add_cleanup
     add_when_ready(ap.start)
     add_cleanup(ap.stop)
