@@ -196,6 +196,7 @@ class Encodings(StubClientMixin):
                 profile = os.environ.get("XPRA_H264_%s_PROFILE" % (csc_name), default_profile)
                 if profile:
                     h264_caps["%s.profile" % (csc_name)] = profile
+            h264_caps["fast-decode"] = envbool("XPRA_X264_FAST_DECODE", False)
             log("x264 encoding options: %s", h264_caps)
             updict(caps, "h264", h264_caps)
         iq = max(self.min_quality, self.quality)
