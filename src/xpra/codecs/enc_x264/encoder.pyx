@@ -67,6 +67,10 @@ cdef extern from "x264.h":
     int X264_CSP_BGRA
     int X264_CSP_RGB
 
+    int X264_RC_CQP
+    int X264_RC_CRF
+    int X264_RC_ABR
+
     int X264_B_ADAPT_NONE
     int X264_B_ADAPT_FAST
     int X264_B_ADAPT_TRELLIS
@@ -288,6 +292,12 @@ ADAPT_TYPES = {
                X264_B_ADAPT_TRELLIS     : "TRELLIS",
                }
 
+RC_TYPES = {
+    X264_RC_CQP : "CQP",
+    X264_RC_CRF : "CRF",
+    X264_RC_ABR : "ABR",
+    }
+
 SLICE_TYPES = {
     X264_TYPE_AUTO  : "auto",
     X264_TYPE_IDR   : "IDR",
@@ -473,6 +483,7 @@ cdef class Encoder:
     cdef int b_frames
     cdef int delayed_frames
     cdef int export_nals
+    cdef unsigned long bandwidth_limit
     cdef unsigned long long bytes_in
     cdef unsigned long long bytes_out
     cdef object last_frame_times
@@ -507,6 +518,7 @@ cdef class Encoder:
         self.last_frame_times = deque(maxlen=200)
         self.time = 0
         self.first_frame_timestamp = 0
+        self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         self.profile = self._get_profile(options, self.src_format)
         self.export_nals = options.intget("h264.export-nals", 0)
         if self.profile is not None and self.profile not in cs_info[2]:
@@ -562,6 +574,16 @@ cdef class Encoder:
         param.b_open_gop = 1        #allow open gop
         #param.b_opencl = self.opencl
         param.i_bframe = self.b_frames
+        self.bandwidth_limit = 2*1000*1000
+        if self.bandwidth_limit>0 and self.bandwidth_limit<=5*1000*1000:
+            #CBR mode:
+            param.rc.i_rc_method = X264_RC_ABR
+            param.rc.i_bitrate = self.bandwidth_limit//1024
+            param.rc.i_vbv_max_bitrate = 2*self.bandwidth_limit//1024
+            param.rc.i_vbv_buffer_size = self.bandwidth_limit//1024
+            param.rc.f_vbv_buffer_init = 1
+        else:
+            param.rc.i_rc_method = X264_RC_CRF
         param.rc.i_lookahead = min(param.rc.i_lookahead, self.b_frames-1)
         param.b_vfr_input = 0
         if not self.b_frames:
@@ -643,6 +665,7 @@ cdef class Encoder:
             "version"       : get_version(),
             "frame-types"   : self.frame_types,
             "delayed"       : self.delayed_frames,
+            "bandwidth-limit" : self.bandwidth_limit,
             })
         cdef x264_param_t param
         x264_encoder_parameters(self.context, &param)
@@ -679,15 +702,9 @@ cdef class Encoder:
 
     cdef get_param_info(self, x264_param_t *param):
         return {
-            "me"                :   {
-                "type"              : ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method),
-                "me-range"          : param.analyse.i_me_range,
-                "mv-range"          : param.analyse.i_mv_range,
-                "weighted-pred"     : param.analyse.i_weighted_pred,
-                },
+            "me"                : self.get_analyse_info(param),
+            "rc"                : self.get_rc_info(param),
             "vfr-input"         : bool(param.b_vfr_input),
-            "lookahead"         : param.rc.i_lookahead,
-            "mb-tree"           : bool(param.rc.b_mb_tree),
             "bframe-adaptive"   :  ADAPT_TYPES.get(param.i_bframe_adaptive, param.i_bframe_adaptive),
             "open-gop"          : bool(param.b_open_gop),
             "bluray-compat"     : bool(param.b_bluray_compat),
@@ -699,6 +716,34 @@ cdef class Encoder:
             "threads"           : {0 : "auto"}.get(param.i_threads, param.i_threads),
             "sliced-threads"    : bool(param.b_sliced_threads),
             }
+
+    cdef get_analyse_info(self, x264_param_t *param):
+        return {
+                "type"              : ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method),
+                "me-range"          : param.analyse.i_me_range,
+                "mv-range"          : param.analyse.i_mv_range,
+                "mv-range-thread"   : param.analyse.i_mv_range_thread,
+                "subpel_refine"     : param.analyse.i_subpel_refine,
+                "weighted-pred"     : param.analyse.i_weighted_pred,
+                }
+
+    cdef get_rc_info(self, x264_param_t *param):
+        return {
+            "rc-method"         : RC_TYPES.get(param.rc.i_rc_method, param.rc.i_rc_method),
+            "qp_constant"       : param.rc.i_qp_constant,
+            "qp_min"            : param.rc.i_qp_min,
+            "qp_max"            : param.rc.i_qp_max,
+            "qp_step"           : param.rc.i_qp_step,
+            "bitrate"           : param.rc.i_bitrate,
+            "vbv_max_bitrate"   : param.rc.i_vbv_max_bitrate,
+            "vbv_buffer_size"   : param.rc.i_vbv_buffer_size,
+            "vbv_buffer_init"   : param.rc.f_vbv_buffer_init,
+            "vbv_max_bitrate"   : param.rc.i_vbv_max_bitrate,
+
+            "mb-tree"           : bool(param.rc.b_mb_tree),
+            "lookahead"         : param.rc.i_lookahead,
+            }
+
 
     def __repr__(self):
         if self.src_format is None:

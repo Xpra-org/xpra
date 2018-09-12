@@ -344,6 +344,7 @@ cdef class Encoder:
     cdef int width
     cdef int height
     cdef int max_threads
+    cdef unsigned long bandwidth_limit
     cdef double initial_bitrate_per_pixel
     cdef object encoding
     cdef object src_format
@@ -370,6 +371,7 @@ cdef class Encoder:
         self.height = height
         self.speed = speed
         self.quality = quality
+        self.bandwidth_limit = options.get("bandwidth-limit", 0)
         self.lossless = 0
         self.frames = 0
         self.last_frame_times = deque(maxlen=200)
@@ -461,8 +463,12 @@ cdef class Encoder:
     cdef update_cfg(self):
         self.cfg.rc_undershoot_pct = 100
         self.cfg.rc_overshoot_pct = 100
-        self.cfg.rc_target_bitrate = max(16, min(15000, int(self.width * self.height * self.initial_bitrate_per_pixel)))
-        log("update_cfg() bitrate(%i,%i,%.3f)=%i", self.width, self.height, self.initial_bitrate_per_pixel, self.cfg.rc_target_bitrate)
+        bitrate_kbps = int(self.width * self.height * self.initial_bitrate_per_pixel)
+        if self.bandwidth_limit>0:
+            #vpx bitrate values are in Kbps:
+            bitrate_kbps = min(self.bandwidth_limit//1024, bitrate_kbps)
+        self.cfg.rc_target_bitrate = max(16, min(15000, bitrate_kbps))
+        log("update_cfg() bitrate(%i,%i,%.3f,%i)=%iKbps", self.width, self.height, self.initial_bitrate_per_pixel, self.bandwidth_limit, bitrate_kbps)
         self.cfg.g_threads = self.max_threads
         self.cfg.rc_min_quantizer = MAX(0, MIN(63, int((80-self.quality) * 0.63)))
         self.cfg.rc_max_quantizer = MAX(self.cfg.rc_min_quantizer, MIN(63, int((100-self.quality) * 0.63)))
@@ -483,6 +489,7 @@ cdef class Encoder:
             "encoding"  : self.encoding,
             "src_format": self.src_format,
             "max_threads": self.max_threads,
+            "bandwidth-limit" : self.bandwidth_limit,
             })
         #calculate fps:
         cdef unsigned int f = 0
@@ -564,6 +571,10 @@ cdef class Encoder:
             assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
             pic_in[i] = pic_buf
             strides[i] = istrides[i]
+        cdef unsigned long bandwidth_limit = options.get("bandwidth-limit", self.bandwidth_limit)
+        if bandwidth_limit!=self.bandwidth_limit:
+            self.bandwidth_limit = bandwidth_limit
+            self.update_cfg()
         if speed>=0:
             self.set_encoding_speed(speed)
         if quality>=0:
