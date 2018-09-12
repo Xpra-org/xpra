@@ -1359,10 +1359,11 @@ class WindowSource(WindowIconSource):
             else:
                 self.do_send_delayed()
             return
-        if self.bandwidth_limit>0:
+        bwl = self.bandwidth_limit
+        if bwl>0:
             used = self.statistics.get_bitrate()
-            bandwidthlog("may_send_delayed() wid=%3i : bandwidth limit=%i, used=%i : %i%%", self.wid, self.bandwidth_limit, used, 100*used//self.bandwidth_limit)
-            if used>=self.bandwidth_limit:
+            bandwidthlog("may_send_delayed() wid=%3i : bandwidth limit=%i, used=%i : %i%%", self.wid, bwl, used, 100*used//bwl)
+            if used>=bwl:
                 check_again(50)
                 return
         pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
