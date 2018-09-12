@@ -13,6 +13,7 @@ bandwidthlog = Logger("bandwidth")
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
+from xpra.scripts.config import parse_with_unit
 from xpra.simple_stats import std_unit
 from xpra.os_util import livefds, POSIX
 from xpra.util import envbool, detect_leaks
@@ -36,6 +37,8 @@ class NetworkStateServer(StubServerMixin):
 
     def init(self, opts):
         self.pings = opts.pings
+        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
+        bandwidthlog("bandwidth-limit(%s)=%s", opts.bandwidth_limit, self.bandwidth_limit)
 
     def setup(self):
         self.init_leak_detection()
