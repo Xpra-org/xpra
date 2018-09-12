@@ -510,7 +510,8 @@ cdef class Encoder:
         self.profile = self._get_profile(options, self.src_format)
         self.export_nals = options.intget("h264.export-nals", 0)
         if self.profile is not None and self.profile not in cs_info[2]:
-            log.warn("invalid profile specified for %s: %s (must be one of: %s)" % (src_format, self.profile, cs_info[2]))
+            log.warn("Warning: '%s' is not a valid profile for %s", self.profile, src_format)
+            log.warn(" (must be one of: %s)", csv(cs_info[2]))
             self.profile = None
         if self.profile is None:
             self.profile = cs_info[1]
@@ -528,6 +529,8 @@ cdef class Encoder:
             return TUNE
         if self.content_type=="video":
             return b"film"
+        elif self.content_type=="text":
+            return b"grain"
         #return "animation"
         return b"zerolatency"
 
