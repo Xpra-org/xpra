@@ -11,7 +11,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 
-from xpra.util import nonl, envint, envbool, typedict, AtomicInteger
+from xpra.util import nonl, envint, envbool, typedict, csv, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
