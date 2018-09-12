@@ -450,7 +450,7 @@ class WindowVideoSource(WindowSource):
         if depth==8 and "png/P" in options:
             return "png/P"
         pixel_count = ww*wh
-        if pixel_count<self._rgb_auto_threshold or self.is_tray:
+        if pixel_count<self._rgb_auto_threshold or self.is_tray or ww<=2 or wh<=2:
             #high speed and high quality, rgb is still good
             if "rgb24" in options:
                 return "rgb24"
@@ -461,7 +461,7 @@ class WindowVideoSource(WindowSource):
         #take into account how many pixels need to be encoded:
         #more pixels means we switch to lossless more easily
         lossless_q = min(100, self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh))
-        if quality<lossless_q and depth>16 and "jpeg" in options and ww>=2 and wh>=2:
+        if quality<lossless_q and depth>16 and "jpeg" in options and ww>=8 and wh>=8:
             #assume that we have "turbojpeg",
             #which beats everything in terms of efficiency for lossy compression:
             return "jpeg"
