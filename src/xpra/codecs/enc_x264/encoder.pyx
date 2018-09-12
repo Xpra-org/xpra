@@ -462,7 +462,7 @@ cdef class Encoder:
     cdef unsigned int fast_decode
     #cdef int opencl
     cdef object src_format
-    cdef object source
+    cdef object content_type
     cdef object profile
     cdef object tune
     cdef double time
@@ -494,7 +494,7 @@ cdef class Encoder:
         self.quality = quality
         self.speed = speed
         #self.opencl = USE_OPENCL and width>=32 and height>=32
-        self.source = options.strget("source", "unknown")      #ie: "video"
+        self.content_type = options.strget("content-type", "unknown")      #ie: "video"
         self.b_frames = options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
         if self.fast_decode:
@@ -523,10 +523,10 @@ cdef class Encoder:
             log.info("saving %s stream to %s", encoding, filename)
 
     def get_tune(self):
-        log("x264: get_tune() TUNE=%s, fast_decode=%s, source=%s", TUNE, self.fast_decode, self.source)
+        log("x264: get_tune() TUNE=%s, fast_decode=%s, content_type=%s", TUNE, self.fast_decode, self.content_type)
         if TUNE:
             return TUNE
-        if self.source=="video":
+        if self.content_type=="video":
             return b"film"
         #return "animation"
         return b"zerolatency"
@@ -542,7 +542,7 @@ cdef class Encoder:
 
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
-        log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s", <uintptr_t> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
+        log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, content_type=%s", <uintptr_t> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.content_type)
         log("x264 params: %s", self.get_param_info(&param))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
@@ -567,7 +567,7 @@ cdef class Encoder:
         else:
             if param.i_bframe_adaptive==X264_B_ADAPT_TRELLIS:
                 param.i_bframe_adaptive = X264_B_ADAPT_FAST
-        if self.source!="video":
+        if self.content_type!="video":
             #specifically told this is not video,
             #so use a simple motion search:
             param.analyse.i_me_method = X264_ME_DIA
@@ -600,7 +600,7 @@ cdef class Encoder:
         self.height = 0
         self.fast_decode = 0
         self.src_format = ""
-        self.source = None
+        self.content_type = None
         self.profile = None
         self.time = 0
         self.colorspace = 0
@@ -636,7 +636,7 @@ cdef class Encoder:
             "quality"       : self.quality,
             "lossless"      : self.quality==100,
             "src_format"    : self.src_format,
-            "source"        : self.source,
+            "content-type"  : self.content_type,
             "version"       : get_version(),
             "frame-types"   : self.frame_types,
             "delayed"       : self.delayed_frames,
@@ -745,12 +745,12 @@ cdef class Encoder:
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
 
-        source = options.get("source", "unknown")
+        content_type = options.get("content-type", self.content_type)
         b_frames = options.get("b-frames", 0)
-        if source!=self.source or self.b_frames!=b_frames:
+        if content_type!=self.content_type or self.b_frames!=b_frames:
             #some options have changed:
-            log("compress_image: reconfig b-frames=%s, source=%s (from %s, %s)", b_frames, source, self.b_frames, self.source)
-            self.source = source
+            log("compress_image: reconfig b-frames=%s, content_type=%s (from %s, %s)", b_frames, content_type, self.b_frames, self.content_type)
+            self.content_type = content_type
             self.b_frames = b_frames
             self.reconfig_tune()
 

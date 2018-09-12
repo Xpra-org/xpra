@@ -1564,15 +1564,16 @@ class WindowVideoSource(WindowSource):
 
     def get_video_encoder_options(self, encoding, width, height):
         #tweaks for "real" video:
+        opts = {}
         if self.matches_video_subregion(width, height) and self.subregion_is_video() and (monotonic_time()-self.last_scroll_time)>5:
-            return {
-                "source"     : "video",
+            opts.update({
+                "content-type"  : "video",
                 #could take av-sync into account here to choose the number of b-frames:
-                "b-frames"   : int(B_FRAMES and (encoding in self.supports_video_b_frames)),
-                }
-        return {
-            "source"  : self.content_type,
-            }
+                "b-frames"      : int(B_FRAMES and (encoding in self.supports_video_b_frames)),
+                })
+        else:
+            opts["content-type"] = self.content_type
+        return opts
 
 
     def get_fail_cb(self, packet):
