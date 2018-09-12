@@ -182,27 +182,22 @@ class Encodings(StubClientMixin):
 
         if "h264" in self.get_core_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
-            # set the default to "high10" for I420/YUV420P
+            # set the default to "high10" for YUV420P
             # as the python client always supports all the profiles
             # whereas on the server side, the default is baseline to accomodate less capable clients.
-            # I422/YUV422P requires high422, and
-            # I444/YUV444P requires high444,
+            # YUV422P requires high422, and
+            # YUV444P requires high444,
             # so we don't bother specifying anything for those two.
-            for old_csc_name, csc_name, default_profile in (
-                        ("I420", "YUV420P", "high10"),
-                        ("I422", "YUV422P", ""),
-                        ("I444", "YUV444P", "")):
-                profile = default_profile
-                #try with the old prefix (X264) as well as the more correct one (H264):
-                for H264_NAME in ("X264", "H264"):
-                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, old_csc_name), profile)
-                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, csc_name), profile)
+            h264_caps = {}
+            for csc_name, default_profile in (
+                        ("YUV420P", "high10"),
+                        ("YUV422P", ""),
+                        ("YUV444P", "")):
+                profile = os.environ.get("XPRA_H264_%s_PROFILE" % (csc_name), default_profile)
                 if profile:
-                    #send as both old and new names:
-                    for h264_name in ("x264", "h264"):
-                        caps["%s.%s.profile" % (h264_name, old_csc_name)] = profile
-                        caps["%s.%s.profile" % (h264_name, csc_name)] = profile
-            log("x264 encoding options: %s", str([(k,v) for k,v in caps.items() if k.startswith("x264.")]))
+                    h264_caps["%s.profile" % (csc_name)] = profile
+            log("x264 encoding options: %s", h264_caps)
+            updict(caps, "h264", h264_caps)
         iq = max(self.min_quality, self.quality)
         if iq<0:
             iq = 70
