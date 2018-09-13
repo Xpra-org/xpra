@@ -140,8 +140,9 @@ def sanitize_gtkselectiondata(obj):
     cdef GdkAtom gdkatom
     cdef gpointer data
     cdef char* c
-    if (<uintptr_t> selectiondata.type)>=2**16:
-        log.warn("Warning: sanitizing invalid gtk selection type atom %#x", <uintptr_t> selectiondata.type)
+    if selectiondata.format<0 or selectiondata.length<0:
+        log.warn("Warning: sanitizing invalid gtk selection")
+        log.warn(" format=%#x, length=%#x", selectiondata.format, selectiondata.length)
         data = g_malloc(16)
         assert data!=NULL
         c = <char *> data
