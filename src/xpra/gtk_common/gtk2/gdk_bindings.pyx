@@ -12,6 +12,7 @@ from gtk import gdk
 
 from xpra.log import Logger
 log = Logger("bindings", "gtk")
+clipboardlog = Logger("clipboard", "gtk")
 
 
 from libc.stdint cimport uintptr_t
@@ -131,18 +132,18 @@ cdef void * pyg_boxed_get(v):
     return <void *> pygboxed.boxed
 
 def sanitize_gtkselectiondata(obj):
-    log("get_gtkselectiondata(%s) type=%s", obj, type(obj))
+    clipboardlog("get_gtkselectiondata(%s) type=%s", obj, type(obj))
     cdef GtkSelectionData * selectiondata = <GtkSelectionData *> pyg_boxed_get(obj)
     if selectiondata==NULL:
         return False
-    log("selectiondata: selection=%#x, target=%#x, type=%#x, format=%#x, length=%#x, data=%#x",
+    clipboardlog("selectiondata: selection=%#x, target=%#x, type=%#x, format=%#x, length=%#x, data=%#x",
         <uintptr_t> selectiondata.selection, <uintptr_t> selectiondata.target, <uintptr_t> selectiondata.type, selectiondata.format, selectiondata.length, <uintptr_t> selectiondata.data)
     cdef GdkAtom gdkatom
     cdef gpointer data
     cdef char* c
     if selectiondata.format<0 or selectiondata.length<0:
-        log.warn("Warning: sanitizing invalid gtk selection")
-        log.warn(" format=%#x, length=%#x", selectiondata.format, selectiondata.length)
+        clipboardlog.warn("Warning: sanitizing invalid gtk selection")
+        clipboardlog.warn(" format=%#x, length=%#x", selectiondata.format, selectiondata.length)
         data = g_malloc(16)
         assert data!=NULL
         c = <char *> data
