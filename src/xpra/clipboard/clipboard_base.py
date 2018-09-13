@@ -920,6 +920,7 @@ class ClipboardProxy(gtk.Invisible):
             log("unpack %s: %s", clipboard, type(selection_data))
             global sanitize_gtkselectiondata
             if selection_data and sanitize_gtkselectiondata(selection_data):
+                self._clipboard.set_text("", len=-1)
                 selection_data = None
             if selection_data is None:
                 cb(None, None, None)
