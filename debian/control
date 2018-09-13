@@ -85,8 +85,8 @@ Recommends:
 #stretch:        ,libx264-148
 #xenial:        ,libx264-148
 #artful:        ,libx264-148
-#bionic:        ,libx264-148
-#buster:        ,libx264-148
+#bionic:        ,libx264-152
+#buster:        ,libx264-152
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 # for notifications forwarding and dbus server / proxying:
