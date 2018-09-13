@@ -120,10 +120,6 @@ Recommends:
         ,cups-common
         ,cups-pdf
         ,python-cups
-#for webcam support:
-        ,python-pyinotify
-        ,python-opencv
-        ,v4l2loopback-dkms
 #for ssh transport:
         ,python-paramiko
         ,openssh-client
@@ -141,6 +137,10 @@ Suggests: openssh-server
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils
+# for webcam support:
+        ,python-pyinotify
+        ,python-opencv
+        ,v4l2loopback-dkms
 # for publishing servers via mdns:
         ,python-avahi
         ,python-netifaces
