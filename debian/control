@@ -12,14 +12,15 @@ Build-Depends: debhelper (>= 8)
               ,libx264-dev
               ,python-all-dev
 #xenial:              ,python-gobject-dev
-#artful:              ,python-gobject-dev
 #bionic:              ,python-gobject-2-dev
+#cosmic:              ,python-gobject-2-dev
 #stretch:              ,python-gobject-dev
 #buster:              ,python-gobject-2-dev
 #xenial:              ,ffmpeg-xpra
-#artful:              ,ffmpeg-xpra
 #bionic:              ,libavcodec-dev
 #bionic:              ,libswscale-dev
+#cosmic:              ,libavcodec-dev
+#cosmic:              ,libswscale-dev
 #stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
 #buster:              ,libswscale-dev
@@ -44,8 +45,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #stretch:        ,xserver-xorg-video-dummy
 #buster:        ,xserver-xorg-video-dummy
 #xenial:        ,xvfb
-#artful:        ,xserver-xorg-video-dummy
 #bionic:        ,xserver-xorg-video-dummy
+#cosmic:        ,xserver-xorg-video-dummy
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
@@ -55,8 +56,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-pil
 # fast JPEG client support:
 #xenial:         ,libturbojpeg
-#artful:        ,libturbojpeg
 #bionic:        ,libturbojpeg
+#cosmic:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
 # packet encoder:
@@ -75,17 +76,17 @@ Recommends:
 # ffmpeg based codecs:
 #stretch:        ,ffmpeg-xpra
 #xenial:        ,ffmpeg-xpra
-#artful:        ,libavcodec57
-#artful:        ,libswscale4
 #bionic:        ,libavcodec57
 #bionic:        ,libswscale4
+#cosmic:        ,libavcodec58
+#cosmic:        ,libswscale5
 #buster:        ,libavcodec57
 #buster:        ,libswscale4
 # x264:
 #stretch:        ,libx264-148
 #xenial:        ,libx264-148
-#artful:        ,libx264-148
 #bionic:        ,libx264-152
+#cosmic:        ,libx264-152
 #buster:        ,libx264-152
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
@@ -97,8 +98,8 @@ Recommends:
 #webp
 #stretch:        ,libwebp6
 #xenial:        ,libwebp5
-#artful:        ,libwebp6
 #bionic:        ,libwebp6
+#cosmic:        ,libwebp6
 #buster:        ,libwebp6
         ,python-cryptography
 #authentication:
