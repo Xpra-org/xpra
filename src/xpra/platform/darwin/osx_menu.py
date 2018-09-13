@@ -351,7 +351,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def make_invertmousewheelmenuitem(self):
         def invert_toggled(*args):
             v = self.mousewheel_menuitem.get_active()
-            log.info("invert_toggled(%s) invert enabled=%s", args, v)
+            log("invert_toggled(%s) invert enabled=%s", args, v)
             if v:
                 self.client.wheel_map[4] = 5
                 self.client.wheel_map[5] = 4
