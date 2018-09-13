@@ -41,12 +41,10 @@ Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-gtk2
         ,x11-xserver-utils
-#we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
-#stretch:        ,xserver-xorg-video-dummy
-#buster:        ,xserver-xorg-video-dummy
-#xenial:        ,xvfb
-#bionic:        ,xserver-xorg-video-dummy
-#cosmic:        ,xserver-xorg-video-dummy
+#we need a vfb: either Xdummy (Debian) or Xvfb (some Ubuntu versions break Xorg tty access)
+#install both so users can choose which one they want to use:
+        ,xserver-xorg-video-dummy
+        ,xvfb
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
