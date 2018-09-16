@@ -33,11 +33,21 @@ class KeyboardBase(object):
         self.modifier_keys = {}
         self.modifier_keycodes = {}
         for modifier, keys in mappings.items():
-            for keycode,keyname in keys:
+            for a, b in keys:
+                #log.info("%s (%s), %s (%s)", keycode, type(keycode), keyname, type(keyname))
+                if isinstance(a, int) and isinstance(b, bytes):
+                    keycode = a
+                    keyname = b
+                elif isinstance(a, bytes) and isinstance(b, int):
+                    keyname = a
+                    #level = b
+                    keycode = 0
                 self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
-                keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
-                if keycode not in keycodes:
-                    keycodes.append(keycode)
+                if keycode:
+                    keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
+                    if keycode not in keycodes:
+                        keycodes.append(keycode)
+                self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
         log("modifier_keys=%s", self.modifier_keys)
         log("modifier_keycodes=%s", self.modifier_keycodes)
 
