@@ -226,7 +226,11 @@ class KeyboardConfig(KeyboardConfigBase):
                     #ie: client_def = Super_L
                     #ie: client_def = (0, Super_L)
                     if type(client_def) in (list, tuple):
-                        #ie: client_def = (99, Super_L)
+                        #ie:
+                        # keycode, keysym:
+                        #  client_def = (99, Super_L)
+                        # or keysym, level:
+                        #  client_def = (Super_L, 1)
                         client_keydefs.append(client_def)
                     elif client_def==keysym:
                         #ie: client_def = Super_L
@@ -408,12 +412,18 @@ class KeyboardConfig(KeyboardConfigBase):
                 #non-native: try harder to find matching keysym
                 #first, try to honour shift state:
                 shift = "shift" in modifiers
-                mode = 0    #TODO: find AltGr modifier
-                i = int(shift) + int(mode)*2
-                keycode = self.keycode_translation.get((keyname, i))
+                mode = 0
+                for mod in modifiers:
+                    names = self.keynames_for_mod.get(mod, [])
+                    for name in names:
+                        if name in ("ISO_Level3_Shift", "Mode_switch"):
+                            mode = 1
+                            break
+                level = int(shift) + int(mode)*2
+                keycode = self.keycode_translation.get((keyname, level))
                 if keycode is None:
                     keycode = self.keycode_translation.get(keyname, client_keycode)
-                log("get_keycode(%s, %s, %s) i=%i, keyname lookup: %s", client_keycode, keyname, modifiers, i, keycode)
+                log("get_keycode(%s, %s, %s) level=%i, keyname lookup: %s", client_keycode, keyname, modifiers, level, keycode)
         else:
             log("get_keycode(%s, %s, %s) keyname+keycode lookup: %s", client_keycode, keyname, modifiers, keycode)
         return keycode
