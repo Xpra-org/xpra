@@ -498,7 +498,9 @@ class WindowVideoSource(WindowSource):
     def cancel_damage(self):
         self.cancel_encode_from_queue()
         self.free_encode_queue_images()
-        self.video_subregion.cancel_refresh_timer()
+        vsr = self.video_subregion
+        if vsr:
+            vsr.cancel_refresh_timer()
         self.scroll_data = None
         self.last_scroll_time = 0
         WindowSource.cancel_damage(self)
