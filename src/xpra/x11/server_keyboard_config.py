@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -77,12 +77,18 @@ class KeyboardConfig(KeyboardConfigBase):
         #keycodes:
         if self.keycode_translation:
             ksinfo = info.setdefault("keysym", {})
+            kssinf = info.setdefault("keysyms", {})
             kcinfo = info.setdefault("keycode", {})
             for kc, keycode in self.keycode_translation.items():
                 if type(kc)==tuple:
-                    client_keycode, keysym = kc
-                    ksinfo.setdefault(keysym, {})[client_keycode] = keycode
-                    kcinfo.setdefault(client_keycode, {})[keysym] = keycode
+                    a, b = kc
+                    if isinstance(a, int):
+                        client_keycode, keysym = a, b
+                        ksinfo.setdefault(keysym, {})[client_keycode] = keycode
+                        kcinfo.setdefault(client_keycode, {})[keysym] = keycode
+                    elif isinstance(b, int):
+                        keysym, index = a, b
+                        kssinf.setdefault(keycode, []).append((index, keysym))
                 else:
                     kcinfo[kc] = keycode
         if self.xkbmap_keycodes:
@@ -400,8 +406,14 @@ class KeyboardConfig(KeyboardConfigBase):
                 log("get_keycode(%s, %s, %s) native keymap, using client keycode %s", client_keycode, keyname, modifiers, client_keycode)
             else:
                 #non-native: try harder to find matching keysym
-                keycode = self.keycode_translation.get(keyname, client_keycode)
-                log("get_keycode(%s, %s, %s) keyname lookup: %s", client_keycode, keyname, modifiers, keycode)
+                #first, try to honour shift state:
+                shift = "shift" in modifiers
+                mode = 0    #TODO: find AltGr modifier
+                i = int(shift) + int(mode)*2
+                keycode = self.keycode_translation.get((keyname, i))
+                if keycode is None:
+                    keycode = self.keycode_translation.get(keyname, client_keycode)
+                log("get_keycode(%s, %s, %s) i=%i, keyname lookup: %s", client_keycode, keyname, modifiers, i, keycode)
         else:
             log("get_keycode(%s, %s, %s) keyname+keycode lookup: %s", client_keycode, keyname, modifiers, keycode)
         return keycode

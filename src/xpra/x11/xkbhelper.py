@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -149,10 +149,13 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
         keycodes = indexed_mappings(xkbmap_x11_keycodes)
     else:
         keycodes = gtk_keycodes_to_mappings(xkbmap_keycodes)
+    log("set_keycode_translation(%s, %s) keycodes=%s", xkbmap_x11_keycodes, xkbmap_keycodes)
+    log(" keycodes=%s", keycodes)
     #keycodes = {
     #     9: set([('', 1), ('Escape', 4), ('', 3), ('Escape', 0), ('Escape', 2)]),
     #     10: set([('onesuperior', 4), ('onesuperior', 8), ('exclam', 1), ('1', 6), ('exclam', 3), ('1', 2), ('exclamdown', 9), ('exclamdown', 5), ('1', 0), ('exclam', 7)]),
     x11_keycodes = X11Keyboard.get_keycode_mappings()
+    log(" x11_keycodes=%s", x11_keycodes)
     #x11_keycodes = {
     #    8: ['Mode_switch', '', 'Mode_switch', '', 'Mode_switch'],
     #    9: ['Escape', '', 'Escape', '', 'Escape'],
@@ -192,7 +195,22 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
             x11_keycode = find_keycode(keycode, keysym, i)
             if x11_keycode:
                 trans[(keycode, keysym)] = x11_keycode
+                trans[(keysym, i)] = x11_keycode
                 trans[keysym] = x11_keycode
+    if not xkbmap_x11_keycodes:
+        #now add all the keycodes we may not have mapped yet
+        #(present in x11_keycodes but not keycodes)
+        for keycode, keysyms in x11_keycodes.items():
+            for i, keysym in enumerate(keysyms):
+                if keysym not in trans:
+                    if keysym in DEBUG_KEYSYMS:
+                        log.info("x11 keycode %s: %s", keycode, keysym)
+                    trans[keysym] = keycode
+                key = (keysym, i)
+                if key not in trans:
+                    if keysym in DEBUG_KEYSYMS:
+                        log.info("x11 keycode %s: %s", keycode, key)
+                    trans[key] = keycode
     log("set_keycode_translation(..)=%s", trans)
     return trans
 
