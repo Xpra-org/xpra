@@ -235,16 +235,27 @@ class WSRequestHandler(WebSocketRequestHandler):
                 if enc not in accept:
                     continue
                 compressed_path = "%s.%s" % (path, enc)     #ie: "/path/to/index.html.br"
-                if os.path.exists(compressed_path):
-                    log("sending pre-compressed file '%s'", compressed_path)
-                    #read pre-gzipped file:
-                    f.close()
-                    f = None
-                    f = open(compressed_path, 'rb')
-                    content = f.read()
-                    assert content, "no data in %s" % compressed_path
-                    headers["Content-Encoding"] = enc
-                    break
+                if not os.path.exists(compressed_path):
+                    continue
+                if not os.path.isfile(compressed_path):
+                    log.warn("Warning: '%s' is not a file!", compressed_path)
+                    continue
+                if not os.access(compressed_path, os.R_OK):
+                    log.warn("Warning: '%s' is not readable", compressed_path)
+                    continue
+                st = os.stat(compressed_path)
+                if st.st_size==0:
+                    log.warn("Warning: '%s' is empty", compressed_path)
+                    continue
+                log("sending pre-compressed file '%s'", compressed_path)
+                #read pre-gzipped file:
+                f.close()
+                f = None
+                f = open(compressed_path, 'rb')
+                content = f.read()
+                assert content, "no data in %s" % compressed_path
+                headers["Content-Encoding"] = enc
+                break
             if not content:
                 content = f.read()
                 assert len(content)==content_length, "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
