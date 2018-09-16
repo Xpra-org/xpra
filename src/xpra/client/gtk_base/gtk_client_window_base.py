@@ -32,7 +32,7 @@ draglog = Logger("dragndrop")
 
 
 from xpra.os_util import bytestostr, is_X11, WIN32, OSX, POSIX, PYTHON3
-from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl, csv,
+from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
                        WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
                        MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
@@ -1871,7 +1871,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         key_event.keyval = keyval or 0
         key_event.keycode = keycode
         key_event.group = event.group
-        key_event.string = event.string or ""
+        try:
+            key_event.string = event.string or ""
+        except UnicodeDecodeError as e:
+            if first_time("key-%s-%s" % (keycode, keyname)):
+                keylog.warn("Warning: failed to parse string for key")
+                keylog.warn(" keyname=%s, keycode=%s", keyname, keycode)
+            key_event.string = ""
         key_event.pressed = pressed
         keylog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event
