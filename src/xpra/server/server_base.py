@@ -564,7 +564,8 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(info, c.get_info(self, proto))
             except Exception as e:
                 log("do_get_info%s", (proto, server_sources), exc_info=True)
-                log.error("Error collecting information from %s: %s", c, e)
+                log.error("Error collecting information from %s", c)
+                log.error(" %s", e)
 
         up("features",  self.get_features_info())
         up("network", {
