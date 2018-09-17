@@ -82,9 +82,9 @@ if POSIX and USE_X11_BINDINGS:
             supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
             CAN_SET_WORKSPACE = SET_WORKSPACE and bool(supported) and "_NET_WM_DESKTOP" in supported
         except Exception as e:
-            log("x11 workspace bindings error", exc_info=True)
-            log.error("Error: failed to setup workspace hooks:")
-            log.error(" %s", e)
+            workspacelog("x11 workspace bindings error", exc_info=True)
+            workspacelog.error("Error: failed to setup workspace hooks:")
+            workspacelog.error(" %s", e)
     except ImportError:
         prop_get, prop_set = None, None
 
