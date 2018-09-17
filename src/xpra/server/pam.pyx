@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #!python
-#cython: boundscheck=False, wraparound=False, cdivision=True
+#cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 from __future__ import absolute_import
 
 import os
@@ -213,8 +213,8 @@ cdef class pam_session(object):
                 log.error("Error: invalid pam item '%s'", k)
                 continue
             elif item_type==PAM_XAUTHDATA:
-                method = "MIT-MAGIC-COOKIE-1\0"
-                xauth_data.namelen = len("MIT-MAGIC-COOKIE-1")
+                method = b"MIT-MAGIC-COOKIE-1\0"
+                xauth_data.namelen = len(b"MIT-MAGIC-COOKIE-1")
                 xauth_data.name = method
                 s = v+b"\0"
                 xauth_data.datalen = len(v)

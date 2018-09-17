@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cython: boundscheck=False, wraparound=False, cdivision=True
+#cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 from __future__ import absolute_import
 
 from xpra.os_util import bytestostr

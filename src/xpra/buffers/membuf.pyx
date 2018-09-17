@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@
 # 2) object to buffer conversion utility functions,
 # 3) xxhash wrapper
 
-#cython: auto_pickle=False, wraparound=False, cdivision=True
+#cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
 from __future__ import absolute_import
 
 

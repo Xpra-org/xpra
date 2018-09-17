@@ -1,11 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Special guard to work around Fedora/RH's pygtk2 silliness
 # see http://partiwm.org/ticket/34 for details
+
+#cython: language_level=3
+
 from __future__ import absolute_import
 
 from time import sleep

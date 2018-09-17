@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cython: wraparound=False
+#cython: wraparound=False, language_level=3
 from __future__ import absolute_import
 
 from libc.stdint cimport uint32_t, uintptr_t

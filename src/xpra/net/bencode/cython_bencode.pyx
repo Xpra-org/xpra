@@ -1,12 +1,15 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Taken from BitTorrent 3.4.2 (which is MIT-licensed), then hacked up
 # further.
 # Original version written by Petru Paler
+
+#cython: language_level=3
+
 from __future__ import absolute_import
 
 
@@ -49,7 +52,7 @@ cdef int find(const unsigned char *p, char c, unsigned int start, size_t len):
 
 cdef decode_int(const unsigned char *x, unsigned int f, int l):
     f += 1
-    cdef int newf = find(x, 'e', f, l)
+    cdef int newf = find(x, b'e', f, l)
     cdef object n
     assert newf>=0, "end of int not found"
     cdef unsigned int unewf = newf
@@ -57,15 +60,15 @@ cdef decode_int(const unsigned char *x, unsigned int f, int l):
         n = int(x[f:unewf])
     except (OverflowError, ValueError):
         n = long(x[f:unewf])
-    if x[f] == '-':
-        if x[f + 1] == '0':
+    if x[f] == b'-':
+        if x[f + 1] == b'0':
             raise ValueError("-0 is not a valid number")
-    elif x[f] == '0' and unewf != f+1:
+    elif x[f] == b'0' and unewf != f+1:
         raise ValueError("leading zeroes are not allowed")
     return (n, unewf+1)
 
 cdef decode_string(const unsigned char *x, unsigned int f, int l):
-    cdef int colon = find(x, ':', f, l)
+    cdef int colon = find(x, b':', f, l)
     cdef int slen
     assert colon>=0, "colon not found in string size header"
     lenstr = x[f:colon]
@@ -77,7 +80,7 @@ cdef decode_string(const unsigned char *x, unsigned int f, int l):
             slen = LongType(lenstr)
         except:
             raise ValueError("cannot parse length '%s' (f=%s, colon=%s, string=%s)" % (lenstr, f, ucolon, x))
-    if x[f] == '0' and ucolon != f+1:
+    if x[f] == b'0' and ucolon != f+1:
         raise ValueError("leading zeroes are not allowed (found in string length)")
     ucolon += 1
     return (x[ucolon:ucolon+slen], ucolon+slen)
@@ -90,7 +93,7 @@ cdef decode_list(const unsigned char *x, unsigned int f, int l):
     cdef object r = []
     f += 1
     cdef object v
-    while x[f] != 'e':
+    while x[f] != b'e':
         v, f = decode(x, f, l, "list item")
         r.append(v)
     return (r, f + 1)
@@ -100,7 +103,7 @@ cdef decode_dict(const unsigned char *x, unsigned int f, int l):
     cdef object k
     cdef object v               #dict value
     f += 1
-    while x[f] != 'e':
+    while x[f] != b'e':
         k, f = decode(x, f, l, "dictionary key")
         v, f = decode(x, f, l, "dictionary value")
         try:
@@ -114,15 +117,15 @@ cdef decode_dict(const unsigned char *x, unsigned int f, int l):
 cdef decode(const unsigned char *x, unsigned int f, size_t l, unsigned char *what):
     assert f<l, "cannot decode past the end of the string!"
     cdef char c = x[f]
-    if c=='l':
+    if c==b'l':
         return decode_list(x, f, l)
-    elif c=='d':
+    elif c==b'd':
         return decode_dict(x, f, l)
-    elif c=='i':
+    elif c==b'i':
         return decode_int(x, f, l)
-    elif c in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'):
+    elif c in (b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9'):
         return decode_string(x, f, l)
-    elif c=='u':
+    elif c==b'u':
         return decode_unicode(x, f, l)
     else:
         raise ValueError("invalid %s type identifier: %s at position %s" % (what, c, f))
@@ -143,11 +146,11 @@ def bdecode(x):
 # Encoding functions:
 
 cdef int encode_int(x, r) except -1:
-    r.extend(('i', str(x), 'e'))
+    r.extend((b'i', str(x), b'e'))
     return 0
 
 cdef int encode_string(x, r) except -1:
-    r.extend((str(len(x)), ':', x))
+    r.extend((str(len(x)), b':', x))
     return 0
 
 cdef int encode_unicode(x, r) except -1:
@@ -155,19 +158,19 @@ cdef int encode_unicode(x, r) except -1:
     return encode_string(x, r)
 
 cdef int encode_list(object x, r) except -1:
-    r.append('l')
+    r.append(b'l')
     for i in x:
         assert encode(i, r)==0
-    r.append('e')
+    r.append(b'e')
     return 0
 
 cdef int encode_dict(object x, r) except -1:
-    r.append('d')
+    r.append(b'd')
     for k in sorted(x.keys()):
         v = x[k]
         assert encode(k, r)==0
         assert encode(v, r)==0
-    r.append('e')
+    r.append(b'e')
     return 0
 
 

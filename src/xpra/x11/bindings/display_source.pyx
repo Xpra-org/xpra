@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,9 @@
 # other times we may get an existing "Display" pointer from
 # somewhere else, so we need this file to hide that...
 # (we can't just pass pointers around easily with Python/Cython)
+
+#cython: language_level=3
+
 from __future__ import absolute_import
 
 from libc.stdint cimport uintptr_t

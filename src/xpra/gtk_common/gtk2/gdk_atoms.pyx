@@ -1,12 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # cython code for manipulating GdkAtoms
 
-#cython: wraparound=False
+#cython: wraparound=False, language_level=3
 from __future__ import absolute_import
 
 import gobject
@@ -47,8 +47,9 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
     cdef const GdkAtom * array = <GdkAtom*> NULL
     cdef Py_ssize_t array_len_bytes = 0
     assert PyObject_AsReadBuffer(atom_string, <const void**> &array, &array_len_bytes)==0
-    array_len = array_len_bytes / sizeof(GdkAtom)
+    cdef unsigned int array_len = array_len_bytes // sizeof(GdkAtom)
     objects = []
+    cdef unsigned int i
     for i in range(array_len):
         if array[i]==GDK_NONE:
             continue

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cython: auto_pickle=False, wraparound=False, cdivision=True
+#cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
 from __future__ import absolute_import
 
 import time
@@ -180,8 +180,8 @@ COLORSPACE_STR = {
     V4L2_COLORSPACE_REC709          : "REC709",
 }
 
-cdef int V4L2_PIX_FMT_H264 = v4l2_fourcc('H', '2', '6', '4')
-cdef int V4L2_PIX_FMT_MPEG4 = v4l2_fourcc('M', 'P', 'G', '4')
+cdef int V4L2_PIX_FMT_H264 = v4l2_fourcc(b'H', b'2', b'6', b'4')
+cdef int V4L2_PIX_FMT_MPEG4 = v4l2_fourcc(b'M', b'P', b'G', b'4')
 
 FORMAT_STR = {
     V4L2_PIX_FMT_GREY           : "GREY",
