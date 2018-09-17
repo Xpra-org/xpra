@@ -12,7 +12,7 @@
 
 Name:           %{pygtkglext}
 Version:        1.1.0
-Release:        16.xpra3%{?dist}
+Release:        27.xpra3%{?dist}
 Summary:        Python bindings for GtkGLExt
 License:        LGPLv2+
 Group:          System Environment/Libraries
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Sep 17 2018 Antoine Martin <antoine@devloop.org.uk> - 1.1.0-27.xpra1
+- bump revision so we upgrade the upstream package, which has broken dependencies
+
 * Mon Sep 17 2018 Antoine Martin <antoine@devloop.org.uk> - 1.1.0-16.xpra3
 - use the package name for python2-pyopengl on Fedora
 
