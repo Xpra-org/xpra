@@ -12,7 +12,7 @@
 
 Name:           %{pygtkglext}
 Version:        1.1.0
-Release:        16.xpra2%{?dist}
+Release:        16.xpra3%{?dist}
 Summary:        Python bindings for GtkGLExt
 License:        LGPLv2+
 Group:          System Environment/Libraries
@@ -23,11 +23,11 @@ BuildRequires:  gtkglext-devel
 BuildRequires:  python-devel
 BuildRequires:  %{pygtk2}-devel
 Requires:       %{pygtk2}
+
+%if 0%{?fedora}
+Requires:       python2-pyopengl
+%else
 Requires:       PyOpenGL
-%if 0%{?suse_version}
-Patch0:			pygtkgl-version.patch
-Patch1:			pygtkgl-overrides.patch
-Patch2:			pygtkgl-constants.patch
 %endif
 
 %description
@@ -100,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Sep 17 2018 Antoine Martin <antoine@devloop.org.uk> - 1.1.0-16.xpra3
+- use the package name for python2-pyopengl on Fedora
+
 * Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 1.1.0-16.xpra2
 - use python2 explicitly
 
