@@ -13,7 +13,7 @@ Source0:	ftp://ftp.gnome.org/pub/gnome/sources/gtkglext/1.2/gtkglext-%{version}.
 Patch0:		gtkglext-1.2.0-bz677457.diff
 # config.{sub,guess} from automake-1.13.4, addressing BZ 925512
 Patch1:		gtkglext-1.2.0-config.diff
-Patch2:		gtkglext-1.2.0-index.diff
+Patch2:		gtkglext-1.2.0-index.patch
 
 BuildRequires:	gtk2-devel
 BuildRequires:	libGLU-devel
