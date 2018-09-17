@@ -21,7 +21,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.common import MAX_WINDOW_SIZE
-from xpra.os_util import StringIOClass, monotonic_time, PYTHON3
+from xpra.os_util import StringIOClass, monotonic_time, strtobytes, PYTHON3
 from xpra.util import engs, csv, typedict
 from xpra.net.compression import Compressed
 
@@ -794,7 +794,7 @@ class X11ServerCore(GTKServerBase):
                 pass
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self._server_sources.values():
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
+            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, strtobytes(event.bell_name or ""))
 
 
     def get_screen_number(self, _wid):

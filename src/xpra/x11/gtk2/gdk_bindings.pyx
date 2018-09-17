@@ -416,7 +416,7 @@ def get_xatom(str_or_xatom):
         l = long(str_or_xatom)
         assert l>=0, "invalid long atom value %s" % str_or_xatom
         return l
-    assert isinstance(str_or_xatom, str), "argument is not a string or number: %s" % type(str_or_xatom)
+    assert isinstance(str_or_xatom, bytes), "argument is not a string or number: %s" % type(str_or_xatom)
     gdkatom = gdk.atom_intern(str_or_xatom)
     if not gdkatom:
         return  0
@@ -1127,7 +1127,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             if xkb_e.xkb_type!=XkbBellNotify:
                 return GDK_FILTER_CONTINUE
             bell_e = <XkbBellNotifyEvent*>e
-            pyev.subtype = "bell"
+            pyev.subtype = b"bell"
             pyev.device = int(bell_e.device)
             pyev.percent = int(bell_e.percent)
             pyev.pitch = int(bell_e.pitch)

@@ -364,16 +364,16 @@ cdef extern from "X11/extensions/Xdamage.h":
 
 cdef _munge_packed_ints_to_longs(data):
     assert len(data) % sizeof(int) == 0
-    n = len(data) / sizeof(int)
-    format_from = "@" + "i" * n
-    format_to = "@" + "l" * n
+    cdef unsigned int n = len(data) // sizeof(int)
+    format_from = b"@" + b"i" * n
+    format_to = b"@" + b"l" * n
     return struct.pack(format_to, *struct.unpack(format_from, data))
 
 cdef _munge_packed_longs_to_ints(data):
     assert len(data) % sizeof(long) == 0
-    n = len(data) / sizeof(long)
-    format_from = "@" + "l" * n
-    format_to = "@" + "i" * n
+    cdef unsigned int n = len(data) // sizeof(long)
+    format_from = b"@" + b"l" * n
+    format_to = b"@" + b"i" * n
     return struct.pack(format_to, *struct.unpack(format_from, data))
 
 
