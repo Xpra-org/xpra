@@ -56,7 +56,7 @@
 			hash="sha256:434eab8da9525ae725d6842aae7e59d9ec6580bdc5ae84f3c225240bc6797f7a"
 			version="0.19.1"/>
 		<dependencies>
-			<dep package="python3"/>
+			<dep package="python3-enum-compat"/>
 		</dependencies>
 		<after>
 			<dep package="python3"/>
@@ -741,6 +741,7 @@
 	<metamodule id="meta-osx-xpra-python3-deps">
 		<dependencies>
 		  <dep package="python3-setuptools"/>
+		  <dep package="python3-enum-compat"/>
 		  <dep package="python3-zeroconf"/>
 		  <dep package="python3-netifaces"/>
 		  <dep package="python3-pyasn1"/>
@@ -766,6 +767,7 @@
 		  <dep package="python3-future"/>
 		  <dep package="python3-u2f"/>
 		  <dep package="python3-kerberos"/>
+		  <dep package="python3-decorator"/>
 		  <dep package="python3-gssapi"/>
 		  <dep package="python3-ipaddress"/>
 		  <dep package="python3-idna"/>
