@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, PYTHON2
 from xpra.gtk_common.gobject_compat import import_glib
 glib = import_glib()
-glib.threads_init()
+if PYTHON2:
+    glib.threads_init()
 
 import unittest
 from collections import deque
