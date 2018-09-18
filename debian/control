@@ -18,15 +18,23 @@ Build-Depends: debhelper (>= 8)
 #buster:              ,python-gobject-2-dev
 #xenial:              ,ffmpeg-xpra
 #bionic:              ,libavcodec-dev
+#bionic:              ,libavformat-dev
 #bionic:              ,libswscale-dev
 #cosmic:              ,libavcodec-dev
+#cosmic:              ,libavformat-dev
 #cosmic:              ,libswscale-dev
 #stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
+#buster:              ,libavformat-dev
 #buster:              ,libswscale-dev
               ,python-gtk2-dev
               ,dh-python
               ,dh-systemd
+#for minimizing the html5 assets:
+#buster:              ,uglifyjs
+#xenial:              ,uglifyjs
+#bionic:              ,uglifyjs
+#cosmic:              ,uglifyjs
               ,libjs-jquery
               ,libsystemd-dev
               ,libpam-dev
