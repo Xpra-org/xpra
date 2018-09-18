@@ -151,12 +151,17 @@ class SSHSocketConnection(SocketConnection):
         #stderr = self._socket.makefile_stderr(mode="rb", bufsize=1)
         chan = self._socket
         stderr = chan.makefile_stderr("rb", 1)
+        errs = []
         while self.active:
             v = stderr.readline()
             if not v:
                 log("SSH EOF on stderr of %s", chan.get_name())
                 return
-            log.warn("remote SSH stderr: %s", v.rstrip("\n\r"))
+            errs.append(bytestostr(v.rstrip(b"\n\r")))
+        if errs:
+            log.warn("remote SSH stderr:")
+            for e in errs:
+                log.warn(" %s", e)
 
     def peek(self, n):
         return self._raw_socket.recv(n, socket.MSG_PEEK)
