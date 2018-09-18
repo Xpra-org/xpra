@@ -129,6 +129,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         def test_signal_function(*args):
             log("test_signal_function%s", args)
             readback.append(args)
+            glib.idle_add(lc.send, "loop_stop")
         #hook up a function which will be called when the wrapper converts the packet into a method call:
         callee.test_signal = test_signal_function
         #lc.connect_export("test-signal", hello)
@@ -151,7 +152,6 @@ class SubprocessWrapperTest(unittest.TestCase):
         glib.idle_add(callee.emit, "test-signal", signal_string)
         #hook up a stop function call which ends this test cleanly
         callee.loop_stop = loop_stop
-        glib.idle_add(lc.send, "loop_stop")
         #run!
         lc.start()
         mainloop.run()
