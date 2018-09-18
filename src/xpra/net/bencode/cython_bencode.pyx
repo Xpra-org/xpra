@@ -13,30 +13,20 @@
 from __future__ import absolute_import
 
 
-__version__ = ("Cython", 0, 13)
+__version__ = ("Cython", 0, 14)
 
 from xpra.buffers.membuf cimport object_as_buffer
 
-import sys
-if sys.version_info[0]>=3:
-    StringType  = bytes
-    UnicodeType = str
-    IntType     = int
-    LongType    = int
-    DictType    = dict
-    ListType    = list
-    TupleType   = tuple
-    BooleanType = bool
-    import codecs
-    def b(x):
-        if type(x)==bytes:
-            return x
-        return codecs.latin_1_encode(x)[0]
-else:
-    from types import (StringType, UnicodeType, IntType, LongType, DictType, ListType,
-                       TupleType, BooleanType)
-    def b(x):               #@DuplicatedSignature
+import codecs
+def b(x):
+    if type(x)==bytes:
         return x
+    return codecs.latin_1_encode(x)[0]
+import sys
+if sys.version_info[0]==2:
+    LongType = long
+else:
+    LongType = int
 
 
 cdef int find(const unsigned char *p, char c, unsigned int start, size_t len):
@@ -74,7 +64,7 @@ cdef decode_string(const unsigned char *x, unsigned int f, int l):
     lenstr = x[f:colon]
     cdef unsigned int ucolon = colon
     try:
-        slen = IntType(lenstr)
+        slen = int(lenstr)
     except (OverflowError, ValueError):
         try:
             slen = LongType(lenstr)
@@ -176,21 +166,21 @@ cdef int encode_dict(object x, r) except -1:
 
 cdef int encode(object v, r) except -1:
     cdef object t = type(v)
-    if t==IntType:
+    if t==int:
         return encode_int(v, r)
     elif t==LongType:
         return encode_int(v, r)
-    elif t==StringType:
+    elif t==bytes:
         return encode_string(v, r)
-    elif t==UnicodeType:
+    elif t==str:
         return encode_unicode(v, r)
-    elif t==ListType:
+    elif t==list:
         return encode_list(v, r)
-    elif t==TupleType:
+    elif t==tuple:
         return encode_list(v, r)
-    elif t==DictType:
+    elif t==dict:
         return encode_dict(v, r)
-    elif t==BooleanType:
+    elif t==bool:
         return encode_int(long(v), r)
     elif v==None:
         raise ValueError("found None value!")
