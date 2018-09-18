@@ -15,7 +15,7 @@
 %global debug_package %{nil}
 
 Name:           python2-pycuda
-Version:        2018.1
+Version:        2018.1.1
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
@@ -130,6 +130,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Sep 18 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.1.1-1
+- new upstream release fixing Fedora 29 builds
+
 * Thu Aug 02 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.1-1
 - new upstream release
 
