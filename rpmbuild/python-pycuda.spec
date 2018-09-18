@@ -130,7 +130,7 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Thu Sep 18 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.1.1-1
+* Tue Sep 18 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.1.1-1
 - new upstream release fixing Fedora 29 builds
 
 * Thu Aug 02 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.1-1
