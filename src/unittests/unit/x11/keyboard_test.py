@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,7 +24,7 @@ class TestX11Keyboard(ServerTestUtil):
                 hk = keyboard_bindings.parse_keysym("0x"+x)
                 #osx U+ form:
                 uk = keyboard_bindings.parse_keysym("U+"+x)
-                log("keysym(U+%s)=%s" % (x, uk))
+                log("keysym(U+%s)=%#x, keysym(0x%s)=%#x", x, uk, x, hk)
                 assert hk and uk
                 assert uk == hk, "failed to get unicode keysym %s" % x
         xvfb.terminate()
