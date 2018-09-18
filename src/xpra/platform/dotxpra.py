@@ -77,6 +77,7 @@ class DotXpra(object):
         sock.settimeout(timeout)
         try:
             sock.connect(sockpath)
+            return self.LIVE
         except socket.error as e:
             debug("get_server_state: connect(%s)=%s", sockpath, e)
             err = e.args[0]
@@ -87,10 +88,12 @@ class DotXpra(object):
                 return self.UNKNOWN
             if err in (errno.EWOULDBLOCK, errno.ENOENT):
                 return self.DEAD
-        else:
-            sock.close()
-            return self.LIVE
-        return self.UNKNOWN
+            return self.UNKNOWN
+        finally:
+            try:
+                sock.close()
+            except:
+                debug("%s.close()", sock, exc_info=True)
 
 
     def displays(self, check_uid=0, matching_state=None):
