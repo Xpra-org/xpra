@@ -9,6 +9,7 @@ Build-Depends: debhelper (>= 8)
               ,libxcomposite-dev
               ,libxdamage-dev
               ,libxtst-dev
+              ,libxkbfile-dev
               ,libx264-dev
               ,python-all-dev
 #xenial:              ,python-gobject-dev
