@@ -2793,6 +2793,7 @@ def init_module():
                     if first_time(wkey):
                         log.warn("Warning: NVENC on device %s:", get_device_name(device_id) or device_id)
                         log.warn(" does not support %s", nvenc_encoding_name)
+                    FAILED_ENCODINGS.add(e)
                     continue
                 #ensure MAX_SIZE is set:
                 cmax = MAX_SIZE.get(e)
