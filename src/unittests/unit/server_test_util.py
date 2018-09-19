@@ -38,9 +38,12 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
 		from xpra.server.server_util import find_log_dir
+		os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority")
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
-		XAUTHORITY = os.path.expanduser("~/.Xauthority")
-		os.environ["XAUTHORITY"] = XAUTHORITY
+		os.environ["XPRA_NOTTY"] = "1"
+		os.environ["XPRA_FLATTEN_INFO"] = "0"
+		os.environ["XPRA_NOTTY"] = "1"
+		cls.default_env = os.environ.copy()
 		cls.default_config = get_defaults()
 		cls.display_start = 100+sys.version_info[0]
 		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
@@ -49,7 +52,6 @@ class ServerTestUtil(unittest.TestCase):
 			cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp"]
 		cls.existing_displays = cls.displays()
 		cls.processes = []
-		cls.default_env = os.environ.copy()
 
 	@classmethod
 	def tearDownClass(cls):
@@ -74,7 +76,6 @@ class ServerTestUtil(unittest.TestCase):
 	def setUp(self):
 		os.environ.clear()
 		os.environ.update(self.default_env)
-		os.environ["XPRA_NOTTY"] = "1"
 		self.temp_files = []
 		xpra_list = self.run_xpra(["list"])
 		assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
@@ -92,8 +93,6 @@ class ServerTestUtil(unittest.TestCase):
 	def get_run_env(self):
 		env = dict((k,v) for k,v in os.environ.items() if
 				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "XAUTHORITY", "PWD", "PYTHONPATH", ))
-		env["XPRA_FLATTEN_INFO"] = "0"
-		env["XPRA_NOTTY"] = "1"
 		return env
 
 	@classmethod
@@ -228,7 +227,7 @@ class ServerTestUtil(unittest.TestCase):
 				pass
 		if len(screens)>1:
 			cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
-					"-auth", os.environ["XAUTHORITY"]]
+					"-auth", self.default_env["XAUTHORITY"]]
 			for i, screen in enumerate(screens):
 				(w, h) = screen
 				cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]

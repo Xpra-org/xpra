@@ -22,7 +22,7 @@ class X11ClientTestUtil(ServerTestUtil):
 	def do_run_client(self, client_display, *args):
 		from xpra.x11.vfb_util import xauth_add
 		xauth_data = get_hex_uuid()
-		xauth_add(os.environ["XAUTHORITY"], client_display, xauth_data, os.getuid(), os.getgid())
+		xauth_add(self.default_env["XAUTHORITY"], client_display, xauth_data, os.getuid(), os.getgid())
 		env = self.get_run_env()
 		env["DISPLAY"] = client_display
 		global uq
