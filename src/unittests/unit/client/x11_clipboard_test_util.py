@@ -26,8 +26,9 @@ class X11ClipboardTestUtil(X11ClientTestUtil):
 		return self.get_command_output("xclip -d %s -selection %s -o" % (display, selection), shell=True)
 
 	def set_clipboard_value(self, display, value, selection="clipboard"):
-		xclip = self.run_command("echo -n '%s' | xclip -d %s -selection %s -i" % (value, display, selection), shell=True)
-		assert pollwait(xclip, 5)==0, "xclip returned %s" % xclip.poll()
+		cmd = "echo -n '%s' | xclip -d %s -selection %s -i" % (value, display, selection)
+		xclip = self.run_command(cmd, shell=True)
+		assert pollwait(xclip, 5)==0, "xclip command %s returned %s" % (cmd, xclip.poll())
 
 
 	def copy_and_verify(self, display1, display2, synced=True, wait=1, selection="clipboard"):

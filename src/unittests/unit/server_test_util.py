@@ -39,6 +39,8 @@ class ServerTestUtil(unittest.TestCase):
 	def setUpClass(cls):
 		from xpra.server.server_util import find_log_dir
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
+		XAUTHORITY = os.path.expanduser("~/.Xauthority")
+		os.environ["XAUTHORITY"] = XAUTHORITY
 		cls.default_config = get_defaults()
 		cls.display_start = 100+sys.version_info[0]
 		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
@@ -89,7 +91,7 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def get_run_env(self):
 		env = dict((k,v) for k,v in os.environ.items() if
-				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "PWD", "XAUTHORITY", "PYTHONPATH", ))
+				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "XAUTHORITY", "PWD", "PYTHONPATH", ))
 		env["XPRA_FLATTEN_INFO"] = "0"
 		env["XPRA_NOTTY"] = "1"
 		return env
@@ -131,7 +133,10 @@ class ServerTestUtil(unittest.TestCase):
 		if env is not None and not WIN32:
 			kwargs["env"] = env
 		stdout_file = stderr_file = None
-		strcommand = " ".join("'%s'" % x for x in command)
+		if isinstance(command, str):
+			strcommand = command
+		else:
+			strcommand = " ".join("'%s'" % x for x in command)
 		if XPRA_TEST_DEBUG:
 			log("************************")
 			log("run_command(%s, %s)", " ".join('"%s"' % x for x in command), repr_ellipsized(str(env), 40))
@@ -213,8 +218,6 @@ class ServerTestUtil(unittest.TestCase):
 		assert POSIX
 		if display is None:
 			display = self.find_free_display()
-		XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
-		os.environ["XAUTHORITY"] = XAUTHORITY
 		for x in list(os.environ.keys()):
 			if x in ("LOGNAME", "USER", "PATH", "LANG", "TERM", "HOME", "USERNAME", "PYTHONPATH", "HOSTNAME"):	#DBUS_SESSION_BUS_ADDRESS
 				#keep it
@@ -225,7 +228,7 @@ class ServerTestUtil(unittest.TestCase):
 				pass
 		if len(screens)>1:
 			cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
-					"-auth", XAUTHORITY]
+					"-auth", os.environ["XAUTHORITY"]]
 			for i, screen in enumerate(screens):
 				(w, h) = screen
 				cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
