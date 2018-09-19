@@ -19,7 +19,7 @@ TEST_RFB = envbool("XPRA_TEST_RFB", not WIN32 and not OSX)
 VFB_INITIAL_RESOLUTION = os.environ.get("XPRA_TEST_VFB_INITIAL_RESOLUTION", "1920x1080")
 
 
-OPTIONS = (
+OPTIONS = [
     "windows",
     "notifications",
     "webcam",
@@ -29,11 +29,15 @@ OPTIONS = (
     "av-sync",
     "printing",
     "file-transfer",
-    "mmap",
     "readonly",
-    "dbus-proxy",
     "remote-logging",
-    )
+    ]
+if not WIN32:
+    OPTIONS += [
+    "mmap",
+    "dbus-proxy",
+    ]
+
 
 class ServerMixinsOptionTestUtil(ServerTestUtil):
 
