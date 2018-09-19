@@ -11,7 +11,7 @@ import tempfile
 import unittest
 import subprocess
 from xpra.util import envbool, envint, repr_ellipsized
-from xpra.os_util import OSEnvContext, pollwait, osexpand, bytestostr, POSIX, WIN32
+from xpra.os_util import pollwait, osexpand, bytestostr, POSIX, WIN32
 from xpra.scripts.config import get_defaults
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_xpra_command
@@ -47,6 +47,7 @@ class ServerTestUtil(unittest.TestCase):
 			cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp"]
 		ServerTestUtil.existing_displays = cls.displays()
 		ServerTestUtil.processes = []
+		cls.default_env = os.environ.copy()
 
 	@classmethod
 	def tearDownClass(cls):
@@ -65,6 +66,8 @@ class ServerTestUtil(unittest.TestCase):
 				proc.communicate(None)
 
 	def setUp(self):
+		os.environ.clear()
+		os.environ.update(self.default_env)
 		self.temp_files = []
 		xpra_list = self.run_xpra(["list"])
 		assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
@@ -200,51 +203,51 @@ class ServerTestUtil(unittest.TestCase):
 		assert POSIX
 		if display is None:
 			display = self.find_free_display()
-		with OSEnvContext():
-			XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
-			for x in list(os.environ.keys()):
-				if x in ("LOGNAME", "USER", "PATH", "LANG", "TERM", "HOME", "USERNAME", "PYTHONPATH", "HOSTNAME"):	#DBUS_SESSION_BUS_ADDRESS
-					#keep it
-					continue
-				try:
-					del os.environ[x]
-				except:
-					pass
-			if len(screens)>1:
-				cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
-						"-auth", XAUTHORITY]
-				for i, screen in enumerate(screens):
-					(w, h) = screen
-					cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
-			else:
-				xvfb_cmd = self.default_config.get("xvfb")
-				assert xvfb_cmd, "no 'xvfb' command in default config"
-				import shlex
-				cmd = shlex.split(osexpand(xvfb_cmd))
-				try:
-					i = cmd.index("/etc/xpra/xorg.conf")
-				except ValueError:
-					i = -1
-				if i>0 and os.path.exists("./etc/xpra/xorg.conf"):
-					cmd[i] = "./etc/xpra/xorg.conf"
-			cmd.append(display)
-			os.environ["DISPLAY"] = display
-			os.environ["XPRA_LOG_DIR"] = "/tmp"
-			cmd_expanded = [osexpand(v) for v in cmd]
-			cmdstr = " ".join("'%s'" % x for x in cmd_expanded)
-			if SHOW_XORG_OUTPUT:
-				stdout = sys.stdout
-				stderr = sys.stderr
-			else:
-				stdout = self._temp_file(prefix="Xorg-stdout-")
-				log("stdout=%s for %s", stdout.name, cmd)
-				stderr = self._temp_file(prefix="Xorg-stderr-")
-				log("stderr=%s for %s", stderr.name, cmd)
-			xvfb = self.run_command(cmd_expanded, stdout=stdout, stderr=stderr)
-			time.sleep(1)
-			log("xvfb(%s)=%s" % (cmdstr, xvfb))
-			assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll())
-			return xvfb
+		XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
+		os.environ["XAUTHORITY"] = XAUTHORITY
+		for x in list(os.environ.keys()):
+			if x in ("LOGNAME", "USER", "PATH", "LANG", "TERM", "HOME", "USERNAME", "PYTHONPATH", "HOSTNAME"):	#DBUS_SESSION_BUS_ADDRESS
+				#keep it
+				continue
+			try:
+				del os.environ[x]
+			except:
+				pass
+		if len(screens)>1:
+			cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
+					"-auth", XAUTHORITY]
+			for i, screen in enumerate(screens):
+				(w, h) = screen
+				cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
+		else:
+			xvfb_cmd = self.default_config.get("xvfb")
+			assert xvfb_cmd, "no 'xvfb' command in default config"
+			import shlex
+			cmd = shlex.split(osexpand(xvfb_cmd))
+			try:
+				i = cmd.index("/etc/xpra/xorg.conf")
+			except ValueError:
+				i = -1
+			if i>0 and os.path.exists("./etc/xpra/xorg.conf"):
+				cmd[i] = "./etc/xpra/xorg.conf"
+		cmd.append(display)
+		os.environ["DISPLAY"] = display
+		os.environ["XPRA_LOG_DIR"] = "/tmp"
+		cmd_expanded = [osexpand(v) for v in cmd]
+		cmdstr = " ".join("'%s'" % x for x in cmd_expanded)
+		if SHOW_XORG_OUTPUT:
+			stdout = sys.stdout
+			stderr = sys.stderr
+		else:
+			stdout = self._temp_file(prefix="Xorg-stdout-")
+			log("stdout=%s for %s", stdout.name, cmd)
+			stderr = self._temp_file(prefix="Xorg-stderr-")
+			log("stderr=%s for %s", stderr.name, cmd)
+		xvfb = self.run_command(cmd_expanded, stdout=stdout, stderr=stderr)
+		time.sleep(1)
+		log("xvfb(%s)=%s" % (cmdstr, xvfb))
+		assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll())
+		return xvfb
 
 
 	def run_server(self, *args):
