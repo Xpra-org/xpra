@@ -199,10 +199,6 @@ class Encodings(StubClientMixin):
             h264_caps["fast-decode"] = envbool("XPRA_X264_FAST_DECODE", False)
             log("x264 encoding options: %s", h264_caps)
             updict(caps, "h264", h264_caps)
-        iq = max(self.min_quality, self.quality)
-        if iq<0:
-            iq = 70
-        caps["initial_quality"] = iq
         log("encoding capabilities: %s", caps)
         return caps
 
