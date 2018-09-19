@@ -40,34 +40,39 @@ class ServerTestUtil(unittest.TestCase):
 		from xpra.server.server_util import find_log_dir
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
 		cls.default_config = get_defaults()
-		cls.display_start = 100
+		cls.display_start = 100+sys.version_info[0]
 		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
 		cls.default_xpra_args = ["--speaker=no", "--microphone=no"]
 		if not WIN32:
 			cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp"]
-		ServerTestUtil.existing_displays = cls.displays()
-		ServerTestUtil.processes = []
+		cls.existing_displays = cls.displays()
+		cls.processes = []
 		cls.default_env = os.environ.copy()
 
 	@classmethod
 	def tearDownClass(cls):
-		for x in ServerTestUtil.processes:
+		for x in cls.processes:
 			try:
 				if x.poll() is None:
 					x.terminate()
 			except:
 				log.error("failed to stop subprocess %s", x)
 		displays = set(cls.displays())
-		new_displays = displays - set(ServerTestUtil.existing_displays)
+		new_displays = displays - set(cls.existing_displays)
 		if new_displays:
 			for x in list(new_displays):
 				log("stopping display %s" % x)
-				proc = cls.run_xpra(["stop", x])
-				proc.communicate(None)
+				try:
+					cmd = cls.get_xpra_cmd()+["stop", x]
+					proc = subprocess.Popen(cmd)
+					proc.communicate(None)
+				except Exception:
+					log.error("failed to cleanup display '%s'", x, exc_info=True)
 
 	def setUp(self):
 		os.environ.clear()
 		os.environ.update(self.default_env)
+		os.environ["XPRA_NOTTY"] = "1"
 		self.temp_files = []
 		xpra_list = self.run_xpra(["list"])
 		assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
@@ -86,6 +91,7 @@ class ServerTestUtil(unittest.TestCase):
 		env = dict((k,v) for k,v in os.environ.items() if
 				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "PWD", "XAUTHORITY", "PYTHONPATH", ))
 		env["XPRA_FLATTEN_INFO"] = "0"
+		env["XPRA_NOTTY"] = "1"
 		return env
 
 	@classmethod
@@ -100,10 +106,15 @@ class ServerTestUtil(unittest.TestCase):
 		return cmd
 
 	def run_xpra(self, xpra_args, env=None, **kwargs):
+		cmd = self.get_xpra_cmd()+list(xpra_args)
+		return self.run_command(cmd, env, **kwargs)
+
+	@classmethod
+	def get_xpra_cmd(cls):
 		xpra_cmd = get_xpra_command()
 		if xpra_cmd==["xpra"]:
-			xpra_cmd = [self.which("xpra")]
-		cmd = xpra_cmd + self.default_xpra_args + xpra_args
+			xpra_cmd = [cls.which("xpra")]
+		cmd = xpra_cmd + cls.default_xpra_args
 		pyexename = "python%i" % sys.version_info[0]
 		exe = bytestostr(xpra_cmd[0])
 		if exe.endswith(pyexename):
@@ -111,8 +122,8 @@ class ServerTestUtil(unittest.TestCase):
 		elif WIN32 and exe.endswith("%s.exe" % pyexename):
 			pass
 		else:
-			cmd = [pyexename] + xpra_cmd + self.default_xpra_args + xpra_args
-		return self.run_command(cmd, env, **kwargs)
+			cmd = [pyexename] + xpra_cmd + cls.default_xpra_args
+		return cmd
 
 	def run_command(self, command, env=None, **kwargs):
 		if env is None:
@@ -141,13 +152,12 @@ class ServerTestUtil(unittest.TestCase):
 		except OSError as e:
 			log.warn("run_command(%s, %s, %s) %s", command, env, kwargs, e)
 			raise
-		ServerTestUtil.processes.append(proc)
+		self.processes.append(proc)
 		return proc
 
 
-	@classmethod
-	def get_command_output(cls, command, env=None, **kwargs):
-		proc = cls.run_command(command, env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+	def get_command_output(self, command, env=None, **kwargs):
+		proc = self.run_command(command, env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
 		out,_ = proc.communicate()
 		return out
 

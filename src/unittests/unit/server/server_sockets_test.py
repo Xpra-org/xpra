@@ -24,12 +24,11 @@ def estr(r):
 
 class ServerSocketsTest(ServerTestUtil):
 
-	@classmethod
-	def start_server(cls, *args):
-		server_proc = cls.run_xpra(["start", "--no-daemon"]+list(args))
+	def start_server(self, *args):
+		server_proc = self.run_xpra(["start", "--no-daemon"]+list(args))
 		if pollwait(server_proc, 5) is not None:
 			r = server_proc.poll()
-			raise Exception("server failed to start, returned %s" % estr(r))
+			raise Exception("server failed to start with args=%s, returned %s" % (args, estr(r)))
 		return server_proc
 
 	def _test_connect(self, server_args=[], auth="none", client_args=[], password=None, uri_prefix=":", exit_code=0):
