@@ -248,7 +248,9 @@ class ServerCore(object):
 
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
         self.unix_socket_paths = []
-        self._socket_dir = opts.socket_dir or opts.socket_dirs[0]
+        self._socket_dir = opts.socket_dir or ""
+        if not self._socket_dir and len(opts.socket_dirs)>0:
+            self._socket_dir = opts.socket_dirs[0]
         self.encryption = opts.encryption
         self.encryption_keyfile = opts.encryption_keyfile
         self.tcp_encryption = opts.tcp_encryption
