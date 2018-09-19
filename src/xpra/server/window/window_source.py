@@ -228,14 +228,23 @@ class WindowSource(WindowIconSource):
         self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
         self._encoding_speed = deque(maxlen=100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
         # they may have fixed values:
-        self._fixed_quality = default_encoding_options.get("quality", 0)
-        self._fixed_min_quality = default_encoding_options.get("min-quality", 0)
-        self._fixed_speed = default_encoding_options.get("speed", 0)
-        self._fixed_min_speed = default_encoding_options.get("min-speed", 0)
+        def capr(v):
+            return min(100, max(0, int(v)))
+        self._fixed_quality = capr(default_encoding_options.get("quality", 0))
+        self._fixed_min_quality = capr(default_encoding_options.get("min-quality", 0))
+        self._fixed_speed = capr(default_encoding_options.get("speed", 0))
+        self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
-        self._current_quality = self._fixed_quality or INITIAL_QUALITY
-        self._current_speed = self._fixed_speed or INITIAL_SPEED
+        nobwl = not (self.bandwidth_limit or 0)>0
+        if self._fixed_quality:
+            self._current_quality = capr(self._fixed_quality)
+        else:
+            self._current_quality = capr(encoding_options.intget("initial_quality", INITIAL_QUALITY*(1+int(nobwl))))
+        if self._fixed_speed:
+            self._current_speed = capr(self._fixed_speed)
+        else:
+            self._current_speed = capr(encoding_options.intget("initial_speed", INITIAL_SPEED*(1+int(nobwl))))
         self._want_alpha = False
         self._lossless_threshold_base = 85
         self._lossless_threshold_pixel_boost = 20
