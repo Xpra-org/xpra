@@ -263,7 +263,9 @@ class ServerTestUtil(unittest.TestCase):
 		cmd = [subcommand]
 		if display:
 			cmd.append(display)
-		cmd += ["--no-daemon"]+list(args)
+		if not WIN32:
+			cmd += ["--no-daemon"]
+		cmd += list(args)
 		server_proc = cls.run_xpra(cmd)
 		assert pollwait(server_proc, SERVER_TIMEOUT) is None, "server failed to start with '%s', returned %s" % (cmd, server_proc.poll())
 		if display:
