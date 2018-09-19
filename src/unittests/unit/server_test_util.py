@@ -37,7 +37,6 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):
-		cls.temp_files = []
 		from xpra.server.server_util import find_log_dir
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
 		cls.default_config = get_defaults()
@@ -48,8 +47,6 @@ class ServerTestUtil(unittest.TestCase):
 			cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp"]
 		ServerTestUtil.existing_displays = cls.displays()
 		ServerTestUtil.processes = []
-		xpra_list = cls.run_xpra(["list"])
-		assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
 
 	@classmethod
 	def tearDownClass(cls):
@@ -66,8 +63,15 @@ class ServerTestUtil(unittest.TestCase):
 				log("stopping display %s" % x)
 				proc = cls.run_xpra(["stop", x])
 				proc.communicate(None)
+
+	def setUp(self):
+		self.temp_files = []
+		xpra_list = self.run_xpra(["list"])
+		assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
+
+	def tearDown(self):
 		if DELETE_TEMP_FILES:
-			for x in cls.temp_files:
+			for x in self.temp_files:
 				try:
 					os.unlink(x)
 				except:
@@ -92,12 +96,11 @@ class ServerTestUtil(unittest.TestCase):
 			pass
 		return cmd
 
-	@classmethod
-	def run_xpra(cls, xpra_args, env=None, **kwargs):
+	def run_xpra(self, xpra_args, env=None, **kwargs):
 		xpra_cmd = get_xpra_command()
 		if xpra_cmd==["xpra"]:
-			xpra_cmd = [cls.which("xpra")]
-		cmd = xpra_cmd + cls.default_xpra_args + xpra_args
+			xpra_cmd = [self.which("xpra")]
+		cmd = xpra_cmd + self.default_xpra_args + xpra_args
 		pyexename = "python%i" % sys.version_info[0]
 		exe = bytestostr(xpra_cmd[0])
 		if exe.endswith(pyexename):
@@ -105,13 +108,12 @@ class ServerTestUtil(unittest.TestCase):
 		elif WIN32 and exe.endswith("%s.exe" % pyexename):
 			pass
 		else:
-			cmd = [pyexename] + xpra_cmd + cls.default_xpra_args + xpra_args
-		return cls.run_command(cmd, env, **kwargs)
+			cmd = [pyexename] + xpra_cmd + self.default_xpra_args + xpra_args
+		return self.run_command(cmd, env, **kwargs)
 
-	@classmethod
-	def run_command(cls, command, env=None, **kwargs):
+	def run_command(self, command, env=None, **kwargs):
 		if env is None:
-			env = cls.get_run_env()
+			env = self.get_run_env()
 		if env is not None and not WIN32:
 			kwargs["env"] = env
 		stdout_file = stderr_file = None
@@ -122,11 +124,11 @@ class ServerTestUtil(unittest.TestCase):
 			log("************************")
 		else:
 			if "stdout" not in kwargs:
-				stdout_file = cls._temp_file(prefix="xpra-stdout-")
+				stdout_file = self._temp_file(prefix="xpra-stdout-")
 				kwargs["stdout"] = stdout_file
 				log("stdout: %s for %s", stdout_file.name, strcommand)
 			if "stderr" not in kwargs:
-				stderr_file = cls._temp_file(prefix="xpra-stderr-")
+				stderr_file = self._temp_file(prefix="xpra-stderr-")
 				kwargs["stderr"] = stderr_file
 				log("stderr: %s for %s", stderr_file.name, strcommand)
 		try:
@@ -147,7 +149,6 @@ class ServerTestUtil(unittest.TestCase):
 		return out
 
 
-	@classmethod
 	def _temp_file(self, data=None, prefix="xpra-"):
 		f = tempfile.NamedTemporaryFile(prefix=prefix, delete=DELETE_TEMP_FILES)
 		if data:
@@ -247,31 +248,28 @@ class ServerTestUtil(unittest.TestCase):
 			return xvfb
 
 
-	@classmethod
-	def run_server(cls, *args):
-		display = cls.find_free_display()
-		server = cls.check_server("start", display, *args)
+	def run_server(self, *args):
+		display = self.find_free_display()
+		server = self.check_server("start", display, *args)
 		server.display = display
 		return server
 
-	@classmethod
-	def check_start_server(cls, display, *args):
-		return cls.check_server("start", display, *args)
+	def check_start_server(self, display, *args):
+		return self.check_server("start", display, *args)
 
-	@classmethod
-	def check_server(cls, subcommand, display, *args):
+	def check_server(self, subcommand, display, *args):
 		cmd = [subcommand]
 		if display:
 			cmd.append(display)
 		if not WIN32:
 			cmd += ["--no-daemon"]
 		cmd += list(args)
-		server_proc = cls.run_xpra(cmd)
+		server_proc = self.run_xpra(cmd)
 		assert pollwait(server_proc, SERVER_TIMEOUT) is None, "server failed to start with '%s', returned %s" % (cmd, server_proc.poll())
 		if display:
 			#wait until the socket shows up:
 			for _ in range(20):
-				live = cls.dotxpra.displays()
+				live = self.dotxpra.displays()
 				if display in live:
 					break
 				time.sleep(1)
@@ -283,10 +281,10 @@ class ServerTestUtil(unittest.TestCase):
 		version = None
 		for _ in range(20):
 			if version is None:
+				args = ["version"]
 				if display:
-					version = cls.run_xpra(["version", display])
-				else:
-					version = cls.run_xpra(["version"])
+					args.append(display)
+				version = self.run_xpra(args)
 			r = pollwait(version, 1)
 			log("version for %s returned %s", display, r)
 			if r is not None:
@@ -299,17 +297,15 @@ class ServerTestUtil(unittest.TestCase):
 		assert r==0, "version failed for %s, returned %s" % (display, r)
 		return server_proc
 
-	@classmethod
-	def stop_server(cls, server_proc, subcommand="stop", *connect_args):
+	def stop_server(self, server_proc, subcommand="stop", *connect_args):
 		if server_proc.poll() is not None:
 			return
 		cmd = [subcommand]+list(connect_args)
-		stopit = cls.run_xpra(cmd)
+		stopit = self.run_xpra(cmd)
 		assert pollwait(stopit, STOP_WAIT_TIMEOUT) is not None, "%s command failed to exit" % subcommand
 		assert pollwait(server_proc, STOP_WAIT_TIMEOUT) is not None, "server process %s failed to exit" % server_proc
 
-	@classmethod
-	def check_stop_server(cls, server_proc, subcommand="stop", display=":99999"):
-		cls.stop_server(server_proc, subcommand, display)
+	def check_stop_server(self, server_proc, subcommand="stop", display=":99999"):
+		self.stop_server(server_proc, subcommand, display)
 		if display:
-			assert display not in cls.dotxpra.displays(), "server socket for display %s should have been removed" % display
+			assert display not in self.dotxpra.displays(), "server socket for display %s should have been removed" % display
