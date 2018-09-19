@@ -933,6 +933,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/gtk2/constants.pxi",
                    "xpra/x11/gtk2/gdk_bindings.c",
                    "xpra/x11/gtk2/gdk_display_source.c",
+                   "xpra/x11/gtk3/constants.pxi",
                    "xpra/x11/gtk3/gdk_bindings.c",
                    "xpra/x11/gtk3/gdk_display_source.c",
                    "xpra/x11/bindings/constants.pxi",
