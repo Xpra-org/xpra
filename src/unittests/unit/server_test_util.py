@@ -196,11 +196,10 @@ class ServerTestUtil(unittest.TestCase):
 		return ":%i" % cls.find_free_display_no()
 
 
-	@classmethod
-	def start_Xvfb(cls, display=None, screens=[(1024,768)]):
+	def start_Xvfb(self, display=None, screens=[(1024,768)]):
 		assert POSIX
 		if display is None:
-			display = cls.find_free_display()
+			display = self.find_free_display()
 		with OSEnvContext():
 			XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
 			for x in list(os.environ.keys()):
@@ -218,7 +217,7 @@ class ServerTestUtil(unittest.TestCase):
 					(w, h) = screen
 					cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
 			else:
-				xvfb_cmd = cls.default_config.get("xvfb")
+				xvfb_cmd = self.default_config.get("xvfb")
 				assert xvfb_cmd, "no 'xvfb' command in default config"
 				import shlex
 				cmd = shlex.split(osexpand(xvfb_cmd))
@@ -237,11 +236,11 @@ class ServerTestUtil(unittest.TestCase):
 				stdout = sys.stdout
 				stderr = sys.stderr
 			else:
-				stdout = cls._temp_file(prefix="Xorg-stdout-")
+				stdout = self._temp_file(prefix="Xorg-stdout-")
 				log("stdout=%s for %s", stdout.name, cmd)
-				stderr = cls._temp_file(prefix="Xorg-stderr-")
+				stderr = self._temp_file(prefix="Xorg-stderr-")
 				log("stderr=%s for %s", stderr.name, cmd)
-			xvfb = cls.run_command(cmd_expanded, stdout=stdout, stderr=stderr)
+			xvfb = self.run_command(cmd_expanded, stdout=stdout, stderr=stderr)
 			time.sleep(1)
 			log("xvfb(%s)=%s" % (cmdstr, xvfb))
 			assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll())
