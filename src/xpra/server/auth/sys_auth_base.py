@@ -196,7 +196,7 @@ class SysAuthenticator(SysAuthenticatorBase):
             import pwd
             self.pw = pwd.getpwnam(username)
         except Exception:
-            log("cannot load password database entry for '%s': %s", username, exc_info=True)
+            log("cannot load password database entry for '%s'", username, exc_info=True)
             self.pw = None
 
     def get_uid(self):
