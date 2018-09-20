@@ -160,7 +160,7 @@ def main(argv):
         print("usage:")
         print(" %s databasefile create" % sys.argv[0])
         print(" %s databasefile list" % sys.argv[0])
-        print(" %s databasefile add username password [uid, gid, displays, env_options, session_options" % sys.argv[0])
+        print(" %s databasefile add username password [uid, gid, displays, env_options, session_options]" % sys.argv[0])
         print(" %s databasefile remove username [password]" % sys.argv[0])
         print(" %s databasefile authenticate username password" % sys.argv[0])
         return 1
