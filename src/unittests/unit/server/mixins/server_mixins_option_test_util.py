@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import time
 from collections import OrderedDict
 
 from xpra.util import envbool
@@ -154,7 +153,8 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             else:
                 self.stop_server(server, "stop", *connect_args)
             if display:
-                assert display not in self.dotxpra.displays(), "server socket for display %s should have been removed" % display
+                if display in self.dotxpra.displays():
+                    log.warn("server socket for display %s should have been removed", display)
 
             if gui_client:
                 r = pollwait(gui_client, 5)
