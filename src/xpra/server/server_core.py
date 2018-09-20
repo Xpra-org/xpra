@@ -1003,7 +1003,7 @@ class ServerCore(object):
     def make_protocol(self, socktype, conn):
         def xpra_protocol_class(conn):
             protocol = Protocol(self, conn, self.process_packet)
-            protocol.large_packets.append("info-response")
+            protocol.large_packets.append(b"info-response")
             protocol.receive_aliases.update(self._aliases)
             return protocol
         return self.do_make_protocol(socktype, conn, xpra_protocol_class)
@@ -1886,7 +1886,7 @@ class ServerCore(object):
             def udp_protocol_class(conn):
                 protocol = UDPServerProtocol(self, conn, self.process_packet)
                 protocol.uuid = uuid
-                protocol.large_packets.append("info-response")
+                protocol.large_packets.append(b"info-response")
                 protocol.receive_aliases.update(self._aliases)
                 return protocol
             socktype = "udp"

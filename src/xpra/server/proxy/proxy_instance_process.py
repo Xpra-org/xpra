@@ -251,16 +251,12 @@ class ProxyInstanceProcess(Process):
         self.client_protocol.restore_state(self.client_state)
         self.server_protocol = Protocol(self, self.server_conn, self.process_server_packet, self.get_server_packet)
         #server connection tweaks:
-        self.server_protocol.large_packets.append("input-devices")
-        self.server_protocol.large_packets.append("draw")
-        self.server_protocol.large_packets.append("window-icon")
-        self.server_protocol.large_packets.append("keymap-changed")
-        self.server_protocol.large_packets.append("server-settings")
+        for x in (b"input-devices", b"draw", b"window-icon", b"keymap-changed", b"server-settings"):
+            self.server_protocol.large_packets.append(x)
         if self.caps.boolget("file-transfer"):
-            self.client_protocol.large_packets.append("send-file")
-            self.client_protocol.large_packets.append("send-file-chunk")
-            self.server_protocol.large_packets.append("send-file")
-            self.server_protocol.large_packets.append("send-file-chunk")
+            for x in (b"send-file", b"send-file-chunk", b"send-file", b"send-file-chunk"):
+                self.server_protocol.large_packets.append(x)
+                self.client_protocol.large_packets.append(x)
         self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
         self.server_protocol.enable_default_encoder()
 
@@ -381,7 +377,7 @@ class ProxyInstanceProcess(Process):
         sc = SocketConnection(sock, sockname, address, target, "unix-domain")
         log.info("New proxy instance control connection received: %s", sc)
         protocol = Protocol(self, sc, self.process_control_packet)
-        protocol.large_packets.append("info-response")
+        protocol.large_packets.append(b"info-response")
         self.potential_protocols.append(protocol)
         protocol.enable_default_encoder()
         protocol.start()
@@ -487,7 +483,7 @@ class ProxyInstanceProcess(Process):
         return d
 
     def filter_client_caps(self, caps):
-        fc = self.filter_caps(caps, ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib"))
+        fc = self.filter_caps(caps, (b"cipher", b"challenge", b"digest", b"aliases", b"compression", b"lz4", b"lz0", b"zlib"))
         #update with options provided via config if any:
         fc.update(self.sanitize_session_options(self.session_options))
         #add video proxies if any:
@@ -498,7 +494,7 @@ class ProxyInstanceProcess(Process):
 
     def filter_server_caps(self, caps):
         self.server_protocol.enable_encoder_from_caps(caps)
-        return self.filter_caps(caps, ("aliases", ))
+        return self.filter_caps(caps, (b"aliases", ))
 
     def filter_caps(self, caps, prefixes):
         #removes caps that the proxy overrides / does not use:
@@ -551,8 +547,9 @@ class ProxyInstanceProcess(Process):
             sleep(0.1)
         log.info("proxy instance %s stopped", os.getpid())
 
-    def stop(self, reason="proxy terminating", skip_proto=None):
-        log.info("stop(%s, %s)", reason, skip_proto)
+    def stop(self, reason="terminating", skip_proto=None):
+        log("stop(%s, %s)", reason, skip_proto)
+        log.info("stopping proxy instance: %s", reason)
         self.exit = True
         try:
             self.control_socket.close()
@@ -647,13 +644,13 @@ class ProxyInstanceProcess(Process):
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop("server connection lost", proto)
             return
-        elif packet_type=="disconnect":
+        elif packet_type==b"disconnect":
             log("got disconnect from server: %s", packet[1])
             if self.exit:
                 self.server_protocol.close()
             else:
                 self.stop("disconnect from server: %s" % packet[1])
-        elif packet_type=="hello":
+        elif packet_type==b"hello":
             c = typedict(packet[1])
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
             caps = self.filter_server_caps(c)
@@ -672,27 +669,27 @@ class ProxyInstanceProcess(Process):
             self.client_protocol.max_packet_size = max(self.client_protocol.max_packet_size, file_max_packet_size)
             self.server_protocol.max_packet_size = max(self.server_protocol.max_packet_size, file_max_packet_size)
             packet = ("hello", caps)
-        elif packet_type=="info-response":
+        elif packet_type==b"info-response":
             #adds proxy info:
             #note: this is only seen by the client application
             #"xpra info" is a new connection, which talks to the proxy server...
             info = packet[1]
             info.update(self.get_proxy_info(proto))
-        elif packet_type=="lost-window":
+        elif packet_type==b"lost-window":
             wid = packet[1]
             #mark it as lost so we can drop any current/pending frames
             self.lost_windows.add(wid)
             #queue it so it gets cleaned safely (for video encoders mostly):
             self.encode_queue.put(packet)
             #and fall through so tell the client immediately
-        elif packet_type=="draw":
+        elif packet_type==b"draw":
             #use encoder thread:
             self.encode_queue.put(packet)
             #which will queue the packet itself when done:
             return
         #we do want to reformat cursor packets...
         #as they will have been uncompressed by the network layer already:
-        elif packet_type=="cursor":
+        elif packet_type==b"cursor":
             #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:
             #packet = ["cursor", "png", x, y, width, height, xhot, yhot, serial, pixels, name]
@@ -705,15 +702,15 @@ class ProxyInstanceProcess(Process):
                     self._packet_recompress(packet, 8, "cursor")
                 except:
                     self._packet_recompress(packet, 9, "cursor")
-        elif packet_type=="window-icon":
+        elif packet_type==b"window-icon":
             self._packet_recompress(packet, 5, "icon")
-        elif packet_type=="send-file":
+        elif packet_type==b"send-file":
             if packet[6]:
                 packet[6] = Compressed("file-data", packet[6])
-        elif packet_type=="send-file-chunk":
+        elif packet_type==b"send-file-chunk":
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
-        elif packet_type=="challenge":
+        elif packet_type==b"challenge":
             password = self.session_options.get("password")
             if not password:
                 self.stop("authentication requested by the server, but no password available for this session")
@@ -760,7 +757,7 @@ class ProxyInstanceProcess(Process):
                 return
             try:
                 packet_type = packet[0]
-                if packet_type=="lost-window":
+                if packet_type==b"lost-window":
                     wid = packet[1]
                     self.lost_windows.remove(wid)
                     ve = self.video_encoders.get(wid)
@@ -768,12 +765,12 @@ class ProxyInstanceProcess(Process):
                         del self.video_encoders[wid]
                         del self.video_encoders_last_used_time[wid]
                         ve.clean()
-                elif packet_type=="draw":
+                elif packet_type==b"draw":
                     #modify the packet with the video encoder:
                     if self.process_draw(packet):
                         #then send it as normal:
                         self.queue_client_packet(packet)
-                elif packet_type=="check-video-timeout":
+                elif packet_type==b"check-video-timeout":
                     #not a real packet, this is added by the timeout check:
                     wid = packet[1]
                     ve = self.video_encoders.get(wid)
@@ -795,12 +792,13 @@ class ProxyInstanceProcess(Process):
     def process_draw(self, packet):
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
         #never modify mmap packets
-        if encoding in ("mmap", "scroll"):
+        if encoding in (b"mmap", b"scroll"):
             return True
 
+        client_options = typedict(client_options)
         #we have a proxy video packet:
-        rgb_format = client_options.get("rgb_format", "")
-        enclog("proxy draw: client_options=%s", client_options)
+        rgb_format = client_options.strget("rgb_format", "")
+        enclog("proxy draw: encoding=%s, client_options=%s", encoding, client_options)
 
         def send_updated(encoding, compressed_data, updated_client_options):
             #update the packet with actual encoding data used:
@@ -811,7 +809,7 @@ class ProxyInstanceProcess(Process):
             return (wid not in self.lost_windows)
 
         def passthrough(strip_alpha=True):
-            enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)", rgb_format, rowstride, client_options.get("rowstride", 0), strip_alpha)
+            enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)", rgb_format, rowstride, client_options.intget("rowstride", 0), strip_alpha)
             if strip_alpha:
                 #passthrough as plain RGB:
                 Xindex = rgb_format.upper().find("X")
@@ -820,7 +818,7 @@ class ProxyInstanceProcess(Process):
                     newdata = bytearray(pixels)
                     for i in range(len(pixels)/4):
                         newdata[i*4+Xindex] = chr(255)
-                    packet[9] = client_options.get("rowstride", 0)
+                    packet[9] = client_options.intget("rowstride", 0)
                     cdata = bytes(newdata)
                 else:
                     cdata = pixels
@@ -834,7 +832,7 @@ class ProxyInstanceProcess(Process):
             #(we may have to convert to rgb24..)
             return send_updated("rgb32", wrapped, new_client_options)
 
-        proxy_video = client_options.get("proxy", False)
+        proxy_video = client_options.boolget("proxy", False)
         if PASSTHROUGH and (encoding in ("rgb32", "rgb24") or proxy_video):
             #we are dealing with rgb data, so we can pass it through:
             return passthrough(proxy_video)
@@ -862,19 +860,19 @@ class ProxyInstanceProcess(Process):
                 ve.clean()
                 ve = None
         #scaling and depth are proxy-encoder attributes:
-        scaling = client_options.get("scaling", (1, 1))
-        depth   = client_options.get("depth", 24)
-        rowstride = client_options.get("rowstride", rowstride)
-        quality = client_options.get("quality", -1)
-        speed   = client_options.get("speed", -1)
-        timestamp = client_options.get("timestamp")
+        scaling = client_options.intlistget("scaling", (1, 1))
+        depth   = client_options.intget("depth", 24)
+        rowstride = client_options.intget("rowstride", rowstride)
+        quality = client_options.intget("quality", -1)
+        speed   = client_options.intget("speed", -1)
+        timestamp = client_options.intget("timestamp")
 
         image = ImageWrapper(x, y, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
         if timestamp is not None:
             image.set_timestamp(timestamp)
 
         #the encoder options are passed through:
-        encoder_options = client_options.get("options", {})
+        encoder_options = client_options.dictget("options", {})
         if not ve:
             #make a new video encoder:
             spec = self._find_video_encoder(encoding, rgb_format)
@@ -893,7 +891,7 @@ class ProxyInstanceProcess(Process):
             enclog("creating new video encoder %s for window %s", spec, wid)
             ve = spec.make_instance()
             #dst_formats is specified with first frame only:
-            dst_formats = client_options.get("dst_formats")
+            dst_formats = client_options.strlistget("dst_formats")
             if dst_formats is not None:
                 #save it in case we timeout the video encoder,
                 #so we can instantiate it again, even from a frame no>1
