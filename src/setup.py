@@ -2047,7 +2047,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
                 break
     else:
         nvcc_exe = "nvcc"
-        for v in ("", "9.2", "9.1", "-9.0", "-8.0", "-7.5"):
+        for v in ("", "10.0", "9.2", "9.1", "-9.0", "-8.0", "-7.5"):
             path_options += ["/usr/local/cuda%s/bin" % v, "/opt/cuda%s/bin" % v]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     def which(cmd):
@@ -2078,7 +2078,8 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
                 version = "0"
                 version_str = " unknown version!"
             print("found CUDA compiler: %s%s" % (filename, version_str))
-            nvcc_versions[version] = filename
+            vnum = tuple(int(x) for x in version.split("."))
+            nvcc_versions[vnum] = filename
     assert nvcc_versions, "cannot find nvcc compiler!"
     #choose the most recent one:
     version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
@@ -2130,19 +2131,21 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
             cmd += ["-I%s" % os.path.abspath("win32")]
         comp_code_options = [(30, 30), (35, 35)]
         #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
-        if version!="0" and version<"7.5":
+        if version!=(0,) and version<(7, 5):
             print("CUDA version %s is very unlikely to work")
             print("try upgrading to version 7.5 or later")
-        if version>="7.5":
+        if version>=(7, 5):
             comp_code_options.append((50, 50))
             comp_code_options.append((52, 52))
             comp_code_options.append((53, 53))
-        if version>="8.0":
+        if version>=(8, 0):
             comp_code_options.append((60, 60))
             comp_code_options.append((61, 61))
             comp_code_options.append((62, 62))
-        if version>="9.0":
+        if version>=(9, 0):
             comp_code_options.append((70, 70))
+        if version>=(10, 0):
+            comp_code_options.append((75, 75))
         for arch, code in comp_code_options:
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
         print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
