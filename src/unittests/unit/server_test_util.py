@@ -151,6 +151,7 @@ class ServerTestUtil(unittest.TestCase):
 				log("stderr: %s for %s", stderr_file.name, strcommand)
 		try:
 			proc = subprocess.Popen(args=command, **kwargs)
+			proc.command = command
 			proc.stdout_file = stdout_file
 			proc.stderr_file = stderr_file
 		except OSError as e:
@@ -158,6 +159,20 @@ class ServerTestUtil(unittest.TestCase):
 			raise
 		self.processes.append(proc)
 		return proc
+
+	def show_proc_error(self, proc, msg):
+		log.warn("%s failed:", proc.command)
+		def showfile(fileobj, filetype="stdout"):
+			if fileobj and fileobj.name and os.path.exists(fileobj.name):
+				log.warn("contents of %s file '%s'", filetype, fileobj.name)
+				with open(fileobj.name, 'rb') as f:
+					for line in f:
+						log.warn(" %s", line.rstrip(b"\n\r"))
+			else:
+				log.warn("no %s file", filetype)
+		showfile(proc.stdout_file, "stdout")
+		showfile(proc.stderr_file, "stderr")
+		raise Exception(msg+" command=%s" % proc.command)
 
 
 	def get_command_output(self, command, env=None, **kwargs):
@@ -258,7 +273,8 @@ class ServerTestUtil(unittest.TestCase):
 		xvfb = self.run_command(cmd_expanded, stdout=stdout, stderr=stderr)
 		time.sleep(1)
 		log("xvfb(%s)=%s" % (cmdstr, xvfb))
-		assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll())
+		if pollwait(xvfb, XVFB_TIMEOUT) is not None:
+			self.show_proc_error(xvfb, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll()))
 		return xvfb
 
 
@@ -279,7 +295,8 @@ class ServerTestUtil(unittest.TestCase):
 			cmd += ["--no-daemon"]
 		cmd += list(args)
 		server_proc = self.run_xpra(cmd)
-		assert pollwait(server_proc, SERVER_TIMEOUT) is None, "server failed to start with '%s', returned %s" % (cmd, server_proc.poll())
+		if pollwait(server_proc, SERVER_TIMEOUT) is not None:
+			self.show_proc_error(server_proc, "server failed to start")
 		if display:
 			#wait until the socket shows up:
 			for _ in range(20):
@@ -287,7 +304,8 @@ class ServerTestUtil(unittest.TestCase):
 				if display in live:
 					break
 				time.sleep(1)
-			assert server_proc.poll() is None, "server '%s' terminated and returned %s" % (cmd, server_proc.poll())
+			if server_proc.poll() is not None:
+				self.show_proc_error(server_proc, "server terminated")
 			assert display in live, "server display '%s' not found in live displays %s" % (display, live)
 			#then wait a little before using it:
 			time.sleep(1)
@@ -308,7 +326,8 @@ class ServerTestUtil(unittest.TestCase):
 					continue
 				break
 			time.sleep(1)
-		assert r==0, "version failed for %s, returned %s" % (display, r)
+		if r!=0:
+			self.show_proc_error(version, "version check failed for %s, returned %s" % (display, r))
 		return server_proc
 
 	def stop_server(self, server_proc, subcommand="stop", *connect_args):
@@ -316,7 +335,8 @@ class ServerTestUtil(unittest.TestCase):
 			return
 		cmd = [subcommand]+list(connect_args)
 		stopit = self.run_xpra(cmd)
-		assert pollwait(stopit, STOP_WAIT_TIMEOUT) is not None, "%s command failed to exit" % subcommand
+		if pollwait(stopit, STOP_WAIT_TIMEOUT) is None:
+			self.show_proc_error(stopit, "stop server error")
 		assert pollwait(server_proc, STOP_WAIT_TIMEOUT) is not None, "server process %s failed to exit" % server_proc
 
 	def check_stop_server(self, server_proc, subcommand="stop", display=":99999"):
