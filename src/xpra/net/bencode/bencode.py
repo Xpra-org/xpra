@@ -9,7 +9,7 @@
 
 # Original version written by Petru Paler
 
-__version__ = ("Python", 0, 11)
+__version__ = (b"Python", 0, 12)
 
 import sys
 if sys.version_info[0] >= 3:

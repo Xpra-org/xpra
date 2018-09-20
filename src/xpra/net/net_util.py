@@ -462,20 +462,22 @@ def main():
                 if info:
                     print("  %s" % info)
 
+        from xpra.os_util import bytestostr
         def pver(v):
-            if type(v) in (tuple, list):
+            if isinstance(v, (tuple, list)):
                 s = ""
-                for i in range(len(v)):
-                    if i>0:
+                lastx = None
+                for x in v:
+                    if lastx is not None:
                         #dot seperated numbers
-                        if type(v[i-1])==int:
+                        if isinstance(lastx, int):
                             s += "."
                         else:
                             s += ", "
-                    s += str(v[i])
+                    s += bytestostr(x)
+                    lastx = x
                 return s
             if type(v)==bytes:
-                from xpra.os_util import bytestostr
                 v = bytestostr(v)
             if type(v)==str and v.startswith("v"):
                 return v[1:]
@@ -499,7 +501,7 @@ def main():
         if netifaces_version:
             netif["version"] = netifaces_version
         netcaps["netifaces"] = netif
-        print_nested_dict(netcaps)
+        print_nested_dict(netcaps, vformat=pver)
 
         print("")
         print("Network Config:")

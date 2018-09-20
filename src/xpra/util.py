@@ -765,7 +765,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
                         pass
             else:
                 sprint("%s%s %s" % (prefix, lchar, k))
-            print_nested_dict(v, prefix+"  ", "-", print_fn=print_fn, version_keys=version_keys, hex_keys=hex_keys)
+            print_nested_dict(v, prefix+"  ", "-", vformat=vformat, print_fn=print_fn, version_keys=version_keys, hex_keys=hex_keys)
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, str(k).ljust(l), vf(k, v)))
 

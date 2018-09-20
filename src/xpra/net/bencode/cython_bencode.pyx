@@ -13,7 +13,7 @@
 from __future__ import absolute_import
 
 
-__version__ = ("Cython", 0, 14)
+__version__ = (b"Cython", 0, 14)
 
 from xpra.buffers.membuf cimport object_as_buffer
 
