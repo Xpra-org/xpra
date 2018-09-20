@@ -95,8 +95,8 @@ class ServerTestUtil(unittest.TestCase):
 
 
 	@classmethod
-	def get_run_env(self):
-		env = dict((k,v) for k,v in os.environ.items() if
+	def get_run_env(cls):
+		env = dict((k,v) for k,v in cls.default_env.items() if
 				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "XAUTHORITY", "PWD", "PYTHONPATH", ))
 		return env
 
@@ -169,7 +169,7 @@ class ServerTestUtil(unittest.TestCase):
 		log.warn("%s failed:", proc.command)
 		def showfile(fileobj, filetype="stdout"):
 			if fileobj and fileobj.name and os.path.exists(fileobj.name):
-				log.warn("contents of %s file '%s'", filetype, fileobj.name)
+				log.warn("contents of %s file '%s':", filetype, fileobj.name)
 				with open(fileobj.name, 'rb') as f:
 					for line in f:
 						log.warn(" %s", line.rstrip(b"\n\r"))
