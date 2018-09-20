@@ -367,7 +367,7 @@ class ProxyServer(ServerCore):
                 client_conn.set_active(True)
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
                                                self.video_encoders, self.csc_modules,
-                                               client_conn, client_state, cipher, encryption_key, server_conn, c, message_queue)
+                                               client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())
                 self.processes[process] = (display, message_queue)
                 process.start()

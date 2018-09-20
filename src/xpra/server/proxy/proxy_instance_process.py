@@ -66,7 +66,7 @@ class ProxyInstanceProcess(Process):
 
     def __init__(self, uid, gid, env_options, session_options, socket_dir,
                  video_encoder_modules, csc_modules,
-                 client_conn, client_state, cipher, encryption_key, server_conn, caps, message_queue):
+                 client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps, message_queue):
         Process.__init__(self, name=str(client_conn))
         self.uid = uid
         self.gid = gid
@@ -76,6 +76,7 @@ class ProxyInstanceProcess(Process):
         self.video_encoder_modules = video_encoder_modules
         self.csc_modules = csc_modules
         self.client_conn = client_conn
+        self.disp_desc = disp_desc
         self.client_state = client_state
         self.cipher = cipher
         self.encryption_key = encryption_key
@@ -83,7 +84,7 @@ class ProxyInstanceProcess(Process):
         self.caps = caps
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
                                video_encoder_modules, csc_modules,
-                               client_conn, repr_ellipsized(str(client_state)), cipher, encryption_key, server_conn,
+                               client_conn, disp_desc, repr_ellipsized(str(client_state)), cipher, encryption_key, server_conn,
                                "%s: %s.." % (type(caps), repr_ellipsized(str(caps))), message_queue))
         self.client_protocol = None
         self.server_protocol = None
@@ -484,6 +485,10 @@ class ProxyInstanceProcess(Process):
 
     def filter_client_caps(self, caps):
         fc = self.filter_caps(caps, (b"cipher", b"challenge", b"digest", b"aliases", b"compression", b"lz4", b"lz0", b"zlib"))
+        #the display string may override the username:
+        username = self.disp_desc.get("username")
+        if username:
+            fc["username"] = username
         #update with options provided via config if any:
         fc.update(self.sanitize_session_options(self.session_options))
         #add video proxies if any:
@@ -711,7 +716,8 @@ class ProxyInstanceProcess(Process):
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
         elif packet_type==b"challenge":
-            password = self.session_options.get("password")
+            password = self.disp_desc.get("password", self.session_options.get("password"))
+            log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
             if not password:
                 self.stop("authentication requested by the server, but no password available for this session")
                 return
