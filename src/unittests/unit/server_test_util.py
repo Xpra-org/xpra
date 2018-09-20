@@ -38,7 +38,9 @@ class ServerTestUtil(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
 		from xpra.server.server_util import find_log_dir
-		os.environ["XAUTHORITY"] = os.path.expanduser("~/.Xauthority")
+		cls.xauthority_temp = tempfile.NamedTemporaryFile(prefix="xpra-test.", suffix=".xauth", delete=False)
+		cls.xauthority_temp.close()
+		os.environ["XAUTHORITY"] = os.path.expanduser(cls.xauthority_temp.name)
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
 		os.environ["XPRA_NOTTY"] = "1"
 		os.environ["XPRA_FLATTEN_INFO"] = "0"
@@ -72,6 +74,9 @@ class ServerTestUtil(unittest.TestCase):
 					proc.communicate(None)
 				except Exception:
 					log.error("failed to cleanup display '%s'", x, exc_info=True)
+		if cls.xauthority_temp:
+			os.unlink(cls.xauthority_temp.name)
+
 
 	def setUp(self):
 		os.environ.clear()
