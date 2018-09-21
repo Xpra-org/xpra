@@ -366,7 +366,8 @@ def get_CUDA_function(device_id, function_name):
         return None
     log("get_CUDA_function(%s, %s) module=%s", device_id, function_name, mod)
     try:
-        CUDA_function = mod.get_function(function_name)
+        fn = function_name.encode()
+        CUDA_function = mod.get_function(fn)
     except driver.LogicError as e:
         raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e))
     end = monotonic_time()
