@@ -184,7 +184,7 @@ class WindowServer(StubServerMixin):
         if ss:
             ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
 
-    def _damage(self, window, x, y, width, height, options=None):
+    def _damage(self, window, x, y, width, height, options={}):
         wid = self._window_to_id[window]
         for ss in tuple(self._server_sources.values()):
             ss.damage(wid, window, x, y, width, height, options)
