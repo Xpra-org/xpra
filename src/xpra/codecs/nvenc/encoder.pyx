@@ -16,7 +16,7 @@ from collections import deque, OrderedDict
 
 from pycuda import driver
 
-from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr
+from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr, strtobytes
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, get_device_info, get_device_name, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -1119,12 +1119,12 @@ cdef GUID c_parseguid(src) except *:
         else:
             #must be an hex number:
             c = src.upper()[i]
-            if c not in (u"0123456789ABCDEF"):
+            if c not in ("0123456789ABCDEF"):
                 raise Exception("invalid GUID format: character at position %s is not in hex: %s" % (i, c))
     parts = src.split("-")    #ie: ["CE788D20", "AAA9", ...]
     nparts = []
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
-        b = atob(array.array('B', binascii.unhexlify(parts[i])))
+        b = atob(array.array('B', binascii.unhexlify(strtobytes(parts[i]))))
         v = 0
         for j in range(s):
             c = b[j]
