@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,7 +16,7 @@ import pycuda
 from pycuda import driver
 
 from xpra.util import engs, print_nested_dict, envbool
-from xpra.os_util import monotonic_time, bytestostr
+from xpra.os_util import monotonic_time, bytestostr, PYTHON2
 
 IGNORE_BLACKLIST = envbool("XPRA_CUDA_IGNORE_BLACKLIST", False)
 
@@ -366,7 +366,9 @@ def get_CUDA_function(device_id, function_name):
         return None
     log("get_CUDA_function(%s, %s) module=%s", device_id, function_name, mod)
     try:
-        fn = function_name.encode()
+        fn = function_name
+        if PYTHON2:
+            fn = function_name.encode()
         CUDA_function = mod.get_function(fn)
     except driver.LogicError as e:
         raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e))
