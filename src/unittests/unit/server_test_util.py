@@ -164,6 +164,8 @@ class ServerTestUtil(unittest.TestCase):
 		return proc
 
 	def show_proc_error(self, proc, msg):
+		if not proc:
+			raise Exception("command failed to start: %s" % msg)
 		log.warn("%s failed:", proc.command)
 		def showfile(fileobj, filetype="stdout"):
 			if fileobj and fileobj.name and os.path.exists(fileobj.name):
