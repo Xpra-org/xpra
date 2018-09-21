@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from xpra.os_util import pollwait, OSX, POSIX, PYTHON2
 from unit.server_test_util import ServerTestUtil, log
 
 
-class ProxyServerTest(ServerTestUtil):
+class X11ServerTest(ServerTestUtil):
 
 
 	def test_display_reuse(self):
@@ -19,13 +19,21 @@ class ProxyServerTest(ServerTestUtil):
 		server = self.check_start_server(display)
 		assert display in self.find_X11_displays()
 		#make sure we cannot start another server on the same display:
+		saved_spe = self.show_proc_error
+		def raise_exception_no_log(*args):
+			raise Exception("%s" % args)
+		#suspend process error logging:
+		self.show_proc_error = raise_exception_no_log
 		try:
-			log("should not be able to start another test server on %s", display)
-			self.check_start_server(display)
-		except:
-			pass
-		else:
-			raise Exception("server using the same display should have failed to start")
+			try:
+				log("should not be able to start another test server on %s", display)
+				self.check_start_server(display)
+			except:
+				pass
+			else:
+				raise Exception("server using the same display should have failed to start")
+		finally:
+			self.show_proc_error = saved_spe
 		assert server.poll() is None, "server should not have terminated"
 		#tell the server to exit and leave the display behind:
 		log("asking the server to exit")
