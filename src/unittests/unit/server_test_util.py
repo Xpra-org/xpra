@@ -94,9 +94,8 @@ class ServerTestUtil(unittest.TestCase):
 					pass
 
 
-	@classmethod
-	def get_run_env(cls):
-		env = dict((k,v) for k,v in cls.default_env.items() if
+	def get_run_env(self):
+		env = dict((k,v) for k,v in self.default_env.items() if
 				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "XAUTHORITY", "PWD", "PYTHONPATH", ))
 		return env
 
@@ -134,8 +133,7 @@ class ServerTestUtil(unittest.TestCase):
 	def run_command(self, command, env=None, **kwargs):
 		if env is None:
 			env = self.get_run_env()
-		if env is not None and not WIN32:
-			kwargs["env"] = env
+		kwargs["env"] = env
 		stdout_file = stderr_file = None
 		if isinstance(command, str):
 			strcommand = command

@@ -28,9 +28,7 @@ class ServerAuthTest(ServerTestUtil):
 		if password:
 			f = self._temp_file(password)
 			cmd += ["--password-file=%s" % f.name]
-		env = self.get_run_env()
-		env["XPRA_NOTTY"] = "1"
-		client = self.run_xpra(cmd, env=env)
+		client = self.run_xpra(cmd)
 		r = pollwait(client, 5)
 		if f:
 			f.close()
