@@ -131,16 +131,31 @@ def remove_user(filename, username, password=None):
     return exec_database_sql_script(None, filename, sql, sqlargs)
 
 def list_users(filename):
-    fields = ["username", "password", "uid", "gid", "displays", "env_options", "session_options"]
+    fields = ("username", "password", "uid", "gid", "displays", "env_options", "session_options")
+    def fmt(values, sizes):
+        s = ""
+        for i, field in enumerate(values):
+            if i==0:
+                s += "|"
+            s += ("%s" % field).rjust(sizes[i])+"|"
+        return s
     def cursor_callback(cursor):
         rows = cursor.fetchall()
         if len(rows)==0:
             print("no rows found")
             return
         print("%i rows found:" % len(rows))
-        print(csv(fields))
+        #calculate max size for each field:
+        sizes = [len(x)+1 for x in fields]
         for row in rows:
-            print(csv(row))
+            for i, value in enumerate(row):
+                sizes[i] = max(sizes[i], len(str(value))+1)
+        total = sum(sizes)+len(fields)+1
+        print("-"*total)
+        print(fmt(fields, sizes))
+        print("-"*total)
+        for row in rows:
+            print(fmt(row, sizes))
     sql = "SELECT %s FROM users" % csv(fields)
     return exec_database_sql_script(cursor_callback, filename, sql)
 
