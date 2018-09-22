@@ -150,7 +150,7 @@ def encode(image, int quality=50, int speed=50, options={}):
     client_options = {
         "quality"   : min(99, quality),
         }
-    return "jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, width, height, 0, 24
+    return b"jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, width, height, 0, 24
 
 
 def selftest(full=False):
