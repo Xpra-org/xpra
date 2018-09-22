@@ -547,7 +547,7 @@ class Protocol(object):
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif ti not in (str, bytes):
-                log.warn("unexpected data type %s in %s packet: %s", ti, packet[0], repr_ellipsized(item))
+                log.warn("Warning: unexpected data type %s in '%s' packet: %s", ti, packet[0], repr_ellipsized(item))
         #now the main packet (or what is left of it):
         packet_type = packet[0]
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
