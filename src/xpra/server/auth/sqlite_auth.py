@@ -25,7 +25,7 @@ class Authenticator(SysAuthenticator):
             filename = os.path.join(exec_cwd, filename)
         self.filename = filename
         self.password_query = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(?)")
-        self.sessions_query = kwargs.pop("sessions_query", "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(?)")
+        self.sessions_query = kwargs.pop("sessions_query", "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(?) AND password=(?)")
         SysAuthenticator.__init__(self, username, **kwargs)
         self.authenticate = self.authenticate_hmac
 
@@ -59,7 +59,7 @@ class Authenticator(SysAuthenticator):
             conn = sqlite3.connect(self.filename)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute(self.sessions_query, [self.username])
+            cursor.execute(self.sessions_query, [self.username, self.password_used or ""])
             data = cursor.fetchone()
         except sqlite3.DatabaseError as e:
             log("get_sessions()", exc_info=True)
@@ -152,7 +152,7 @@ def list_users(filename):
                 sizes[i] = max(sizes[i], len(str(value))+1)
         total = sum(sizes)+len(fields)+1
         print("-"*total)
-        print(fmt(fields, sizes))
+        print(fmt((field.replace("_", " ") for field in fields), sizes))
         print("-"*total)
         for row in rows:
             print(fmt(row, sizes))

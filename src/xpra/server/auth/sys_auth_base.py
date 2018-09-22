@@ -70,6 +70,7 @@ class SysAuthenticatorBase(object):
         self.prompt = kwargs.pop("prompt", "password")
         self.challenge_sent = False
         self.passed = False
+        self.password_used = None
         #warn about unused options:
         unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd"))
         if unused:
@@ -160,6 +161,7 @@ class SysAuthenticatorBase(object):
         log("found %i passwords using %s", len(passwords), type(self))
         for x in passwords:
             if verify_digest(self.digest, x, salt, challenge_response):
+                self.password_used = x
                 return True
         log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
         if len(passwords)>1:
