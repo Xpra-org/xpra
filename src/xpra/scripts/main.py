@@ -1434,7 +1434,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         if params.get("display") is not None:
             proxy_args.append(params["display"])
         for x in get_start_server_args(opts, compat=True):
-            proxy_args.append(shellquote(x))
+            proxy_args.append(x)
         #we have consumed the start[-child] options
         opts.start_child = []
         opts.start = []

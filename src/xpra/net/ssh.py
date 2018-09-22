@@ -13,7 +13,7 @@ from subprocess import PIPE, Popen
 from xpra.log import Logger
 log = Logger("network", "ssh")
 
-from xpra.scripts.main import InitException, InitExit
+from xpra.scripts.main import InitException, InitExit, shellquote
 from xpra.platform.paths import get_xpra_command, get_ssh_known_hosts_files
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
@@ -441,12 +441,13 @@ keymd5(host_key),
         chan.close()
         if r!=0:
             continue
-        cmd = xpra_cmd + " " + " ".join("\"%s\"" % x for x in proxy_command)
+        cmd = xpra_cmd + " " + " ".join(shellquote(x) for x in proxy_command)
         if socket_dir:
             cmd += " \"--socket-dir=%s\"" % socket_dir
         if display_as_args:
             cmd += " "
-            cmd += " ".join("\"%s\"" % x for x in display_as_args)
+            cmd += " ".join(shellquote(x) for x in display_as_args)
+        log("cmd(%s, %s)=%s", proxy_command, display_as_args, cmd)
 
         #see https://github.com/paramiko/paramiko/issues/175
         #WINDOW_SIZE = 2097152
@@ -517,7 +518,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 pc = ['%s which "%s" > /dev/null 2>&1; then' % (check, x)]
             else:
                 pc = ['%s [ -x %s ]; then' % (check, x)]
-            pc += [x] + proxy_command + display_as_args
+            pc += [x] + proxy_command + [shellquote(x) for x in display_as_args]
             if socket_dir:
                 pc.append("--socket-dir=%s" % socket_dir)
             remote_cmd += " ".join(pc)+";"
