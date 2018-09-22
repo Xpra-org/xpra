@@ -24,7 +24,7 @@ from xpra.net.protocol import Protocol
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, POSIX, osexpand, bytestostr, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
+from xpra.os_util import Queue, SIGNAMES, POSIX, osexpand, bytestostr, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid, strtobytes
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, first_time, AtomicInteger, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import XPRA_VERSION
@@ -631,7 +631,7 @@ class ProxyInstanceProcess(Process):
         if len(packet)>index:
             data = packet[index]
             if len(data)<512:
-                packet[index] = str(data)
+                packet[index] = strtobytes(data)
                 return
             #FIXME: this is ugly and not generic!
             zlib = compression.use_zlib and self.caps.boolget("zlib", True)
