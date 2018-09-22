@@ -35,7 +35,7 @@ from xpra.make_thread import start_thread
 PROXY_SOCKET_TIMEOUT = envfloat("XPRA_PROXY_SOCKET_TIMEOUT", "0.1")
 PROXY_WS_TIMEOUT = envfloat("XPRA_PROXY_WS_TIMEOUT", "1.0")
 assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
-CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", False)
+CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", getuid()!=0)
 
 
 MAX_CONCURRENT_CONNECTIONS = 200
@@ -172,6 +172,9 @@ class ProxyServer(ServerCore):
         if is_req("stop"):
             if not CAN_STOP_PROXY:
                 self.send_disconnect(proto, "cannot stop proxy server")
+                return
+            if not proto.authenticators:
+                self.send_disconnect(proto, "cannot stop proxy server from unauthenticated connections")
                 return
             self._requests.add(proto)
             #send a hello back and the client should then send its "shutdown-server" packet
