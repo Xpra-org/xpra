@@ -57,7 +57,7 @@ def load_content_type_file(ct_file):
             if line.startswith("#") or not (line.strip()):
                 continue
             parts = line.rsplit("=", 1)
-            #ie: "title:helloworld=text" -> "title:helloworld", "text"
+            #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
             if len(parts)!=2:
                 log.warn("Warning: invalid content-type definition")
                 log.warn(" found in '%s' at line %i", ct_file, l)
@@ -70,6 +70,9 @@ def load_content_type_file(ct_file):
                 log.warn("Warning: invalid content-type definition")
                 log.warn(" match string '%s' is missing a ':'", match)
                 continue
+            #ignore comments:
+            #"text    #some comments here" > "text"
+            content_type = content_type.split(":")[0].strip()
             prop_name, regex = parts
             try:
                 c = re.compile(regex)
