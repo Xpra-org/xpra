@@ -36,6 +36,7 @@ PROXY_SOCKET_TIMEOUT = envfloat("XPRA_PROXY_SOCKET_TIMEOUT", "0.1")
 PROXY_WS_TIMEOUT = envfloat("XPRA_PROXY_WS_TIMEOUT", "1.0")
 assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
 CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", getuid()!=0)
+STOP_PROXY_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_SOCKET_TYPES", "unix-domain,named-pipe").split(",")
 
 
 MAX_CONCURRENT_CONNECTIONS = 200
@@ -170,17 +171,29 @@ class ProxyServer(ServerCore):
             self.send_disconnect(proto, "invalid request")
             return
         if is_req("stop"):
+            #global kill switch:
             if not CAN_STOP_PROXY:
                 msg = "cannot stop proxy server"
                 log.warn("Warning: %s", msg)
                 self.send_disconnect(proto, msg)
                 return
+            #verify socket type (only local connections by default):
+            try:
+                socktype = proto._conn.get_info().get("type")
+            except:
+                socktype = "unknown"
+            if socktype not in STOP_PROXY_SOCKET_TYPES:
+                msg = "cannot stop proxy server from a '%s' connection" % socktype
+                log.warn("Warning: %s", msg)
+                log.warn(" only from: %s", csv(STOP_PROXY_SOCKET_TYPES))
+                self.send_disconnect(proto, msg)
+                return
+            #connection must be authenticated:
             if not proto.authenticators:
                 msg = "cannot stop proxy server from unauthenticated connections"
                 log.warn("Warning: %s", msg)
                 self.send_disconnect(proto, msg)
                 return
-            log.info("proto.conn=%s", proto._conn)
             self._requests.add(proto)
             #send a hello back and the client should then send its "shutdown-server" packet
             capabilities = self.make_hello()
