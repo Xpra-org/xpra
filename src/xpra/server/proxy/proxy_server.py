@@ -171,11 +171,16 @@ class ProxyServer(ServerCore):
             return
         if is_req("stop"):
             if not CAN_STOP_PROXY:
-                self.send_disconnect(proto, "cannot stop proxy server")
+                msg = "cannot stop proxy server"
+                log.warn("Warning: %s", msg)
+                self.send_disconnect(proto, msg)
                 return
             if not proto.authenticators:
-                self.send_disconnect(proto, "cannot stop proxy server from unauthenticated connections")
+                msg = "cannot stop proxy server from unauthenticated connections"
+                log.warn("Warning: %s", msg)
+                self.send_disconnect(proto, msg)
                 return
+            log.info("proto.conn=%s", proto._conn)
             self._requests.add(proto)
             #send a hello back and the client should then send its "shutdown-server" packet
             capabilities = self.make_hello()

@@ -1270,7 +1270,7 @@ class ServerCore(object):
         self.cancel_verify_connection_accepted(protocol)
         if self.is_timedout(protocol):
             info = getattr(protocol, "_conn", protocol)
-            log.error("connection timedout: %s", info)
+            log.error("Error: connection timed out: %s", info)
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def cancel_verify_connection_accepted(self, protocol):
