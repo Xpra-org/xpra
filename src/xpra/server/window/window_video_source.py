@@ -627,10 +627,13 @@ class WindowVideoSource(WindowSource):
         return vr
 
     def subregion_is_video(self):
-        vr = self.video_subregion.rectangle
+        vs = self.video_subregion
+        if not vs:
+            return False
+        vr = vs.rectangle
         if not vr:
             return False
-        events_count = self.statistics.damage_events_count - self.video_subregion.set_at
+        events_count = self.statistics.damage_events_count - vs.set_at
         min_video_events = MIN_VIDEO_EVENTS
         min_video_fps = MIN_VIDEO_FPS
         if self.content_type=="video":
@@ -638,7 +641,7 @@ class WindowVideoSource(WindowSource):
             min_video_fps //= 2
         if events_count<min_video_events:
             return False
-        if self.video_subregion.fps<min_video_fps:
+        if vs.fps<min_video_fps:
             return False
         return True
 
@@ -945,6 +948,8 @@ class WindowVideoSource(WindowSource):
         avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i, actual=%i, for wid=%i)", first_due, still_due, self.av_sync_delay, av_delay, self.wid)
         self.idle_add(self.schedule_encode_from_queue, first_due)
 
+    def _more_lossless(self):
+        return self.subregion_is_video()
 
     def update_encoding_options(self, force_reload=False):
         """
@@ -975,10 +980,6 @@ class WindowVideoSource(WindowSource):
                 if newrect is None or old is None or newrect!=old:
                     self.cleanup_codecs()
                 if newrect:
-                    #when we have a video region, lower the lossless threshold
-                    #especially for small regions
-                    self._lossless_threshold_base = min(80, 10+self._current_speed//5)
-                    self._lossless_threshold_pixel_boost = 90-self._current_speed//5
                     #remove this from regular refresh:
                     if old is None or old!=newrect:
                         refreshlog("identified new video region: %s", newrect)

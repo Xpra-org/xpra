@@ -700,9 +700,13 @@ class WindowSource(WindowIconSource):
         self.update_encoding_options()
         self.update_refresh_attributes()
 
+    def _more_lossless(self):
+        return False
+
     def update_encoding_options(self, force_reload=False):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
-        self._lossless_threshold_base = min(90, 60+self._current_speed//5)
+        ml = self._more_lossless()
+        self._lossless_threshold_base = min(90-10*ml, 60-ml*20+self._current_speed//5)
         if self.content_type=="text" or self.is_shadow:
             self._lossless_threshold_base -= 20
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
