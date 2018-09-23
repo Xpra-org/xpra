@@ -703,7 +703,7 @@ class WindowSource(WindowIconSource):
     def update_encoding_options(self, force_reload=False):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         self._lossless_threshold_base = min(90, 60+self._current_speed//5)
-        if self.content_type=="text":
+        if self.content_type=="text" or self.is_shadow:
             self._lossless_threshold_base -= 20
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         #calculate the threshold for using rgb
@@ -1064,7 +1064,8 @@ class WindowSource(WindowIconSource):
         self.do_set_auto_refresh_delay(min_delay, delay)
         rs = AUTO_REFRESH_SPEED
         rq = AUTO_REFRESH_QUALITY
-        if self._current_quality<70 and (cv>0.1 or (bwl>0 and bwl<=1000*1000)):
+        bits_per_pixel = float(bwl)/(1+ww*wh)
+        if self._current_quality<70 and (cv>0.1 or (bwl>0 and bits_per_pixel<1)):
             #when bandwidth is scarce, don't use lossless refresh,
             #switch to almost-lossless:
             rs = AUTO_REFRESH_SPEED//2
@@ -1609,9 +1610,7 @@ class WindowSource(WindowIconSource):
         encoding = packet[6]
         region = rectangle(*packet[2:6])    #x,y,w,h
         client_options = packet[10]     #info about this packet from the encoder
-        if encoding.startswith("png") or encoding.startswith("rgb"):
-            #FIXME: maybe we've sent png for 30bit image,
-            #in which case png is not actually lossless?
+        if (encoding.startswith("png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith("rgb"):
             actual_quality = 100
             lossy = False
         else:
