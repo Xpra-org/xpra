@@ -95,7 +95,7 @@ class TrayClient(StubClientMixin):
             log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
             if button==1 and pressed:
                 self.idle_add(self.menu_helper.activate, button, time)
-            elif button==3 and not pressed:
+            elif button in (2, 3) and not pressed:
                 self.idle_add(self.menu_helper.popup, button, time)
         def xpra_tray_mouseover(*args):
             log("xpra_tray_mouseover%s", args)
