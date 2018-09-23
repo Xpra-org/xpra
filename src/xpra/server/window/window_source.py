@@ -63,7 +63,7 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 from xpra.server.window.windowicon_source import WindowIconSource
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_config import DamageBatchConfig
@@ -1611,10 +1611,10 @@ class WindowSource(WindowIconSource):
         if not self.can_refresh():
             self.cancel_refresh_timer()
             return
-        encoding = packet[6]
+        encoding = strtobytes(packet[6])
         region = rectangle(*packet[2:6])    #x,y,w,h
         client_options = packet[10]     #info about this packet from the encoder
-        if (encoding.startswith("png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith("rgb"):
+        if (encoding.startswith(b"png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith(b"rgb"):
             actual_quality = 100
             lossy = False
         else:
