@@ -9,6 +9,7 @@ import time
 import operator
 import threading
 from math import sqrt
+from collections import OrderedDict
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -1281,7 +1282,6 @@ class WindowVideoSource(WindowSource):
                 if q>=q_noscaling or ffps==0:
                     scaling = get_min_required_scaling()
                 else:
-                    sscaling = {}
                     pps = ffps*width*height                 #Pixels/s
                     if self.bandwidth_limit>0:
                         #assume video compresses pixel data by ~95% (size is 20 times smaller)
@@ -1303,6 +1303,7 @@ class WindowVideoSource(WindowSource):
                     target = target * (10+q)**2 // 50**2
                     #high speed means more scaling:
                     target = target * 60**2 // (q+20)**2
+                    sscaling = OrderedDict()
                     for num, denom in (
                         (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1),
                         ):
