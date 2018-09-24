@@ -1283,20 +1283,22 @@ class WindowVideoSource(WindowSource):
                 else:
                     sscaling = {}
                     pps = ffps*width*height                 #Pixels/s
-                    target = self.bandwidth_limit//24*10    #assume 24 bits per pixel, compressed by 90%
-                    if target==0:
-                        target = SCALING_PPS_TARGET             #ie: 1080p
+                    if self.bandwidth_limit>0:
+                        #assume video compresses pixel data by ~95% (size is 20 times smaller)
+                        #(and convert to bytes per second)
+                        #ie: 240p minimum target
+                        target = max(SCALING_MIN_PPS, self.bandwidth_limit//8*20)
                     else:
-                        target = max(SCALING_MIN_PPS, target)   #ie: 240p minimum target
+                        target = SCALING_PPS_TARGET             #ie: 1080p
                     if self.is_shadow:
                         #shadow servers look ugly when scaled:
                         target *= 2
                     elif self.content_type=="text":
                         #try to avoid scaling:
                         target *= 4
-                    elif video:
-                        #we can downscale video content more:
-                        target //= 2
+                    elif not video:
+                        #downscale non-video content less:
+                        target *= 2
                     #high quality means less scaling:
                     target = target * (10+q)**2 // 50**2
                     #high speed means more scaling:
@@ -1305,7 +1307,7 @@ class WindowVideoSource(WindowSource):
                         (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1),
                         ):
                         #scaled pixels per second value:
-                        spps = pps*num/denom
+                        spps = pps*(num**2)/(denom**2)
                         ratio = float(target)/spps
                         #ideal ratio is 1, measure distance from 1:
                         score = int(abs(1-ratio)*100)
@@ -1315,7 +1317,7 @@ class WindowVideoSource(WindowSource):
                             #give it a score boost (lowest score wins):
                             score = int(score/1.5)
                         sscaling[score] = (num, denom)
-                    scalinglog("calculate_scaling%s wid=%i, pps=%s, target=%s, scores=%s", (width, height, max_w, max_h), self.wid, pps, target, sscaling)
+                    scalinglog.info("calculate_scaling%s wid=%i, pps=%s, target=%s, scores=%s", (width, height, max_w, max_h), self.wid, pps, target, sscaling)
                     if sscaling:
                         highscore = sorted(sscaling.keys())[0]
                         scaling = sscaling[highscore]
