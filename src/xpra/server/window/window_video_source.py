@@ -1317,7 +1317,7 @@ class WindowVideoSource(WindowSource):
                             #give it a score boost (lowest score wins):
                             score = int(score/1.5)
                         sscaling[score] = (num, denom)
-                    scalinglog.info("calculate_scaling%s wid=%i, pps=%s, target=%s, scores=%s", (width, height, max_w, max_h), self.wid, pps, target, sscaling)
+                    scalinglog("calculate_scaling%s wid=%i, pps=%s, target=%s, scores=%s", (width, height, max_w, max_h), self.wid, pps, target, sscaling)
                     if sscaling:
                         highscore = sorted(sscaling.keys())[0]
                         scaling = sscaling[highscore]
