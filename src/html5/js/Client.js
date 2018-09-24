@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
  * Copyright (c) 2016 David Brushinski <dbrushinski@spikes.com>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Copyright (c) 2015-2016 Spikes, Inc.
@@ -2735,8 +2735,10 @@ XpraClient.prototype._process_open_url = function(packet, ctx) {
         console.warn(" but opening of URLs is disabled");
         return
     }
-    $('#action-link').attr("href", url);
-    $('#action-link').text(url);
-    $('#action-link').show();
     console.log("opening url:", url);
+	if (window.doNotification) {
+		var summary = "Server URL Open Request";
+		var body = "Link: <a href=\""+url+"\" target=\"_blank\">"+url+"</a>";
+		window.doNotification("info", 0, summary, body, 30);
+	}
 }
