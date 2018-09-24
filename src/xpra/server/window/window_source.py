@@ -2074,6 +2074,7 @@ class WindowSource(WindowIconSource):
             return  None
 
         coding, data, client_options, outw, outh, outstride, bpp = ret
+        coding = strtobytes(coding)
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
@@ -2138,7 +2139,7 @@ class WindowSource(WindowIconSource):
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
     def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options={}, _options={}):
-        packet = ("draw", self.wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
+        packet = ("draw", self.wid, x, y, outw, outh, strtobytes(coding), data, self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
