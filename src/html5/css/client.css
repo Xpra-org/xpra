@@ -245,6 +245,7 @@ div.windowinfocus {
 	margin: 1rem;
 	font-weight: 600;
 	font-size: 1.3rem;
+	line-height: 1.3rem;
 }
 .notifications .alert span a {
 	text-decoration: none;
