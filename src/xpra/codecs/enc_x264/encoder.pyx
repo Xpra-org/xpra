@@ -31,6 +31,8 @@ TUNE = os.environ.get("XPRA_X264_TUNE")
 LOG_NALS = envbool("XPRA_X264_LOG_NALS")
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
+FAST_DECODE_MIN_SPEED = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
+
 
 cdef extern from "string.h":
     int vsnprintf(char * s, size_t n, const char * format, va_list arg)
@@ -268,14 +270,6 @@ cdef const char * const *get_preset_names():
     return x264_preset_names;
 
 
-#we choose presets from 1 to 7
-#(we exclude placebo)
-cdef int get_preset_for_speed(int speed):
-    if speed > 99:
-        #only allow "ultrafast" if pct > 99
-        return 0
-    return 7 - max(0, min(6, speed / 15))
-
 #the x264 quality option ranges from 0 (best) to 51 (lowest)
 cdef float get_x264_quality(int pct, char *profile):
     if pct>=100 and profile:
@@ -508,9 +502,7 @@ cdef class Encoder:
         self.content_type = options.strget("content-type", "unknown")      #ie: "video"
         self.b_frames = options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
-        if self.fast_decode:
-            speed = max(70, speed)
-        self.preset = get_preset_for_speed(speed)
+        self.preset = self.get_preset_for_speed(speed)
         self.src_format = src_format
         self.colorspace = cs_info[0]
         self.frames = 0
@@ -928,7 +920,7 @@ cdef class Encoder:
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
         cdef x264_param_t param                     #@DuplicatedSignature
-        cdef int new_preset = get_preset_for_speed(pct)
+        cdef int new_preset = self.get_preset_for_speed(pct)
         if new_preset == self.preset:
             return
         self.speed = pct
@@ -951,6 +943,17 @@ cdef class Encoder:
         #adjust quality:
         self.quality = pct
         self.reconfig_tune()
+
+    #we choose presets from 1 to 7
+    #(we exclude placebo)
+    cdef int get_preset_for_speed(self, int speed):
+        if self.fast_decode:
+            speed = max(FAST_DECODE_MIN_SPEED, speed)
+        if speed > 99:
+            #only allow "ultrafast" if pct > 99
+            return 0
+        return 7 - max(0, min(6, speed / 15))
+
 
     def reconfig_tune(self):
         cdef x264_param_t param
