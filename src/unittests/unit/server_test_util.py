@@ -96,7 +96,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	def get_run_env(self):
 		env = dict((k,v) for k,v in self.default_env.items() if
-				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "XAUTHORITY", "PWD", "PYTHONPATH", ))
+				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "XAUTHORITY", "PWD", "PYTHONPATH", "SYSTEMROOT"))
 		return env
 
 	@classmethod
