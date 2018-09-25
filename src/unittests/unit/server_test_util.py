@@ -43,6 +43,7 @@ class ServerTestUtil(unittest.TestCase):
 		os.environ["XAUTHORITY"] = os.path.expanduser(cls.xauthority_temp.name)
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
 		os.environ["XPRA_NOTTY"] = "1"
+		os.environ["XPRA_WAIT_FOR_INPUT"] = "0"
 		os.environ["XPRA_FLATTEN_INFO"] = "0"
 		os.environ["XPRA_NOTTY"] = "1"
 		cls.default_env = os.environ.copy()
