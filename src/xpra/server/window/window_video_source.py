@@ -53,6 +53,23 @@ SCALING = envbool("XPRA_SCALING", True)
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 SCALING_PPS_TARGET = envint("XPRA_SCALING_PPS_TARGET", 25*1920*1080)
 SCALING_MIN_PPS = envint("XPRA_SCALING_MIN_PPS", 25*320*240)
+SCALING_OPTIONS = (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1)
+SCALING_OPTIONS_STR = os.environ.get("XPRA_SCALING_OPTIONS")
+if SCALING_OPTIONS_STR:
+    #parse 1/10,1/5,1/4,1/3,1/2,2/3,1/1
+    #or even: 1:10, 1:5, ...
+    vs_options = []
+    for option in SCALING_OPTIONS_STR.split(","):
+        parts = option.strip().split("/")
+        try:
+            num, den = parts
+            vs_options.append((int(num), int(den)))
+        except ValueError:
+            scalinglog.warn("Warning: invalid scaling string '%s'", option.strip())
+    if vs_options:
+        SCALING_OPTIONS = tuple(vs_options)
+del SCALING_OPTIONS_STR
+scalinglog("scaling options: SCALING=%s, HARDCODED=%s, PPS_TARGET=%i, MIN_PPS=%i, OPTIONS=%s", SCALING, SCALING_HARDCODED, SCALING_PPS_TARGET, SCALING_MIN_PPS, SCALING_OPTIONS)
 
 FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
@@ -1226,10 +1243,16 @@ class WindowVideoSource(WindowSource):
             if width<=max_w and height<=max_h:
                 return default_value    #no problem
             #most encoders can't deal with that!
-            TRY_SCALE = ((2, 3), (1, 2), (1, 3), (1, 4), (1, 8), (1, 10))
-            for op, d in TRY_SCALE:
-                if width*op/d<=max_w and height*op/d<=max_h:
-                    return (op, d)
+            #sort them from smallest scaling to highest:
+            sopts = {}
+            for num, den in SCALING_OPTIONS:
+                sopts[float(num)/den] = (num, den)
+            for ratio in reversed(sorted(sopts.keys())):
+                num, den = sopts[ratio]
+                if num==1 and den==1:
+                    continue
+                if width*num/den<=max_w and height*num/den<=max_h:
+                    return (num, den)
             raise Exception("BUG: failed to find a scaling value for window size %sx%s", width, height)
         if not SCALING or not self.supports_video_scaling:
             #not supported by client or disabled by env
@@ -1304,9 +1327,7 @@ class WindowVideoSource(WindowSource):
                     #high speed means more scaling:
                     target = target * 60**2 // (q+20)**2
                     sscaling = OrderedDict()
-                    for num, denom in (
-                        (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1),
-                        ):
+                    for num, denom in SCALING_OPTIONS:
                         #scaled pixels per second value:
                         spps = pps*(num**2)/(denom**2)
                         ratio = float(target)/spps
