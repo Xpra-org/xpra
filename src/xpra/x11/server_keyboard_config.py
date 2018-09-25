@@ -403,29 +403,26 @@ class KeyboardConfig(KeyboardConfigBase):
         if not self.enabled:
             log("ignoring keycode since keyboard is turned off")
             return -1
-        keycode = self.keycode_translation.get((client_keycode, keyname))
-        if keycode is None:
-            if bool(self.xkbmap_query):
-                keycode = client_keycode
-                log("get_keycode(%s, %s, %s) native keymap, using client keycode %s", client_keycode, keyname, modifiers, client_keycode)
-            else:
-                #non-native: try harder to find matching keysym
-                #first, try to honour shift state:
-                shift = "shift" in modifiers
-                mode = 0
-                for mod in modifiers:
-                    names = self.keynames_for_mod.get(mod, [])
-                    for name in names:
-                        if name in ("ISO_Level3_Shift", "Mode_switch"):
-                            mode = 1
-                            break
-                level = int(shift) + int(mode)*2
-                keycode = self.keycode_translation.get((keyname, level))
-                if keycode is None:
-                    keycode = self.keycode_translation.get(keyname, client_keycode)
-                log("get_keycode(%s, %s, %s) level=%i, keyname lookup: %s", client_keycode, keyname, modifiers, level, keycode)
+        keycode = None
+        if self.xkbmap_query:
+            keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
+            log("get_keycode(%s, %s, %s)=%s (native keymap)", client_keycode, keyname, modifiers, keycode)
         else:
-            log("get_keycode(%s, %s, %s) keyname+keycode lookup: %s", client_keycode, keyname, modifiers, keycode)
+            #non-native: try harder to find matching keysym
+            #first, try to honour shift state:
+            shift = "shift" in modifiers
+            mode = 0
+            for mod in modifiers:
+                names = self.keynames_for_mod.get(mod, [])
+                for name in names:
+                    if name in ("ISO_Level3_Shift", "Mode_switch"):
+                        mode = 1
+                        break
+            level = int(shift) + int(mode)*2
+            keycode = self.keycode_translation.get((keyname, level))
+            if keycode is None:
+                keycode = self.keycode_translation.get(keyname, client_keycode)
+            log("get_keycode(%s, %s, %s)=%i (level=%i)", client_keycode, keyname, modifiers, keycode, level)
         return keycode
 
 
