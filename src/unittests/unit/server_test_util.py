@@ -170,9 +170,13 @@ class ServerTestUtil(unittest.TestCase):
 		def showfile(fileobj, filetype="stdout"):
 			if fileobj and fileobj.name and os.path.exists(fileobj.name):
 				log.warn("contents of %s file '%s':", filetype, fileobj.name)
-				with open(fileobj.name, 'rb') as f:
-					for line in f:
-						log.warn(" %s", line.rstrip(b"\n\r"))
+				try:
+					with fileobj as f:
+						f.seek(0)
+						for line in f:
+							log.warn(" %s", line.rstrip(b"\n\r"))
+				except Exception as e:
+					log.error("Error: failed to read '%s': %s", fileobj.name, e)
 			else:
 				log.warn("no %s file", filetype)
 		showfile(proc.stdout_file, "stdout")
