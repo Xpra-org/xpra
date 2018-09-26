@@ -49,7 +49,7 @@ class LoggingServer(StubServerMixin):
                 return bytestostr(x)
         try:
             if isinstance(msg, (tuple, list)):
-                dmsg = "".join(dec(x) for x in msg)
+                dmsg = " ".join(dec(x) for x in msg)
             else:
                 dmsg = dec(msg)
             for l in dmsg.splitlines():
