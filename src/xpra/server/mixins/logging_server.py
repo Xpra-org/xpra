@@ -8,6 +8,7 @@ from xpra.log import Logger
 log = Logger("client")
 
 from xpra.os_util import bytestostr
+from xpra.util import repr_ellipsized
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
@@ -44,12 +45,20 @@ class LoggingServer(StubServerMixin):
         def dec(x):
             try:
                 return x.decode("utf8")
-            except:
+            except Exception:
                 return bytestostr(x)
-        if isinstance(msg, (tuple, list)):
-            msg = " ".join(dec(x) for x in msg)
-        for x in dec(msg).splitlines():
-            log.log(level, prefix+x)
+        try:
+            if isinstance(msg, (tuple, list)):
+                dmsg = "".join(dec(x) for x in msg)
+            else:
+                dmsg = dec(msg)
+            for l in dmsg.splitlines():
+                log.log(level, prefix+l)
+        except Exception as e:
+            log("log message decoding error", exc_info=True)
+            log.error("Error: failed to parse logging message:")
+            log.error(" %s", repr_ellipsized(msg))
+            log.error(" %s", e)
 
 
     def init_packet_handlers(self):
