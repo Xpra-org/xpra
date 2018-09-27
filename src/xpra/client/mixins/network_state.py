@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
-from xpra.os_util import monotonic_time, get_user_uuid, POSIX
+from xpra.os_util import monotonic_time, POSIX
 from xpra.util import envint, csv
 from xpra.exit_codes import EXIT_TIMEOUT
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -35,8 +35,6 @@ class NetworkState(StubClientMixin):
 
     def __init__(self):
         StubClientMixin.__init__(self)
-        self.uuid = get_user_uuid()
-
         self.server_start_time = -1
 
         #setting:
