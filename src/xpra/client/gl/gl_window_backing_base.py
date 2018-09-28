@@ -602,16 +602,21 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
+        left, top, right, bottom = self.offsets
+
+        #viewport for clearing the whole window:
+        glViewport(0, 0, left+ww+right, top+wh+bottom)
         if self._alpha_enabled:
             # transparent background:
             glClearColor(0.0, 0.0, 0.0, 0.0)
         else:
-            # plain white no alpha:
-            glClearColor(1.0, 1.0, 1.0, 1.0)
+            # black, no alpha:
+            glClearColor(0.0, 0.0, 0.0, 1.0)
+        if left or top or right or bottom:
+            glClear(GL_COLOR_BUFFER_BIT)
 
-        #viewport for painting to window:
-        x, _, _, y = self.offsets
-        glViewport(x, y, ww, wh)
+        #from now on, take the offsets into account:
+        glViewport(left, top, ww, wh)
         target = GL_TEXTURE_RECTANGLE_ARB
         if ww!=bw or wh!=bh:
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
