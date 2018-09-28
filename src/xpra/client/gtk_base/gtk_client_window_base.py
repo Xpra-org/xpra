@@ -537,6 +537,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 if self._client._current_screen_sizes:
                     w, h = self._size
                     self.window_offset = self.calculate_window_offset(x, y, w, h)
+                    geomlog("OR offsets=%s", self.window_offset)
                     if self.window_offset:
                         x += self.window_offset[0]
                         y += self.window_offset[1]
@@ -1709,12 +1710,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def center_backing(self, w, h):
         ww, wh = self.get_size()
         #align in the middle:
-        ox = (ww-w)//2
-        oy = (wh-h)//2
+        dw = max(0, ww-w)
+        dh = max(0, wh-h)
+        ox = dw//2
+        oy = dh//2
         geomlog("using window offset values %i,%i", ox, oy)
         #some backings use top,left values,
         #(opengl uses left and botton since the viewport starts at the bottom)
-        self._backing.offsets = ox, oy, ox+((ww-w)&0x1), oy+((wh-h)&0x1)
+        self._backing.offsets = ox, oy, ox+(dw&0x1), oy+(dh&0x1)
+        geomlog("center_backing(%i, %i) window size=%ix%i, backing offsets=%s", w, h, ww, wh, self._backing.offsets)
         #adjust pointer coordinates:
         self.window_offset = ox, oy
 
