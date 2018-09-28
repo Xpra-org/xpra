@@ -300,7 +300,7 @@ class ServerBaseControlCommands(StubServerMixin):
         else:
             for client_uuid in client_uuids.split(","):
                 self.window_filters.append((client_uuid, window_filter))
-        return "added window-filter: %s" % window_filter
+        return "added window-filter: %s for client uuids=%s" % (window_filter, client_uuids)
 
 
     def control_command_compression(self, compression):

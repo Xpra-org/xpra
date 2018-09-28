@@ -13,7 +13,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings     #@Unresolved
 window_bindings = X11WindowBindings()
 
 from xpra.log import Logger
-log = Logger("x11", "server")
+log = Logger("x11", "filters")
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -32,6 +32,7 @@ def get_x11_window_value(prop, window):
         #log("%s: %s (%s)", filter_object.property_name, x11type, ptype)
         assert ptype, "type '%s' is not handled!" % x11type
         v = prop_get(window, prop, ptype)
+        log("prop_get(%s, %s, %s)=%s", window, prop, ptype, v)
         if v and isinstance(v, (str, unicode)):
             v = strtobytes(v).replace("\0", "")
     else:

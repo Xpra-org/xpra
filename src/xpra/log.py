@@ -203,6 +203,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("frame"        , "Window frame"),
                 ("grab"         , "Window grabs (both keyboard and mouse)"),
                 ("dragndrop"    , "Window drag-n-drop events"),
+                ("filters"      , "Window filters"),
                 ])),
     ("Encoding", OrderedDict([
                 ("codec"        , "Codec loader and video helper"),

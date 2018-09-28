@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
-log = Logger("window")
+log = Logger("filters")
 
 
 class WindowPropertyFilter(object):
