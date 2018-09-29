@@ -27,6 +27,7 @@ if sys.version_info[0]==2:
     LongType = long
 else:
     LongType = int
+    unicode = str
 
 
 cdef int find(const unsigned char *p, char c, unsigned int start, size_t len):
@@ -172,7 +173,7 @@ cdef int encode(object v, r) except -1:
         return encode_int(v, r)
     elif t==bytes:
         return encode_string(v, r)
-    elif t==str:
+    elif t in (str, unicode):
         return encode_unicode(v, r)
     elif t==list:
         return encode_list(v, r)
