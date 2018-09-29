@@ -445,7 +445,12 @@ class ClientConnection(ClientConnectionClass):
                          })
         info.update(self.get_features_info())
         for bc in CC_BASES:
-            merge_dicts(info, bc.get_info(self))
+            try:
+                merge_dicts(info, bc.get_info(self))
+            except Exception as e:
+                log("merge_dicts on %s", bc, exc_info=True)
+                log.error("Error: cannot add information from %s:", bc)
+                log.error(" %s", e)
         return info
 
     def get_features_info(self):
