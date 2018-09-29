@@ -18,14 +18,11 @@ from xpra.log import Logger
 log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
-screenlog = Logger("gtk", "client", "screen")
 framelog = Logger("gtk", "client", "frame")
-menulog = Logger("gtk", "client", "menu")
 filelog = Logger("gtk", "client", "file")
 clipboardlog = Logger("gtk", "client", "clipboard")
 notifylog = Logger("gtk", "notify")
 grablog = Logger("client", "grab")
-authlog = Logger("client", "auth")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)

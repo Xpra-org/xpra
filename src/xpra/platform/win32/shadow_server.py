@@ -13,10 +13,8 @@ from xpra.log import Logger
 from xpra.os_util import strtobytes
 from xpra.util import envbool, prettify_plug_name, csv
 log = Logger("shadow", "win32")
-traylog = Logger("tray")
 shapelog = Logger("shape")
 cursorlog = Logger("cursor")
-netlog = Logger("network")
 keylog = Logger("keyboard")
 screenlog = Logger("screen")
 
