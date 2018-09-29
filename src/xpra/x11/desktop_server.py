@@ -156,7 +156,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
 
     def get_property(self, prop):
         if prop=="xid":
-            return self.client_window.xid
+            return int(self.client_window.xid)
         elif prop=="depth":
             return self._depth
         elif prop=="title":
