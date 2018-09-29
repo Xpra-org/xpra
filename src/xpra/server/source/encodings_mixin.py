@@ -319,7 +319,11 @@ class EncodingsMixin(StubSourceMixin):
             except:
                 proxylog.error("failed to parse proxy video", exc_info=True)
 
-        self.default_encoding_options["scaling.control"] = self.encoding_options.get("scaling.control", self.scaling_control)
+        sc = self.encoding_options.get("scaling.control", self.scaling_control)
+        if sc is not None:
+            #"encoding_options" are exposed via "xpra info",
+            #so we can't have None values in there (bencoder would choke)
+            self.default_encoding_options["scaling.control"] = sc
         q = self.encoding_options.intget("quality", self.default_quality)         #0.7 onwards:
         if q>0:
             self.default_encoding_options["quality"] = q
