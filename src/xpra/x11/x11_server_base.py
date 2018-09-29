@@ -15,13 +15,8 @@ from xpra.gtk_common.error import xswallow, xsync
 
 from xpra.log import Logger
 log = Logger("x11", "server")
-keylog = Logger("x11", "server", "keyboard")
 mouselog = Logger("x11", "server", "mouse")
-grablog = Logger("server", "grab")
-cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
-xinputlog = Logger("xinput")
-gllog = Logger("screen", "opengl")
 
 from xpra.util import envint
 from xpra.os_util import hexstr

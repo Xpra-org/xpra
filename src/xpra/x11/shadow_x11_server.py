@@ -19,9 +19,6 @@ XImage = XImageBindings()
 
 from xpra.log import Logger
 log = Logger("x11", "shadow")
-traylog = Logger("tray")
-cursorlog = Logger("cursor")
-geomlog = Logger("geometry")
 
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)

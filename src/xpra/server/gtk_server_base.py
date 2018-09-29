@@ -13,7 +13,6 @@ from xpra.log import Logger
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 cursorlog = Logger("server", "cursor")
-netlog = Logger("network")
 notifylog = Logger("notify")
 
 from xpra.util import flatten_dict
