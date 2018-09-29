@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util import AdHocStruct, typedict
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, get_hex_uuid
 from xpra.client.mixins.network_state import NetworkState
 from xpra.client.mixins.mmap import MmapClient
 from xpra.client.mixins.remote_logging import RemoteLogging
@@ -29,6 +29,7 @@ class MixinsTest(unittest.TestCase):
 		x.server_capabilities = typedict({"start_time" : monotonic_time()})
 		x.parse_server_capabilities()
 		assert x.server_start_time>=x.start_time, "server_start_time=%s vs start_time=%s" % (x.server_start_time, x.start_time)
+		x.uuid = get_hex_uuid()
 		x.send_info_request()
 		packet = ["info-response", {"foo" : "bar"}]
 		x._process_info_response(packet)
