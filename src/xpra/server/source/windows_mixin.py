@@ -152,14 +152,6 @@ class WindowsMixin(StubSourceMixin):
             }
         if self.window_frame_sizes:
             info.setdefault("window", {}).update({"frame-sizes" : self.window_frame_sizes})
-        if self.window_filters:
-            i = 0
-            finfo = {}
-            for uuid, f in self.window_filters:
-                if uuid==self.uuid:
-                    finfo[i] = str(f)
-                    i += 1
-            info["window-filter"] = finfo
         info.update(self.get_window_info())
         return info
 

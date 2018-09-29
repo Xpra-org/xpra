@@ -335,9 +335,6 @@ class ServerBase(ServerBaseClass):
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
 
-    def reset_window_filters(self):
-        self.window_filters = []
-
     def parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #adds try:except around parse hello ui code:
         try:
