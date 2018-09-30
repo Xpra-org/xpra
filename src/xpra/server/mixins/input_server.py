@@ -171,7 +171,7 @@ class InputServer(StubServerMixin):
         modifiers = tuple(bytestostr(x) for x in modifiers)
         self.set_ui_driver(ss)
         self.set_keyboard_layout_group(group)
-        keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
+        keycode = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers)
         keylog("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
         self._focus(ss, wid, None)
@@ -188,8 +188,8 @@ class InputServer(StubServerMixin):
                 keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.user_event()
 
-    def get_keycode(self, ss, client_keycode, keyname, modifiers):
-        return ss.get_keycode(client_keycode, keyname, modifiers)
+    def get_keycode(self, ss, client_keycode, keyname, pressed, modifiers):
+        return ss.get_keycode(client_keycode, keyname, pressed, modifiers)
 
     def is_modifier(self, keyname, keycode):
         if keyname in DEFAULT_MODIFIER_MEANINGS.keys():

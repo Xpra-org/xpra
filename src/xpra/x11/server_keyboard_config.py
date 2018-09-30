@@ -399,7 +399,7 @@ class KeyboardConfig(KeyboardConfigBase):
             log("set_default_keymap: modifier_map=%s", self.modifier_map)
 
 
-    def get_keycode(self, client_keycode, keyname, modifiers):
+    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers):
         if not self.enabled:
             log("ignoring keycode since keyboard is turned off")
             return -1

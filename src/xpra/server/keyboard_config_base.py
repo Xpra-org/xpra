@@ -15,6 +15,7 @@ class KeyboardConfigBase(object):
     def __init__(self):
         self.enabled = True
         self.owner = None
+        self.pressed_translation = {}
 
     def __repr__(self):
         return "KeyboardConfigBase"
@@ -43,7 +44,19 @@ class KeyboardConfigBase(object):
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         pass
 
-    def get_keycode(self, _client_keycode, _keyname, _modifiers):
+    def get_keycode(self, client_keycode, keyname, pressed, modifiers):
+        if not pressed:
+            keycode = self.pressed_translation.get(client_keycode)
+            if keycode:
+                #del self.pressed_translation[client_keycode]
+                return keycode
+        keycode = self.do_get_keycode(client_keycode, keyname, pressed, modifiers)
+        if pressed not in (None, -1):
+            #keep track of it so we can unpress the same key:
+            self.pressed_translation[client_keycode] = keycode
+        return keycode
+
+    def do_get_keycode(self, _client_keycode, _keyname, _pressed, _modifiers):
         log("%s does not implement get_keycode!", type(self))
         return -1
 
