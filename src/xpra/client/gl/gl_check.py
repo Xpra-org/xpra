@@ -136,6 +136,7 @@ def check_PyOpenGL_support(force_enable):
             global _version_warning_shown
             if not _version_warning_shown:
                 log.warn("Warning: version mismatch between PyOpenGL and PyOpenGL-accelerate")
+                log.warn(" %s vs %s", pyopengl_version, accel_version)
                 log.warn(" this may cause crashes")
                 _version_warning_shown = True
         vsplit = pyopengl_version.split('.')
