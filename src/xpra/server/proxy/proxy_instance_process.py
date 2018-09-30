@@ -406,6 +406,10 @@ class ProxyInstanceProcess(Process):
 
     def filter_client_caps(self, caps):
         fc = self.filter_caps(caps, ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib"))
+        #the display string may override the username:
+        username = self.disp_desc.get("username")
+        if username:
+            fc["username"] = username
         #update with options provided via config if any:
         fc.update(self.sanitize_session_options(self.session_options))
         #add video proxies if any:
@@ -416,10 +420,6 @@ class ProxyInstanceProcess(Process):
 
     def filter_server_caps(self, caps):
         self.server_protocol.enable_encoder_from_caps(caps)
-        #the display string may override the username:
-        username = self.disp_desc.get("username")
-        if username:
-            fc["username"] = username
         return self.filter_caps(caps, ("aliases", ))
 
     def filter_caps(self, caps, prefixes):
