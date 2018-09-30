@@ -96,7 +96,7 @@ XpraClient.prototype.send_log = function(level, args) {
 		try {
 			var sargs = [];
 			for(var i = 0; i < args.length; i++) {
-				sargs.push(String(args[i]));
+				sargs.push(unescape(encodeURIComponent(String(args[i]))));
 			}
 			this.protocol.send(["logging", level, sargs]);
 		} catch (e) {
