@@ -253,6 +253,7 @@ BuildRequires: desktop-file-utils
 BuildRequires: %{numpy}
 BuildRequires: %{xvfb}
 BuildRequires: %{py2prefix}-rencode
+BuildRequires: xorg-x11-drv-dummy
 %endif
 Requires(post): openssl
 Requires(post): desktop-file-utils
