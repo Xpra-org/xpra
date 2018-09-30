@@ -18,7 +18,8 @@ Build-Depends: debhelper (>= 8)
 #jessie:        ,dh-systemd
 #stretch:        ,dh-systemd
 #xenial:        ,dh-systemd
-#yakkety:        ,dh-systemd
+#bionic:        ,dh-systemd
+#buster:        ,dh-systemd
 X-Python-Version: >= 2.5
 Standards-Version: 3.9.3
 Homepage: http://xpra.org/
@@ -30,15 +31,10 @@ Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-gtk2
         ,x11-xserver-utils
-#we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
-#wheezy:        ,xserver-xorg-video-dummy
-#jessie:        ,xserver-xorg-video-dummy
-#stretch:        ,xserver-xorg-video-dummy
-#precise:        ,xvfb
-#trusty:        ,xvfb
-#artful:        ,xserver-xorg-video-dummy
-#xenial:        ,xvfb
-#yakkety:        ,xserver-xorg-video-dummy
+#we need a vfb: either Xdummy (Debian) or Xvfb (some Ubuntu versions break Xorg tty access)
+#install both so users can choose which one they want to use:
+        ,xserver-xorg-video-dummy
+        ,xvfb
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
@@ -48,7 +44,13 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-pil
 # scrolling detection:
         ,python-xxhash
-#artful:        ,libturbojpeg
+# fast JPEG client support:
+#trusty:         ,libturbojpeg
+#xenial:         ,libturbojpeg
+#bionic:        ,libturbojpeg
+#cosmic:        ,libturbojpeg
+#stretch:         ,libturbojpeg0
+#buster:         ,libturbojpeg0
 # ffmpeg based codecs:
         ,ffmpeg-xpra
 # packet encoder:
@@ -61,34 +63,37 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #stretch:        ,python-lz4
 #trusty:        ,python-lzo
 #xenial:        ,python-lz4
-#yakkety:        ,python-lz4
+#bionic:        ,python-lz4
+#buster:        ,python-lz4
 #if you use Ubuntu, you will "want" this mess:
 #precise:		,python-appindicator
 #jessie:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #stretch:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #trusty:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #xenial:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
-#artful:        ,libx264-148
-#yakkety:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
+#bionic:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
+#buster:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #trusty:        ,python-appindicator
 #xenial:        ,python-appindicator
 #yakkety:        ,python-appindicator
 Recommends:
-#x264
+# x264:
 #precise:        ,libx264-120
 #wheezy:        ,libx264-123
-#jessie:        ,libx264-142
 #stretch:        ,libx264-148
-#trusty:        ,libx264-142
 #xenial:        ,libx264-148
-#yakkety:        ,libx264-148
+#bionic:        ,libx264-152
+#cosmic:        ,libx264-152
+#buster:        ,libx264-152
         ,libxvidcore4
 #webp
 #jessie:        ,libwebp5
-#stretch:        ,libwebp5
 #trusty:        ,libwebp5
+#stretch:        ,libwebp6
 #xenial:        ,libwebp5
-#yakkety:        ,libwebp5
+#bionic:        ,libwebp6
+#cosmic:        ,libwebp6
+#buster:        ,libwebp6
 #AES encryption:
 #precise:        ,python-crypto
 #wheezy:        ,python-crypto
@@ -96,7 +101,8 @@ Recommends:
 #stretch:        ,python-cryptography
 #trusty:        ,python-crypto
 #xenial:        ,python-cryptography
-#yakkety:        ,python-cryptography
+#bionic:        ,python-cryptography
+#buster:        ,python-cryptography
 # audio-related:
 #precise:        ,gstreamer0.10-plugins-base
 #wheezy:        ,gstreamer0.10-plugins-base
@@ -104,7 +110,8 @@ Recommends:
 #stretch:        ,gstreamer1.0-plugins-base
 #trusty:        ,gstreamer1.0-plugins-base
 #xenial:        ,gstreamer1.0-plugins-base
-#yakkety:        ,gstreamer1.0-plugins-base
+#bionic:        ,gstreamer1.0-plugins-base
+#buster:        ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
 #precise:        ,gstreamer0.10-plugins-good
 #wheezy:        ,gstreamer0.10-plugins-good
@@ -112,7 +119,8 @@ Recommends:
 #stretch:        ,gstreamer1.0-plugins-good
 #trusty:        ,gstreamer1.0-plugins-good
 #xenial:        ,gstreamer1.0-plugins-good
-#yakkety:        ,gstreamer1.0-plugins-good
+#bionic:        ,gstreamer1.0-plugins-good
+#buster:        ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
 #precise:        ,gstreamer0.10-plugins-ugly
 #wheezy:        ,gstreamer0.10-plugins-ugly
@@ -120,7 +128,8 @@ Recommends:
 #stretch:        ,gstreamer1.0-plugins-ugly
 #trusty:        ,gstreamer1.0-plugins-ugly
 #xenial:        ,gstreamer1.0-plugins-ugly
-#yakkety:        ,gstreamer1.0-plugins-ugly
+#bionic:        ,gstreamer1.0-plugins-ugly
+#buster:        ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
 #precise:        ,python-gst-0.10
 #wheezy:        ,python-gst-0.10
@@ -128,7 +137,8 @@ Recommends:
 #stretch:        ,python-gst-1.0
 #trusty:        ,python-gst-1.0
 #xenial:        ,python-gst-1.0
-#yakkety:        ,python-gst-1.0
+#bionic:        ,python-gst-1.0
+#buster:        ,python-gst-1.0
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 #for printer forwarding:
@@ -150,7 +160,8 @@ Recommends:
 #stretch:        ,python-lzo
 #trusty:        ,python-lz4
 #xenial:        ,python-lzo
-#yakkety:        ,python-lzo
+#bionic:        ,python-lzo
+#buster:        ,python-lzo
 #for html5 support:
         ,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
