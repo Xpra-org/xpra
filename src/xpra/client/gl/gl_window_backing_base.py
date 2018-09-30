@@ -634,12 +634,21 @@ class GLWindowBackingBase(GTKWindowBacking):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
+        left, top, right, bottom = self.offsets
+
+        #viewport for clearing the whole window:
+        glViewport(0, 0, left+ww+right, top+wh+bottom)
         if self._alpha_enabled:
             # transparent background:
             glClearColor(0.0, 0.0, 0.0, 0.0)
         else:
-            # plain white no alpha:
-            glClearColor(1.0, 1.0, 1.0, 1.0)
+            # black, no alpha:
+            glClearColor(0.0, 0.0, 0.0, 1.0)
+        if left or top or right or bottom:
+            glClear(GL_COLOR_BUFFER_BIT)
+
+        #viewport for painting to window:
+        glViewport(left, top, ww, wh)
 
         # Draw FBO texture on screen
         self.set_rgb_paint_state()
@@ -689,9 +698,6 @@ class GLWindowBackingBase(GTKWindowBacking):
             img.save(filename, SAVE_BUFFERS, **kwargs)
             glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
 
-        #viewport for painting to window:
-        x, _, _, y = self.offsets
-        glViewport(x, y, ww, wh)
         if ww!=bw or wh!=bh:
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
