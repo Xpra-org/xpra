@@ -1424,11 +1424,30 @@ class ServerBase(ServerCore):
         if ss is None:
             return
         level, msg = packet[1:3]
-        prefix = "client %i: " % ss.counter
-        if not isinstance(msg, (tuple, list)):
-            msg = msg.splitlines()
-        for x in msg:
-            clientlog.log(level, prefix+x)
+        prefix = "client "
+        if len(self._server_sources)>1:
+            prefix += "%3i " % ss.counter
+        if len(packet)>=4:
+            dtime = packet[3]
+            prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
+        def dec(x):
+            try:
+                return x.decode("utf8")
+            except Exception:
+                return bytestostr(x)
+        try:
+            if isinstance(msg, (tuple, list)):
+                dmsg = " ".join(dec(x) for x in msg)
+            else:
+                dmsg = dec(msg)
+            for l in dmsg.splitlines():
+                log.log(level, prefix+l)
+        except Exception as e:
+            log("log message decoding error", exc_info=True)
+            log.error("Error: failed to parse logging message:")
+            log.error(" %s", repr_ellipsized(msg))
+            log.error(" %s", e)
+
 
     def _process_printers(self, proto, packet):
         if not self.file_transfer.printing:
