@@ -64,7 +64,7 @@ class ProxyInstanceProcess(Process):
 
     def __init__(self, uid, gid, env_options, session_options, socket_dir,
                  video_encoder_modules, csc_modules,
-                 client_conn, client_state, cipher, encryption_key, server_conn, caps, message_queue):
+                 client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps, message_queue):
         Process.__init__(self, name=str(client_conn))
         self.uid = uid
         self.gid = gid
@@ -74,6 +74,7 @@ class ProxyInstanceProcess(Process):
         self.video_encoder_modules = video_encoder_modules
         self.csc_modules = csc_modules
         self.client_conn = client_conn
+        self.disp_desc = disp_desc
         self.client_state = client_state
         self.cipher = cipher
         self.encryption_key = encryption_key
@@ -81,7 +82,7 @@ class ProxyInstanceProcess(Process):
         self.caps = caps
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
                                video_encoder_modules, csc_modules,
-                               client_conn, repr_ellipsized(str(client_state)), cipher, encryption_key, server_conn,
+                               client_conn, disp_desc, repr_ellipsized(str(client_state)), cipher, encryption_key, server_conn,
                                "%s: %s.." % (type(caps), repr_ellipsized(str(caps))), message_queue))
         self.client_protocol = None
         self.server_protocol = None
@@ -415,6 +416,10 @@ class ProxyInstanceProcess(Process):
 
     def filter_server_caps(self, caps):
         self.server_protocol.enable_encoder_from_caps(caps)
+        #the display string may override the username:
+        username = self.disp_desc.get("username")
+        if username:
+            fc["username"] = username
         return self.filter_caps(caps, ("aliases", ))
 
     def filter_caps(self, caps, prefixes):
@@ -639,7 +644,8 @@ class ProxyInstanceProcess(Process):
             if digest!=b"hmac":
                 self.stop("digest mode '%s' not supported", std(digest))
                 return
-            password = self.session_options.get("password")
+            password = self.disp_desc.get("password", self.session_options.get("password"))
+            log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
             if not password:
                 self.stop("authentication requested by the server, but no password available for this session")
                 return
