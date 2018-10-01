@@ -653,6 +653,10 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 
 	this._check_browser_language(key_language);
 
+	var DOM_KEY_LOCATION_RIGHT = 2;
+	if (keyname.match("_L$") && event.location==DOM_KEY_LOCATION_RIGHT)
+		keyname = keyname.replace("_L", "_R")
+
 	//AltGr: keep track of pressed state
 	if (str=="AltGraph" || (keyname=="Alt_R" && Utilities.isWindows())) {
 		this.altgr_state = pressed;
@@ -662,9 +666,6 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 
 	//if (this.num_lock && keycode>=96 && keycode<106)
 	//	keyname = "KP_"+(keycode-96);
-	var DOM_KEY_LOCATION_RIGHT = 2;
-	if (keyname.match("_L$") && event.location==DOM_KEY_LOCATION_RIGHT)
-		keyname = keyname.replace("_L", "_R")
 
 	var raw_modifiers = get_event_modifiers(event);
 	var modifiers = this._keyb_get_modifiers(event);
