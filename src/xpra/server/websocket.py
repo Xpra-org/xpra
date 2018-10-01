@@ -38,6 +38,8 @@ WEBSOCKET_TCP_NODELAY = envbool("WEBSOCKET_TCP_NODELAY", True)
 WEBSOCKET_TCP_KEEPALIVE = envbool("WEBSOCKET_TCP_KEEPALIVE", True)
 WEBSOCKET_DEBUG = envbool("XPRA_WEBSOCKET_DEBUG", False)
 
+HTTP_ACCEPT_ENCODING = os.environ.get("XPRA_HTTP_ACCEPT_ENCODING", "br,gzip").split(",")
+
 
 class WSRequestHandler(WebSocketRequestHandler):
 
@@ -230,7 +232,7 @@ class WSRequestHandler(WebSocketRequestHandler):
             accept = [x.split(";")[0].strip() for x in accept]
             content = None
             log("accept-encoding=%s", accept)
-            for enc in ("br", "gzip"):
+            for enc in HTTP_ACCEPT_ENCODING:
                 #find a matching pre-compressed file:
                 if enc not in accept:
                     continue
@@ -259,7 +261,7 @@ class WSRequestHandler(WebSocketRequestHandler):
             if not content:
                 content = f.read()
                 assert len(content)==content_length, "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
-                if content_length>128 and ("gzip" in accept) and (ext not in (".png", )):
+                if content_length>128 and ("gzip" in accept) and ("gzip" in HTTP_ACCEPT_ENCODING) and (ext not in (".png", )):
                     #gzip it on the fly:
                     import zlib
                     assert len(content)==content_length, "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
