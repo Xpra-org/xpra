@@ -557,7 +557,7 @@ XpraClient.prototype.translate_modifiers = function(modifiers) {
 		if (index>=0)
 			new_modifiers.splice(index, 1);
 	}
-	console.log("altgr_state=", this.altgr_state, ", altgr_modifier=", this.altgr_modifier, ", modifiers=", new_modifiers);
+	//console.log("altgr_state=", this.altgr_state, ", altgr_modifier=", this.altgr_modifier, ", modifiers=", new_modifiers);
 	return new_modifiers;
 }
 
