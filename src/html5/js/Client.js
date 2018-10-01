@@ -219,7 +219,7 @@ XpraClient.prototype.debug = function() {
 	var category = arguments[0];
 	var args = Array.from(arguments);
 	args = args.splice(1);
-	if (this.debug_categories.includes(category)) {
+	if (this.debug_categories.indexOf(category)>=0) {
 		if (category!="network") {
 			//logging.DEBUG = 10
 			this.send_log(10, arguments);
@@ -2150,7 +2150,7 @@ XpraClient.prototype.request_redraw = function(win) {
 	this.debug("draw", "request_redraw for", win);
 	win.swap_buffers();
 	if(window.requestAnimationFrame) {
-		if (!this.pending_redraw.includes(win)) {
+		if (!this.pending_redraw.indexOf(win)>=0) {
 			this.pending_redraw.push(win);
 		}
 		// schedule a screen refresh if one is not already due:

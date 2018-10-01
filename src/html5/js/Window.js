@@ -985,7 +985,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 	this.video.style.zIndex = this.div.css("z-index")+1;
 	this.video.style.left  = ""+this.leftoffset+"px";
 	this.video.style.top = ""+this.topoffset+"px";
-	if (this.debug_categories.includes("audio")) {
+	if (this.debug_categories.indexOf("audio")>=0) {
 		MediaSourceUtil.addMediaElementEventDebugListeners(this.video, "video");
 		this.video.setAttribute('controls', "controls");
 	}
@@ -1016,7 +1016,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 		var vsb = me.media_source.addSourceBuffer(codec_string);
 	    vsb.mode = "sequence";
 		me.video_source_buffer = vsb;
-		if (me.debug_categories.includes("draw")) {
+		if (me.debug_categories.indexOf("draw")>=0) {
 			MediaSourceUtil.addSourceBufferEventDebugListeners(vsb, "video");
 		}
 		vsb.addEventListener('error', function(e) { me.error("video source buffer error"); });
@@ -1294,7 +1294,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 					xdelta = scroll_data[4],
 					ydelta = scroll_data[5];
 				this.offscreen_canvas_ctx.drawImage(this.draw_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
-				if (this.debug_categories.includes("draw")) {
+				if (this.debug_categories.indexOf("draw")>=0) {
 					paint_box("brown", sx+xdelta, sy+ydelta, sw, sh);
 				}
 			}
