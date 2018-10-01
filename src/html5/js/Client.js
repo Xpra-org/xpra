@@ -536,29 +536,28 @@ XpraClient.prototype.translate_modifiers = function(modifiers) {
 	}
 
 	var new_modifiers = modifiers.slice();
-	index = modifiers.indexOf("meta");
+	var index = modifiers.indexOf("meta");
 	if (index>=0 && meta)
 		new_modifiers[index] = meta;
 	index = modifiers.indexOf("control");
 	if (index>=0 && control)
 		new_modifiers[index] = control;
-	//warning: this may change the size of the array
-	//(so don't use indexes after that!)
-	var index = modifiers.indexOf("alt");
-	if (index>=0) {
-		if (this.altgr_state && altgr) {
-			//remove alt since we're setting altrgr:
-			new_modifiers.splice(index, 1);
-		}
-		else if (alt) {
-			new_modifiers[index] = alt;
-		}
-	}
+	index = modifiers.indexOf("alt");
+	if (index>=0 && alt)
+		new_modifiers[index] = alt;
+	
 	//add altgr?
 	if (this.altgr_state && altgr && new_modifiers.indexOf(altgr)<0) {
 		new_modifiers.push(altgr);
+		//remove spurious modifiers:
+		index = new_modifiers.indexOf(alt);
+		if (index>=0)
+			new_modifiers.splice(index, 1);
+		index = new_modifiers.indexOf(control);
+		if (index>=0)
+			new_modifiers.splice(index, 1);
 	}
-	//console.log("altgr_state=", this.altgr_state, ", altgr_modifier=", this.altgr_modifier, ", modifiers=", new_modifiers);
+	console.log("altgr_state=", this.altgr_state, ", altgr_modifier=", this.altgr_modifier, ", modifiers=", new_modifiers);
 	return new_modifiers;
 }
 
@@ -655,9 +654,10 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	this._check_browser_language(key_language);
 
 	//AltGr: keep track of pressed state
-	if (str=="AltGraph") {
+	if (str=="AltGraph" || (keyname=="Alt_R" && Utilities.isWindows())) {
 		this.altgr_state = pressed;
 		keyname = "ISO_Level3_Shift";
+		str = "AltGraph"
 	}
 
 	//if (this.num_lock && keycode>=96 && keycode<106)
