@@ -117,7 +117,7 @@ class ClientInfoMixin(StubSourceMixin):
                 "session-type"      : self.client_session_type,
                 "session-type.full" : self.client_session_type_full,
                 "uuid"              : self.uuid,
-                "hostname"          : self.hostname,
+                "hostname"          : self.hostname or "",
                 "argv"              : self.argv,
                 }
 
