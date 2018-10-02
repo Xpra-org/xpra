@@ -72,16 +72,16 @@ var Utilities = {
 	},
 
 	getPlatformName: function() {
-		if (navigator.appVersion.indexOf('Win') !== -1){
+		if (navigator.appVersion.includes('Win')){
 			return 'Microsoft Windows';
 		}
-		if (navigator.appVersion.indexOf('Mac') !== -1){
+		if (navigator.appVersion.includes('Mac')){
 			return 'Mac OSX';
 		}
-		if (navigator.appVersion.indexOf('Linux') !== -1){
+		if (navigator.appVersion.includes('Linux')){
 			return 'Linux';
 		}
-		if (navigator.appVersion.indexOf('X11') !== -1){
+		if (navigator.appVersion.includes('X11')){
 			return 'Posix';
 		}
 		return 'unknown';
@@ -89,16 +89,16 @@ var Utilities = {
 
 	getPlatform: function() {
 		//use python style strings for platforms:
-		if (navigator.appVersion.indexOf('Win') !== -1){
+		if (navigator.appVersion.includes('Win')){
 			return 'win32';
 		}
-		if (navigator.appVersion.indexOf('Mac') !== -1){
+		if (navigator.appVersion.includes('Mac')){
 			return 'darwin';
 		}
-		if (navigator.appVersion.indexOf('Linux') !== -1){
+		if (navigator.appVersion.includes('Linux')){
 			return 'linux';
 		}
-		if (navigator.appVersion.indexOf('X11') !== -1){
+		if (navigator.appVersion.includes('X11')){
 			return 'posix';
 		}
 		return 'unknown';
@@ -177,36 +177,36 @@ var Utilities = {
 	},
 
 	isMacOS : function() {
-		return navigator.platform.indexOf('Mac') >= 0;
+		return navigator.platform.includes('Mac');
 	},
 
 	isWindows : function() {
-		return navigator.platform.indexOf('Win') >= 0;
+		return navigator.platform.includes('Win');
 	},
 
 	isLinux : function() {
-		return navigator.platform.indexOf('Linux') >= 0;
+		return navigator.platform.includes('Linux');
 	},
 
 
 	isFirefox : function() {
 		var ua = navigator.userAgent.toLowerCase();
-		return ua.indexOf("firefox") >= 0;
+		return ua.includes("firefox");
 	},
 	isOpera : function() {
 		var ua = navigator.userAgent.toLowerCase();
-		return ua.indexOf("opera") >= 0;
+		return ua.includes("opera");
 	},
 	isSafari : function() {
 		var ua = navigator.userAgent.toLowerCase();
-		return ua.indexOf("safari") >= 0 && ua.indexOf('chrome') < 0;
+		return ua.includes("safari") && !ua.includes('chrome');
 	},
 	isChrome : function () {
 		var isChromium = window.chrome,
 			winNav = window.navigator,
 			vendorName = winNav.vendor,
-			isOpera = winNav.userAgent.indexOf("OPR") > -1,
-			isIEedge = winNav.userAgent.indexOf("Edge") > -1,
+			isOpera = winNav.userAgent.includes("OPR"),
+			isIEedge = winNav.userAgent.includes("Edge"),
 			isIOSChrome = winNav.userAgent.match("CriOS");
 		  if (isIOSChrome) {
 			  return true;
@@ -219,7 +219,7 @@ var Utilities = {
 		  }
 	},
 	isIE : function() {
-		return navigator.userAgent.indexOf("MSIE") != -1;
+		return navigator.userAgent.includes("MSIE");
 	},
 
 	getSimpleUserAgentString : function() {
@@ -331,19 +331,18 @@ var Utilities = {
 
 	saveFile : function(filename, data, mimetype) {
 	    var a = document.createElement("a");
-	    a.style = "display: none";
+	    a.setAttribute("style", "display: none");
 	    document.body.appendChild(a);
 	    var blob = new Blob([data], mimetype);
 	    var url = window.URL.createObjectURL(blob);
-        a.href = url;
-        a.download = filename;
-        a.click();
-        window.URL.revokeObjectURL(url);
-	},
-
-	//IE is retarded:
-	endsWith : function (str, suffix) {
-	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+	    if (navigator.msSaveOrOpenBlob) {
+	    	navigator.msSaveOrOpenBlob(blob, filename);
+	    } else {
+	        a.href = url;
+	        a.download = filename;
+	        a.click();
+	        window.URL.revokeObjectURL(url);
+	    }
 	},
 
 	monotonicTime : function() {
@@ -446,7 +445,7 @@ var Utilities = {
 		if(v===null) {
 			return default_value;
 		}
-		return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())>=0;
+		return ["true", "on", "1", "yes", "enabled"].includes(String(v).toLowerCase());
 	},
 
 	getConnectionInfo : function() {
@@ -511,81 +510,3 @@ var MOVERESIZE_DIRECTION_JS_NAME = {
         6	: "sw",
         7	: "w",
         };
-
-
-if (!Array.from) {
-	Array.from = (function () {
-		var toStr = Object.prototype.toString;
-		var isCallable = function (fn) {
-			return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
-		};
-		var toInteger = function (value) {
-			var number = Number(value);
-			if (isNaN(number)) { return 0; }
-			if (number === 0 || !isFinite(number)) { return number; }
-			return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
-		};
-		var maxSafeInteger = Math.pow(2, 53) - 1;
-		var toLength = function (value) {
-			var len = toInteger(value);
-			return Math.min(Math.max(len, 0), maxSafeInteger);
-		};
-
-		// The length property of the from method is 1.
-		return function from(arrayLike/*, mapFn, thisArg */) {
-			// 1. Let C be the this value.
-			var C = this;
-
-			// 2. Let items be ToObject(arrayLike).
-			var items = Object(arrayLike);
-
-			// 3. ReturnIfAbrupt(items).
-			if (arrayLike == null) {
-				throw new TypeError("Array.from requires an array-like object - not null or undefined");
-			}
-
-			// 4. If mapfn is undefined, then let mapping be false.
-			var mapFn = arguments.length > 1 ? arguments[1] : void undefined;
-			var T;
-			if (typeof mapFn !== 'undefined') {
-				// 5. else
-				// 5. a If IsCallable(mapfn) is false, throw a TypeError exception.
-				if (!isCallable(mapFn)) {
-					throw new TypeError('Array.from: when provided, the second argument must be a function');
-				}
-
-				// 5. b. If thisArg was supplied, let T be thisArg; else let T be undefined.
-				if (arguments.length > 2) {
-					T = arguments[2];
-				}
-			}
-
-			// 10. Let lenValue be Get(items, "length").
-			// 11. Let len be ToLength(lenValue).
-			var len = toLength(items.length);
-
-			// 13. If IsConstructor(C) is true, then
-			// 13. a. Let A be the result of calling the [[Construct]] internal method of C with an argument list containing the single item len.
-			// 14. a. Else, Let A be ArrayCreate(len).
-			var A = isCallable(C) ? Object(new C(len)) : new Array(len);
-
-			// 16. Let k be 0.
-			var k = 0;
-			// 17. Repeat, while k < len… (also steps a - h)
-			var kValue;
-			while (k < len) {
-				kValue = items[k];
-				if (mapFn) {
-					A[k] = typeof T === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
-				} else {
-					A[k] = kValue;
-				}
-				k += 1;
-			}
-			// 18. Let putStatus be Put(A, "length", len, true).
-			A.length = len;
-			// 20. Return A.
-			return A;
-		};
-	}());
-}

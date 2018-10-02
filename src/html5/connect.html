@@ -3,7 +3,7 @@
 
 <head>
 	<!--
-	Copyright (c) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+	Copyright (c) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 	Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
 	Licensed under MPL 2.0
 	-->
@@ -20,6 +20,7 @@
 	<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 	<link rel="icon" type="image/png" href="favicon.png">
 
+	<script type="text/javascript" src="js/lib/es6-shim.js"></script>
 	<script type="text/javascript" src="js/lib/jquery.js"></script>
 	<script type="text/javascript" src="js/Utilities.js"></script>
 	<script type="text/javascript" src="js/MediaSourceUtil.js"></script>
@@ -346,7 +347,7 @@ $(document).ready(function() {
 	var link = document.createElement('a');
 	link.setAttribute('href', url);
 	var pathname = link.pathname;
-	if (pathname && Utilities.endsWith(pathname, "connect.html")) {
+	if (pathname && pathname.endsWith("connect.html")) {
 		pathname = pathname.substring(0, pathname.length-"connect.html".length);
 	}
 	if (pathname && pathname=="/") {
@@ -543,7 +544,7 @@ $(document).ready(function() {
 	}
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
-		var def = default_on.indexOf(prop)>=0;
+		var def = default_on.includes(prop);
 		document.getElementById(prop).checked = getboolparam(prop, def);
 	}
 	function toggle_mediasource_video() {

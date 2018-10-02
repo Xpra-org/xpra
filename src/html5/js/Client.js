@@ -219,7 +219,7 @@ XpraClient.prototype.debug = function() {
 	var category = arguments[0];
 	var args = Array.from(arguments);
 	args = args.splice(1);
-	if (this.debug_categories.indexOf(category)>=0) {
+	if (this.debug_categories.includes(category)) {
 		if (category!="network") {
 			//logging.DEBUG = 10
 			this.send_log(10, arguments);
@@ -547,7 +547,7 @@ XpraClient.prototype.translate_modifiers = function(modifiers) {
 		new_modifiers[index] = alt;
 	
 	//add altgr?
-	if (this.altgr_state && altgr && new_modifiers.indexOf(altgr)<0) {
+	if (this.altgr_state && altgr && !new_modifiers.includes(altgr)) {
 		new_modifiers.push(altgr);
 		//remove spurious modifiers:
 		index = new_modifiers.indexOf(alt);
@@ -631,7 +631,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	//(for arrowpad, keyname==str)
 	if (keyname!=str && str in NUMPAD_TO_NAME) {
 		keyname = NUMPAD_TO_NAME[str];
-		this.num_lock = ("0123456789.".indexOf(keyname))>=0;
+		this.num_lock = ("0123456789.".includes(keyname));
 	}
 	//some special keys are better mapped by name:
 	else if (keyname in KEY_TO_NAME){
@@ -640,7 +640,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	//next try mapping the actual character
 	else if (str in CHAR_TO_NAME) {
 		keyname = CHAR_TO_NAME[str];
-		if (keyname.indexOf("_")>0) {
+		if (keyname.includes("_")) {
 			//ie: Thai_dochada
 			var lang = keyname.split("_")[0];
 			key_language = KEYSYM_TO_LAYOUT[lang];
@@ -672,7 +672,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	var keyval = keycode;
 	var group = 0;
 
-	var shift = modifiers.indexOf("shift")>=0;
+	var shift = modifiers.includes("shift");
 	if ((this.caps_lock && shift) || (!this.caps_lock && !shift))
 		str = str.toLowerCase();
 
@@ -704,7 +704,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		setTimeout(function () {
 			me.send(packet);
 			me.debug("keyboard", packet);
-			if (pressed && me.swap_keys && raw_modifiers.indexOf("meta")>=0 && ostr!="meta") {
+			if (pressed && me.swap_keys && raw_modifiers.includes("meta") && ostr!="meta") {
 				//macos will swallow the key release event if the meta modifier is pressed,
 				//so simulate one immediately:
 				packet = ["key-action", me.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
@@ -733,7 +733,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 			this.debug("keyboard", "passing clipboard combination Shift+Insert to browser");
 			return true;
 		}
-		var clipboard_mod_set = raw_modifiers.indexOf(clipboard_modifier)>=0;
+		var clipboard_mod_set = raw_modifiers.includes(clipboard_modifier);
 		if (clipboard_mod_set) {
 			var l = keyname.toLowerCase();
 			if (l=="c" || l=="x" || l=="v") {
@@ -769,7 +769,7 @@ XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
 	var modifiers = ctx._keyb_get_modifiers(event);
 
 	/* PITA: this only works for keypress event... */
-	var shift = modifiers.indexOf("shift")>=0;
+	var shift = modifiers.includes("shift");
 	if (keycode>=97 && keycode<=122 && shift) {
 		ctx.caps_lock = true;
 	}
@@ -1582,7 +1582,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 			}
 			else {
 				ctx.log("audio codecs supported by the server:", ctx.server_audio_codecs);
-				if(ctx.server_audio_codecs.indexOf(ctx.audio_codec)<0) {
+				if(!ctx.server_audio_codecs.includes(ctx.audio_codec)) {
 					ctx.warn("audio codec "+ctx.audio_codec+" is not supported by the server");
 					ctx.audio_codec = null;
 					//find the best one we can use:
@@ -2151,7 +2151,7 @@ XpraClient.prototype.request_redraw = function(win) {
 	this.debug("draw", "request_redraw for", win);
 	win.swap_buffers();
 	if(window.requestAnimationFrame) {
-		if (!this.pending_redraw.indexOf(win)>=0) {
+		if (!this.pending_redraw.includes(win)) {
 			this.pending_redraw.push(win);
 		}
 		// schedule a screen refresh if one is not already due:
@@ -2650,7 +2650,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 	// because we can't (the browser security won't let us)
 	// we just record the contents and actually set the clipboard
 	// when we get a click, control-C or control-X event
-	if(ctx.clipboard_targets.indexOf(packet[3])>=0) {
+	if(ctx.clipboard_targets.includes(packet[3])) {
 		var data = packet[7];
 		try {
 			data = Utilities.Uint8ToString(data);

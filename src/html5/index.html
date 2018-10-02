@@ -16,6 +16,7 @@
 		<link rel="stylesheet" href="css/client.css">
 		<link rel="stylesheet" href="css/spinner.css">
 
+		<script type="text/javascript" src="js/lib/es6-shim.js"></script>
 		<script type="text/javascript" src="js/lib/jquery.js"></script>
 		<script type="text/javascript" src="js/lib/jquery-ui.js"></script>
 		<script type="text/javascript" src="js/lib/jquery.ba-throttle-debounce.js"></script>
@@ -332,7 +333,7 @@
 			    if(sound) {
 			    	client.audio_enabled = true;
 			    	clog("sound enabled, audio codec string: "+audio_codec);
-			    	if(audio_codec && audio_codec.indexOf(":")>0) {
+			    	if(audio_codec && audio_codec.includes(":")) {
 				    	var acparts = audio_codec.split(":");
 				    	client.audio_framework = acparts[0];
 				    	client.audio_codec = acparts[1];
@@ -655,7 +656,7 @@
 					var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
 					if (!f_el) {
 						var elem = document.getElementById("fullscreen");
-				        var req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen;
+				        var req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
 						if (req) {
 							req.call(document.getElementById("screen"));
 						}

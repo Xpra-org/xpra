@@ -440,7 +440,7 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 			//remove any existing "wmclass-" classes not in the new wm_class list:
 			for (var i = 0; i < classes.length; i++) {
 				var tclass = ""+classes[i];
-				if (tclass.indexOf("wmclass-")===0 && wm_class && wm_class.indexOf(tclass)<0) {
+				if (tclass.indexOf("wmclass-")===0 && wm_class && !wm_class.includes(tclass)) {
 					jQuery(this.div).removeClass(tclass);
 				}
 			}
@@ -985,7 +985,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 	this.video.style.zIndex = this.div.css("z-index")+1;
 	this.video.style.left  = ""+this.leftoffset+"px";
 	this.video.style.top = ""+this.topoffset+"px";
-	if (this.debug_categories.indexOf("audio")>=0) {
+	if (this.debug_categories.includes("audio")) {
 		MediaSourceUtil.addMediaElementEventDebugListeners(this.video, "video");
 		this.video.setAttribute('controls', "controls");
 	}
@@ -1016,7 +1016,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 		var vsb = me.media_source.addSourceBuffer(codec_string);
 	    vsb.mode = "sequence";
 		me.video_source_buffer = vsb;
-		if (me.debug_categories.indexOf("draw")>=0) {
+		if (me.debug_categories.includes("draw")) {
 			MediaSourceUtil.addSourceBufferEventDebugListeners(vsb, "video");
 		}
 		vsb.addEventListener('error', function(e) { me.error("video source buffer error"); });
@@ -1294,7 +1294,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 					xdelta = scroll_data[4],
 					ydelta = scroll_data[5];
 				this.offscreen_canvas_ctx.drawImage(this.draw_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
-				if (this.debug_categories.indexOf("draw")>=0) {
+				if (this.debug_categories.includes("draw")) {
 					paint_box("brown", sx+xdelta, sy+ydelta, sw, sh);
 				}
 			}

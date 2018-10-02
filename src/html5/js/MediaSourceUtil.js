@@ -169,7 +169,7 @@ var MediaSourceUtil = {
 							blacklist += ["opus+mka"];
 						}
 					}
-					if(blacklist.indexOf(codec_option)>=0) {
+					if(blacklist.includes(codec_option)) {
 						Utilities.log("audio codec MediaSource '"+codec_option+"' / '"+codec_string+"' is blacklisted for "+navigator.userAgent);
 						if(ignore_blacklist) {
 							Utilities.log("blacklist overruled!");
@@ -209,7 +209,7 @@ var MediaSourceUtil = {
 			var codec_options = Object.keys(codecs);
 			for (var i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
 				var codec_option = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
-				if(codec_options.indexOf(codec_option)>=0) {
+				if(codec_options.includes(codec_option)) {
 					return codec_option;
 				}
 			}
