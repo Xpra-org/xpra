@@ -22,7 +22,7 @@ from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.os_util import StringIOClass, monotonic_time, strtobytes, PYTHON3
-from xpra.util import engs, csv, typedict
+from xpra.util import engs, csv, typedict, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 
 set_context_check(verify_sync)
@@ -704,10 +704,18 @@ class X11ServerCore(GTKServerBase):
                     maxdelta = max(abs(actual_xdpi-xdpi), abs(actual_ydpi-ydpi))
                     if maxdelta>=10:
                         l = log.warn
-                    l("DPI set to %s x %s (wanted %s x %s)", actual_xdpi, actual_ydpi, xdpi, ydpi)
+                    messages = [
+                        "DPI set to %s x %s (wanted %s x %s)" % (actual_xdpi, actual_ydpi, xdpi, ydpi),
+                        ]
                     if maxdelta>=10:
-                        l(" you may experience scaling problems, such as huge or small fonts, etc")
-                        l(" to fix this issue, try the dpi switch, or use a patched Xorg dummy driver")
+                        messages.append("you may experience scaling problems, such as huge or small fonts, etc")
+                        messages.append("to fix this issue, try the dpi switch, or use a patched Xorg dummy driver")
+                        sources = tuple(self._server_sources.values())
+                        if len(sources)==1:
+                            body = "\n".join(messages)
+                            sources[0].may_notify(XPRA_DPI_NOTIFICATION_ID, "DPI Issue", body, icon_name="font")
+                    for i,message in enumerate(messages):
+                        l("%s%s", ["", " "][i>0], message)
             #show dpi via idle_add so server has time to change the screen size (mm)
             self.idle_add(show_dpi)
         except Exception as e:
