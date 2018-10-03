@@ -179,13 +179,13 @@ class WindowModel(BaseWindowModel):
     def setup(self):
         super(WindowModel, self).setup()
 
-        x, y, w, h, _ = self.client_window.get_geometry()
+        ox, oy, ow, oh, _ = self.client_window.get_geometry()
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
-        x, y = self._clamp_to_desktop(x, y, w, h)
+        x, y = self._clamp_to_desktop(ox, oy, ow, oh)
         self.corral_window = gdk.Window(self.parking_window,
-                                        x=x, y=y, width=w, height=h,
+                                        x=x, y=y, width=ow, height=oh,
                                         window_type=gdk.WINDOW_CHILD,
                                         wclass=gdk.INPUT_OUTPUT,
                                         event_mask=gdk.PROPERTY_CHANGE_MASK,
@@ -225,8 +225,11 @@ class WindowModel(BaseWindowModel):
             raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
         self._updateprop("geometry", (x, y, nw, nh))
         geomlog("setup() resizing windows to %sx%s", nw, nh)
-        self.corral_window.resize(nw, nh)
-        self.client_window.resize(nw, nh)
+        #don't trigger a resize unless we have to:
+        if ow!=nw or oh!=nh:
+            self.corral_window.resize(nw, nh)
+        if w!=nw or h!=nh:
+            self.client_window.resize(nw, nh)
         self.client_window.show_unraised()
         #this is here to trigger X11 errors if any are pending
         #or if the window is deleted already:
