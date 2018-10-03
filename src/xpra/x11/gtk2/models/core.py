@@ -39,6 +39,7 @@ ADDMASK = gdk.STRUCTURE_MASK | gdk.PROPERTY_CHANGE_MASK | gdk.FOCUS_CHANGE_MASK 
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
+FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 
 
 # grab stuff:
@@ -431,6 +432,8 @@ class CoreX11WindowModel(WindowModelStub):
         #legacy name for _sync_frame() called from Wm
         self._sync_frame()
     def _sync_frame(self, *_args):
+        if not FRAME_EXTENTS:
+            return
         v = self.get_property("frame")
         framelog("sync_frame: frame(%#x)=%s", self.xid, v)
         if not v and (not self.is_OR() and not self.is_tray()):

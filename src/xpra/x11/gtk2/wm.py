@@ -98,8 +98,6 @@ DEFAULT_NET_SUPPORTED = [
         "_NET_CLOSE_WINDOW",
 
         # These aren't supported in any particularly meaningful way, but hey.
-        "_NET_FRAME_EXTENTS",
-
         "_NET_WM_WINDOW_TYPE",
         "_NET_WM_WINDOW_TYPE_NORMAL",
         "_NET_WM_WINDOW_TYPE_DESKTOP",
@@ -144,6 +142,10 @@ DEFAULT_NET_SUPPORTED = [
         # Not at all yet:
         #"_NET_RESTACK_WINDOW",
         ]
+FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
+if FRAME_EXTENTS:
+    DEFAULT_NET_SUPPORTED.append("_NET_FRAME_EXTENTS")
+
 NET_SUPPORTED = [x for x in DEFAULT_NET_SUPPORTED if x not in NO_NET_SUPPORTED]
 
 
@@ -400,7 +402,7 @@ class Wm(gobject.GObject):
         if event.message_type=="_NET_SHOWING_DESKTOP":
             show = bool(event.data[0])
             self.emit("show-desktop", show)
-        elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS":
+        elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS" and FRAME_EXTENTS:
             #if we're here, that means the window model does not exist
             #(or it would have processed the event)
             #so this must be a an unmapped window
@@ -412,7 +414,7 @@ class Wm(gobject.GObject):
                 if not frame:
                     #fallback:
                     frame = (0, 0, 0, 0)
-                log("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, event.window.xid)
+                framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, event.window.xid)
                 prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
     def _lost_wm_selection(self, selection):
