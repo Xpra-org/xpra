@@ -489,7 +489,7 @@ cdef class Encoder:
             "encoding"  : self.encoding,
             "src_format": self.src_format,
             "max_threads": self.max_threads,
-            "bandwidth-limit" : self.bandwidth_limit,
+            "bandwidth-limit" : int(self.bandwidth_limit),
             })
         #calculate fps:
         cdef unsigned int f = 0

@@ -657,7 +657,7 @@ cdef class Encoder:
             "version"       : get_version(),
             "frame-types"   : self.frame_types,
             "delayed"       : self.delayed_frames,
-            "bandwidth-limit" : self.bandwidth_limit,
+            "bandwidth-limit" : int(self.bandwidth_limit),
             })
         cdef x264_param_t param
         x264_encoder_parameters(self.context, &param)
@@ -729,7 +729,7 @@ cdef class Encoder:
             "bitrate"           : param.rc.i_bitrate,
             "vbv_max_bitrate"   : param.rc.i_vbv_max_bitrate,
             "vbv_buffer_size"   : param.rc.i_vbv_buffer_size,
-            "vbv_buffer_init"   : param.rc.f_vbv_buffer_init,
+            #"vbv_buffer_init"   : param.rc.f_vbv_buffer_init,	#can't have floats with bencoder
             "vbv_max_bitrate"   : param.rc.i_vbv_max_bitrate,
 
             "mb-tree"           : bool(param.rc.b_mb_tree),

@@ -357,14 +357,15 @@ def get_ssl_info():
         v = getattr(ssl, k, None)
         if v is not None:
             info[name] = v
-    for k,name in {
-                    ""            : "version",
-                    "_INFO"        : "version-info",
-                    "_NUMBER"    : "version-number",
+    for k, idef in {
+                    ""           : ("version", str),
+                    "_INFO"      : ("version-info", str),
+                    "_NUMBER"    : ("version-number", int),
                     }.items():
         v = getattr(ssl, "OPENSSL_VERSION%s" % k, None)
         if v is not None:
-            info.setdefault("openssl", {})[name] = v
+            name, conv = idef
+            info.setdefault("openssl", {})[name] = conv(v)
     return info
 
 
