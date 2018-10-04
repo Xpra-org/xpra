@@ -107,7 +107,7 @@ def do_verify_packet(tree, packet):
                 r = False
             if not do_verify_packet(new_tree("value for key='%s'" % str(k)), v):
                 r = False
-    elif type(packet) in (int, bool, str, bytes):
+    elif type(packet) in (int, bool, str, bytes, unicode):
         pass
     else:
         err("unsupported type: %s" % type(packet))
