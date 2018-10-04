@@ -186,7 +186,7 @@ cdef int encode(object v, r) except -1:
     elif v==None:
         raise ValueError("found None value!")
     else:
-        raise ValueError("unsupported type: %s" % t)
+        raise ValueError("unsupported type: %s, value=%s" % (t, v))
 
 def bencode(x):
     r = []
