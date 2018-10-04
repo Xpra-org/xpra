@@ -61,6 +61,7 @@
 					<button onclick="show_menu('xpra_menu', event);" class="menu-button">Xpra &#9660;</button>
 					<div id="xpra_menu" class="menu-content">
 						<a href="#" id="about_link" onclick="show_about(event); return false">About</a>
+						<a href="#" id="sessioninfo_link" onclick="show_sessioninfo(event); return false">Session Info</a>
 						<a href="#" id="disconnect_link" onclick="client.disconnect_reason='User request'; client.close(); return false">Disconnect</a>
 					</div>
 					<button onclick="show_menu('server_menu', event);" class="menu-button">Server &#9660;</button>
@@ -106,6 +107,49 @@
 			<span class="info">
 			For more information, see <a href="https://xpra.org/trac/wiki/HTML5">xpra HTML5 wiki</a>.
 			</span>
+		</div>
+
+		<div id="sessioninfo">
+			<h2>Session Information</h2>
+			<h3>Connection Data</h3>
+			<table id='sessiondata'>
+			<tr>
+				<th>Server Endpoint</th>
+				<td id="endpoint"></td>
+			</tr>
+			<tr>
+				<th>Server Display</th>
+				<td id="server_display"></td>
+			</tr>
+			<!-- <tr>
+				<th>Server Hostname</th>
+				<td id="server_hostname"></td>
+			</tr> -->
+			<tr>
+				<th>Server Platform</th>
+				<td id="server_platform"></td>
+			</tr>
+			<tr>
+				<th>Server Load</th>
+				<td id="server_load"></td>
+			</tr>
+			<!-- <tr>
+				<th>Session Started</th>
+				<td id="session_started"></td>
+			</tr> -->
+			<tr>
+				<th>Session Connected</th>
+				<td id="session_connected"></td>
+			</tr>
+			<tr>
+				<th>Server Latency</th>
+				<td id="server_latency"></td>
+			</tr>
+			<tr>
+				<th>Client Latency</th>
+				<td id="client_latency"></td>
+			</tr>
+			</table>
 		</div>
 
 	    <div>
@@ -157,13 +201,67 @@
 			$("body").click(function() {
 				$('.menu-content').slideUp();
 				$('#about').hide();
+				hide_sessioninfo(event);
 			});
 
 			function show_about(event) {
 				$('.menu-content').slideUp();
 				$('#about').show();
+				hide_sessioninfo(event);
 				event.stopPropagation();
 			}
+
+			//session-info handling:
+			function show_sessioninfo(event) {
+				$('.menu-content').slideUp();
+				$('#about').hide();
+				$('#sessiondata td').html("");
+				$('#sessioninfo').show();
+				client.start_info_timer();
+				event.stopPropagation();
+			}
+			function hide_sessioninfo(event) {
+				$('#sessioninfo').hide();
+				client.stop_info_timer();
+			}
+			document.addEventListener('info-response', function (e) {
+				var info = e.data;
+				$("#endpoint").html(client.uri);
+				$("#server_display").html(client.server_display);
+				//$("#server_hostname").html(info["hostname"] || "");
+				$("#server_platform").html(client.server_platform);
+				if (client.server_load==null) {
+					$("#server_load").html("n/a");
+				}
+				else {
+					$("#server_load").html(""+client.server_load);
+				}
+				function toHHMMSS(t) {
+					var s = "";
+					var hh = Math.floor(t/1000/60/60);
+					if (hh>0)
+						s += ""+hh+":";
+					var mm = Math.floor(t/1000/60) % 60;
+					s += ("0" + mm).slice(-2);	//left pad with "0"
+					var ss = Math.floor(t/1000) % 60;
+					s += ":"+("0" + ss).slice(-2);	//left pad with "0"
+					return s
+				}
+				//this one shows bogus values!?:
+				//var elapsed = (new Date()).getTime()-info["server.start_time"];
+				//$("#session_started").html(toHHMMSS(elapsed));
+				var elapsed = (new Date()).getTime()-client.client_start_time;
+				$("#session_connected").html(toHHMMSS(elapsed));
+				if (client.server_ping_latency>=0)
+					$("#server_latency").html(client.server_ping_latency);
+				if (client.client_ping_latency>=0)
+					$("#client_latency").html(client.client_ping_latency);
+				//TODO:
+				// * add packet counter to Protocol.js
+	  	        //"Packets Received"
+	  	        //"Encoding + Compression"
+				}, false);
+
 
 			function init_client() {
 				if (typeof jQuery == 'undefined') {

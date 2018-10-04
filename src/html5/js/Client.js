@@ -47,6 +47,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.username = "";
 	this.password = null;
 	this.insecure = false;
+	this.uri = "";
 	//connection options:
 	this.sharing = false;
 	this.open_url = true;
@@ -74,6 +75,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.PING_TIMEOUT = 15000;
 	this.PING_GRACE = 2000;
 	this.PING_FREQUENCY = 5000;
+	this.INFO_FREQUENCY = 1000;
 	this.uuid = Utilities.getHexUUID();
 }
 
@@ -82,6 +84,8 @@ XpraClient.prototype.init_state = function(container) {
 	this.desktop_width = 0;
 	this.desktop_height = 0;
 	this.server_remote_logging = false;
+    this.server_start_time = -1;
+    this.client_start_time = new Date();
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
@@ -123,6 +127,9 @@ XpraClient.prototype.init_state = function(container) {
 	this.remote_open_files = false;
 	// hello
 	this.hello_timer = null;
+	this.info_timer = null;
+	this.info_request_pending = false;
+	this.server_last_info = {};
 	// ping
 	this.ping_timeout_timer = null;
 	this.ping_grace_timer = null;
@@ -130,6 +137,9 @@ XpraClient.prototype.init_state = function(container) {
 	this.last_ping_server_time = 0
 	this.last_ping_local_time = 0
 	this.last_ping_echoed_time = 0;
+	this.server_ping_latency = 0;
+	this.client_ping_latency = 0;
+	this.server_load = null;
 	this.server_ok = false;
     //packet handling
     this.queue_draw_packets = false;
@@ -137,6 +147,8 @@ XpraClient.prototype.init_state = function(container) {
     this.dQ_interval_id = null;
     this.process_interval = 4;
 
+    this.server_display = "";
+    this.server_platform = "";
     this.server_resize_exact = false;
     this.server_screen_sizes = [];
     this.server_is_desktop = false;
@@ -249,6 +261,7 @@ XpraClient.prototype.init_packet_handlers = function() {
 		'hello': this._process_hello,
 		'ping': this._process_ping,
 		'ping_echo': this._process_ping_echo,
+		'info-response': this._process_info_response,
 		'new-tray': this._process_new_tray,
 		'new-window': this._process_new_window,
 		'new-override-redirect': this._process_new_override_redirect,
@@ -355,6 +368,7 @@ XpraClient.prototype.open_protocol = function() {
 	uri += ":" + this.port;
 	uri += this.path;
 	// do open
+	this.uri = uri;
 	this.on_connection_progress("Opening WebSocket connection", uri, 60);
 	this.protocol.open(uri);
 }
@@ -400,6 +414,7 @@ XpraClient.prototype.close_protocol = function() {
 }
 
 XpraClient.prototype.clear_timers = function() {
+	this.stop_info_timer();
 	if (this.hello_timer) {
 		clearTimeout(this.hello_timer);
 		this.hello_timer = null;
@@ -890,23 +905,6 @@ XpraClient.prototype._check_echo_timeout = function(ping_time) {
 	}
 }
 
-XpraClient.prototype._send_ping = function() {
-	if (this.reconnect_in_progress) {
-		return;
-	}
-	var me = this;
-	var now_ms = Math.ceil(Utilities.monotonicTime());
-	this.send(["ping", now_ms]);
-	// add timeout to wait for ping timout
-	this.ping_timeout_timer = setTimeout(function () {
-		me._check_echo_timeout(now_ms);
-	}, this.PING_TIMEOUT);
-	// add timeout to detect temporary ping miss for spinners
-	var wait = 2000;
-	this.ping_grace_timer = setTimeout(function () {
-		me._check_server_echo(now_ms);
-	}, wait);
-}
 
 /**
  * Hello
@@ -1487,6 +1485,8 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx.hello_timer = null;
 	}
 	var hello = packet[1];
+    ctx.server_display = hello["display"] || "";
+    ctx.server_platform = hello["platform"] || "";
 	ctx.server_remote_logging = hello["remote-logging.multi-line"];
 	if(ctx.server_remote_logging && ctx.remote_logging) {
 		//hook remote logging:
@@ -1729,6 +1729,25 @@ XpraClient.prototype._gendigest = function(digest, password, salt) {
 	}
 }
 
+
+XpraClient.prototype._send_ping = function() {
+	if (this.reconnect_in_progress) {
+		return;
+	}
+	var me = this;
+	var now_ms = Math.ceil(Utilities.monotonicTime());
+	this.send(["ping", now_ms]);
+	// add timeout to wait for ping timout
+	this.ping_timeout_timer = setTimeout(function () {
+		me._check_echo_timeout(now_ms);
+	}, this.PING_TIMEOUT);
+	// add timeout to detect temporary ping miss for spinners
+	var wait = 2000;
+	this.ping_grace_timer = setTimeout(function () {
+		me._check_server_echo(now_ms);
+	}, wait);
+}
+
 XpraClient.prototype._process_ping = function(packet, ctx) {
 	var echotime = packet[1];
 	ctx.last_ping_server_time = echotime;
@@ -1743,9 +1762,49 @@ XpraClient.prototype._process_ping = function(packet, ctx) {
 
 XpraClient.prototype._process_ping_echo = function(packet, ctx) {
 	ctx.last_ping_echoed_time = packet[1];
+	var l1 = packet[2],
+		l2 = packet[3],
+		l3 = packet[4];
+	ctx.client_ping_latency = packet[5];
+    ctx.server_ping_latency = Math.ceil(Utilities.monotonicTime())-ctx.last_ping_echoed_time;
+	ctx.server_load = [l1/1000.0, l2/1000.0, l3/1000.0];
 	// make sure server goes OK immediately instead of waiting for next timeout
 	ctx._check_server_echo(0);
 }
+
+
+/**
+ * Info
+ */
+XpraClient.prototype.start_info_timer = function() {
+	if (this.info_timer==null) {
+		var me = this;
+		this.info_timer = setInterval(function () {
+			if (!me.info_request_pending) {
+				me.info_request_pending = true;
+	            me.send(["info-request", [me.uuid], [], []]);
+			}
+			return true;
+		}, this.INFO_FREQUENCY);
+	}
+}
+XpraClient.prototype._process_info_response = function(packet, ctx) {
+	ctx.info_request_pending = false;
+	ctx.server_last_info = packet[1];
+	ctx.debug("network", "info-response:", ctx.server_last_info);
+	var event = document.createEvent("Event");
+	event.initEvent('info-response', true, true);
+	event.data = ctx.server_last_info;
+	document.dispatchEvent(event);
+}
+XpraClient.prototype.stop_info_timer = function() {
+	if (this.info_timer) {
+		clearTimeout(this.info_timer);
+		this.info_timer = null;
+		this.info_request_pending = false;
+	}
+}
+
 
 /**
  * System Tray forwarding

@@ -308,12 +308,17 @@ div.windowinfocus {
     background-color: #2980B9;
 }
 
-#about {
+#about, #sessioninfo {
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	background-color: #eee;
 	border: 2px solid #ddd;
 	display: none;
 	z-index: 1000000;
+	margin: auto;
+	text-align: center;
+	padding: 20px;
+}
+#about, #sessioninfo {
 	position: fixed;
 	margin: auto;
 	width: 640px;
@@ -322,8 +327,15 @@ div.windowinfocus {
 	left: 50%;
 	margin-left: -320px;
 	margin-top: -140px;
-	text-align: center;
-	padding: 20px;
+}
+table#sessiondata {
+	width: 90%;
+}
+table#sessiondata th {
+	text-align: left;
+}
+table#sessiondata td {
+	text-align: right;
 }
 
 #upload {
