@@ -36,6 +36,9 @@
 		-->
 		<script type="text/javascript" src="js/lib/aurora/aurora-xpra.js"></script>
 
+		<script type="text/javascript" src="js/lib/FileSaver.js"></script>
+		<script type="text/javascript" src="js/lib/jszip.js"></script>
+
 		<script type="text/javascript" src="js/Keycodes.js"></script>
 		<script type="text/javascript" src="js/Protocol.js"></script>
 		<script type="text/javascript" src="js/Window.js"></script>
@@ -62,6 +65,7 @@
 					<div id="xpra_menu" class="menu-content">
 						<a href="#" id="about_link" onclick="show_about(event); return false">About</a>
 						<a href="#" id="sessioninfo_link" onclick="show_sessioninfo(event); return false">Session Info</a>
+						<a href="#" id="bugreport_link" onclick="show_bugreport(event); return false">Bug Report</a>
 						<a href="#" id="disconnect_link" onclick="client.disconnect_reason='User request'; client.close(); return false">Disconnect</a>
 					</div>
 					<button onclick="show_menu('server_menu', event);" class="menu-button">Server &#9660;</button>
@@ -96,7 +100,7 @@
 
 		<div id="about">
 			<h2>Xpra HTML5 Client</h2>
-			<h3>Version 2.3</h3>
+			<h3>Version 2.4</h3>
 			<span>
 				Copyright (c) 2013-2018 Antoine Martin &lt;antoine@devloop.org.uk&gt;
 				<br />
@@ -152,8 +156,23 @@
 			</table>
 		</div>
 
+		<div id="bugreport">
+			<h2>Xpra Bug Report</h2>
+			<br />
+			<form>
+				Summary: <input id="bugreport_summary" type="text" size="64" maxlength="128" value="" />
+				<br />
+				Description:
+				<br />
+				<textarea id="bugreport_description" cols="80" rows="6"></textarea>
+				<br />
+				<button id="bugreport_cancel" type="button" onclick="hide_bugreport()">Cancel</button>
+				<button id="bugreport_submit" type="button" onclick="generate_bugreport()" disabled>Generate Report</button>
+			</form>
+		</div>
+
 	    <div>
-		    <textarea id="pasteboard" onblur="this.focus()" autofocus style="display: block; position: absolute; left: -99em;"></textarea>
+			<textarea id="pasteboard" style="display: block; position: absolute; left: -99em;"></textarea>
 	    </div>
 
 		<script>
@@ -203,6 +222,14 @@
 				$('#about').hide();
 				hide_sessioninfo(event);
 			});
+
+			$("#pasteboard").blur(function() {
+				//force focus back to our capture widget:
+				if (client.capture_keyboard) {
+					$("#pasteboard").focus();
+				}
+			});
+		    <!--  <textarea id="pasteboard" onblur="this.focus()" autofocus style="display: block; position: absolute; left: -99em;"></textarea> -->
 
 			function show_about(event) {
 				$('.menu-content').slideUp();
@@ -262,6 +289,41 @@
 	  	        //"Encoding + Compression"
 				}, false);
 
+
+			function enable_bugreport_submit() {
+				$("#bugreport_submit").prop('disabled', false);
+				document.removeEventListener('info-response', enable_bugreport_submit);
+			}
+			function hide_bugreport(event) {
+				$('#bugreport').hide();
+				//focus back on our capture widget:
+				$("#pasteboard").prop('autofocus');
+				$("#pasteboard").focus();
+			}
+			function show_bugreport(event) {
+				//stop capturing input, so we can interact with the bugreport form:
+				client.capture_keyboard = false;
+				$("#pasteboard").removeAttr('autofocus');
+				//hide menu:
+				$('.menu-content').slideUp();
+				$('#bugreport').show();
+				event.stopPropagation();
+				//disable submit until we get an info-response:
+				$("#bugreport_submit").prop('disabled', true);
+				document.addEventListener('info-response', enable_bugreport_submit);
+				client.send_info_request();
+			}
+			function generate_bugreport() {
+				client.capture_keyboard = true;
+				var zip = new JSZip();
+				zip.file("Summary.txt", ""+$("#bugreport_summary").val()+"\n\n"+$("#bugreport_description").val());
+				zip.file("Server-Info.txt", ""+JSON.stringify(client.server_last_info));
+				zip.generateAsync({type:"blob"})
+				.then(function(content) {
+				    saveAs(content, "bugreport.zip");
+				});
+				hide_bugreport();
+			}
 
 			function init_client() {
 				if (typeof jQuery == 'undefined') {

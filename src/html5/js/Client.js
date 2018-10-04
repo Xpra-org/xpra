@@ -495,6 +495,8 @@ XpraClient.prototype.init_keyboard = function() {
 	this.meta_modifier = null;
 	this.altgr_modifier = null;
 	this.altgr_state = false;
+
+	this.capture_keyboard = true;
 	// assign the keypress callbacks
 	// if we detect jQuery, use that to assign them instead
 	// to allow multiple clients on the same page
@@ -616,6 +618,9 @@ XpraClient.prototype._check_browser_language = function(key_layout) {
 
 
 XpraClient.prototype._keyb_process = function(pressed, event) {
+	if (!this.capture_keyboard) {
+		return true;
+	}
 	/**
 	 * Process a key event: key pressed or key released.
 	 * Figure out the keycode, keyname, modifiers, etc
@@ -769,6 +774,9 @@ XpraClient.prototype._keyb_onkeyup = function(event, ctx) {
 };
 
 XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
+	if (!ctx.capture_keyboard) {
+		return true;
+	}
 	/**
 	 * This function is only used for figuring out the caps_lock state!
 	 * onkeyup and onkeydown give us the raw keycode,
@@ -1128,6 +1136,9 @@ XpraClient.prototype._make_hello = function() {
 		"file-transfer" 			: this.file_transfer,
 		"printing" 					: this.printing,
 		"file-size-limit"			: 10,
+		//capabilities:
+		//this causes errors with info-response!
+		//"info-namespace"			: true,
 	});
 }
 
@@ -1780,12 +1791,17 @@ XpraClient.prototype.start_info_timer = function() {
 	if (this.info_timer==null) {
 		var me = this;
 		this.info_timer = setInterval(function () {
-			if (!me.info_request_pending) {
-				me.info_request_pending = true;
-	            me.send(["info-request", [me.uuid], [], []]);
+			if (me.info_timer!=null) {
+				me.send_info_request();
 			}
 			return true;
 		}, this.INFO_FREQUENCY);
+	}
+}
+XpraClient.prototype.send_info_request = function() {
+	if (!this.info_request_pending) {
+        this.send(["info-request", [this.uuid], [], []]);
+        this.info_request_pending = true;
 	}
 }
 XpraClient.prototype._process_info_response = function(packet, ctx) {

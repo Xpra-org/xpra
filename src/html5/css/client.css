@@ -308,7 +308,7 @@ div.windowinfocus {
     background-color: #2980B9;
 }
 
-#about, #sessioninfo {
+#about, #sessioninfo, #bugreport {
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	background-color: #eee;
 	border: 2px solid #ddd;
@@ -318,7 +318,7 @@ div.windowinfocus {
 	text-align: center;
 	padding: 20px;
 }
-#about, #sessioninfo {
+#about, #sessioninfo, #bugreport {
 	position: fixed;
 	margin: auto;
 	width: 640px;
@@ -328,6 +328,10 @@ div.windowinfocus {
 	margin-left: -320px;
 	margin-top: -140px;
 }
+#bugreport {
+	text-align: left;
+}
+
 table#sessiondata {
 	width: 90%;
 }
