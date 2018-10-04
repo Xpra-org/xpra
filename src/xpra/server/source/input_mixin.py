@@ -39,9 +39,10 @@ class InputMixin(StubSourceMixin):
 
     def get_info(self):
         info = {
-            "time"      : self.double_click_time,
-            "distance"  : self.double_click_distance,
-            }
+			"time"	  : self.double_click_time,
+			}
+        if self.double_click_distance:
+            info["distance"] = self.double_click_distance
         return {"double-click" : info}
 
     def get_caps(self):
