@@ -328,6 +328,14 @@ XpraProtocol.prototype.process_receive_queue = function() {
 				packet[index] = this.raw_packets[index];
 			}
 			this.raw_packets = {}
+		}
+		catch (e) {
+			//FIXME: maybe we should error out and disconnect here?
+			console.error("error decoding packet " + e);
+			//console.error("packet_data="+packet_data);
+			return;
+		}
+		try {
 			// pass to our packet handler
 			if((packet[0] === 'draw') && (packet[6] !== 'scroll')){
 				var img_data = packet[7];
@@ -351,7 +359,7 @@ XpraProtocol.prototype.process_receive_queue = function() {
 		}
 		catch (e) {
 			//FIXME: maybe we should error out and disconnect here?
-			console.error("error processing packet " + e)
+			console.error("error processing packet " + packet[0]+": " + e);
 			//console.error("packet_data="+packet_data);
 		}
 	}
