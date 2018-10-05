@@ -217,6 +217,27 @@
 				$('#upload').click();
 			}
 
+			function cleanup_dialogs() {
+				$('.menu-content').slideUp();
+				$('#about').hide();
+				hide_sessioninfo(null);
+				hide_bugreport(null);
+			}
+			function connection_established() {
+				//this may be a re-connection,
+				//so make sure we cleanup any left-overs
+				clog("connection-established")
+				cleanup_dialogs();
+				$("button.menu-button").prop('disabled', false);
+			}
+			function connection_lost() {
+				clog("connection-lost")
+				cleanup_dialogs();
+				$("button.menu-button").prop('disabled', true);
+			}
+			document.addEventListener('connection-established', connection_established);
+			document.addEventListener('connection-lost', connection_lost);
+			
 			$("body").click(function() {
 				$('.menu-content').slideUp();
 				$('#about').hide();

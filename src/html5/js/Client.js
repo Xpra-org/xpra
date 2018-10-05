@@ -914,6 +914,19 @@ XpraClient.prototype._check_echo_timeout = function(ping_time) {
 }
 
 
+XpraClient.prototype._emit_event = function(event_type) {
+	var event = document.createEvent("Event");
+	event.initEvent(event_type, true, true);
+	document.dispatchEvent(event);
+}
+XpraClient.prototype.emit_connection_lost = function(event_type) {
+	this._emit_event("connection-lost");
+}
+XpraClient.prototype.emit_connection_established = function(event_type) {
+	this._emit_event("connection-established");
+}
+
+
 /**
  * Hello
  */
@@ -1428,6 +1441,7 @@ XpraClient.prototype.do_reconnect = function() {
 				this.protocol = null;
 				protocol.terminate();
 			}
+			me.emit_connection_lost();
 			me.connect();
 		}
 		finally {
@@ -1445,6 +1459,7 @@ XpraClient.prototype._process_close = function(packet, ctx) {
 		ctx.disconnect_reason = packet[1];
 	}
 	if (ctx.reconnect && ctx.reconnect_attempt<ctx.reconnect_count) {
+		ctx.emit_connection_lost();
 		ctx.reconnect_attempt++;
 		ctx.do_reconnect();
 	}
@@ -1454,6 +1469,7 @@ XpraClient.prototype._process_close = function(packet, ctx) {
 }
 
 XpraClient.prototype.close = function() {
+	this.emit_connection_lost();
 	this.close_windows();
 	this.close_audio();
 	this.clear_timers();
@@ -1477,6 +1493,7 @@ XpraClient.prototype._process_disconnect = function(packet, ctx) {
 
 XpraClient.prototype._process_startup_complete = function(packet, ctx) {
 	ctx.log("startup complete");
+	ctx.emit_connection_established();
 }
 
 XpraClient.prototype._connection_change = function(e) {
