@@ -47,6 +47,9 @@ PAINT_FAULT_TELL = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
 WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
 TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
+OR_FORCE_GRAB = os.environ.get("XPRA_OR_FORCE_GRAB", "sun-awt-X11")
+
+
 SKIP_DUPLICATE_BUTTON_EVENTS = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
 REVERSE_HORIZONTAL_SCROLLING = envbool("XPRA_REVERSE_HORIZONTAL_SCROLLING", OSX)
 
@@ -703,6 +706,13 @@ class WindowClient(StubClientMixin):
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show()
+        if override_redirect and OR_FORCE_GRAB:
+            wm_class = metadata.get("class-instance")
+            if wm_class and len(wm_class)==2:
+                c = wm_class[0]
+                if any(c.startswith(x) for x in OR_FORCE_GRAB):
+                    grablog.warn("forcing grab for OR window %i, wm class '%s' matches %s", wid, c, OR_FORCE_GRAB)
+                    self.window_grab(window)
         return window
 
     ######################################################################
