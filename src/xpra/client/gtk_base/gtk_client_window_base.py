@@ -385,9 +385,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._client.update_focus(self._id, True)
 
     def cancel_focus_timer(self):
-        if self.recheck_focus_timer:
-            self.source_remove(self.recheck_focus_timer)
+        rft = self.recheck_focus_timer
+        if rft:
             self.recheck_focus_timer = 0
+            self.source_remove(rft)
 
     def schedule_recheck_focus(self):
         if self.recheck_focus_timer==0:
@@ -1916,7 +1917,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         #gdkwin.raise_()
                         w.present()
                         return focused
-        return self._id
+        return ClientWindowBase.get_mouse_event_wid(self, x, y)
 
 
     def do_scroll_event(self, event):
