@@ -889,6 +889,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         grablog("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
 
     def window_ungrab(self):
+        grablog("window_ungrab()")
         gdk.pointer_ungrab(0)
         gdk.keyboard_ungrab(0)
 

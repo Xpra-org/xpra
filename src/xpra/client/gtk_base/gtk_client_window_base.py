@@ -371,16 +371,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         grablog("recheck_focus() wid=%i, focused=%s, latest=%s", self._id, focused, self._focus_latest)
         hasfocus = focused==self._id
         if not focused:
+            grablog("window_ungrab()")
             #we should never own the grab if we don't have focus
-            self.keyboard_ungrab()
-            self.pointer_ungrab()
+            self._client.window_ungrab()
             return
         if hasfocus==self._focus_latest:
             #we're already up to date
             return
         if not self._focus_latest:
-            self.keyboard_ungrab()
-            self.pointer_ungrab()
+            self._client.window_ungrab()
             self._client.update_focus(self._id, False)
         else:
             self._client.update_focus(self._id, True)
