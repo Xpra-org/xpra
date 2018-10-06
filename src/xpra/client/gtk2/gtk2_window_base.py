@@ -12,10 +12,6 @@ from xpra.log import Logger
 log = Logger("window")
 statelog = Logger("state")
 eventslog = Logger("events")
-workspacelog = Logger("workspace")
-grablog = Logger("grab")
-mouselog = Logger("mouse")
-draglog = Logger("dragndrop")
 drawlog = Logger("draw")
 
 
