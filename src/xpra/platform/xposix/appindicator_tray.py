@@ -37,6 +37,14 @@ def get_appindicator():
             _appindicator = None
     return _appindicator
 
+def get_application_status(appindicator):
+    v = getattr(appindicator, "CATEGORY_APPLICATION_STATUS", None)
+    if v is None:
+        cat = getattr(appindicator, "IndicatorCategory", None)
+        if cat:
+            v = getattr(cat, "APPLICATION_STATUS", None)
+    return v
+
 def can_use_appindicator():
     return get_appindicator() is not None and is_unity()
 
@@ -49,7 +57,9 @@ class AppindicatorTray(TrayBase):
         self.appindicator = get_appindicator()
         self._has_icon = False
         assert self.appindicator, "appindicator is not available!"
-        self.tray_widget = self.appindicator.Indicator(self.tooltip, filename, self.appindicator.CATEGORY_APPLICATION_STATUS)
+        status = get_application_status(self.appindicator)
+        assert status, "appindicator status is not available!"
+        self.tray_widget = self.appindicator.Indicator(self.tooltip, filename, status)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
         self.tray_widget.set_attention_icon("xpra.png")
