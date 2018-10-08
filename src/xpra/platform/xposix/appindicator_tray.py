@@ -58,7 +58,7 @@ class AppindicatorTray(TrayBase):
         self._has_icon = False
         assert self.appindicator, "appindicator is not available!"
         status = get_application_status(self.appindicator)
-        assert status, "appindicator status is not available!"
+        assert status is not None, "appindicator status is not available!"
         self.tray_widget = self.appindicator.Indicator(self.tooltip, filename, status)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
