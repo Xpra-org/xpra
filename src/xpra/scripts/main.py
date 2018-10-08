@@ -57,11 +57,9 @@ def main(script_file, cmdline):
         from xpra.util import start_mem_watcher
         start_mem_watcher(ml)
 
-    from xpra.platform import clean as platform_clean, command_error, command_info, get_main_fallback
+    from xpra.platform import clean as platform_clean, command_error, command_info
     if len(cmdline)==1:
-        fm = get_main_fallback(cmdline[0])
-        if fm:
-            return fm()
+        cmdline.append("gui")
 
     def debug_exc(msg="run_mode error"):
         get_util_logger().debug(msg, exc_info=True)
@@ -114,7 +112,7 @@ def main(script_file, cmdline):
 
 
 def configure_logging(options, mode):
-    if mode in ("showconfig", "info", "id", "control", "list", "list-mdns", "sessions", "mdns-gui", "attach", "stop", "print", "opengl", "test-connect"):
+    if mode in ("showconfig", "info", "id", "control", "list", "list-mdns", "sessions", "mdns-gui", "attach", "launcher", "stop", "print", "opengl", "test-connect"):
         s = sys.stdout
     else:
         s = sys.stderr
@@ -393,6 +391,12 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_mdns_gui(error_cb, options)
         elif mode == "sessions":
             return run_sessions_gui(error_cb, options)
+        elif mode == "launcher":
+            from xpra.client.gtk_base.client_launcher import main
+            return main()
+        elif mode == "gui":
+            from xpra.client.gtk_base.gui import main
+            return main()
         elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)

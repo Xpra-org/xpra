@@ -1104,7 +1104,7 @@ def get_icon_from_file(filename):
     return pixbuf
 
 
-def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, default=False, min_size=None, label_color=None):
+def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, default=False, min_size=None, label_color=None, label_font=None):
     button = gtk.Button(title)
     settings = button.get_settings()
     settings.set_property('gtk-button-images', True)
@@ -1123,11 +1123,18 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
             button.set_can_default(True)
         else:
             button.set_flags(gtk.CAN_DEFAULT)
-    if label_color:
-        alignment = button.get_children()[0]
-        b_hbox = alignment.get_children()[0]
-        label = b_hbox.get_children()[1]
-        label.modify_fg(STATE_NORMAL, label_color)
+    if label_color or label_font:
+        try:
+            alignment = button.get_children()[0]
+            b_hbox = alignment.get_children()[0]
+            label = b_hbox.get_children()[1]
+        except:
+            pass
+        else:
+            if label_color:
+                label.modify_fg(STATE_NORMAL, label_color)
+            if label_font:
+                label.modify_font(label_font)
     return button
 
 def menuitem(title, image=None, tooltip=None, cb=None):

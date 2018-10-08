@@ -114,14 +114,6 @@ def get_application_name():
     return _appname
 
 
-def get_main_fallback(_cmd):
-    #this is used on some platforms (win32),
-    #when the user tries to run "xpra" without arguments
-    #returns the function to run as fallback (or None)
-    return None
-
-
-
 def get_username():
     return do_get_username()
 
@@ -170,4 +162,4 @@ def platform_import(where, pm, required, *imports):
 
 platform_import(globals(), None, True, "do_init", "do_clean")
 platform_import(globals(), None, False, "set_prgname", "set_application_name", "program_context",
-                "command_error", "command_info", "get_main_fallback", "do_get_username")
+                "command_error", "command_info", "do_get_username")

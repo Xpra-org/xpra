@@ -221,6 +221,7 @@ def do_parse_cmdline(cmdline, defaults):
                         "\t%prog showconfig\n"
                         "\t%prog list\n"
                         "\t%prog sessions\n"
+                        "\t%prog launcher\n"
                         "\t%prog stop [DISPLAY]\n"
                         "\t%prog exit [DISPLAY]\n"
                       ]
