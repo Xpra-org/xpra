@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("tray", "posix")
 
 from xpra.util import envbool
-from xpra.os_util import is_unity, monotonic_time
+from xpra.os_util import is_unity, monotonic_time, getUbuntuVersion, PYTHON2
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename
 
@@ -26,10 +26,15 @@ def get_appindicator():
         try:
             import sys
             if "gi" in sys.modules:
-                import gi
-                gi.require_version('AppIndicator3', '0.1')
-                from gi.repository import AppIndicator3 #@UnresolvedImport @Reimport
-                _appindicator = AppIndicator3
+                if getUbuntuVersion()>=(18,4) and is_unity():
+                    #causes segfaults just by importing it
+                    #shambolic
+                    pass
+                else:
+                    import gi
+                    gi.require_version('AppIndicator3', '0.1')
+                    from gi.repository import AppIndicator3 #@UnresolvedImport @Reimport
+                    _appindicator = AppIndicator3
             else:
                 import appindicator                     #@UnresolvedImport
                 _appindicator = appindicator
@@ -37,7 +42,7 @@ def get_appindicator():
             _appindicator = None
     return _appindicator
 
-def get_application_status(appindicator):
+def get_application_category(appindicator):
     v = getattr(appindicator, "CATEGORY_APPLICATION_STATUS", None)
     if v is None:
         cat = getattr(appindicator, "IndicatorCategory", None)
@@ -57,9 +62,14 @@ class AppindicatorTray(TrayBase):
         self.appindicator = get_appindicator()
         self._has_icon = False
         assert self.appindicator, "appindicator is not available!"
-        status = get_application_status(self.appindicator)
-        assert status is not None, "appindicator status is not available!"
-        self.tray_widget = self.appindicator.Indicator(self.tooltip, filename, status)
+        category = get_application_category(self.appindicator)
+        assert category is not None, "appindicator category is not available!"
+        if PYTHON2:
+            self.tray_widget = self.appindicator.Indicator(self.tooltip, filename, category)
+        else:
+            self.tray_widget = self.appindicator.Indicator()
+            self.tray_widget.set_property("label", self.tooltip)
+            self.tray_widget.set_property("category", category)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
         self.tray_widget.set_attention_icon("xpra.png")
