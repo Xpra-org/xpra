@@ -112,7 +112,13 @@ class GUI(gtk.Window):
         self.exec_command(cmd)
 
     def browse(self, *_args):
-        cmd = get_xpra_command()+["mdns-gui"]
+        subcommand = "mdns-gui"
+        try:
+            from xpra.net import mdns
+            assert mdns
+        except ImportError:
+            subcommand = "sessions"
+        cmd = get_xpra_command()+[subcommand]
         self.exec_command(cmd)
 
     def show_launcher(self, *_args):
