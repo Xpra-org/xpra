@@ -180,7 +180,11 @@ class SessionsGUI(gtk.Window):
 
     def get_session_info(self, sockpath):
         #the lazy way using a subprocess
-        cmd = get_nodock_command()+["id", "socket:%s" % sockpath]
+        if WIN32:
+            socktype = "namedpipe"
+        else:
+            socktype = "socket"
+        cmd = get_nodock_command()+["id", "%s:%s" % (socktype, sockpath)]
         p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, _ = p.communicate()
         log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
