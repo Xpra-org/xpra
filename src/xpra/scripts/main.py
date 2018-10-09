@@ -395,7 +395,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             from xpra.client.gtk_base.client_launcher import main
             return main()
         elif mode == "gui":
-            from xpra.client.gtk_base.gui import main
+            from xpra.gtk_common.gui import main        #@Reimport
             return main()
         elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
             nox()
