@@ -136,6 +136,8 @@ Recommends:
 #for html5 support:
         ,websockify
         ,libjs-jquery
+#the start-session GUI:
+        ,python-xdg
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 Suggests: openssh-server
