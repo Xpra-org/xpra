@@ -38,6 +38,7 @@ class SessionsGUI(gtk.Window):
         self.set_border_width(20)
         self.set_resizable(True)
         self.set_decorated(True)
+        self.set_size_request(440, 200)
         self.set_position(WIN_POS_CENTER)
         icon = self.get_pixbuf("xpra")
         if icon:
