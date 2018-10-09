@@ -277,6 +277,7 @@ Requires:			python2-pyopengl
 Requires:			pygtkglext
 %{Recommends}:		python2-pyu2f
 %if 0%{?fedora}
+Recommends:         python2-xdg
 Recommends:			python2-xpra-audio
 Recommends:			python2-cups
 Recommends:			sshpass
@@ -415,6 +416,7 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			sshpass
 Recommends:			python3-pyu2f
+Recommends:         python3-xdg
 %if 0%{?run_tests}
 BuildRequires:		xclip
 %endif
