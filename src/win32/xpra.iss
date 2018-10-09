@@ -39,7 +39,7 @@ Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app};
 
 
 [Run]
-Filename: {app}\Xpra-Launcher.exe; Description: {cm:LaunchProgram,xpra}; Flags: nowait postinstall skipifsilent
+Filename: {app}\Xpra.exe; Description: {cm:LaunchProgram,xpra}; Flags: nowait postinstall skipifsilent
 
 [Registry]
 Root: HKCR; Subkey: ".xpra"; ValueType: string; ValueName: ""; ValueData: "Xpra.Session"; Flags: uninsdeletevalue
