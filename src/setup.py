@@ -1689,7 +1689,7 @@ else:
             'frameworks'        : ['CoreFoundation', 'Foundation', 'AppKit'],
             }
         setup_options["options"] = {"py2app": py2app_options}
-        setup_options["app"]     = ["xpra/client/gtk_base/client_launcher.py"]
+        setup_options["app"]     = ["xpra/scripts/main.py"]
 
     if OSX:
         #simply adding the X11 path to PKG_CONFIG_PATH breaks things in mysterious ways,
