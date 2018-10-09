@@ -264,6 +264,10 @@ fi
 for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
+#remove empty directories:
+rmdir xpra/*/*/* > /dev/null
+rmdir xpra/*/* > /dev/null
+rmdir xpra/* > /dev/null
 popd > /dev/null
 popd > /dev/null
 
