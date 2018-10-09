@@ -46,6 +46,7 @@ except ImportError:
 def exec_command(cmd):
     proc = subprocess.Popen(cmd)
     log("exec_command(%s)=%s", cmd, proc)
+    return proc
 
 def get_pixbuf(icon_name):
     icon_filename = os.path.join(get_icon_dir(), icon_name)
@@ -80,22 +81,22 @@ class GUI(gtk.Window):
         #title_label = gtk.Label(title)
         #title_label.modify_font(pango.FontDescription("sans 14"))
         #self.vbox.add(title_label)
-        widgets = []
+        self.widgets = []
         label_font = pango.FontDescription("sans 16")
         if has_client:
             icon = get_pixbuf("browse.png")
             self.browse_button = imagebutton("Browse", icon, "Browse and connect to local sessions", clicked_callback=self.browse, icon_size=48, label_font=label_font)
-            widgets.append(self.browse_button)
+            self.widgets.append(self.browse_button)
             icon = get_pixbuf("connect.png")
             self.connect_button = imagebutton("Connect", icon, "Connect to a session", clicked_callback=self.show_launcher, icon_size=48, label_font=label_font)
-            widgets.append(self.connect_button)
+            self.widgets.append(self.connect_button)
         if has_server:
             icon = get_pixbuf("server-connected.png")
             self.shadow_button = imagebutton("Shadow", icon, "Start a shadow server", clicked_callback=self.start_shadow, icon_size=48, label_font=label_font)
             if not has_shadow:
                 self.shadow_button.set_tooltip_text("This build of Xpra does not support starting sessions")
                 self.shadow_button.set_sensitive(False)
-            widgets.append(self.shadow_button)
+            self.widgets.append(self.shadow_button)
             icon = get_pixbuf("windows.png")
             self.start_button = imagebutton("Start", icon, "Start a session", clicked_callback=self.start, icon_size=48, label_font=label_font)
             #not all builds and platforms can start sessions:
@@ -105,13 +106,20 @@ class GUI(gtk.Window):
             elif not has_server:
                 self.start_button.set_tooltip_text("This build of Xpra does not support starting sessions")
                 self.start_button.set_sensitive(False)
-            widgets.append(self.start_button)
-        assert len(widgets)%2==0
-        table = gtk.Table(2, len(widgets)//2, True)
-        for i, widget in enumerate(widgets):
+            self.widgets.append(self.start_button)
+        assert len(self.widgets)%2==0
+        table = gtk.Table(2, len(self.widgets)//2, True)
+        for i, widget in enumerate(self.widgets):
             table.attach(widget, i%2, i%2+1, i//2, i//2+1, xpadding=10, ypadding=10)
         self.vbox.add(table)
         self.show_all()
+        def focus_in(window, event):
+            log("focus_in(%s, %s)", window, event)
+        def focus_out(window, event):
+            log("focus_out(%s, %s)", window, event)
+            self.reset_cursors()
+        self.connect("focus-in-event", focus_in)
+        self.connect("focus-out-event", focus_out)
 
     def quit(self, *args):
         log("quit%s", args)
@@ -127,14 +135,25 @@ class GUI(gtk.Window):
         self.do_quit()
 
 
+    def reset_cursors(self):
+        for widget in self.widgets:
+            widget.get_window().set_cursor(None)
+
+    def busy_cursor(self, widget):
+        watch = gdk.Cursor(gdk.WATCH)
+        widget.get_window().set_cursor(watch)
+        glib.timeout_add(5*1000, self.reset_cursors)
+
+
     def show_about(self, *_args):
         from xpra.gtk_common.about import about
         about()
 
-
     def start_shadow(self, *_args):
         cmd = get_xpra_command()+["shadow"]
-        exec_command(cmd)
+        proc = exec_command(cmd)
+        if proc.poll() is None:
+            self.busy_cursor(self.shadow_button)
 
     def browse(self, *_args):
         subcommand = "mdns-gui"
@@ -144,11 +163,15 @@ class GUI(gtk.Window):
         except ImportError:
             subcommand = "sessions"
         cmd = get_xpra_command()+[subcommand]
-        exec_command(cmd)
+        proc = exec_command(cmd)
+        if proc.poll() is None:
+            self.busy_cursor(self.browse_button)
 
     def show_launcher(self, *_args):
         cmd = get_xpra_command()+["launcher"]
-        exec_command(cmd)
+        proc = exec_command(cmd)
+        if proc.poll() is None:
+            self.busy_cursor(self.connect_button)
 
     def start(self, *args):
         if not self.start_session:
