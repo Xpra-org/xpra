@@ -210,7 +210,9 @@ class SessionsGUI(gtk.Window):
             self.table = gtk.Label("No sessions found")
             self.vbox.add(self.table)
             self.table.show()
+            self.set_size_request(440, 200)
             return
+        self.set_size_request(-1, -1)
         tb = TableBuilder(1, 6, False)
         tb.add_row(gtk.Label("Host"), gtk.Label("Display"), gtk.Label("Name"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("URI"), gtk.Label("Connect"), gtk.Label("Open in Browser"))
         self.table = tb.get_table()
@@ -288,7 +290,9 @@ class SessionsGUI(gtk.Window):
     def attach(self, key, uri):
         self.warning.set_text("")
         cmd = get_xpra_command() + ["attach", uri]
-        proc = subprocess.Popen(cmd)
+        env = os.environ.copy()
+        env["XPRA_NOTTY"] = "1"
+        proc = subprocess.Popen(cmd, env=env)
         log("attach() Popen(%s)=%s", cmd, proc)
         def proc_exit(*args):
             log("proc_exit%s", args)
