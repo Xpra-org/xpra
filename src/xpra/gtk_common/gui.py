@@ -66,7 +66,6 @@ class GUI(gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_position(WIN_POS_CENTER)
-        self.set_size_request(640, 300)
         icon = get_pixbuf("xpra")
         if icon:
             self.set_icon(icon)
@@ -108,10 +107,11 @@ class GUI(gtk.Window):
                 self.start_button.set_sensitive(False)
             self.widgets.append(self.start_button)
         assert len(self.widgets)%2==0
-        table = gtk.Table(2, len(self.widgets)//2, True)
+        table = gtk.Table(len(self.widgets)//2, 2, True)
         for i, widget in enumerate(self.widgets):
             table.attach(widget, i%2, i%2+1, i//2, i//2+1, xpadding=10, ypadding=10)
         self.vbox.add(table)
+        self.set_size_request(640, 100+100*len(self.widgets)//2)
         self.show_all()
         def focus_in(window, event):
             log("focus_in(%s, %s)", window, event)
