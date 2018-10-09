@@ -31,7 +31,7 @@ Source: dist\*; Excludes: "etc\xpra"; DestDir: {app}; Flags: ignoreversion recur
 Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall; AfterInstall: PostInstall()
 
 [Icons]
-Name: "{group}\Xpra"; Filename: {app}\Xpra-Launcher.exe; WorkingDir: {app}
+Name: "{group}\Xpra"; Filename: {app}\Xpra.exe; WorkingDir: {app}
 Name: "{group}\Xpra Session Browser"; Filename: {app}\Xpra_Browser.exe; WorkingDir: {app}
 Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
 Name: "{group}\Xpra Command Manual"; Filename: "{app}\manual.html"
