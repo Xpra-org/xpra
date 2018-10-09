@@ -16,7 +16,7 @@ glib = import_glib()
 glib.threads_init()
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX, WIN32, PYTHON2
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, add_window_accel, imagebutton, window_defaults, scaled_image, WIN_POS_CENTER
 from xpra.log import Logger
 log = Logger("client", "util")
@@ -28,8 +28,8 @@ try:
 except ImportError:
     has_client = False
 try:
-    from xpra import server
-    has_server = bool(server)
+    from xpra.server import server_util
+    has_server = bool(server_util)
 except ImportError:
     has_server = False
 try:
@@ -41,6 +41,13 @@ try:
     import xdg
 except ImportError:
     xdg = None
+
+
+def set_tooltip_text(widget, text):
+    #PITA: GTK3 has problems displaying tooltips:
+    #makes it hard to click on the button!
+    if PYTHON2 or not WIN32:
+        widget.set_tooltip_text(text)
 
 
 def exec_command(cmd):
@@ -93,17 +100,17 @@ class GUI(gtk.Window):
             icon = get_pixbuf("server-connected.png")
             self.shadow_button = imagebutton("Shadow", icon, "Start a shadow server", clicked_callback=self.start_shadow, icon_size=48, label_font=label_font)
             if not has_shadow:
-                self.shadow_button.set_tooltip_text("This build of Xpra does not support starting sessions")
+                set_tooltip_text(self.shadow_button, "This build of Xpra does not support starting sessions")
                 self.shadow_button.set_sensitive(False)
             self.widgets.append(self.shadow_button)
             icon = get_pixbuf("windows.png")
             self.start_button = imagebutton("Start", icon, "Start a session", clicked_callback=self.start, icon_size=48, label_font=label_font)
             #not all builds and platforms can start sessions:
             if OSX or WIN32:
-                self.start_button.set_tooltip_text("Starting sessions is not supported on %s" % sys.platform)
+                set_tooltip_text(self.start_button, "Starting sessions is not supported on %s" % sys.platform)
                 self.start_button.set_sensitive(False)
             elif not has_server:
-                self.start_button.set_tooltip_text("This build of Xpra does not support starting sessions")
+                set_tooltip_text(self.start_button, "This build of Xpra does not support starting sessions")
                 self.start_button.set_sensitive(False)
             self.widgets.append(self.start_button)
         assert len(self.widgets)%2==0
@@ -270,7 +277,7 @@ class StartSession(gtk.Window):
         vbox.add(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             btn = gtk.Button(label)
-            btn.set_tooltip_text(tooltip)
+            set_tooltip_text(btn, tooltip)
             btn.connect("clicked", callback)
             if icon_name:
                 icon = get_pixbuf(icon_name)
