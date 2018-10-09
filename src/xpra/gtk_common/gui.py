@@ -127,7 +127,7 @@ class GUI(gtk.Window):
         self.do_quit()
 
 
-    def show_about(self, *args):
+    def show_about(self, *_args):
         from xpra.gtk_common.about import about
         about()
 
@@ -151,7 +151,6 @@ class GUI(gtk.Window):
         exec_command(cmd)
 
     def start(self, *args):
-        #TODO: show start gui
         if not self.start_session:
             self.start_session = StartSession()
         self.start_session.show()
@@ -183,7 +182,6 @@ class StartSession(gtk.Window):
         al.add(self.seamless_btn)
         hbox.add(al)
         self.desktop_btn = gtk.RadioButton(self.seamless_btn, "Desktop Session")
-        self.desktop_btn.set_sensitive(False)   #TODO!
         #since they're radio buttons, both get toggled,
         #so no need to connect to both signals:
         #self.desktop.connect("toggled", self.desktop_toggled)
@@ -225,6 +223,7 @@ class StartSession(gtk.Window):
         hbox.pack_start(self.command_combo)
         self.command_combo.connect("changed", self.command_changed)
         self.commands = {}
+        self.xsessions = None
         self.desktop_entry = None
 
         # start options:
@@ -254,9 +253,9 @@ class StartSession(gtk.Window):
                     btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
             return btn
-        self.run_btn = btn("Run", "Run this command", self.run_command, "forward.png")
-        self.run_btn.set_sensitive(False)
         self.cancel_btn = btn("Cancel", "", self.close, "quit.png")
+        self.run_btn = btn("Start", "Start this command in an xpra session", self.run_command, "forward.png")
+        self.run_btn.set_sensitive(False)
 
         vbox.show_all()
         self.add(vbox)
@@ -287,7 +286,6 @@ class StartSession(gtk.Window):
     def populate_category(self):
         self.categories = {}
         try:
-            self.category_combo.get_model().clear()
             from xdg.Menu import parse, Menu
             menu = parse()
             for submenu in menu.getEntries():
@@ -295,15 +293,17 @@ class StartSession(gtk.Window):
                     name = submenu.getName()
                     if self.categories.get(name) is None:
                         self.categories[name] = submenu
-                        self.category_combo.append_text(name)
-            self.category_combo.set_active(0)
         except Exception:
             log("failed to parse menus", exc_info=True)
+        self.category_combo.get_model().clear()
+        for name in sorted(self.categories.keys()):
+            self.category_combo.append_text(name)
+        if self.categories:
+            self.category_combo.set_active(0)
 
     def category_changed(self, *args):
         category = self.category_combo.get_active_text()
         log("category_changed(%s) category=%s", args, category)
-        self.command_combo.get_model().clear()
         self.commands = {}
         self.desktop_entry = None
         if category:
@@ -315,23 +315,41 @@ class StartSession(gtk.Window):
                 #TODO: can we have more than 2 levels of submenus?
                 if isinstance(entry, MenuEntry):
                     name = entry.DesktopEntry.getName()
-                    self.command_combo.append_text(name)
                     self.commands[name] = entry.DesktopEntry
+        self.command_combo.get_model().clear()
+        for name in sorted(self.commands.keys()):
+            self.command_combo.append_text(name)
+        if self.commands:
             self.command_combo.set_active(0)
         self.command_box.show()
             
 
     def populate_command(self):
         log("populate_command()")
-        for x in self.command_combo.get_children():
-            self.command_combo.remove(x)
-        #TODO: get list of xsessions
+        self.command_combo.get_model().clear()
+        if self.xsessions is None:
+            assert xdg
+            from xdg.DesktopEntry import DesktopEntry
+            xsessions_dir = "%s/share/xsessions" % sys.prefix
+            self.xsessions = {}
+            if os.path.exists(xsessions_dir):
+                for f in os.listdir(xsessions_dir):
+                    filename = os.path.join(xsessions_dir, f)
+                    de = DesktopEntry(filename)
+                    self.xsessions[de.getName()] = de
+        log("populate_command() xsessions=%s", self.xsessions)
+        for name in sorted(self.xsessions.keys()):
+            self.command_combo.append_text(name)
+        self.command_combo.set_active(0)
 
     def command_changed(self, *args):
         name = self.command_combo.get_active_text()
         log("command_changed(%s) command=%s", args, name)
         if name:
-            self.desktop_entry = self.commands[name]
+            if self.seamless:
+                self.desktop_entry = self.commands[name]
+            else:
+                self.desktop_entry = self.xsessions[name]
             log("command_changed(%s) desktop_entry=%s", args, self.desktop_entry)
             self.run_btn.set_sensitive(True)
         else:
