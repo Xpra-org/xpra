@@ -58,7 +58,7 @@ class ServerSocketsTest(ServerTestUtil):
 			client.terminate()
 		server.terminate()
 		if r!=exit_code:
-			raise Exception("expected info client to return %s but got %s" % estr(exit_code), estr(r))
+			raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
 
 	def test_default_socket(self):
 		self._test_connect([], "allow", [], "hello", ":", EXIT_OK)
