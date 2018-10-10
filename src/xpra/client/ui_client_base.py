@@ -16,7 +16,7 @@ from xpra.client.client_base import XpraClientBase
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.features import MMAP_SUPPORTED
-from xpra.platform.gui import (ready as gui_ready, get_session_type, ClientExtras)
+from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
@@ -101,6 +101,9 @@ class UIXpraClient(ClientBaseClass):
             log.info(" running on %s", osinfo)
         except:
             log("platform name error:", exc_info=True)
+        wm = get_wm_name()
+        if wm:
+            log.info(" window manager is '%s'", wm)
 
         self._ui_events = 0
         self.title = ""
