@@ -1627,7 +1627,7 @@ class ServerCore(object):
             ctr = c.strget("connect_test_request")
             response = {"connect_test_response" : ctr}
             proto.send_now(("hello", response))
-            return
+            return True
         if is_req("id"):
             self.send_id_info(proto)
             return True
