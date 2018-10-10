@@ -710,10 +710,7 @@ class X11ServerCore(GTKServerBase):
                     if maxdelta>=10:
                         messages.append("you may experience scaling problems, such as huge or small fonts, etc")
                         messages.append("to fix this issue, try the dpi switch, or use a patched Xorg dummy driver")
-                        sources = tuple(self._server_sources.values())
-                        if len(sources)==1:
-                            body = "\n".join(messages)
-                            sources[0].may_notify(XPRA_DPI_NOTIFICATION_ID, "DPI Issue", body, icon_name="font")
+                        self.notify_dpi_warning("\n".join(messages))
                     for i,message in enumerate(messages):
                         l("%s%s", ["", " "][i>0], message)
             #show dpi via idle_add so server has time to change the screen size (mm)
@@ -721,6 +718,11 @@ class X11ServerCore(GTKServerBase):
         except Exception as e:
             screenlog.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         return root_w, root_h
+
+    def notify_dpi_warning(self, body):
+        sources = tuple(self._server_sources.values())
+        if len(sources)==1:
+            sources[0].may_notify(XPRA_DPI_NOTIFICATION_ID, "DPI Issue", body, icon_name="font")
 
 
     def _process_server_settings(self, _proto, packet):

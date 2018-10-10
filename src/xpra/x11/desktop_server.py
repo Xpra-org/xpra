@@ -307,6 +307,9 @@ class XpraDesktopServer(DesktopServerBaseClass):
             cleanup_all_event_receivers()
 
 
+    def notify_dpi_warning(self, body):
+        pass
+
     def print_screen_info(self):
         super(XpraDesktopServer, self).print_screen_info()
         root_w, root_h = get_root_size()
