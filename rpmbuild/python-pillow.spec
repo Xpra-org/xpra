@@ -33,8 +33,8 @@
 
 
 Name:           python2-pillow
-Version:        5.2.0
-Release:        3%{?snap}%{?dist}
+Version:        5.3.0
+Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -296,6 +296,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Wed Oct 10 2018 Antoine Martin <antoine@devloop.org.uk> - 5.3.0-1
+- new upstream release
+
 * Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 5.2.0-3
 - use python2 explicitly
 
