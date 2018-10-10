@@ -298,7 +298,7 @@ class ConnectTestXpraClient(CommandConnectClient):
 
     def do_command(self):
         if self.server_capabilities:
-            ctr = self.server_capabilities.get("connect_test_response")
+            ctr = self.server_capabilities.strget("connect_test_response")
             log("do_command() expected connect test response='%s', got '%s'", self.value, ctr)
             if ctr==self.value:
                 self.quit(EXIT_OK)
