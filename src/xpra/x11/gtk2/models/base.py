@@ -358,6 +358,7 @@ class BaseWindowModel(CoreX11WindowModel):
     def _handle_wm_hints_change(self):
         with xswallow:
             wm_hints = X11Window.getWMHints(self.xid)
+        metalog("getWMHints(%#x)=%s", self.xid, wm_hints)
         if wm_hints is None:
             return
         # GdkWindow or None
