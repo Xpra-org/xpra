@@ -81,7 +81,7 @@ class RFBSource(object):
         log("damage: %s", img)
         if not img or self.is_closed():
             return
-        fbupdate = struct.pack("!BBH", 0, 0, 1)
+        fbupdate = struct.pack(b"!BBH", 0, 0, 1)
         encoding = 0    #Raw
         rect = struct.pack(b"!HHHHi", x, y, w, h, encoding)
         if img.get_rowstride()!=w*4:

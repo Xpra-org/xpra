@@ -64,7 +64,7 @@ PYTHON2 = sys.version_info[0]==2
 PYTHON3 = sys.version_info[0]==3
 
 import struct
-BITS = struct.calcsize("P")*8
+BITS = struct.calcsize(b"P")*8
 
 
 if PYTHON2:
@@ -759,8 +759,8 @@ def get_peercred(sock):
         log = get_util_logger()
         try:
             import socket
-            creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize('3i'))
-            pid, uid, gid = struct.unpack('3i',creds)
+            creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize(b'3i'))
+            pid, uid, gid = struct.unpack(b'3i',creds)
             log("peer: %s", (pid, uid, gid))
             return pid, uid, gid
         except Exception as  e:

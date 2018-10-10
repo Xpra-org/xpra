@@ -66,7 +66,7 @@ def get_wm_name():
         try:
             wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
             if wm_check:
-                xid = struct.unpack("=I", wm_check)[0]
+                xid = struct.unpack(b"=I", wm_check)[0]
                 traylog("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
                 wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
                 traylog("_NET_WM_NAME=%s", wm_name)
@@ -332,7 +332,7 @@ def get_current_desktop():
         try:
             d = _get_X11_root_property("_NET_CURRENT_DESKTOP", "CARDINAL")
             if d:
-                v = struct.unpack("=I", d)[0]
+                v = struct.unpack(b"=I", d)[0]
         except Exception as e:
             log.warn("failed to get current desktop: %s", e)
         log("get_current_desktop() %s=%s", hexstr(d or ""), v)
@@ -353,7 +353,7 @@ def get_workarea():
                 screenlog.warn("get_workarea() invalid _NET_WORKAREA value")
             else:
                 cur_workarea = workarea[d*4*4:(d+1)*4*4]
-                v = struct.unpack("=IIII", cur_workarea)
+                v = struct.unpack(b"=IIII", cur_workarea)
                 screenlog("get_workarea() %s=%s", hexstr(cur_workarea), v)
                 return v
         except Exception as e:
@@ -368,7 +368,7 @@ def get_number_of_desktops():
         try:
             d = _get_X11_root_property("_NET_NUMBER_OF_DESKTOPS", "CARDINAL")
             if d:
-                v = struct.unpack("=I", d)[0]
+                v = struct.unpack(b"=I", d)[0]
         except Exception as e:
             screenlog.warn("failed to get number of desktop: %s", e)
         v = max(1, v)

@@ -60,7 +60,7 @@ def get_settings(disp, d):
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
     if DEBUG_XSETTINGS:
         log("get_settings(%s)", tuple(d))
-    byte_order, _, _, _, serial, n_settings = struct.unpack("=BBBBII", d[:12])
+    byte_order, _, _, _, serial, n_settings = struct.unpack(b"=BBBBII", d[:12])
     cache = XSETTINGS_CACHE.get(disp)
     log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache(%s)=%s", byte_order, get_local_byteorder(), serial, n_settings, disp, cache)
     if cache and cache[0]==serial:
@@ -71,31 +71,31 @@ def get_settings(disp, d):
     while n_settings>len(settings) and len(d)>0:
         istart = pos
         #parse header:
-        setting_type, _, name_len = struct.unpack("=BBH", d[pos:pos+4])
+        setting_type, _, name_len = struct.unpack(b"=BBH", d[pos:pos+4])
         pos += 4
         #extract property name:
         prop_name = d[pos:pos+name_len]
         pos += (name_len + 0x3) & ~0x3
         #serial:
         assert len(d)>=pos+4, "not enough data (%s bytes) to extract serial (4 bytes needed)" % (len(d)-pos)
-        last_change_serial = struct.unpack("=I", d[pos:pos+4])[0]
+        last_change_serial = struct.unpack(b"=I", d[pos:pos+4])[0]
         pos += 4
         if DEBUG_XSETTINGS:
             log("get_settings(..) found property %s of type %s, serial=%s", prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
         #extract value:
         if setting_type==XSettingsTypeInteger:
             assert len(d)>=pos+4, "not enough data (%s bytes) to extract int (4 bytes needed)" % (len(d)-pos)
-            value = int(struct.unpack("=I", d[pos:pos+4])[0])
+            value = int(struct.unpack(b"=I", d[pos:pos+4])[0])
             pos += 4
         elif setting_type==XSettingsTypeString:
             assert len(d)>=pos+4, "not enough data (%s bytes) to extract string length (4 bytes needed)" % (len(d)-pos)
-            value_len = struct.unpack("=I", d[pos:pos+4])[0]
+            value_len = struct.unpack(b"=I", d[pos:pos+4])[0]
             assert len(d)>=pos+4+value_len, "not enough data (%s bytes) to extract string (%s bytes needed)" % (len(d)-pos-4, value_len)
             value = d[pos+4:pos+4+value_len]
             pos += 4 + ((value_len + 0x3) & ~0x3)
         elif setting_type==XSettingsTypeColor:
             assert len(d)>=pos+8, "not enough data (%s bytes) to extract color (8 bytes needed)" % (len(d)-pos)
-            red, blue, green, alpha = struct.unpack("=HHHH", d[pos:pos+8])
+            red, blue, green, alpha = struct.unpack(b"=HHHH", d[pos:pos+8])
             value = (red, blue, green, alpha)
             pos += 8
         else:
@@ -120,26 +120,26 @@ def set_settings(_disp, d):
         prop_name = str(prop_name)
         try:
             log("set_settings(..) processing property %s of type %s", prop_name, XSettingsNames.get(setting_type, "INVALID!"))
-            x = struct.pack("=BBH", setting_type, 0, len(prop_name))
-            x += struct.pack("="+"s"*len(prop_name), *tuple(prop_name))
+            x = struct.pack(b"=BBH", setting_type, 0, len(prop_name))
+            x += struct.pack(b"="+"s"*len(prop_name), *tuple(prop_name))
             pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
             x += '\0'*pad_len
-            x += struct.pack("=I", last_change_serial)
+            x += struct.pack(b"=I", last_change_serial)
             if setting_type==XSettingsTypeInteger:
                 assert type(value) in (int, long), "invalid value type (int or long wanted): %s" % type(value)
-                x += struct.pack("=I", int(value))
+                x += struct.pack(b"=I", int(value))
             elif setting_type==XSettingsTypeString:
                 if type(value)==unicode:
                     value = str(value)
                 else:
                     assert type(value)==str, "invalid value type (str wanted): %s" % type(value)
-                x += struct.pack("=I", len(value))
-                x += struct.pack("="+"s"*len(value), *tuple(value))
+                x += struct.pack(b"=I", len(value))
+                x += struct.pack(b"="+"s"*len(value), *tuple(value))
                 pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
                 x += '\0'*pad_len
             elif setting_type==XSettingsTypeColor:
                 red, blue, green, alpha = value
-                x = struct.pack("=HHHH", red, blue, green, alpha)
+                x = struct.pack(b"=HHHH", red, blue, green, alpha)
             else:
                 log.error("invalid xsetting type: %s, skipped %s", setting_type, prop_name)
                 continue
@@ -150,7 +150,7 @@ def set_settings(_disp, d):
             log.error(" type=%s, value=%s", XSettingsNames.get(setting_type, "INVALID!"), value)
             log.error(" %s", e)
     #header
-    v = struct.pack("=BBBBII", get_local_byteorder(), 0, 0, 0, serial, len(all_bin_settings))
+    v = struct.pack(b"=BBBBII", get_local_byteorder(), 0, 0, 0, serial, len(all_bin_settings))
     v += "".join(all_bin_settings)  #values
     v += '\0'                       #null terminated
     log("set_settings(%s)=%s", d, tuple(v))

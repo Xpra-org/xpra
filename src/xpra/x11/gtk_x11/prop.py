@@ -55,7 +55,7 @@ from xpra.gtk_common.error import xsync, XError
 
 
 def _get_atom(_disp, d):
-    unpacked = struct.unpack("@I", d)[0]
+    unpacked = struct.unpack(b"@I", d)[0]
     with xsync:
         pyatom = X11Window.XGetAtomName(unpacked)
     if not pyatom:
@@ -71,7 +71,7 @@ def _get_xatom(str_or_int):
         return X11Window.get_xatom(str_or_int)
 
 def _get_multiple(disp, d):
-    uint_struct = struct.Struct("@I")
+    uint_struct = struct.Struct(b"@I")
     log("get_multiple struct size=%s, len(%s)=%s", uint_struct.size, d, len(d))
     if len(d)!=uint_struct.size and False:
         log.info("get_multiple value is not an atom: %s", d)
@@ -108,16 +108,16 @@ def get_python_type(scalar_type):
     return PYTHON_TYPES.get(scalar_type)
 
 def _to_atom(_disp, a):
-    return struct.pack("@I", _get_xatom(a))
+    return struct.pack(b"@I", _get_xatom(a))
 
 def _to_visual(_disp, c):
-    return struct.pack("=I", get_xvisual(c))
+    return struct.pack(b"=I", get_xvisual(c))
 
 def _to_window(_disp, w):
-    return struct.pack("=I", get_xwindow(w))
+    return struct.pack(b"=I", get_xwindow(w))
 
 def get_window(disp, w):
-    return get_pywindow(disp, struct.unpack("=I", w)[0])
+    return get_pywindow(disp, struct.unpack(b"=I", w)[0])
 
 #add the GTK / GDK types to the conversion function list:
 PROP_TYPES.update({

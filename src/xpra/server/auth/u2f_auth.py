@@ -95,7 +95,7 @@ class Authenticator(SysAuthenticator):
 
     def authenticate(self, challenge_response=None, client_salt=None):
         log("authenticate(%s, %s)", repr(challenge_response), repr(client_salt))
-        user_presence, counter = struct.unpack(">BI", strtobytes(challenge_response)[:5])
+        user_presence, counter = struct.unpack(b">BI", strtobytes(challenge_response)[:5])
         sig = strtobytes(challenge_response[5:])
         log("u2f user_presence=%s, counter=%s, signature=%s", user_presence, counter, hexstr(sig))
         app_param = sha256(self.app_id.encode('utf8')).digest()
@@ -109,8 +109,8 @@ class Authenticator(SysAuthenticator):
             }
         client_param = sha256(json.dumps(client_data, sort_keys=True).encode('utf8')).digest()
         param = app_param + \
-                struct.pack('>B', user_presence) + \
-                struct.pack('>I', counter) + \
+                struct.pack(b'>B', user_presence) + \
+                struct.pack(b'>I', counter) + \
                 client_param
         #check all the public keys:
         from cryptography.hazmat.primitives import hashes

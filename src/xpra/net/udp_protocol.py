@@ -32,7 +32,7 @@ def clamp_mtu(mtu):
 
 
 #UUID, seqno, synchronous, chunk, chunks
-_header_struct = struct.Struct('!QQHHH')
+_header_struct = struct.Struct(b'!QQHHH')
 _header_size = _header_struct.size
 
 

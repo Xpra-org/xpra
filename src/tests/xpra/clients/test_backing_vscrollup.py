@@ -48,15 +48,15 @@ class WindowAnim(object):
         v = int(time.time()*10000)
         for _ in range(W*ydelta):
             CB = 0xFF << ((self.wid % 4) * 8)
-            c = struct.pack("@I", v & 0xFFFFFFFF & ~CB)
+            c = struct.pack(b"@I", v & 0xFFFFFFFF & ~CB)
             dots.append(c)
         img_data = b"".join(dots)
         self.paint_rect(0, H-ydelta, W, ydelta, img_data)
         if self.damage:
-            c = struct.pack("@I", 0xFFFFFFFF)
+            c = struct.pack(b"@I", 0xFFFFFFFF)
             img_data = c*10*16
             self.paint_rect(W-10, H//2-8-16, 10, 16, img_data)
-            c = struct.pack("@I", 0x000000FF)
+            c = struct.pack(b"@I", 0x000000FF)
             img_data = c*10*16
             self.paint_rect(W-10, H//2-8, 10, 16, img_data)
         return True

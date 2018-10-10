@@ -340,7 +340,7 @@ def unpremultiply_argb(buf):
 
 
 #precalculate indexes in native endianness:
-tmp = struct.pack("=L", 0 + 1*(2**8) + 2*(2**16) + 3*(2**24))
+tmp = struct.pack(b"=L", 0 + 1*(2**8) + 2*(2**16) + 3*(2**24))
 #little endian will give 0, 1, 2, 3
 #big endian should give 3, 2, 1, 0 (untested)
 cdef unsigned char B = tmp.index(b'\0')
@@ -373,7 +373,7 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
             b = 0
         #we could use struct pack to avoid endianness issues
         #but this is python 2.5 onwards only and is probably slower:
-        #struct.pack_into("=BBBB", argb_out, i*4, b, g, r, a)
+        #struct.pack_into(b"=BBBB", argb_out, i*4, b, g, r, a)
         argb_out[i*4+B] = b
         argb_out[i*4+G] = g
         argb_out[i*4+R] = r

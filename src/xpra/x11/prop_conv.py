@@ -63,7 +63,7 @@ class NetWMStrut(object):
         # will be only length 4 instead of 12, we just don't define the other values
         # and let the client deal with it appropriately
         if len(data)==16:
-            self.left, self.right, self.top, self.bottom = struct.unpack("=IIII", data)
+            self.left, self.right, self.top, self.bottom = struct.unpack(b"=IIII", data)
         else:
             data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 4 * 12)
             (self.left, self.right, self.top, self.bottom,
@@ -71,7 +71,7 @@ class NetWMStrut(object):
              self.right_start_y, self.right_end_y,
              self.top_start_x, self.top_end_x,
              self.bottom_start_x, self.bottom_stop_x,
-             ) = struct.unpack("=" + "I" * 12, data)
+             ) = struct.unpack(b"=" + "I" * 12, data)
 
     def todict(self):
         return self.__dict__
@@ -85,7 +85,7 @@ class MotifWMHints(object):
         #some applications use the wrong size (ie: blender uses 16) so pad it:
         pdata = _force_length("_MOTIF_WM_HINTS", data, 20, 16)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
-            struct.unpack("=IIIiI", pdata)
+            struct.unpack(b"=IIIiI", pdata)
         log("MotifWMHints(%s)=%s", hexstr(data), self)
 
     #found in mwmh.h:
@@ -208,7 +208,7 @@ def _read_image(_disp, stream):
         header = stream.read(2 * 4)
         if not header:
             return None
-        (width, height) = struct.unpack("=II", header)
+        (width, height) = struct.unpack(b"=II", header)
         data = stream.read(width * height * 4)
         if len(data) < width * height * 4:
             log.warn("Corrupt _NET_WM_ICON")
@@ -278,16 +278,16 @@ PROP_TYPES = {
     # that Xutf8TextPropertyToTextList exists.
     "latin1": (unicode, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
     "state": ((int, long), "WM_STATE", 32,
-            lambda _disp, c: struct.pack("=I", c),
-            lambda _disp, d: struct.unpack("=I", d)[0],
+            lambda _disp, c: struct.pack(b"=I", c),
+            lambda _disp, d: struct.unpack(b"=I", d)[0],
             b""),
     "u32": ((int, long), "CARDINAL", 32,
-            lambda _disp, c: struct.pack("=I", c),
-            lambda _disp, d: struct.unpack("=I", d)[0],
+            lambda _disp, c: struct.pack(b"=I", c),
+            lambda _disp, d: struct.unpack(b"=I", d)[0],
             b""),
     "integer": ((int, long), "INTEGER", 32,
-            lambda _disp, c: struct.pack("=I", c),
-            lambda _disp, d: struct.unpack("=I", d)[0],
+            lambda _disp, c: struct.pack(b"=I", c),
+            lambda _disp, d: struct.unpack(b"=I", d)[0],
             b""),
     "strut": (NetWMStrut, "CARDINAL", 32,
               unsupported, NetWMStrut, None),

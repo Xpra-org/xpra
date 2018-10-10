@@ -276,7 +276,7 @@ def get_compression_type(level):
 
 
 import struct
-LZ4_HEADER = struct.Struct('<L')
+LZ4_HEADER = struct.Struct(b'<L')
 def decompress(data, level):
     #log.info("decompress(%s bytes, %s) type=%s", len(data), get_compression_type(level))
     if level & LZ4_FLAG:

@@ -616,7 +616,7 @@ def register_URL_handler(handler):
 
     # A helper to make struct since cocoa headers seem to make
     # it impossible to use kAE*
-    fourCharToInt = lambda code: struct.unpack('>l', code)[0]
+    fourCharToInt = lambda code: struct.unpack(b'>l', code)[0]
 
     urlh = GURLHandler.alloc()
     urlh.init()

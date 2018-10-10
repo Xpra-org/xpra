@@ -688,18 +688,18 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
         fmt = None
         if prop_type=="INTEGER":
             fmt = {
-                8   : "b",
-                16  : "h",
-                32  : "i",
+                8   : b"b",
+                16  : b"h",
+                32  : b"i",
                 }.get(actual_format)
         elif prop_type=="CARDINAL":
             fmt = {
-                8   : "B",
-                16  : "H",
-                32  : "I",
+                8   : b"B",
+                16  : b"H",
+                32  : b"I",
                 }.get(actual_format)
         elif prop_type=="FLOAT":
-            fmt = "f"
+            fmt = b"f"
         if fmt:
             value = struct.unpack(fmt*nitems, data)
             if nitems==1:

@@ -136,7 +136,7 @@ class RFBProtocol(object):
         return len(response)
 
     def send_fail_challenge(self):
-        self.send(struct.pack("!I", 1))
+        self.send(struct.pack(b"!I", 1))
         self.close()
 
     def _parse_security_result(self, packet):

@@ -66,9 +66,9 @@ TRANSLATED_TARGETS = {
     "application/x-moz-nativehtml" : "UTF8_STRING"
     }
 
-sizeof_long = struct.calcsize('@L')
+sizeof_long = struct.calcsize(b'@L')
 assert sizeof_long in (4, 8), "struct.calcsize('@L')=%s" % sizeof_long
-sizeof_short = struct.calcsize('=H')
+sizeof_short = struct.calcsize(b'=H')
 assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
 
 
@@ -435,11 +435,11 @@ class ClipboardProtocolHelperBase(object):
                 return None, None
             #important note: on 64 bits, format=32 means 8 bytes, not 4
             #that's just the way it is...
-            binfmt = "@" + "L" * (len(data) // sizeof_long)
+            binfmt = b"@" + b"L" * (len(data) // sizeof_long)
             ints = struct.unpack(binfmt, data)
             return b"integers", ints
         elif dformat == 16:
-            binfmt = "=" + "H" * (len(data) // sizeof_short)
+            binfmt = b"=" + b"H" * (len(data) // sizeof_short)
             ints = struct.unpack(binfmt, data)
             return b"integers", ints
         elif dformat == 8:
@@ -467,7 +467,7 @@ class ClipboardProtocolHelperBase(object):
                 format_char = "B"
             else:
                 raise Exception("unknown encoding format: %s" % dformat)
-            fstr = "@" + format_char * len(data)
+            fstr = b"@" + format_char * len(data)
             log("struct.pack(%s, %s)", fstr, data)
             return struct.pack(fstr, *data)
         else:

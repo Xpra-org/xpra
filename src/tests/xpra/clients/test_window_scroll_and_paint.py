@@ -28,7 +28,7 @@ class WindowAnim(object):
 
     def paint_crect(self, x=200, y=200, w=32, h=32, color=0x80808080):
         import struct
-        c = struct.pack("@I", color & 0xFFFFFFFF)
+        c = struct.pack(b"@I", color & 0xFFFFFFFF)
         img_data = c*w*h
         self.window.draw_region(x, y, w, h, "rgb32", img_data, w*4, 0, typedict({}), [])
 
