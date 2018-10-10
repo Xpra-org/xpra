@@ -271,6 +271,10 @@ class Wm(gobject.GObject):
         # the existing clients.
         add_event_receiver(self._root, self)
         add_fallback_receiver("xpra-client-message-event", self)
+        #when reparenting, the events may get sent
+        #to a window that is already destroyed
+        #and we don't want to miss those events, so:
+        add_fallback_receiver("child-map-request-event", self)
         X11Window.substructureRedirect(self._root.xid)
 
         for w in get_children(self._root):
@@ -426,6 +430,7 @@ class Wm(gobject.GObject):
 
     def cleanup(self):
         remove_fallback_receiver("xpra-client-message-event", self)
+        remove_fallback_receiver("child-map-request-event", self)
         for win in tuple(self._windows.itervalues()):
             win.unmanage(True)
 

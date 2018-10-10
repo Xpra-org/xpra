@@ -886,12 +886,20 @@ cdef _route_event(int etype, event, signal, parent_signal):
     #fallback only fires if nothing else has fired yet:
     if not handlers:
         global fallback_receivers
-        handlers = fallback_receivers.get(signal)
-        _maybe_send_event(DEBUG, handlers, signal, event, "fallback")
+        if signal:
+            handlers = fallback_receivers.get(signal)
+            _maybe_send_event(DEBUG, handlers, signal, event, "fallback-signal")
+        if parent_signal:
+            handlers = fallback_receivers.get(parent_signal)
+            _maybe_send_event(DEBUG, handlers, parent_signal, event, "fallback-parent-signal")
     #always fire those:
     global catchall_receivers
-    handlers = catchall_receivers.get(signal)
-    _maybe_send_event(DEBUG, handlers, signal, event, "catchall")
+    if signal:
+        handlers = catchall_receivers.get(signal)
+        _maybe_send_event(DEBUG, handlers, signal, event, "catchall-signal")
+    if parent_signal:
+        handlers = catchall_receivers.get(parent_signal)
+        _maybe_send_event(DEBUG, handlers, parent_signal, event, "catchall-parent-signal")
 
 
 cdef object _gw(display, Window xwin):
