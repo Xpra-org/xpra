@@ -27,6 +27,8 @@ class WebSocketClientConnection(Connection):
     def untilConcludes(self, *args):
         try:
             return Connection.untilConcludes(self, *args)
+        except websocket.WebSocketConnectionClosedException as e:
+            raise ConnectionClosedException(e)
         except websocket.WebSocketTimeoutException as e:
             raise ConnectionClosedException(e)
 
