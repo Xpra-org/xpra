@@ -35,7 +35,7 @@ class OSXLikeClipboardTest(X11ClipboardTestUtil):
 
 
 def main():
-	if POSIX and PYTHON2 and not OSX and has_xclip:
+	if POSIX and PYTHON2 and not OSX and has_xclip():
 		unittest.main()
 
 
