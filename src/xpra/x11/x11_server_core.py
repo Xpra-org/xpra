@@ -697,7 +697,8 @@ class X11ServerCore(GTKServerBase):
                 actual_xdpi = iround(root_w * 25.4 / wmm)
                 actual_ydpi = iround(root_h * 25.4 / hmm)
                 if abs(actual_xdpi-xdpi)<=1 and abs(actual_ydpi-ydpi)<=1:
-                    screenlog.info("DPI set to %s x %s", xdpi, ydpi)
+                    screenlog.info("DPI set to %s x %s", actual_xdpi, actual_ydpi)
+                    screenlog("wanted: %s x %s", xdpi, ydpi)
                 else:
                     #should this be a warning:
                     l = screenlog.info
