@@ -753,22 +753,23 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
             pass
         return nonl(pver(v, ", ", ", "))
     l = pad-len(prefix)-len(lchar)
+    from xpra.os_util import bytestostr
     for k in sorted_nicely(d.keys()):
         v = d[k]
         if isinstance(v, dict):
             nokey = v.get("", (v.get(None)))
             if nokey is not None:
-                sprint("%s%s %s : %s" % (prefix, lchar, str(k).ljust(l), vf(k, nokey)))
+                sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, nokey)))
                 for x in ("", None):
                     try:
                         del v[x]
                     except:
                         pass
             else:
-                sprint("%s%s %s" % (prefix, lchar, k))
+                sprint("%s%s %s" % (prefix, lchar, bytestostr(k)))
             print_nested_dict(v, prefix+"  ", "-", vformat=vformat, print_fn=print_fn, version_keys=version_keys, hex_keys=hex_keys)
         else:
-            sprint("%s%s %s : %s" % (prefix, lchar, str(k).ljust(l), vf(k, v)))
+            sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
 
 
 def std(s, extras="-,./: "):
