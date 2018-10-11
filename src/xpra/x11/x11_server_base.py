@@ -262,7 +262,7 @@ class X11ServerBase(X11ServerCore):
     def set_icc_profile(self):
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
         if len(ui_clients)!=1:
-            screenlog("%i UI clients, not setting ICC profile", len(ui_clients))
+            screenlog("%i UI clients, resetting ICC profile to default", len(ui_clients))
             self.reset_icc_profile()
             return
         icc = ui_clients[0].icc
