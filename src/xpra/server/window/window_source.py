@@ -13,7 +13,7 @@ from math import sqrt
 from collections import deque
 
 from xpra.os_util import monotonic_time
-from xpra.util import envint, envbool, csv
+from xpra.util import envint, envbool, csv, typedict
 from xpra.log import Logger
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
@@ -276,7 +276,7 @@ class WindowSource(WindowIconSource):
             self._encoders["jpeg"] = self.jpeg_encode
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
-        self.full_csc_modes = {}
+        self.full_csc_modes = typedict()
         self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default_value=None))
 
     def init_vars(self):
@@ -288,7 +288,7 @@ class WindowSource(WindowIconSource):
         self.auto_refresh_encodings = ()
         self.core_encodings = ()
         self.rgb_formats = ()
-        self.full_csc_modes = {}
+        self.full_csc_modes = typedict()
         self.client_refresh_encodings = ()
         self.encoding_options = {}
         self.rgb_zlib = False
@@ -608,8 +608,9 @@ class WindowSource(WindowIconSource):
     def parse_csc_modes(self, full_csc_modes):
         #only override if values are specified:
         log("parse_csc_modes(%s) current value=%s", full_csc_modes, self.full_csc_modes)
-        if full_csc_modes is not None and type(full_csc_modes)==dict:
-            self.full_csc_modes = full_csc_modes
+        if full_csc_modes is not None and isinstance(full_csc_modes, dict):
+            self.full_csc_modes = typedict(full_csc_modes)
+            log.info("full_csc_modes=%s", self.full_csc_modes)
 
 
     def set_auto_refresh_delay(self, d):
@@ -2159,7 +2160,7 @@ class WindowSource(WindowIconSource):
         #the native webp encoder only takes BGRX / BGRA as input,
         #but the client may be able to swap channels,
         #so it may be able to process RGBX / RGBA:
-        client_rgb_formats = self.full_csc_modes.get("webp", ("BGRA", "BGRX", ))
+        client_rgb_formats = self.full_csc_modes.strlistget("webp", ("BGRA", "BGRX", ))
         if pixel_format not in client_rgb_formats:
             if not rgb_reformat(image, client_rgb_formats, self.supports_transparency):
                 raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, self.rgb_formats))
