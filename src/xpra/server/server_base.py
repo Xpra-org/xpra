@@ -13,6 +13,7 @@ log = Logger("server")
 netlog = Logger("network")
 httplog = Logger("http")
 timeoutlog = Logger("timeout")
+screenlog = Logger("screen")
 
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
@@ -302,7 +303,8 @@ class ServerBase(ServerBaseClass):
                 self.antialias = c.dictget("antialias")
                 self.cursor_size = c.intget("cursor.size", 0)
             #FIXME: this belongs in DisplayManager!
-            log("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s, antialias=%s, cursor_size=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance, self.antialias, self.cursor_size)
+            screenlog("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s, cursor_size=%s", self.dpi, self.xdpi, self.ydpi, self.antialias, self.cursor_size)
+            log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
             #if we're not sharing, reset all the settings:
             reset = share_count==0
             self.update_all_server_settings(reset)
