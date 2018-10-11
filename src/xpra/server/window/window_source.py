@@ -610,7 +610,6 @@ class WindowSource(WindowIconSource):
         log("parse_csc_modes(%s) current value=%s", full_csc_modes, self.full_csc_modes)
         if full_csc_modes is not None and isinstance(full_csc_modes, dict):
             self.full_csc_modes = typedict(full_csc_modes)
-            log.info("full_csc_modes=%s", self.full_csc_modes)
 
 
     def set_auto_refresh_delay(self, d):
