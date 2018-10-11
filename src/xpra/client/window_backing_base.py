@@ -156,6 +156,7 @@ class WindowBackingBase(object):
         if not self._alpha_enabled:
             target_rgb_modes = tuple(x for x in target_rgb_modes if x.find("A")<0)
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
+        full_csc_modes["webp"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA")]
         log("_get_full_csc_modes(%s)=%s (target_rgb_modes=%s)", rgb_modes, full_csc_modes, target_rgb_modes)
         return full_csc_modes
 
