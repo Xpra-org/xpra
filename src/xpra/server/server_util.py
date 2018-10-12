@@ -292,7 +292,7 @@ def get_uinput_device_path(device):
                             return dev_path
     except Exception as e:
         log.error("Error: cannot query uinput device path:")
-        log.error(" %", e)
+        log.error(" %s", e)
     return None
 
 def has_uinput():
