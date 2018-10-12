@@ -76,8 +76,11 @@ def dictlook(d, k, fallback=None):
     v = d.get(k)
     if v is not None:
         return v
-    parts = strtobytes(k).split(b".")
+    parts = (b"client."+strtobytes(k)).split(b".")
     v = newdictlook(d, parts, fallback)
+    if v is None:
+        parts = strtobytes(k).split(b".")
+        v = newdictlook(d, parts, fallback)        
     if v is None:
         return fallback
     return v
@@ -361,7 +364,7 @@ class SessionInfo(gtk.Window):
                    *self.client_latency_labels)
         if mixin_features.windows and self.client.windows_enabled:
             self.batch_labels = maths_labels()
-            tb.add_row(slabel("Batch Delay (ms)", "How long the server waits for new screen updates to accumulate before processing them"),
+            tb.add_row(slabel("Batch Delay (MPixels / ms)", "How long the server waits for new screen updates to accumulate before processing them"),
                        *self.batch_labels)
             self.damage_labels = maths_labels()
             tb.add_row(slabel("Damage Latency (ms)", "The time it takes to compress a frame and pass it to the OS network layer"),
@@ -867,6 +870,15 @@ class SessionInfo(gtk.Window):
         return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
 
     def all_values_from_info(self, *window_props):
+        #newer (2.4 and later) servers can just give us the value directly:
+        for window_prop in window_props:
+            v = dictlook(self.client.server_last_info, "client.%s" % window_prop)
+            if v is not None:
+                v = typedict(v)
+                getv = v.intget
+                return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
+
+        #legacy servers: sum up the values for all the windows found
         def avg(values):
             if not values:
                 return ""

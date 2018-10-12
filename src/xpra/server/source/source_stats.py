@@ -56,6 +56,10 @@ class GlobalPerformanceStatistics(object):
                                                             #last NRECS: (event_time, lateness_pct, duration)
         self.bytes_sent = deque(maxlen=NRECS//4)            #how much bandwidth we are using
                                                             #last NRECS: (sample_time, bytes)
+        self.quality = deque(maxlen=NRECS)                  #quality used for sending updates:
+                                                            #(event_time, no of pixels, quality)
+        self.speed = deque(maxlen=NRECS)                    #speed used for sending updates:
+                                                            #(event_time, no of pixels, speed)
         self.client_load = None
         self.last_congestion_time = 0
         self.congestion_value = 0
@@ -169,20 +173,18 @@ class GlobalPerformanceStatistics(object):
             factors.append(("congestion", {}, 1+self.congestion_value, self.congestion_value*10))
         return factors
 
-    def get_client_info(self):
+    def get_connection_info(self):
         latencies = [x*1000 for (_, _, _, x) in tuple(self.client_latency)]
         info = {
-                "connection"        : {
-                                       "mmap_bytecount"  : self.mmap_bytes_sent
-                                       },
-                "latency"           : get_list_stats(latencies),
-                "server"            : {
-                                       "ping_latency"   : get_list_stats(1000.0*x for _, x in tuple(self.server_ping_latency)),
-                                       },
-                "client"            : {
-                                       "ping_latency"   : get_list_stats(1000.0*x for _, x in tuple(self.client_ping_latency)),
-                                       },
-                }
+            "mmap_bytecount"  : self.mmap_bytes_sent,
+            "latency"           : get_list_stats(latencies),
+            "server"            : {
+                "ping_latency"   : get_list_stats(1000.0*x for _, x in tuple(self.server_ping_latency)),
+                },
+            "client"            : {
+                "ping_latency"   : get_list_stats(1000.0*x for _, x in tuple(self.client_ping_latency)),
+                },
+            }
         if self.min_client_latency is not None:
             info["latency"] = {"absmin" : int(self.min_client_latency*1000)}
         return info
@@ -193,22 +195,30 @@ class GlobalPerformanceStatistics(object):
         pqsizes = [x for _,x in tuple(self.packet_qsizes)]
         now = monotonic_time()
         time_limit = now-60             #ignore old records (60s)
-        info = {"damage" : {
-                            "events"        : self.damage_events_count,
-                            "packets_sent"  : self.packet_count,
-                            "data_queue"    : {
-                                               "size"   : get_list_stats(cwqsizes),
-                                               },
-                            "packet_queue"  : {
-                                               "size"   : get_list_stats(pqsizes),
-                                               },
-                            },
-                "encoding" : {"decode_errors"   : self.decode_errors},
-                "congestion" : {
-                    "avg-send-speed"        : self.avg_congestion_send_speed,
-                    "elapsed-time"          : int(now-self.last_congestion_time),
-                                },
+        info = {
+            "damage" : {
+                "events"        : self.damage_events_count,
+                "packets_sent"  : self.packet_count,
+                "data_queue"    : {
+                    "size"   : get_list_stats(cwqsizes),
+                    },
+                "packet_queue"  : {
+                    "size"   : get_list_stats(pqsizes),
+                    },
+                },
+            "encoding" : {"decode_errors"   : self.decode_errors},
+            "congestion" : {
+                "avg-send-speed"        : self.avg_congestion_send_speed,
+                "elapsed-time"          : int(now-self.last_congestion_time),
+                },
+            "connection" : self.get_connection_info(),
             }
+        if self.quality:
+            ql = tuple(quality for _,_,quality in self.quality)
+            info["encoding"]["quality"] = get_list_stats(ql)
+        if self.speed:
+            sl = tuple(speed for _,_,speed in self.speed)
+            info["encoding"]["speed"] = get_list_stats(sl)
         #client pixels per second:
         #pixels per second: decode time and overall
         total_pixels = 0                #total number of pixels processed

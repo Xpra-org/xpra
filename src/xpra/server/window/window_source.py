@@ -977,9 +977,13 @@ class WindowSource(WindowIconSource):
         else:
             info = {}
             speed = min(100, speed)
-        self._current_speed = int(speed)
-        statslog("update_speed() wid=%s, info=%s, speed=%s", self.wid, info, self._current_speed)
-        self._encoding_speed.append((monotonic_time(), info, self._current_speed))
+        speed = int(speed)
+        self._current_speed = speed
+        statslog("update_speed() wid=%s, info=%s, speed=%s", self.wid, info, speed)
+        self._encoding_speed.append((monotonic_time(), info, speed))
+        now = monotonic_time()
+        ww, wh = self.window_dimensions
+        self.global_statistics.speed.append((now, ww*wh, speed))
 
     def set_min_speed(self, min_speed):
         if self._fixed_min_speed!=min_speed:
@@ -1014,9 +1018,13 @@ class WindowSource(WindowIconSource):
         else:
             info = {}
             quality = min(100, quality)
-        self._current_quality = int(quality)
-        statslog("update_quality() wid=%i, info=%s, quality=%s", self.wid, info, self._current_quality)
-        self._encoding_quality.append((monotonic_time(), info, self._current_quality))
+        quality = int(quality)
+        self._current_quality = quality
+        statslog("update_quality() wid=%i, info=%s, quality=%s", self.wid, info, quality)
+        now = monotonic_time()
+        self._encoding_quality.append((now, info, quality))
+        ww, wh = self.window_dimensions
+        self.global_statistics.quality.append((now, ww*wh, quality))
 
     def set_min_quality(self, min_quality):
         if self._fixed_min_quality!=min_quality:

@@ -436,9 +436,11 @@ class EncodingsMixin(StubSourceMixin):
                                            },
                      "icons"            : ieo,
                      })
-        einfo = {"default"      : self.default_encoding or ""}
-        einfo.update(self.default_encoding_options)
-        einfo.update(self.encoding_options)
+        einfo = {
+            "default"      : self.default_encoding or "",
+            "defaults"     : self.default_encoding_options,
+            "client-defaults" : self.encoding_options,
+            }
         info.setdefault("encoding", {}).update(einfo)
         return info
 
