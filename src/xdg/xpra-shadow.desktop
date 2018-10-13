@@ -4,6 +4,7 @@ Comment=Start a shadow server
 Exec=xpra shadow --bind-tcp=0.0.0.0:0
 Icon=xpra-shadow
 Terminal=false
+NoDisplay=true
 Type=Application
 StartupNotify=false
 Categories=Network;

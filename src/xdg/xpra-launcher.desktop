@@ -5,6 +5,7 @@ TryExec=xpra_launcher
 Exec=xpra_launcher %f
 Icon=xpra
 Terminal=false
+NoDisplay=true
 Type=Application
 StartupNotify=false
 Categories=Network;
