@@ -822,8 +822,43 @@ fi
 
 
 %changelog
-* Wed May 09 2018 Antoine Martin <antoine@devloop.org.uk> 2.4-1
-- TODO
+* Sat Oct 13 2018 Antoine Martin <antoine@devloop.org.uk> 2.4-1
+- SSH client integration (paramiko)
+- builtin server support for TCP socket upgrades to SSH (paramiko)
+- automatic TCP port allocation
+- expose desktop-sessions as VNC via mdns
+- add zeroconf backend
+- register more URL schemes
+- window content type heuristics configuration
+- use content type it to better tune automatic encoding selection
+- automatic video scaling
+- bandwidth-limit management in video encoders
+- HTML5 client mpeg1 and h264 decoding
+- HTML5 client support for forwarding of URL open requests
+- HTML5 client Internet Explorer 11 compatibility
+- HTML5 client toolbar improvements
+- HTML5 fullscreen mode support
+- limit video dimensions to cap CPU and bandwidth usage
+- keyboard layout handling fixes
+- better memory management and resource usage
+- new default GUI welcome screen
+- desktop file for starting shadow servers more easily
+- clipboard synchronization with multiple clients
+- use notifications bubbles for more important events
+- workarounds for running under Wayland with GTK3
+- modal windows enabled by default
+- support xdg base directory specification and socket file time
+- improved python3 support (still client only)
+- multi-window shadow servers on MacOS and MS Windows
+- buildbot upgrade
+- more reliable unit tests
+- fixes and workarounds for Java client applications
+- locally authenticated users can shutdown proxy servers
+- restrict potential privileged information leakage
+- enhanced per-client window filtering
+- remove extra pixel copy in opengl enabled client
+- clip pointer events to the actual window content size
+- new platforms: Ubuntu Cosmic, Fedora 29
 
 * Tue May 08 2018 Antoine Martin <antoine@devloop.org.uk> 2.3-1
 - stackable authentication modules
