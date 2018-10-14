@@ -155,12 +155,14 @@ class VideoHelper(object):
             #check again with lock held (in case of race):
             if not self._initialized:
                 return
-            for module in self._cleanup_modules:
+            cmods = self._cleanup_modules
+            self._cleanup_modules = []
+            log("VideoHelper.cleanup() cleanup modules=%s", cmods)
+            for module in cmods:
                 try:
                     module.cleanup_module()
                 except:
-                    log.error("error cleaning up %s", module, exc_info=True)
-            self._cleanup_modules = []
+                    log.error("Error cleaning up %s", module, exc_info=True)
             self._video_encoder_specs = {}
             self._csc_encoder_specs = {}
             self._video_decoder_specs = {}
@@ -296,6 +298,7 @@ class VideoHelper(object):
             for colorspace in colorspaces:
                 spec = encoder_module.get_spec(encoding, colorspace)
                 self.add_encoder_spec(encoding, colorspace, spec)
+        log("video encoder options: %s", self._video_encoder_specs)
 
     def add_encoder_spec(self, encoding, colorspace, spec):
         self._video_encoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec)
@@ -315,6 +318,7 @@ class VideoHelper(object):
             log(" %s - %s options:", src_format, len(d))
             for dst_format, specs in sorted(d.items()):
                 log("  * %s via: %s", dst_format, csv(sorted(spec.codec_type for spec in specs)))
+        log("csc options: %s", self._csc_encoder_specs)
 
     def init_csc_option(self, csc_name):
         csc_module = get_codec(csc_name)
@@ -354,6 +358,7 @@ class VideoHelper(object):
             except:
                 log.warn("Warning: cannot add %s decoder", x, exc_info=True)
         log("found %s video decoder%s: %s", len(self._video_decoder_specs), engs(self._video_decoder_specs), csv(self._video_decoder_specs))
+        log("video decoder options: %s", self._video_decoder_specs)
 
     def init_video_decoder_option(self, decoder_name):
         decoder_module = get_codec(decoder_name)
@@ -395,6 +400,7 @@ class VideoHelper(object):
             returns the CSC modes per encoding that the server can encode with.
             (taking into account the decoder's actual output colorspace for each encoding)
         """
+        log("get_client_full_csc_modes(%s) decoder encodings=%s", client_supported_csc_modes, self._video_decoder_specs.keys())
         full_csc_modes = {}
         for encoding, encoding_specs in self._video_decoder_specs.items():
             assert encoding_specs is not None
