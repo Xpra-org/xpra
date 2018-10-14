@@ -393,7 +393,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_sessions_gui(error_cb, options)
         elif mode == "launcher":
             from xpra.client.gtk_base.client_launcher import main
-            return main()
+            return main(["xpra"]+args)
         elif mode == "gui":
             from xpra.gtk_common.gui import main        #@Reimport
             return main()

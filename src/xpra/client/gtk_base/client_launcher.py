@@ -920,14 +920,14 @@ def exception_dialog(title):
     gtk_main()
 
 
-def main():
+def main(argv):
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Xpra-Launcher", "Xpra Connection Launcher"):
         enable_color()
-        return do_main()
+        return do_main(argv)
 
-def do_main():
+def do_main(argv):
     from xpra.os_util import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
@@ -937,7 +937,7 @@ def do_main():
     gui_init()
     try:
         from xpra.scripts.parsing import parse_cmdline, fixup_debug_option
-        options, args = parse_cmdline(sys.argv)
+        options, args = parse_cmdline(argv)
         debug = fixup_debug_option(options.debug)
         if debug:
             for x in debug.split(","):
@@ -1027,5 +1027,5 @@ def do_main():
 
 
 if __name__ == "__main__":
-    v = main()
+    v = main(sys.argv)
     sys.exit(v)
