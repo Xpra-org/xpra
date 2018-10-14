@@ -101,6 +101,7 @@ def do_init():
 def do_ready():
     osxapp = get_OSXApplication()
     if osxapp:
+        log("%s()", osxapp.ready)
         osxapp.ready()
 
 
@@ -604,6 +605,63 @@ def take_screenshot():
     buf.close()
     return w, h, "png", image.get_rowstride(), data
 
+def show_with_focus_workaround(show_cb):
+    from xpra.gtk_common.gobject_compat import import_glib
+    glib = import_glib()
+    enable_focus_workaround()
+    show_cb()
+    glib.timeout_add(500, disable_focus_workaround)
+
+
+__osx_open_signal = False
+#We have to wait for the main loop to be running
+#to get the NSApplicationOpenFile signal,
+#or the GURLHandler.
+OPEN_SIGNAL_WAIT = envint("XPRA_OSX_OPEN_SIGNAL_WAIT", 500)
+def add_open_handlers(open_file_cb, open_url_cb):
+    assert open_file_cb and open_url_cb
+
+    def idle_add(fn, *args):
+        from xpra.gtk_common.gobject_compat import import_glib
+        glib = import_glib()
+        glib.idle_add(fn, *args)
+
+    def open_URL(url):
+        global __osx_open_signal
+        __osx_open_signal = True
+        log("open_URL(%s)", url)
+        idle_add(open_url_cb, url)
+        return True
+
+    def open_file(_, filename, *args):
+        global __osx_open_signal
+        __osx_open_signal = True
+        log("open_file(%s, %s)", filename, args)
+        idle_add(open_file_cb, filename)
+        return True
+    register_file_handler(open_file)
+    register_URL_handler(open_URL)
+
+def wait_for_open_handlers(show_cb, open_file_cb, open_url_cb, delay=OPEN_SIGNAL_WAIT):
+    assert show_cb and open_file_cb and open_url_cb
+    from xpra.gtk_common.gobject_compat import import_glib
+    glib = import_glib()
+
+    add_open_handlers(open_file_cb, open_url_cb)
+    def may_show():
+        global __osx_open_signal
+        log("may_show() osx open signal=%s", __osx_open_signal)
+        if not __osx_open_signal:
+            show_with_focus_workaround(show_cb)
+    glib.timeout_add(delay, may_show)
+
+def register_file_handler(handler):
+    log("register_file_handler(%s)", handler)
+    try:
+        get_OSXApplication().connect("NSApplicationOpenFile", handler)
+    except Exception as e:
+        log.error("Error: cannot handle file associations:")
+        log.error(" %s", e)
 
 def register_URL_handler(handler):
     log("register_URL_handler(%s)", handler)
@@ -709,6 +767,9 @@ class Delegate(NSObject):
         except:
             workspacelog.error("Error querying workspace info", exc_info=True)
 
+    #def application_openFile_(self, application, fileName):
+    #    log.warn("application_openFile_(%s, %s)", application, fileName)
+
     def receiveSleepNotification_(self, aNotification):
         log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)
         self.delegate_cb("sleep_callback")
@@ -736,8 +797,8 @@ def enable_focus_workaround():
 
 
 class ClientExtras(object):
-    def __init__(self, client, opts):
-        if OSX_FOCUS_WORKAROUND:
+    def __init__(self, client=None, opts=None):
+        if OSX_FOCUS_WORKAROUND and client:
             def first_ui_received(*_args):
                 enable_focus_workaround()
                 client.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)

@@ -18,6 +18,7 @@ glib.threads_init()
 from xpra.platform.paths import get_icon_dir, get_xpra_command
 from xpra.os_util import OSX, WIN32, PYTHON2
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, add_window_accel, imagebutton, window_defaults, scaled_image, WIN_POS_CENTER
+
 from xpra.log import Logger
 log = Logger("client", "util")
 
@@ -118,8 +119,8 @@ class GUI(gtk.Window):
         for i, widget in enumerate(self.widgets):
             table.attach(widget, i%2, i%2+1, i//2, i//2+1, xpadding=10, ypadding=10)
         self.vbox.add(table)
+        self.vbox.show_all()
         self.set_size_request(640, 100+100*len(self.widgets)//2)
-        self.show_all()
         def focus_in(window, event):
             log("focus_in(%s, %s)", window, event)
         def focus_out(window, event):
@@ -185,6 +186,31 @@ class GUI(gtk.Window):
             self.start_session = StartSession()
         self.start_session.show()
         self.start_session.present()
+
+    def open_file(self, filename):
+        self.exec_subcommand("launcher", filename)
+
+    def open_url(self, url):
+        log("open_url(%s)", url)
+        self.exec_subcommand("attach", url)
+
+    def exec_subcommand(self, subcommand, arg):
+        log("exec_subcommand(%s)", subcommand, arg)
+        cmd = get_xpra_command()
+        cmd.append(subcommand)
+        cmd.append(arg)
+        proc = exec_command(cmd)
+        if proc.poll() is None:
+            self.hide()
+            def may_exit():
+                if proc.poll() is None:
+                    self.quit()
+                else:
+                    self.show()
+            #don't ask me why,
+            #but on macos we can get file descriptor errors
+            #if we exit immediately after we spawn the attach command
+            glib.timeout_add(2000, may_exit)
 
 
 class StartSession(gtk.Window):
@@ -427,12 +453,22 @@ class StartSession(gtk.Window):
 def main():
     from xpra.platform import program_context
     from xpra.log import enable_color
+    from xpra.platform.gui import init, ready
+    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
+    gtk_main_quit_on_fatal_exceptions_enable()
     with program_context("Xpra-GUI", "Xpra GUI"):
         enable_color()
+        init()
         gui = GUI()
         import signal
         signal.signal(signal.SIGINT, gui.app_signal)
         signal.signal(signal.SIGTERM, gui.app_signal)
+        ready()
+        if OSX:
+            from xpra.platform.darwin.gui import wait_for_open_handlers
+            wait_for_open_handlers(gui.show, gui.open_file, gui.open_url)
+        else:
+            gui.show()
         gtk_main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return 0
