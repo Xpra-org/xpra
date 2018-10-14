@@ -5,7 +5,7 @@
 %define with_python3 0%{?fedora}
 
 Name:		python2-Cython
-Version:	0.28.5
+Version:	0.29
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
@@ -107,6 +107,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Oct 14 2018 Antoine Martin <antoine@devloop.org.uk> - 0.29-1
+- new upstream release
+
 * Fri Aug 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.5-1
 - new upstream release
 
