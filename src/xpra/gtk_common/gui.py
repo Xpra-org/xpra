@@ -188,6 +188,7 @@ class GUI(gtk.Window):
         self.start_session.present()
 
     def open_file(self, filename):
+        log("open_file(%s)", filename)
         self.exec_subcommand("launcher", filename)
 
     def open_url(self, url):
@@ -195,7 +196,7 @@ class GUI(gtk.Window):
         self.exec_subcommand("attach", url)
 
     def exec_subcommand(self, subcommand, arg):
-        log("exec_subcommand(%s)", subcommand, arg)
+        log("exec_subcommand(%s, %s)", subcommand, arg)
         cmd = get_xpra_command()
         cmd.append(subcommand)
         cmd.append(arg)
