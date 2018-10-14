@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 2.4
+%define version 2.5
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -822,6 +822,9 @@ fi
 
 
 %changelog
+* Sun Oct 14 2018 Antoine Martin <antoine@devloop.org.uk> 2.5-1
+- TODO
+
 * Sat Oct 13 2018 Antoine Martin <antoine@devloop.org.uk> 2.4-1
 - SSH client integration (paramiko)
 - builtin server support for TCP socket upgrades to SSH (paramiko)
