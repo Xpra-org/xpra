@@ -192,7 +192,7 @@ cdef class WebpBufferWrapper:
             self.buffer_ptr = 0
 
 
-def decompress(data, has_alpha, rgb_format=None):
+def decompress(data, has_alpha, rgb_format=None, rgb_formats=[]):
     """
         This returns a WebpBufferWrapper, you MUST call free() on it
         once the pixel buffer can be freed.
@@ -204,20 +204,28 @@ def decompress(data, has_alpha, rgb_format=None):
     log("webp decompress found features: width=%4i, height=%4i, has_alpha=%-5s, input rgb_format=%s", config.input.width, config.input.height, bool(config.input.has_alpha), rgb_format)
 
     cdef int stride = 4 * config.input.width
+    config.output.colorspace = MODE_bgrA
     if has_alpha:
         if len(rgb_format or "")!=4:
             #use default if the format given is not valid:
-            rgb_format = "BGRA"
-        config.output.colorspace = MODE_bgrA
+            out_format = "BGRA"
+        else:
+            out_format = rgb_format
     else:
-        rgb_format = (rgb_format or "").replace("A", "").replace("X", "")
+        noalpha_format = (rgb_format or "").replace("A", "").replace("X", "")
         #the webp encoder takes BGRA input,
         #so we have to swap the colours in the output to match:
-        if rgb_format=="RGB":
-            rgb_format = "BGR"
+        if noalpha_format=="RGB":
+            out_format = "BGR"
         else:
-            rgb_format = "RGB"
-        config.output.colorspace = MODE_RGB
+            out_format = "RGB"
+        if out_format in rgb_formats:
+            #we can use 3 bytes per pixel output:
+            config.output.colorspace = MODE_RGB
+        elif rgb_format in ("RGBX", "RGBA"):
+            out_format = "RGBX"
+        else:
+            out_format = "BGRX"
     cdef size_t size = stride * config.input.height
     #allocate the buffer:
     cdef uint8_t *buf = <uint8_t*> memalign(size + stride)      #add one line of padding
@@ -231,7 +239,7 @@ def decompress(data, has_alpha, rgb_format=None):
     #we use external memory, so this is not needed:
     #WebPFreeDecBuffer(&config.output)
 
-    return b, config.input.width, config.input.height, stride, has_alpha and config.input.has_alpha, rgb_format
+    return b, config.input.width, config.input.height, stride, has_alpha and config.input.has_alpha, out_format
 
 
 def decompress_yuv(data, has_alpha=False):

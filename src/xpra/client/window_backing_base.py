@@ -300,8 +300,7 @@ class WindowBackingBase(object):
             return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
         rgb_format = options.strget("rgb_format")
         has_alpha = options.boolget("has_alpha", False)
-        #log("paint_webp%s rgb_format=%s, has_alpha=%s, RGB_MODES=%s", (len(img_data), x, y, width, height, options, callbacks), rgb_format, has_alpha, self.RGB_MODES)
-        buffer_wrapper, width, height, stride, has_alpha, rgb_format = self.webp_decoder.decompress(img_data, has_alpha, rgb_format)
+        buffer_wrapper, width, height, stride, has_alpha, rgb_format = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.RGB_MODES)
         def free_buffer(*_args):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
