@@ -96,6 +96,9 @@
 		${prefix}/lib/liblzo*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/liblz4*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libssl*.dylib
 	</binary>
 	<binary>
