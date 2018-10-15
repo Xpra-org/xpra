@@ -43,8 +43,8 @@ install -m 444 docs/websockify.1 %{buildroot}%{_mandir}/man1/
 
 
 %changelog
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.8.0-2
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 0.8.0-2
 - use python2 explicitly
 
-* Wed Jan 17 2018 Antoine Martin <antoine@devloop.org.uk> - 0.8.0-1
+* Wed Jan 17 2018 Antoine Martin <antoine@xpra.org> - 0.8.0-1
 - initial CentOS packaging

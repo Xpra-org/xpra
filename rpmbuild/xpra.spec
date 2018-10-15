@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -63,7 +63,7 @@ Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
 URL:				http://xpra.org/
-Packager:			Antoine Martin <antoine@devloop.org.uk>
+Packager:			Antoine Martin <antoine@xpra.org>
 Vendor:				http://xpra.org/
 Source:				xpra-%{version}.tar.bz2
 #rpm falls over itself if we try to make the top-level package noarch:
@@ -822,10 +822,10 @@ fi
 
 
 %changelog
-* Sun Oct 14 2018 Antoine Martin <antoine@devloop.org.uk> 2.5-1
+* Sun Oct 14 2018 Antoine Martin <antoine@xpra.org> 2.5-1
 - TODO
 
-* Sat Oct 13 2018 Antoine Martin <antoine@devloop.org.uk> 2.4-1
+* Sat Oct 13 2018 Antoine Martin <antoine@xpra.org> 2.4-1
 - SSH client integration (paramiko)
 - builtin server support for TCP socket upgrades to SSH (paramiko)
 - automatic TCP port allocation
@@ -863,7 +863,7 @@ fi
 - clip pointer events to the actual window content size
 - new platforms: Ubuntu Cosmic, Fedora 29
 
-* Tue May 08 2018 Antoine Martin <antoine@devloop.org.uk> 2.3-1
+* Tue May 08 2018 Antoine Martin <antoine@xpra.org> 2.3-1
 - stackable authentication modules
 - tcp wrappers authentication module
 - gss, kerberos, ldap and u2f authentication modules
@@ -889,7 +889,7 @@ fi
 - structural improvements: refactoring, fewer synchronized X11 calls, etc
 
 
-* Mon Dec 11 2017 Antoine Martin <antoine@devloop.org.uk> 2.2-1
+* Mon Dec 11 2017 Antoine Martin <antoine@xpra.org> 2.2-1
 - support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
 - UDP transport (experimental) with bind-udp and udp://host:port URLs
 - TCP sockets can be upgrade to Websockets and / or SSL, RFB
@@ -915,7 +915,7 @@ fi
 - password prompt dialog in client
 - fixed memory leaks
 
-* Mon Jul 24 2017 Antoine Martin <antoine@devloop.org.uk> 2.1-1
+* Mon Jul 24 2017 Antoine Martin <antoine@xpra.org> 2.1-1
 - improve system wide proxy server, logind support on, socket activation
 - new authentication modules: peercred, sqlite
 - split packages for RPM, MS Windows and Mac OS
@@ -942,7 +942,7 @@ fi
 - structural improvements and important bug fixes
 
 
-* Fri Mar 17 2017 Antoine Martin <antoine@devloop.org.uk> 2.0-1
+* Fri Mar 17 2017 Antoine Martin <antoine@xpra.org> 2.0-1
 - dropped support for outdated OS and libraries (long list)
 - 64-bit builds for MS Windows and MacOSX
 - MS Windows MSYS2 based build system with fully up to date libraries
@@ -965,7 +965,7 @@ fi
 - fix html5 visual corruption with scroll paint packets
 
 
-* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0-1
+* Tue Dec 06 2016 Antoine Martin <antoine@xpra.org> 1.0-1
 - SSL socket support
 - IANA assigned default port 14500 (so specifying the TCP port is now optional)
 - include a system-wide proxy server service on our default port, using system authentication
@@ -998,7 +998,7 @@ fi
 - Mac OS X remote shadow start support (though not all versions are supported)
 
 
-* Mon Apr 18 2016 Antoine Martin <antoine@devloop.org.uk> 0.17.0-1
+* Mon Apr 18 2016 Antoine Martin <antoine@xpra.org> 0.17.0-1
 - GStreamer 1.6.x on MS Windows and OSX
 - opus is now the default sound codec
 - microphone and speaker forwarding no longer cause sound loops
@@ -1027,7 +1027,7 @@ fi
 - split file authentication module
 - debug logging and message improvements
 
-* Wed Dec 16 2015 Antoine Martin <antoine@devloop.org.uk> 0.16.0-1
+* Wed Dec 16 2015 Antoine Martin <antoine@xpra.org> 0.16.0-1
 - remove more legacy code, cleanups, etc
 - switch to GStreamer 1.x on most platforms
 - mostly gapless audio playback
@@ -1061,7 +1061,7 @@ fi
 - more robust error handling and recovery from client errors
 - NVENC support for MS Windows shadow servers
 
-* Tue Apr 28 2015 Antoine Martin <antoine@devloop.org.uk> 0.15.0-1
+* Tue Apr 28 2015 Antoine Martin <antoine@xpra.org> 0.15.0-1
 -printer forwarding
 -functional HTML5 client
 -add session idle timeout switch
@@ -1096,7 +1096,7 @@ fi
 -more detailed bug report information
 -more minimal MS Windows and OSX builds
 
-* Thu Aug 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.14.0-1
+* Thu Aug 14 2014 Antoine Martin <antoine@xpra.org> 0.14.0-1
 - support for lzo compression
 - support for choosing the compressors enabled (lz4, lzo, zlib)
 - support for choosing the packet encoders enabled (bencode, rencode, yaml)
@@ -1122,7 +1122,7 @@ fi
 - more Cython compile time optimizations
 - some focus issues fixed
 
-* Wed Aug 13 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.9-1
+* Wed Aug 13 2014 Antoine Martin <antoine@xpra.org> 0.13.9-1
 - fix clipboard on OSX
 - fix remote ssh start with start-child issues
 - use secure "compare_digest" if available
@@ -1134,7 +1134,7 @@ fi
 - fix clipboard errors with no data
 - fix opencl platform initialization errors
 
-* Wed Aug 06 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.8-1
+* Wed Aug 06 2014 Antoine Martin <antoine@xpra.org> 0.13.8-1
 - fix server early exit when pulseaudio terminates
 - fix SELinux static codec library label (make it persistent)
 - fix missed auto-refresh when batching
@@ -1151,7 +1151,7 @@ fi
 - fix proxy handling of raw RGB data for large screen sizes
 - fix potential error from missing data in client packets
 
-* Thu Jul 10 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.7-3
+* Thu Jul 10 2014 Antoine Martin <antoine@xpra.org> 0.13.7-3
 - fix x11 server pixmap memory leak
 - fix speed and quality values range (1 to 100)
 - fix nvenc device allocation errors
@@ -1159,7 +1159,7 @@ fi
 - fix "initenv" compatibility with older servers
 - don't start child when upgrading or shadowing
 
-* Tue Jun 17 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.6-3
+* Tue Jun 17 2014 Antoine Martin <antoine@xpra.org> 0.13.6-3
 - fix compatibility older versions of pygtk (centos5)
 - fix compatibility with python 2.4 (centos5)
 - fix AltGr workaround with win32 clients
@@ -1167,10 +1167,10 @@ fi
 - fix installation on systems without python-glib (centos5)
 - fix Xorg version detection for Fedora rawhide
 
-* Sat Jun 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.5-3
+* Sat Jun 14 2014 Antoine Martin <antoine@xpra.org> 0.13.5-3
 - re-fix opengl compatibility
 
-* Fri Jun 13 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.5-1
+* Fri Jun 13 2014 Antoine Martin <antoine@xpra.org> 0.13.5-1
 - fix use correct dimensions when evaluating video
 - fix invalid latency statistics recording
 - fix auto-refresh wrongly cancelled
@@ -1181,7 +1181,7 @@ fi
 - fix ssh connection with shells not starting in home directory
 - fix keyboard layout change forwarding
 
-* Tue Jun 10 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.4-1
+* Tue Jun 10 2014 Antoine Martin <antoine@xpra.org> 0.13.4-1
 - fix numeric keypad period key mapping on some non-us keyboards
 - fix client launcher GUI on OSX
 - fix remote ssh start with clean user account
@@ -1192,7 +1192,7 @@ fi
 - fix focus issue with some applications
 - fix batch delay use
 
-* Sun Jun 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.3-1
+* Sun Jun 01 2014 Antoine Martin <antoine@xpra.org> 0.13.3-1
 - fix xpra upgrade
 - fix xpra control error handling
 - fix window refresh on inactive workspace
@@ -1200,7 +1200,7 @@ fi
 - fix error in rgb strict mode
 - add missing x11 server type information
 
-* Sun Jun 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.2-1
+* Sun Jun 01 2014 Antoine Martin <antoine@xpra.org> 0.13.2-1
 - fix painting of forwarded tray
 - fix initial window workspace
 - fix launcher with debug option in config file
@@ -1208,7 +1208,7 @@ fi
 - fix infinite recursion in cython csc module
 - don't include sound utilities when building without sound
 
-* Wed May 28 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.1-1
+* Wed May 28 2014 Antoine Martin <antoine@xpra.org> 0.13.1-1
 - honour lossless encodings
 - fix avcodec2 build for Debian jessie and sid
 - fix pam authentication module
@@ -1219,7 +1219,7 @@ fi
 - fix re-stride code for compatibility with ancient clients
 - fix timer reference leak causing some warnings
 
-* Thu May 22 2014 Antoine Martin <antoine@devloop.org.uk> 0.13.0-1
+* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0-1
 - Python3 / GTK3 client support
 - NVENC module included in binary builds
 - support for enhanced dummy driver with DPI option
@@ -1236,7 +1236,7 @@ fi
 - more detailed version information and tools
 - stricter handling of server supplied values
 
-* Fri May 16 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.6-1
+* Fri May 16 2014 Antoine Martin <antoine@xpra.org> 0.12.6-1
 - fix invalid pixel buffer size causing encoding failures
 - fix auto-refresh infinite loop, and honour refresh quality
 - fix sound sink with older versions of GStreamer plugins
@@ -1248,7 +1248,7 @@ fi
 - fix RGB pixel data buffer size (re-stride as needed)
 - avoid buggy swscale 2.1.0 on Ubuntu
 
-* Sat May 03 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.5-1
+* Sat May 03 2014 Antoine Martin <antoine@xpra.org> 0.12.5-1
 - fix error when clients supply invalid screen dimensions
 - fix MS Windows build without ffmpeg
 - fix cairo backing alternative
@@ -1257,12 +1257,12 @@ fi
 - fix exception handling in client when called from the launcher
 - fix libav dependencies for Debian and Ubuntu builds
 
-* Wed Apr 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.4-1
+* Wed Apr 23 2014 Antoine Martin <antoine@xpra.org> 0.12.4-1
 - fix xpra shadow subcommand
 - fix xpra shadow keyboard mapping support for non-posix clients
 - avoid Xorg dummy warning in log
 
-* Wed Apr 09 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.3-1
+* Wed Apr 09 2014 Antoine Martin <antoine@xpra.org> 0.12.3-1
 - fix mispostioned windows
 - fix quickly disappearing windows (often menus)
 - fix server errors when closing windows
@@ -1277,16 +1277,16 @@ fi
 - fix logging errors in debug mode
 - fix timer expired warning
 
-* Sun Mar 30 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.2-1
+* Sun Mar 30 2014 Antoine Martin <antoine@xpra.org> 0.12.2-1
 - fix switching to RGB encoding via client tray
 - fix remote server start via SSH
 - fix workspace change detection causing slow screen updates
 
-* Thu Mar 27 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.1-1
+* Thu Mar 27 2014 Antoine Martin <antoine@xpra.org> 0.12.1-1
 - fix 32-bit server timestamps
 - fix client PNG handling on installations without PIL / Pillow
 
-* Sun Mar 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.1-1
+* Sun Mar 23 2014 Antoine Martin <antoine@xpra.org> 0.12.1-1
 - NVENC support for YUV444 mode, support for automatic bitrate tuning
 - NVENC and CUDA load balancing for multiple cards
 - proxy encoding: ability to encode on proxy server
@@ -1314,10 +1314,10 @@ fi
 - improved build system: smaller and more correct build output (much smaller OSX images)
 - automatically stop remote shadow servers when client disconnects
 
-* Tue Mar 18 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.6-1
+* Tue Mar 18 2014 Antoine Martin <antoine@xpra.org> 0.11.6-1
 - correct fix for system tray forwarding
 
-* Tue Mar 18 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.5-1
+* Tue Mar 18 2014 Antoine Martin <antoine@xpra.org> 0.11.5-1
 - fix "xpra info" with bencoder
 - ensure we re-sanitize window size hints when they change
 - workaround applications with nonsensical size hints (ie: handbrake)
@@ -1327,7 +1327,7 @@ fi
 - fix compilation warning
 - remove spurious cursor warnings
 
-* Sat Mar 01 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.4-1
+* Sat Mar 01 2014 Antoine Martin <antoine@xpra.org> 0.11.4-1
 - fix NVENC GPU memory leak
 - fix video compatibility with ancient clients
 - fix vpx decoding in ffmpeg decoders
@@ -1335,7 +1335,7 @@ fi
 - fix client crashes with system tray forwarding
 - fix webp codec loader error handler
 
-* Fri Feb 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.3-1
+* Fri Feb 14 2014 Antoine Martin <antoine@xpra.org> 0.11.3-1
 - fix compatibility with ancient versions of GTK
 - fix crashes with malformed socket names
 - fix server builds without client modules
@@ -1343,19 +1343,19 @@ fi
 - blacklist VMware OpenGL driver which causes client crashes
 - ensure all "control" subcommands run in UI thread
 
-* Wed Jan 29 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.2-1
+* Wed Jan 29 2014 Antoine Martin <antoine@xpra.org> 0.11.2-1
 - fix Cython 0.20 compatibility
 - fix OpenGL pixel upload alignment code
 - fix xpra command line help page tokens
 - fix compatibility with old versions of the python glib library
 
-* Fri Jan 24 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.1-1
+* Fri Jan 24 2014 Antoine Martin <antoine@xpra.org> 0.11.1-1
 - fix compatibility with old/unsupported servers
 - fix shadow mode
 - fix paint issue with transparent tooltips on OSX and MS Windows
 - fix pixel format typo in OpenGL logging
 
-* Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+* Mon Jan 20 2014 Antoine Martin <antoine@xpra.org> 0.11.0-1
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
@@ -1379,7 +1379,7 @@ fi
 - experimental HTML5 client
 - drop non xpra clients with a more friendly response
 
-* Tue Jan 14 2014 Antoine Martin <antoine@devloop.org.uk> 0.10.12-1
+* Tue Jan 14 2014 Antoine Martin <antoine@xpra.org> 0.10.12-1
 - fix missing auto-refresh with lossy colourspace conversion
 - fix spurious warning from Nvidia OpenGL driver
 - fix OpenGL client crash with some drivers (ie: VirtualBox)
@@ -1388,7 +1388,7 @@ fi
 - big warnings about webp leaking memory
 - generated debuginfo RPMs
 
-* Tue Jan 07 2014 Antoine Martin <antoine@devloop.org.uk> 0.10.11-1
+* Tue Jan 07 2014 Antoine Martin <antoine@xpra.org> 0.10.11-1
 - fix popup windows focus issue
 - fix "xpra upgrade" subcommand
 - fix server backtrace in error handler
@@ -1397,7 +1397,7 @@ fi
 - add support for RGBX pixel format required by some clients
 - avoid ffmpeg "data is not aligned" warning on client
 
-* Wed Dec 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.10-1
+* Wed Dec 04 2013 Antoine Martin <antoine@xpra.org> 0.10.10-1
 - fix focus regression
 - fix MS Windows clipboard copy including null byte
 - fix h264 decoding with old versions of avcodec
@@ -1412,27 +1412,27 @@ fi
 - forward compatibility with namespace changes
 - forward compatibility with the new generic encoding names
 
-* Tue Nov 05 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.9-1
+* Tue Nov 05 2013 Antoine Martin <antoine@xpra.org> 0.10.9-1
 - fix h264 decoding of padded images
 - fix plain RGB encoding with very old clients
 - fix "xpra info" error when old clients are connected
 - remove warning when "help" is specified as encoding
 
-* Tue Oct 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.8-1
+* Tue Oct 22 2013 Antoine Martin <antoine@xpra.org> 0.10.8-1
 - fix misapplied patch breaking all windows with transparency
 
-* Tue Oct 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.7-1
+* Tue Oct 22 2013 Antoine Martin <antoine@xpra.org> 0.10.7-1
 - fix client crash on Linux with AMD cards and fglrx driver
 - fix missing WM_CLASS on X11 clients
 - fix "xpra info" on shadow servers
 - add usable 1366x768 dummy resolution
 
-* Tue Oct 15 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.6-1
+* Tue Oct 15 2013 Antoine Martin <antoine@xpra.org> 0.10.6-1
 - fix window titles reverting to "unknown host"
 - fix tray forwarding bug causing client disconnections
 - replace previous rencode fix with warning
 
-* Thu Oct 10 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.5-1
+* Thu Oct 10 2013 Antoine Martin <antoine@xpra.org> 0.10.5-1
 - fix client time out when the initial connection fails
 - fix shadow mode
 - fix connection failures when some system information is missing
@@ -1442,15 +1442,15 @@ fi
 - fix potential rencode bug with unhandled data types
 - error out if the client requests authentication and none is available
 
-* Tue Sep 10 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.4-2
+* Tue Sep 10 2013 Antoine Martin <antoine@xpra.org> 0.10.4-2
 - fix modifier key handling (was more noticeable with MS Windows clients)
 - fix auto-refresh
 
-* Fri Sep 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.3-2
+* Fri Sep 06 2013 Antoine Martin <antoine@xpra.org> 0.10.3-2
 - fix transient windows with no parent
 - fix metadata updates handling (maximize, etc)
 
-* Thu Aug 29 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.2-2
+* Thu Aug 29 2013 Antoine Martin <antoine@xpra.org> 0.10.2-2
 - fix connection error with unicode user name
 - fix vpx compilation warning
 - fix python 2.4 compatibility
@@ -1458,7 +1458,7 @@ fi
 - build fix: ensure all builds include source information
 
 
-* Tue Aug 20 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.1-1
+* Tue Aug 20 2013 Antoine Martin <antoine@xpra.org> 0.10.1-1
 - fix avcodec buffer pointer errors on some 32-bit Linux
 - fix invalid time convertion
 - fix OpenGL scaling with fractions
@@ -1468,7 +1468,7 @@ fi
 - silence PyOpenGL warnings we can do nothing about
 - fix CentOS 6.3 packaging dependencies
 
-* Tue Aug 13 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-3
+* Tue Aug 13 2013 Antoine Martin <antoine@xpra.org> 0.10.0-3
 - performance: X11 shared memory (XShm) pixels transfers
 - performance: zero-copy window pixels to picture encoders
 - performance: zero copy decoded pixels to window (but not with OpenGL..)
@@ -1500,20 +1500,20 @@ fi
 - export much more debugging information about system state and statistics
 - simplify non-UI subcommands and their packets, also use rencode ("xpra info", "xpra version", etc)
 
-* Mon Jul 29 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.8-1
+* Mon Jul 29 2013 Antoine Martin <antoine@xpra.org> 0.9.8-1
 - fix client workarea size change detection (again)
 - fix crashes handling info requests
 - fix server hangs due to sound cleanup deadlock
 - use lockless window video decoder cleanup (much faster)
 - speedup server startup when no XAUTHORITY file exists yet
 
-* Tue Jul 16 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.7-1
+* Tue Jul 16 2013 Antoine Martin <antoine@xpra.org> 0.9.7-1
 - fix error in sound cleanup code
 - fix network threads accounting
 - fix missing window icons
 - fix client availibility of remote session start feature
 
-* Sun Jun 30 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.6-1
+* Sun Jun 30 2013 Antoine Martin <antoine@xpra.org> 0.9.6-1
 - fix lost clicks on some popup menus (mostly with MS Windows clients)
 - fix client workarea size change detection
 - fix reading of unique "machine-id" on posix
@@ -1525,19 +1525,19 @@ fi
 - fix man page indentation
 - fix variable test vs use (correctness only)
 
-* Thu Jun 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.5-1
+* Thu Jun 06 2013 Antoine Martin <antoine@xpra.org> 0.9.5-1
 - fix auto-refresh: don't refresh unnecessarily
 - fix wrong initial timeout when ssh takes a long time to connect
 - fix client monitor/resolution size change detection
 - fix attributes reported to clients when encoding overrides are used
 - Gentoo ebuild uses virtual to allow one to choose pillow or PIL
 
-* Mon May 27 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.4-1
+* Mon May 27 2013 Antoine Martin <antoine@xpra.org> 0.9.4-1
 - revert cursor scaling fix which broke other applications
 - fix auto refresh mis-firing
 - fix type (atom) of the X11 visual property we expose
 
-* Mon May 20 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.3-1
+* Mon May 20 2013 Antoine Martin <antoine@xpra.org> 0.9.3-1
 - fix clipboard for *nix clients
 - fix selection timestamp parsing
 - fix crash due to logging code location
@@ -1548,14 +1548,14 @@ fi
 - reset cursors when disabling cursor forwarding
 - workaround invalid window size hints
 
-* Mon May 13 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.2-1
+* Mon May 13 2013 Antoine Martin <antoine@xpra.org> 0.9.2-1
 - fix double error when loading build information (missing about dialog)
 - fix and simplify build "clean" subcommand
 - fix OpenGL rendering alignment for padded rowstrides case
 - fix potential double error when tray initialization fails
 - fix window static properties usage
 
-* Wed May 08 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.1-1
+* Wed May 08 2013 Antoine Martin <antoine@xpra.org> 0.9.1-1
 - honour initial client window's requested position
 - fix for hidden appindicator
 - fix string formatting error in non-cython fallback math code
@@ -1565,7 +1565,7 @@ fi
 - add required CentOS RPM libXfont dependency
 - tag our /etc configuration files in RPM spec file
 
-* Thu Apr 25 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
+* Thu Apr 25 2013 Antoine Martin <antoine@xpra.org> 0.9.0-1
 - fix focus problems with old Xvfb display servers
 - fix RPM SELinux labelling of static codec builds (CentOS)
 - fix CentOS 5.x compatibility
@@ -1588,14 +1588,14 @@ fi
 - improved OpenGL client rendering (still disabled by default)
 - upgrade to rencode 1.0.2
 
-* Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.8-1
+* Thu Mar 07 2013 Antoine Martin <antoine@xpra.org> 0.8.8-1
 - fix server deadlock on dead connections
 - fix compatibility with older versions of Python
 - fix sound capture script usage via command line
 - fix screen number preserve code
 - fix error in logs in shadow mode
 
-* Wed Feb 27 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.7-1
+* Wed Feb 27 2013 Antoine Martin <antoine@xpra.org> 0.8.7-1
 - fix x264 crash with older versions of libav
 - fix 32-bit builds breakage introduce by python2.4 fix in 0.8.6
 - fix missing sound forwarding when using the GUI launcher
@@ -1603,22 +1603,22 @@ fi
 - fix client window properties store
 - fix first workspace not preserved and other workspace issues
 
-* Fri Feb 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.6-1
+* Fri Feb 22 2013 Antoine Martin <antoine@xpra.org> 0.8.6-1
 - fix python2.4 compatibility in icon grabbing code
 - fix exit message location
 
-* Sun Feb 17 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.5-1
+* Sun Feb 17 2013 Antoine Martin <antoine@xpra.org> 0.8.5-1
 - fix server crash with transient windows
 
-* Wed Feb 13 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.4-1
+* Wed Feb 13 2013 Antoine Martin <antoine@xpra.org> 0.8.4-1
 - fix hello packet encoding bug
 - fix colours in launcher and session-info windows
 
-* Tue Feb 12 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.3-1
+* Tue Feb 12 2013 Antoine Martin <antoine@xpra.org> 0.8.3-1
 - Python 2.4 compatiblity fixes (CentOS 5.x)
 - fix static builds of vpx and x264
 
-* Sun Feb 10 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.2-1
+* Sun Feb 10 2013 Antoine Martin <antoine@xpra.org> 0.8.2-1
 - fix libav uninitialized structure crash
 - fix warning on installations without sound libraries
 - fix warning when pulseaudio utils are not installed
@@ -1628,7 +1628,7 @@ fi
 - re-enable system tray forwarding
 - remove spurious "too many receivers" warnings
 
-* Mon Feb 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.1-1
+* Mon Feb 04 2013 Antoine Martin <antoine@xpra.org> 0.8.1-1
 - fix server daemonize on some platforms
 - fix server SSH support on platforms with old versions of glib
 - fix "xpra upgrade" closing applications
@@ -1641,7 +1641,7 @@ fi
 - rename "Quality" to "Min Quality" in tray menu
 - fix rpm packaging: remove unusable modules
 
-* Thu Jan 31 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.0-9
+* Thu Jan 31 2013 Antoine Martin <antoine@xpra.org> 0.8.0-9
 - fix modal windows support
 - fix default mouse cursor: now uses the client's default cursor
 - fix short lived windows: avoid doing unnecessary work, avoid re-registering handlers
@@ -1681,7 +1681,7 @@ fi
 - partial/initial Java/AWT keyboard support
 
 
-* Mon Oct 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.7.0-1
+* Mon Oct 08 2012 Antoine Martin <antoine@xpra.org> 0.7.0-1
 - fix "AltGr" key handling with MS Windows clients (and others)
 - fix crash with x264 encoding
 - fix crash with fast disappearing tooltip windows
@@ -1704,7 +1704,7 @@ fi
 - client launcher improvements: prevent logging conflict, add version info
 - large source layout cleanup, compilation warnings fixed
 
-* Fri Oct 05 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.4-1
+* Fri Oct 05 2012 Antoine Martin <antoine@xpra.org> 0.6.4-1
 - fix bencoder to properly handle dicts with non-string keys
 - fix swscale bug with windows that are too small by switch encoding
 - fix locking of video encoder resizing leading to missing video frames
@@ -1714,13 +1714,13 @@ fi
 - prevent races during setup and cleanup of network connections
 - take shortcut if there is nothing to send
 
-* Thu Sep 27 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.3-1
+* Thu Sep 27 2012 Antoine Martin <antoine@xpra.org> 0.6.3-1
 - fix memory leak in server after client disconnection
 - fix launcher: clear socket timeout once connected and add missing options
 - fix potential bug in network code (prevent disconnection)
 - enable auto-refresh by default since we now use a lossy encoder by default
 
-* Tue Sep 25 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.2-1
+* Tue Sep 25 2012 Antoine Martin <antoine@xpra.org> 0.6.2-1
 - fix missing key frames with x264/vpx: always reset the video encoder when we skip some frames (forces a new key frame)
 - fix server crash on invalid keycodes (zero or negative)
 - fix latency: isolate per-window latency statistics from each other
@@ -1733,10 +1733,10 @@ fi
 - restore protocol main packet compression and single chunk sending
 - drop unnecessary OpenGL dependencies from some deb/rpm packages
 
-* Fri Sep 14 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.1-1
+* Fri Sep 14 2012 Antoine Martin <antoine@xpra.org> 0.6.1-1
 - fix compress clipboard data (previous fix was ineffectual)
 
-* Sat Sep 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.0-1
+* Sat Sep 08 2012 Antoine Martin <antoine@xpra.org> 0.6.0-1
 - fix launcher: don't block the UI whilst connecting, and use a lower timeout, fix icon lookup on *nix
 - fix clipboard contents too big (was causing connection drops): try to compress them and just drop them if they are still too big
 - x264 or vpx are now the default encodings (if available)
@@ -1749,28 +1749,28 @@ fi
 - remove 'nogil' switch (as 'nogil' is much faster)
 - test all socket types with automated tests
 
-* Sat Sep 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.4-1
+* Sat Sep 08 2012 Antoine Martin <antoine@xpra.org> 0.5.4-1
 - fix man page typo
 - fix non bash login shell compatibility
 - fix xpra screenshot argument parsing error handling
 - fix video encoding mismatch when switching encoding
 - fix ssh mode on OpenBSD
 
-* Wed Sep 05 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.3-1
+* Wed Sep 05 2012 Antoine Martin <antoine@xpra.org> 0.5.3-1
 - zlib compatibility fix: use chunked decompression when supported (newer versions)
 
-* Wed Aug 29 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.2-1
+* Wed Aug 29 2012 Antoine Martin <antoine@xpra.org> 0.5.2-1
 - fix xpra launcher icon lookup on *nix
 - fix big clipboard packets causing disconnection: just drop them instead
 - fix zlib compression in raw packet mode: ensure we always flush the buffer for each chunk
 - force disconnection after irrecoverable network parsing error
 - fix window refresh: do not skip all windows after a hidden one!
 
-* Mon Aug 27 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.1-6
+* Mon Aug 27 2012 Antoine Martin <antoine@xpra.org> 0.5.1-6
 - fix xpra_launcher
 - build against rpmfusion repository, with build fix for Fedora 16
 
-* Sat Aug 25 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.1-1
+* Sat Aug 25 2012 Antoine Martin <antoine@xpra.org> 0.5.1-1
 - fix DPI issue with Xdummy: set virtual screen to 96dpi by default
 - avoid looping forever doing maths on 'infinity' value
 - fix incomplete cloning of attributes causing default values to be used for batch configuration
@@ -1781,7 +1781,7 @@ fi
 - fix test code compatibility with older xpra versions
 - statistics shown for 'damage_packet_queue_pixels' were incorrect
 
-* Mon Aug 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.0-1
+* Mon Aug 20 2012 Antoine Martin <antoine@xpra.org> 0.5.0-1
 - new packet encoder written in C (much faster and data is now smaller too)
 - read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
 - support Xdummy out of the box on platforms with recent enough versions of Xorg (and not installed suid)
@@ -1801,7 +1801,7 @@ fi
 - removed old "--no-randr" option
 - drop compatibility with versions older than 0.3: we now assume the "raw_packets" feature is supported
 
-* Mon Jul 23 2012 Antoine Martin <antoine@devloop.org.uk> 0.4.0-1
+* Mon Jul 23 2012 Antoine Martin <antoine@xpra.org> 0.4.0-1
 - fix client application resizing its own window
 - fix window dimensions hints not applied
 - fix memleak in x264 cleanup code
@@ -1838,7 +1838,7 @@ fi
 - CentOS static ffmpeg build with memalign for better performance
 - no longer bundle parti window manager
 
-* Tue Jul 10 2012 Antoine Martin <antoine@devloop.org.uk> 0.3.3-1
+* Tue Jul 10 2012 Antoine Martin <antoine@xpra.org> 0.3.3-1
 - do not try to free the empty x264/vpx buffers after a decompression failure
 - fix xpra command exit code (zero) when no error occurred
 - fix Xvfb deadlock on shutdown
@@ -1860,13 +1860,13 @@ fi
 - correctly calculate min_batch_delay shown in statistics via "xpra info"
 - require x264-libs for x264 support on Fedora
 
-* Wed Jun 06 2012 Antoine Martin <antoine@devloop.org.uk> 0.3.2-1
+* Wed Jun 06 2012 Antoine Martin <antoine@xpra.org> 0.3.2-1
 - fix missing 'a' key using OS X clients
 - fix debian packaging for xpra_launcher
 - fix unicode decoding problems in window title
 - fix latency issue
 
-* Tue May 29 2012 Antoine Martin <antoine@devloop.org.uk> 0.3.1-1
+* Tue May 29 2012 Antoine Martin <antoine@xpra.org> 0.3.1-1
 - fix DoS in network connections setup code
 - fix for non-ascii characters in source file
 - log remote IP or socket address
@@ -1876,7 +1876,7 @@ fi
 - "xpra info" to report the number of clients connected
 - use xpra's own icon for its own windows (about and info dialogs)
 
-* Sun May 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.3.0-1
+* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0-1
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
 - fix vpx encoder memory leak
@@ -1893,7 +1893,7 @@ fi
 - automated regression and performance tests
 - remove compatibility code for versions older than 0.1
 
-* Fri Apr 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.2.1-1
+* Fri Apr 20 2012 Antoine Martin <antoine@xpra.org> 0.2.1-1
 - x264 and vpx video encoding support
 - gtk3 and python 3 partial support (client only - no keyboard support)
 - detect missing X11 server extensions and exit with error
@@ -1903,7 +1903,7 @@ fi
 - show more system version information in session information dialog
 - hide window decorations for openoffice splash screen (workaround)
 
-* Wed Mar 21 2012 Antoine Martin <antoine@devloop.org.uk> 0.1.0-1
+* Wed Mar 21 2012 Antoine Martin <antoine@xpra.org> 0.1.0-1
 - security: strict filtering of packet handlers until connection authenticated
 - prevent DoS: limit number of concurrent connections attempting login (20)
 - prevent DoS: limit initial packet size (memory exhaustion: 32KB)
@@ -1928,12 +1928,12 @@ fi
 - turn off compression over local connections (when mmap is enabled)
 - clients can specify maximum refresh rate and screen update batching options
 
-* Wed Feb 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.0.7.36-1
+* Wed Feb 08 2012 Antoine Martin <antoine@xpra.org> 0.0.7.36-1
 - fix clipboard bug which was causing Java applications to crash
 - ensure we always properly disconnect previous client when new connection is accepted
 - avoid warnings with Java applications, focus errors, etc
 
-* Wed Feb 01 2012 Antoine Martin <antoine@devloop.org.uk> 0.0.7.35-1
+* Wed Feb 01 2012 Antoine Martin <antoine@xpra.org> 0.0.7.35-1
 - ssh password input fix
 - ability to take screenshots ("xpra screenshot")
 - report server version ("xpra version")
@@ -1943,7 +1943,7 @@ fi
 - ignore missing properties when they are changed, and report correct source of the problem
 - code style cleanups and improvements
 
-* Thu Jan 19 2012 Antoine Martin <antoine@devloop.org.uk> 0.0.7.34-1
+* Thu Jan 19 2012 Antoine Martin <antoine@xpra.org> 0.0.7.34-1
 - security: restrict access to run-xpra script (chmod)
 - security: cursor data sent to the client was too big (exposing server memory)
 - fix thread leak - properly this time, SIGUSR1 now dumps all threads
@@ -1955,7 +1955,7 @@ fi
 - logging formatting fixes (only shown with logging on)
 - hide picture encoding menu when mmap in use (since it is then ignored)
 
-* Fri Jan 13 2012 Antoine Martin <antoine@devloop.org.uk> 0.0.7.33-1
+* Fri Jan 13 2012 Antoine Martin <antoine@xpra.org> 0.0.7.33-1
 - readonly command line option
 - correctly stop all network related threads on disconnection
 - faster pixel data transfers for large areas
@@ -1965,7 +1965,7 @@ fi
 - keyboard: better modifiers detection, synchronization of capslock and numlock
 - keyboard: support all modifiers correctly with and without keyboard-sync option
 
-* Wed Dec 28 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.32-1
+* Wed Dec 28 2011 Antoine Martin <antoine@xpra.org> 0.0.7.32-1
 - bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
 - bug fix: don't remove window focus when just any connection is lost, only when the real client goes away
 - bug fix: initial windows should get focus (partial fix)
@@ -1980,7 +1980,7 @@ fi
 - use dbus for tray notifications if available, prefered to pynotify
 - show full version information in about dialog
 
-* Mon Nov 28 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.31-1
+* Mon Nov 28 2011 Antoine Martin <antoine@xpra.org> 0.0.7.31-1
 - threaded server for much lower latency
 - fast memory mapped transfers for local connections
 - adaptive damage batching, fixes window refresh
@@ -1988,15 +1988,15 @@ fi
 - fixed system tray for Ubuntu clients
 - fixed maximized windows on Ubuntu clients
 
-* Tue Nov 01 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.30-1
+* Tue Nov 01 2011 Antoine Martin <antoine@xpra.org> 0.0.7.30-1
 - fix for update batching causing screen corruption
 - fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
 - fix for jitter compensation code being a little bit too trigger-happy
 
-* Wed Oct 26 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.29-2
+* Wed Oct 26 2011 Antoine Martin <antoine@xpra.org> 0.0.7.29-2
 - fix partial packets on boundary causing connection to drop (properly this time)
 
-* Tue Oct 25 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.29-1
+* Tue Oct 25 2011 Antoine Martin <antoine@xpra.org> 0.0.7.29-1
 - fix partial packets on boundary causing connection to drop
 - improve disconnection diagnostic messages
 - scale cursor down to the client's default size
@@ -2005,10 +2005,10 @@ fi
 - support ubuntu's appindicator (yet another system tray implementation)
 - remove harmless warnings about missing properties on startup
 
-* Tue Oct 18 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.28-2
+* Tue Oct 18 2011 Antoine Martin <antoine@xpra.org> 0.0.7.28-2
 - fix password mode - oops
 
-* Tue Oct 18 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.28-1
+* Tue Oct 18 2011 Antoine Martin <antoine@xpra.org> 0.0.7.28-1
 - much more efficient and backwards compatible network code, prevents a CPU bottleneck on the client
 - forwarding of system notifications, system bell and custom cursors
 - system tray menu to make it easier to change settings and disconnect
@@ -2020,11 +2020,11 @@ fi
 - compensate for line jitter causing keys to repeat
 - fixed cython warnings, unused variables, etc
 
-* Thu Sep 22 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.27-1
+* Thu Sep 22 2011 Antoine Martin <antoine@xpra.org> 0.0.7.27-1
 - compatibility fix for python 2.4 (remove "with" statement)
 - slow down updates from windows that refresh continuously
 
-* Tue Sep 20 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.26-1
+* Tue Sep 20 2011 Antoine Martin <antoine@xpra.org> 0.0.7.26-1
 - minor changes to support the Android client (work in progress)
 - allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
 - clear modifiers when applying new keymaps to prevent timeouts
@@ -2032,63 +2032,63 @@ fi
 - try harder to close connections cleanly
 - removed some unused code, fixed some old test code
 
-* Wed Aug 31 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.25-1
+* Wed Aug 31 2011 Antoine Martin <antoine@xpra.org> 0.0.7.25-1
 - Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly
 - Reset modifiers whenever we gain or lose focus, or when the keymap changes
 
-* Mon Aug 15 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.24-1
+* Mon Aug 15 2011 Antoine Martin <antoine@xpra.org> 0.0.7.24-1
 - Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
 - Keyboard fixes for AltGr and special keys for non Unix-like clients
 
-* Wed Jul 27 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.23-2
+* Wed Jul 27 2011 Antoine Martin <antoine@xpra.org> 0.0.7.23-2
 - More keymap fixes..
 
-* Wed Jul 20 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.23-1
+* Wed Jul 20 2011 Antoine Martin <antoine@xpra.org> 0.0.7.23-1
 - Try to use setxkbmap before xkbcomp to setup the matching keyboard layout
 - Handle keyval level (shifted keys) explicitly, should fix missing key mappings
 - More generic option for setting window titles
 - Exit if the server dies
 
-* Thu Jun 02 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.22-1
+* Thu Jun 02 2011 Antoine Martin <antoine@xpra.org> 0.0.7.22-1
 - minor fixes: jpeg, man page, etc
 
-* Fri May 20 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.21-1
+* Fri May 20 2011 Antoine Martin <antoine@xpra.org> 0.0.7.21-1
 - ability to bind to an existing display with --use-display
 - --xvfb now specifies the full command used. The default is unchanged
 - --auto-refresh-delay does automatic refresh of idle displays in a lossless fashion
 
-* Wed May 04 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.20-1
+* Wed May 04 2011 Antoine Martin <antoine@xpra.org> 0.0.7.20-1
 - more reliable fix for keyboard mapping issues
 
-* Mon Apr 25 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.19-1
+* Mon Apr 25 2011 Antoine Martin <antoine@xpra.org> 0.0.7.19-1
 - xrandr support when running against Xdummy, screen resizes on demand
 - fixes for keyboard mapping issues: multiple keycodes for the same key
 
-* Mon Apr 4 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.18-2
+* Mon Apr 4 2011 Antoine Martin <antoine@xpra.org> 0.0.7.18-2
 - Fix for older distros (like CentOS) with old versions of pycairo
 
-* Mon Mar 28 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.18-1
+* Mon Mar 28 2011 Antoine Martin <antoine@xpra.org> 0.0.7.18-1
 - Fix jpeg compression on MS Windows
 - Add ability to disable clipboard code
 - Updated man page
 
-* Wed Jan 19 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.17-1
+* Wed Jan 19 2011 Antoine Martin <antoine@xpra.org> 0.0.7.17-1
 - Honour the pulseaudio flag on client
 
-* Wed Aug 25 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.16-1
+* Wed Aug 25 2010 Antoine Martin <antoine@xpra.org> 0.0.7.16-1
 - Merged upstream changes.
 
-* Thu Jul 01 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.15-1
+* Thu Jul 01 2010 Antoine Martin <antoine@xpra.org> 0.0.7.15-1
 - Add option to disable Pulseaudio forwarding as this can be a real network hog.
 - Use logging rather than print statements.
 
-* Tue May 04 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.13-1
+* Tue May 04 2010 Antoine Martin <antoine@xpra.org> 0.0.7.13-1
 - Ignore minor version differences in the future (must bump to 0.0.8 to cause incompatibility error)
 
-* Tue Apr 13 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.12-1
+* Tue Apr 13 2010 Antoine Martin <antoine@xpra.org> 0.0.7.12-1
 - bump screen resolution
 
-* Mon Jan 11 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.11-1
+* Mon Jan 11 2010 Antoine Martin <antoine@xpra.org> 0.0.7.11-1
 - first rpm spec file
 
 ###

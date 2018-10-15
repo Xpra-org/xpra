@@ -296,105 +296,105 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
-* Wed Oct 10 2018 Antoine Martin <antoine@devloop.org.uk> - 5.3.0-1
+* Wed Oct 10 2018 Antoine Martin <antoine@xpra.org> - 5.3.0-1
 - new upstream release
 
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 5.2.0-3
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 5.2.0-3
 - use python2 explicitly
 
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 5.2.0-2
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 5.2.0-2
 - try harder to prevent rpm db conflicts
 
-* Mon Jul 02 2018 Antoine Martin <antoine@devloop.org.uk> - 5.2.0-1
+* Mon Jul 02 2018 Antoine Martin <antoine@xpra.org> - 5.2.0-1
 - new upstream release
 
-* Tue Apr 10 2018 Antoine Martin <antoine@devloop.org.uk> - 5.1.0-1
+* Tue Apr 10 2018 Antoine Martin <antoine@xpra.org> - 5.1.0-1
 - new upstream release
 
-* Tue Jan 02 2018 Antoine Martin <antoine@devloop.org.uk> - 5.0.0-1
+* Tue Jan 02 2018 Antoine Martin <antoine@xpra.org> - 5.0.0-1
 - new upstream release
 
-* Thu Nov 23 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-3
+* Thu Nov 23 2017 Antoine Martin <antoine@xpra.org> - 4.3.0-3
 - don't link with webp on CentOS, so we can use our private library in xpra without conflicting
 
-* Mon Oct 09 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-1
+* Mon Oct 09 2017 Antoine Martin <antoine@xpra.org> - 4.3.0-1
 - new upstream release
 
-* Mon Jul 31 2017 Antoine Martin <antoine@devloop.org.uk> - 4.2.1-2
+* Mon Jul 31 2017 Antoine Martin <antoine@xpra.org> - 4.2.1-2
 - we should provide and obsolete "python2-imaging" as well as "python-imaging"
 
-* Sat Jul 08 2017 Antoine Martin <antoine@devloop.org.uk> - 4.2.1-1
+* Sat Jul 08 2017 Antoine Martin <antoine@xpra.org> - 4.2.1-1
 - new upstream release
 
-* Wed Jul 05 2017 Antoine Martin <antoine@devloop.org.uk> - 4.2.0-1
+* Wed Jul 05 2017 Antoine Martin <antoine@xpra.org> - 4.2.0-1
 - new upstream release
 
-* Sun Apr 30 2017 Antoine Martin <antoine@devloop.org.uk> - 4.1.1-1
+* Sun Apr 30 2017 Antoine Martin <antoine@xpra.org> - 4.1.1-1
 - new upstream release
 
-* Sun Apr 09 2017 Antoine Martin <antoine@devloop.org.uk> - 4.1.0-1
+* Sun Apr 09 2017 Antoine Martin <antoine@xpra.org> - 4.1.0-1
 - new upstream release
 
-* Sun Jan 08 2017 Antoine Martin <antoine@devloop.org.uk> - 4.0.0-1
+* Sun Jan 08 2017 Antoine Martin <antoine@xpra.org> - 4.0.0-1
 - new upstream release
 
-* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 3.4.2-2
+* Sat Dec 24 2016 Antoine Martin <antoine@xpra.org> - 3.4.2-2
 - try harder to supersede the old package name
 
-* Wed Oct 19 2016 Antoine Martin <antoine@devloop.org.uk> - 3.4.2-1
+* Wed Oct 19 2016 Antoine Martin <antoine@xpra.org> - 3.4.2-1
 - new upstream release
 
-* Sun Oct 09 2016 Antoine Martin <antoine@devloop.org.uk> - 3.4.1-1
+* Sun Oct 09 2016 Antoine Martin <antoine@xpra.org> - 3.4.1-1
 - new upstream release
 
-* Sat Aug 20 2016 Antoine Martin <antoine@devloop.org.uk> - 3.3.1-1
+* Sat Aug 20 2016 Antoine Martin <antoine@xpra.org> - 3.3.1-1
 - new upstream release
 
-* Tue Jul 19 2016 Antoine Martin <antoine@nagafix.co.uk> - 3.3.0-3
+* Tue Jul 19 2016 Antoine Martin <antoine@xpra.org> - 3.3.0-3
 - fix lcms2 dependency for Fedora
 
-* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 3.3.0-2
+* Sun Jul 17 2016 Antoine Martin <antoine@xpra.org> - 3.3.0-2
 - rename and obsolete old python package name
 
-* Mon Jul 04 2016 Antoine Martin <antoine@devloop.org.uk> - 3.3.0-1
+* Mon Jul 04 2016 Antoine Martin <antoine@xpra.org> - 3.3.0-1
 - new upstream release
 
-* Fri Apr 08 2016 Antoine Martin <antoine@devloop.org.uk> - 3.2.0-2
+* Fri Apr 08 2016 Antoine Martin <antoine@xpra.org> - 3.2.0-2
 - tweak liblcms dependencies (not useful on centos)
 
-* Sat Apr 02 2016 Antoine Martin <antoine@devloop.org.uk> - 3.2.0-1
+* Sat Apr 02 2016 Antoine Martin <antoine@xpra.org> - 3.2.0-1
 - new upstream release
 
-* Sat Feb 06 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1-1
+* Sat Feb 06 2016 Antoine Martin <antoine@xpra.org> - 3.1.1-1
 - new upstream release
 
-* Mon Jan 04 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.0-1
+* Mon Jan 04 2016 Antoine Martin <antoine@xpra.org> - 3.1.0-1
 - new upstream release
 
-* Sun Oct 18 2015 Antoine Martin <antoine@devloop.org.uk> - 3.0.0-1
+* Sun Oct 18 2015 Antoine Martin <antoine@xpra.org> - 3.0.0-1
 - new upstream release
 
-* Tue Jul 07 2015 Antoine Martin <antoine@devloop.org.uk> - 2.9.0-1
+* Tue Jul 07 2015 Antoine Martin <antoine@xpra.org> - 2.9.0-1
 - new upstream release
 
-* Wed Jun 10 2015 Antoine Martin <antoine@devloop.org.uk> - 2.8.2-1
+* Wed Jun 10 2015 Antoine Martin <antoine@xpra.org> - 2.8.2-1
 - new upstream release
 
-* Sun Apr 05 2015 Antoine Martin <antoine@devloop.org.uk> - 2.8.1-1
+* Sun Apr 05 2015 Antoine Martin <antoine@xpra.org> - 2.8.1-1
 - new upstream release
 
-* Mon Jan 19 2015 Antoine Martin <antoine@devloop.org.uk> - 2.7.0-1
+* Mon Jan 19 2015 Antoine Martin <antoine@xpra.org> - 2.7.0-1
 - new upstream release
 - remove sane packages which are no longer part of the main source distribution
 
-* Sun Jan 18 2015 Antoine Martin <antoine@devloop.org.uk> - 2.6.2-1
+* Sun Jan 18 2015 Antoine Martin <antoine@xpra.org> - 2.6.2-1
 - new upstream release
 
-* Sat Oct 25 2014 Antoine Martin <antoine@devloop.org.uk> - 2.6.1-1
+* Sat Oct 25 2014 Antoine Martin <antoine@xpra.org> - 2.6.1-1
 - new upstream release
 
-* Tue Oct 07 2014 Antoine Martin <antoine@devloop.org.uk> - 2.6.0-1
+* Tue Oct 07 2014 Antoine Martin <antoine@xpra.org> - 2.6.0-1
 - new upstream release
 
-* Thu Sep 04 2014 Antoine Martin <antoine@devloop.org.uk> - 2.5.3-1
+* Thu Sep 04 2014 Antoine Martin <antoine@xpra.org> - 2.5.3-1
 - Initial packaging for xpra

@@ -1,7 +1,7 @@
 Source: python-rencode
 Section: python
 Priority: optional
-Maintainer: Antoine Martin <antoine@devloop.org.uk>
+Maintainer: Antoine Martin <antoine@xpra.org>
 Build-Depends: debhelper (>= 9), python-all-dev
 X-Python-Version: >= 2.7
 Standards-Version: 3.9.5

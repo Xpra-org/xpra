@@ -78,28 +78,28 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Mon Apr 30 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.0-1
+* Mon Apr 30 2018 Antoine Martin <antoine@xpra.org> 1.0.0-1
 - new upstream release
 
-* Wed Nov 29 2017 Antoine Martin <antoine@devloop.org.uk> 0.6.1-1
+* Wed Nov 29 2017 Antoine Martin <antoine@xpra.org> 0.6.1-1
 - new upstream release
 
-* Wed Nov 22 2017 Antoine Martin <antoine@devloop.org.uk> 0.6.0-1
+* Wed Nov 22 2017 Antoine Martin <antoine@xpra.org> 0.6.0-1
 - new upstream release
 
-* Fri Nov 13 2015 Antoine Martin <antoine@devloop.org.uk> 0.4.4-1
+* Fri Nov 13 2015 Antoine Martin <antoine@xpra.org> 0.4.4-1
 - new upstream release
 
-* Tue Mar 31 2015 Antoine Martin <antoine@devloop.org.uk> 0.4.3-1
+* Tue Mar 31 2015 Antoine Martin <antoine@xpra.org> 0.4.3-1
 - new upstream release
 
-* Sat Oct 25 2014 Antoine Martin <antoine@devloop.org.uk> 0.4.2-1
+* Sat Oct 25 2014 Antoine Martin <antoine@xpra.org> 0.4.2-1
 - new upstream release
 
-* Mon Aug 18 2014 Antoine Martin <antoine@devloop.org.uk> 0.4.1-1
+* Mon Aug 18 2014 Antoine Martin <antoine@xpra.org> 0.4.1-1
 - Update to 0.4.1
 
-* Thu Jul 31 2014 Antoine Martin <antoine@devloop.org.uk>
+* Thu Jul 31 2014 Antoine Martin <antoine@xpra.org>
 - configure doesn't support --enable-pic
 
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>

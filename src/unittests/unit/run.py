@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014 Antoine Martin <antoine@xpra.org>
 
 #need to find a generic way to discover tests
 #that works with python2.6 without introducing more dependencies

@@ -60,24 +60,24 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.5.2-1
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 2018.5.2-1
 - new upstream release
 - try harder to prevent rpm db conflicts
 
-* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.2.1-3
+* Sat Dec 24 2016 Antoine Martin <antoine@xpra.org> - 2016.2.1-3
 - try harder to supersede the old package name
 
-* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 2016.2.1-2
+* Sun Jul 17 2016 Antoine Martin <antoine@xpra.org> - 2016.2.1-2
 - rename and obsolete old python package name
 
-* Thu May 26 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.2.1-1
+* Thu May 26 2016 Antoine Martin <antoine@xpra.org> - 2016.2.1-1
 - new upstream release
 
-* Thu Jul 16 2015 Antoine Martin <antoine@devloop.org.uk> - 2015.1.2-1
+* Thu Jul 16 2015 Antoine Martin <antoine@xpra.org> - 2015.1.2-1
 - new upstream release
 
-* Wed Jun 17 2015 Antoine Martin <antoine@devloop.org.uk> - 2014.3.5-1
+* Wed Jun 17 2015 Antoine Martin <antoine@xpra.org> - 2014.3.5-1
 - new upstream release
 
-* Thu Sep 04 2014 Antoine Martin <antoine@devloop.org.uk> - 2014.3-1
+* Thu Sep 04 2014 Antoine Martin <antoine@xpra.org> - 2014.3-1
 - Initial packaging for xpra

@@ -95,5 +95,5 @@ EOF
 %exclude %{_libdir}/libmad.la
 
 %changelog
-* Fri Oct 17 2014 Antoine Martin <antoine@devloop.org.uk> 0.15.1b
+* Fri Oct 17 2014 Antoine Martin <antoine@xpra.org> 0.15.1b
 - initial xpra package

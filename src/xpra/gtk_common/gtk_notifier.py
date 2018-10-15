@@ -3,7 +3,7 @@
 #gtkPopupNotify.py
 #
 # Copyright 2009 Daniel Woodhouse
-# Copyright 2013-2018 Antoine Martin <antoine@devloop.org.uk>
+# Copyright 2013-2018 Antoine Martin <antoine@xpra.org>
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU Lesser General Public License as published by

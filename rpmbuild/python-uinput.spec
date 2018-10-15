@@ -108,10 +108,10 @@ chmod a-x examples/*
 
 
 %changelog
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.11.2-3
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 0.11.2-3
 - use python2 explicitly
 
-* Mon Jan 22 2018 Antoine Martin <antoine@devloop.org.uk> - 0.11.2-2
+* Mon Jan 22 2018 Antoine Martin <antoine@xpra.org> - 0.11.2-2
 - more explicit python version, sitearch paths
 
 * Fri Aug 11 2017 Miro Hrončok <mhroncok@redhat.com> - 0.11.2-1

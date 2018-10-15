@@ -1,7 +1,7 @@
 Source: python-lz4
 Section: python
 Priority: optional
-Maintainer: Antoine Martin <antoine@nagafix.co.uk>
+Maintainer: Antoine Martin <antoine@xpra.org>
 Build-Depends: debhelper (>= 9), dh-python, python-all-dev, python3-all-dev
               ,liblz4-dev (>= 0.0~r131~)
               ,pkg-config

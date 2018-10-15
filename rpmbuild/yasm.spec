@@ -71,7 +71,7 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Mon Aug 18 2014 Antoine Martin <antoine@devloop.org.uk> 1.3.0-1
+* Mon Aug 18 2014 Antoine Martin <antoine@xpra.org> 1.3.0-1
 - Update to 1.3.0
 
 * Thu Mar 15 2012 Matthias Saou <matthias@saou.eu> 1.2.0-1

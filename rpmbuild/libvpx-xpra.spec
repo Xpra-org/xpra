@@ -76,19 +76,19 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sat Jan 27 2018 Antoine Martin <antoine@devloop.org.uk> 1.7.0-1
+* Sat Jan 27 2018 Antoine Martin <antoine@xpra.org> 1.7.0-1
 - new upstream release
 
-* Tue Jan 24 2017 Antoine Martin <antoine@devloop.org.uk> 1.6.1-1
+* Tue Jan 24 2017 Antoine Martin <antoine@xpra.org> 1.6.1-1
 - new upstream release
 
-* Sun Jul 24 2016 Antoine Martin <antoine@devloop.org.uk> 1.6.0-1
+* Sun Jul 24 2016 Antoine Martin <antoine@xpra.org> 1.6.0-1
 - new upstream release
 
-* Fri Nov 13 2015 Antoine Martin <antoine@devloop.org.uk> 1.5.0-1
+* Fri Nov 13 2015 Antoine Martin <antoine@xpra.org> 1.5.0-1
 - new upstream release
 
-* Sat Apr 04 2015 Antoine Martin <antoine@devloop.org.uk> 1.4.0-1
+* Sat Apr 04 2015 Antoine Martin <antoine@xpra.org> 1.4.0-1
 - new upstream release
 
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>

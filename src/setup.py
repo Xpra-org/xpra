@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -52,7 +52,7 @@ setup_options = {
                  "version"          : XPRA_VERSION,
                  "license"          : "GPLv2+",
                  "author"           : "Antoine Martin",
-                 "author_email"     : "antoine@devloop.org.uk",
+                 "author_email"     : "antoine@xpra.org",
                  "url"              : url,
                  "download_url"     : "http://xpra.org/src/",
                  "description"      : description,

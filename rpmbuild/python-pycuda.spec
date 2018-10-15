@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2018 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -130,48 +130,48 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Tue Sep 18 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.1.1-1
+* Tue Sep 18 2018 Antoine Martin <antoine@xpra.org> - 2018.1.1-1
 - new upstream release fixing Fedora 29 builds
 
-* Thu Aug 02 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.1-1
+* Thu Aug 02 2018 Antoine Martin <antoine@xpra.org> - 2018.1-1
 - new upstream release
 
-* Wed Aug 09 2017 Antoine Martin <antoine@devloop.org.uk> - 2017.1.1-1
+* Wed Aug 09 2017 Antoine Martin <antoine@xpra.org> - 2017.1.1-1
 - new upstream release
 
-* Tue Jul 18 2017 Antoine Martin <antoine@devloop.org.uk> - 2017.1-2
+* Tue Jul 18 2017 Antoine Martin <antoine@xpra.org> - 2017.1-2
 - build python3 variant too
 
-* Thu Jun 01 2017 Antoine Martin <antoine@devloop.org.uk> - 2017.1-1
+* Thu Jun 01 2017 Antoine Martin <antoine@xpra.org> - 2017.1-1
 - new upstream release
 
-* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.1.2-2
+* Sat Dec 24 2016 Antoine Martin <antoine@xpra.org> - 2016.1.2-2
 - try harder to supersede the old package name
 
-* Fri Jul 29 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.1.2-1
+* Fri Jul 29 2016 Antoine Martin <antoine@xpra.org> - 2016.1.2-1
 - new upstream release
 
-* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 2016.1.1-1
+* Sun Jul 17 2016 Antoine Martin <antoine@xpra.org> - 2016.1.1-1
 - new upstream release
 - rename and obsolete old python package name
 
-* Fri Apr 01 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.1-1
+* Fri Apr 01 2016 Antoine Martin <antoine@xpra.org> - 2016.1-1
 - new upstream release
 
-* Wed Nov 04 2015 Antoine Martin <antoine@devloop.org.uk> - 2015.1.3-1
+* Wed Nov 04 2015 Antoine Martin <antoine@xpra.org> - 2015.1.3-1
 - new upstream release
 
-* Wed Jul 01 2015 Antoine Martin <antoine@devloop.org.uk> - 2015.1.2-1
+* Wed Jul 01 2015 Antoine Martin <antoine@xpra.org> - 2015.1.2-1
 - new upstream release
 
-* Wed Jun 17 2015 Antoine Martin <antoine@devloop.org.uk> - 2015.1-1
+* Wed Jun 17 2015 Antoine Martin <antoine@xpra.org> - 2015.1-1
 - new upstream release
 
-* Sun Mar 29 2015 Antoine Martin <antoine@devloop.org.uk> - 2014.1-3
+* Sun Mar 29 2015 Antoine Martin <antoine@xpra.org> - 2014.1-3
 - remove dependency on libcuda so the package can be installed without using the RPM drivers
 
-* Fri Nov 07 2014 Antoine Martin <antoine@devloop.org.uk> - 2014.1-2
+* Fri Nov 07 2014 Antoine Martin <antoine@xpra.org> - 2014.1-2
 - remove curand bindings which require libcurand found in full CUDA SDK
 
-* Wed Sep 03 2014 Antoine Martin <antoine@devloop.org.uk> - 2014.1-1
+* Wed Sep 03 2014 Antoine Martin <antoine@xpra.org> - 2014.1-1
 - initial packaging

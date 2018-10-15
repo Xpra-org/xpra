@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -73,11 +73,11 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Thu Jun 28 2018 Antoine Martin <antoine@devloop.org.uk> - 0.1.4-2
+* Thu Jun 28 2018 Antoine Martin <antoine@xpra.org> - 0.1.4-2
 - fix provides tag
 
-* Sat Mar 24 2018 Antoine Martin <antoine@devloop.org.uk> - 0.1.4-1
+* Sat Mar 24 2018 Antoine Martin <antoine@xpra.org> - 0.1.4-1
 - new upstream release
 
-* Sat Mar 24 2018 Antoine Martin <antoine@devloop.org.uk> - 0.1.2
+* Sat Mar 24 2018 Antoine Martin <antoine@xpra.org> - 0.1.2
 - initial packaging for xpra

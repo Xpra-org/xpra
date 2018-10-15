@@ -2,7 +2,7 @@
 # * MIT X11 license, Copyright (c) 2007 by:
 # *      Michael Dominic K. <mdk@mdk.am>
 #http://www.mdk.org.pl/2007/11/17/gl-colorspace-conversions
-# "full-color" version by Antoine Martin <antoine@nagafix.co.uk>
+# "full-color" version by Antoine Martin <antoine@xpra.org>
 
 YUV2RGB_shader = b"""!!ARBfp1.0
 # cgc version 3.1.0010, build date Feb 10 2012

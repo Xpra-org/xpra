@@ -9,7 +9,7 @@ License: BSD-3-clause
 
 Files: debian/*
 Copyright: 2014-2016 Dmitry Smirnov <onlyjob@debian.org>
-Copyright: 2017 Antoine Martin <antoine@nagafix.co.uk>
+Copyright: 2017 Antoine Martin <antoine@xpra.org>
 License: GPL-2+ or BSD-3-clause
 
 License: GPL-2+

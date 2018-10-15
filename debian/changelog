@@ -1,7 +1,7 @@
 xpra (2.5-1) UNRELEASED; urgency=low
   * TODO
  
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 14 Oct 2018 23:45:13 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 14 Oct 2018 23:45:13 +0700
 
  xpra (2.4-1) UNRELEASED; urgency=low
   * SSH client integration (paramiko)
@@ -41,7 +41,7 @@ xpra (2.5-1) UNRELEASED; urgency=low
   * clip pointer events to the actual window content size
   * new platforms: Ubuntu Cosmic, Fedora 29
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 13 Oct 2018 13:51:43 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 13 Oct 2018 13:51:43 +0700
 
 xpra (2.3-1) UNRELEASED; urgency=low
   * stackable authentication modules
@@ -68,7 +68,7 @@ xpra (2.3-1) UNRELEASED; urgency=low
   * packaging: switch back to ffmpeg system libraries, support GTK3 on macos
   * structural improvements: refactoring, fewer synchronized X11 calls, etc
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 08 May 2018 00:20:15 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 08 May 2018 00:20:15 +0700
 
 xpra (2.2-1) UNRELEASED; urgency=low
   * support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
@@ -96,7 +96,7 @@ xpra (2.2-1) UNRELEASED; urgency=low
   * password prompt dialog in client
   * fixed memory leaks
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 11 Dec 2017 22:48:59 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 11 Dec 2017 22:48:59 +0700
 
 xpra (2.1-1) UNRELEASED; urgency=low
   * improve system wide proxy server, logind support on, socket activation
@@ -124,7 +124,7 @@ xpra (2.1-1) UNRELEASED; urgency=low
   * shadow servers improvements: show shadow pointer in opengl client
   * structural improvements and important bug fixes
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 24 Jul 2017 21:11:38 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 24 Jul 2017 21:11:38 +0700
 
 xpra (2.0-1) UNRELEASED; urgency=low
   * dropped support for outdated OS and libraries (long list)
@@ -148,7 +148,7 @@ xpra (2.0-1) UNRELEASED; urgency=low
   * fix python-lz4 0.9.0 API breakage
   * fix html5 visual corruption with scroll paint packets
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 17 Mar 2017 14:08:46 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 17 Mar 2017 14:08:46 +0700
 
 
 xpra (1.0-1) UNRELEASED; urgency=low
@@ -192,7 +192,7 @@ xpra (1.0-1) UNRELEASED; urgency=low
   * Mac OS X remote shadow start support
     (though not all versions are supported)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Dec 2016 17:47:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 06 Dec 2016 17:47:26 +0700
 
 
 xpra (0.17.0-1) UNRELEASED; urgency=low
@@ -224,7 +224,7 @@ xpra (0.17.0-1) UNRELEASED; urgency=low
   * split file authentication module
   * debug logging and message improvements
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 18 Apr 2016 12:28:05 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 18 Apr 2016 12:28:05 +0700
 
 
 xpra (0.16.0-1) UNRELEASED; urgency=low
@@ -261,7 +261,7 @@ xpra (0.16.0-1) UNRELEASED; urgency=low
   * more robust error handling and recovery from client errors
   * NVENC support for MS Windows shadow servers
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 16 Dec 2015 10:12:01 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 16 Dec 2015 10:12:01 +0700
 
 
 xpra (0.15.0-1) UNRELEASED; urgency=low
@@ -309,7 +309,7 @@ xpra (0.15.0-1) UNRELEASED; urgency=low
   * more detailed bug report information
   * more minimal MS Windows and OSX builds
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 28 Apr 2015 12:16:50 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 28 Apr 2015 12:16:50 +0700
 
 xpra (0.14.0-1) UNRELEASED; urgency=low
   * support for lzo compression
@@ -337,7 +337,7 @@ xpra (0.14.0-1) UNRELEASED; urgency=low
   * more Cython compile time optimizations
   * some focus issues fixed
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 14 Aug 2014 15:34:58 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 14 Aug 2014 15:34:58 +0700
 
 xpra (0.13.9-1) UNRELEASED; urgency=low
   * fix clipboard on OSX
@@ -351,7 +351,7 @@ xpra (0.13.9-1) UNRELEASED; urgency=low
   * fix clipboard errors with no data
   * fix opencl platform initialization errors
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 13 Aug 2014 21:56:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Aug 2014 21:56:26 +0700
 
 xpra (0.13.8-1) UNRELEASED; urgency=low
   * fix server early exit when pulseaudio terminates
@@ -370,7 +370,7 @@ xpra (0.13.8-1) UNRELEASED; urgency=low
   * fix proxy handling of raw RGB data for large screen sizes
   * fix potential error from missing data in client packets
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 06 Aug 2014 09:33:07 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 06 Aug 2014 09:33:07 +0700
 
 xpra (0.13.7-1) UNRELEASED; urgency=low
   * fix x11 server pixmap memory leak
@@ -380,7 +380,7 @@ xpra (0.13.7-1) UNRELEASED; urgency=low
   * fix "initenv" compatibility with older servers
   * don't start child when upgrading or shadowing
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 10 Jul 2014 19:47:21 +0200
+ -- Antoine Martin <antoine@xpra.org>  Thu, 10 Jul 2014 19:47:21 +0200
 
 xpra (0.13.6-1) UNRELEASED; urgency=low
   * fix compatibility older versions of pygtk (centos5)
@@ -390,12 +390,12 @@ xpra (0.13.6-1) UNRELEASED; urgency=low
   * fix installation on systems without python-glib (centos5)
   * fix Xorg version detection for Fedora rawhide
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 17 Jun 2014 23:02:29 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 17 Jun 2014 23:02:29 +0700
 
 xpra (0.13.5-3) UNRELEASED; urgency=low
   * re-fix opengl compatibility
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 14 Jun 2014 01:04:46 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 14 Jun 2014 01:04:46 +0700
 
 xpra (0.13.5-1) UNRELEASED; urgency=low
   * fix use correct dimensions when evaluating video
@@ -408,7 +408,7 @@ xpra (0.13.5-1) UNRELEASED; urgency=low
   * fix ssh connection with shells not starting in home directory
   * fix keyboard layout change forwarding
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 13 Jun 2014 20:40:10 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 13 Jun 2014 20:40:10 +0700
 
 xpra (0.13.4-1) UNRELEASED; urgency=low
   * fix numeric keypad period key mapping on some non-us keyboards
@@ -421,7 +421,7 @@ xpra (0.13.4-1) UNRELEASED; urgency=low
   * fix focus issue with some applications
   * fix batch delay use
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 10 Jun 2014 21:40:12 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 10 Jun 2014 21:40:12 +0700
 
 xpra (0.13.3-1) UNRELEASED; urgency=low
   * fix xpra upgrade
@@ -431,7 +431,7 @@ xpra (0.13.3-1) UNRELEASED; urgency=low
   * fix error in rgb strict mode
   * add missing x11 server type information
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 05 Jun 2014 15:36:09 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 05 Jun 2014 15:36:09 +0700
 
 xpra (0.13.2-1) UNRELEASED; urgency=low
   * fix painting of forwarded tray
@@ -441,7 +441,7 @@ xpra (0.13.2-1) UNRELEASED; urgency=low
   * fix infinite recursion in cython csc module
   * don't include sound utilities when building without sound
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 01 Jun 2014 21:03:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 01 Jun 2014 21:03:26 +0700
 
 xpra (0.13.1-1) UNRELEASED; urgency=low
   * honour lossless encodings
@@ -454,7 +454,7 @@ xpra (0.13.1-1) UNRELEASED; urgency=low
   * fix re-stride code for compatibility with ancient clients
   * fix timer reference leak causing some warnings
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 28 May 2014 14:32:01 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 28 May 2014 14:32:01 +0700
 
 xpra (0.13.0-1) UNRELEASED; urgency=low
   * Python3 / GTK3 client support
@@ -473,7 +473,7 @@ xpra (0.13.0-1) UNRELEASED; urgency=low
   * more detailed version information and tools
   * stricter handling of server supplied values
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 22 May 2014 21:33:03 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 22 May 2014 21:33:03 +0700
 
 xpra (0.12.6-1) UNRELEASED; urgency=low
   * fix invalid pixel buffer size causing encoding failures
@@ -485,7 +485,7 @@ xpra (0.12.6-1) UNRELEASED; urgency=low
   * fix RGB pixel data buffer size (re-stride as needed)
   * avoid buggy swscale 2.1.0 on Ubuntu
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 16 May 2014 12:37:44 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 16 May 2014 12:37:44 +0700
 
 xpra (0.12.5-1) UNRELEASED; urgency=low
   * fix error when clients supply invalid screen dimensions
@@ -496,14 +496,14 @@ xpra (0.12.5-1) UNRELEASED; urgency=low
   * fix exception handling in client when called from the launcher
   * fix libav dependencies for Debian and Ubuntu builds
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 03 May 2014 15:23:02 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 03 May 2014 15:23:02 +0700
 
 xpra (0.12.4-1) UNRELEASED; urgency=low
   * fix xpra shadow subcommand
   * fix xpra shadow keyboard mapping support for non-posix clients
   * avoid Xorg dummy warning in log
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 23 Apr 2014 13:59:22 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 23 Apr 2014 13:59:22 +0700
 
 xpra (0.12.3-1) UNRELEASED; urgency=low
   * fix mispostioned windows
@@ -520,30 +520,30 @@ xpra (0.12.3-1) UNRELEASED; urgency=low
   * fix logging errors in debug mode
   * fix timer expired warning
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 09 Apr 2014 12:39:07 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 09 Apr 2014 12:39:07 +0700
 
 xpra (0.12.2-1) UNRELEASED; urgency=low
   * fix switching to RGB encoding via client tray
   * fix remote server start via SSH
   * fix workspace change detection causing slow screen updates
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 30 Mar 2014 11:56:39 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 30 Mar 2014 11:56:39 +0700
 
 xpra (0.12.1-1) UNRELEASED; urgency=low
   * fix 32-bit server timestamps
   * fix client PNG handling on installations without PIL / Pillow
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 27 Mar 2014 21:59:50 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Mar 2014 21:59:50 +0700
 
 xpra (0.12.0-2) UNRELEASED; urgency=low
   * fix x264 decoding
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 27 Mar 2014 09:28:54 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Mar 2014 09:28:54 +0700
 
 xpra (0.12.0-2) UNRELEASED; urgency=low
   * fix x264 decoding
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 27 Mar 2014 09:28:54 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Mar 2014 09:28:54 +0700
 
 xpra (0.12.0-1) UNRELEASED; urgency=low
   * NVENC support for YUV444 mode, support for automatic bitrate tuning
@@ -573,12 +573,12 @@ xpra (0.12.0-1) UNRELEASED; urgency=low
   * improved build system: smaller and more correct build output
   * automatically stop remote shadow servers when client disconnects
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 23 Mar 2014 13:30:38 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 23 Mar 2014 13:30:38 +0700
 
 xpra (0.11.6-1) UNRELEASED; urgency=low
   * correct fix for system tray forwarding
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 18 Mar 2014 16:54:38 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Mar 2014 16:54:38 +0700
 
 xpra (0.11.5-1) UNRELEASED; urgency=low
   * fix "xpra info" with bencoder
@@ -589,7 +589,7 @@ xpra (0.11.5-1) UNRELEASED; urgency=low
   * fix workspace restore
   * fix compilation warning
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 18 Mar 2014 12:08:50 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Mar 2014 12:08:50 +0700
 
 xpra (0.11.4-1) UNRELEASED; urgency=low
   * fix NVENC GPU memory leak
@@ -599,7 +599,7 @@ xpra (0.11.4-1) UNRELEASED; urgency=low
   * fix client crashes with system tray forwarding
   * fix webp codec loader error handler
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 01 Mar 2014 08:06:48 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 01 Mar 2014 08:06:48 +0700
 
 xpra (0.11.3-1) UNRELEASED; urgency=low
   * fix compatibility with ancient versions of GTK
@@ -609,7 +609,7 @@ xpra (0.11.3-1) UNRELEASED; urgency=low
   * blacklist VMware OpenGL driver which causes client crashes
   * ensure all "control" subcommands run in UI thread
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 14 Feb 2014 14:55:10 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 14 Feb 2014 14:55:10 +0700
 
 xpra (0.11.2-1) UNRELEASED; urgency=low
   * fix Cython 0.20 compatibility
@@ -617,7 +617,7 @@ xpra (0.11.2-1) UNRELEASED; urgency=low
   * fix xpra command line help page tokens
   * fix compatibility with old versions of the python glib library
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 29 Jan 2014 12:13:35 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 29 Jan 2014 12:13:35 +0700
 
 xpra (0.11.1-1) UNRELEASED; urgency=low
   * fix compatibility with old/unsupported servers
@@ -625,7 +625,7 @@ xpra (0.11.1-1) UNRELEASED; urgency=low
   * fix paint issue with transparent tooltips on OSX and MS Windows
   * fix pixel format typo in OpenGL logging
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 24 Jan 2014 15:15:48 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 24 Jan 2014 15:15:48 +0700
 
 xpra (0.11.0-1) UNRELEASED; urgency=low
   * NVENC hardware h264 encoding acceleration
@@ -651,7 +651,7 @@ xpra (0.11.0-1) UNRELEASED; urgency=low
   * experimental HTML5 client
   * drop non xpra clients with a more friendly response
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 20 Jan 2014 17:33:48 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 20 Jan 2014 17:33:48 +0700
 
 xpra (0.10.12-1) UNRELEASED; urgency=low
   * fix missing auto-refresh with lossy colourspace conversion
@@ -660,7 +660,7 @@ xpra (0.10.12-1) UNRELEASED; urgency=low
   * fix crash in bencoder caused by empty data to encode
   * big warnings about webp leaking memory
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 14 Jan 2014 15:28:21 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 14 Jan 2014 15:28:21 +0700
 
 xpra (0.10.11-1) UNRELEASED; urgency=low
   * fix popup windows focus issue
@@ -671,7 +671,7 @@ xpra (0.10.11-1) UNRELEASED; urgency=low
   * add support for RGBX pixel format required by some clients
   * avoid ffmpeg "data is not aligned" warning on client
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 07 Jan 2014 12:41:09 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 07 Jan 2014 12:41:09 +0700
 
 xpra (0.10.10-1) UNRELEASED; urgency=low
   * fix focus regression
@@ -688,7 +688,7 @@ xpra (0.10.10-1) UNRELEASED; urgency=low
   * forward compatibility with namespace changes
   * forward compatibility with the new generic encoding names
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 04 Dec 2013 18:53:44 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 04 Dec 2013 18:53:44 +0700
 
 xpra (0.10.9-1) UNRELEASED; urgency=low
   * fix h264 decoding of padded images
@@ -696,12 +696,12 @@ xpra (0.10.9-1) UNRELEASED; urgency=low
   * fix "xpra info" error when old clients are connected
   * remove warning when "help" is specified as encoding
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 05 Nov 2013 11:18:29 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 05 Nov 2013 11:18:29 +0700
 
 xpra (0.10.8-1) UNRELEASED; urgency=low
   * fix misapplied patch breaking all windows with transparency
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 22 Oct 2013 20:26:42 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 22 Oct 2013 20:26:42 +0700
 
 xpra (0.10.7-1) UNRELEASED; urgency=low
   * fix client crash on Linux with AMD cards and fglrx driver
@@ -709,14 +709,14 @@ xpra (0.10.7-1) UNRELEASED; urgency=low
   * fix "xpra info" on shadow servers
   * add usable 1366x768 dummy resolution
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 22 Oct 2013 13:02:40 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 22 Oct 2013 13:02:40 +0700
 
 xpra (0.10.6-1) UNRELEASED; urgency=low
   * fix window titles reverting to "unknown host"
   * fix tray forwarding bug causing client disconnections
   * replace previous rencode fix with warning
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 15 Oct 2013 10:29:54 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 15 Oct 2013 10:29:54 +0700
 
 xpra (0.11.0-1) UNRELEASED; urgency=low
   * proxy server mode for serving multiple sessions through one port
@@ -725,7 +725,7 @@ xpra (0.11.0-1) UNRELEASED; urgency=low
   * real time frame latency graphs
   * removed most of the Cython/C code duplication
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 11 Oct 2013 12:39:49 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 11 Oct 2013 12:39:49 +0700
 
 xpra (0.10.5-1) UNRELEASED; urgency=low
   * fix client time out when the initial connection fails
@@ -737,19 +737,19 @@ xpra (0.10.5-1) UNRELEASED; urgency=low
   * fix potential rencode bug with unhandled data types
   * error out if the client requests authentication and none is available
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 10 Oct 2013 15:39:42 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 10 Oct 2013 15:39:42 +0700
 
 xpra (0.10.4-1) UNRELEASED; urgency=low
   * fix modifier key handling (was more noticeable with MS Windows clients)
   * fix auto-refresh
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 10 Sep 2013 12:36:08 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 10 Sep 2013 12:36:08 +0700
 
 xpra (0.10.3-1) UNRELEASED; urgency=low
   * fix transient windows with no parent
   * fix metadata updates handling (maximize, etc)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 06 Sep 2013 11:08:42 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 06 Sep 2013 11:08:42 +0700
 
 xpra (0.10.2-1) UNRELEASED; urgency=low
   * fix connection error with unicode user name
@@ -758,7 +758,7 @@ xpra (0.10.2-1) UNRELEASED; urgency=low
   * fix handling of scaling attribute via environment override
   * build fix: ensure all builds include source information
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 29 Aug 2013 15:18:25 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 29 Aug 2013 15:18:25 +0700
 
 xpra (0.10.1-1) UNRELEASED; urgency=low
   * fix avcodec buffer pointer errors on some 32-bit Linux
@@ -771,7 +771,7 @@ xpra (0.10.1-1) UNRELEASED; urgency=low
   * silence PyOpenGL warnings we can do nothing about
   * fix CentOS 6.3 packaging dependencies
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 20 Aug 2013 21:09:46 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 20 Aug 2013 21:09:46 +0700
 
 xpra (0.10.0-6) UNRELEASED; urgency=low
   * performance: X11 shared memory (XShm) pixels transfers
@@ -805,7 +805,7 @@ xpra (0.10.0-6) UNRELEASED; urgency=low
   * export much more debugging information about system state and statistics
   * simplify non-UI subcommands and their packets, also use rencode
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 13 Aug 2013 13:15:11 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 13 Aug 2013 13:15:11 +0700
 
 xpra (0.9.8-1) UNRELEASED; urgency=low
   * fix client workarea size change detection (again)
@@ -815,7 +815,7 @@ xpra (0.9.8-1) UNRELEASED; urgency=low
   * fix server hangs due to sound cleanup deadlock
   * use lockless window video decoder cleanup (much faster)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 29 Jul 2013 17:55:21 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 29 Jul 2013 17:55:21 +0700
 
 xpra (0.9.7-1) UNRELEASED; urgency=low
   * fix error in sound cleanup code
@@ -823,7 +823,7 @@ xpra (0.9.7-1) UNRELEASED; urgency=low
   * fix missing window icons
   * fix client availibility of remote session start feature
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 16 Jul 2013 16:21:27 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 16 Jul 2013 16:21:27 +0700
 
 xpra (0.9.6-1) UNRELEASED; urgency=low
   * fix lost clicks on some popup menus (mostly with MS Windows clients)
@@ -838,7 +838,7 @@ xpra (0.9.6-1) UNRELEASED; urgency=low
   * fix variable test vs use (correctness only)
   * forward compatibility with future "xpra info" namespace changes
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 30 Jun 2013 16:33:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 30 Jun 2013 16:33:26 +0700
 
 xpra (0.9.5-1) UNRELEASED; urgency=low
   * fix auto-refresh: don't refresh unnecessarily
@@ -847,14 +847,14 @@ xpra (0.9.5-1) UNRELEASED; urgency=low
   * fix attributes reported to clients when encoding overrides are used
   * Gentoo ebuild uses virtual to allow one to choose pillow or PIL
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 06 Jun 2013 15:33:54 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 06 Jun 2013 15:33:54 +0700
 
 xpra (0.9.4-1) UNRELEASED; urgency=low
   * revert cursor scaling fix which broke other applications
   * fix auto refresh mis-firing
   * fix type (atom) of the X11 visual property we expose
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 27 May 2013 11:17:15 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 27 May 2013 11:17:15 +0700
 
 xpra (0.9.3-2) UNRELEASED; urgency=low
   * fix clipboard for *nix clients
@@ -867,7 +867,7 @@ xpra (0.9.3-2) UNRELEASED; urgency=low
   * reset cursors when disabling cursor forwarding
   * workaround invalid window size hints
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 20 May 2013 16:02:59 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 20 May 2013 16:02:59 +0700
 
 xpra (0.9.2-1) UNRELEASED; urgency=low
   * fix double error when loading build information (missing about dialog)
@@ -876,7 +876,7 @@ xpra (0.9.2-1) UNRELEASED; urgency=low
   * fix potential double error when tray initialization fails
   * fix window static properties usage
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 13 May 2013 22:48:41 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 13 May 2013 22:48:41 +0700
 
 xpra (0.9.1-1) UNRELEASED; urgency=low
   * honour initial client window's requested position
@@ -886,7 +886,7 @@ xpra (0.9.1-1) UNRELEASED; urgency=low
   * fix for windows without a valid window-type (ie: shadows)
   * fix OpenGL missing required feature detection (and add debug)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 08 May 2013 21:08:09 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 08 May 2013 21:08:09 +0700
 
 xpra (0.9.0-1) UNRELEASED; urgency=low
   * fix focus problems with old Xvfb display servers
@@ -909,7 +909,7 @@ xpra (0.9.0-1) UNRELEASED; urgency=low
   * improved OpenGL client rendering (still disabled by default)
   * upgrade to rencode 1.0.2
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 25 Mar 2013 00:20:32 +0100
+ -- Antoine Martin <antoine@xpra.org>  Thu, 25 Mar 2013 00:20:32 +0100
 
 xpra (0.8.8-1) UNRELEASED; urgency=low
   * fix server deadlock on dead connections
@@ -918,7 +918,7 @@ xpra (0.8.8-1) UNRELEASED; urgency=low
   * fix screen number preserve code
   * fix error in logs in shadow mode
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 07 Mar 2013 00:35:22 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 07 Mar 2013 00:35:22 +0700
 
 xpra (0.8.7-1) UNRELEASED; urgency=low
   * fix x264 crash with older versions of libav
@@ -928,31 +928,31 @@ xpra (0.8.7-1) UNRELEASED; urgency=low
   * fix client window properties store
   * fix first workspace not preserved and other workspace issues
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 27 Feb 2013 00:27:50 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 27 Feb 2013 00:27:50 +0700
 
 xpra (0.8.6-1) UNRELEASED; urgency=low
   * fix python2.4 compatibility in icon grabbing code
   * fix libav compatibility on MS Windows with VisualStudio
   * fix exit message location
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 22 Feb 2013 16:45:53 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 22 Feb 2013 16:45:53 +0700
 
 xpra (0.8.5-1) UNRELEASED; urgency=low
   * fix server crash with transient windows
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 17 Feb 2013 18:11:27 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 17 Feb 2013 18:11:27 +0700
 
 xpra (0.8.4-1) UNRELEASED; urgency=low
   * fix hello packet encoding bug
   * fix colours in launcher and session-info windows
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 13 Feb 2013 11:21:54 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Feb 2013 11:21:54 +0700
 
 xpra (0.8.3-1) UNRELEASED; urgency=low
   * Python 2.4 compatiblity fixes (CentOS 5.x)
   * fix static builds of vpx and x264
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Feb 2013 12:45:47 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 12 Feb 2013 12:45:47 +0700
 
 xpra (0.8.2-1) UNRELEASED; urgency=low
   * fix libav uninitialized structure crash
@@ -964,7 +964,7 @@ xpra (0.8.2-1) UNRELEASED; urgency=low
   * re-enable system tray forwarding, fix location conflicts
   * remove spurious "too many receivers" warnings
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 10 Feb 2013 14:21:24 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 10 Feb 2013 14:21:24 +0700
 
 xpra (0.8.1-1) UNRELEASED; urgency=low
   * fix server daemonize on some platforms
@@ -979,7 +979,7 @@ xpra (0.8.1-1) UNRELEASED; urgency=low
   * disable tray forwarding by default as it causes problems with some apps
   * rename "Quality" to "Min Quality" in tray menu
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 04 Feb 2013 00:08:20 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 04 Feb 2013 00:08:20 +0700
 
 xpra (0.8.0-1) UNRELEASED; urgency=low
   * fix modal windows support
@@ -1020,7 +1020,7 @@ xpra (0.8.0-1) UNRELEASED; urgency=low
   * detect overly large main packets
   * partial/initial Java/AWT keyboard support
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 31 Jan 2013 00:55:50 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 31 Jan 2013 00:55:50 +0700
 
 xpra (0.7.0-1) UNRELEASED; urgency=low
   * fix "AltGr" key handling with MS Windows clients (and others)
@@ -1047,7 +1047,7 @@ xpra (0.7.0-1) UNRELEASED; urgency=low
   * client launcher improvements: prevent logging conflict, add version info
   * large source layout cleanup, compilation warnings fixed
 
- -- Antoine Martin <antoine@devloop.org.uk>  Mon, 08 Oct 2012 22:27:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 08 Oct 2012 22:27:26 +0700
 
 xpra (0.6.4-1) UNRELEASED; urgency=low
   * fix bencoder to properly handle dicts with non-string keys
@@ -1059,7 +1059,7 @@ xpra (0.6.4-1) UNRELEASED; urgency=low
   * prevent races during setup and cleanup of network connections
   * take shortcut if there is nothing to send
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 05 Oct 2012 21:31:07 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 05 Oct 2012 21:31:07 +0700
 
 xpra (0.6.3-1) UNRELEASED; urgency=low
   * fix memory leak in server after client disconnection
@@ -1067,7 +1067,7 @@ xpra (0.6.3-1) UNRELEASED; urgency=low
   * fix potential bug in network code (prevent disconnection)
   * enable auto-refresh by default since we now use a lossy encoder by default
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 27 Sep 2012 21:40:40 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Sep 2012 21:40:40 +0700
 
 xpra (0.6.2-1) UNRELEASED; urgency=low
   * fix missing key frames with x264/vpx: always reset the video encoder when
@@ -1083,14 +1083,14 @@ xpra (0.6.2-1) UNRELEASED; urgency=low
   * restore protocol main packet compression and single chunk sending
   * drop unnecessary OpenGL dependencies from some deb/rpm packages
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 26 Sep 2012 00:09:55 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 26 Sep 2012 00:09:55 +0700
 
 xpra (0.6.1-1) UNRELEASED; urgency=low
   * fix compress clipboard data (previous fix was ineffectual)
   * fix missing damage data queue statistics (was causing latency issues)
   * use memory aligned allocations for colourspace conversion
 
- -- Antoine Martin <antoine@devloop.org.uk>  Fri, 14 Sep 2012 22:19:45 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 14 Sep 2012 22:19:45 +0700
 
 xpra (0.6.0-5) UNRELEASED; urgency=low
   * fix launcher: don't block the UI whilst connecting, and use a lower timeout,
@@ -1107,7 +1107,7 @@ xpra (0.6.0-5) UNRELEASED; urgency=low
   * remove 'nogil' switch (as 'nogil' is much faster)
   * test all socket types with automated tests
 
- -- Antoine Martin <antoine@devloop.org.uk>  Sat, 08 Sep 2012 11:33:52 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 08 Sep 2012 11:33:52 +0700
 
 xpra (0.5.4-1) UNRELEASED; urgency=low
   * fix man page typo
@@ -1116,12 +1116,12 @@ xpra (0.5.4-1) UNRELEASED; urgency=low
   * fix video encoding mismatch when switching encoding
   * fix ssh mode on OpenBSD
 
- -- Antoine Martin <antoine@devloop.org.uk>  Sat, 08 Sep 2012 11:07:55 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 08 Sep 2012 11:07:55 +0700
 
 xpra (0.5.3-1) UNRELEASED; urgency=low
   * zlib compatibility fix: use chunked decompression when supported
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 05 Sep 2012 12:17:25 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 05 Sep 2012 12:17:25 +0700
 
 xpra (0.5.2-1) UNRELEASED; urgency=low
   * fix xpra launcher icon lookup on *nix
@@ -1130,12 +1130,12 @@ xpra (0.5.2-1) UNRELEASED; urgency=low
   * fix zlib compression in raw packet mode: always flush the buffer
   * fix window refresh: do not skip all windows after a hidden one!
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 29 Aug 2012 10:31:27 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 29 Aug 2012 10:31:27 +0700
 
 xpra (0.5.1-2) UNRELEASED; urgency=low
   * fix xpra_launcher
 
- -- Antoine Martin <antoine@devloop.org.uk>  Sat, 25 Aug 2012 04:29:56 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 25 Aug 2012 04:29:56 +0700
 
 xpra (0.5.1-1) UNRELEASED; urgency=low
   * fix DPI issue with Xdummy: set virtual screen to 96dpi by default
@@ -1148,12 +1148,12 @@ xpra (0.5.1-1) UNRELEASED; urgency=low
   * fix test code compatibility with older xpra versions
   * statistics shown for 'damage_packet_queue_pixels' were incorrect
 
- -- Antoine Martin <antoine@devloop.org.uk>  Sat, 25 Aug 2012 00:50:35 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 25 Aug 2012 00:50:35 +0700
 
 xpra (0.5.0-2) UNRELEASED; urgency=low
   * fix font size by setting a default DPI for Xdummy
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 22 Aug 2012 01:38:24 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 22 Aug 2012 01:38:24 +0700
 
 xpra (0.5.0-1) UNRELEASED; urgency=low
   * new packet encoder written in C (much faster and data is now smaller too)
@@ -1183,7 +1183,7 @@ xpra (0.5.0-1) UNRELEASED; urgency=low
   * drop compatibility with versions older than 0.3: we now assume the
     "raw_packets" feature is supported
 
- -- Antoine Martin <antoine@devloop.org.uk>  Mon, 20 Aug 2012 18:25:32 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 20 Aug 2012 18:25:32 +0700
 
 xpra (0.4.2-1) UNRELEASED; urgency=low
   * fix clipboard atom packing (was more noticeable with qt and Java
@@ -1200,7 +1200,7 @@ xpra (0.4.2-1) UNRELEASED; urgency=low
   * delay 'check packet size' to allow the limit to be raised - important over
     slower links where it triggers more easily
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 16 Aug 2012 15:20:58 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 16 Aug 2012 15:20:58 +0700
 
 xpra (0.4.1-1) UNRELEASED; urgency=low
   * fix clipboard bugs
@@ -1209,7 +1209,7 @@ xpra (0.4.1-1) UNRELEASED; urgency=low
   * robustify cython version string parsing
   * fix source files changed detection during build
 
- -- Antoine Martin <antoine@devloop.org.uk>  Tue, 31 Jul 2012 21:15:21 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 31 Jul 2012 21:15:21 +0700
 
 xpra (0.4.0-1) UNRELEASED; urgency=low
   * fix client application resizing its own window
@@ -1255,7 +1255,7 @@ xpra (0.4.0-1) UNRELEASED; urgency=low
   * debian: build with hardening features
   * debian: don't record as modified the files we know we modify during build
 
- -- Antoine Martin <antoine@devloop.org.uk>  Mon, 23 Jul 2012 13:10:57 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 23 Jul 2012 13:10:57 +0700
 
 xpra (0.3.3-1) UNRELEASED; urgency=low
   * do not try to free the empty x264/vpx buffers after a decompression failure
@@ -1278,12 +1278,12 @@ xpra (0.3.3-1) UNRELEASED; urgency=low
   * non-US keyboard layout fix
   * correctly calculate min_batch_delay shown in statistics via "xpra info"
 
- -- Antoine Martin <antoine@devloop.org.uk>  Tue, 10 Jul 2012 16:10:37 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 10 Jul 2012 16:10:37 +0700
 
 xpra (0.3.2-2) UNRELEASED; urgency=low
   * fix debian packaging of xpra_launcher
 
- -- Antoine Martin <antoine@devloop.org.uk>  Tue, 05 Jun 2012 20:18:08 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 05 Jun 2012 20:18:08 +0700
 
 xpra (0.3.2-1) UNRELEASED; urgency=low
   * fix missing 'a' key using OS X clients
@@ -1291,7 +1291,7 @@ xpra (0.3.2-1) UNRELEASED; urgency=low
   * fix unicode decoding problems in window title
   * fix latency issue
 
- -- Antoine Martin <antoine@devloop.org.uk>  Mon, 04 Jun 2012 00:14:00 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 04 Jun 2012 00:14:00 +0700
 
 xpra (0.3.1-1) UNRELEASED; urgency=low
   * fix DoS in network connections setup code
@@ -1306,7 +1306,7 @@ xpra (0.3.1-1) UNRELEASED; urgency=low
   * more graceful disconnection of invalid clients
   * updates to man page and xpra command help page
 
- -- Antoine Martin <antoine@devloop.org.uk>  Sun, 23 May 2012 18:05:45 +0100
+ -- Antoine Martin <antoine@xpra.org>  Sun, 23 May 2012 18:05:45 +0100
 
 xpra (0.3.0-1) UNRELEASED; urgency=low
   * zero-copy network code, per packet compression
@@ -1325,7 +1325,7 @@ xpra (0.3.0-1) UNRELEASED; urgency=low
   * automated regression and performance tests
   * remove compatibility code for versions older than 0.1
 
- -- Antoine Martin <antoine@devloop.org.uk>  Sun, 20 May 2012 15:00:42 +0200
+ -- Antoine Martin <antoine@xpra.org>  Sun, 20 May 2012 15:00:42 +0200
 
 xpra (0.2.0-1) UNRELEASED; urgency=low
   * x264 and vpx video encoding support
@@ -1337,7 +1337,7 @@ xpra (0.2.0-1) UNRELEASED; urgency=low
   * show more system version information in session information dialog
   * hide window decorations for openoffice splash screen (workaround)
 
- -- Antoine Martin <antoine@devloop.org.uk>  Fri, 20 Apr 2012 14:19:47 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 20 Apr 2012 14:19:47 +0700
 
 xpra (0.1.0-1) UNRELEASED; urgency=low
   * security: strict filtering of packet handlers until connection authenticated
@@ -1364,14 +1364,14 @@ xpra (0.1.0-1) UNRELEASED; urgency=low
   *	turn off compression over local connections (when mmap is enabled)
   *	clients can specify maximum refresh rate and screen update batching options
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 21 Mar 2012 18:03:38 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 21 Mar 2012 18:03:38 +0700
 
 xpra (0.0.7.36-1) UNRELEASED; urgency=low
   * fix clipboard bug which was causing Java applications to crash
   * ensure we always properly disconnect previous client when new connection is accepted
   * avoid warnings with Java applications, focus errors, etc
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 09 Feb 2012 02:41:53 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 09 Feb 2012 02:41:53 +0700
 
 xpra (0.0.7.35-1) UNRELEASED; urgency=low
   * ssh password input fix
@@ -1383,7 +1383,7 @@ xpra (0.0.7.35-1) UNRELEASED; urgency=low
   * ignore missing properties when they are changed, and report correct source of the problem
   * code style cleanups and improvements
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 01 Feb 2012 19:03:55 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 01 Feb 2012 19:03:55 +0700
 
 xpra (0.0.7.34-1) UNRELEASED; urgency=low
   * security: restrict access to run-xpra script (chmod)
@@ -1397,7 +1397,7 @@ xpra (0.0.7.34-1) UNRELEASED; urgency=low
   * logging formatting fixes (only shown with logging on)
   * hide picture encoding menu when mmap in use (since it is then ignored)
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 19 Jan 2012 02:12:42 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 19 Jan 2012 02:12:42 +0700
 
 xpra (0.0.7.33-1) UNRELEASED; urgency=low
   * readonly command line option
@@ -1408,7 +1408,7 @@ xpra (0.0.7.33-1) UNRELEASED; urgency=low
   * keyboard: better modifiers detection, synchronization of capslock and numlock
   * keyboard: support all modifiers correctly with and without keyboard-sync option
 
- -- Antoine Martin <antoine@devloop.org.uk>  Fri, 13 Jan 2012 03:30:37 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 13 Jan 2012 03:30:37 +0700
 
 xpra (0.0.7.32-1) UNRELEASED; urgency=low
   * bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
@@ -1426,7 +1426,7 @@ xpra (0.0.7.32-1) UNRELEASED; urgency=low
   * use dbus for tray notifications if available, prefered to pynotify
   * show full version information in about dialog
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 08 Dec 2011 23:23:52 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 08 Dec 2011 23:23:52 +0700
 
 xpra (0.0.7.31-1) UNRELEASED; urgency=low
   * threaded server for much lower latency
@@ -1436,19 +1436,19 @@ xpra (0.0.7.31-1) UNRELEASED; urgency=low
   * fixed system tray for Ubuntu clients
   * fixed maximized windows on Ubuntu clients
 
- -- Antoine Martin <antoine@devloop.org.uk>  Tue, 23 Nov 2011 17:46:03 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 23 Nov 2011 17:46:03 +0700
 
 xpra (0.0.7.30-1) UNRELEASED; urgency=low
   * fix for update batching causing screen corruption
   * fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
   * fix for jitter compensation code being a little bit too trigger-happy
 
- -- Antoine Martin <antoine@devloop.org.uk>  Tue, 01 Nov 2011 15:08:06 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 01 Nov 2011 15:08:06 +0700
 
 xpra (0.0.7.29-2) UNRELEASED; urgency=low
   * fix partial packets on boundary causing connection to drop (properly this time)
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 26 Oct 2011 14:43:00 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 26 Oct 2011 14:43:00 +0700
 
 xpra (0.0.7.29-1) UNRELEASED; urgency=low
   * fix partial packets on boundary causing connection to drop
@@ -1459,13 +1459,13 @@ xpra (0.0.7.29-1) UNRELEASED; urgency=low
   * posix: detect when there is no DISPLAY and error out
   * remove harmless warnings about missing properties on startup
 
- -- Antoine Martin <antoine@devloop.org.uk>  Tue, 25 Oct 2011 23:25:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 25 Oct 2011 23:25:26 +0700
 
 xpra (0.0.7.28-2) UNRELEASED; urgency=low
 
   * fix password mode - oops
 
- -- Antoine Martin <antoine@devloop.org.uk>  Tue, 18 Oct 2011 00:37:15 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Oct 2011 00:37:15 +0700
 
 xpra (0.0.7.28-1) UNRELEASED; urgency=low
 
@@ -1480,14 +1480,14 @@ xpra (0.0.7.28-1) UNRELEASED; urgency=low
   * compensate for line jitter causing keys to repeat
   * fixed cython warnings, unused variables, etc
 
- -- Antoine Martin <antoine@devloop.org.uk>  Tue, 18 Oct 2011 00:37:15 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Oct 2011 00:37:15 +0700
 
 xpra (0.0.7.27-1) UNRELEASED; urgency=low
 
   * compatibility fix for python 2.4 (remove "with" statement)
   * slow down updates from windows that refresh continuously
 
- -- Antoine Martin <antoine@devloop.org.uk>  Fri, 22 Sep 2011 11:05:45 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 22 Sep 2011 11:05:45 +0700
 
 xpra (0.0.7.26-1) UNRELEASED; urgency=low
 
@@ -1498,27 +1498,27 @@ xpra (0.0.7.26-1) UNRELEASED; urgency=low
   * try harder to close connections cleanly
   * removed some unused code, fixed some old test code
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 20 Sep 2011 23:15:09 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 20 Sep 2011 23:15:09 +0700
 
 xpra (0.0.7.25-1) UNRELEASED; urgency=low
 
   * Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly
   * Reset modifiers whenever we gain or lose focus, or when the keymap changes
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 31 Aug 2011 19:26:34 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 31 Aug 2011 19:26:34 +0700
 
 xpra (0.0.7.24-1) UNRELEASED; urgency=low
 
   * Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
   * Keyboard fixes for AltGr and special keys for non Unix-like clients
 
- -- Antoine Martin <antoine@devloop.org.uk>  Mon, 15 Aug 2011 15:10:22 +0200
+ -- Antoine Martin <antoine@xpra.org>  Mon, 15 Aug 2011 15:10:22 +0200
 
 xpra (0.0.7.23-2) UNRELEASED; urgency=low
 
   * Rebuilt with debian patches applied: "--with quilt" flag was missing
 
- -- Antoine Martin <antoine@devloop.org.uk>  Wed, 27 Jul 2011 18:15:03 +0000
+ -- Antoine Martin <antoine@xpra.org>  Wed, 27 Jul 2011 18:15:03 +0000
 
 xpra (0.0.7.23-1) UNRELEASED; urgency=low
 
@@ -1530,7 +1530,7 @@ xpra (0.0.7.23-1) UNRELEASED; urgency=low
   * More generic option for setting window titles
   * Exit if the server dies
 
- -- Antoine Martin <antoine@devloop.org.uk>  Sun, 24 Jul 2011 23:09:42 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 24 Jul 2011 23:09:42 +0700
 
 xpra (0.0.7.22.1+dfsg-1) UNRELEASED; urgency=low
 

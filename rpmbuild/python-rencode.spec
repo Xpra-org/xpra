@@ -119,31 +119,31 @@ popd
 %endif
 
 %changelog
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-8.xpra1
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 1.0.5-8.xpra1
 - try harder to prevent rpm db conflicts
 
-* Sat Aug 05 2017 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-7.xpra1
+* Sat Aug 05 2017 Antoine Martin <antoine@xpra.org> - 1.0.5-7.xpra1
 - bump so we override fedora's package which lacks the import fix
 
-* Sat Aug 05 2017 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-5.xpra2
+* Sat Aug 05 2017 Antoine Martin <antoine@xpra.org> - 1.0.5-5.xpra2
 - add patch to fix python 2.6 compatibility in the tests
 
-* Sun Jul 30 2017 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-5.xpra1
+* Sun Jul 30 2017 Antoine Martin <antoine@xpra.org> - 1.0.5-5.xpra1
 - we're ahead of Fedora with the patch, make sure the release number is too
 
-* Fri Jul 28 2017 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-3
+* Fri Jul 28 2017 Antoine Martin <antoine@xpra.org> - 1.0.5-3
 - avoid import warnings with python 3.6
 
-* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-2
+* Sat Dec 24 2016 Antoine Martin <antoine@xpra.org> - 1.0.5-2
 - try harder to supersede the old package name
 
-* Sat Jul 16 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-1
+* Sat Jul 16 2016 Antoine Martin <antoine@xpra.org> - 1.0.5-1
 - new upstream release
 
-* Sat Mar 12 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.4-1
+* Sat Mar 12 2016 Antoine Martin <antoine@xpra.org> - 1.0.4-1
 - new upstream release
 
-* Wed Sep 17 2014 Antoine Martin <antoine@devloop.org.uk> - 1.0.3-1
+* Wed Sep 17 2014 Antoine Martin <antoine@xpra.org> - 1.0.3-1
 - Preparing for xpra unbundling, support builds without python3 (ie: CentOS)
 
 * Sun Aug 17 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.0.2-6.20121209svn33

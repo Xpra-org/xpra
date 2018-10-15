@@ -174,52 +174,52 @@ popd
 
 
 %changelog
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-10xpra1
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 3.1.1a1-10xpra1
 - try harder to prevent rpm db conflicts
 
-* Thu Dec 07 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-9xpra1
+* Thu Dec 07 2017 Antoine Martin <antoine@xpra.org> - 3.1.1a1-9xpra1
 - remove opensuse bitrot
 
-* Thu Jul 13 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.2xpra4
+* Thu Jul 13 2017 Antoine Martin <antoine@xpra.org> - 3.1.1a1-4.2xpra4
 - also obsolete / provide "python-opengl" package name
 
-* Tue Jan 10 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra4
+* Tue Jan 10 2017 Antoine Martin <antoine@xpra.org> - 3.1.1a1-4.1xpra4
 - also use "python2-opengl" package name on CentOS
 
-* Fri Aug 05 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra3
+* Fri Aug 05 2016 Antoine Martin <antoine@xpra.org> - 3.1.1a1-4.1xpra3
 - Fedora 23 does not have the python2 renamed packages yet
 - only opensuse calls numpy python-numpy
 
-* Mon Aug 01 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra2
+* Mon Aug 01 2016 Antoine Martin <antoine@xpra.org> - 3.1.1a1-4.1xpra2
 - and again
 
-* Mon Aug 01 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.xpra2
+* Mon Aug 01 2016 Antoine Martin <antoine@xpra.org> - 3.1.1a1-4.xpra2
 - Try harder to force centos to behave, override more versions too
 
-* Thu Jul 28 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.xpra1
+* Thu Jul 28 2016 Antoine Martin <antoine@xpra.org> - 3.1.1a1-4.xpra1
 - Try to ensure this updates the Fedora upstream package
 
-* Mon Jul 18 2016 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1r2-1
+* Mon Jul 18 2016 Antoine Martin <antoine@xpra.org> - 3.1.1a1r2-1
 - Fix upgrade path for PyOpenGL_accelerate
 
-* Sat Nov 28 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1r1-1
+* Sat Nov 28 2015 Antoine Martin <antoine@xpra.org> 3.1.1a1r1-1
 - Force bump to ensure this supercedes the previous "final" builds
 
-* Fri Nov 13 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1-2
+* Fri Nov 13 2015 Antoine Martin <antoine@xpra.org> 3.1.1a1-2
 - Force rebuild with version lockstep change
 
-* Sun Jul 12 2015 Antoine Martin <antoine@nagafix.co.uk> 3.1.1a1-1
+* Sun Jul 12 2015 Antoine Martin <antoine@xpra.org> 3.1.1a1-1
 - Force rebuild to workaround breakage caused by Fedora packaging differences
 - Use new alpha build (no issues found so far)
 
-* Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> - 3.1.0final-3
+* Wed Sep 17 2014 Antoine Martin <antoine@xpra.org> - 3.1.0final-3
 - fixed Tk package dependencies
 
-* Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> - 3.1.0final-2
+* Wed Sep 17 2014 Antoine Martin <antoine@xpra.org> - 3.1.0final-2
 - Add Python3 package
 
-* Fri Sep 05 2014 Antoine Martin <antoine@devloop.org.uk> 3.1.0final-1
+* Fri Sep 05 2014 Antoine Martin <antoine@xpra.org> 3.1.0final-1
 - Fix version string to prevent upgrade to older beta version
 
-* Fri Aug 08 2014 Antoine Martin <antoine@devloop.org.uk> 3.1.0-1
+* Fri Aug 08 2014 Antoine Martin <antoine@xpra.org> 3.1.0-1
 - Initial packaging for xpra

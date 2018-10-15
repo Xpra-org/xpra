@@ -1,6 +1,6 @@
 /**
  * This file is part of Xpra.
- * Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
  */
 
 //Just a wrapper for functions that are problematic to access with Cython

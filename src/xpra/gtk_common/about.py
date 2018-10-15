@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2009-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2009-2017 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -57,7 +57,7 @@ def about(on_close=None):
             dialog.set_icon(xpra_icon)
     dialog.set_name("Xpra")
     dialog.set_version(XPRA_VERSION)
-    dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
+    dialog.set_authors(('Antoine Martin <antoine@xpra.org>',
                         'Nathaniel Smith <njs@pobox.com>',
                         'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
     _license = load_license()

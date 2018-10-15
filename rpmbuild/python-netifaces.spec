@@ -19,7 +19,7 @@ Release: 1%{?dist}
 License: GPL3
 Requires: python
 Group: Networking
-Packager: Antoine Martin <antoine@nagafix.co.uk>
+Packager: Antoine Martin <antoine@xpra.org>
 URL: http://winswitch.org/
 Source: netifaces-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -84,37 +84,37 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Tue May 08 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.10.7-1
+* Tue May 08 2018 Antoine Martin <antoine@xpra.org> - 0.10.7-1
 - new upstream release
 
-* Mon Apr 02 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.10.6-1
+* Mon Apr 02 2018 Antoine Martin <antoine@xpra.org> - 0.10.6-1
 - new upstream release
 
-* Sat Dec 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.10.5-2
+* Sat Dec 17 2016 Antoine Martin <antoine@xpra.org> - 0.10.5-2
 - force update with new dependencies
 
-* Fri Aug 26 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.10.5-1
+* Fri Aug 26 2016 Antoine Martin <antoine@xpra.org> - 0.10.5-1
 - new upstream release
 
-* Mon Aug 01 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.10.4-6
+* Mon Aug 01 2016 Antoine Martin <antoine@xpra.org> - 0.10.4-6
 - trying to get centos6 to behave
 
-* Fri Jul 29 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.10.4-5
+* Fri Jul 29 2016 Antoine Martin <antoine@xpra.org> - 0.10.4-5
 - fix obsolete atom
 
-* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.10.4-4
+* Sun Jul 17 2016 Antoine Martin <antoine@xpra.org> - 0.10.4-4
 - rename and obsolete old python package name
 
-* Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> 0.10.4-3
+* Wed Sep 17 2014 Antoine Martin <antoine@xpra.org> 0.10.4-3
 - Add Python3 package
 
-* Wed Aug 27 2014 Antoine Martin <antoine@nagafix.co.uk> 0.10.4-2
+* Wed Aug 27 2014 Antoine Martin <antoine@xpra.org> 0.10.4-2
 - Rebuild with obsoletes tag
 
-* Thu Feb 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.10.4-1
+* Thu Feb 23 2012 Antoine Martin <antoine@xpra.org> 0.10.4-1
 - Updated to 0.10.4
 
-* Thu Feb 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.8.0-1
+* Thu Feb 23 2012 Antoine Martin <antoine@xpra.org> 0.8.0-1
 - Fixed bit-rot in the ioctl() code path
 - Fixed a problem with setup.py that might manifest itself if the config.cache file was manually edited
 - Fixed the ioctl() code path to cope with systems that have sa_len
@@ -122,8 +122,8 @@ rm -rf $RPM_BUILD_ROOT
 - Added a version property to the module that you can test at runtime
 - Added address_families dictionary to allow code to look up the symbolic name corresponding to a given numeric address family code
 
-* Sun Nov 14 2010 Antoine Martin <antoine@nagafix.co.uk> 0.5.0-2
+* Sun Nov 14 2010 Antoine Martin <antoine@xpra.org> 0.5.0-2
 - Rebuilt with new, simplified specfile
 
-* Sat May 01 2010 Antoine Martin <antoine@nagafix.co.uk> 0.5.0-1
+* Sat May 01 2010 Antoine Martin <antoine@xpra.org> 0.5.0-1
 - First attempt at making RPMs

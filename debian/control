@@ -1,7 +1,7 @@
 Source: xpra
 Section: x11
 Priority: optional
-Maintainer: Antoine Martin <antoine@devloop.org.uk>
+Maintainer: Antoine Martin <antoine@xpra.org>
 Build-Depends: debhelper (>= 8)
               ,cython (>= 0.23)
               ,libx11-dev

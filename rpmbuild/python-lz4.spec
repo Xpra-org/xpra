@@ -90,85 +90,85 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Sun Jul 08 2018 Antoine Martin <antoine@nagafix.co.uk> - 2.0.2-1
+* Sun Jul 08 2018 Antoine Martin <antoine@xpra.org> - 2.0.2-1
 - New upstream release
 
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 2.0.1-2
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 2.0.1-2
 - try harder to prevent rpm db conflicts
 
-* Mon Jul 02 2018 Antoine Martin <antoine@nagafix.co.uk> - 2.0.1-1
+* Mon Jul 02 2018 Antoine Martin <antoine@xpra.org> - 2.0.1-1
 - New upstream release
 
-* Fri May 11 2018 Antoine Martin <antoine@nagafix.co.uk> - 1.10-1
+* Fri May 11 2018 Antoine Martin <antoine@xpra.org> - 1.10-1
 - New upstream release
 
-* Tue Apr 03 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.21.6-2.xpra1
+* Tue Apr 03 2018 Antoine Martin <antoine@xpra.org> - 0.21.6-2.xpra1
 - Force upgrade of broken Fedora 28 package, which is missing the new python "deprecation" dependency
 
-* Mon Feb 05 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.21.6-1
+* Mon Feb 05 2018 Antoine Martin <antoine@xpra.org> - 0.21.6-1
 - New upstream release
 
-* Thu Feb 01 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.19.2-1
+* Thu Feb 01 2018 Antoine Martin <antoine@xpra.org> - 0.19.2-1
 - New upstream release
 
-* Sun Jan 22 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.19.1-1
+* Sun Jan 22 2018 Antoine Martin <antoine@xpra.org> - 0.19.1-1
 - New upstream release
 
-* Mon Jan 01 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.18.1-1
+* Mon Jan 01 2018 Antoine Martin <antoine@xpra.org> - 0.18.1-1
 - New upstream release
 
-* Mon Dec 25 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.14.0-1
+* Mon Dec 25 2017 Antoine Martin <antoine@xpra.org> - 0.14.0-1
 - New upstream release
 
-* Fri Dec 22 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.13.0-1
+* Fri Dec 22 2017 Antoine Martin <antoine@xpra.org> - 0.13.0-1
 - New upstream release
 
-* Tue Nov 21 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.11.1-1
+* Tue Nov 21 2017 Antoine Martin <antoine@xpra.org> - 0.11.1-1
 - New upstream release
 
-* Sun Jul 02 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.10.1-1
+* Sun Jul 02 2017 Antoine Martin <antoine@xpra.org> - 0.10.1-1
 - New upstream release
 
-* Sat Jun 10 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.10.0-1
+* Sat Jun 10 2017 Antoine Martin <antoine@xpra.org> - 0.10.0-1
 - New upstream release
 
-* Sun May 14 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.9.1-1
+* Sun May 14 2017 Antoine Martin <antoine@xpra.org> - 0.9.1-1
 - New upstream release
 
-* Mon Mar 13 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.9.0-1
+* Mon Mar 13 2017 Antoine Martin <antoine@xpra.org> - 0.9.0-1
 - New upstream release
 
-* Sat Dec 24 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-3
+* Sat Dec 24 2016 Antoine Martin <antoine@xpra.org> - 0.8.2-3
 - conflict with old package name
 
-* Mon Jul 18 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-2
+* Mon Jul 18 2016 Antoine Martin <antoine@xpra.org> - 0.8.2-2
 - new package name, obsolete the old one
 
-* Fri Jun 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-1
+* Fri Jun 17 2016 Antoine Martin <antoine@xpra.org> - 0.8.2-1
 - New upstream release
 
-* Fri Apr 29 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.1-1
+* Fri Apr 29 2016 Antoine Martin <antoine@xpra.org> - 0.8.1-1
 - New upstream release
 
-* Thu Jan 07 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.0.rc2-1
+* Thu Jan 07 2016 Antoine Martin <antoine@xpra.org> - 0.8.0.rc2-1
 - Merge "release the GIL" patch
 
-* Mon Jul 13 2015 Antoine Martin <antoine@nagafix.co.uk> - 0.8.0.rc1-1
+* Mon Jul 13 2015 Antoine Martin <antoine@xpra.org> - 0.8.0.rc1-1
 - Pre-release testing
 
-* Sat Jun 27 2015 Antoine Martin <antoine@nagafix.co.uk> - 0.7.0-2
+* Sat Jun 27 2015 Antoine Martin <antoine@xpra.org> - 0.7.0-2
 - Add version information to package
 
-* Wed Sep 17 2014 Antoine Martin <antoine@nagafix.co.uk> - 0.7.0-1
+* Wed Sep 17 2014 Antoine Martin <antoine@xpra.org> - 0.7.0-1
 - Add Python3 package
 
-* Mon Jul 07 2014 Antoine Martin <antoine@devloop.org.uk> - 0.7.0-0
+* Mon Jul 07 2014 Antoine Martin <antoine@xpra.org> - 0.7.0-0
 - New upstream release
 
-* Fri Mar 21 2014 Antoine Martin <antoine@devloop.org.uk> - 0.6.1-0
+* Fri Mar 21 2014 Antoine Martin <antoine@xpra.org> - 0.6.1-0
 - New upstream release
 
-* Wed Jan 15 2014 Antoine Martin <antoine@devloop.org.uk> - 0.6.0-1.0
+* Wed Jan 15 2014 Antoine Martin <antoine@xpra.org> - 0.6.0-1.0
 - Fix version in specfile
 - build debuginfo packages
 

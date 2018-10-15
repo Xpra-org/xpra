@@ -88,11 +88,11 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-2
+* Sat Dec 24 2016 Antoine Martin <antoine@xpra.org> - 1.0.5-2
 - try harder to supersede the old package name
 
-* Sun Jul 17 2016 Antoine Martin <antoine@nagafix.co.uk> - 1.0.5-1
+* Sun Jul 17 2016 Antoine Martin <antoine@xpra.org> - 1.0.5-1
 - rename and obsolete old python package name
 
-* Thu Jan 07 2016 Antoine Martin <antoine@nagafix.co.uk> - 1.0.5-0
+* Thu Jan 07 2016 Antoine Martin <antoine@xpra.org> - 1.0.5-0
 - Initial packaging

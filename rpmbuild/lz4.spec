@@ -89,36 +89,36 @@ chmod -x %{buildroot}%{_includedir}/*.h
 
 
 %changelog
-* Wed Sep 12 2018 Antoine Martin <antoine@devloop.org.uk> - 1.8.3-1
+* Wed Sep 12 2018 Antoine Martin <antoine@xpra.org> - 1.8.3-1
 - new upstream release
 
-* Tue Aug 21 2018 Antoine Martin <antoine@devloop.org.uk> - 1.8.2-1
+* Tue Aug 21 2018 Antoine Martin <antoine@xpra.org> - 1.8.2-1
 - new upstream release
 
-* Mon Jan 22 2018 Antoine Martin <antoine@devloop.org.uk> - 1.8.1.2-1
+* Mon Jan 22 2018 Antoine Martin <antoine@xpra.org> - 1.8.1.2-1
 - new upstream release
 
-* Sat Jan 13 2018 Antoine Martin <antoine@devloop.org.uk> - 1.8.1-1
+* Sat Jan 13 2018 Antoine Martin <antoine@xpra.org> - 1.8.1-1
 - new upstream release
 
-* Thu Sep 14 2017 Antoine Martin <antoine@devloop.org.uk> - 1.8.0-1
+* Thu Sep 14 2017 Antoine Martin <antoine@xpra.org> - 1.8.0-1
 - new upstream release
 
-* Mon Jan 16 2017 Antoine Martin <antoine@devloop.org.uk> - 1.7.5-1
+* Mon Jan 16 2017 Antoine Martin <antoine@xpra.org> - 1.7.5-1
 - new upstream release
 
-* Wed Nov 23 2016 Antoine Martin <antoine@devloop.org.uk> - 1.7.4-2
+* Wed Nov 23 2016 Antoine Martin <antoine@xpra.org> - 1.7.4-2
 - PIE build fix
 
-* Tue Nov 22 2016 Antoine Martin <antoine@devloop.org.uk> - 1.7.4-1
+* Tue Nov 22 2016 Antoine Martin <antoine@xpra.org> - 1.7.4-1
 - new upstream release
 
-* Thu Nov 17 2016 Antoine Martin <antoine@devloop.org.uk> - 1.7.3-1
+* Thu Nov 17 2016 Antoine Martin <antoine@xpra.org> - 1.7.3-1
 - new upstream release
 - new version naming scheme
 
-* Sat Mar 12 2016 Antoine Martin <antoine@devloop.org.uk> - r131-2
+* Sat Mar 12 2016 Antoine Martin <antoine@xpra.org> - r131-2
 - use hardened build option
 
-* Thu Dec 17 2015 Antoine Martin <antoine@devloop.org.uk> - r131-1
+* Thu Dec 17 2015 Antoine Martin <antoine@xpra.org> - r131-1
 - xpra packaging for CentOS

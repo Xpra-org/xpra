@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ Summary:		Xpra HTML5 client
 Group:			Networking
 BuildArch:		noarch
 URL:			http://xpra.org/
-Packager:		Antoine Martin <antoine@devloop.org.uk>
+Packager:		Antoine Martin <antoine@xpra.org>
 Vendor:			http://xpra.org/
 Source:			%{name}-%{version}.tar.bz2
 BuildRoot:		%{_tmppath}/%{name}-%{version}-root
@@ -45,5 +45,5 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/www
 
 %changelog
-* Thu Jul 27 2017 Antoine Martin <antoine@devloop.org.uk> 2.2-3
+* Thu Jul 27 2017 Antoine Martin <antoine@xpra.org> 2.2-3
 - split html5 client from main RPM package

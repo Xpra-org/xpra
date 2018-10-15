@@ -102,7 +102,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/lame.h
 
 %changelog
-* Fri Oct 17 2014 Antoine Martin <antoine@devloop.org.uk> 3.99.5-3
+* Fri Oct 17 2014 Antoine Martin <antoine@xpra.org> 3.99.5-3
 - initial xpra package
 
 * Sun Mar 03 2013 Nicolas Chauvet <kwizart@gmail.com> - 3.99.5-2

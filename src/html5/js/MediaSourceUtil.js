@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2016 Antoine Martin <antoine@xpra.org>
  * Licensed under MPL 2.0
  *
  */

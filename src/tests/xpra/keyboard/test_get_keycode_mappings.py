@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2013 Antoine Martin <antoine@xpra.org>
 
 from xpra.x11.bindings import posix_display_source      #@UnusedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings	    #@UnresolvedImport

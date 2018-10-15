@@ -1,6 +1,6 @@
 /**
  * This file is part of Xpra.
- * Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
  *
  * This service code is based on "The Complete Service Sample":
  * https://msdn.microsoft.com/en-us/library/bb540476(v=VS.85).aspx

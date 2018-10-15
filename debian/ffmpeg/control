@@ -1,7 +1,7 @@
 Source: ffmpeg-xpra
 Section: libs
 Priority: optional
-Maintainer: Antoine Martin <antoine@devloop.org.uk>
+Maintainer: Antoine Martin <antoine@xpra.org>
 Build-Depends: debhelper (>= 9), python-all-dev, libvpx-dev, libx264-dev, yasm
 Standards-Version: 3.9.5
 Homepage: https://ffmpeg.org/

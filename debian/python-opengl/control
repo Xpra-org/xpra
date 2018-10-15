@@ -1,7 +1,7 @@
 Source: pyopengl
 Section: python
 Priority: optional
-Maintainer: Antoine Martin <antoine@devloop.org.uk>
+Maintainer: Antoine Martin <antoine@xpra.org>
 Build-Depends: debhelper (>= 9), dh-python, python-all (>= 2.6.6-3~), python-setuptools
 Standards-Version: 3.9.5
 Homepage: http://pyopengl.sourceforge.net

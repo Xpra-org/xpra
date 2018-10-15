@@ -100,14 +100,14 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Mon Sep 17 2018 Antoine Martin <antoine@devloop.org.uk> - 1.1.0-27.xpra1
+* Mon Sep 17 2018 Antoine Martin <antoine@xpra.org> - 1.1.0-27.xpra1
 - bump revision so we upgrade the upstream package, which has broken dependencies
 
-* Mon Sep 17 2018 Antoine Martin <antoine@devloop.org.uk> - 1.1.0-16.xpra3
+* Mon Sep 17 2018 Antoine Martin <antoine@xpra.org> - 1.1.0-16.xpra3
 - use the package name for python2-pyopengl on Fedora
 
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 1.1.0-16.xpra2
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 1.1.0-16.xpra2
 - use python2 explicitly
 
-* Thu Dec 03 2015 Antoine Martin <antoine@nagafix.co.uk> - 1.1.0-16.xpra1
+* Thu Dec 03 2015 Antoine Martin <antoine@xpra.org> - 1.1.0-16.xpra1
 - Added support for building on openSUSE

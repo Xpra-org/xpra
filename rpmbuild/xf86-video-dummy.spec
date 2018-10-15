@@ -67,8 +67,8 @@ find %{buildroot}%{_libdir} -name '*.la' -type f -delete -print
 %{_libdir}/xorg/modules/drivers/dummy_drv.so
 
 %changelog
-* Tue Jan 10 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.3.8.1.xpra1
+* Tue Jan 10 2017 Antoine Martin <antoine@xpra.org> - 0.3.8.1.xpra1
 - new upstream release
 
-* Mon Nov 30 2015 Antoine Martin <antoine@nagafix.co.uk> - 0.3.7-4.1.4.xpra1
+* Mon Nov 30 2015 Antoine Martin <antoine@xpra.org> - 0.3.7-4.1.4.xpra1
 - initial xpra packaging

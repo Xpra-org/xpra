@@ -40,5 +40,5 @@ cp libgsttimestamp.so %{buildroot}%{_libdir}/gstreamer-1.0/
 %{_libdir}/gstreamer-1.0/libgsttimestamp.so
 
 %changelog
-* Thu Jun 01 2017 Antoine Martin <antoine@devloop.org.uk> 0.1.0-1
+* Thu Jun 01 2017 Antoine Martin <antoine@xpra.org> 0.1.0-1
 - Initial packaging

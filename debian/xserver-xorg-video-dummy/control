@@ -1,8 +1,8 @@
 Source: xserver-xorg-video-dummy
 Section: x11
 Priority: optional
-Maintainer: Antoine Martin <antoine@nagafix.co.uk>
-Uploaders: Antoine Martin <antoine@nagafix.co.uk>
+Maintainer: Antoine Martin <antoine@xpra.org>
+Uploaders: Antoine Martin <antoine@xpra.org>
 Build-Depends:
  debhelper,
  quilt,

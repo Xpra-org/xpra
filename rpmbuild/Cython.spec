@@ -107,106 +107,106 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sun Oct 14 2018 Antoine Martin <antoine@devloop.org.uk> - 0.29-1
+* Sun Oct 14 2018 Antoine Martin <antoine@xpra.org> - 0.29-1
 - new upstream release
 
-* Fri Aug 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.5-1
+* Fri Aug 03 2018 Antoine Martin <antoine@xpra.org> - 0.28.5-1
 - new upstream release
 
-* Fri Aug 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.4-1
+* Fri Aug 03 2018 Antoine Martin <antoine@xpra.org> - 0.28.4-1
 - new upstream release
 
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.3-3
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 0.28.3-3
 - use python2 explicitly
 
-* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.3-2
+* Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 0.28.3-2
 - try harder to prevent rpm db conflicts
 
-* Wed May 30 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.3-1
+* Wed May 30 2018 Antoine Martin <antoine@xpra.org> - 0.28.3-1
 - new upstream release
 
-* Mon Mar 19 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.1-1
+* Mon Mar 19 2018 Antoine Martin <antoine@xpra.org> - 0.28.1-1
 - new upstream release
 
-* Wed Mar 14 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28-1
+* Wed Mar 14 2018 Antoine Martin <antoine@xpra.org> - 0.28-1
 - new upstream release
 
-* Thu Nov 09 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27.3-1
+* Thu Nov 09 2017 Antoine Martin <antoine@xpra.org> - 0.27.3-1
 - new upstream release
 
-* Sun Oct 23 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27.2-1
+* Sun Oct 23 2017 Antoine Martin <antoine@xpra.org> - 0.27.2-1
 - new upstream release
 
-* Sun Oct 02 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27.1-1
+* Sun Oct 02 2017 Antoine Martin <antoine@xpra.org> - 0.27.1-1
 - new upstream release
 
-* Sat Sep 23 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27-1
+* Sat Sep 23 2017 Antoine Martin <antoine@xpra.org> - 0.27-1
 - new upstream release
 
-* Wed Aug 30 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26.1-1
+* Wed Aug 30 2017 Antoine Martin <antoine@xpra.org> - 0.26.1-1
 - new upstream release
 
-* Thu Jul 20 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-1
+* Thu Jul 20 2017 Antoine Martin <antoine@xpra.org> - 0.26-1
 - new upstream release
 
-* Wed Jul 19 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0rc2
+* Wed Jul 19 2017 Antoine Martin <antoine@xpra.org> - 0.26-0rc2
 - new release candidate
 
-* Sat Jul 15 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0rc0
+* Sat Jul 15 2017 Antoine Martin <antoine@xpra.org> - 0.26-0rc0
 - release candidate
 
-* Tue Jul 11 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0b2p1
+* Tue Jul 11 2017 Antoine Martin <antoine@xpra.org> - 0.26-0b2p1
 - add fallthrough fix
 
-* Tue Jul 11 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0b2
+* Tue Jul 11 2017 Antoine Martin <antoine@xpra.org> - 0.26-0b2
 - new beta release
 
-* Tue Jul 04 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0b0
+* Tue Jul 04 2017 Antoine Martin <antoine@xpra.org> - 0.26-0b0
 - new beta release
 
-* Sun Dec 25 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25.2-2
+* Sun Dec 25 2016 Antoine Martin <antoine@xpra.org> - 0.25.2-2
 - add provides for python2 package naming
 
-* Fri Dec 09 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25.2-1
+* Fri Dec 09 2016 Antoine Martin <antoine@xpra.org> - 0.25.2-1
 - new upstream release
 
-* Fri Nov 04 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25.1-1
+* Fri Nov 04 2016 Antoine Martin <antoine@xpra.org> - 0.25.1-1
 - new upstream release
 
-* Wed Oct 26 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25-1
+* Wed Oct 26 2016 Antoine Martin <antoine@xpra.org> - 0.25-1
 - new upstream release
 
-* Fri Jul 15 2016 Antoine Martin <antoine@devloop.org.uk> - 0.24.1-1
+* Fri Jul 15 2016 Antoine Martin <antoine@xpra.org> - 0.24.1-1
 - new upstream release
 
-* Tue Apr 05 2016 Antoine Martin <antoine@devloop.org.uk> - 0.24-1
+* Tue Apr 05 2016 Antoine Martin <antoine@xpra.org> - 0.24-1
 - new upstream release
 
-* Sat Mar 26 2016 Antoine Martin <antoine@devloop.org.uk> - 0.23.5-1
+* Sat Mar 26 2016 Antoine Martin <antoine@xpra.org> - 0.23.5-1
 - new upstream release
 
-* Sun Oct 11 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.4-1
+* Sun Oct 11 2015 Antoine Martin <antoine@xpra.org> - 0.23.4-1
 - new upstream release
 
-* Tue Sep 29 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.3-1
+* Tue Sep 29 2015 Antoine Martin <antoine@xpra.org> - 0.23.3-1
 - new upstream release
 
-* Fri Sep 11 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.2-1
+* Fri Sep 11 2015 Antoine Martin <antoine@xpra.org> - 0.23.2-1
 - new upstream release
 
-* Sun Aug 23 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.1-2
+* Sun Aug 23 2015 Antoine Martin <antoine@xpra.org> - 0.23.1-2
 - build python3 package
 
-* Sun Aug 23 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23.1-1
+* Sun Aug 23 2015 Antoine Martin <antoine@xpra.org> - 0.23.1-1
 - new upstream release
 
-* Wed Aug 19 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23-2
+* Wed Aug 19 2015 Antoine Martin <antoine@xpra.org> - 0.23-2
 - add upstream patch for infinite deepcopy loop
 
-* Sun Aug 09 2015 Antoine Martin <antoine@devloop.org.uk> - 0.23-1
+* Sun Aug 09 2015 Antoine Martin <antoine@xpra.org> - 0.23-1
 - new upstream release
 
-* Mon Jun 22 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22.1-1
+* Mon Jun 22 2015 Antoine Martin <antoine@xpra.org> - 0.22.1-1
 - Crash when returning values on generator termination.
 - In some cases, exceptions raised during internal isinstance() checks were not propagated.
 - Runtime reported file paths of source files (e.g for profiling and tracing) are now relative to the build root directory instead of the main source file.
@@ -221,22 +221,22 @@ rm -rf %{buildroot}
 - Fixed a memory leak in the compiler when compiling multiple modules.
 - When compiling multiple modules, external library dependencies could leak into later compiler runs. Fix by Jeroen Demeyer. This fixes ticket 845.
 
-* Thu Feb 12 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22-1
+* Thu Feb 12 2015 Antoine Martin <antoine@xpra.org> - 0.22-1
 - new upstream release
 
-* Thu Jan 22 2015 Antoine Martin <antoine@devloop.org.uk> - 0.22.beta0-0
+* Thu Jan 22 2015 Antoine Martin <antoine@xpra.org> - 0.22.beta0-0
 - new beta
 
-* Sun Dec 28 2014 Antoine Martin <antoine@devloop.org.uk> - 0.21.2-1
+* Sun Dec 28 2014 Antoine Martin <antoine@xpra.org> - 0.21.2-1
 - new upstream release
 
-* Sun Oct 19 2014 Antoine Martin <antoine@devloop.org.uk> - 0.21.1-1
+* Sun Oct 19 2014 Antoine Martin <antoine@xpra.org> - 0.21.1-1
 - Update to 0.21.1
 
-* Thu Sep 11 2014 Antoine Martin <antoine@devloop.org.uk> - 0.21-1
+* Thu Sep 11 2014 Antoine Martin <antoine@xpra.org> - 0.21-1
 - Update to 0.21
 
-* Thu Jul 31 2014 Antoine Martin <antoine@devloop.org.uk> - 0.20.2-2
+* Thu Jul 31 2014 Antoine Martin <antoine@xpra.org> - 0.20.2-2
 - Removed EPEL bits that get in the way, fix (guess) date in changelog
 
 * Tue Jun 17 2014 Matthew Gyurgyik <pyther@pyther.net> - 0.20.2-1

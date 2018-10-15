@@ -1,5 +1,5 @@
 /* Copyright (c) 2009 Anton Ekblad
- * Copyright (c) 2013 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2013 Antoine Martin <antoine@xpra.org>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

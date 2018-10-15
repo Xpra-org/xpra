@@ -51,5 +51,5 @@ find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
 %{_libdir}/pkgconfig/*
 
 %changelog
-* Fri Nov 20 2015 Antoine Martin <antoine@devloop.org.uk> - 0.0.2-1
+* Fri Nov 20 2015 Antoine Martin <antoine@xpra.org> - 0.0.2-1
 - Initial package for xpra based on the Fedora spec file

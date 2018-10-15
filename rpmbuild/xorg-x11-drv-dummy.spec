@@ -54,30 +54,30 @@ find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 %{driverdir}/dummy_drv.so
 
 %changelog
-* Fri Dec 23 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.8-1.xpra1
+* Fri Dec 23 2016 Antoine Martin <antoine@xpra.org> - 0.3.8-1.xpra1
 - new upstream release
 
-* Thu Nov 24 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.7-1.xpra1
+* Thu Nov 24 2016 Antoine Martin <antoine@xpra.org> - 0.3.7-1.xpra1
 - merge upstream updates
 
 * Wed Nov  9 2016 Hans de Goede <hdegoede@redhat.com> - 0.3.7-1
 - New upstream release 0.7.3
 - Fix undefined symbol error with xserver-1.19 (rhbz#1393114)
 
-* Sun Oct 30 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-26.xpra3
+* Sun Oct 30 2016 Antoine Martin <antoine@xpra.org> - 0.3.6-26.xpra3
 - force rebuild against updated headers
 
-* Wed Oct 26 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-26.xpra2
+* Wed Oct 26 2016 Antoine Martin <antoine@xpra.org> - 0.3.6-26.xpra2
 - fix change-window-property API call
 
-* Fri Oct 21 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-26.xpra1
+* Fri Oct 21 2016 Antoine Martin <antoine@xpra.org> - 0.3.6-26.xpra1
 - rebuild for Fedora 25
 
-* Tue Sep 20 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-25.xpra3
+* Tue Sep 20 2016 Antoine Martin <antoine@xpra.org> - 0.3.6-25.xpra3
 - updated 30 bit patch
 
-* Tue Sep 20 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-25.xpra2
+* Tue Sep 20 2016 Antoine Martin <antoine@xpra.org> - 0.3.6-25.xpra2
 - add support for 30 bit depth
 
-* Mon Apr 18 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.3.6-25.xpra1
+* Mon Apr 18 2016 Antoine Martin <antoine@xpra.org> - 0.3.6-25.xpra1
 - Rebuilt with xpra fixes: DAC, DPI and pointer limits
