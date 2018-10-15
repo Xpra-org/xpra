@@ -157,7 +157,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                     log.warn("server socket for display %s should have been removed", display)
 
             if gui_client:
-                r = pollwait(gui_client, 5)
+                r = pollwait(gui_client, 20)
                 assert r is not None, "gui client should have been disconnected"
         finally:
             for x in (xvfb, rfb_client, gui_client, server, client):
