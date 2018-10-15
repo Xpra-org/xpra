@@ -21,6 +21,7 @@ BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 ZIP_OPENGL=${ZIP_OPENGL:-1}
+ZIP_LIBS=${ZIP_LIBS:-1}
 
 PYTHON=${PYTHON:-python2}
 
@@ -265,18 +266,35 @@ fi
 for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
+popd > /dev/null
+popd > /dev/null
+
+pushd ${DIST}/lib > /dev/null
+#remove test bits we don't need:
+rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
+#remove source:
+find xpra -name "*.pyx" -exec rm {} \;
+find xpra -name "*.c" -exec rm {} \;
+find xpra -name "*.cpp" -exec rm {} \;
+find xpra -name "constants.txt" -exec rm {} \;
+find xpra -name "*.h" -exec rm {} \;
+find xpra -name "*.html" -exec rm {} \;
+find xpra -name "*.pxd" -exec rm {} \;
+find xpra -name "*.cu" -exec rm {} \;
 #remove empty directories:
 rmdir xpra/*/*/* 2> /dev/null
 rmdir xpra/*/* 2> /dev/null
 rmdir xpra/* 2> /dev/null
-popd > /dev/null
-popd > /dev/null
-
-if [ "${ZIP_OPENGL}" == "1" ]; then
-	pushd ${DIST}/lib > /dev/null
-	zip --move -ur library.zip OpenGL > /dev/null
-	popd > /dev/null
+#zip up some modules:
+if [ "${ZIP_LIBS}" == "1" ]; then
+	#zip --move -ur library.zip OpenGL xpra test numpy ldap3 email cryptography comtypes PIL paramiko pyasn1 nacl asn1crypto ldap websocket cffi pyu2f future encodings unittest > /dev/null
+	zip --move -ur library.zip OpenGL test encodings unittest > /dev/null
+else
+	if [ "${ZIP_OPENGL}" == "1" ]; then
+		zip --move -ur library.zip OpenGL > /dev/null
+	fi
 fi
+popd > /dev/null
 
 
 echo "* Generating gdk pixbuf loaders.cache"
