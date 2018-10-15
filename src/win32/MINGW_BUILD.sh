@@ -20,6 +20,7 @@ DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
+ZIP_OPENGL=${ZIP_OPENGL:-1}
 
 PYTHON=${PYTHON:-python2}
 
@@ -270,6 +271,12 @@ rmdir xpra/*/* 2> /dev/null
 rmdir xpra/* 2> /dev/null
 popd > /dev/null
 popd > /dev/null
+
+if [ "${ZIP_OPENGL}" == "1" ]; then
+	pushd ${DIST}/lib > /dev/null
+	zip --move -ur library.zip OpenGL > /dev/null
+	popd > /dev/null
+fi
 
 
 echo "* Generating gdk pixbuf loaders.cache"
