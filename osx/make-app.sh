@@ -11,6 +11,7 @@ STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 STRIP_NUMPY="${STRIP_NUMPY:=$STRIP_DEFAULT}"
+ZIP_MODULES="${ZIP_MODULES:=1}"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
 
 DO_TESTS="${DO_TESTS:-1}"
@@ -142,15 +143,19 @@ fi
 
 echo
 echo "*******************************************************************************"
-echo "unzip site-packages and make python softlink without version number"
+echo "make python softlink without version number"
 pushd ${LIBDIR} || exit 1
 ln -sf python${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} python
 cd python
-if [ -e "site-packages.zip" ]; then
-	unzip -nq site-packages.zip
-	rm site-packages.zip
-else
-	unzip -nq ../python${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}.zip
+rmdir config
+if [ "${ZIP_MODULES}" != "1" ]; then
+	echo "unzip site-packages"
+	if [ -e "site-packages.zip" ]; then
+		unzip -nq site-packages.zip
+		rm site-packages.zip
+	else
+		unzip -nq ../python${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}.zip
+	fi
 fi
 popd
 
@@ -256,6 +261,11 @@ if [ "$STRIP_OPENGL" == "1" ]; then
 		rm -fr ./$x
 		rm -fr ./raw/$x
 	done
+	popd
+fi
+if [ "${ZIP_MODULES}" != "1" ]; then
+	pushd $LIBDIR/python
+	zip --move -ur site-packges.zip OpenGL
 	popd
 fi
 echo " * add gobject-introspection (py2app refuses to do it)"

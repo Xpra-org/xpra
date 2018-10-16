@@ -62,6 +62,7 @@ export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules
 PYTHONPATH="$bundle_lib:$PYTHONPATH"
 PYTHONPATH="$bundle_lib/python/lib-dynload/:$PYTHONPATH"
+PYTHONPATH="$bundle_lib/python/site-packages.zip:$PYTHONPATH"
 PYTHONPATH="$bundle_lib/python/:$PYTHONPATH"
 PYTHONPATH="$bundle_lib/pygtk/2.0:$PYTHONPATH"
 export PYTHONPATH
