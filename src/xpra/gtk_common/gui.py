@@ -16,8 +16,8 @@ glib = import_glib()
 glib.threads_init()
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command
-from xpra.os_util import OSX, WIN32, PYTHON2
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, add_window_accel, imagebutton, window_defaults, scaled_image, WIN_POS_CENTER
+from xpra.os_util import OSX, WIN32
+from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, pixbuf_new_from_file, add_window_accel, imagebutton, window_defaults, scaled_image, WIN_POS_CENTER
 
 from xpra.log import Logger
 log = Logger("client", "util")
@@ -42,13 +42,6 @@ try:
     import xdg
 except ImportError:
     xdg = None
-
-
-def set_tooltip_text(widget, text):
-    #PITA: GTK3 has problems displaying tooltips:
-    #makes it hard to click on the button!
-    if PYTHON2 or not WIN32:
-        widget.set_tooltip_text(text)
 
 
 def exec_command(cmd):
@@ -148,9 +141,14 @@ class GUI(gtk.Window):
             widget.get_window().set_cursor(None)
 
     def busy_cursor(self, widget):
-        watch = gdk.Cursor(gdk.WATCH)
-        widget.get_window().set_cursor(watch)
-        glib.timeout_add(5*1000, self.reset_cursors)
+        from xpra.gtk_common.cursor_names import cursor_types
+        watch = cursor_types.get("WATCH")
+        if watch:
+            from xpra.gtk_common.gtk_util import display_get_default, new_Cursor_for_display
+            display = display_get_default()
+            cursor = new_Cursor_for_display(display, watch)
+            widget.get_window().set_cursor(cursor)
+            glib.timeout_add(5*1000, self.reset_cursors)
 
 
     def show_about(self, *_args):

@@ -1104,6 +1104,13 @@ def get_icon_from_file(filename):
     return pixbuf
 
 
+def set_tooltip_text(widget, text):
+    #PITA: GTK3 has problems displaying tooltips:
+    #makes it hard to click on the button!
+    if PYTHON2 or not WIN32:
+        widget.set_tooltip_text(text)
+
+
 def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, default=False, min_size=None, label_color=None, label_font=None):
     button = gtk.Button(title)
     settings = button.get_settings()
@@ -1113,7 +1120,7 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
             icon = scaled_image(icon, icon_size)
         button.set_image(icon)
     if tooltip:
-        button.set_tooltip_text(tooltip)
+        set_tooltip_text(button, tooltip)
     if min_size:
         button.set_size_request(min_size, min_size)
     if clicked_callback:
