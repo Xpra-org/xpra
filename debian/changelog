@@ -1,9 +1,9 @@
 xpra (2.5-1) UNRELEASED; urgency=low
   * TODO
- 
+
  -- Antoine Martin <antoine@xpra.org>  Sun, 14 Oct 2018 23:45:13 +0700
 
- xpra (2.4-1) UNRELEASED; urgency=low
+xpra (2.4-1) UNRELEASED; urgency=low
   * SSH client integration (paramiko)
   * builtin server support for TCP socket upgrades to SSH (paramiko)
   * automatic TCP port allocation
