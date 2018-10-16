@@ -263,7 +263,7 @@ if [ "$STRIP_OPENGL" == "1" ]; then
 	done
 	popd
 fi
-if [ "${ZIP_MODULES}" != "1" ]; then
+if [ "${ZIP_MODULES}" == "1" ]; then
 	pushd $LIBDIR/python
 	zip --move -ur site-packges.zip OpenGL
 	popd
