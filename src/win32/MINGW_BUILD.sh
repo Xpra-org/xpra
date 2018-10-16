@@ -20,8 +20,7 @@ DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
-ZIP_OPENGL=${ZIP_OPENGL:-1}
-ZIP_LIBS=${ZIP_LIBS:-1}
+ZIP_MODULES=${ZIP_MODULES:-1}
 
 PYTHON=${PYTHON:-python2}
 
@@ -272,10 +271,18 @@ popd > /dev/null
 pushd ${DIST}/lib > /dev/null
 #remove test bits we don't need:
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
+#trim tests from numpy
+pushd numpy
+rm -fr ./f2py/docs
+for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing; do
+	rm -fr ./$x/tests
+done
+popd
 #remove source:
 find xpra -name "*.pyx" -exec rm {} \;
 find xpra -name "*.c" -exec rm {} \;
 find xpra -name "*.cpp" -exec rm {} \;
+find xpra -name "*.m" -exec rm {} \;
 find xpra -name "constants.txt" -exec rm {} \;
 find xpra -name "*.h" -exec rm {} \;
 find xpra -name "*.html" -exec rm {} \;
@@ -286,13 +293,18 @@ rmdir xpra/*/*/* 2> /dev/null
 rmdir xpra/*/* 2> /dev/null
 rmdir xpra/* 2> /dev/null
 #zip up some modules:
-if [ "${ZIP_LIBS}" == "1" ]; then
-	#zip --move -ur library.zip OpenGL xpra test numpy ldap3 email cryptography comtypes PIL paramiko pyasn1 nacl asn1crypto ldap websocket cffi pyu2f future encodings unittest > /dev/null
-	zip --move -ur library.zip OpenGL test encodings unittest > /dev/null
-else
-	if [ "${ZIP_OPENGL}" == "1" ]; then
-		zip --move -ur library.zip OpenGL > /dev/null
-	fi
+if [ "${PYTHON_MAJOR_VERSION}" != "3" ]; then
+	rm -fr gtk-3.0 lib2to3
+fi
+if [ "${ZIP_MODULES}" == "1" ]; then
+	#these modules contain native code or data files,
+	#so they will require special treatment:
+	#xpra numpy cryptography PIL nacl cffi gtk rencode gobject glib > /dev/null
+	zip --move -ur library.zip OpenGL test encodings unittest ldap3 future paramiko html \
+			pyasn1 distutils comtypes asn1crypto ldap email websocket multiprocessing \
+			pkg_resources pyu2f pycparser idna ctypes websockify json pygtkcompat \
+			http enum sqlite3 winreg copyreg _thread _dummythread builtins importlib \
+			logging queue urllib xml xmlrpc pyasn1_modules concurrent pynvml collections > /dev/null
 fi
 popd > /dev/null
 
