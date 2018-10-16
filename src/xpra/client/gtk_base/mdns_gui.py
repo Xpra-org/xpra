@@ -51,6 +51,56 @@ class mdns_sessions(SessionsGUI):
         glib.idle_add(self.populate_table)
 
 
+def check_mdns(gui):
+    import os
+    from xpra.os_util import WIN32
+    if WIN32:
+        for e in ("programfiles", "programfiles(x86)"):
+            d = os.environ.get(e)
+            if not d:
+                continue
+            dll_file = os.path.join(d, "Bonjour", "mdnsNSP.dll")
+            if os.path.exists(dll_file):
+                log("check_mdns() found bonjour DLL: %s", dll_file)
+                pass
+                #return True
+        #bonjour not found:
+        glib.timeout_add(1000, win32_bonjour_download_warning, gui)
+    return True
+
+def win32_bonjour_download_warning(gui):
+    from xpra.gtk_common.gobject_compat import import_pango
+    from xpra.gtk_common.gtk_util import DIALOG_MODAL, DESTROY_WITH_PARENT
+    dialog = gtk.Dialog("Bonjour not found",
+           gui,
+           DIALOG_MODAL | DESTROY_WITH_PARENT)
+    RESPONSE_CANCEL = 1
+    RESPONSE_DOWNLOAD = 2
+    dialog.add_button(gtk.STOCK_CANCEL,     RESPONSE_CANCEL)
+    dialog.add_button("Download Bonjour",   RESPONSE_DOWNLOAD)
+    def add(widget, padding=0):
+        a = gtk.Alignment()
+        a.set(0.5, 0.5, 1, 1)
+        a.add(widget)
+        a.set_padding(padding, padding, padding, padding)
+        dialog.vbox.pack_start(a)
+    pango = import_pango()
+    title = gtk.Label("Bonjour support not found")
+    title.modify_font(pango.FontDescription("sans 14"))
+    add(title, 16)
+    info = gtk.Label("To automatically discover xpra sessions via mDNS,\n"+
+                     "you can install 'Bonjour'.\n\n")
+    add(info, 10)
+    dialog.vbox.show_all()
+    def handle_response(dialog, response):
+        dialog.destroy()
+        if response==RESPONSE_DOWNLOAD:
+            import webbrowser
+            webbrowser.open("https://support.apple.com/kb/DL999")
+    dialog.connect("response", handle_response)
+    dialog.show()
+
+
 def do_main(opts):
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color
@@ -59,7 +109,12 @@ def do_main(opts):
         if not get_listener_class():
             command_error("no mDNS support in this build")
             return 1
-        gui = mdns_sessions(opts)
+        mdns = opts.mdns
+        if mdns:
+            gui = mdns_sessions(opts)
+            mdns = check_mdns(gui)
+        else:
+            gui = SessionsGUI(opts)
         gtk_main()
         return gui.exit_code
 
