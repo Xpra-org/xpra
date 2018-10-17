@@ -11,6 +11,7 @@ import os
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
 
+from xpra.util import first_time
 from xpra.os_util import strtobytes, bytestostr
 from xpra.log import Logger
 log = Logger("util", "network")
@@ -106,7 +107,7 @@ def get_interface_info(int sockfd, ifname):
     if r >= 0:
         info["speed"] = edata.speed*1000*1000
         #info["duplex"] = duplex: DUPLEX_HALF, DUPLEX_FULL DUPLEX_NONE?
-    else:
+    elif first_time("ethtool-%s" % ifname):
         log.info("no ethtool interface speed available for %s", ifname)
     cdef ethtool_drvinfo drvinfo
     drvinfo.cmd = ETHTOOL_GDRVINFO
