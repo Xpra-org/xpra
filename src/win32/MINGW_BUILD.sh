@@ -236,7 +236,7 @@ mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.
 rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
 #move libs that are likely to be common to the lib dir:
-for prefix in lib avcodec avformat avutil swscale swresample xvidcore zlib1; do
+for prefix in lib avcodec avformat avutil swscale swresample zlib1; do
 	find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
 done
 for x in openblas gfortran quadmath; do
