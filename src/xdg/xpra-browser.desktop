@@ -6,4 +6,4 @@ Icon=xpra-mdns
 Terminal=false
 Type=Application
 StartupNotify=false
-Categories=Network;
+Categories=Network;RemoteAccess;

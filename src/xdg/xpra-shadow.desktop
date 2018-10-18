@@ -7,4 +7,4 @@ Terminal=false
 NoDisplay=true
 Type=Application
 StartupNotify=false
-Categories=Network;
+Categories=Network;RemoteAccess;
