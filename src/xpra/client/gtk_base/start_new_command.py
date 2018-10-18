@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,21 +25,22 @@ from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pi
                                     WIN_POS_CENTER
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
-log = Logger("util")
+log = Logger("exec")
 
 
 _instance = None
-def getStartNewCommand(run_callback, can_share=False):
+def getStartNewCommand(run_callback, can_share=False, xdg_menu=None):
     global _instance
     if _instance is None:
-        _instance = StartNewCommand(run_callback, can_share)
+        _instance = StartNewCommand(run_callback, can_share, xdg_menu)
     return _instance
 
 
 class StartNewCommand(object):
 
-    def __init__(self, run_callback=None, can_share=False):
+    def __init__(self, run_callback=None, can_share=False, xdg_menu=None):
         self.run_callback = run_callback
+        self.xdg_menu = xdg_menu
         self.window = gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.close)
@@ -54,19 +55,37 @@ class StartNewCommand(object):
         vbox = gtk.VBox(False, 0)
         vbox.set_spacing(0)
 
-        # Label:
-        label = gtk.Label("Command to run:")
-        label.modify_font(pango.FontDescription("sans 14"))
-        al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(label)
-        vbox.add(al)
+        if xdg_menu:
+            # or use menus if we have xdg data:
+            hbox = gtk.HBox(False, 20)
+            vbox.add(hbox)
+            hbox.add(gtk.Label("Category:"))
+            self.category_combo = gtk.combo_box_new_text()
+            hbox.add(self.category_combo)
+            for name in sorted(xdg_menu.keys()):
+                self.category_combo.append_text(name)
+            self.category_combo.set_active(0)
+            self.category_combo.connect("changed", self.category_changed)
 
-        # Actual command:
-        self.entry = gtk.Entry()
-        self.entry.set_max_length(255)
-        self.entry.set_width_chars(32)
-        self.entry.connect('activate', self.run_command)
-        vbox.add(self.entry)
+            hbox = gtk.HBox(False, 20)
+            vbox.add(hbox)
+            self.command_combo = gtk.combo_box_new_text()
+            hbox.pack_start(gtk.Label("Command:"))
+            hbox.pack_start(self.command_combo)
+            #this will populate the command combo:
+            self.category_changed()
+        else:
+            entry_label = gtk.Label("Command to run:")
+            entry_label.modify_font(pango.FontDescription("sans 14"))
+            entry_al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
+            entry_al.add(entry_label)
+            vbox.add(entry_al)
+            # Actual command:
+            self.entry = gtk.Entry()
+            self.entry.set_max_length(255)
+            self.entry.set_width_chars(32)
+            self.entry.connect('activate', self.run_command)
+            vbox.add(self.entry)
 
         if can_share:
             self.share = gtk.CheckButton("Shared", use_underline=False)
@@ -98,6 +117,17 @@ class StartNewCommand(object):
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
+
+
+    def category_changed(self, *args):
+        category = self.category_combo.get_active_text()
+        log("category_changed(%s) category=%s", args, category)
+        entries = self.xdg_menu.get(category)
+        self.command_combo.get_model().clear()
+        for name in entries.keys():
+            self.command_combo.append_text(name)
+        if entries:
+            self.command_combo.set_active(0)
 
 
     def show(self):
@@ -140,8 +170,21 @@ class StartNewCommand(object):
 
     def run_command(self, *_args):
         self.hide()
-        command = self.entry.get_text()
-        if self.run_callback:
+        command = None
+        if self.xdg_menu:
+            category = self.category_combo.get_active_text()
+            log("category=%s", category)
+            entries = self.xdg_menu.get(category)
+            if entries:
+                command_name = self.command_combo.get_active_text()
+                command_props = entries.get(command_name)
+                log("command properties=%s", command_props)
+                command = command_props.get("command")
+
+        else:
+            command = self.entry.get_text()
+        log("command=%s", command)
+        if self.run_callback and command:
             self.run_callback(command, self.share is None or self.share.get_active())
 
 
