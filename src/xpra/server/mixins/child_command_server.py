@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import os.path
 
 from xpra.log import Logger
@@ -21,13 +20,6 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
-
-if sys.version_info[0] >= 3:
-    unicode = str           #@ReservedAssignment
-    from typing import Generator as generator
-else:
-    from types import GeneratorType as generator
-
 
 
 """
@@ -97,68 +89,8 @@ class ChildCommandServer(StubServerMixin):
     def get_caps(self, _source):
         caps = {}
         if self.start_new_commands and POSIX and not OSX:
-            #expose XDG menus
-            try:
-                menu_data = {}
-                from xdg.Menu import parse, Menu, MenuEntry
-                menu = parse()
-                for submenu in menu.getEntries():
-                    if isinstance(submenu, Menu) and submenu.Visible:
-                        name = submenu.getName()
-                        submenu_data = menu_data.setdefault(name, {})
-                        for entry in submenu.getEntries():
-                            #TODO: can we have more than 2 levels of submenus?
-                            if isinstance(entry, MenuEntry):
-                                de = entry.DesktopEntry
-                                name = de.getName()
-                                if de.getTryExec():
-                                    command = de.findTryExec()
-                                else:
-                                    command = de.getExec()
-                                props = {
-                                    "command"   : command,
-                                    }
-                                submenu_data[name] = props
-                                def isvalidtype(v):
-                                    if isinstance(v, (list, tuple, generator)):
-                                        if len(v)==0:
-                                            return True
-                                        return all(isvalidtype(x) for x in v)
-                                    return isinstance(v, (bytes, str, unicode, bool, int))
-                                    
-                                #not exposed:
-                                #"MimeType" is an re
-                                #"Version" is a float
-                                for prop in (
-                                    "Type", "VersionString", "Name", "GenericName", "NoDisplay",
-                                    "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
-                                    "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
-                                    "Categories", "StartupNotify", "StartupWMClass", "URL",
-                                    ):
-                                    fn_name = "get%s" % prop
-                                    try:
-                                        fn = getattr(de, fn_name, None)
-                                        if fn:
-                                            v = fn()
-                                            if isinstance(v, (list, tuple, generator)):
-                                                log("%s=%s (%s)", prop, v, type(x for x in v))
-                                            else:
-                                                log("%s=%s (%s)", prop, v, type(v))
-                                            if not isvalidtype(v):
-                                                log.warn("Warning: found invalid type for '%s': %s", v, type(v))
-                                            else:
-                                                props[prop] = v
-                                    except Exception as e:
-                                        log("error on %s", entry, exc_info=True)
-                                        log.error("Error parsing '%s': %s", prop, e)
-                caps["xdg-menu"] = menu_data
-                log("xdg-menu=%s", menu_data)
-            except ImportError as e:
-                log("get_caps()", exc_info=True)
-                if first_time("xdg-import"):
-                    log.warn("Warning: no xdg module, cannot expose application menus")
-            except Exception:
-                log.error("Error parsing menus", exc_info=True)
+            from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
+            caps["xdg-menu"] = load_xdg_menu_data()
         return caps
 
 

@@ -452,6 +452,7 @@ class WindowSource(WindowIconSource):
                                            "bucket"         : buckets_info,
                                            },
                 "property"              : self.get_property_info(),
+                "content-type"          : self.content_type or "",
                 "batch"                 : self.batch_config.get_info(),
                 "soft-timeout"          : {
                                            "expired"        : self.soft_expired,

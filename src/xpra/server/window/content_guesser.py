@@ -6,7 +6,7 @@
 
 import re
 import os.path
-from xpra.os_util import PYTHON2
+from xpra.os_util import load_binary_file, hexstr, PYTHON2, OSX, POSIX, LINUX
 from collections import OrderedDict
 from xpra.platform.paths import get_app_dir, get_user_conf_dirs
 
@@ -93,7 +93,7 @@ def get_content_type_properties():
     return content_type_defs.keys()
 
 
-def guess_content_type(window):
+def guess_content_type_from_defs(window):
     global content_type_defs
     load_content_type_defs()
     for prop_name, defs in content_type_defs.items():
@@ -112,4 +112,91 @@ def guess_content_type(window):
                     regex_str, content_type = match_data
                     log("guess_content_type(%s) found match: property=%s, regex=%s, content-type=%s", window, prop_name, regex_str, content_type)
                     return content_type
-    return DEFAULT_CONTENT_TYPE
+    return None
+
+#text, picture or video?
+CATEGORIES_TO_TYPE = {
+    "graphics"          : "picture",
+    "accessibility"     : "text",
+    #"Application"       : "",
+    "archiving"         : "text",
+    "audio"             : "text",
+    "video"             : "video",
+    "compression"       : "text",
+    "development"       : "text",
+    "documentation"     : "text",
+    "game"              : "video",
+    "graphics"          : "picture",
+    "ide"               : "text",
+    "webbrowser"        : "text",
+    "wordprocessor"     : "text",
+    "calculator"        : "text",
+    "documentation"     : "text",
+    "engineering"       : "picture",
+    "office"            : "text",
+    "spreadsheet"       : "text",
+    "math"              : "text",
+    "terminalemulator"  : "text",
+    "filemanager"       : "picture",
+    "remoteaccess"      : "picture",
+    }
+command_to_type = None
+def load_command_to_type():
+    global command_to_type
+    if command_to_type is None:
+        command_to_type = {}
+        from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
+        xdg_menu = load_xdg_menu_data()
+        if xdg_menu:
+            for category, entries in xdg_menu.items():
+                log("category %s: %s", category, entries)
+                for name, props in entries.items():
+                    command = props.get("TryExec") or props.get("Exec")
+                    categories = props.get("Categories")
+                    log("Entry '%s': command=%s, categories=%s", name, command, categories)
+                    if command and categories:
+                        for c in categories:
+                            ctype = CATEGORIES_TO_TYPE.get(c.lower())
+                            if not ctype:
+                                #try a more fuzzy match:
+                                for category,ct in CATEGORIES_TO_TYPE.items():
+                                    if c.lower().find(category)>=0:
+                                        ctype = ct
+                                        break
+                            if ctype:
+                                cmd = os.path.basename(command.split(" ")[0]).encode()
+                                if cmd:
+                                    command_to_type[cmd] = ctype
+                                    break
+        log("command_to_type()=%s", command_to_type)
+    return command_to_type
+
+def guess_content_type_from_command(window):
+    if POSIX and not OSX:
+        def getprop(name):
+            try:
+                if name not in window.get_property_names():
+                    return None
+                return window.get_property(name)
+            except TypeError:
+                log.error("Error querying %s on %s", name, window, exc_info=True)
+        command = getprop("command")
+        if not command and LINUX:
+            #try to find the command via /proc:
+            pid = getprop("pid")
+            if pid:
+                proc_cmd_line = os.path.join("/proc", "%s" % pid, "cmdline")
+                if os.path.exists(proc_cmd_line):
+                    command = load_binary_file(proc_cmd_line).rstrip("\0")
+        log("guess_content_type_from_command(%s) command=%s", window, command)
+        if command:
+            ctt = load_command_to_type()
+            cmd = os.path.basename(command)
+            ctype = ctt.get(cmd)
+            log("content-type(%s)=%s", cmd, ctype)
+            return ctype
+    return None 
+
+
+def guess_content_type(window):
+    return guess_content_type_from_defs(window) or guess_content_type_from_command(window) or DEFAULT_CONTENT_TYPE
