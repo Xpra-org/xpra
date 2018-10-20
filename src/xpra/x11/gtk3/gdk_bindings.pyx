@@ -469,7 +469,7 @@ def get_pyatom(display_source, xatom):
 cdef _query_tree(pywindow):
     cdef Window root = 0, parent = 0
     cdef Window * children = <Window *> 0
-    cdef unsigned int nchildren = 0
+    cdef unsigned int i, nchildren = 0
     cdef object pychildren
     cdef object pyparent
     if not XQueryTree(get_xdisplay_for(pywindow),
