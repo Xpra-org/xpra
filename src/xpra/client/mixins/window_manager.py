@@ -47,8 +47,14 @@ PAINT_FAULT_TELL = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
 WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
 TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
-OR_FORCE_GRAB = os.environ.get("XPRA_OR_FORCE_GRAB", "sun-awt-X11")
-
+OR_FORCE_GRAB_STR = os.environ.get("XPRA_OR_FORCE_GRAB", "DIALOG:sun-awt-X11")
+OR_FORCE_GRAB = {}
+for s in OR_FORCE_GRAB_STR.split(","):
+    parts = s.split(":")
+    if len(parts)==1:
+        OR_FORCE_GRAB.setdefault("*", []).append(s)
+    else:
+        OR_FORCE_GRAB.setdefault(parts[0], []).append(parts[1])
 
 SKIP_DUPLICATE_BUTTON_EVENTS = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
 REVERSE_HORIZONTAL_SCROLLING = envbool("XPRA_REVERSE_HORIZONTAL_SCROLLING", OSX)
@@ -706,15 +712,27 @@ class WindowClient(StubClientMixin):
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show()
-        if override_redirect and OR_FORCE_GRAB:
-            window_types = metadata.get("window-type")
-            wm_class = metadata.get("class-instance")
-            if "DIALOG" in window_types and wm_class and len(wm_class)==2:
-                c = wm_class[0]
-                if any(c.startswith(x) for x in OR_FORCE_GRAB):
-                    grablog.warn("forcing grab for OR window %i, wm class '%s' matches %s", wid, c, OR_FORCE_GRAB)
-                    self.window_grab(window)
+        if override_redirect:
+            if self.should_force_grab(metadata):
+                grablog.warn("forcing grab for OR window %i, matches %s", wid, OR_FORCE_GRAB)
+                self.window_grab(window)
         return window
+
+    def should_force_grab(self, metadata):
+        if not OR_FORCE_GRAB:
+            return
+        window_types = metadata.get("window-type", [])
+        wm_class = metadata.get("class-instance")
+        c = None
+        if wm_class:
+            c = wm_class[0]
+        for window_type, force_wm_classes in OR_FORCE_GRAB.items():
+            #ie: DIALOG : ["sun-awt-X11"]
+            if window_type=="*" or window_type in window_types:
+                for wmc in force_wm_classes:
+                    if wmc=="*" or c and c.startswith(wmc):
+                        return True
+        return False
 
     ######################################################################
     # listen for process signals using a watcher process:
