@@ -2,9 +2,10 @@
 
 #per-distro build options (builtbot will uncomment the right one):
 #xenial:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
-#yakkety:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
-#zesty:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
+#bionic:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
+#cosmic:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
 #stretch:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+#buster:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
 PY2BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 PY3BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ --without-html5 --without-printing
