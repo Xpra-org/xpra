@@ -22,6 +22,7 @@ usr/share/xpra/www/*
 usr/share/xpra/http-headers/*
 usr/share/xpra/cuda/*
 usr/share/xpra/content-type/*
+usr/share/xpra/content-categories/*
 etc/xpra/*.conf
 etc/xpra/conf.d/*conf
 etc/pam.d/xpra
