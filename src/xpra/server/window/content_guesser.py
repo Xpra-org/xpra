@@ -192,11 +192,12 @@ def load_command_to_type():
 
 def guess_content_type_from_command(window):
     if POSIX and not OSX:
-        def getprop(name):
+        def getprop(prop):
             try:
-                if name not in window.get_property_names():
+                if prop not in window.get_property_names():
+                    log("guess_content_type_from_command(%s) no '%s' property on this window", prop)
                     return None
-                return window.get_property(name)
+                return window.get_property(prop)
             except TypeError:
                 log.error("Error querying %s on %s", name, window, exc_info=True)
         command = getprop("command")
