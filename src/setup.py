@@ -150,7 +150,7 @@ shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and DEFAULT
 rfb_ENABLED = server_ENABLED
 service_ENABLED = LINUX and server_ENABLED
-sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd") and (not is_Ubuntu() or getUbuntuVersion()>[16, 4])
+sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd") and (not is_Ubuntu() or getUbuntuVersion()>(16, 4))
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 scripts_ENABLED = not WIN32
@@ -859,7 +859,7 @@ def build_xpra_conf(install_dir):
         return " ".join(cmd)
     #OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
     #Ubuntu 16.10 has opencv builds that conflict with our private ffmpeg
-    webcam = webcam_ENABLED and not (OSX or getUbuntuVersion()==[16, 10])
+    webcam = webcam_ENABLED and not (OSX or getUbuntuVersion()==(16, 10))
     #no python-avahi on RH / CentOS, need dbus module on *nix:
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {

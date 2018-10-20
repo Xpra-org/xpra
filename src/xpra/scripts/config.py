@@ -166,7 +166,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
 
     if is_Ubuntu():
         rnum = getUbuntuVersion()
-        if rnum==[16, 10]:
+        if rnum==(16, 10):
             return Xorg_suid_check()
         debug("Warning: Ubuntu breaks Xorg/Xdummy usage - using Xvfb fallback")
         return get_Xvfb_command()

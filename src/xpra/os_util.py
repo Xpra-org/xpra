@@ -347,11 +347,11 @@ def getUbuntuVersion():
     if distro and len(distro)==3 and distro[0]=="Ubuntu":
         ur = distro[1]  #ie: "12.04"
         try:
-            rnum = [int(x) for x in ur.split(".")]  #ie: [12, 4]
+            rnum = tuple(int(x) for x in ur.split("."))  #ie: (12, 4)
             return rnum
         except:
             pass
-    return []
+    return ()
 
 def is_unity():
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("unity")
