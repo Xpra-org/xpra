@@ -721,6 +721,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 #the cython version shipped with Xenial emits warnings:
                 if getUbuntuVersion()<=(16,4):
                     eifd.append("-Wno-error=shift-count-overflow")
+                    eifd.append("-Wno-error=sign-compare")
             if NETBSD:
                 #see: http://trac.cython.org/ticket/395
                 eifd += ["-fno-strict-aliasing"]
