@@ -60,7 +60,7 @@ def load_content_type_file(ct_file):
             #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
             if len(parts)!=2:
                 log.warn("Warning: invalid content-type definition")
-                log.warn(" found in '%s' at line %i", ct_file, l)
+                log.warn(" found in '%s' at line %i", line, l)
                 log.warn(" '%s' is missing a '='", line)
                 continue
             match, content_type = parts
@@ -114,32 +114,49 @@ def guess_content_type_from_defs(window):
                     return content_type
     return None
 
-#text, picture or video?
-CATEGORIES_TO_TYPE = {
-    "graphics"          : "picture",
-    "accessibility"     : "text",
-    #"Application"       : "",
-    "archiving"         : "text",
-    "audio"             : "text",
-    "video"             : "video",
-    "compression"       : "text",
-    "development"       : "text",
-    "documentation"     : "text",
-    "game"              : "video",
-    "graphics"          : "picture",
-    "ide"               : "text",
-    "webbrowser"        : "text",
-    "wordprocessor"     : "text",
-    "calculator"        : "text",
-    "documentation"     : "text",
-    "engineering"       : "picture",
-    "office"            : "text",
-    "spreadsheet"       : "text",
-    "math"              : "text",
-    "terminalemulator"  : "text",
-    "filemanager"       : "picture",
-    "remoteaccess"      : "picture",
-    }
+def load_categories_to_type():
+    d = os.path.join(get_app_dir(), "content-categories")
+    if not os.path.exists(d) or not os.path.isdir(d):
+        log("load_categories_to_type() directory '%s' not found", d)
+        return {}
+    categories_to_type = {}
+    for f in sorted(os.listdir(d)):
+        if f.endswith(".conf"):
+            cc_file = os.path.join(d, f)
+            if os.path.isfile(cc_file):
+                try:
+                    categories_to_type.update(load_content_categories_file(cc_file))
+                except Exception as e:
+                    log("load_content_type_file(%s)", cc_file, exc_info=True)
+                    log.error("Error loading content-type data from '%s'", cc_file)
+                    log.error(" %s", e)
+    log("load_categories_to_type()=%s", categories_to_type)
+    return categories_to_type
+def load_content_categories_file(cc_file):
+    if PYTHON2:
+        mode = "rU"
+    else:
+        mode = "r"
+    d = {}
+    with open(cc_file, mode) as f:
+        l = 0
+        for line in f:
+            l += 1
+            line = line.rstrip("\n\r")
+            if line.startswith("#") or not (line.strip()):
+                continue
+            parts = line.rsplit(":", 1)
+            #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
+            if len(parts)!=2:
+                log.warn("Warning: invalid content-type definition")
+                log.warn(" found in '%s' at line %i", line, l)
+                log.warn(" '%s' is missing a '='", line)
+                continue
+            category, content_type = parts
+            d[category.strip("\t ").lower()] = content_type.strip("\t ")
+    log("load_content_categories_file(%s)=%s", cc_file, d)
+    return d  
+
 command_to_type = None
 def load_command_to_type():
     global command_to_type
@@ -147,7 +164,9 @@ def load_command_to_type():
         command_to_type = {}
         from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
         xdg_menu = load_xdg_menu_data()
-        if xdg_menu:
+        categories_to_type = load_categories_to_type()
+        log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type) 
+        if xdg_menu and categories_to_type:
             for category, entries in xdg_menu.items():
                 log("category %s: %s", category, entries)
                 for name, props in entries.items():
@@ -156,10 +175,10 @@ def load_command_to_type():
                     log("Entry '%s': command=%s, categories=%s", name, command, categories)
                     if command and categories:
                         for c in categories:
-                            ctype = CATEGORIES_TO_TYPE.get(c.lower())
+                            ctype = categories_to_type.get(c.lower())
                             if not ctype:
                                 #try a more fuzzy match:
-                                for category,ct in CATEGORIES_TO_TYPE.items():
+                                for category,ct in categories_to_type.items():
                                     if c.lower().find(category)>=0:
                                         ctype = ct
                                         break
@@ -168,7 +187,7 @@ def load_command_to_type():
                                 if cmd:
                                     command_to_type[cmd] = ctype
                                     break
-        log("command_to_type()=%s", command_to_type)
+        log("load_command_to_type()=%s", command_to_type)
     return command_to_type
 
 def guess_content_type_from_command(window):

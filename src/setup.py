@@ -1720,6 +1720,7 @@ add_data_files(share_xpra,                      ["bell.wav"])
 add_data_files("%shttp-headers" % share_xpra,   glob.glob("http-headers/*"))
 add_data_files("%sicons" % share_xpra,          glob.glob("icons/*png"))
 add_data_files("%scontent-type" % share_xpra,   glob.glob("content-type/*"))
+add_data_files("%scontent-categories" % share_xpra, glob.glob("content-categories/*"))
 
 
 if html5_ENABLED:
