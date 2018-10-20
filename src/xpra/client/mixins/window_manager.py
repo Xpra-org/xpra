@@ -534,7 +534,8 @@ class WindowClient(StubClientMixin):
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
         from xpra.client.client_tray import ClientTray
-        return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
+        mmap = getattr(self, "mmap", None)
+        return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, mmap)
 
 
     def get_tray_window(self, app_name, hints):
