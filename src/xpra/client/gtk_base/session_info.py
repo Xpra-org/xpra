@@ -370,9 +370,9 @@ class SessionInfo(gtk.Window):
             tb.add_row(slabel("Damage Latency (ms)", "The time it takes to compress a frame and pass it to the OS network layer"),
                        *self.damage_labels)
             self.quality_labels = maths_labels()
-            tb.add_row(slabel("Encoding Quality (pct)"), *self.quality_labels)
+            tb.add_row(slabel("Encoding Quality (pct)", "Automatic picture quality, average for all the windows"), *self.quality_labels)
             self.speed_labels = maths_labels()
-            tb.add_row(slabel("Encoding Speed (pct)"), *self.speed_labels)
+            tb.add_row(slabel("Encoding Speed (pct)", "Automatic picture encoding speed (bandwidth vs CPU usage), average for all the windows"), *self.speed_labels)
 
             self.decoding_labels = maths_labels()
             tb.add_row(slabel("Decoding Latency (ms)", "How long it takes the client to decode a screen update"), *self.decoding_labels)
