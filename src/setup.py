@@ -1887,7 +1887,7 @@ elif gtk3_ENABLED or (gtk_x11_ENABLED and PYTHON3):
 
 if client_ENABLED and gtk3_ENABLED:
     #cairo workaround:
-    if OSX:
+    if OSX or is_Ubuntu() or is_Debian():
         pycairo = "py3cairo"
     else:
         pycairo = "pycairo"
