@@ -16,6 +16,24 @@ log = Logger("window", "util")
 DEFAULT_CONTENT_TYPE = os.environ.get("XPRA_DEFAULT_CONTENT_TYPE", "")
 
 
+def get_proc_cmdline(pid):
+    if pid and LINUX:
+        #try to find the command via /proc:
+        proc_cmd_line = os.path.join("/proc", "%s" % pid, "cmdline")
+        if os.path.exists(proc_cmd_line):
+            return load_binary_file(proc_cmd_line).rstrip("\0")
+    return None
+
+def getprop(window, prop):
+    try:
+        if prop not in window.get_property_names():
+            log("no '%s' property on window %s", prop, window)
+            return None
+        return window.get_property(prop)
+    except TypeError:
+        log.error("Error querying %s on %s", name, window, exc_info=True)
+
+
 content_type_defs = None
 def load_content_type_defs():
     global content_type_defs
@@ -100,6 +118,11 @@ def guess_content_type_from_defs(window):
         if prop_name not in window.get_property_names():
             continue
         prop_value = window.get_property(prop_name)
+        #special case for "command":
+        #we can look it up using proc on Linux
+        if not prop_value and prop_name=="command":
+            pid = getprop(window, "pid")
+            prop_value = get_proc_cmdline(pid)
         #some properties return lists of values,
         #in which case we try to match any of them:
         if isinstance(prop_value, (list,tuple)):
@@ -192,22 +215,10 @@ def load_command_to_type():
 
 def guess_content_type_from_command(window):
     if POSIX and not OSX:
-        def getprop(prop):
-            try:
-                if prop not in window.get_property_names():
-                    log("guess_content_type_from_command(%s) no '%s' property on this window", prop)
-                    return None
-                return window.get_property(prop)
-            except TypeError:
-                log.error("Error querying %s on %s", name, window, exc_info=True)
-        command = getprop("command")
+        command = getprop(window, "command")
         if not command and LINUX:
-            #try to find the command via /proc:
-            pid = getprop("pid")
-            if pid:
-                proc_cmd_line = os.path.join("/proc", "%s" % pid, "cmdline")
-                if os.path.exists(proc_cmd_line):
-                    command = load_binary_file(proc_cmd_line).rstrip("\0")
+            pid = getprop(window, "pid")
+            command = get_proc_cmdline(pid)
         log("guess_content_type_from_command(%s) command=%s", window, command)
         if command:
             ctt = load_command_to_type()
