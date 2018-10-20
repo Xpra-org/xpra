@@ -75,6 +75,10 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
             "/usr/share/javascript/jquery/jquery.js",
             "/usr/share/javascript/jquery/3/jquery.js",
             ],
+        "jquery-ui.js"     : [
+            "/usr/share/javascript/jquery-ui/jquery-ui.js",
+            "/usr/share/javascript/jquery-ui/3/jquery-ui.js",
+            ],
         }
     for k,files in glob_recurse("html5").items():
         if (k!=""):
