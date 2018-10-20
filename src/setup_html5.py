@@ -32,11 +32,44 @@ def get_status_output(*args, **kwargs):
     return p.returncode, stdout.decode("utf-8"), stderr.decode("utf-8")
 
 
-def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True, verbose=False):
+def install_symlink(symlink_options, dst):
+    for symlink_option in symlink_options:
+        if symlink_option.find("*"):
+            #this is a regular expression,
+            #try to find the matching file
+            d, fname_re = os.path.split(symlink_option)
+            if d.find("*")>=0:
+                print("regex must be in filename (%s), not directory (%s)" % (fname_re, d))
+                continue
+            if not os.path.exists(d):
+                print("directory %s does not exist" % d)
+                continue
+            if not os.path.isdir(d):
+                print("%s is not a directory" % d)
+                continue
+            import re
+            rec = re.compile(fname_re)
+            symlink_option = None
+            for fname in os.listdir(d):
+                if rec.match(fname):
+                    symlink_option = os.path.join(d, fname)
+                    break
+            if not symlink_option:
+                continue
+        if os.path.exists(symlink_option):
+            print("symlinked %s from %s" % (dst, symlink_option))
+            os.symlink(symlink_option, dst)
+            return True
+    #print("no symlinks found for %s from %s" % (dst, symlink_options))
+    return False
+
+def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True, verbose=False, extra_symlinks={}):
     if minifier:
         print("minifying html5 client to '%s' using %s" % (install_dir, minifier))
     else:
         print("copying html5 client to '%s'" % (install_dir, ))
+    #those are used to replace the file we ship in source form
+    #with one that is maintained by the distribution:
     symlinks = {
         "jquery.js"     : [
             "/usr/share/javascript/jquery/jquery.js",
@@ -60,11 +93,7 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                 os.unlink(dst)
             #try to find an existing installed library and symlink it:
             symlink_options = symlinks.get(os.path.basename(f), [])
-            for symlink_option in symlink_options:
-                if os.path.exists(symlink_option):
-                    os.symlink(symlink_option, dst)
-                    break
-            if os.path.exists(dst):
+            if install_symlink(symlink_options, dst):
                 #we've created a symlink, skip minification and compression
                 continue
             ddir = os.path.split(dst)[0]
@@ -138,6 +167,17 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                         os.chmod(br_dst, 0o644)
                     else:
                         print("Warning: brotli did not create '%s'" % br_dst)
+    if os.name=="posix":
+        #point the background.png to a local background image:
+        background_options = [
+                "/usr/share/backgrounds/images/default.png",
+                "/usr/share/backgrounds/images/.*default.*.png",
+                "/usr/share/backgrounds/.*default.*png",
+                ]
+        extra_symlinks = {"background.png" : background_options}
+        for f, symlink_options in extra_symlinks.items():
+            dst = os.path.join(install_dir, f)
+            install_symlink(symlink_options, dst)
 
 
 def main():
