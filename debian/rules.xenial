@@ -37,11 +37,10 @@ override_dh_systemd_enable:
 override_dh_systemd_start:
 	dh_systemd_start xpra.service
 
-## gracefully handle stripping if -dbg packages are (un-)commented in debian/control
-override_dh_strip:
-	[ -d "$(CURDIR)/debian/xpra-dbg" ] \
-        && dh_strip -pxpra --dbg-package=xpra-dbg \
-        || dh_strip -pxpra
+# we want the man pages only in xpra-common,
+# but the dh automagic gets confused
+override_dh_installman:
+	gzip -9 debian/xpra-common/usr/share/man/man1/*.1
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz
