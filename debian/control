@@ -18,6 +18,7 @@ Build-Depends: debhelper (>= 8)
               ,brotli
               ,libjs-jquery
               ,libjs-jquery-ui
+              ,gnome-backgrounds
 #python2 :
               ,python-all-dev
               ,python-gtk2-dev
@@ -141,6 +142,7 @@ Architecture: any
 Depends:
         libjs-jquery
         ,libjs-jquery-ui
+        ,gnome-backgrounds
 Description: the html5 xpra client
 
 
