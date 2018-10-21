@@ -140,7 +140,6 @@ Description: tool to detach/reattach running X programs
 Package: python2-xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
-        ,xpra-common
         ,python-gtk2
 # for opengl support:
         ,python-gtkglext1
