@@ -35,26 +35,11 @@ def get_status_output(*args, **kwargs):
 def install_symlink(symlink_options, dst):
     for symlink_option in symlink_options:
         if symlink_option.find("*"):
-            #this is a regular expression,
-            #try to find the matching file
-            d, fname_re = os.path.split(symlink_option)
-            if d.find("*")>=0:
-                print("regex must be in filename (%s), not directory (%s)" % (fname_re, d))
-                continue
-            if not os.path.exists(d):
-                print("directory %s does not exist" % d)
-                continue
-            if not os.path.isdir(d):
-                print("%s is not a directory" % d)
-                continue
-            import re
-            rec = re.compile(fname_re)
-            symlink_option = None
-            for fname in os.listdir(d):
-                if rec.match(fname):
-                    symlink_option = os.path.join(d, fname)
-                    break
-            if not symlink_option:
+            #this is a glob, find at least one match:
+            matches = glob.glob(symlink_option)
+            if matches:
+                symlink_option = matches[0]
+            else:
                 continue
         if os.path.exists(symlink_option):
             print("symlinked %s from %s" % (dst, symlink_option))
@@ -175,8 +160,8 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
         #point the background.png to a local background image:
         background_options = [
                 "/usr/share/backgrounds/images/default.png",
-                "/usr/share/backgrounds/images/.*default.*.png",
-                "/usr/share/backgrounds/.*default.*png",
+                "/usr/share/backgrounds/images/*default*.png",
+                "/usr/share/backgrounds/*default*png",
                 "/usr/share/backgrounds/gnome/adwaita*.jpg",    #Debian Stretch
                 "/usr/share/backgrounds/images/*jpg",           #CentOS 7
                 ]
