@@ -383,6 +383,7 @@ BuildRequires:		python3-devel
 BuildRequires:		python3-Cython
 BuildRequires:		python3-gobject
 BuildRequires:		pygobject3-devel
+BuildRequires:		python3-cairo-devel
 BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
 BuildRequires:		libyuv-devel
