@@ -11,6 +11,13 @@ Build-Depends: debhelper (>= 8)
               ,libxtst-dev
               ,libxkbfile-dev
               ,libx264-dev
+#buster:              ,uglifyjs
+#xenial:              ,uglifyjs
+#bionic:              ,uglifyjs
+#cosmic:              ,uglifyjs
+              ,brotli
+              ,libjs-jquery
+              ,libjs-jquery-ui
 #xenial:              ,python-gobject-dev
 #bionic:              ,python-gobject-2-dev
 #cosmic:              ,python-gobject-2-dev
@@ -42,14 +49,6 @@ Vcs-Browser: http://xpra.org/trac/browser/
 Package: xpra-common
 Architecture: any
 #for minimizing and symlinking the html5 assets:
-Build-Depends: node-uglify
-#buster:              ,uglifyjs
-#xenial:              ,uglifyjs
-#bionic:              ,uglifyjs
-#cosmic:              ,uglifyjs
-              ,brotli
-              ,libjs-jquery
-              ,libjs-jquery-ui
 Depends: x11-xserver-utils
 #we need a vfb: either Xdummy (Debian) or Xvfb (some Ubuntu versions break Xorg tty access)
 #install both so users can choose which one they want to use:
