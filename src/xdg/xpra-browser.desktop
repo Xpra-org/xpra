@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Xpra Browser
 Comment=Browse Xpra sessions on the local network using mDNS
-Exec=xpra_browser
+Exec=xpra mdns-gui
 Icon=xpra-mdns
 Terminal=false
 Type=Application
