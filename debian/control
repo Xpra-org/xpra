@@ -145,6 +145,7 @@ Description: the html5 xpra client
 Package: python2-xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
+        ,xpra
         ,python-gtk2
 # for opengl support:
         ,python-gtkglext1
@@ -204,6 +205,7 @@ Description: tool to detach/reattach running X programs
 Package: python3-xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
+        ,xpra
         ,python3-gi
 # for opengl support:
         ,python3-opengl
