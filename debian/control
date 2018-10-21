@@ -57,7 +57,6 @@ Vcs-Browser: http://xpra.org/trac/browser/
 
 Package: xpra
 Architecture: any
-#for minimizing and symlinking the html5 assets:
 Depends: python2-xpra | python3-xpra,
          python-minimal,
          x11-xserver-utils,
@@ -75,6 +74,7 @@ Depends: python2-xpra | python3-xpra,
 # if you use Ubuntu, you will "want" this mess:
 #xenial:        ,python-appindicator
 Recommends:
+        xpra-html5
 # ffmpeg based codecs:
 #stretch:        ,ffmpeg-xpra
 #xenial:        ,ffmpeg-xpra
@@ -117,9 +117,6 @@ Recommends:
         ,openssh-client
 #for using SSH passwords from the GUI launcher:
         ,sshpass
-#for html5 support:
-        ,libjs-jquery
-        ,libjs-jquery-ui
 #the start-session GUI:
         ,python-xdg
 Suggests: openssh-server
@@ -135,6 +132,14 @@ Description: tool to detach/reattach running X programs
  .
  This package contains all the files and dependencies common to both the
  Python 2 (xpra) and Python 3 builds (python3-xpra).
+
+
+Package: xpra-html5
+Architecture: any
+Depends:
+        libjs-jquery
+        ,libjs-jquery-ui
+Description: the html5 xpra client
 
 
 Package: python2-xpra
