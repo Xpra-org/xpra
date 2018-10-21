@@ -139,6 +139,7 @@ def main():
         log("appindicator not available")
         return
 
+    log("main: appindicator=%s", appindicator)
     if not can_use_appindicator():
         log("appindicator may not be shown...")
 
