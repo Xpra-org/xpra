@@ -674,10 +674,10 @@
 
 	<distutils id="python3-rencode" python3="1">
 		<branch repo="github.com"
-			module="/aresch/rencode/archive/v1.0.5.tar.gz"
-			checkoutdir="rencode-1.0.5"
-			hash="md5:3bdbec5c50d845e5367ba53c5b85d1a4"
-			version="1.0.5"/>
+			module="/aresch/rencode/archive/v1.0.6.tar.gz"
+			checkoutdir="rencode-1.0.6"
+			hash="sha256:0ed61111f053ea37511da86ca7aed2a3cfda6bdaa1f54a237c4b86eea52f0733"
+			version="1.0.6"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>

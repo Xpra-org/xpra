@@ -1,3 +1,10 @@
+python-rencode (1.0.6-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 22 Oct 2016 01:31:11 +0700
+
+
 python-rencode (1.0.5-1) unstable; urgency=low
 
   * New upstream release
