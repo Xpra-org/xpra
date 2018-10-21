@@ -73,6 +73,8 @@ Depends: python2-xpra | python3-xpra,
 #buster:         ,libturbojpeg0
 # if you use Ubuntu, you will "want" this mess:
 #xenial:        ,python-appindicator
+#bionic:        ,python-appindicator
+#cosmic:        ,python-appindicator
 Recommends:
         xpra-html5
 # ffmpeg based codecs:
