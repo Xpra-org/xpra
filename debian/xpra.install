@@ -2,7 +2,6 @@ usr/lib/tmpfiles.d/xpra.conf
 usr/lib/sysusers.d/xpra.conf
 usr/bin/xpra
 usr/bin/xpra_launcher
-usr/bin/xpra_browser
 usr/bin/xpra_signal_listener
 usr/bin/xpra_udev_product_version
 usr/lib/cups/backend/xpraforwarder
