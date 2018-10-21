@@ -177,7 +177,8 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                 "/usr/share/backgrounds/images/default.png",
                 "/usr/share/backgrounds/images/.*default.*.png",
                 "/usr/share/backgrounds/.*default.*png",
-                "/usr/share/backgrounds/gnome/adwaita*.jpg",
+                "/usr/share/backgrounds/gnome/adwaita*.jpg",    #Debian Stretch
+                "/usr/share/backgrounds/images/*jpg",           #CentOS 7
                 ]
         extra_symlinks = {"background.png" : background_options}
         for f, symlink_options in extra_symlinks.items():

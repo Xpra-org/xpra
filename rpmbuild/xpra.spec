@@ -165,6 +165,10 @@ BuildRequires:		desktop-backgrounds-compat
 Requires:			js-jquery
 Requires:			desktop-backgrounds-compat
 %endif
+%if 0%{?el7}
+BuildRequires:		desktop-backgrounds-basic
+Requires:			desktop-backgrounds-basic
+%endif
 %description html5
 This package contains Xpra's HTML5 client.
 
