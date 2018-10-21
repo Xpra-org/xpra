@@ -35,6 +35,7 @@ def get_status_output(*args, **kwargs):
 def install_symlink(symlink_options, dst):
     for symlink_option in symlink_options:
         if symlink_option.find("*"):
+            import glob
             #this is a glob, find at least one match:
             matches = glob.glob(symlink_option)
             if matches:
