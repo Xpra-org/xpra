@@ -1,32 +1,26 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import gtk
-from gtk import gdk
-import glib
-import gobject
 import signal
 import math
 from collections import deque, namedtuple
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint
-from xpra.os_util import memoryview_to_bytes, monotonic_time
+from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
+from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow, pixbuf_new_from_data, SUBSTRUCTURE_MASK
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.prop import prop_set
-from xpra.x11.gtk2.wm import Wm
-from xpra.x11.gtk2.tray import get_tray_window, SystemTray
-from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel
-from xpra.x11.gtk2.gdk_bindings import (
+from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
+from xpra.x11.gtk_x11.gdk_bindings import (
                                add_event_receiver,          #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
@@ -38,6 +32,13 @@ X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
 from xpra.gtk_common.error import xsync, xswallow
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_gobject
+
+gtk = import_gtk()
+gdk = import_gdk()
+glib = import_glib()
+gobject = import_gobject()
+
 
 from xpra.log import Logger
 log = Logger("server")
@@ -226,13 +227,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._focus_history = deque(maxlen=100)
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
-        root = gdk.get_default_root_window()
-        root.set_events(root.get_events() | gdk.SUBSTRUCTURE_MASK)
-        root.property_change(gdk.atom_intern("XPRA_SERVER", False),
-                            gdk.atom_intern("STRING", False),
-                            8,
-                            gdk.PROP_MODE_REPLACE,
-                            XPRA_VERSION)
+        root = get_default_root_window()
+        root.set_events(root.get_events() | SUBSTRUCTURE_MASK)
+        prop_set(root, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
             try:
@@ -254,6 +251,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     self.root_overlay = None
 
         ### Create the WM object
+        from xpra.x11.gtk2.wm import Wm
         self._wm = Wm(self.clobber, self.wm_name)
         if server_features.windows:
             self._wm.connect("new-window", self._new_window_signaled)
@@ -422,7 +420,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for window in self._wm.get_property("windows"):
             self._add_new_window(window)
 
-        root = gdk.get_default_root_window()
+        root = get_default_root_window()
         with xsync:
             for window in get_children(root):
                 xid = get_xwindow(window)
@@ -609,6 +607,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         try:
             tray_window = get_tray_window(raw_window)
+            from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel
             if tray_window is not None:
                 assert self._tray
                 window = SystemTrayWindowModel(raw_window)
@@ -1099,7 +1098,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
         if has_alpha:
             import cairo
-            pixbuf = gdk.pixbuf_new_from_data(img_data, gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
+            pixbuf = pixbuf_new_from_data(img_data, gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
             cr = overlaywin.cairo_create()
             cr.new_path()
             cr.rectangle(wx+x, wy+y, width, height)

@@ -41,7 +41,9 @@ import gi
 gi.require_version('GdkX11', '3.0')
 from gi.repository import GdkX11
 
+display = None
 def init_gdk_display_source():
+    global display
     if not is_X11():
         from xpra.scripts.config import InitException
         raise InitException("cannot use X11 bindings with Wayland and GTK3 (buggy)")
@@ -57,7 +59,13 @@ def init_gdk_display_source():
     #this next line actually ensures Gdk is initialized, somehow
     root = Gdk.get_default_root_window()
     assert root is not None, "could not get the default root window"
+    display = Gdk.Display.get_default()
     #now we can get a display:
     x11_display = gdk_x11_display_get_xdisplay(gdk_display)
     set_display(x11_display)
     set_display_name(gdk_display_get_name(gdk_display))
+
+def close_gdk_display_source():
+    #this triggers the garbage collection of the Display object:
+    global display
+    display = None

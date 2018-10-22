@@ -14,7 +14,7 @@ from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.gtk_util import get_xwindow, get_default_root_window, display_get_default
+from xpra.gtk_common.gtk_util import get_default_root_window, display_get_default
 
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk2.selection import ManagerSelection
@@ -45,7 +45,6 @@ CWHeight        = constants["CWHeight"]
 NotifyPointerRoot   = constants["NotifyPointerRoot"]
 NotifyDetailNone    = constants["NotifyDetailNone"]
 
-FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
 LOG_MANAGE_FAILURES = envbool("XPRA_LOG_MANAGE_FAILURES", False)
 
 NO_NET_SUPPORTED = os.environ.get("XPRA_NO_NET_SUPPORTED", "").split(",")
@@ -147,50 +146,6 @@ if FRAME_EXTENTS:
     DEFAULT_NET_SUPPORTED.append("_NET_FRAME_EXTENTS")
 
 NET_SUPPORTED = [x for x in DEFAULT_NET_SUPPORTED if x not in NO_NET_SUPPORTED]
-
-
-def wm_check(display, wm_name, upgrading=False):
-    #there should only be one screen... but let's check all of them
-    for i in range(display.get_n_screens()):
-        screen = display.get_screen(i)
-        root = screen.get_root_window()
-        wm_prop = "WM_S%s" % i
-        cwm_prop = "_NEW_WM_CM_S%s" % i
-        wm_so = X11Window.XGetSelectionOwner(wm_prop)
-        cwm_so = X11Window.XGetSelectionOwner(cwm_prop)
-        log("ewmh selection owner for %s: %s", wm_prop, wm_so)
-        log("compositing window manager %s: %s", cwm_prop, cwm_so)
-
-        try:
-            ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
-        except:
-            #errors here generally indicate that the window is gone
-            #which is fine: it means the previous window manager is no longer active
-            continue
-        def xid(w):
-            if w:
-                return "%#x" % get_xwindow(w)
-            return None
-        log("_NET_SUPPORTING_WM_CHECK for screen %i: %s (root=%s)", i, xid(ewmh_wm), xid(root))
-        if ewmh_wm:
-            try:
-                name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
-            except:
-                name = None
-            if upgrading and name and name==wm_name:
-                log.info("found previous Xpra instance")
-            else:
-                log.warn("Warning: found an existing window manager on screen %s using window %#x: %s", i, ewmh_wm.xid, name or "unknown")
-            if (wm_so is None or wm_so==0) and (cwm_so is None or cwm_so==0):
-                if FORCE_REPLACE_WM:
-                    log.warn("XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
-                else:
-                    log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", wm_prop, cwm_prop)
-                    log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
-                    log.warn("if you are certain that the window manager is already gone,")
-                    log.warn(" you may set XPRA_FORCE_REPLACE_WM=1 to force xpra to continue, at your own risk")
-                    return False
-    return True
 
 
 class Wm(gobject.GObject):

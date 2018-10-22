@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, PYTHON3, PYTHON2, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -85,19 +85,19 @@ def _get_str(prop_name):
 
 
 def save_xvfb_pid(pid):
-    _save_int("_XPRA_SERVER_PID", pid)
+    _save_int(b"_XPRA_SERVER_PID", pid)
 
 def get_xvfb_pid():
-    return _get_int("_XPRA_SERVER_PID")
+    return _get_int(b"_XPRA_SERVER_PID")
 
 def save_dbus_pid(pid):
-    _save_int("_XPRA_DBUS_PID", pid)
+    _save_int(b"_XPRA_DBUS_PID", pid)
 
 def get_dbus_pid():
-    return _get_int("_XPRA_DBUS_PID")
+    return _get_int(b"_XPRA_DBUS_PID")
 
 def save_uinput_id(uuid):
-    _save_str("_XPRA_UINPUT_ID", uuid)
+    _save_str(b"_XPRA_UINPUT_ID", uuid)
 
 #def get_uinput_id():
 #    return _get_str("_XPRA_UINPUT_ID")
@@ -993,7 +993,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if not check_xvfb():
             return  1
         assert starting or starting_desktop or upgrading
-        from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source, close_gdk_display_source
+        if PYTHON2:
+            from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source, close_gdk_display_source
+        else:
+            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source, close_gdk_display_source
         init_gdk_display_source()
         insert_cleanup(close_gdk_display_source)
         #(now we can access the X11 server)
@@ -1006,7 +1009,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             save_xvfb_pid(xvfb_pid)
 
         if POSIX:
-            save_uinput_id(uinput_uuid or "")
+            save_uinput_id(uinput_uuid or b"")
             dbus_pid = -1
             dbus_env = {}
             if clobber:
@@ -1078,10 +1081,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 log.error("Xpra 'start' subcommand runs as a compositing manager")
                 log.error(" it cannot use a display which lacks the XComposite extension!")
                 return 1
-            assert not PYTHON3
             if starting:
                 #check for an existing window manager:
-                from xpra.x11.gtk2.wm import wm_check
+                from xpra.x11.gtk_x11.wm_check import wm_check
                 if not wm_check(display, opts.wm_name, upgrading):
                     return 1
             log("XShape=%s", X11Window.displayHasXShape())

@@ -14,7 +14,7 @@ from xpra.x11.bindings.display_source cimport set_display
 from xpra.x11.bindings.display_source import set_display_name
 
 import gobject
-import gtk.gdk
+from gtk import gdk
 
 ###################################
 # Headers, python magic
@@ -74,15 +74,15 @@ def init_gdk_display_source():
     global display
     cdef cGdkDisplay* gdk_display
     cdef Display * x11_display
-    if not gtk.gdk.display_get_default():
+    if not gdk.display_get_default():
         import os
         from xpra.scripts.config import InitException
         raise InitException("cannot access the default display '%s'" % os.environ.get("DISPLAY", ""))
-    root_window = gtk.gdk.get_default_root_window()
+    root_window = gdk.get_default_root_window()
     assert root_window, "cannot get the root window"
     display = root_window.get_display()
     assert root_window, "no display for root window %s" % root_window.xid
-    gdk_display = <cGdkDisplay*> unwrap(display, gtk.gdk.Display)
+    gdk_display = <cGdkDisplay*> unwrap(display, gdk.Display)
     x11_display = GDK_DISPLAY_XDISPLAY(gdk_display)
     set_display(x11_display)
     set_display_name(display.get_name())
