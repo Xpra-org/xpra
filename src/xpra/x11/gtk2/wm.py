@@ -20,7 +20,7 @@ from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk2.world_window import WorldWindow
 from xpra.x11.gtk2.window import WindowModel, configure_bits
-from xpra.x11.gtk2.gdk_bindings import (
+from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,                              #@UnresolvedImport
                add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
                get_children,                                    #@UnresolvedImport

@@ -93,7 +93,7 @@ if is_gtk3():
     def is_realized(widget):
         return widget.get_realized()
 
-    def Window(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL, event_mask=0, wclass=gdk.WindowWindowClass.INPUT_OUTPUT, title=None, x=None, y=None, visual=None, **kwargs):
+    def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL, event_mask=0, wclass=gdk.WindowWindowClass.INPUT_OUTPUT, title=None, x=None, y=None, visual=None, **kwargs):
         attributes_mask = 0
         attributes = gdk.WindowAttr()
         if x is not None:
@@ -124,7 +124,7 @@ if is_gtk3():
         return gdk.Window(parent, attributes, mask)
 
     def make_temp_window(title):
-        return Window(title=title)
+        return GDKWindow(title=title)
 
 
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
@@ -251,6 +251,7 @@ if is_gtk3():
 
     GDKWINDOW_TEMP     = gdk.WindowType.TEMP
     GDKWINDOW_TOPLEVEL = gdk.WindowType.TOPLEVEL
+    GDKWINDOW_CHILD    = gdk.WindowType.CHILD
 
     CLASS_INPUT_OUTPUT = gdk.WindowWindowClass.INPUT_OUTPUT
     CLASS_INPUT_ONLY = gdk.WindowWindowClass.INPUT_ONLY
@@ -429,11 +430,11 @@ else:
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
 
-    def Window(parent=None, width=1, height=1, window_type=gdk.WINDOW_TOPLEVEL, event_mask=0, wclass=gdk.INPUT_OUTPUT, title=None, x=-1, y=-1, **kwargs):
+    def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WINDOW_TOPLEVEL, event_mask=0, wclass=gdk.INPUT_OUTPUT, title=None, x=-1, y=-1, **kwargs):
         return gdk.Window(parent, width, height, window_type, event_mask, wclass, title, x, y, **kwargs)
 
     def make_temp_window(title):
-        return Window(title=title)
+        return GDKWindow(title=title)
 
     def get_pixbuf_from_window(window, x, y, w, h):
         pixbuf = gdk.Pixbuf(gdk.COLORSPACE_RGB, False, 8, w, h)
@@ -529,6 +530,7 @@ else:
 
     GDKWINDOW_TEMP     = gdk.WINDOW_TEMP
     GDKWINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
+    GDKWINDOW_CHILD    = gdk.WINDOW_CHILD
 
     CLASS_INPUT_OUTPUT = gdk.INPUT_OUTPUT
     CLASS_INPUT_ONLY = gdk.INPUT_ONLY

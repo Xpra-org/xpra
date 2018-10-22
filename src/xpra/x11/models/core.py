@@ -16,11 +16,11 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
+from xpra.x11.gtk2.composite import CompositeHelper
+from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
-from xpra.x11.gtk2.composite import CompositeHelper
-from xpra.x11.gtk2.models.model_stub import WindowModelStub
-from xpra.x11.gtk2.gdk_bindings import (
+from xpra.x11.gtk_x11.gdk_bindings import (
                 add_event_receiver,                         #@UnresolvedImport
                 remove_event_receiver,                      #@UnresolvedImport
                )

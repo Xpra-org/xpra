@@ -1,13 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import gobject
 
 from xpra.gtk_common.gobject_util import AutoPropGObjectMixin
+from xpra.gtk_common.gobject_compat import import_gobject
+gobject = import_gobject()
 
 from xpra.log import Logger
 log = Logger("x11", "window")

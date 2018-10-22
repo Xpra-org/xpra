@@ -82,3 +82,7 @@ cdef void * pyg_boxed_get(v):
 
 cdef GdkWindow *get_gdkwindow(pywindow):
     return <GdkWindow*>unwrap(pywindow, Gdk.Window)
+
+def calc_constrained_size(int width, int height, object hints):
+    log.warn("Warning: calc_constrained_size not implemented yet for GTK3")
+    return None

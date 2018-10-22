@@ -8,7 +8,7 @@ from xpra.gtk_common.error import xswallow, xsync
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, is_gtk3
 from xpra.gtk_common.gtk_util import (
-    display_get_default, get_default_root_window, get_xwindow, Window,
+    display_get_default, get_default_root_window, get_xwindow, GDKWindow,
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
     WINDOW_TOPLEVEL, CLASS_INPUT_OUTPUT
     )
@@ -110,8 +110,8 @@ class SystemTray(gobject.GObject):
             log("undocking %s", window)
             wxid = get_xwindow(window)
             rxid = get_xwindow(root)
-            X11Window.Unmap(xwid)
-            X11Window.Reparent(xwid, rxid, 0, 0)
+            X11Window.Unmap(wxid)
+            X11Window.Reparent(wxid, rxid, 0, 0)
         with xswallow:
             owner = X11Window.XGetSelectionOwner(SELECTION)
             if owner==get_xwindow(self.tray_window):
@@ -153,7 +153,7 @@ class SystemTray(gobject.GObject):
                 colormap = screen.get_rgb_colormap()
             kwargs["colormap"] = colormap
         assert visual is not None, "failed to obtain visual"
-        self.tray_window = Window(root, width=1, height=1,
+        self.tray_window = GDKWindow(root, width=1, height=1,
                                   title="Xpra-SystemTray",
                                   visual=visual,
                                   **kwargs)

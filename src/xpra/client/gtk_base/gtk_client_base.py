@@ -37,7 +37,7 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, get_root_size, get_xwindow, image_new_from_stock, \
-            get_screen_sizes, Window, \
+            get_screen_sizes, GDKWindow, \
             CLASS_INPUT_ONLY, \
             INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING, \
             BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK
@@ -1154,7 +1154,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         title = u"%s group leader for %s" % (self.session_name or u"Xpra", pid)
         #group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
         #static new(parent, attributes, attributes_mask)
-        group_leader_window = Window(wclass=CLASS_INPUT_ONLY, title=title)
+        group_leader_window = GDKWindow(wclass=CLASS_INPUT_ONLY, title=title)
         self._ref_to_group_leader[refkey] = group_leader_window
         #avoid warning on win32...
         if not WIN32:

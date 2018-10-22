@@ -8,10 +8,10 @@ import os
 import gobject
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
-from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.x11.gtk2.models.core import CoreX11WindowModel, xswallow
+from xpra.x11.models.core import CoreX11WindowModel, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
-from xpra.x11.gtk2.gdk_bindings import get_pywindow, get_pyatom                 #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
+from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gtk_util import atom_intern
 
 from xpra.log import Logger

@@ -9,9 +9,7 @@ from gtk import gdk
 import gobject
 import socket
 
-from xpra.os_util import get_generic_os_name, PYTHON3
-if PYTHON3:
-    raise ImportError("desktop server needs porting to python3 / gtk3")
+from xpra.os_util import get_generic_os_name
 from xpra.util import updict, log_screen_sizes
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
@@ -31,7 +29,7 @@ from xpra.x11.gtk2.gdk_bindings import (
                                )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.xroot_props import XRootPropWatcher
-from xpra.x11.gtk2.window_damage import WindowDamageHandler
+from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()

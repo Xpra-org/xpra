@@ -5,10 +5,6 @@
 # later version. See the file COPYING for details.
 
 
-import gtk
-from gtk import gdk
-import cairo
-
 from xpra.util import envint, envbool
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
 from xpra.gtk_common.error import XError
@@ -17,19 +13,25 @@ from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.common import Unmanageable
-from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
+from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.common import MAX_WINDOW_SIZE
-from xpra.x11.gtk2.models.base import BaseWindowModel, constants
-from xpra.x11.gtk2.models.core import sanestr, gobject, xswallow, xsync
-from xpra.x11.gtk2.gdk_bindings import (
-                add_event_receiver,                         #@UnresolvedImport
-                remove_event_receiver,                      #@UnresolvedImport
-               )
-from xpra.gtk_common.gtk2.gdk_bindings import (
-                get_display_for,                            #@UnresolvedImport
-                calc_constrained_size,                      #@UnresolvedImport
-               )
-from xpra.gtk_common.gtk_util import get_default_root_window
+from xpra.x11.models.base import BaseWindowModel, constants
+from xpra.x11.models.core import sanestr, gobject, xswallow, xsync
+from xpra.x11.gtk_x11.gdk_bindings import (
+    add_event_receiver,                         #@UnresolvedImport
+    remove_event_receiver,                      #@UnresolvedImport
+    get_display_for,                            #@UnresolvedImport
+    calc_constrained_size,                      #@UnresolvedImport
+    )
+from xpra.gtk_common.gtk_util import (
+    get_default_root_window, get_xwindow,
+    GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
+    )
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
+gtk = import_gtk()
+gdk = import_gdk()
+cairo = import_cairo()
+
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -184,15 +186,15 @@ class WindowModel(BaseWindowModel):
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
-        self.corral_window = gdk.Window(self.parking_window,
+        self.corral_window = GDKWindow(self.parking_window,
                                         x=x, y=y, width=ow, height=oh,
-                                        window_type=gdk.WINDOW_CHILD,
-                                        wclass=gdk.INPUT_OUTPUT,
-                                        event_mask=gdk.PROPERTY_CHANGE_MASK,
+                                        window_type=GDKWINDOW_CHILD,
+                                        event_mask=PROPERTY_CHANGE_MASK,
                                         title = "CorralWindow-%#x" % self.xid)
-        log("setup() corral_window=%#x", self.corral_window.xid)
+        cxid = get_xwindow(self.corral_window)
+        log("setup() corral_window=%#x", cxid)
         prop_set(self.corral_window, "_NET_WM_NAME", "utf8", u"Xpra-CorralWindow-%#x" % self.xid)
-        X11Window.substructureRedirect(self.corral_window.xid)
+        X11Window.substructureRedirect(cxid)
         add_event_receiver(self.corral_window, self)
 
         # The child might already be mapped, in case we inherited it from
@@ -209,7 +211,7 @@ class WindowModel(BaseWindowModel):
         self.in_save_set = True
 
         log("setup() reparenting")
-        X11Window.Reparent(self.xid, self.corral_window.xid, 0, 0)
+        X11Window.Reparent(self.xid, cxid, 0, 0)
         self.client_reparented = True
 
         geomlog("setup() geometry")
@@ -475,16 +477,17 @@ class WindowModel(BaseWindowModel):
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
-        geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s", event, self.corral_window.xid, self.xid, self._managed)
+        cxid = get_xwindow(self.corral_window)
+        geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s", event, cxid, self.xid, self._managed)
         if not self._managed:
             return
         if event.window==self.corral_window:
             #we only care about events on the client window
-            geomlog("WindowModel.do_xpra_configure_event: event is on the corral window %#x, ignored", self.corral_window.xid)
+            geomlog("WindowModel.do_xpra_configure_event: event is on the corral window %#x, ignored", cxid)
             return
         if event.window!=self.client_window:
             #we only care about events on the client window
-            geomlog("WindowModel.do_xpra_configure_event: event is not on the client window but on %#x, ignored", event.window.xid)
+            geomlog("WindowModel.do_xpra_configure_event: event is not on the client window but on %#x, ignored", get_xwindow(event.window))
             return
         if self.corral_window is None or not self.corral_window.is_visible():
             geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
@@ -499,7 +502,7 @@ class WindowModel(BaseWindowModel):
                 self.resize_corral_window(event.x, event.y, event.width, event.height)
         except XError as e:
             geomlog("do_xpra_configure_event(%s)", event, exc_info=True)
-            geomlog.warn("Warning: failed to resize corral window %#x", self.corral_window.xid)
+            geomlog.warn("Warning: failed to resize corral window %#x", cxid)
             geomlog.warn(" %s", e)
 
     def resize_corral_window(self, x, y, w, h):
@@ -531,8 +534,9 @@ class WindowModel(BaseWindowModel):
             self._updateprop("geometry", (x, y, cw, ch))
 
     def do_child_configure_request_event(self, event):
+        cxid = get_xwindow(self.corral_window)
         hints = self.get_property("size-hints")
-        geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s", event, self.xid, self.corral_window.xid, configure_bits(event.value_mask), hints)
+        geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s", event, self.xid, cxid, configure_bits(event.value_mask), hints)
         if event.value_mask & CWStackMode:
             geomlog(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:
