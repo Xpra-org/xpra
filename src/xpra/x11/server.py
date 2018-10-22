@@ -618,15 +618,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         try:
             tray_window = get_tray_window(raw_window)
-            from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel
             if tray_window is not None:
                 assert self._tray
+                from xpra.x11.models.systray import SystemTrayWindowModel
                 window = SystemTrayWindowModel(raw_window)
                 wid = self._add_new_window_common(window)
                 raw_window.set_data(WINDOW_MODEL_KEY, wid)
                 window.call_setup()
                 self._send_new_tray_window_packet(wid, window)
             else:
+                from xpra.x11.models.or_window import OverrideRedirectWindowModel
                 window = OverrideRedirectWindowModel(raw_window)
                 wid = self._add_new_window_common(window)
                 raw_window.set_data(WINDOW_MODEL_KEY, wid)

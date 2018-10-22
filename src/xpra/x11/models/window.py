@@ -18,10 +18,10 @@ from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr, gobject, xswallow, xsync
 from xpra.x11.gtk_x11.gdk_bindings import (
-    add_event_receiver,                         #@UnresolvedImport
-    remove_event_receiver,                      #@UnresolvedImport
-    get_display_for,                            #@UnresolvedImport
-    calc_constrained_size,                      #@UnresolvedImport
+    add_event_receiver, remove_event_receiver,
+    get_display_for,
+    calc_constrained_size,
+    x11_get_server_time,
     )
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow,
@@ -756,7 +756,7 @@ class WindowModel(BaseWindowModel):
         # genuine race conditions here (e.g. suppose the client does not
         # actually get around to requesting the focus until after we have
         # already changed our mind and decided to give it to someone else).
-        now = gdk.x11_get_server_time(self.corral_window)
+        now = x11_get_server_time(self.corral_window)
         # ICCCM 4.1.7 *claims* to describe how we are supposed to give focus
         # to a window, but it is completely opaque.  From reading the
         # metacity, kwin, gtk+, and qt code, it appears that the actual rules

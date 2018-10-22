@@ -5,9 +5,12 @@
 
 from xpra.gtk_common.gobject_compat import is_gtk3, try_import_GdkX11
 if is_gtk3():
-    try_import_GdkX11()
+    gdkx11 = try_import_GdkX11()
+    x11_get_server_time = gdkx11.x11_get_server_time
     from xpra.x11.gtk3 import gdk_bindings  #@UnresolvedImport, @UnusedImport
 else:
+    from gtk import gdk
+    x11_get_server_time = gdk.x11_get_server_time
     from xpra.x11.gtk2 import gdk_bindings  #@UnresolvedImport, @Reimport
 
 get_pywindow                = gdk_bindings.get_pywindow
@@ -23,6 +26,7 @@ cleanup_all_event_receivers = gdk_bindings.cleanup_all_event_receivers
 get_pywindow                = gdk_bindings.get_pywindow
 get_xvisual                 = gdk_bindings.get_xvisual
 get_parent                  = gdk_bindings.get_parent
+get_pyatom                  = gdk_bindings.get_pyatom
 
 if is_gtk3():
     try_import_GdkX11()

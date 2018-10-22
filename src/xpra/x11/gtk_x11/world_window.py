@@ -1,15 +1,19 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk
-import gobject
 from xpra.gtk_common.error import trap
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk_x11.gdk_bindings import x11_get_server_time
+from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default
+from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+gtk = import_gtk()
+gobject = import_gobject()
+
 from xpra.log import Logger
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
@@ -81,7 +85,7 @@ CurrentTime = constants["CurrentTime"]
 # have gone wonky.
 
 def root_set(*args):
-    prop_set(gtk.gdk.get_default_root_window(), *args)
+    prop_set(get_default_root_window(), *args)
 
 world_window = None
 def get_world_window():
@@ -89,7 +93,7 @@ def get_world_window():
     return world_window
 
 class WorldWindow(gtk.Window):
-    def __init__(self, screen=gtk.gdk.screen_get_default()):
+    def __init__(self, screen=screen_get_default()):
         global world_window
         assert world_window is None, "a world window already exists! (%s)" % world_window
         world_window = self
@@ -118,8 +122,9 @@ class WorldWindow(gtk.Window):
         return "WorldWindow(%#x)" % xid
 
     def _resize(self, *_args):
-        x = gtk.gdk.screen_width()
-        y = gtk.gdk.screen_height()
+        s = screen_get_default()
+        x = s.get_width()
+        y = s.get_height()
         log("sizing world to %sx%s", x, y)
         self.set_size_request(x, y)
         self.resize(x, y)
@@ -176,7 +181,7 @@ class WorldWindow(gtk.Window):
         # sending a WM_TAKE_FOCUS to our own window, which will go to the X
         # server and then come back to our own process, which will then issue
         # an XSetInputFocus on itself.
-        now = gtk.gdk.x11_get_server_time(self.window)
+        now = x11_get_server_time(self.window)
         send_wm_take_focus(self.window, now)
 
     def reset_x_focus(self):
