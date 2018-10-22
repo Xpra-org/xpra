@@ -413,6 +413,10 @@ def log_screen_sizes(root_w, root_h, sizes):
 def prettify_plug_name(s, default=""):
     if not s:
         return default
+    try:
+        s = s.decode("utf8")
+    except:
+        pass
     #prettify strings on win32
     s = re.sub(r"[0-9\.]*\\", "-", s).lstrip("-")
     if s.startswith("WinSta-"):
@@ -438,7 +442,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
         display_name, width, height, width_mm, height_mm, \
         monitors, work_x, work_y, work_width, work_height = s[:10]
         #always log plug name:
-        info = ["%s" % prettify_plug_name(display_name.decode("utf8"))]
+        info = ["%s" % prettify_plug_name(display_name)]
         if width!=root_w or height!=root_h:
             #log plug dimensions if not the same as display (root):
             info.append("%ix%i" % (width, height))
