@@ -181,7 +181,7 @@ class WindowModel(BaseWindowModel):
     def setup(self):
         super(WindowModel, self).setup()
 
-        ox, oy, ow, oh, _ = self.client_window.get_geometry()
+        ox, oy, ow, oh = self.client_window.get_geometry()[:4]
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
