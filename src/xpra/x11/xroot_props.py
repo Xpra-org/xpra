@@ -1,15 +1,18 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gtk import gdk
-import gobject
 from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
-from xpra.x11.gtk2.gdk_bindings import (add_event_receiver, remove_event_receiver,  #@UnresolvedImport
-                                        cleanup_all_event_receivers)                #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import (
+    add_event_receiver, remove_event_receiver,
+    cleanup_all_event_receivers,
+    )
+from xpra.gtk_common.gtk_util import PROPERTY_CHANGE_MASK
 from xpra.gtk_common.error import xsync
+from xpra.gtk_common.gobject_compat import import_gobject
+gobject = import_gobject()
 
 from xpra.log import Logger
 log = Logger("x11", "util")
@@ -26,7 +29,7 @@ class XRootPropWatcher(gobject.GObject):
         self._props = props
         self._root = root_window
         self._saved_event_mask = self._root.get_events()
-        self._root.set_events(self._saved_event_mask | gdk.PROPERTY_CHANGE_MASK)
+        self._root.set_events(self._saved_event_mask | PROPERTY_CHANGE_MASK)
         add_event_receiver(self._root, self)
 
     def cleanup(self):

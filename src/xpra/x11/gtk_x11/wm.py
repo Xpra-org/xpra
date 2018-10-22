@@ -323,7 +323,7 @@ class Wm(gobject.GObject):
                 l = log.warn
             else:
                 l = log
-            l("Warning: failed to manage client window %#x:", gdkwindow.xid)
+            l("Warning: failed to manage client window %#x:", get_xwindow(gdkwindow))
             l(" %s", e)
             l("", exc_info=True)
             with xswallow:
@@ -375,13 +375,13 @@ class Wm(gobject.GObject):
             #so this must be a an unmapped window
             frame = (0, 0, 0, 0)
             with xswallow:
-                if not X11Window.is_override_redirect(event.window.xid):
+                if not X11Window.is_override_redirect(get_xwindow(event.window)):
                     #use the global default:
                     frame = prop_get(self._root, "DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
                 if not frame:
                     #fallback:
                     frame = (0, 0, 0, 0)
-                framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, event.window.xid)
+                framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, get_xwindow(event.window))
                 prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
     def _lost_wm_selection(self, selection):
@@ -419,7 +419,7 @@ class Wm(gobject.GObject):
             return
         log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window", event, configure_bits(event.value_mask))
         with xswallow:
-            xid = event.window.xid
+            xid = get_xwindow(event.window)
             x, y, w, h = X11Window.getGeometry(xid)[:4]
             if event.value_mask & CWX:
                 x = event.x

@@ -194,9 +194,9 @@ class CoreX11WindowModel(WindowModelStub):
                               "_NET_FRAME_EXTENTS", "_NET_WM_ALLOWED_ACTIONS"]
 
     def __init__(self, client_window):
-        log("new window %#x", client_window.xid)
         super(CoreX11WindowModel, self).__init__()
         self.xid = get_xwindow(client_window)
+        log("new window %#x", self.xid)
         self.client_window = client_window
         self.client_window_saved_events = self.client_window.get_events()
         self._composite = None

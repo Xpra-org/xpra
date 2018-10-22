@@ -12,7 +12,7 @@ log = Logger("keyboard")
 
 
 from xpra.util import csv, nonl, envbool
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, strtobytes
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, get_default_root_window
@@ -484,9 +484,10 @@ class KeyboardConfig(KeyboardConfigBase):
             failed = []
             for modifier in modifiers:
                 modifier = bytestostr(modifier)
-                keynames = self.keynames_for_mod.get(modifier)
+                keynames = self.keynames_for_mod.get(strtobytes(modifier))
                 if not keynames:
                     log.error("Error: unknown modifier '%s'", modifier)
+                    log.error(" known modifiers: %s", csv(self.keynames_for_mod.keys()))
                     continue
                 #find the keycodes that match the keynames for this modifier
                 keycodes = []

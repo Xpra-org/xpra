@@ -9,6 +9,7 @@
 from __future__ import absolute_import
 
 import errno as pyerrno
+from xpra.os_util import strtobytes
 from libc.stdint cimport uint64_t, uintptr_t
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
 from xpra.monotonic_time cimport monotonic_time
@@ -439,7 +440,7 @@ cdef class XImageWrapper(object):
         self.rowstride = rowstride
 
     def set_pixel_format(self, pixel_format):
-        assert pixel_format is not None and pixel_format in RGB_FORMATS, "invalid pixel format: %s" % pixel_format
+        assert pixel_format is not None and strtobytes(pixel_format) in RGB_FORMATS, "invalid pixel format: %s" % pixel_format
         self.pixel_format = pixel_format
 
     def set_pixels(self, pixels):

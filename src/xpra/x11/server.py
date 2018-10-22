@@ -236,9 +236,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         prop_set(root, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
+            xid = get_xwindow(root)
             try:
                 with xsync:
-                    self.root_overlay = X11Window.XCompositeGetOverlayWindow(root.xid)
+                    self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                     if self.root_overlay:
                         #ugly: API expects a window object with a ".xid"
                         X11WindowModel = namedtuple("X11WindowModel", "xid")
@@ -246,7 +247,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                         prop_set(root_overlay, "WM_TITLE", "latin1", u"RootOverlay")
                         X11Window.AllowInputPassthrough(self.root_overlay)
             except Exception as e:
-                log("XCompositeGetOverlayWindow(%#x)", root.xid, exc_info=True)
+                log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
                 log.error("Error setting up xvfb synchronization:")
                 log.error(" %s", e)
                 if self.root_overlay:

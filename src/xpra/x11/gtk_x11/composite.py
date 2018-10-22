@@ -7,6 +7,7 @@
 
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
+from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,             #@UnresolvedImport
     remove_event_receiver,          #@UnresolvedImport
@@ -48,15 +49,17 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
         xid = 0
         cw = self.client_window
         if cw:
-            xid = cw.xid
+            xid = get_xwindow(cw)
         return "CompositeHelper(%#x)" % xid
 
     def setup(self):
-        X11Window.XCompositeRedirectWindow(self.client_window.xid)
+        xid = get_xwindow(self.client_window)
+        X11Window.XCompositeRedirectWindow(xid)
         WindowDamageHandler.setup(self)
 
     def do_destroy(self, window):
-        trap.swallow_synced(X11Window.XCompositeUnredirectWindow, window.xid)
+        xid = get_xwindow(window)
+        trap.swallow_synced(X11Window.XCompositeUnredirectWindow, xid)
         WindowDamageHandler.do_destroy(self, window)
 
     def invalidate_pixmap(self):
@@ -102,11 +105,13 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
                 # corral window selection masks, and those don't deserve
                 # clobbering.  They are our friends!  X is driving me
                 # slowly mad.
-                X11Window.addXSelectInput(win.xid, StructureNotifyMask)
+                xid = get_xwindow(win)
+                X11Window.addXSelectInput(xid, StructureNotifyMask)
                 add_event_receiver(win, self, max_receivers=-1)
                 listening.append(win)
                 win = get_parent(win)
-            handle = XImage.get_xcomposite_pixmap(self.client_window.xid)
+            xid = get_xwindow(self.client_window)
+            handle = XImage.get_xcomposite_pixmap(xid)
         except Exception as e:
             try:
                 self._cleanup_listening(listening)
@@ -118,7 +123,7 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
             win = self.client_window
             xid = 0
             if win:
-                xid = win.xid
+                xid = get_xwindow(win)
             log("failed to name a window pixmap for %#x: %s", xid, e)
             self._cleanup_listening(listening)
         else:

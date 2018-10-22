@@ -9,7 +9,7 @@ from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import x11_get_server_time
-from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default
+from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default, get_xwindow
 from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
 gtk = import_gtk()
 gobject = import_gobject()
@@ -118,7 +118,7 @@ class WorldWindow(gtk.Window):
     def __repr__(self):
         xid = 0
         if self.window:
-            xid = self.window.xid
+            xid = get_xwindow(self.window)
         return "WorldWindow(%#x)" % xid
 
     def _resize(self, *_args):

@@ -5,8 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from gtk import gdk
-import gobject
 import socket
 
 from xpra.os_util import get_generic_os_name
@@ -17,16 +15,18 @@ from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.error import xswallow
-from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size, get_xwindow
-from xpra.x11.gtk2.models.model_stub import WindowModelStub
-from xpra.x11.gtk2.gdk_bindings import (
-                               add_catchall_receiver,       #@UnresolvedImport
-                               remove_catchall_receiver,    #@UnresolvedImport
-                               add_event_receiver,          #@UnresolvedImport
-                               init_x11_filter,             #@UnresolvedImport
-                               cleanup_x11_filter,          #@UnresolvedImport
-                               cleanup_all_event_receivers  #@UnresolvedImport
-                               )
+from xpra.gtk_common.gtk_util import (
+    get_screen_sizes, get_root_size,
+    get_xwindow,
+    display_get_default,
+    )
+from xpra.x11.models.model_stub import WindowModelStub
+from xpra.x11.gtk_x11.gdk_bindings import (
+    add_catchall_receiver, remove_catchall_receiver,
+    add_event_receiver,          #@UnresolvedImport
+    init_x11_filter, cleanup_x11_filter,          #@UnresolvedImport
+    cleanup_all_event_receivers  #@UnresolvedImport
+   )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.xroot_props import XRootPropWatcher
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
@@ -37,6 +37,8 @@ from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
 RandR = RandRBindings()
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.gtk_common.error import xsync
+from xpra.gtk_common.gobject_compat import import_gobject
+gobject = import_gobject()
 
 from xpra.log import Logger
 log = Logger("server")
@@ -99,7 +101,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         screen = self.client_window.get_screen()
         screen.connect("size-changed", self._screen_size_changed)
         self.update_size_hints(screen)
-        self._depth = X11Window.get_depth(self.client_window.xid)
+        self._depth = X11Window.get_depth(get_xwindow(self.client_window))
         self._managed = True
         self._setup_done = True
 
@@ -154,7 +156,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
 
     def get_property(self, prop):
         if prop=="xid":
-            return int(self.client_window.xid)
+            return int(get_xwindow(self.client_window))
         elif prop=="depth":
             return self._depth
         elif prop=="title":
@@ -286,7 +288,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def x11_init(self):
         X11ServerBase.x11_init(self)
         assert init_x11_filter() is True
-        display = gdk.display_get_default()
+        display = display_get_default()
         screens = display.get_n_screens()
         for n in range(screens):
             screen = display.get_screen(n)
@@ -326,11 +328,11 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def configure_best_screen_size(self):
         """ for the first client, honour desktop_mode_size if set """
-        root_w, root_h = self.root_window.get_size()
+        root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
             screenlog("configure_best_screen_size() no randr")
             return root_w, root_h
-        sss = self._server_sources.values()
+        sss = tuple(self._server_sources.values())
         if len(sss)!=1:
             screenlog.info("screen used by %i clients:", len(sss))
             return root_w, root_h
@@ -410,7 +412,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def load_existing_windows(self):
         #at present, just one  window is forwarded:
         #the root window covering the whole display
-        display = gdk.display_get_default()
+        display = display_get_default()
         screens = display.get_n_screens()
         with xsync:
             for n in range(screens):

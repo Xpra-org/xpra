@@ -1089,7 +1089,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             log("XShape=%s", X11Window.displayHasXShape())
             app = make_server(clobber)
         else:
-            assert starting_desktop and not PYTHON3
+            assert starting_desktop
             app = make_desktop_server()
         app.init_virtual_devices(devices)
 
