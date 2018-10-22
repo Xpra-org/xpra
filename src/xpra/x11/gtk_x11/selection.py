@@ -1,5 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
+# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,16 +9,19 @@
 # selection, we can either abort or steal it.  Once we have it, if someone
 # else steals it, then we should exit.
 
-import gobject
-import gtk
 from struct import pack, unpack, calcsize
 
+from xpra.gtk_common.gtk_util import (
+    gtk_main, gtk_main_quit, get_xwindow,
+    selectiondata_get_data, set_clipboard_data, wait_for_contents, GetClipboard,
+    STRUCTURE_MASK,
+    )
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
-from xpra.x11.gtk2.gdk_bindings import (
+from xpra.x11.gtk_x11.gdk_bindings import (
                 get_xatom,                  #@UnresolvedImport
                 get_pywindow,               #@UnresolvedImport
                 add_event_receiver,         #@UnresolvedImport
@@ -26,7 +30,9 @@ from xpra.x11.gtk2.gdk_bindings import (
 
 from xpra.log import Logger
 log = Logger("x11", "util")
-
+from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+gtk = import_gtk()
+gobject = import_gobject()
 
 StructureNotifyMask = constants["StructureNotifyMask"]
 XNone = constants["XNone"]
@@ -48,7 +54,7 @@ class ManagerSelection(gobject.GObject):
     def __init__(self, display, selection):
         gobject.GObject.__init__(self)
         self.atom = selection
-        self.clipboard = gtk.Clipboard(display, selection)
+        self.clipboard = GetClipboard(selection)
         self._xwindow = None
 
     def _owner(self):
@@ -72,10 +78,7 @@ class ManagerSelection(gobject.GObject):
         if when is self.IF_UNOWNED and old_owner != XNone:
             raise AlreadyOwned
 
-        self.clipboard.set_with_data([("VERSION", 0, 0)],
-                                     self._get,
-                                     self._clear,
-                                     None)
+        set_clipboard_data(self.clipboard, "VERSION")
 
         # Having acquired the selection, we have to announce our existence
         # (ICCCM 2.8, still).  The details here probably don't matter too
@@ -92,7 +95,9 @@ class ManagerSelection(gobject.GObject):
         # some weird tricks to get at these.
 
         # Ask ourselves when we acquired the selection:
-        ts_data = self.clipboard.wait_for_contents("TIMESTAMP").data
+        contents = wait_for_contents(self.clipboard, "TIMESTAMP")
+        ts_data = selectiondata_get_data(contents)
+        
         #data is a timestamp, X11 datatype is Time which is CARD32,
         #(which is 64 bits on 64-bit systems!)
         Lsize = calcsize("@L")
@@ -107,7 +112,8 @@ class ManagerSelection(gobject.GObject):
         self._xwindow = X11Window.XGetSelectionOwner(self.atom)
 
         root = self.clipboard.get_display().get_default_screen().get_root_window()
-        X11Window.sendClientMessage(root.xid, root.xid, False, StructureNotifyMask,
+        xid = get_xwindow(root)
+        X11Window.sendClientMessage(xid, xid, False, StructureNotifyMask,
                           "MANAGER",
                           ts_num, selection_xatom, self._xwindow)
 
@@ -117,21 +123,21 @@ class ManagerSelection(gobject.GObject):
             try:
                 with xsync:
                     window = get_pywindow(self.clipboard, old_owner)
-                    window.set_events(window.get_events() | gtk.gdk.STRUCTURE_MASK)
+                    window.set_events(window.get_events() | STRUCTURE_MASK)
                 log("got window")
             except XError:
                 log("Previous owner is already gone, not blocking")
             else:
                 log("Waiting for previous owner to exit...")
                 add_event_receiver(window, self)
-                gtk.main()
+                gtk_main()
                 log("...they did.")
         window = get_pywindow(self.clipboard, self._xwindow)
         window.set_title("Xpra-ManagerSelection")
 
     def do_xpra_destroy_event(self, event):
         remove_event_receiver(event.window, self)
-        gtk.main_quit()
+        gtk_main_quit()
 
     def _get(self, _clipboard, outdata, _which, _userdata):
         # We are compliant with ICCCM version 2.0 (see section 4.3)

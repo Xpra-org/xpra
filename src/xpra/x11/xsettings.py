@@ -1,23 +1,25 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gobject
-import gtk
+from xpra.gtk_common.gtk_util import display_get_default, GetClipboard
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.x11.gtk2.selection import ManagerSelection
-from xpra.x11.gtk2.gdk_bindings import (
+from xpra.x11.gtk_x11.selection import ManagerSelection
+from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,          #@UnresolvedImport
                remove_event_receiver,       #@UnresolvedImport
                get_pywindow,                #@UnresolvedImport
                get_xatom)                   #@UnresolvedImport
-
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
+from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+gtk = import_gtk()
+gobject = import_gobject()
+
 from xpra.log import Logger
 log = Logger("x11", "xsettings")
 
@@ -31,8 +33,8 @@ XNone = constants["XNone"]
 
 class XSettingsManager(object):
     def __init__(self, screen_number=0):
-        selection = "_XSETTINGS_S%s" % screen_number
-        self._manager = ManagerSelection(gtk.gdk.display_get_default(), selection)
+        selection = "_XSETTINGS_S%i" % screen_number
+        self._manager = ManagerSelection(display_get_default(), selection)
         # Technically I suppose ICCCM says we should use FORCE, but it's not
         # like a window manager where you have to wait for the old wm to clean
         # things up before you can do anything... as soon as the selection is
@@ -61,7 +63,7 @@ class XSettingsHelper(object):
     """
     def __init__(self, screen_number=0):
         self._selection = "_XSETTINGS_S%s" % screen_number
-        self._clipboard = gtk.Clipboard(gtk.gdk.display_get_default(), self._selection)
+        self._clipboard = GetClipboard(self._selection)
 
     def xsettings_owner(self):
         try:

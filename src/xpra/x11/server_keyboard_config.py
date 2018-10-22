@@ -187,7 +187,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 for keyname in keynames:
                     if keyname in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
                         self.xkbmap_mod_nuisance.add(modifier)
-                    keyval = gdk.keyval_from_name(keyname)
+                    keyval = gdk.keyval_from_name(bytestostr(keyname))
                     if keyval==0:
                         log.error("Error: no keyval found for keyname '%s' (modifier '%s')", keyname, modifier)
                         return  []

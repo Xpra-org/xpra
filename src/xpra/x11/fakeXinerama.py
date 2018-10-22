@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("x11", "server", "util")
 
 from xpra.util import prettify_plug_name
-from xpra.os_util import find_lib, find_lib_ldconfig, LINUX
+from xpra.os_util import find_lib, find_lib_ldconfig, strtobytes, LINUX
 from xpra.version_util import XPRA_VERSION
 
 
@@ -90,8 +90,9 @@ def save_fakeXinerama_config(supported=True, source="", ss=[]):
     for filename in fakeXinerama_config_files:
         try:
             with open(filename, 'wb') as f:
-                f.write(contents)
+                f.write(strtobytes(contents))
         except Exception as e:
+            log("writing to '%s'", filename, exc_info=True)
             log.warn("Error writing fake xinerama file '%s':", filename)
             log.warn(" %s", e)
     log("saved %s monitors to fake xinerama files: %s", len(monitors), fakeXinerama_config_files)

@@ -110,33 +110,33 @@ def get_settings(disp, d):
         XSETTINGS_CACHE[disp] = (serial, settings)
     return  serial, settings
 
-def set_settings(_disp, d):
+def set_settings(disp, d):
     assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
     serial, settings = d
     log("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))
     all_bin_settings = []
     for setting in settings:
         setting_type, prop_name, value, last_change_serial = setting
-        prop_name = str(prop_name)
+        prop_name = str(prop_name).encode()
         try:
             log("set_settings(..) processing property %s of type %s", prop_name, XSettingsNames.get(setting_type, "INVALID!"))
             x = struct.pack(b"=BBH", setting_type, 0, len(prop_name))
-            x += struct.pack(b"="+"s"*len(prop_name), *tuple(prop_name))
+            x += prop_name
             pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
-            x += '\0'*pad_len
+            x += b'\0'*pad_len
             x += struct.pack(b"=I", last_change_serial)
             if setting_type==XSettingsTypeInteger:
                 assert type(value) in (int, long), "invalid value type (int or long wanted): %s" % type(value)
                 x += struct.pack(b"=I", int(value))
             elif setting_type==XSettingsTypeString:
-                if type(value)==unicode:
-                    value = str(value)
+                if type(value) in (str, unicode):
+                    value = str(value).encode()
                 else:
-                    assert type(value)==str, "invalid value type (str wanted): %s" % type(value)
+                    assert type(value)==bytes, "invalid value type, wanted byte string, not %s" % type(value)
                 x += struct.pack(b"=I", len(value))
-                x += struct.pack(b"="+"s"*len(value), *tuple(value))
+                x += value
                 pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
-                x += '\0'*pad_len
+                x += b'\0'*pad_len
             elif setting_type==XSettingsTypeColor:
                 red, blue, green, alpha = value
                 x = struct.pack(b"=HHHH", red, blue, green, alpha)
@@ -146,13 +146,14 @@ def set_settings(_disp, d):
             log("set_settings(..) %s -> %s", setting, tuple(x))
             all_bin_settings.append(x)
         except Exception as e:
+            log("set_settings(%s, %s)", disp, d, exc_info=True)
             log.error("Error processing XSettings property %s:", prop_name)
             log.error(" type=%s, value=%s", XSettingsNames.get(setting_type, "INVALID!"), value)
             log.error(" %s", e)
     #header
     v = struct.pack(b"=BBBBII", get_local_byteorder(), 0, 0, 0, serial, len(all_bin_settings))
-    v += "".join(all_bin_settings)  #values
-    v += '\0'                       #null terminated
+    v += b"".join(all_bin_settings)  #values
+    v += b'\0'                       #null terminated
     log("set_settings(%s)=%s", d, tuple(v))
     return  v
 

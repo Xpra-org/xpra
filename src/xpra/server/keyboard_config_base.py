@@ -30,7 +30,7 @@ class KeyboardConfigBase(object):
         pass
 
     def get_hash(self):
-        return ""
+        return b""
 
     def set_layout(self, layout, variant, options):
         pass

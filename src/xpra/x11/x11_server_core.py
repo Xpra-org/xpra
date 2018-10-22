@@ -515,7 +515,7 @@ class X11ServerCore(GTKServerBase):
     def configure_best_screen_size(self):
         #return ServerBase.set_best_screen_size(self)
         """ sets the screen size to use the largest width and height used by any of the clients """
-        root_w, root_h = self.root_window.get_size()
+        root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
             return root_w, root_h
         max_w, max_h = 0, 0
@@ -590,7 +590,7 @@ class X11ServerCore(GTKServerBase):
 
     def set_screen_size(self, desired_w, desired_h, bigger=True):
         screenlog("set_screen_size%s", (desired_w, desired_h, bigger))
-        root_w, root_h = self.root_window.get_size()
+        root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
             return root_w,root_h
         if desired_w==root_w and desired_h==root_h and not self.fake_xinerama:

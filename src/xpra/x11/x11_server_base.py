@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 
+from xpra.os_util import bytestostr
 from xpra.util import nonl, typedict, envbool, iround
 
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -349,7 +350,7 @@ class X11ServerBase(X11ServerCore):
         for k, v in settings.items():
             #cook the "resource-manager" value to add the DPI and/or antialias values:
             if k=="resource-manager" and (dpi>0 or antialias or cursor_size>0):
-                value = v.decode("utf-8")
+                value = bytestostr(v)
                 #parse the resources into a dict:
                 values={}
                 options = value.split("\n")
@@ -370,7 +371,7 @@ class X11ServerBase(X11ServerCore):
                 if antialias:
                     ad = typedict(antialias)
                     subpixel_order = "none"
-                    sss = self._server_sources.values()
+                    sss = tuple(self._server_sources.values())
                     if len(sss)==1:
                         #only honour sub-pixel hinting if a single client is connected
                         #and only when it is not using any scaling (or overriden with SCALED_FONT_ANTIALIAS):

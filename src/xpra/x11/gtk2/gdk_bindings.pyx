@@ -390,7 +390,7 @@ cdef object _get_pywindow(object display_source, Window xwindow):
         raise XError(BadWindow)
     return win
 
-def get_xvisual(pyvisual):
+def get_xvisual(disp_source, pyvisual):
     cdef Visual * xvisual
     xvisual = _get_xvisual(pyvisual)
     if xvisual==NULL:
@@ -912,16 +912,16 @@ cdef object _gw(display, Window xwin):
         gdk.flush()
         error = gdk.error_trap_pop()
     except Exception as e:
-        verbose("cannot get gdk window for %s, %s: %s", display, xwin, e)
+        verbose("cannot get gdk window for %s, %#x: %s", display, xwin, e)
         error = gdk.error_trap_pop()
         if error:
             verbose("ignoring XError %s in unwind", get_error_text(error))
         raise XError(e)
     if error:
-        verbose("cannot get gdk window for %s, %s: %s", display, xwin, get_error_text(error))
+        verbose("cannot get gdk window for %s, %#x: %s", display, xwin, get_error_text(error))
         raise XError(error)
     if win is None:
-        verbose("cannot get gdk window for %s, %s", display, xwin)
+        verbose("cannot get gdk window for %s, %#x", display, xwin)
         raise XError(BadWindow)
     return win
 

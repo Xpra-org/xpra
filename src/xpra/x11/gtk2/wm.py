@@ -17,7 +17,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, display_get_default
 
 from xpra.x11.common import Unmanageable
-from xpra.x11.gtk2.selection import ManagerSelection
+from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk2.world_window import WorldWindow
 from xpra.x11.gtk2.window import WindowModel, configure_bits
 from xpra.x11.gtk2.gdk_bindings import (

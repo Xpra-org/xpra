@@ -37,6 +37,8 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, get_root_size, get_xwindow, image_new_from_stock, \
+            get_screen_sizes, Window, \
+            CLASS_INPUT_ONLY, \
             INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING, \
             BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -739,7 +741,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):
-        from xpra.gtk_common.gtk_util import get_screen_sizes
         return get_screen_sizes(xscale, yscale)
 
 
@@ -1153,20 +1154,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         title = u"%s group leader for %s" % (self.session_name or u"Xpra", pid)
         #group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
         #static new(parent, attributes, attributes_mask)
-        if is_gtk3():
-            #long winded and annoying
-            attributes = gdk.WindowAttr()
-            attributes.width = 1
-            attributes.height = 1
-            attributes.title = title
-            attributes.wclass = gdk.WindowWindowClass.INPUT_ONLY
-            attributes.event_mask = 0
-            attributes_mask = gdk.WindowAttributesType.TITLE | gdk.WindowAttributesType.WMCLASS
-            group_leader_window = gdk.Window(None, attributes, attributes_mask)
-            group_leader_window.resize(1, 1)
-        else:
-            #gtk2:
-            group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
+        group_leader_window = Window(wclass=CLASS_INPUT_ONLY, title=title)
         self._ref_to_group_leader[refkey] = group_leader_window
         #avoid warning on win32...
         if not WIN32:

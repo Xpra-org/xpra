@@ -11,6 +11,7 @@ from xpra.x11.gtk_x11.gdk_display_source import init_display_source
 init_display_source()
 
 from xpra.util import std, csv
+from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
@@ -650,11 +651,11 @@ def set_modifiers(modifiers):
     """
     instructions = []
     for modifier, keynames in modifiers.items():
-        mod = X11Keyboard.parse_modifier(modifier)
+        mod = X11Keyboard.parse_modifier(bytestostr(modifier))
         if mod>=0:
             instructions.append(("add", mod, keynames))
         else:
-            log.error("set_modifiers_from_dict: unknown modifier %s", modifier)
+            log.error("Error: unknown modifier %s", modifier)
     log("set_modifiers: %s", instructions)
     def apply_or_trim(instructions):
         err = apply_xmodmap(instructions)

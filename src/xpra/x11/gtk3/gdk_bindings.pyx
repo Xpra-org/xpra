@@ -19,6 +19,7 @@ from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
 from gi.repository import Gdk               #@UnresolvedImport
 
 
+from xpra.os_util import strtobytes
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.error import trap, XError
 from xpra.x11.common import X11Event
@@ -414,7 +415,7 @@ cdef object _get_pywindow(object display_source, Window xwindow):
         raise XError(BadWindow)
     return win
 
-def get_xvisual(pyvisual):
+def get_xvisual(disp_source, pyvisual):
     cdef Visual * xvisual
     xvisual = _get_xvisual(pyvisual)
     if xvisual==NULL:
@@ -436,15 +437,13 @@ def get_xatom(str_or_xatom):
         i = int(str_or_xatom)
         assert i>=0, "invalid int atom value %s" % str_or_xatom
         return i
-    if isinstance(str_or_xatom, long):
-        l = long(str_or_xatom)
-        assert l>=0, "invalid long atom value %s" % str_or_xatom
-        return l
     assert isinstance(str_or_xatom, str), "argument is not a string or number: %s" % type(str_or_xatom)
-    gdkatom = Gdk.atom_intern(str_or_xatom)
+    gdkatom = Gdk.atom_intern(str_or_xatom, False)
     if not gdkatom:
         return  0
-    return gdk_x11_get_xatom_by_name(str_or_xatom)
+    #atom_intern takes str, but gdk_x11_get_xatom_by_name wants bytes!
+    b = strtobytes(str_or_xatom)
+    return gdk_x11_get_xatom_by_name(b)
 
 cdef GdkAtom get_gdkatom(display_source, xatom):
     if long(xatom) > long(2) ** 32:
@@ -942,7 +941,7 @@ cdef object _gw(display, Window xwin):
         gdk_display_flush(disp)
         error = gdk_x11_display_error_trap_pop(disp)
     except Exception as e:
-        verbose("cannot get gdk window for %s, %s: %s", display, xwin, e)
+        verbose("cannot get gdk window for %s, %#x: %s", display, xwin, e)
         if disp:
             error = gdk_x11_display_error_trap_pop(disp)
             if error:
@@ -951,10 +950,10 @@ cdef object _gw(display, Window xwin):
         else:
             raise
     if error:
-        verbose("cannot get gdk window for %s, %s: %s", display, xwin, get_error_text(error))
+        verbose("cannot get gdk window for %s, %#x: %s", display, xwin, get_error_text(error))
         raise XError(error)
     if win is None:
-        verbose("cannot get gdk window for %s, %s", display, xwin)
+        verbose("cannot get gdk window for %s, %#x", display, xwin)
         raise XError(BadWindow)
     return win
 

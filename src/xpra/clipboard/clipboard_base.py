@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("clipboard")
 
 from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
-from xpra.gtk_common.gtk_util import GetClipboard, selection_owner_set, selection_add_target, selectiondata_get_selection, selectiondata_get_target, selectiondata_get_data, selectiondata_get_data_type, selectiondata_get_format, selectiondata_set, clipboard_request_contents, PROPERTY_CHANGE_MASK
+from xpra.gtk_common.gtk_util import GetClipboard, selection_owner_set, selection_add_target, selectiondata_get_selection, selectiondata_get_target, selectiondata_get_data, selectiondata_get_data_type, selectiondata_get_format, selectiondata_set, clipboard_request_contents, set_clipboard_data, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
 from xpra.os_util import WIN32, POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid, is_X11, is_Wayland
@@ -97,25 +97,6 @@ def _filter_targets(targets):
     f = [target for target in targets if not must_discard(target)]
     log("_filter_targets(%s)=%s", targets, f)
     return f
-
-
-def set_string(clipboard, thestring):
-    if is_gtk3():
-        #no other way?
-        clipboard.set_text(thestring, len(thestring))
-        return
-    value = [thestring]
-    def get_func(clipboard, selection, info, targets):
-        log("get_func%s value=%s", (clipboard, selection, info, targets), value[0])
-        s = value[0]
-        if s:
-            selection.set("STRING", 8, s)
-        else:
-            clipboard.clear()
-    def clear_func(*args):
-        log("clear_func%s value=%s", args, value[0])
-        value[0] = ""
-    clipboard.set_with_data([("STRING", 0, 0)], get_func, clear_func)
 
 
 class ClipboardProtocolHelperBase(object):
@@ -204,9 +185,9 @@ class ClipboardProtocolHelperBase(object):
             for selection, rvalue in uuids.items():
                 log("%s=%s", proxy._selection, value)
                 if rvalue==proxy._loop_uuid:
-                    set_string(clipboard, "")
+                    set_clipboard_data(clipboard, "")
                 if rvalue and value==rvalue:
-                    set_string(clipboard, "")
+                    set_clipboard_data(clipboard, "")
                     if selection==proxy._selection:
                         log.warn("Warning: loop detected for %s clipboard", selection)
                     else:
@@ -627,7 +608,7 @@ class ClipboardProxy(gtk.Invisible):
     def init_uuid(self):
         self._loop_uuid = LOOP_PREFIX+get_hex_uuid()
         log("init_uuid() %s uuid=%s", self._selection, self._loop_uuid)
-        set_string(self._clipboard, self._loop_uuid)
+        set_clipboard_data(self._clipboard, "")
 
     def set_direction(self, can_send, can_receive):
         self._can_send = can_send
@@ -863,7 +844,7 @@ class ClipboardProxy(gtk.Invisible):
                     if text_target in target_data:
                         text_data = target_data.get(text_target)
                         log("clipboard %s set to '%s'", self._selection, repr_ellipsized(text_data))
-                        set_string(self._clipboard, text_data)
+                        set_clipboard_data(self._clipboard, text_data)
         if not claim:
             log("token packet without claim, not setting the token flag")
             #the other end is just telling us to send the token again next time something changes,

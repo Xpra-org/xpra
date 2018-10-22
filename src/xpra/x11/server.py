@@ -16,7 +16,10 @@ from xpra.util import updict, rindex, envbool, envint
 from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow, pixbuf_new_from_data, SUBSTRUCTURE_MASK
+from xpra.gtk_common.gtk_util import (
+    get_default_root_window, get_xwindow, pixbuf_new_from_data,
+    SUBSTRUCTURE_MASK, GDKWINDOW_TEMP,
+    )
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
@@ -32,7 +35,7 @@ X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
 from xpra.gtk_common.error import xsync, xswallow
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_gobject, is_gtk3
 
 gtk = import_gtk()
 gdk = import_gdk()
@@ -77,7 +80,8 @@ class DesktopManager(gtk.Widget):
         self._models = {}
         gtk.Widget.__init__(self)
         self.set_property("can-focus", True)
-        self.set_flags(gtk.NO_WINDOW)
+        if not is_gtk3():
+            self.set_flags(gtk.NO_WINDOW)
 
     def __repr__(self):
         return "DesktopManager(%s)" % len(self._models)
@@ -251,6 +255,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     self.root_overlay = None
 
         ### Create the WM object
+        if is_gtk3():
+            #FIXME: do this for GTK3
+            self._wm = None
+            return
         from xpra.x11.gtk2.wm import Wm
         self._wm = Wm(self.clobber, self.wm_name)
         if server_features.windows:
@@ -410,6 +418,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         return self._desktop_manager.is_shown(window)
 
     def load_existing_windows(self):
+        if not self._wm:
+            return
 
         ### Create our window managing data structures:
         self._desktop_manager = DesktopManager()
@@ -455,7 +465,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         frame = None
         if ss.window_frame_sizes:
             frame = ss.window_frame_sizes.intlistget("frame", (0, 0, 0, 0), 4, 4)
-        self._wm.set_default_frame_extents(frame)
+        if self._wm:
+            self._wm.set_default_frame_extents(frame)
 
 
     def send_initial_windows(self, ss, sharing=False):
@@ -580,7 +591,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self.root_overlay and self.root_overlay==xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
-        if raw_window.get_window_type()==gdk.WINDOW_TEMP:
+        if raw_window.get_window_type()==GDKWINDOW_TEMP:
             #ignoring one of gtk's temporary windows
             #all the windows we manage should be gdk.WINDOW_FOREIGN
             windowlog("ignoring TEMP window %#x", xid)

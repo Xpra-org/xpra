@@ -93,16 +93,39 @@ if is_gtk3():
     def is_realized(widget):
         return widget.get_realized()
 
-    def make_temp_window(title):
+    def Window(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL, event_mask=0, wclass=gdk.WindowWindowClass.INPUT_OUTPUT, title=None, x=None, y=None, visual=None, **kwargs):
+        attributes_mask = 0
         attributes = gdk.WindowAttr()
-        attributes.width = 1
-        attributes.height = 1
-        attributes.title = title
+        if x is not None:
+            attributes.x = x
+            attributes_mask |= gdk.WindowAttributesType.X
+        if y is not None:
+            attributes.y = y
+            attributes_mask |= gdk.WindowAttributesType.Y
+        #attributes.type_hint = gdk.WindowTypeHint.NORMAL
+        #attributes_mask |= gdk.WindowAttributesType.TYPE_HINT
+        attributes.width = width
+        attributes.height = height
         attributes.window_type = gdk.WindowType.TOPLEVEL
+        if title:
+            attributes.title = title
+            attributes_mask |= gdk.WindowAttributesType.TITLE
+        if visual:
+            attributes.visual = visual
+            attributes_mask |= gdk.WindowAttributesType.VISUAL
+        #OR:
+        attributes.override_redirect = False
+        attributes_mask |= gdk.WindowAttributesType.NOREDIR
+        #events:
+        attributes.event_mask = event_mask
+        #wclass:
         attributes.wclass = gdk.WindowWindowClass.INPUT_OUTPUT
-        attributes.event_mask = 0
-        attributes_mask = gdk.WindowAttributesType.TITLE | gdk.WindowAttributesType.WMCLASS
-        return gdk.Window(None, attributes, attributes_mask)
+        mask = gdk.WindowAttributesType(attributes_mask)
+        return gdk.Window(parent, attributes, mask)
+
+    def make_temp_window(title):
+        return Window(title=title)
+
 
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         data = array.array('B', strtobytes(rgb_data))
@@ -207,6 +230,8 @@ if is_gtk3():
     ENTER_NOTIFY_MASK    = gdk.EventMask.ENTER_NOTIFY_MASK
     LEAVE_NOTIFY_MASK    = gdk.EventMask.LEAVE_NOTIFY_MASK
     SUBSTRUCTURE_MASK    = gdk.EventMask.SUBSTRUCTURE_MASK
+    STRUCTURE_MASK       = gdk.EventMask.STRUCTURE_MASK
+    EXPOSURE_MASK        = gdk.EventMask.EXPOSURE_MASK
     ACCEL_LOCKED = gtk.AccelFlags.LOCKED
     ACCEL_VISIBLE = gtk.AccelFlags.VISIBLE
     JUSTIFY_LEFT    = gtk.Justification.LEFT
@@ -223,6 +248,12 @@ if is_gtk3():
 
     WINDOW_POPUP    = gtk.WindowType.POPUP
     WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
+
+    GDKWINDOW_TEMP     = gdk.WindowType.TEMP
+    GDKWINDOW_TOPLEVEL = gdk.WindowType.TOPLEVEL
+
+    CLASS_INPUT_OUTPUT = gdk.WindowWindowClass.INPUT_OUTPUT
+    CLASS_INPUT_ONLY = gdk.WindowWindowClass.INPUT_ONLY
 
     LSB_FIRST       = gdk.ByteOrder.LSB_FIRST
     MSB_FIRST       = gdk.ByteOrder.MSB_FIRST
@@ -318,7 +349,8 @@ if is_gtk3():
     for x in ("PRIMARY", "SECONDARY", "CLIPBOARD"):
         CLIPBOARD_SELECTION[x] = getattr(gdk, "SELECTION_%s" % bytestostr(x))
     def GetClipboard(selection):
-        return Clipboard.get(CLIPBOARD_SELECTION[selection])
+        atom = CLIPBOARD_SELECTION.get(selection) or gdk.Atom.intern(bytestostr(selection), False)
+        return Clipboard.get(atom)
     def clipboard_request_contents(clipboard, target, unpack):
         target_atom = gdk.Atom.intern(bytestostr(target), False)
         clipboard.request_contents(target_atom, unpack)
@@ -383,12 +415,25 @@ if is_gtk3():
         _, data, etag = gfile.load_contents_finish(res)
         return data, len(data), etag
 
+    def set_clipboard_data(clipboard, thevalue, vtype="STRING"):
+        #only strings with GTK3?
+        thestring = str(thevalue)
+        clipboard.set_text(thestring, len(thestring))
+        return
+
+    def wait_for_contents(clipboard, target):
+        atom = gdk.Atom.intern(target, False)
+        return clipboard.wait_for_contents(atom)
+
 else:
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
 
+    def Window(parent=None, width=1, height=1, window_type=gdk.WINDOW_TOPLEVEL, event_mask=0, wclass=gdk.INPUT_OUTPUT, title=None, x=-1, y=-1, **kwargs):
+        return gdk.Window(parent, width, height, window_type, event_mask, wclass, title, x, y, **kwargs)
+
     def make_temp_window(title):
-        return gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_OUTPUT, title)
+        return Window(title=title)
 
     def get_pixbuf_from_window(window, x, y, w, h):
         pixbuf = gdk.Pixbuf(gdk.COLORSPACE_RGB, False, 8, w, h)
@@ -463,6 +508,8 @@ else:
     ENTER_NOTIFY_MASK    = gdk.ENTER_NOTIFY_MASK
     LEAVE_NOTIFY_MASK    = gdk.LEAVE_NOTIFY_MASK
     SUBSTRUCTURE_MASK    = gdk.SUBSTRUCTURE_MASK
+    STRUCTURE_MASK       = gdk.STRUCTURE_MASK
+    EXPOSURE_MASK        = gdk.EXPOSURE_MASK
     ACCEL_LOCKED = gtk.ACCEL_LOCKED
     ACCEL_VISIBLE = gtk.ACCEL_VISIBLE
     JUSTIFY_LEFT    = gtk.JUSTIFY_LEFT
@@ -479,6 +526,12 @@ else:
 
     WINDOW_POPUP    = gtk.WINDOW_POPUP
     WINDOW_TOPLEVEL = gtk.WINDOW_TOPLEVEL
+
+    GDKWINDOW_TEMP     = gdk.WINDOW_TEMP
+    GDKWINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
+
+    CLASS_INPUT_OUTPUT = gdk.INPUT_OUTPUT
+    CLASS_INPUT_ONLY = gdk.INPUT_ONLY
 
     LSB_FIRST       = gdk.LSB_FIRST
     MSB_FIRST       = gdk.MSB_FIRST
@@ -647,12 +700,29 @@ else:
     def load_contents_finish(gfile, res):
         return gfile.load_contents_finish(res)
 
+    def set_clipboard_data(clipboard, thevalue, vtype="STRING"):
+        value = [thevalue]
+        def get_func(clipboard, selection, info, targets):
+            log("get_func%s value=%s", (clipboard, selection, info, targets), value[0])
+            s = value[0]
+            if s:
+                selection.set(vtype, 8, s)
+            else:
+                clipboard.clear()
+        def clear_func(*args):
+            log("clear_func%s value=%s", args, value[0])
+            value[0] = ""
+        clipboard.set_with_data([(vtype, 0, 0)], get_func, clear_func)
+
+    def wait_for_contents(clipboard, target):
+        return clipboard.wait_for_contents(target)
+
 #no idea why, but trying to use the threads_init / threads_enter
 #causes deadlocks on win32:
 if WIN32:
     def gtk_main():
         gtk.main()
-
+gtk_main_quit = gtk.main_quit
 
 GRAB_STATUS_STRING = {
                       GRAB_SUCCESS          : "SUCCESS",

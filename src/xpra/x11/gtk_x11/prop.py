@@ -18,40 +18,21 @@ import struct
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, try_import_GdkX11
+from xpra.x11.gtk_x11.gdk_bindings import (
+    get_pywindow,               #@UnresolvedImport
+    get_xvisual,                #@UnresolvedImport
+    )
 gtk = import_gtk()
 gdk = import_gdk()
 from xpra.gtk_common.gtk_util import get_xwindow
-
-from xpra.log import Logger
-log = Logger("x11", "window")
-
-
-if is_gtk3():
-    gdkx11 = try_import_GdkX11()
-    def get_pywindow(disp_source, xid):
-        try:
-            disp = disp_source.get_display()
-        except:
-            disp = gdk.Display.get_default()
-        return gdkx11.foreign_new_for_display(disp, xid)
-    def get_xvisual(disp_source, xid):
-        try:
-            disp = disp_source.get_display()
-        except:
-            disp = gdk.Display.get_default()
-        return disp.get_default_screen().lookup_visual(xid)
-else:
-    from xpra.x11.gtk2.gdk_bindings import (
-                    get_pywindow,               #@UnresolvedImport
-                    get_xvisual,                #@UnresolvedImport
-                   )
-
 from xpra.x11.bindings.window_bindings import (
                 X11WindowBindings,          #@UnresolvedImport
                 PropertyError)              #@UnresolvedImport
 X11Window = X11WindowBindings()
-
 from xpra.gtk_common.error import xsync, XError
+
+from xpra.log import Logger
+log = Logger("x11", "window")
 
 
 def _get_atom(_disp, d):
@@ -110,8 +91,8 @@ def get_python_type(scalar_type):
 def _to_atom(_disp, a):
     return struct.pack(b"@I", _get_xatom(a))
 
-def _to_visual(_disp, c):
-    return struct.pack(b"=I", get_xvisual(c))
+def _to_visual(disp, c):
+    return struct.pack(b"=I", get_xvisual(disp, c))
 
 def _to_window(_disp, w):
     return struct.pack(b"=I", get_xwindow(w))
