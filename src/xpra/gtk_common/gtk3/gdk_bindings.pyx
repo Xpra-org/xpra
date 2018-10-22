@@ -85,4 +85,4 @@ cdef GdkWindow *get_gdkwindow(pywindow):
 
 def calc_constrained_size(int width, int height, object hints):
     log.warn("Warning: calc_constrained_size not implemented yet for GTK3")
-    return None
+    return width, height
