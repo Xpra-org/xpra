@@ -8,10 +8,9 @@
 import os
 import sys
 from xpra.util import envbool
-from xpra.os_util import PYTHON2
 
 #defaults which may be overriden by platform_import:
-LOCAL_SERVERS_SUPPORTED = PYTHON2
+LOCAL_SERVERS_SUPPORTED = False
 SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
 MMAP_SUPPORTED = True
