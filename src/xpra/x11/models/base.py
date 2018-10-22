@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import gobject
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.models.core import CoreX11WindowModel, xswallow
@@ -13,6 +12,8 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      
 from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gtk_util import atom_intern
+from xpra.gtk_common.gobject_compat import import_gobject
+gobject = import_gobject()
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -535,7 +536,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "focused"               : ("_NET_WM_STATE_FOCUSED", ),
         }
     _state_properties_reversed = {}
-    for k, states in _state_properties.iteritems():
+    for k, states in tuple(_state_properties.items()):
         for x in states:
             _state_properties_reversed[x] = k
 

@@ -367,7 +367,7 @@ class X11ServerCore(GTKServerBase):
                                                         })
         sinfo = info.setdefault("server", {})
         try:
-            from xpra.x11.gtk2.composite import CompositeHelper
+            from xpra.x11.gtk_x11.composite import CompositeHelper
             sinfo["XShm"] = CompositeHelper.XShmEnabled
         except:
             pass

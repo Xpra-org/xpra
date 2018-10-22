@@ -10,7 +10,6 @@ from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, is_gtk3
 from xpra.gtk_common.gtk_util import (
     display_get_default, get_default_root_window, get_xwindow, GDKWindow,
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
-    WINDOW_TOPLEVEL, CLASS_INPUT_OUTPUT
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
@@ -241,15 +240,16 @@ class SystemTray(gobject.GObject):
             title = ""
         xid = get_xwindow(root)
         log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s, visual.depth=%s", xid, xid, window.get_geometry(), title, window.get_visual().depth)
-        tray_window = gdk.Window(root, width=w, height=h,
-                                           window_type=gdk.WINDOW_TOPLEVEL,
+        kwargs = {}
+        if not is_gtk3():
+            kwargs["colormap"] = window.get_colormap()
+        tray_window = GDKWindow(root, width=w, height=h,
                                            event_mask = event_mask,
-                                           wclass=gdk.INPUT_OUTPUT,
                                            title=title,
                                            x=-200, y=-200,
                                            override_redirect=True,
                                            visual=window.get_visual(),
-                                           colormap=window.get_colormap())
+                                           **kwargs)
         log("dock_tray(%#x) setting tray properties", xid)
         set_tray_window(tray_window, window)
         tray_window.show()

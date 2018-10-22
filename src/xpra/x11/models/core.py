@@ -5,25 +5,25 @@
 # later version. See the file COPYING for details.
 
 import os
-import glib
-import gobject
-from gtk import gdk
 import signal
 
 from xpra.util import envbool
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.gtk_util import get_xwindow
+from xpra.gtk_common.gtk_util import (
+    get_xwindow,
+    STRUCTURE_MASK, PROPERTY_CHANGE_MASK, FOCUS_CHANGE_MASK, POINTER_MOTION_MASK,
+    )
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
-from xpra.x11.gtk2.composite import CompositeHelper
 from xpra.x11.models.model_stub import WindowModelStub
+from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
-from xpra.x11.gtk_x11.gdk_bindings import (
-                add_event_receiver,                         #@UnresolvedImport
-                remove_event_receiver,                      #@UnresolvedImport
-               )
+from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
+from xpra.gtk_common.gobject_compat import import_gobject, import_glib
+glib = import_glib()
+gobject = import_gobject()
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -35,7 +35,7 @@ geomlog = Logger("x11", "window", "geometry")
 
 
 X11Window = X11WindowBindings()
-ADDMASK = gdk.STRUCTURE_MASK | gdk.PROPERTY_CHANGE_MASK | gdk.FOCUS_CHANGE_MASK | gdk.POINTER_MOTION_MASK
+ADDMASK = STRUCTURE_MASK | PROPERTY_CHANGE_MASK | FOCUS_CHANGE_MASK | POINTER_MOTION_MASK
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)

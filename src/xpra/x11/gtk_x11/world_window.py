@@ -157,7 +157,7 @@ class WorldWindow(gtk.Window):
             # (ICCCM violating) to use CurrentTime in a WM_TAKE_FOCUS message,
             # but GTK doesn't happen to care, and this guarantees that we
             # *will* get the focus, and thus a real FocusIn event.
-            send_wm_take_focus(self.window, CurrentTime)
+            send_wm_take_focus(self.get_window(), CurrentTime)
 
     def do_focus_in_event(self, event):
         htf = self.get_property("has-toplevel-focus")

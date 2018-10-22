@@ -255,11 +255,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     self.root_overlay = None
 
         ### Create the WM object
-        if is_gtk3():
-            #FIXME: do this for GTK3
-            self._wm = None
-            return
-        from xpra.x11.gtk2.wm import Wm
+        from xpra.x11.gtk_x11.wm import Wm
         self._wm = Wm(self.clobber, self.wm_name)
         if server_features.windows:
             self._wm.connect("new-window", self._new_window_signaled)

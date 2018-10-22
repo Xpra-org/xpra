@@ -4,25 +4,26 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gobject
 
-from xpra.log import Logger
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
-log = Logger("x11", "window")
-
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
-from xpra.x11.gtk2.gdk_bindings import (
-            add_event_receiver,             #@UnresolvedImport
-            remove_event_receiver,          #@UnresolvedImport
-            get_parent)                     #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import (
+    add_event_receiver,             #@UnresolvedImport
+    remove_event_receiver,          #@UnresolvedImport
+    get_parent,                     #@UnresolvedImport
+    )
 from xpra.gtk_common.error import trap
-
 from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 XImage = XImageBindings()
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 X11Window.ensure_XComposite_support()
+from xpra.gtk_common.gobject_compat import import_gobject
+gobject = import_gobject()
+
+from xpra.log import Logger
+log = Logger("x11", "window")
 
 
 StructureNotifyMask = constants["StructureNotifyMask"]

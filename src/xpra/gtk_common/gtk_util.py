@@ -93,7 +93,7 @@ if is_gtk3():
     def is_realized(widget):
         return widget.get_realized()
 
-    def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL, event_mask=0, wclass=gdk.WindowWindowClass.INPUT_OUTPUT, title=None, x=None, y=None, visual=None, **kwargs):
+    def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL, event_mask=0, wclass=gdk.WindowWindowClass.INPUT_OUTPUT, title=None, x=None, y=None, override_redirect=False, visual=None, **kwargs):
         attributes_mask = 0
         attributes = gdk.WindowAttr()
         if x is not None:
@@ -106,7 +106,7 @@ if is_gtk3():
         #attributes_mask |= gdk.WindowAttributesType.TYPE_HINT
         attributes.width = width
         attributes.height = height
-        attributes.window_type = gdk.WindowType.TOPLEVEL
+        attributes.window_type = window_type
         if title:
             attributes.title = title
             attributes_mask |= gdk.WindowAttributesType.TITLE
@@ -114,12 +114,12 @@ if is_gtk3():
             attributes.visual = visual
             attributes_mask |= gdk.WindowAttributesType.VISUAL
         #OR:
-        attributes.override_redirect = False
+        attributes.override_redirect = override_redirect
         attributes_mask |= gdk.WindowAttributesType.NOREDIR
         #events:
         attributes.event_mask = event_mask
         #wclass:
-        attributes.wclass = gdk.WindowWindowClass.INPUT_OUTPUT
+        attributes.wclass = wclass
         mask = gdk.WindowAttributesType(attributes_mask)
         return gdk.Window(parent, attributes, mask)
 
@@ -225,6 +225,7 @@ if is_gtk3():
     FILE_CHOOSER_ACTION_SAVE    = gtk.FileChooserAction.SAVE
     FILE_CHOOSER_ACTION_OPEN    = gtk.FileChooserAction.OPEN
     PROPERTY_CHANGE_MASK = gdk.EventMask.PROPERTY_CHANGE_MASK
+    FOCUS_CHANGE_MASK    = gdk.EventMask.FOCUS_CHANGE_MASK
     BUTTON_PRESS_MASK    = gdk.EventMask.BUTTON_PRESS_MASK
     BUTTON_RELEASE_MASK  = gdk.EventMask.BUTTON_RELEASE_MASK
     ENTER_NOTIFY_MASK    = gdk.EventMask.ENTER_NOTIFY_MASK
@@ -252,6 +253,7 @@ if is_gtk3():
     GDKWINDOW_TEMP     = gdk.WindowType.TEMP
     GDKWINDOW_TOPLEVEL = gdk.WindowType.TOPLEVEL
     GDKWINDOW_CHILD    = gdk.WindowType.CHILD
+    GDKWINDOW_FOREIGN  = gdk.WindowType.FOREIGN
 
     CLASS_INPUT_OUTPUT = gdk.WindowWindowClass.INPUT_OUTPUT
     CLASS_INPUT_ONLY = gdk.WindowWindowClass.INPUT_ONLY
@@ -504,6 +506,7 @@ else:
     FILE_CHOOSER_ACTION_SAVE    = gtk.FILE_CHOOSER_ACTION_SAVE
     FILE_CHOOSER_ACTION_OPEN    = gtk.FILE_CHOOSER_ACTION_OPEN
     PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
+    FOCUS_CHANGE_MASK    = gdk.FOCUS_CHANGE_MASK
     BUTTON_PRESS_MASK    = gdk.BUTTON_PRESS_MASK
     BUTTON_RELEASE_MASK  = gdk.BUTTON_RELEASE_MASK
     ENTER_NOTIFY_MASK    = gdk.ENTER_NOTIFY_MASK
@@ -531,6 +534,7 @@ else:
     GDKWINDOW_TEMP     = gdk.WINDOW_TEMP
     GDKWINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
     GDKWINDOW_CHILD    = gdk.WINDOW_CHILD
+    GDKWINDOW_FOREIGN  = gdk.WINDOW_FOREIGN
 
     CLASS_INPUT_OUTPUT = gdk.INPUT_OUTPUT
     CLASS_INPUT_ONLY = gdk.INPUT_ONLY
