@@ -44,6 +44,8 @@ def install_symlink(symlink_options, dst):
                 continue
         if os.path.exists(symlink_option):
             print("symlinked %s from %s" % (dst, symlink_option))
+            if os.path.exists(dst):
+                os.unlink(dst)
             os.symlink(symlink_option, dst)
             return True
     #print("no symlinks found for %s from %s" % (dst, symlink_options))
