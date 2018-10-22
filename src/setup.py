@@ -670,8 +670,6 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             valid_option = None
             if type(package_options)==str:
                 options = [package_options]     #got given just one string
-                if not package_options.startswith("lib"):
-                    options.append("lib%s" % package_options)
             else:
                 assert type(package_options)==list
                 options = package_options       #got given a list of options
@@ -2206,7 +2204,7 @@ if pillow_ENABLED:
 
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
-    webp_pkgconfig = pkgconfig("webp")
+    webp_pkgconfig = pkgconfig("libwebp")
     cython_add(Extension("xpra.codecs.webp.encode",
                     ["xpra/codecs/webp/encode.pyx"],
                     **webp_pkgconfig))
@@ -2228,7 +2226,7 @@ if jpeg_ENABLED:
 libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
 toggle_packages(libav_common, "xpra.codecs.libav_common")
 if libav_common:
-    avutil_pkgconfig = pkgconfig("avutil")
+    avutil_pkgconfig = pkgconfig("libavutil")
     cython_add(Extension("xpra.codecs.libav_common.av_log",
                 ["xpra/codecs/libav_common/av_log.pyx"],
                 **avutil_pkgconfig))
@@ -2236,7 +2234,7 @@ if libav_common:
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
-    avcodec2_pkgconfig = pkgconfig("avcodec", "avutil", "avformat")
+    avcodec2_pkgconfig = pkgconfig("libavcodec", "libavutil", "libavformat")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/dec_avcodec2/register_compat.c"],
                 **avcodec2_pkgconfig))
@@ -2252,7 +2250,7 @@ if csc_libyuv_ENABLED:
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
-    swscale_pkgconfig = pkgconfig("swscale", "avutil")
+    swscale_pkgconfig = pkgconfig("libswscale", "libavutil")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"],
                 **swscale_pkgconfig))
