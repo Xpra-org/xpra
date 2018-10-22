@@ -189,12 +189,6 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("dec_avcodec2", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
         add_codec_version("avcodec2", "xpra.codecs.dec_avcodec2.decoder")
 
-    try:
-        from xpra.codecs.argb.argb import buffer_api_version            #@UnresolvedImport
-        codec_versions["buffer_api"] = buffer_api_version()
-    except Exception as e:
-        log("unknown buffer api version: %s", e)
-
     log("done loading codecs")
     log("found:")
     #print("codec_status=%s" % codecs)
