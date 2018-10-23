@@ -498,9 +498,7 @@ def main():
                 sys.exit()
             signal.signal(signal.SIGINT, force_quit)
             signal.signal(signal.SIGTERM, force_quit)
-        from xpra.gtk_common.gobject_compat import is_gtk3
-        if not is_gtk3():
-            signal.signal(signal.SIGINT, deadly_signal)
+        signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
 
         def check_for_end(*_args):
