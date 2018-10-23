@@ -5,8 +5,12 @@
 
 from xpra.gtk_common.gobject_compat import is_gtk3, try_import_GdkX11
 if is_gtk3():
-    gdkx11 = try_import_GdkX11()
-    x11_get_server_time = gdkx11.x11_get_server_time
+    from xpra.os_util import POSIX, OSX, WIN32
+    if POSIX and (not OSX or WIN32):
+        gdkx11 = try_import_GdkX11()
+        x11_get_server_time = gdkx11.x11_get_server_time
+    else:
+        x11_get_server_time = None
     from xpra.x11.gtk3 import gdk_bindings  #@UnresolvedImport, @UnusedImport
 else:
     from gtk import gdk
