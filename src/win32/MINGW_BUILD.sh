@@ -272,12 +272,12 @@ pushd ${DIST}/lib > /dev/null
 #remove test bits we don't need:
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
 #trim tests from numpy
-pushd numpy
+pushd numpy > /dev/null
 rm -fr ./f2py/docs
 for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing; do
 	rm -fr ./$x/tests
 done
-popd
+popd > /dev/null
 #remove source:
 find xpra -name "*.pyx" -exec rm {} \;
 find xpra -name "*.c" -exec rm {} \;
