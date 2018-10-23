@@ -159,6 +159,9 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             if gui_client:
                 r = pollwait(gui_client, 20)
                 assert r is not None, "gui client should have been disconnected"
+        except Exception:
+            log.error("test error for '%s' subcommand with options=%s", subcommand, options)
+            raise
         finally:
             for x in (xvfb, rfb_client, gui_client, server, client):
                 try:
