@@ -21,7 +21,7 @@ def get_proc_cmdline(pid):
         #try to find the command via /proc:
         proc_cmd_line = os.path.join("/proc", "%s" % pid, "cmdline")
         if os.path.exists(proc_cmd_line):
-            return load_binary_file(proc_cmd_line).rstrip("\0")
+            return load_binary_file(proc_cmd_line).rstrip(b"\0")
     return None
 
 def getprop(window, prop):

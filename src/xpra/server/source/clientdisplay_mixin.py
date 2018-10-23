@@ -69,7 +69,17 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def set_desktops(self, desktops, desktop_names):
         self.desktops = desktops or 1
-        self.desktop_names = desktop_names or []
+        #older clients send strings,
+        #newer clients send bytes...
+        def b(v):
+            try :
+                return v.decode("utf8")
+            except:
+                return v
+        if desktop_names:
+            self.desktop_names = [b(d) for d in desktop_names]
+        else:
+            self.desktop_names = []
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
         log("updated_desktop_size%s randr_notify=%s, desktop_size=%s", (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)

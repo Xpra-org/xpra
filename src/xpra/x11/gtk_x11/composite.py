@@ -89,9 +89,12 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
         e = None
         try:
             root = self.client_window.get_screen().get_root_window()
-            world = get_world_window().window
+            gdkworld = None
+            world = get_world_window()
+            if world:
+                gdkworld = world.get_window()
             win = get_parent(self.client_window)
-            while win not in (None, root, world) and win.get_parent() is not None:
+            while win not in (None, root, gdkworld) and win.get_parent() is not None:
                 # We have to use a lowlevel function to manipulate the
                 # event selection here, because SubstructureRedirectMask
                 # does not roundtrip through the GDK event mask

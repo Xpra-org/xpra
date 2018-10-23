@@ -524,7 +524,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def _handle_class_change(self):
         with xswallow:
-            class_instance = X11Window.getClassHint(self.xid)
+            class_instance = (X11Window.getClassHint(self.xid) or b"").decode("latin1")
             metalog("WM_CLASS=%s", class_instance)
             self._updateprop("class-instance", class_instance)
 

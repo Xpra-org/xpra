@@ -9,7 +9,7 @@ from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import x11_get_server_time
-from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default, get_xwindow
+from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default, get_xwindow, is_realized
 from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
 gtk = import_gtk()
 gobject = import_gobject()
@@ -175,7 +175,7 @@ class WorldWindow(gtk.Window):
 
     def _take_focus(self):
         focuslog("Take Focus -> world window")
-        assert self.flags() & gtk.REALIZED
+        assert is_realized(self)
         # Weird hack: we are a GDK window, and the only way to properly get
         # input focus to a GDK window is to send it WM_TAKE_FOCUS.  So this is
         # sending a WM_TAKE_FOCUS to our own window, which will go to the X

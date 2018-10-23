@@ -17,19 +17,17 @@ from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import (
-    get_default_root_window, get_xwindow, pixbuf_new_from_data,
+    get_default_root_window, get_xwindow, pixbuf_new_from_data, is_realized,
     SUBSTRUCTURE_MASK, GDKWINDOW_TEMP,
     )
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.gdk_bindings import (
-                               add_event_receiver,          #@UnresolvedImport
-                               get_children,                #@UnresolvedImport
-                               init_x11_filter,             #@UnresolvedImport
-                               cleanup_x11_filter,          #@UnresolvedImport
-                               cleanup_all_event_receivers  #@UnresolvedImport
-                               )
+   add_event_receiver, cleanup_all_event_receivers,
+   get_children,
+   init_x11_filter, cleanup_x11_filter,
+   )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -80,7 +78,9 @@ class DesktopManager(gtk.Widget):
         self._models = {}
         gtk.Widget.__init__(self)
         self.set_property("can-focus", True)
-        if not is_gtk3():
+        if is_gtk3():
+            self.realize()
+        else:
             self.set_flags(gtk.NO_WINDOW)
 
     def __repr__(self):
@@ -89,7 +89,8 @@ class DesktopManager(gtk.Widget):
     ## For communicating with the main WM:
 
     def add_window(self, model, x, y, w, h):
-        assert self.flags() & gtk.REALIZED
+        if not is_gtk3():
+            assert is_realized(self)
         self._models[model] = DesktopState([x, y, w, h])
         model.managed_connect("unmanaged", self._unmanaged)
         model.managed_connect("ownership-election", self._elect_me)
@@ -161,11 +162,18 @@ class DesktopManager(gtk.Widget):
         else:
             return (-1, self)
 
-    def take_window(self, _model, window):
+    def take_window(self, model, window):
+        #log.info("take_window(%s, %s)", model, window)
+        if not is_realized(self):
+            assert is_gtk3()
+            #with GTK3, the widget is never realized??
+            return
+        gdkwin = self.get_window()
+        assert gdkwin, "DesktopManager does not have a gdk window"
         if REPARENT_ROOT:
-            parent = self.window.get_screen().get_root_window()
+            parent = gdkwin.get_screen().get_root_window()
         else:
-            parent = self.window
+            parent = gdkwin
         window.reparent(parent, 0, 0)
 
     def window_size(self, model):
@@ -420,7 +428,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         ### Create our window managing data structures:
         self._desktop_manager = DesktopManager()
-        self._wm.get_property("toplevel").add(self._desktop_manager)
+        add_to = self._wm.get_property("toplevel")
+        #may be missing with GTK3..
+        if add_to:
+            add_to.add(self._desktop_manager)
         self._desktop_manager.show_all()
 
         ### Load in existing windows:

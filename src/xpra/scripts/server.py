@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, PYTHON3, PYTHON2, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -75,7 +75,7 @@ def _get_int(prop_name):
     return _root_prop_get(prop_name, "u32")
 
 def _save_str(prop_name, s):
-    _root_prop_set(prop_name, "latin1", s.decode("latin1"))
+    _root_prop_set(prop_name, "latin1", s)
 
 def _get_str(prop_name):
     v = _root_prop_get(prop_name, "latin1")
@@ -134,6 +134,7 @@ def save_dbus_env(env):
             tv = conv(v)
             save(k, tv)
         except Exception as e:
+            get_util_logger().log("save_dbus_env(%s)", env, exc_info=True)
             error("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
             error(" %s\n" % e)
 
@@ -319,7 +320,7 @@ def start_dbus(dbus_launch):
         assert proc.poll()==0, "exit code is %s" % proc.poll()
         #parse and add to global env:
         dbus_env = {}
-        for l in out.splitlines():
+        for l in bytestostr(out).splitlines():
             parts = l.split("=", 1)
             if len(parts)!=2:
                 continue
@@ -330,6 +331,7 @@ def start_dbus(dbus_launch):
         dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
         return dbus_pid, dbus_env
     except Exception as e:
+        get_util_logger().log("start_dbus(%s)", dbus_launch, exc_info=True)
         error("dbus-launch failed to start using command '%s':\n" % dbus_launch)
         error(" %s\n" % e)
         return 0, {}
@@ -993,10 +995,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if not check_xvfb():
             return  1
         assert starting or starting_desktop or upgrading
-        if PYTHON2:
-            from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source, close_gdk_display_source
-        else:
-            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source, close_gdk_display_source
+        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source, close_gdk_display_source
         init_gdk_display_source()
         insert_cleanup(close_gdk_display_source)
         #(now we can access the X11 server)
@@ -1009,7 +1008,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             save_xvfb_pid(xvfb_pid)
 
         if POSIX:
-            save_uinput_id(uinput_uuid or b"")
+            save_uinput_id(uinput_uuid or u"")
             dbus_pid = -1
             dbus_env = {}
             if clobber:

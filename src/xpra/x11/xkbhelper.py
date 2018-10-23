@@ -7,8 +7,8 @@ import os
 import re
 
 #ensure that we use gtk as display source:
-from xpra.x11.gtk_x11.gdk_display_source import init_display_source
-init_display_source()
+from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+init_gdk_display_source()
 
 from xpra.util import std, csv
 from xpra.os_util import bytestostr

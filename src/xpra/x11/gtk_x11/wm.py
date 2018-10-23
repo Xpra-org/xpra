@@ -29,7 +29,7 @@ from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@Unr
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
-from xpra.gtk_common.gobject_compat import import_gobject
+from xpra.gtk_common.gobject_compat import import_gobject, is_gtk3
 gobject = import_gobject()
 
 from xpra.log import Logger
@@ -224,9 +224,11 @@ class Wm(gobject.GObject):
         self.root_set("_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
 
         # Load up our full-screen widget
-        self._world_window = WorldWindow(self._display.get_default_screen())
-        self.notify("toplevel")
-        self._world_window.show_all()
+        self._world_window = None
+        if not is_gtk3():
+            self._world_window = WorldWindow(self._display.get_default_screen())
+            self.notify("toplevel")
+            self._world_window.show_all()
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
@@ -291,7 +293,7 @@ class Wm(gobject.GObject):
             v = (0, 0, 0, 0)
         self.root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
         #update the models that are using the global default value:
-        for win in list(self._windows.itervalues()):
+        for win in self._windows.values():
             if win.is_OR() or win.is_tray():
                 continue
             cur = win.get_property("frame")
@@ -301,7 +303,7 @@ class Wm(gobject.GObject):
 
     def do_get_property(self, pspec):
         if pspec.name == "windows":
-            return frozenset(self._windows.itervalues())
+            return frozenset(self._windows.values())
         elif pspec.name == "toplevel":
             return self._world_window
         else:
@@ -394,7 +396,7 @@ class Wm(gobject.GObject):
     def cleanup(self):
         remove_fallback_receiver("xpra-client-message-event", self)
         remove_fallback_receiver("child-map-request-event", self)
-        for win in tuple(self._windows.itervalues()):
+        for win in tuple(self._windows.values()):
             win.unmanage(True)
 
     def do_child_map_request_event(self, event):
@@ -439,7 +441,7 @@ class Wm(gobject.GObject):
         # something real.  This is easy to detect -- a FocusIn event with
         # detail PointerRoot or None is generated on the root window.
         focuslog("wm.do_xpra_focus_in_event(%s)", event)
-        if event.detail in (NotifyPointerRoot, NotifyDetailNone):
+        if event.detail in (NotifyPointerRoot, NotifyDetailNone) and self._world_window:
             self._world_window.reset_x_focus()
 
     def do_xpra_focus_out_event(self, event):
