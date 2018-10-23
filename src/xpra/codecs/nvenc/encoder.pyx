@@ -1126,7 +1126,7 @@ cdef GUID c_parseguid(src) except *:
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
         part = parts[i]
         binv = binascii.unhexlify(strtobytes(part))
-        b = atob(array.array(b'B', binv))
+        b = atob(array.array('B', binv))
         log("c_parseguid bytes(%s)=%r", part, b)
         v = 0
         for j in range(s):
