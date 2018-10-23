@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,12 +17,13 @@ def write_displayfd(w_pipe, display, timeout=10):
     limit = monotonic_time()+timeout
     while buf and monotonic_time()<limit:
         try:
-            _, w, _ = select.select([], [w_pipe], [], max(0, limit-monotonic_time()))
+            timeout = max(0, limit-monotonic_time())
+            _, w, _ = select.select([], [w_pipe], [], timeout)
             if w_pipe in w:
                 count = os.write(w_pipe, buf)
                 buf = buf[count:]
         except select.error as e:
-            if e[0]!=errno.EINTR:
+            if e.errno!=errno.EINTR:
                 raise
         except (OSError, IOError) as e:
             if e.errno!=errno.EINTR:
@@ -38,13 +39,14 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     buf = b""
     while monotonic_time()<limit and len(buf)<8 and (proc is None or proc.poll() is None):
         try:
-            r, _, _ = select.select([r_pipe], [], [], max(0, limit-monotonic_time()))
+            timeout = max(0, limit-monotonic_time())
+            r, _, _ = select.select([r_pipe], [], [], timeout)
             if r_pipe in r:
                 buf += os.read(r_pipe, 8)
-                if buf[-1] == b'\n':
+                if buf and (buf[-1]==b'\n' or len(buf)>=8):
                     break
         except select.error as e:
-            if e[0]!=errno.EINTR:
+            if e.errno!=errno.EINTR:
                 raise
         except (OSError, IOError) as e:
             if e.errno!=errno.EINTR:
@@ -55,7 +57,7 @@ def parse_displayfd(buf, err):
     if len(buf) == 0:
         err("did not provide a display number using displayfd")
         return None
-    if buf[-1] != '\n':
+    if buf[-1] not in (b'\n', ord(b"\n")):
         err("output not terminated by newline: %s" % buf)
         return None
     try:

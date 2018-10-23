@@ -13,7 +13,12 @@ import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.util import envbool, envint
-from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, osexpand, monotonic_time, POSIX, OSX
+from xpra.os_util import (
+    setsid, shellsub, close_fds,
+    setuidgid, getuid, getgid,
+    strtobytes, osexpand, monotonic_time,
+    POSIX, OSX, PYTHON3,
+    )
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 
@@ -217,6 +222,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
         xvfb_cmd.append(str(pixel_depth))
     if use_display_fd:
         r_pipe, w_pipe = os.pipe()
+        if PYTHON3:
+            os.set_inheritable(w_pipe, True)
         xvfb_cmd += ["-displayfd", str(w_pipe)]
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         def preexec():
