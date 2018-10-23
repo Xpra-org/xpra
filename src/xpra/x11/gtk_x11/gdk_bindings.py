@@ -29,6 +29,10 @@ get_pywindow                = gdk_bindings.get_pywindow
 get_xvisual                 = gdk_bindings.get_xvisual
 get_parent                  = gdk_bindings.get_parent
 get_pyatom                  = gdk_bindings.get_pyatom
+add_x_event_parser          = gdk_bindings.add_x_event_parser
+add_x_event_signal          = gdk_bindings.add_x_event_signal
+add_x_event_type_name       = gdk_bindings.add_x_event_type_name
+
 
 if is_gtk3():
     try_import_GdkX11()

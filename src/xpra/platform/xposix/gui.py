@@ -21,7 +21,6 @@ xinputlog = Logger("posix", "xinput")
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv
 from xpra.gtk_common.gtk_util import get_xwindow
-from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.os_util import is_X11, is_Wayland
 
 X11WindowBindings = None
@@ -762,10 +761,7 @@ class ClientExtras(object):
         if self.x11_filter:
             return
         try:
-            if is_gtk3():
-                from xpra.x11.gtk3.gdk_bindings import init_x11_filter  #@UnresolvedImport, @UnusedImport
-            else:
-                from xpra.x11.gtk2.gdk_bindings import init_x11_filter  #@UnresolvedImport, @Reimport
+            from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter  #@UnresolvedImport, @UnusedImport
             self.x11_filter = init_x11_filter()
             log("x11_filter=%s", self.x11_filter)
         except Exception:
@@ -776,11 +772,8 @@ class ClientExtras(object):
     def cleanup(self):
         log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
         if self.x11_filter:
-            if is_gtk3():
-                from xpra.x11.gtk3.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport, @UnusedImport
-            else:
-                from xpra.x11.gtk2.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport, @Reimport
             self.x11_filter = None
+            from xpra.x11.gtk_x11.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport, @UnusedImport
             cleanup_x11_filter()
         if self._xsettings_watcher:
             self._xsettings_watcher.cleanup()
@@ -907,9 +900,6 @@ class ClientExtras(object):
         ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         try:
             self.init_x11_filter()
-            if is_gtk3():
-                #xsettings still need porting
-                return
             from xpra.gtk_common.gtk_util import get_default_root_window
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
