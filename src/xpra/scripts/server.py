@@ -122,8 +122,13 @@ def save_dbus_env(env):
     #DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
     #DBUS_SESSION_BUS_PID=11406
     #DBUS_SESSION_BUS_WINDOWID=50331649
+    def u(s):
+        try:
+            return s.decode("latin1")
+        except:
+            return str(s)
     for n,conv,save in (
-            ("ADDRESS",     str,    _save_str),
+            ("ADDRESS",     u,    _save_str),
             ("PID",         int,    _save_int),
             ("WINDOW_ID",   int,    _save_int)):
         k = "DBUS_SESSION_BUS_%s" % n
