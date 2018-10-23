@@ -6,7 +6,7 @@
 
 import re
 import os.path
-from xpra.os_util import load_binary_file, hexstr, PYTHON2, OSX, POSIX, LINUX
+from xpra.os_util import load_binary_file, PYTHON2, OSX, POSIX, LINUX
 from collections import OrderedDict
 from xpra.platform.paths import get_app_dir, get_user_conf_dirs
 
@@ -31,7 +31,7 @@ def getprop(window, prop):
             return None
         return window.get_property(prop)
     except TypeError:
-        log.error("Error querying %s on %s", name, window, exc_info=True)
+        log.error("Error querying %s on %s", prop, window, exc_info=True)
 
 
 content_type_defs = None
