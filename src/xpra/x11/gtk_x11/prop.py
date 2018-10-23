@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,7 @@ the conversions for plain python types is found in prop_conv.py
 import struct
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, try_import_GdkX11
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.x11.gtk_x11.gdk_bindings import (
     get_pywindow,               #@UnresolvedImport
     get_xvisual,                #@UnresolvedImport
