@@ -21,16 +21,14 @@ pygobject_init(-1, -1, -1)
 
 cdef extern from "pygtk/pygtk.h":
     void init_pygtk()
+    ctypedef unsigned long GdkAtom
+    GdkAtom PyGdkAtom_Get(object)
+    object PyGdkAtom_New(GdkAtom)
 init_pygtk()
 # Now all the macros in those header files will work.
 
 cdef extern from "Python.h":
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
-
-cdef extern from "pygtk/pygtk.h":
-    ctypedef unsigned long GdkAtom
-    GdkAtom PyGdkAtom_Get(object)
-    object PyGdkAtom_New(GdkAtom)
 
 cdef extern from "gdk/gdktypes.h":
     GdkAtom GDK_NONE
