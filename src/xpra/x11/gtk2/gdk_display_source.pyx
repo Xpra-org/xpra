@@ -72,6 +72,8 @@ display = None
 ######
 def init_gdk_display_source():
     global display
+    if display:
+        return
     cdef cGdkDisplay* gdk_display
     cdef Display * x11_display
     if not gdk.display_get_default():

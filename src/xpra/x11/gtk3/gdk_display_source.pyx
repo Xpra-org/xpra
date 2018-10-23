@@ -47,6 +47,8 @@ def init_gdk_display_source():
     if not is_X11():
         from xpra.scripts.config import InitException
         raise InitException("cannot use X11 bindings with Wayland and GTK3 (buggy)")
+    if display:
+        return
     cdef GdkDisplay* gdk_display
     cdef Display * x11_display
     #from gi.repository import GdkX11
