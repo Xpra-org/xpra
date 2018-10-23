@@ -392,8 +392,8 @@ def main():
         if verbose:
             log.enable_debug()
         if POSIX and not OSX:
-            from xpra.x11.gtk_x11.gdk_display_source import init_display_source
-            init_display_source()
+            from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+            init_gdk_display_source()
         force_enable = "-f" in sys.argv or "--force" in sys.argv
         from xpra.platform.gl_context import GLContext
         log("testing %s", GLContext)
