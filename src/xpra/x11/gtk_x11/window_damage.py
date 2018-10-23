@@ -41,8 +41,9 @@ class WindowDamageHandler(object):
 
     # This may raise XError.
     def __init__(self, client_window, use_xshm=USE_XSHM):
-        log("WindowDamageHandler.__init__(%#x, %s)", get_xwindow(client_window), use_xshm)
         self.client_window = client_window
+        self.xid = get_xwindow(client_window)
+        log("WindowDamageHandler.__init__(%#x, %s)", self.xid, use_xshm)
         self._use_xshm = use_xshm
         self._damage_handle = None
         self._xshm_handle = None
@@ -50,25 +51,20 @@ class WindowDamageHandler(object):
         self._border_width = 0
 
     def __repr__(self):
-        xid = None
-        if self.client_window:
-            xid = get_xwindow(self.client_window)
-        return "WindowDamageHandler(%#x)" % xid
+        return "WindowDamageHandler(%#x)" % self.xid
 
     def setup(self):
         self.invalidate_pixmap()
-        xid = get_xwindow(self.client_window)
-        geom = X11Window.geometry_with_border(xid)
+        geom = X11Window.geometry_with_border(self.xid)
         if geom is None:
-            raise Unmanageable("window %#x disappeared already" % xid)
+            raise Unmanageable("window %#x disappeared already" % self.xid)
         self._border_width = geom[-1]
         self.create_damage_handle()
         add_event_receiver(self.client_window, self)
 
     def create_damage_handle(self):
-        xid = get_xwindow(self.client_window)
-        self._damage_handle = X11Window.XDamageCreate(xid)
-        log("damage handle(%#x)=%#x", xid, self._damage_handle)
+        self._damage_handle = X11Window.XDamageCreate(self.xid)
+        log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
 
     def destroy(self):
         if self.client_window is None:
@@ -134,7 +130,7 @@ class WindowDamageHandler(object):
                 self._xshm_handle = None
         if self._xshm_handle is None:
             #make a new one:
-            self._xshm_handle = XImage.get_XShmWrapper(get_xwindow(self.client_window))
+            self._xshm_handle = XImage.get_XShmWrapper(self.xid)
             if self._xshm_handle is None:
                 #failed (may retry)
                 return None
@@ -151,7 +147,7 @@ class WindowDamageHandler(object):
         return self._xshm_handle
 
     def _set_pixmap(self):
-        self._contents_handle = XImage.get_xwindow_pixmap_wrapper(get_xwindow(self.client_window))
+        self._contents_handle = XImage.get_xwindow_pixmap_wrapper(self.xid)
 
     def get_contents_handle(self):
         if not self.client_window:
@@ -166,7 +162,7 @@ class WindowDamageHandler(object):
     def get_image(self, x, y, width, height):
         handle = self.get_contents_handle()
         if handle is None:
-            log("get_image(..) pixmap is None for window %#x", get_xwindow(self.client_window))
+            log("get_image(..) pixmap is None for window %#x", self.xid)
             return None
 
         #try XShm:

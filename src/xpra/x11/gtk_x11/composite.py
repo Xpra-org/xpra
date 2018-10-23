@@ -46,20 +46,14 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
         self._listening_to = None
 
     def __repr__(self):
-        xid = 0
-        cw = self.client_window
-        if cw:
-            xid = get_xwindow(cw)
-        return "CompositeHelper(%#x)" % xid
+        return "CompositeHelper(%#x)" % self.xid
 
     def setup(self):
-        xid = get_xwindow(self.client_window)
-        X11Window.XCompositeRedirectWindow(xid)
+        X11Window.XCompositeRedirectWindow(self.xid)
         WindowDamageHandler.setup(self)
 
     def do_destroy(self, window):
-        xid = get_xwindow(window)
-        trap.swallow_synced(X11Window.XCompositeUnredirectWindow, xid)
+        trap.swallow_synced(X11Window.XCompositeUnredirectWindow, self.xid)
         WindowDamageHandler.do_destroy(self, window)
 
     def invalidate_pixmap(self):
@@ -110,8 +104,7 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
                 add_event_receiver(win, self, max_receivers=-1)
                 listening.append(win)
                 win = get_parent(win)
-            xid = get_xwindow(self.client_window)
-            handle = XImage.get_xcomposite_pixmap(xid)
+            handle = XImage.get_xcomposite_pixmap(self.xid)
         except Exception as e:
             try:
                 self._cleanup_listening(listening)
@@ -119,12 +112,7 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
                 pass
             raise
         if handle is None:
-            #avoid race during signal exit, which will clear self.client_window:
-            win = self.client_window
-            xid = 0
-            if win:
-                xid = get_xwindow(win)
-            log("failed to name a window pixmap for %#x: %s", xid, e)
+            log("failed to name a window pixmap for %#x: %s", self.xid, e)
             self._cleanup_listening(listening)
         else:
             self._contents_handle = handle
