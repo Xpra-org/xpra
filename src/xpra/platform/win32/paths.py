@@ -66,7 +66,7 @@ def get_program_data_dir():
         if buf.value:
             return buf.value
     except:
-        get_util_logger().log("get_program_data_dir()", exc_info=True)
+        get_util_logger().debug("get_program_data_dir()", exc_info=True)
     return u"C:\\ProgramData"
 
 def do_get_system_conf_dirs():
