@@ -1138,9 +1138,7 @@ cdef GUID c_parseguid(src) except *:
         log("c_parseguid bytes(%s)=%r", part, b)
         v = 0
         for j in range(s):
-            c = b[j]
-            if not PYTHON3:
-                c = ord(c)
+            c = _ord(b[j])
             v += c<<((s-j-1)*8)
         nparts.append(v)
     cdef GUID guid
@@ -1149,7 +1147,7 @@ cdef GUID c_parseguid(src) except *:
     guid.Data3 = nparts[2]
     v = (nparts[3]<<48) + nparts[4]
     for i in range(8):
-        guid.Data4[i] = (v>>((7-i)*8)) % 256
+        guid.Data4[i] = <uint8_t> ((v>>((7-i)*8)) % 256)
     log("c_parseguid(%s)=%s", src, guid)
     return guid
 
