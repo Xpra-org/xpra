@@ -11,7 +11,6 @@ import binascii
 import os
 import sys
 import numpy
-import array
 from collections import deque, OrderedDict
 
 from pycuda import driver
@@ -1092,13 +1091,13 @@ cdef guidstr(GUID guid):
     #is this even endian safe? do we care? (always on the same system)
     parts = []
     for v, s in ((guid.Data1, 4), (guid.Data2, 2), (guid.Data3, 2)):
-        b = array.array('B', [0 for _ in range(s)])
+        b = bytearray(s)
         for j in range(s):
             b[s-j-1] = v % 256
             v = v // 256
-        parts.append(atob(b))
-    parts.append(atob(array.array('B', guid.get("Data4")[:2])))
-    parts.append(atob(array.array('B', guid.get("Data4")[2:8])))
+        parts.append(b)
+    parts.append(bytearray(guid.get("Data4")[:2]))
+    parts.append(bytearray(guid.get("Data4")[2:8]))
     s = b"-".join(binascii.hexlify(b).upper() for b in parts)
     #log.info("guidstr(%s)=%s", guid, s)
     return bytestostr(s)
@@ -1134,11 +1133,10 @@ cdef GUID c_parseguid(src) except *:
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
         part = parts[i]
         binv = binascii.unhexlify(part)
-        b = atob(array.array('B', binv))
-        log("c_parseguid bytes(%s)=%r", part, b)
+        log("c_parseguid bytes(%s)=%r", part, binv)
         v = 0
         for j in range(s):
-            c = _ord(b[j])
+            c = _ord(binv[j])
             v += c<<((s-j-1)*8)
         nparts.append(v)
     cdef GUID guid
