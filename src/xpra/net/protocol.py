@@ -993,7 +993,11 @@ class Protocol(object):
                 self.timeout_add(5*1000, close_and_release)
 
         def wait_for_write_lock(timeout=100):
-            if not self._write_lock.acquire(False):
+            wl = self._write_lock
+            if not wl:
+                #cleaned up already
+                return
+            if not wl.acquire(False):
                 if timeout<=0:
                     log("flush_then_close: timeout waiting for the write lock")
                     self.close()
