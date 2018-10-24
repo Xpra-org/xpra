@@ -106,7 +106,10 @@ def load_xdg_menu_data():
                                 "Categories", "StartupNotify", "StartupWMClass", "URL",
                                 ))
                             if de.getTryExec():
-                                command = de.findTryExec()
+                                try:
+                                    command = de.findTryExec()
+                                except:
+                                    command = de.getTryExec()
                             else:
                                 command = de.getExec()
                             props["command"] = command

@@ -429,7 +429,10 @@ class StartSession(gtk.Window):
         self.hide()
         if xdg:
             if self.desktop_entry.getTryExec():
-                command = self.desktop_entry.findTryExec()
+                try:
+                    command = self.desktop_entry.findTryExec()
+                except:
+                    command = self.desktop_entry.getTryExec()
             else:
                 command = self.desktop_entry.getExec()
         else:

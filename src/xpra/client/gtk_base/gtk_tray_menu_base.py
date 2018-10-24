@@ -1523,7 +1523,7 @@ class GTKTrayMenuBase(object):
 
     def make_startmenuitem(self):
         start_menu_item = self.handshake_menuitem("Start", "start.png")
-        
+
         def start_menu_init(*args):
             log("start_menu_init(%s)", args)
             if not self.client.server_start_new_commands:
