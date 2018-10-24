@@ -191,8 +191,8 @@ Obsoletes:          libvpx-xpra
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			turbojpeg
-%if 0%{?fedora}
 Requires:			libyuv
+%if 0%{?fedora}
 Requires:			python2-numpy
 %if 0%{?run_tests}
 BuildRequires:		python2-numpy
