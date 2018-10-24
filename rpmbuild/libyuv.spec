@@ -17,7 +17,9 @@ Patch4:		libyuv-0004-Don-t-install-conversion-tool.patch
 Patch5:		libyuv-0005-Use-library-suffix-during-installation.patch
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
+%if !0%{?el7}
 BuildRequires:	gtest-devel
+%endif
 BuildRequires:	libjpeg-devel
 
 
@@ -43,7 +45,11 @@ Additional header files for development with %{name}.
 
 
 %build
+%if 0%{?el7}
+%{cmake} -DTEST=false
+%else
 %{cmake} -DTEST=true
+%endif
 
 
 %install
