@@ -80,38 +80,43 @@ def load_xdg_menu_data():
             log.warn("Warning: no xdg module, cannot use application menu data")
         else:
             xdg_menu_data = {}
-            menu = parse()
-            for submenu in menu.getEntries():
-                if isinstance(submenu, Menu) and submenu.Visible:
-                    name = submenu.getName()
-                    #log.info("submenu %s: %s, %s", name, submenu, dir(submenu))
-                    submenu_data = export(submenu, [
-                        "Name", "GenericName", "Comment",
-                        "Path", "Icon",
-                        ])
-                    xdg_menu_data[name] = submenu_data
-                    entries_data = submenu_data.setdefault("Entries", {})
-                    for entry in submenu.getEntries():
-                        #TODO: can we have more than 2 levels of submenus?
-                        if isinstance(entry, MenuEntry):
-                            de = entry.DesktopEntry
-                            name = de.getName()
-                            #not exposed:
-                            #"MimeType" is an re
-                            #"Version" is a float
-                            props = export(de, (
-                                "Type", "VersionString", "Name", "GenericName", "NoDisplay",
-                                "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
-                                "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
-                                "Categories", "StartupNotify", "StartupWMClass", "URL",
-                                ))
-                            if de.getTryExec():
-                                try:
-                                    command = de.findTryExec()
-                                except:
-                                    command = de.getTryExec()
-                            else:
-                                command = de.getExec()
-                            props["command"] = command
-                            entries_data[name] = props
+            try:
+                menu = parse()
+                for submenu in menu.getEntries():
+                    if isinstance(submenu, Menu) and submenu.Visible:
+                        name = submenu.getName()
+                        #log.info("submenu %s: %s, %s", name, submenu, dir(submenu))
+                        submenu_data = export(submenu, [
+                            "Name", "GenericName", "Comment",
+                            "Path", "Icon",
+                            ])
+                        xdg_menu_data[name] = submenu_data
+                        entries_data = submenu_data.setdefault("Entries", {})
+                        for entry in submenu.getEntries():
+                            #TODO: can we have more than 2 levels of submenus?
+                            if isinstance(entry, MenuEntry):
+                                de = entry.DesktopEntry
+                                name = de.getName()
+                                #not exposed:
+                                #"MimeType" is an re
+                                #"Version" is a float
+                                props = export(de, (
+                                    "Type", "VersionString", "Name", "GenericName", "NoDisplay",
+                                    "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
+                                    "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
+                                    "Categories", "StartupNotify", "StartupWMClass", "URL",
+                                    ))
+                                if de.getTryExec():
+                                    try:
+                                        command = de.findTryExec()
+                                    except:
+                                        command = de.getTryExec()
+                                else:
+                                    command = de.getExec()
+                                props["command"] = command
+                                entries_data[name] = props
+            except Exception as e:
+                log("load_xdg_menu_data()", exc_info=True)
+                log.error("Error loading xdg menu data:")
+                log.error(" %s", e)
     return xdg_menu_data
