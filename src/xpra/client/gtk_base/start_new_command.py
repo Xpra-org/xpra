@@ -63,7 +63,7 @@ class StartNewCommand(object):
             self.category_combo = gtk.combo_box_new_text()
             hbox.add(self.category_combo)
             for name in sorted(xdg_menu.keys()):
-                self.category_combo.append_text(name)
+                self.category_combo.append_text(name.decode("utf-8"))
             self.category_combo.set_active(0)
             self.category_combo.connect("changed", self.category_changed)
 
@@ -120,12 +120,12 @@ class StartNewCommand(object):
 
 
     def category_changed(self, *args):
-        category = self.category_combo.get_active_text()
+        category = self.category_combo.get_active_text().encode("utf-8")
         log("category_changed(%s) category=%s", args, category)
         entries = self.xdg_menu.get(category)
         self.command_combo.get_model().clear()
         for name in entries.keys():
-            self.command_combo.append_text(name)
+            self.command_combo.append_text(name.decode("utf-8"))
         if entries:
             self.command_combo.set_active(0)
 
@@ -174,12 +174,12 @@ class StartNewCommand(object):
         if self.xdg_menu:
             category = self.category_combo.get_active_text()
             log("category=%s", category)
-            entries = self.xdg_menu.get(category)
+            entries = self.xdg_menu.get(category.encode("utf-8"))
             if entries:
                 command_name = self.command_combo.get_active_text()
-                command_props = entries.get(command_name)
+                command_props = entries.get(command_name.encode("utf-8"))
                 log("command properties=%s", command_props)
-                command = command_props.get("command")
+                command = command_props.get(b"command")
 
         else:
             command = self.entry.get_text()
