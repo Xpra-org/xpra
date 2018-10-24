@@ -6,6 +6,8 @@
 
 import re
 import os.path
+
+from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, PYTHON2, OSX, POSIX, LINUX
 from collections import OrderedDict
 from xpra.platform.paths import get_app_dir, get_user_conf_dirs
@@ -178,7 +180,7 @@ def load_content_categories_file(cc_file):
             category, content_type = parts
             d[category.strip("\t ").lower()] = content_type.strip("\t ")
     log("load_content_categories_file(%s)=%s", cc_file, d)
-    return d  
+    return d
 
 command_to_type = None
 def load_command_to_type():
@@ -188,10 +190,11 @@ def load_command_to_type():
         from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
         xdg_menu = load_xdg_menu_data()
         categories_to_type = load_categories_to_type()
-        log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type) 
+        log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type)
         if xdg_menu and categories_to_type:
-            for category, entries in xdg_menu.items():
-                log("category %s: %s", category, entries)
+            for category, category_props in xdg_menu.items():
+                log("category %s: %s", category, repr_ellipsized(str(category_props)))
+                entries = category_props.get("Entries", {})
                 for name, props in entries.items():
                     command = props.get("TryExec") or props.get("Exec")
                     categories = props.get("Categories")
@@ -226,7 +229,7 @@ def guess_content_type_from_command(window):
             ctype = ctt.get(cmd)
             log("content-type(%s)=%s", cmd, ctype)
             return ctype
-    return None 
+    return None
 
 
 def guess_content_type(window):

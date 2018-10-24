@@ -180,7 +180,6 @@ class StartNewCommand(object):
                 command_props = entries.get(command_name.encode("utf-8"))
                 log("command properties=%s", command_props)
                 command = command_props.get(b"command")
-
         else:
             command = self.entry.get_text()
         log("command=%s", command)

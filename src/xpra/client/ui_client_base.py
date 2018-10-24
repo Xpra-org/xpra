@@ -286,6 +286,7 @@ class UIXpraClient(ClientBaseClass):
 
     def send_start_command(self, name, command, ignore, sharing=True):
         log("send_start_command(%s, %s, %s, %s)", name, command, ignore, sharing)
+        assert name is not None and command is not None and ignore is not None
         self.send("start-command", name, command, ignore, sharing)
 
     def get_version_info(self):

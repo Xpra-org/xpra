@@ -9,9 +9,12 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 gtk = import_gtk()
 glib = import_glib()
 
-from xpra.util import CLIENT_EXIT, iround, envbool
+from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized
 from xpra.os_util import bytestostr, OSX
-from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItemClass, MESSAGE_QUESTION, BUTTONS_NONE
+from xpra.gtk_common.gtk_util import (
+    ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItemClass,
+    MESSAGE_QUESTION, BUTTONS_NONE,
+    )
 from xpra.client.client_base import EXIT_OK
 from xpra.gtk_common.about import about, close_about
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
@@ -41,6 +44,7 @@ SHOW_TRANSFERS = envbool("XPRA_SHOW_TRANSFERS", True)
 SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", True)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
+START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 
 BANDWIDTH_MENU_OPTIONS = []
 for x in os.environ.get("XPRA_BANDWIDTH_MENU_OPTIONS", "1,2,5,10,20,50,100").split(","):
@@ -303,6 +307,8 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_windowsmenuitem())
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
             menu.append(self.make_servermenuitem())
+        if mixin_features.windows and START_MENU:
+            menu.append(self.make_startmenuitem())
         menu.append(self.make_disconnectmenuitem())
         if show_close:
             menu.append(self.make_closemenuitem())
@@ -349,10 +355,10 @@ class GTKTrayMenuBase(object):
     def make_menu(self):
         return gtk.Menu()
 
-    def menuitem(self, title, icon_name=None, tooltip=None, cb=None):
+    def menuitem(self, title, icon_name=None, tooltip=None, cb=None, **kwargs):
         """ Utility method for easily creating an ImageMenuItem """
-        image = None
-        if icon_name:
+        image = kwargs.get("image")
+        if icon_name and not image:
             icon_size = self.menu_icon_size or get_icon_size()
             image = self.get_image(icon_name, icon_size)
         return menuitem(title, image, tooltip, cb)
@@ -1515,10 +1521,95 @@ class GTKTrayMenuBase(object):
         self.client.on_server_setting_changed("client-shutdown", enable_shutdown)
         return self.shutdown
 
+    def make_startmenuitem(self):
+        start_menu_item = self.handshake_menuitem("Start", "start.png")
+        
+        def start_menu_init(*args):
+            log("start_menu_init(%s)", args)
+            if not self.client.server_start_new_commands:
+                set_sensitive(start_menu_item, False)
+                start_menu_item.set_tooltip_text("The server does not support starting new commands")
+                return
+            if not self.client.xdg_menu:
+                set_sensitive(start_menu_item, False)
+                start_menu_item.set_tooltip_text("The server does not provide start menu data")
+                return
+            menu = gtk.Menu()
+            start_menu_item.set_submenu(menu)
+            self.popup_menu_workaround(menu)
+            for category, category_props in sorted(self.client.xdg_menu.items()):
+                #log("category_props(%s)=%s", category, category_props)
+                if isinstance(category_props, dict):
+                    entries = category_props.get(b"Entries", {})
+                else:
+                    #TODO: remove this,
+                    #only useful for compatibility with early 2.5 beta:
+                    entries = category_props
+                if not entries:
+                    continue
+                icondata = category_props.get(b"IconData")
+                image = self.get_appimage(category, icondata)
+                category_menu_item = self.handshake_menuitem(category.decode("utf-8"), "windows.png", image=image)
+                cat_menu = gtk.Menu()
+                category_menu_item.set_submenu(cat_menu)
+                self.popup_menu_workaround(cat_menu)
+                menu.append(category_menu_item)
+                for app_name, command_props in entries.items():
+                    app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
+                    cat_menu.append(app_menu_item)
+            menu.show_all()
+        start_menu_item.show()
+        self.client.after_handshake(start_menu_init)
+        return start_menu_item
+
+    def get_appimage(self, app_name, icondata=None):
+        if not icondata:
+            return None
+        from xpra.gtk_common.gtk_util import get_pixbuf_from_data, scaled_image
+        try:
+            from xpra.gtk_common.gobject_compat import import_pixbufloader
+            loader = import_pixbufloader()()
+            loader.write(icondata)
+            loader.close()
+            pixbuf = loader.get_pixbuf()
+            return scaled_image(pixbuf, icon_size=32)
+        except Exception:
+            log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
+            log.error(" data=%s", repr_ellipsized(icondata))
+        #let's try pillow:
+        try:
+            from PIL import Image
+            from xpra.os_util import BytesIOClass
+            buf = BytesIOClass(icondata)
+            img = Image.open(buf)
+            has_alpha = img.mode=="RGBA"
+            width, height = img.size
+            rowstride = width * (3+int(has_alpha))
+            pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
+            return scaled_image(pixbuf, icon_size=32)
+        except Exception:
+            log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
+            log.error(" data=%s", repr_ellipsized(icondata))
+        return None
+
+    def make_applaunch_menu_item(self, app_name, command_props):
+        icondata = command_props.get(b"IconData")
+        image = self.get_appimage(app_name, icondata)
+        app_menu_item = self.handshake_menuitem(app_name.decode("utf-8"), image=image)
+        def app_launch(*_args):
+            command = command_props.get(b"command")
+            log("command=%s", command) 
+            if command:
+                self.client.send_start_command(app_name, command, False, self.client.server_sharing)
+        app_menu_item.connect("activate", app_launch)
+        return app_menu_item
+
+
     def make_disconnectmenuitem(self):
         def menu_quit(*_args):
             self.client.disconnect_and_quit(EXIT_OK, CLIENT_EXIT)
         return self.handshake_menuitem("Disconnect", "quit.png", None, menu_quit)
+
 
     def make_closemenuitem(self):
         return self.menuitem("Close Menu", "close.png", None, self.close_menu)
