@@ -508,7 +508,7 @@ def get_source_plugins():
         sources.append("osxaudiosrc")
     elif WIN32:
         sources.append("directsoundsrc")
-        #sources.append("wasapisrc")
+        sources.append("wasapisrc")
     sources.append("autoaudiosrc")
     if POSIX:
         sources += ["alsasrc",
@@ -547,7 +547,7 @@ def get_sink_plugins():
         SINKS.append("osxaudiosink")
     elif WIN32:
         SINKS.append("directsoundsink")
-        #SINKS.append("wasapisink")
+        SINKS.append("wasapisink")
     SINKS.append("autoaudiosink")
     try:
         from xpra.sound.pulseaudio.pulseaudio_util import has_pa
