@@ -163,7 +163,7 @@ BuildRequires:		uglify-js
 BuildRequires:		js-jquery
 BuildRequires:		desktop-backgrounds-compat
 Requires:			js-jquery
-Requires:			desktop-backgrounds-compat
+%{Recommends}:		desktop-backgrounds-compat
 %endif
 %if 0%{?el7}
 #don't depend on this package,
