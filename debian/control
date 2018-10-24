@@ -142,7 +142,7 @@ Architecture: any
 Depends:
         libjs-jquery
         ,libjs-jquery-ui
-        ,gnome-backgrounds
+Recommends: gnome-backgrounds
 Description: the html5 xpra client
 
 
