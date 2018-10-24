@@ -49,7 +49,7 @@ if socket_path and os.path.exists(socket_path):
         except Exception as e:
             sys.stderr.write("xdg-open: failed to forward to xpra server using socket '%s': %s\n" % (socket_path, e))
             sys.stderr.flush()
-            
+
 
 #fallback to the "real" xdg-open:
 this_file = os.path.abspath(__file__)

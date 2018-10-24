@@ -83,7 +83,7 @@ class AudioMixin(StubSourceMixin):
             "receive"           : self.supports_microphone and len(self.microphone_codecs)>0,
             })
         return flatten_dict({"sound" : sound_props})
-        
+
 
     def audio_loop_check(self, mode="speaker"):
         log("audio_loop_check(%s)", mode)
@@ -205,7 +205,7 @@ class AudioMixin(StubSourceMixin):
 
     def send_eos(self, codec, sequence=0):
         #tell the client this is the end:
-        self.send_more("sound-data", codec, "", 
+        self.send_more("sound-data", codec, "",
                        {
                            "end-of-stream" : True,
                            "sequence"      : sequence,

@@ -9,7 +9,7 @@
 cdef extern from "gtk-2.0/gdk/gdktypes.h":
     ctypedef struct cGdkDisplay "GdkDisplay":
         pass
-    
+
     ctypedef struct _GdkAtom:
         pass
     ctypedef _GdkAtom* GdkAtom

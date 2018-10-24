@@ -89,7 +89,7 @@ def main():
     except:
         pass
     try:
-        from xpra.client.gl.gtk2.gtkgl_client_window import GLClientWindow 
+        from xpra.client.gl.gtk2.gtkgl_client_window import GLClientWindow
         window_classes.append(GLClientWindow)
     except:
         pass

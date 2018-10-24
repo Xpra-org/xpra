@@ -6,11 +6,11 @@ body {
     width: 100%;
 }
 a {
-    color: #069; 
+    color: #069;
     text-decoration: none;
 }
-a:hover { 
-    color: #28b; 
+a:hover {
+    color: #28b;
 }
 p {
     margin-top: 10px;
@@ -26,9 +26,9 @@ input[type=checkbox] {
     margin: 7px;
 }
 #page {
-    display: block; 
+    display: block;
     width: 1100px;
-    height: 100vh !important; 
+    height: 100vh !important;
     overflow: hidden;
     margin: 0 auto;
     text-align: left;

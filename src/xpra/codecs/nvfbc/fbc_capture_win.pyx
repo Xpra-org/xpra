@@ -86,7 +86,7 @@ cdef extern from "NvFBC/nvFBC.h":
     NVFBCRESULT NVFBC_ERROR_DYNAMIC_DISABLE             # NvFBC is dynamically disabled. Cannot continue to capture
     NVFBCRESULT NVFBC_ERROR_IPC_FAILURE                 # NVFBC encountered an error in state management
     NVFBCRESULT NVFBC_ERROR_CURSOR_CAPTURE_FAILURE      # Hardware cursor capture failed
-    
+
 
     ctypedef int NVFBC_STATE
     NVFBC_STATE NVFBC_STATE_DISABLE

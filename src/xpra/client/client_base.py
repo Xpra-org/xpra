@@ -617,7 +617,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def process_challenge_uri(self, packet):
         if self.password:
             self.send_challenge_reply(packet, self.password)
-            #clearing it to allow other modules to process further challenges: 
+            #clearing it to allow other modules to process further challenges:
             self.password = None
             return True
         return False

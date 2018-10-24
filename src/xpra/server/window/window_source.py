@@ -191,7 +191,7 @@ class WindowSource(WindowIconSource):
         self.iconic = False
         self.content_type = ""
         self.window_signal_handlers = []
-        #watch for changes to properties that are used to derive the content-type: 
+        #watch for changes to properties that are used to derive the content-type:
         for x in get_content_type_properties():
             if x in window.get_dynamic_property_names():
                 sid = window.connect("notify::%s" % x, self.content_type_changed)
@@ -802,7 +802,6 @@ class WindowSource(WindowIconSource):
 
     def get_transparent_encoding(self, w, h, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
-        
         if current_encoding in TRANSPARENCY_ENCODINGS:
             return current_encoding
         pixel_count = w*h

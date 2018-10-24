@@ -467,7 +467,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         name += " %s" % display_name
     if mode not in ("tcp", "rfb"):
         name += " (%s)" % mode
-    service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)        
+    service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)
     ap = MDNSPublishers(f_listen_on.values(), name, service_type=service_type, text_dict=d)
     from xpra.scripts.server import add_when_ready, add_cleanup
     add_when_ready(ap.start)

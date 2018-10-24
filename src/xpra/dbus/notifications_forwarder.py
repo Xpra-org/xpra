@@ -150,7 +150,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     @dbus.service.signal(BUS_NAME, signature='us')
     def ActionInvoked(self, nid, action_key):
         pass
-    
+
 
     def release(self):
         try:

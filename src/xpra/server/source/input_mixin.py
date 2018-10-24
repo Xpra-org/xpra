@@ -53,7 +53,7 @@ class InputMixin(StubSourceMixin):
             if mck:
                 return {"modifier_keycodes" : mck}
         return {}
-        
+
 
     def set_layout(self, layout, variant, options):
         return self.keyboard_config.set_layout(layout, variant, options)

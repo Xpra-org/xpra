@@ -80,7 +80,7 @@ def dictlook(d, k, fallback=None):
     v = newdictlook(d, parts, fallback)
     if v is None:
         parts = strtobytes(k).split(b".")
-        v = newdictlook(d, parts, fallback)        
+        v = newdictlook(d, parts, fallback)
     if v is None:
         return fallback
     return v

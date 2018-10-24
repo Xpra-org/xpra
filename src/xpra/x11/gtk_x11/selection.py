@@ -97,7 +97,7 @@ class ManagerSelection(gobject.GObject):
         # Ask ourselves when we acquired the selection:
         contents = wait_for_contents(self.clipboard, "TIMESTAMP")
         ts_data = selectiondata_get_data(contents)
-        
+
         #data is a timestamp, X11 datatype is Time which is CARD32,
         #(which is 64 bits on 64-bit systems!)
         Lsize = calcsize("@L")

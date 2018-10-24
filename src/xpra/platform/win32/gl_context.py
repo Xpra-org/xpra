@@ -11,7 +11,7 @@ from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.platform.win32.gui import get_window_handle
 from xpra.platform.win32.constants import CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW, WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT
 from xpra.platform.win32.common import (
-    GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, DestroyWindow, UnregisterClassA, 
+    GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, DestroyWindow, UnregisterClassA,
     GetModuleHandleA, RegisterClassExA, CreateWindowExA, DefWindowProcA, WNDPROC, WNDCLASSEX
     )
 from xpra.platform.win32.glwin32 import wglCreateContext, wglMakeCurrent, wglDeleteContext , PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL, PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_SUPPORT_COMPOSITION, PFD_MAIN_PLANE, PAINTSTRUCT

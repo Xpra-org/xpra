@@ -146,7 +146,7 @@ def GetMonitorInfo(hmonitor):
 kernel32 = WinDLL("kernel32", use_last_error=True)
 SetConsoleTitleA = kernel32.SetConsoleTitleA
 SetConsoleTitleA.restype = INT
-SetConsoleTitleA.argtypes = [LPCTSTR] 
+SetConsoleTitleA.argtypes = [LPCTSTR]
 GetConsoleScreenBufferInfo = kernel32.GetConsoleScreenBufferInfo
 GetModuleHandleA = kernel32.GetModuleHandleA
 GetModuleHandleA.restype = HMODULE
@@ -188,7 +188,7 @@ CreateWindowExA = user32.CreateWindowExA
 CreateWindowExA.restype = HWND
 DestroyWindow = user32.DestroyWindow
 DestroyWindow.restype = BOOL
-DestroyWindow.argtypes = [HWND] 
+DestroyWindow.argtypes = [HWND]
 DefWindowProcA = user32.DefWindowProcA
 DefWindowProcW = user32.DefWindowProcW
 MessageBoxA = user32.MessageBoxA
@@ -330,7 +330,7 @@ CloseDesktop.restype = BOOL
 CloseDesktop.argtypes = [HDESK]
 OpenInputDesktop = user32.OpenInputDesktop
 OpenInputDesktop.restype = HDESK
-OpenInputDesktop.argtypes = [DWORD, BOOL, ACCESS_MASK] 
+OpenInputDesktop.argtypes = [DWORD, BOOL, ACCESS_MASK]
 GetUserObjectInformationA = user32.GetUserObjectInformationA
 GetUserObjectInformationA.restype = BOOL
 GetUserObjectInformationA.argtypes = [HANDLE, INT, LPVOID, DWORD, LPDWORD]

@@ -49,7 +49,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.proxy_release = None
         self.proxy_version = None
         self.proxy_version = None
-        
+
     def parse_client_caps(self, c):
         self.uuid = c.strget("uuid")
         self.machine_id = c.strget("machine_id")

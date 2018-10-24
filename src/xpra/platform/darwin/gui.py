@@ -168,7 +168,7 @@ class OSX_Subprocess_Notifier(NotifierBase):
 
     def close_notify(self, nid):
         pass
-    
+
 
 def get_native_notifier_classes():
     v = []

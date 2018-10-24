@@ -281,7 +281,7 @@ keymd5(host_key),
                 if not keys:
                     log.warn("Warning: unknown SSH host")
                 else:
-                    log.warn("Warning: unknown %s SSH host key", keyname())                        
+                    log.warn("Warning: unknown %s SSH host key", keyname())
                 qinfo = [
                     "The authenticity of host '%s' can't be established." % (host,),
                     "%s key fingerprint is" % keyname(),

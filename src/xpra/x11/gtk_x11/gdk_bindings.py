@@ -20,7 +20,7 @@ else:
 get_pywindow                = gdk_bindings.get_pywindow
 get_xatom                   = gdk_bindings.get_xatom
 add_event_receiver          = gdk_bindings.add_event_receiver
-remove_event_receiver       = gdk_bindings.remove_event_receiver 
+remove_event_receiver       = gdk_bindings.remove_event_receiver
 add_fallback_receiver       = gdk_bindings.add_fallback_receiver
 remove_fallback_receiver    = gdk_bindings.remove_fallback_receiver
 add_catchall_receiver       = gdk_bindings.add_catchall_receiver

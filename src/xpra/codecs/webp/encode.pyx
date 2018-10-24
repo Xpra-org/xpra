@@ -445,7 +445,7 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
     config.lossless = quality>=LOSSLESS_THRESHOLD
     if config.lossless:
         #not much to gain from setting a high quality here,
-        #the latency will be higher for a negligible compression gain: 
+        #the latency will be higher for a negligible compression gain:
         config.quality = fclamp(50-speed//2)
     else:
         #normalize quality: webp quality is much higher than jpeg's

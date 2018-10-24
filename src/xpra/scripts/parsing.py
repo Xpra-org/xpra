@@ -1089,7 +1089,7 @@ def do_parse_cmdline(cmdline, defaults):
 
     #only use the default key-shortcut list if the user hasn't specified one:
     if not options.key_shortcut:
-        options.key_shortcut = defaults.key_shortcut    
+        options.key_shortcut = defaults.key_shortcut
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2

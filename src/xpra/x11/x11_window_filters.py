@@ -62,7 +62,7 @@ def get_window(filter_object, window):
 def init_x11_window_filters():
     from xpra.server.window import filters
     original_get_window_filter = filters.get_window_filter
-    
+
     def get_x11_window_filter(object_name, property_name, operator, value):
         oname = object_name.lower()
         wf = original_get_window_filter(oname.replace("x11:", ""), property_name, operator, value)
@@ -74,6 +74,6 @@ def init_x11_window_filters():
             log("patched methods: %s, %s", wf.get_window, wf.get_window_value)
         log("x11 get_window_filter%s=%s", (object_name, property_name, operator, value), wf)
         return wf
-    
+
     filters.get_window_filter = get_x11_window_filter
     log("init_x11_window_filters() filters.get_window_filter=%s", filters.get_window_filter)

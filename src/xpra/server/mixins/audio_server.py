@@ -249,7 +249,7 @@ class AudioServer(StubServerMixin):
                             soundlog.error(" found some files in '%s': %s", path, files)
                     except OSError:
                         pass
-            
+
 
     def init_sound_options(self):
         def sound_option_or_all(*_args):

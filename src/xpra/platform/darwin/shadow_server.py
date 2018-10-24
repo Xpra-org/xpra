@@ -240,7 +240,7 @@ def main():
         filename = "./Capture-%s-%s.png" % ((x, y, w, h),tstr,)
         i.save(filename, "png")
         print("saved to %s" % (filename,))
-        
+
 
 if __name__ == "__main__":
     main()

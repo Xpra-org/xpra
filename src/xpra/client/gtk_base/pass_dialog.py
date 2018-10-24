@@ -158,7 +158,7 @@ def show_pass_dialog(argv):
     gui_ready()
     app.show()
     return app.run()
-    
+
 
 def main():
     from xpra.platform import program_context

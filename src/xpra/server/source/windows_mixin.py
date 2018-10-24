@@ -274,7 +274,6 @@ class WindowsMixin(StubSourceMixin):
         cursorlog("send_empty_cursor(..)")
         self.last_cursor_sent = None
         self.send_more("cursor", "")
-        
 
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):

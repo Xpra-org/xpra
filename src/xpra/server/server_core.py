@@ -332,7 +332,7 @@ class ServerCore(object):
             glib.unix_signal_add(glib.PRIORITY_HIGH, sig, handler, sig)
         else:
             signal.signal(sig, handler)
-        
+
 
     def run(self):
         self.print_run_info()
@@ -1507,7 +1507,6 @@ class ServerCore(object):
             if authenticator not in remaining_authenticators:
                 authlog("authenticator[%i]=%s (already passed)", index, authenticator)
                 continue
-            
             req = authenticator.requires_challenge()
             authlog("authenticator[%i]=%s, requires-challenge=%s, challenge-sent=%s", index, authenticator, req, authenticator.challenge_sent)
             if not req:

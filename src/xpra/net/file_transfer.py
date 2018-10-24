@@ -523,7 +523,7 @@ class FileTransferHandler(FileTransferAttributes):
             self._open_url(url)
         else:
             filelog("url '%s' not accepted", url)
-        
+
 
     def send_open_url(self, url):
         if not self.remote_open_url:

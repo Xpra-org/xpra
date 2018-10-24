@@ -41,7 +41,7 @@ class WindowServer(StubServerMixin):
 
     def reset_state(self):
         self._focus(None, 0, [])
-        
+
 
     def get_server_features(self, _source):
         return {
@@ -72,7 +72,7 @@ class WindowServer(StubServerMixin):
     def parse_hello(self, ss, caps, send_ui):
         if send_ui:
             self.parse_hello_ui_window_settings(ss, caps)
-    
+
     def parse_hello_ui_window_settings(self, ss, c):
         pass
 

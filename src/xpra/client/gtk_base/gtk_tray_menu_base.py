@@ -1598,7 +1598,7 @@ class GTKTrayMenuBase(object):
         app_menu_item = self.handshake_menuitem(app_name.decode("utf-8"), image=image)
         def app_launch(*_args):
             command = command_props.get(b"command")
-            log("command=%s", command) 
+            log("command=%s", command)
             if command:
                 self.client.send_start_command(app_name, command, False, self.client.server_sharing)
         app_menu_item.connect("activate", app_launch)

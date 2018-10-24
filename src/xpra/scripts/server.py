@@ -1099,7 +1099,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     if proxying or upgrading:
         #when proxying or upgrading, don't exec any plain start commands:
-        opts.start = opts.start_child = [] 
+        opts.start = opts.start_child = []
     elif opts.exit_with_children:
         assert opts.start_child, "exit-with-children was specified but start-child is missing!"
     elif opts.start_child:

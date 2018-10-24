@@ -44,7 +44,7 @@ class MMAP_Connection(StubSourceMixin):
 
     def parse_client_caps(self, c):
         self.mmap_client_namespace = c.boolget("mmap.namespace", False)
-        sep = ["_", "."][self.mmap_client_namespace] 
+        sep = ["_", "."][self.mmap_client_namespace]
         def mmapattr(k):
             return "mmap%s%s" % (sep, k)
         mmap_filename = c.strget(mmapattr("file"))

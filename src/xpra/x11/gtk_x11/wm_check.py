@@ -29,7 +29,7 @@ def wm_check(display, wm_name, upgrading=False):
             cwm_so = X11Window.XGetSelectionOwner(cwm_prop)
             log("ewmh selection owner for %s: %s", wm_prop, wm_so)
             log("compositing window manager %s: %s", cwm_prop, cwm_so)
-    
+
             try:
                 ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
             except:

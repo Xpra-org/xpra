@@ -61,7 +61,7 @@ class FilePrintServer(StubServerMixin):
 
     def get_server_features(self, _source):
         f = self.file_transfer.get_file_transfer_features()
-        f["printer.attributes"] = ("printer-info", "device-uri") 
+        f["printer.attributes"] = ("printer-info", "device-uri")
         f.update(self.file_transfer.get_file_transfer_features())
         return f
 

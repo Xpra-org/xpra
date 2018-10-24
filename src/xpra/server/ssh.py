@@ -129,7 +129,7 @@ class SSHServer(paramiko.ServerInterface):
         try:
             cmd = shlex.split(command.decode("utf8"))
         except UnicodeDecodeError:
-            cmd = shlex.split(bytestostr(command))            
+            cmd = shlex.split(bytestostr(command))
         if cmd[0] in ("type", "which") and len(cmd)==2:
             xpra_cmd = cmd[1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             if not POSIX:

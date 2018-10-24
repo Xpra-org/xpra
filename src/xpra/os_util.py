@@ -606,7 +606,7 @@ class nomodule_context(object):
 class umask_context(object):
 
     def __init__(self, umask):
-        self.umask = umask        
+        self.umask = umask
     def __enter__(self):
         self.orig_umask = os.umask(self.umask)
     def __exit__(self, *_args):

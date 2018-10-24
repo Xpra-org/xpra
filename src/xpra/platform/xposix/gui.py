@@ -662,7 +662,7 @@ class XI2_Window(object):
         valuators = event.valuators
         unused_valuators = valuators.copy()
         dx, dy = 0, 0
-        if (valuators and device and device.get("enabled") and 
+        if (valuators and device and device.get("enabled") and
             client.server_input_devices=="uinput" and client.server_precise_wheel):
             XIModeRelative = 0
             classes = device.get("classes")
