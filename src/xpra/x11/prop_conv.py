@@ -16,7 +16,7 @@ import cairo
 from xpra.log import Logger
 log = Logger("x11", "window")
 
-from xpra.os_util import hexstr, StringIOClass, PYTHON3
+from xpra.os_util import hexstr, BytesIOClass, PYTHON3
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
@@ -243,7 +243,7 @@ def _read_image(_disp, stream):
 # a _NET_WM_ICON property.
 def NetWMIcons(disp, data):
     icons = []
-    stream = StringIOClass(data)
+    stream = BytesIOClass(data)
     while True:
         size_image = _read_image(disp, stream)
         if size_image is None:
