@@ -441,11 +441,11 @@ class ClipboardProtocolHelperBase(object):
             if len(data or "")==0:
                 return ""
             if dformat == 32:
-                format_char = "L"
+                format_char = b"L"
             elif dformat == 16:
-                format_char = "H"
+                format_char = b"H"
             elif dformat == 8:
-                format_char = "B"
+                format_char = b"B"
             else:
                 raise Exception("unknown encoding format: %s" % dformat)
             fstr = b"@" + format_char * len(data)
