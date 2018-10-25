@@ -13,7 +13,7 @@
 from __future__ import absolute_import
 
 
-__version__ = (b"Cython", 0, 14)
+__version__ = (b"Cython", 2, 5)
 
 from xpra.buffers.membuf cimport object_as_buffer
 
@@ -157,7 +157,7 @@ cdef int encode_list(object x, r) except -1:
 
 cdef int encode_dict(object x, r) except -1:
     r.append(b'd')
-    for k in sorted(x.keys()):
+    for k in x.keys():
         v = x[k]
         assert encode(k, r)==0
         assert encode(v, r)==0

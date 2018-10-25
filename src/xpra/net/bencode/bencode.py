@@ -9,7 +9,7 @@
 
 # Original version written by Petru Paler
 
-__version__ = (b"Python", 0, 12)
+__version__ = (b"Python", 2, 5)
 
 import sys
 if sys.version_info[0] >= 3:
@@ -138,7 +138,7 @@ def encode_list(x, r):
 
 def encode_dict(x,r):
     r.append('d')
-    for k in sorted(x.keys()):
+    for k in x.keys():
         v = x[k]
         encode_func[type(k)](k, r)
         encode_func[type(v)](v, r)
