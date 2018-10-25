@@ -872,17 +872,26 @@ class SessionInfo(gtk.Window):
     def all_values_from_info(self, *window_props):
         #newer (2.4 and later) servers can just give us the value directly:
         for window_prop in window_props:
-            v = dictlook(self.client.server_last_info, "client.%s" % window_prop)
+            prop_path = "client.%s" % window_prop
+            v = dictlook(self.client.server_last_info, prop_path)
             if v is not None:
-                v = typedict(v)
-                getv = v.intget
-                return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
+                try:
+                    v = typedict(v)
+                except TypeError:
+                    #backwards compatibility:
+                    #older servers don't expose the correct value or type here
+                    #so don't use this value
+                    log("expected dictionary for %s", prop_path)
+                    log(" got %s: %s", type(v), v)
+                else:
+                    getv = v.intget
+                    return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
 
         #legacy servers: sum up the values for all the windows found
         def avg(values):
             if not values:
                 return ""
-            return sum(values) / len(values)
+            return sum(values) // len(values)
         def getv(suffix, op):
             if self.client.server_last_info is None:
                 return ""
