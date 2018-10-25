@@ -37,17 +37,24 @@ class KeyboardBase(object):
                 #log.info("%s (%s), %s (%s)", keycode, type(keycode), keyname, type(keyname))
                 if isinstance(a, int) and isinstance(b, bytes):
                     keycode = a
-                    keyname = b
+                    keynames = (b,)
                 elif isinstance(a, bytes) and isinstance(b, int):
-                    keyname = a
+                    keynames = (a,)
                     #level = b
                     keycode = 0
-                self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
-                if keycode:
-                    keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
-                    if keycode not in keycodes:
-                        keycodes.append(keycode)
-                self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
+                elif isinstance(a, (bytes,str)) and isinstance(b, (bytes,str)):
+                    keynames = (a, b)
+                    keycode = 0
+                else:
+                    log.warn("Warning: unexpected key definition: %s, %s", type(a), type(b))
+                    log.warn(" values: %s, %s", a, b)
+                    continue
+                for keyname in keynames:
+                    self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
+                    if keycode:
+                        keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
+                        if keycode not in keycodes:
+                            keycodes.append(keycode)
         log("modifier_keys=%s", self.modifier_keys)
         log("modifier_keycodes=%s", self.modifier_keycodes)
 
