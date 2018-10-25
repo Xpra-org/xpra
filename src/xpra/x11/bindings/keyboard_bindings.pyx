@@ -802,7 +802,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         success = True
         log("add modifier: modifier %s=%s", modifier, keysyms)
         for keysym_str in keysyms:
-            keysym = XStringToKeysym(keysym_str)
+            keysym = XStringToKeysym(strtobytes(keysym_str))
             log("add modifier: keysym(%s)=%s", keysym_str, keysym)
             keycodes = self.KeysymToKeycodes(keysym)
             log("add modifier: keycodes(%s)=%s", keysym, keycodes)
