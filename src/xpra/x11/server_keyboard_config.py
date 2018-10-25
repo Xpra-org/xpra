@@ -484,7 +484,7 @@ class KeyboardConfig(KeyboardConfigBase):
             failed = []
             for modifier in modifiers:
                 modifier = bytestostr(modifier)
-                keynames = self.keynames_for_mod.get(strtobytes(modifier))
+                keynames = self.keynames_for_mod.get(modifier)
                 if not keynames:
                     log.error("Error: unknown modifier '%s'", modifier)
                     log.error(" known modifiers: %s", csv(self.keynames_for_mod.keys()))

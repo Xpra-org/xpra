@@ -684,9 +684,10 @@ def get_modifiers_from_meanings(xkbmap_mod_meanings):
     #first generate a {modifier : [keynames]} dict:
     modifiers = {}
     for keyname, modifier in xkbmap_mod_meanings.items():
-        l = modifiers.setdefault(modifier, [])
-        if keyname not in l:
-            l.append(keyname)
+        l = modifiers.setdefault(bytestostr(modifier), [])
+        kn = bytestostr(keyname)
+        if kn not in l:
+            l.append(kn)
     log("get_modifiers_from_meanings(%s) modifier dict=%s", xkbmap_mod_meanings, modifiers)
     return modifiers
 
