@@ -1528,11 +1528,11 @@ class GTKTrayMenuBase(object):
             log("start_menu_init(%s)", args)
             if not self.client.server_start_new_commands:
                 set_sensitive(start_menu_item, False)
-                start_menu_item.set_tooltip_text("The server does not support starting new commands")
+                start_menu_item.set_tooltip_text("This server does not support starting new commands")
                 return
             if not self.client.xdg_menu:
                 set_sensitive(start_menu_item, False)
-                start_menu_item.set_tooltip_text("The server does not provide start menu data")
+                start_menu_item.set_tooltip_text("This server does not provide start menu data")
                 return
             menu = gtk.Menu()
             start_menu_item.set_submenu(menu)
