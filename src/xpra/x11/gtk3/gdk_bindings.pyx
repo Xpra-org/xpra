@@ -10,7 +10,6 @@ from __future__ import absolute_import
 
 import os
 import traceback
-from weakref import WeakKeyDictionary
 
 import gi
 gi.require_version('GdkX11', '3.0')
@@ -566,41 +565,40 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
 # ClientMessages.  If they are sent with an empty mask, then they go to the
 # client that owns the window they are sent to, otherwise they go to any
 # clients that are selecting for that mask they are sent with.
-
-window_event_receivers = WeakKeyDictionary()
+WINDOW_EVENT_RECEIVERS_KEY = "_xpra_window_event_receivers"
 
 def add_event_receiver(window, receiver, max_receivers=3):
-    receivers = window_event_receivers.get(window)
+    receivers = getattr(window, WINDOW_EVENT_RECEIVERS_KEY, None)
     if receivers is None:
         receivers = set()
-        window_event_receivers[window] = receivers
+        setattr(window, WINDOW_EVENT_RECEIVERS_KEY, receivers)
     if max_receivers>0 and len(receivers)>max_receivers:
         log.warn("already too many receivers for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
         traceback.print_stack()
     receivers.add(receiver)
 
 def remove_event_receiver(window, receiver):
-    receivers = window_event_receivers.get(window)
+    receivers = getattr(window, WINDOW_EVENT_RECEIVERS_KEY, None)
     if receivers is None:
         return
     receivers.discard(receiver)
     if not receivers:
-        del window_event_receivers[window]
+        delattr(window, WINDOW_EVENT_RECEIVERS_KEY)
 
 #only used for debugging:
 def get_event_receivers(window):
-    return window_event_receivers.get(window)
+    return getattr(window, WINDOW_EVENT_RECEIVERS_KEY, None)
 
 def cleanup_all_event_receivers():
     root = Gdk.get_default_root_window()
     try:
-        del window_event_receivers[root]
-    except KeyError:
+        delattr(root, WINDOW_EVENT_RECEIVERS_KEY)
+    except AttributeError:
         pass
     for window in get_children(root):
         try:
-            del window_event_receivers[window]
-        except KeyError:
+            delattr(window, WINDOW_EVENT_RECEIVERS_KEY)
+        except AttributeError:
             pass
 
 
