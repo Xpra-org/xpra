@@ -1554,7 +1554,7 @@ class GTKTrayMenuBase(object):
                 category_menu_item.set_submenu(cat_menu)
                 self.popup_menu_workaround(cat_menu)
                 menu.append(category_menu_item)
-                for app_name, command_props in entries.items():
+                for app_name, command_props in sorted(entries.items()):
                     app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
                     cat_menu.append(app_menu_item)
             menu.show_all()
