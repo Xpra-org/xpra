@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
 gtk = import_gtk()
 glib = import_glib()
 
@@ -13,6 +13,7 @@ from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized
 from xpra.os_util import bytestostr, OSX
 from xpra.gtk_common.gtk_util import (
     ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItemClass,
+    get_pixbuf_from_data, scaled_image,
     MESSAGE_QUESTION, BUTTONS_NONE,
     )
 from xpra.client.client_base import EXIT_OK
@@ -21,6 +22,7 @@ from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.codecs.loader import get_encoding_help, get_encoding_name
 from xpra.simple_stats import std_unit_dec
 from xpra.platform.gui import get_icon_size
+from xpra.platform.paths import get_icon_dir
 from xpra.client import mixin_features
 
 
@@ -1563,33 +1565,42 @@ class GTKTrayMenuBase(object):
         return start_menu_item
 
     def get_appimage(self, app_name, icondata=None):
-        if not icondata:
-            return None
-        from xpra.gtk_common.gtk_util import get_pixbuf_from_data, scaled_image
-        try:
-            from xpra.gtk_common.gobject_compat import import_pixbufloader
-            loader = import_pixbufloader()()
-            loader.write(icondata)
-            loader.close()
-            pixbuf = loader.get_pixbuf()
+        pixbuf = None
+        if app_name and not icondata:
+            #try to load from our icons:
+            icon_filename = os.path.join(get_icon_dir(), "%s.png" % app_name.decode("utf-8").lower())
+            log.info("get_appimage(%s, %s) icon_filename=%s", app_name, icondata, icon_filename)
+            if os.path.exists(icon_filename):
+                log.info("exists!")
+                from xpra.gtk_common.gtk_util import pixbuf_new_from_file
+                pixbuf = pixbuf_new_from_file(icon_filename)
+        if not pixbuf and icondata:
+            #gtk pixbuf loader:
+            try:
+                loader = import_pixbufloader()()
+                loader.write(icondata)
+                loader.close()
+                pixbuf = loader.get_pixbuf()
+            except Exception:
+                log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
+                log.error(" data=%s", repr_ellipsized(icondata))
+        if not pixbuf and icondata:
+            #let's try pillow:
+            try:
+                from PIL import Image
+                from xpra.os_util import BytesIOClass
+                buf = BytesIOClass(icondata)
+                img = Image.open(buf)
+                has_alpha = img.mode=="RGBA"
+                width, height = img.size
+                rowstride = width * (3+int(has_alpha))
+                pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
+                return scaled_image(pixbuf, icon_size=32)
+            except Exception:
+                log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
+                log.error(" data=%s", repr_ellipsized(icondata))
+        if pixbuf:
             return scaled_image(pixbuf, icon_size=32)
-        except Exception:
-            log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
-            log.error(" data=%s", repr_ellipsized(icondata))
-        #let's try pillow:
-        try:
-            from PIL import Image
-            from xpra.os_util import BytesIOClass
-            buf = BytesIOClass(icondata)
-            img = Image.open(buf)
-            has_alpha = img.mode=="RGBA"
-            width, height = img.size
-            rowstride = width * (3+int(has_alpha))
-            pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
-            return scaled_image(pixbuf, icon_size=32)
-        except Exception:
-            log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
-            log.error(" data=%s", repr_ellipsized(icondata))
         return None
 
     def make_applaunch_menu_item(self, app_name, command_props):
