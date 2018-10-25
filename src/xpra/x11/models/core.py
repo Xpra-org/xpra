@@ -360,7 +360,12 @@ class CoreX11WindowModel(WindowModelStub):
                 log.error("BUG: unknown initial X11 property: %s", mutable)
             elif handler not in handlers:
                 handlers.add(handler)
-                handler(self)
+                try:
+                    handler(self)
+                except Exception as e:
+                    log.error("_read_initial_X11_properties()", exc_info=True)
+                    log.error("Error parsing initial property '%s':", mutable)
+                    log.error(" %s", e)
 
     def _scrub_x11(self):
         metalog("scrub_x11() x11 properties=%s", self._scrub_x11_properties)
