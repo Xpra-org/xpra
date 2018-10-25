@@ -265,7 +265,7 @@ class WindowServer(StubServerMixin):
             ss.unmap_window(wid, window)
 
     def get_transient_for(self, _window):
-        return  None
+        return 0
 
     def _process_map_window(self, proto, packet):
         log.info("_process_map_window(%s, %s)", proto, packet)

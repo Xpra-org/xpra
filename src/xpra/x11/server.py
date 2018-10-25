@@ -453,7 +453,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         transient_for = window.get_property("transient-for")
         log("get_transient_for window=%s, transient_for=%s", window, transient_for)
         if transient_for is None:
-            return None
+            return 0
         xid = get_xwindow(transient_for)
         log("transient_for.xid=%#x", xid)
         for w,wid in self._window_to_id.items():
@@ -465,7 +465,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("transient-for using root")
             return -1       #-1 is the backwards compatible marker for root...
         log("not found transient_for=%s, xid=%#x", transient_for, xid)
-        return  None
+        return 0
 
 
     def parse_hello_ui_window_settings(self, ss, _caps):
@@ -605,7 +605,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             windowlog("ignoring TEMP window %#x", xid)
             return
         WINDOW_MODEL_KEY = "_xpra_window_model_"
-        wid = raw_window.get_data(WINDOW_MODEL_KEY)
+        wid = getattr(raw_window, WINDOW_MODEL_KEY, None)
         window = self._id_to_window.get(wid)
         if window:
             if window.is_managed():
@@ -631,14 +631,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 from xpra.x11.models.systray import SystemTrayWindowModel
                 window = SystemTrayWindowModel(raw_window)
                 wid = self._add_new_window_common(window)
-                raw_window.set_data(WINDOW_MODEL_KEY, wid)
+                setattr(raw_window, WINDOW_MODEL_KEY, wid)
                 window.call_setup()
                 self._send_new_tray_window_packet(wid, window)
             else:
                 from xpra.x11.models.or_window import OverrideRedirectWindowModel
                 window = OverrideRedirectWindowModel(raw_window)
                 wid = self._add_new_window_common(window)
-                raw_window.set_data(WINDOW_MODEL_KEY, wid)
+                setattr(raw_window, WINDOW_MODEL_KEY, wid)
                 window.call_setup()
                 window.managed_connect("notify::geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)

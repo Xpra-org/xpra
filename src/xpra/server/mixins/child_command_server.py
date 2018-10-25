@@ -13,7 +13,7 @@ log = Logger("exec")
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import monotonic_time, OSX, WIN32, POSIX
-from xpra.util import envint, csv, first_time
+from xpra.util import envint, csv
 from xpra.scripts.parsing import parse_env
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
