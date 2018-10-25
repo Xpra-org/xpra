@@ -154,7 +154,7 @@ class WindowSource(WindowIconSource):
         self.client_bit_depth = encoding_options.intget("bit-depth", 24)
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
-        self.supports_flush = PAINT_FLUSH and encoding_options.get("flush")
+        self.supports_flush = PAINT_FLUSH and encoding_options.boolget("flush")
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [])
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
