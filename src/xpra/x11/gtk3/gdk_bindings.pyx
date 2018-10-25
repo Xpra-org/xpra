@@ -408,7 +408,11 @@ cdef object _get_pywindow(object display_source, Window xwindow):
     if xwindow==0:
         return None
     disp = get_display_for(display_source)
-    win = GdkX11.X11Window.foreign_new_for_display(disp, xwindow)
+    try:
+        win = GdkX11.X11Window.foreign_new_for_display(disp, xwindow)
+    except TypeError as e:
+        verbose("cannot get gdk window for %s : %#x, %s", display_source, xwindow, e)
+        win = None
     if win is None:
         verbose("cannot get gdk window for %s : %#x", display_source, xwindow)
         raise XError(BadWindow)
@@ -888,7 +892,7 @@ cdef _route_event(int etype, event, signal, parent_signal):
     if event.window is None:
         if DEBUG:
             log.info("  event.window is None, ignoring")
-        assert etype in (UnmapNotify, DestroyNotify), \
+        assert etype in (CreateNotify, UnmapNotify, DestroyNotify, PropertyNotify), \
                 "event window is None for event type %s!" % (x_event_type_names.get(etype, etype))
     elif event.window is event.delivered_to:
         if signal is not None:
@@ -935,7 +939,11 @@ cdef object _gw(display, Window xwin):
     try:
         disp = get_raw_display_for(display)
         gdk_x11_display_error_trap_push(disp)
-        win = GdkX11.X11Window.foreign_new_for_display(display, xwin)
+        try:
+            win = GdkX11.X11Window.foreign_new_for_display(display, xwin)
+        except TypeError as e:
+            verbose("cannot get gdk window for %s, %#x: %s", display, xwin, e)
+            return None
         gdk_display_flush(disp)
         error = gdk_x11_display_error_trap_pop(disp)
     except Exception as e:
@@ -1204,7 +1212,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
                     + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", etype, event_type, event_args, pyev)
         else:
             msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), etype, event_type, event_args, pyev
-            log.error(*msg)
+            log.error(*msg, exc_info=True)
         return None
     return pyev
 
