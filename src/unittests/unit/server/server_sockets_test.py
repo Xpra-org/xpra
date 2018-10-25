@@ -9,7 +9,7 @@ import shutil
 import unittest
 import tempfile
 from xpra.util import repr_ellipsized
-from xpra.os_util import load_binary_file, pollwait, OSX, POSIX, PYTHON2
+from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST, EXIT_SSL_FAILURE, EXIT_STR
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log
@@ -177,7 +177,7 @@ class ServerSocketsTest(ServerTestUtil):
 
 
 def main():
-	if POSIX and PYTHON2 and not OSX:
+	if POSIX and not OSX:
 		unittest.main()
 
 

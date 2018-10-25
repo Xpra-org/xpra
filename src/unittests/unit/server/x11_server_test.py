@@ -63,7 +63,7 @@ class X11ServerTest(ServerTestUtil):
 
 
 def main():
-	if POSIX and PYTHON2 and not OSX:
+	if POSIX and not OSX:
 		unittest.main()
 
 

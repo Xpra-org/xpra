@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.os_util import OSX, POSIX, PYTHON2
+from xpra.os_util import OSX, POSIX
 from unit.server.mixins.server_mixins_option_test_util import ServerMixinsOptionTestUtil
 
 
@@ -23,7 +23,7 @@ class StartOptionTest(ServerMixinsOptionTestUtil):
 
 
 def main():
-    if POSIX and PYTHON2 and not OSX:
+    if POSIX and not OSX:
         unittest.main()
 
 

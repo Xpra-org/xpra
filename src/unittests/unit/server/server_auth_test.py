@@ -6,7 +6,7 @@
 
 import os
 import unittest
-from xpra.os_util import pollwait, OSX, POSIX, PYTHON2
+from xpra.os_util import pollwait, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED, EXIT_NO_AUTHENTICATION
 from unit.server_test_util import ServerTestUtil, log
 
@@ -77,7 +77,7 @@ class ServerAuthTest(ServerTestUtil):
 
 
 def main():
-	if POSIX and PYTHON2 and not OSX:
+	if POSIX and not OSX:
 		unittest.main()
 
 
