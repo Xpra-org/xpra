@@ -20,7 +20,7 @@ from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net.compression import compressed_wrapper, Compressed, use_lz4, use_lzo
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, strtobytes
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, typedict, envint
 
@@ -291,8 +291,10 @@ class EncodingsMixin(StubSourceMixin):
                 self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
         for k in c.keys():
+            #yaml gives us str..
+            k = strtobytes(k)
             if k.startswith(b"theme.") or  k.startswith(b"encoding.icons."):
-                self.icons_encoding_options[k.replace(b"encoding.icons.", b"").replace(b"theme.", b"")] = c[k]
+                self.icons_encoding_options[k.replace(b"encoding.icons.", b"").replace(b"theme.", b"")] = c.strget(k)
             elif k.startswith(b"encoding."):
                 stripped_k = k[len(b"encoding."):]
                 if stripped_k in (b"transparency",

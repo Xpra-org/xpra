@@ -7,6 +7,7 @@
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
+from xpra.os_util import PYTHON3, strtobytes
 from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
 
 from xpra.util import envbool
@@ -62,7 +63,11 @@ def init_yaml():
     try:
         #json messes with strings and unicode (makes it unusable for us)
         import yaml
-        yaml_encode = yaml.dump
+        if PYTHON3:
+            def yaml_encode(v):
+                return yaml.dump(v).encode("latin1")
+        else:
+            yaml_encode = yaml.dump
         yaml_decode = yaml.load
         yaml_version = yaml.__version__
     except ImportError:

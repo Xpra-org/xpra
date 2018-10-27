@@ -18,7 +18,7 @@ screenlog = Logger("screen")
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
 
-from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
+from xpra.os_util import thread, monotonic_time, bytestostr, strtobytes, WIN32, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
@@ -612,6 +612,7 @@ class ServerBase(ServerBaseClass):
                 if v is None:
                     log.warn("removing invalid None property for %s", k)
                     continue
+                k = strtobytes(k)
                 if not k.startswith(b"encoding"):
                     ncp[k] = v
             if ncp:

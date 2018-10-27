@@ -35,10 +35,10 @@ class KeyboardBase(object):
         for modifier, keys in mappings.items():
             for a, b in keys:
                 #log.info("%s (%s), %s (%s)", keycode, type(keycode), keyname, type(keyname))
-                if isinstance(a, int) and isinstance(b, bytes):
+                if isinstance(a, int) and isinstance(b, (bytes, str)):
                     keycode = a
                     keynames = (b,)
-                elif isinstance(a, bytes) and isinstance(b, int):
+                elif isinstance(a, (str,bytes)) and isinstance(b, int):
                     keynames = (a,)
                     #level = b
                     keycode = 0
