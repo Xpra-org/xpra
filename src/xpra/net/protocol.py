@@ -156,7 +156,7 @@ class Protocol(object):
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
-        self.max_packet_size = 256*1024
+        self.max_packet_size = 4*1024*1024
         self.abs_max_packet_size = 256*1024*1024
         self.large_packets = [b"hello", b"window-metadata", b"sound-data", b"notify_show"]
         self.send_aliases = {}
@@ -569,7 +569,11 @@ class Protocol(object):
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         #compress, but don't bother for small packets:
         if level>0 and len(main_packet)>min_comp_size:
-            cl, cdata = self._compress(main_packet, level)
+            try:
+                cl, cdata = self._compress(main_packet, level)
+            except Exception:
+                log.error("Error compressing '%s' packet", packet_type)
+                raise
             packets.append((proto_flags, 0, cl, cdata))
         else:
             packets.append((proto_flags, 0, 0, main_packet))
