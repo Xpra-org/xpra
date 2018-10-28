@@ -33,10 +33,10 @@ override_dh_systemd_enable:
 override_dh_systemd_start:
 	dh_systemd_start xpra.service
 
-# we want the man pages only in xpra-common,
-# but the dh automagic gets confused
 override_dh_installman:
-	find . -name "*.1*"
+	mkdir -p debian/xpra/usr/share/man/man1
+	cp man/*.1 debian/xpra/usr/share/man/man1/
+	gzip -9 debian/xpra/usr/share/man/man1/*.1
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz

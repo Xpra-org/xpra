@@ -35,7 +35,9 @@ override_dh_systemd_start:
 	dh_systemd_start xpra.socket
 
 override_dh_installman:
-	find . -name "*.1*"
+	mkdir -p debian/xpra/usr/share/man/man1
+	cp man/*.1 debian/xpra/usr/share/man/man1/
+	gzip -9 debian/xpra/usr/share/man/man1/*.1
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz
