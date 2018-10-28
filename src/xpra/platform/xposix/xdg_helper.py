@@ -66,7 +66,12 @@ def export(entry, properties=[]):
 def load_icon_from_file(filename):
     if filename.endswith("xpm"):
         from PIL import Image
-        img = Image.open(filename)
+        try:
+            img = Image.open(filename)
+        except Exception:
+            log("Image.open(%s)", filename, exc_info=True)
+            log.error("Error loading '%s'", filename)
+            raise
         buf = BytesIOClass()
         img.save(buf, "PNG")
         pngicondata = buf.getvalue()
