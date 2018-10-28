@@ -64,6 +64,8 @@ class WindowsMixin(StubSourceMixin):
         self.send_windows = True
         self.pointer_grabs = False
         self.window_initiate_moveresize = False
+        self.window_min_size = 0, 0
+        self.window_max_size = 0, 0
         self.system_tray = False
         self.metadata_supported = ()
 
@@ -125,6 +127,8 @@ class WindowsMixin(StubSourceMixin):
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes") or {})
+        self.window_min_size = c.intlistget("window.min-size", (0, 0))
+        self.window_max_size = c.intlistget("window.max-size", (0, 0))
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
 
@@ -150,8 +154,13 @@ class WindowsMixin(StubSourceMixin):
             "system-tray"   : self.system_tray,
             "suspended"     : self.suspended,
             }
+        wsize = info.setdefault("window-size", {})
+        wsize.update({
+            "min"   : self.window_min_size,
+            "max"   : self.window_max_size,
+            })
         if self.window_frame_sizes:
-            info.setdefault("window", {}).update({"frame-sizes" : self.window_frame_sizes})
+            wsize.update({"frame-sizes" : self.window_frame_sizes})
         info.update(self.get_window_info())
         return info
 

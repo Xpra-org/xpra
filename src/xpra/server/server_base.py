@@ -346,6 +346,7 @@ class ServerBase(ServerBaseClass):
             #send_hello will take care of sending the current and max screen resolutions
             root_w, root_h = self.get_root_window_size()
             self.send_hello(ss, root_w, root_h, auth_caps)
+            self.add_new_client(ss, c, send_ui, share_count)
             self.send_initial_data(ss, c, send_ui, share_count)
             self.client_startup_complete(ss)
 
@@ -364,6 +365,11 @@ class ServerBase(ServerBaseClass):
         for bc in SERVER_BASES:
             if bc!=ServerCore:
                 bc.parse_hello(self, ss, c, send_ui)
+
+    def add_new_client(self, ss, c, send_ui, share_count):
+        for bc in SERVER_BASES:
+            if bc!=ServerCore:
+                bc.add_new_client(self, ss, c, send_ui, share_count)
 
     def send_initial_data(self, ss, c, send_ui, share_count):
         for bc in SERVER_BASES:

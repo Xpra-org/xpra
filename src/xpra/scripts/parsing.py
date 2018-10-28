@@ -758,10 +758,14 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--session-name", action="store",
                       dest="session_name", default=defaults.session_name,
                       help="The name of this session, which may be used in notifications, menus, etc. Default: 'Xpra'.")
+    group.add_option("--min-size", action="store",
+                      dest="min_size", default=defaults.min_size,
+                      metavar="MIN_SIZE",
+                      help="The minimum size for normal windows, ie: 100x20. Default: '%default'.")
     group.add_option("--max-size", action="store",
                       dest="max_size", default=defaults.max_size,
                       metavar="MAX_SIZE",
-                      help="The maximum size for all windows, ie: 800x600. Default: '%default'.")
+                      help="The maximum size for normal windows, ie: 800x600. Default: '%default'.")
     group.add_option("--desktop-scaling", action="store",
                       dest="desktop_scaling", default=defaults.desktop_scaling,
                       metavar="SCALING",
@@ -1125,14 +1129,20 @@ def do_parse_cmdline(cmdline, defaults):
         options.dpi = int(options.dpi)
     except Exception as e:
         raise InitException("invalid dpi value '%s': %s" % (options.dpi, e))
-    if options.max_size:
+    def parse_window_size(v, attribute="max-size"):
         try:
             #split on "," or "x":
-            w,h = [int(x.strip()) for x in options.max_size.replace(",", "x").split("x", 1)]
+            pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
+            assert len(pv)==2
+            w, h = pv
             assert w>=0 and h>0 and w<32768 and h<32768
+            return w, h
         except:
-            raise InitException("invalid max-size: %s" % options.max_size)
-        options.max_size = "%sx%s" % (w, h)
+            raise InitException("invalid %s: %s" % (attribute, x))
+    if options.min_size:
+        options.min_size = "%sx%s" % parse_window_size(options.min_size, "min-size")
+    if options.max_size:
+        options.max_size = "%sx%s" % parse_window_size(options.max_size, "max-size")
     if options.encryption_keyfile and not options.encryption:
         options.encryption = "AES"
     if options.tcp_encryption_keyfile and not options.tcp_encryption:

@@ -212,6 +212,13 @@ def get_double_click_time():
         return -1
 
 
+def get_window_min_size():
+    #roughly enough to see the window buttons:
+    return 120, 1
+
+#def get_window_max_size():
+#    return 2**15-1, 2**15-1
+
 def get_window_frame_sizes():
     #use a hard-coded window position and size:
     return get_window_frame_size(20, 20, 100, 100)

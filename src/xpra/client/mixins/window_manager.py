@@ -27,7 +27,10 @@ traylog = Logger("client", "tray")
 
 
 from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
-from xpra.platform.gui import get_vrefresh, get_double_click_time, get_double_click_distance, get_native_system_tray_classes
+from xpra.platform.gui import (
+    get_vrefresh, get_window_min_size, get_window_max_size,
+    get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
+    )
 from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.config import FALSE_OPTIONS
@@ -82,6 +85,7 @@ class WindowClient(StubClientMixin):
         self._id_to_window = {}
 
         self.auto_refresh_delay = -1
+        self.min_window_size = 0, 0
         self.max_window_size = 0, 0
 
         #draw thread:
@@ -147,14 +151,19 @@ class WindowClient(StubClientMixin):
         self.client_supports_bell = opts.bell
         self.input_devices = opts.input_devices
         self.auto_refresh_delay = opts.auto_refresh_delay
-        if opts.max_size:
+        def parse_window_size(v, attribute="max-size"):
+            if not v:
+                return 0, 0
             try:
-                self.max_window_size = [int(x.strip()) for x in opts.max_size.split("x", 1)]
-                assert len(self.max_window_size)==2
+                pv = tuple(int(x.strip()) for x in v.split("x", 1))
+                assert len(pv)==2
+                return pv
             except:
                 #the main script does some checking, but we could be called from a config file launch
-                log.warn("Warning: invalid window max-size specified: %s", opts.max_size)
-                self.max_window_size = 0, 0
+                log.warn("Warning: invalid window %s specified: %s", attribute, v)
+                return None
+        self.min_window_size = parse_window_size(opts.min_size) or get_window_min_size()
+        self.max_window_size = parse_window_size(opts.max_size) or get_window_max_size()
         self.pixel_depth = int(opts.pixel_depth)
         if self.pixel_depth not in (0, 16, 24, 30) and self.pixel_depth<32:
             log.warn("Warning: invalid pixel depth %i", self.pixel_depth)
@@ -288,6 +297,8 @@ class WindowClient(StubClientMixin):
             #implemented in the gtk client:
             "initiate-moveresize"       : False,
             "resize-counter"            : True,
+            "min-size"                  : self.min_window_size,
+            "max-size"                  : self.max_window_size,
             }
 
 

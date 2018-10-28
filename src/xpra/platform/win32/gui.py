@@ -821,6 +821,12 @@ def get_cursor_size():
     return (w+h)//2
 
 
+def get_window_min_size():
+    return GetSystemMetrics(win32con.SM_CXMIN), GetSystemMetrics(win32con.SM_CYMIN)
+
+#def get_window_max_size():
+#    return 2**15-1, 2**15-1
+
 def get_window_frame_sizes():
     try:
         #normal resizable windows:

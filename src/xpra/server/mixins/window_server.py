@@ -27,6 +27,25 @@ class WindowServer(StubServerMixin):
         self._window_to_id = {}
         self._id_to_window = {}
         self.window_filters = []
+        self.window_min_size = 0, 0
+        self.window_max_size = 2**15-1, 2**15-1
+
+    def init(self, opts):
+        def parse_window_size(v, attribute="max-size", default_value=(0, 0)):
+            try:
+                #split on "," or "x":
+                pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
+                assert len(pv)==2
+                w, h = pv
+                assert w>=0 and h>0 and w<32768 and h<32768
+                return w, h
+            except:
+                return default_value
+        self.window_min_size = parse_window_size(opts.min_size, "min-size", (0, 0))
+        self.window_max_size = parse_window_size(opts.max_size, "max-size", (2**15-1, 2**15-1))
+        minw, minh = self.window_min_size
+        maxw, maxh = self.window_max_size
+        self.update_size_constraints(minw, minh, maxw, maxh)
 
     def setup(self):
         self.load_existing_windows()
@@ -75,6 +94,32 @@ class WindowServer(StubServerMixin):
 
     def parse_hello_ui_window_settings(self, ss, c):
         pass
+
+
+    def add_new_client(self, *_args):
+        minw, minh = self.window_min_size
+        maxw, maxh = self.window_max_size
+        for ss in tuple(self._server_sources.values()):
+            cminw, cminh = ss.window_min_size
+            cmaxw, cmaxh = ss.window_max_size
+            minw = max(minw, cminw)
+            minh = max(minh, cminh)
+            if cmaxw>0:
+                maxw = min(maxw, cmaxw)
+            if cmaxh>0:
+                maxh = min(maxh, cmaxh)
+        maxw = max(1, maxw)
+        maxh = max(1, maxh)
+        if minw>0 and minw>maxw:
+            maxw = minw
+        if minh>0 and minh>maxh:
+            maxh = minh
+        self.update_size_constraints(minw, minh, maxw, maxh)
+
+    def update_size_constraints(self, minw, minh, maxw, maxh):
+        #subclasses may update the window models
+        pass
+
 
     def send_initial_data(self, ss, caps, send_ui, share_count):
         if send_ui:

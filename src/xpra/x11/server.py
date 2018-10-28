@@ -20,7 +20,7 @@ from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow, pixbuf_new_from_data, is_realized,
     SUBSTRUCTURE_MASK, GDKWINDOW_TEMP,
     )
-from xpra.x11.common import Unmanageable
+from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -304,6 +304,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self._has_grab:
             self._has_grab = 0
             self.X11_ungrab()
+
+
+    def update_size_constraints(self, minw, minh, maxw, maxh):
+        wm = self._wm
+        if wm:
+            wm.set_size_constraints(minw, minh, maxw, maxh)
+        elif server_features.windows:
+            #update the default so Wm will use it
+            #when we do intantiate it:
+            from xpra.x11.gtk_x11 import wm
+            wm.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
 
     def init_packet_handlers(self):

@@ -5,16 +5,15 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.util import envint, envbool
+from xpra.util import envint, envbool, typedict
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
 from xpra.gtk_common.error import XError
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-from xpra.x11.common import Unmanageable
+from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.models.size_hints_util import sanitize_size_hints
-from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr, gobject, xswallow, xsync
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -156,7 +155,7 @@ class WindowModel(BaseWindowModel):
                               "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]
     _MODELTYPE = "Window"
 
-    def __init__(self, parking_window, client_window, desktop_geometry):
+    def __init__(self, parking_window, client_window, desktop_geometry, size_constraints=(0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)):
         """Register a new client window with the WM.
 
         Raises an Unmanageable exception if this window should not be
@@ -167,6 +166,7 @@ class WindowModel(BaseWindowModel):
         self.parking_window = parking_window
         self.corral_window = None
         self.desktop_geometry = desktop_geometry
+        self.size_constraints = size_constraints
         #extra state attributes so we can unmanage() the window cleanly:
         self.in_save_set = False
         self.client_reparented = False
@@ -221,10 +221,7 @@ class WindowModel(BaseWindowModel):
         w, h = geom[2:4]
         hints = self.get_property("size-hints")
         geomlog("setup() hints=%s size=%ix%i", hints, w, h)
-        nw, nh = calc_constrained_size(w, h, hints)
-        if nw>=MAX_WINDOW_SIZE or nh>=MAX_WINDOW_SIZE:
-            #we can't handle windows that big!
-            raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
+        nw, nh = self.calc_constrained_size(w, h, hints)
         self._updateprop("geometry", (x, y, nw, nh))
         geomlog("setup() resizing windows to %sx%s", nw, nh)
         #don't trigger a resize unless we have to:
@@ -467,7 +464,7 @@ class WindowModel(BaseWindowModel):
         allocated_w, allocated_h = window_size_cb()
         geomlog("_do_update_client_geometry: allocated %ix%i (from %s)", allocated_w, allocated_h, window_size_cb)
         hints = self.get_property("size-hints")
-        w, h = calc_constrained_size(allocated_w, allocated_h, hints)
+        w, h = self.calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
         x, y = window_position_cb(w, h)
         geomlog("_do_update_client_geometry: position=%ix%i (from %s)", x, y, window_position_cb)
@@ -511,7 +508,7 @@ class WindowModel(BaseWindowModel):
         cox, coy, cow, coh = self.corral_window.get_geometry()[:4]
         #size changes (and position if any):
         hints = self.get_property("size-hints")
-        w, h = calc_constrained_size(w, h, hints)
+        w, h = self.calc_constrained_size(w, h, hints)
         cx, cy, cw, ch = self.get_property("geometry")
         resized = cow!=w or coh!=h
         moved = (x, y) != (0, 0)
@@ -564,7 +561,7 @@ class WindowModel(BaseWindowModel):
             self._updateprop("requested-size", (rw, rh))
 
         if VALIDATE_CONFIGURE_REQUEST:
-            w, h = calc_constrained_size(w, h, hints)
+            w, h = self.calc_constrained_size(w, h, hints)
         #update the geometry now, as another request may come in
         #before we've had a chance to process the ConfigureNotify that the code below will generate
         self._updateprop("geometry", (x, y, w, h))
@@ -593,13 +590,66 @@ class WindowModel(BaseWindowModel):
             self._internal_set_property("set-initial-position", (event.data[0] & 0x100) or (event.data[0] & 0x200))
             #honour hints:
             hints = self.get_property("size-hints")
-            w, h = calc_constrained_size(w, h, hints)
+            w, h = self.calc_constrained_size(w, h, hints)
             geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)", self, event.data, geom, (x,y,w,h))
             with xswallow:
                 X11Window.configureAndNotify(self.xid, x, y, w, h)
             return True
         return BaseWindowModel.process_client_message_event(self, event)
 
+    def calc_constrained_size(self, w, h, hints):
+        mhints = typedict(hints)
+        hminw, hminh = mhints.intlistget("minimum-size", (0, 0), 2, 2)
+        hmaxw, hmaxh = mhints.intlistget("maximum-size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
+        cminw, cminh, cmaxw, cmaxh = self.size_constraints
+        if cminw>0 or cminh>0:
+            if cminw>hminw or cminh>hminh:
+                if cminw>0:
+                    hminw = max(cminw, hminw)
+                if cminh>0:
+                    hminh = max(cminh, hminh)
+        if cmaxw<MAX_WINDOW_SIZE or cmaxh<MAX_WINDOW_SIZE:
+            if cmaxw>hmaxw or cmaxh>hmaxh:
+                if cmaxw>0:
+                    hmaxw = min(cmaxw, hmaxw)
+                if cmaxh>0:
+                    hmaxh = min(cmaxh, hmaxh)
+        #sanity checks:
+        if hminw>0 and hminw>hmaxw:
+            #min higher than max!
+            if hminw<=256:
+                hmaxw = hminw
+            elif hmaxw>=256:
+                hminw = hmaxw
+            else:
+                hminw = hmaxw = 256
+        if hminh>0 and hminh>hmaxh:
+            #min higher than max!
+            if hminh<=256:
+                hmaxh = hminh
+            elif hmaxh>=256:
+                hminh = hmaxh
+            else:
+                hminh = hmaxh = 256
+        if hminw>0 or hminh>0:
+            mhints["minimum-size"] = hminw, hminh
+        if hmaxw>0 or hmaxh>0:
+            mhints["maximum-size"] = hmaxw, hmaxh
+        cw, ch = calc_constrained_size(w, h, mhints)
+        geomlog("calc_constrained_size%s=%s (size_constraints=%s)", (w, h, mhints), (cw, ch), self.size_constraints)
+        return cw, ch
+
+    def update_size_constraints(self, minw=0, minh=0, maxw=MAX_WINDOW_SIZE, maxh=MAX_WINDOW_SIZE):
+        if self.size_constraints==(minw, minh, maxw, maxh):
+            geomlog("update_size_constraints%s unchanged", (minw, minh, maxw, maxh))
+            return  #no need to do anything
+        ominw, ominh, omaxw, omaxh = self.size_constraints
+        self.size_constraints = minw, minh, maxw, maxh
+        if minw<=ominw and minh<=ominh and maxw>=omaxw and maxh>=omaxh:
+            geomlog("update_size_constraints%s less restrictive, no need to recalculate", (minw, minh, maxw, maxh))
+            return
+        geomlog("update_size_constraints%s recalculating client geometry", (minw, minh, maxw, maxh))
+        self._update_client_geometry()
 
     #########################################
     # X11 properties synced to Python objects

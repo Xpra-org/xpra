@@ -16,7 +16,7 @@ from xpra.gtk_common.gtk_util import (
     get_default_root_window, display_get_default, get_xwindow,
     GDKWINDOW_FOREIGN, CLASS_INPUT_ONLY, GDKWindow,
     )
-from xpra.x11.common import Unmanageable
+from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.models.window import WindowModel, configure_bits
@@ -154,6 +154,9 @@ def u(s):
         return s.decode("utf8")
     return s
 
+DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
+
+
 class Wm(gobject.GObject):
 
     __gproperties__ = {
@@ -223,6 +226,8 @@ class Wm(gobject.GObject):
         self.set_desktop_geometry(root_w, root_h)
         self.root_set("_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
 
+        self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
+
         # Load up our full-screen widget
         self._world_window = None
         if not is_gtk3():
@@ -287,6 +292,14 @@ class Wm(gobject.GObject):
         for model in self._windows.values():
             model.update_desktop_geometry(width, height)
 
+    def set_size_constraints(self, minw=0, minh=0, maxw=MAX_WINDOW_SIZE, maxh=MAX_WINDOW_SIZE):
+        log("set_size_constraints%s", (minw, minh, maxw, maxh))
+        self.size_constraints = minw, minh, maxw, maxh
+        #update all the windows:
+        for model in self._windows.values():
+            model.update_size_constraints(minw, minh, maxw, maxh)
+
+
     def set_default_frame_extents(self, v):
         framelog("set_default_frame_extents(%s)", v)
         if not v or len(v)!=4:
@@ -319,7 +332,7 @@ class Wm(gobject.GObject):
             with xsync:
                 log("_manage_client(%s)", gdkwindow)
                 desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
-                win = WindowModel(self._root, gdkwindow, desktop_geometry)
+                win = WindowModel(self._root, gdkwindow, desktop_geometry, self.size_constraints)
         except Exception as e:
             if LOG_MANAGE_FAILURES or type(e) not in (Unmanageable, ):
                 l = log.warn

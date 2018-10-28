@@ -111,6 +111,12 @@ class StubServerMixin(object):
         pass
 
     """
+    A new client is being handled, take any action needed.
+    """
+    def add_new_client(self, ss, c, send_ui, share_count):
+        pass
+
+    """
     A new connection has been accepted, send initial data.
     """
     def send_initial_data(self, ss, caps, send_ui, share_count):
