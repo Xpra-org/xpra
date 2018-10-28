@@ -152,16 +152,15 @@ class WindowClient(StubClientMixin):
         self.input_devices = opts.input_devices
         self.auto_refresh_delay = opts.auto_refresh_delay
         def parse_window_size(v, attribute="max-size"):
-            if not v:
-                return 0, 0
-            try:
-                pv = tuple(int(x.strip()) for x in v.split("x", 1))
-                assert len(pv)==2
-                return pv
-            except:
-                #the main script does some checking, but we could be called from a config file launch
-                log.warn("Warning: invalid window %s specified: %s", attribute, v)
-                return None
+            if v:
+                try:
+                    pv = tuple(int(x.strip()) for x in v.split("x", 1))
+                    assert len(pv)==2
+                    return pv
+                except:
+                    #the main script does some checking, but we could be called from a config file launch
+                    log.warn("Warning: invalid window %s specified: %s", attribute, v)
+            return None
         self.min_window_size = parse_window_size(opts.min_size) or get_window_min_size()
         self.max_window_size = parse_window_size(opts.max_size) or get_window_max_size()
         self.pixel_depth = int(opts.pixel_depth)
