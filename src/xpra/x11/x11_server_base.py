@@ -19,140 +19,10 @@ log = Logger("x11", "server")
 mouselog = Logger("x11", "server", "mouse")
 screenlog = Logger("server", "screen")
 
-from xpra.util import envint
 from xpra.os_util import hexstr
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 
-MOUSE_WHEEL_CLICK_MULTIPLIER = envint("XPRA_MOUSE_WHEEL_CLICK_MULTIPLIER", 30)
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
-
-
-class UInputDevice(object):
-
-    def __init__(self, device, device_path):
-        self.device = device
-        self.device_path = device_path
-        self.wheel_delta = 0
-        #the first event always goes MIA:
-        #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
-        #so synthesize a dummy one now:
-        try:
-            with xsync:
-                from xpra.x11.bindings.xi2_bindings import X11XI2Bindings
-                xi2 = X11XI2Bindings()
-                v = xi2.get_xi_version()
-                log("XInput version %s", ".".join(str(x) for x in v))
-                if v<=(2, 2):
-                    self.wheel_motion(4, 1)
-        except:
-            log.warn("cannot query XInput protocol version", exc_info=True)
-
-    def click(self, button, pressed, *_args):
-        import uinput
-        BUTTON_STR = {
-            uinput.BTN_LEFT     : "BTN_LEFT",
-            uinput.BTN_RIGHT    : "BTN_RIGHT",
-            uinput.BTN_MIDDLE   : "BTN_MIDDLE",
-            uinput.BTN_SIDE     : "BTN_SIDE",
-            uinput.BTN_EXTRA    : "BTN_EXTRA",
-            uinput.REL_WHEEL    : "REL_WHEEL",
-            }
-        #this multiplier is based on the values defined in 71-xpra-virtual-pointer.rules as:
-        #MOUSE_WHEEL_CLICK_COUNT=360
-        #MOUSE_WHEEL_CLICK_ANGLE=1
-        mult = MOUSE_WHEEL_CLICK_MULTIPLIER
-        if button==4:
-            ubutton = uinput.REL_WHEEL
-            val = 1*mult
-            if pressed: #only send one event
-                return
-        elif button==5:
-            ubutton = uinput.REL_WHEEL
-            val = -1*mult
-            if pressed: #only send one event
-                return
-        else:
-            ubutton = {
-                1   : uinput.BTN_LEFT,
-                3   : uinput.BTN_RIGHT,
-                2   : uinput.BTN_MIDDLE,
-                8   : uinput.BTN_SIDE,
-                9   : uinput.BTN_EXTRA,
-                }.get(button)
-            val = bool(pressed)
-        if ubutton:
-            mouselog("UInput.click(%i, %s) uinput button=%s (%#x), %#x, value=%s", button, pressed, BUTTON_STR.get(ubutton), ubutton[0], ubutton[1], val)
-            self.device.emit(ubutton, val)
-        else:
-            mouselog("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
-            X11Keyboard.xtest_fake_button(button, pressed)
-
-    def wheel_motion(self, button, distance):
-        if button in (4, 5):
-            val = distance*MOUSE_WHEEL_CLICK_MULTIPLIER
-        else:
-            log.warn("Warning: %s", self)
-            log.warn(" cannot handle wheel motion %i", button)
-            log.warn(" this event has been dropped")
-            return
-        delta = self.wheel_delta+val
-        mouselog("UInput.wheel_motion(%i, %.4f) REL_WHEEL: %s+%s=%s", button, distance, self.wheel_delta, val, delta)
-        ival = int(delta)
-        if ival!=0:
-            import uinput
-            self.device.emit(uinput.REL_WHEEL, ival)
-            self.wheel_delta += val-ival
-
-    def close(self):
-        pass
-
-    def has_precise_wheel(self):
-        return True
-
-class UInputPointerDevice(UInputDevice):
-
-    def __repr__(self):
-        return "UInput pointer device %s" % self.device_path
-
-    def move_pointer(self, screen_no, x, y, *_args):
-        mouselog("UInputPointerDevice.move_pointer(%i, %s, %s)", screen_no, x, y)
-        #calculate delta:
-        with xsync:
-            cx, cy = X11Keyboard.query_pointer()
-            mouselog("X11Keyboard.query_pointer=%s, %s", cx, cy)
-            dx = x-cx
-            dy = y-cy
-            mouselog("delta(%s, %s)=%s, %s", cx, cy, dx, dy)
-        import uinput
-        #self.device.emit(uinput.ABS_X, x, syn=(dy==0))
-        #self.device.emit(uinput.ABS_Y, y, syn=True)
-        if dx or dy:
-            if dx!=0:
-                self.device.emit(uinput.REL_X, dx, syn=(dy==0))
-            if dy!=0:
-                self.device.emit(uinput.REL_Y, dy, syn=True)
-
-class UInputTouchpadDevice(UInputDevice):
-
-    def __init__(self, device, device_path, root_w, root_h):
-        UInputDevice.__init__(self, device, device_path)
-        self.root_w = root_w
-        self.root_h = root_h
-
-    def __repr__(self):
-        return "UInput touchpad device %s" % self.device_path
-
-    def move_pointer(self, screen_no, x, y, *_args):
-        mouselog("UInputTouchpadDevice.move_pointer(%i, %s, %s)", screen_no, x, y)
-        import uinput
-        self.device.emit(uinput.BTN_TOUCH, 1, syn=False)
-        self.device.emit(uinput.ABS_X, x*(2**24)//self.root_w, syn=False)
-        self.device.emit(uinput.ABS_Y, y*(2**24)//self.root_h, syn=False)
-        self.device.emit(uinput.ABS_PRESSURE, 255, syn=False)
-        self.device.emit(uinput.BTN_TOUCH, 0, syn=True)
-        with xsync:
-            cx, cy = X11Keyboard.query_pointer()
-            mouselog("X11Keyboard.query_pointer=%s, %s", cx, cy)
 
 
 def _get_antialias_hintstyle(antialias):
@@ -220,6 +90,7 @@ class X11ServerBase(X11ServerCore):
             uinput_device = pointer.get("uinput")
             device_path = pointer.get("device")
             if uinput_device:
+                from xpra.x11.uinput_device import UInputPointerDevice
                 self.input_devices = "uinput"
                 self.pointer_device = UInputPointerDevice(uinput_device, device_path)
                 self.verify_uinput_pointer_device()
@@ -227,6 +98,7 @@ class X11ServerBase(X11ServerCore):
             uinput_device = touchpad.get("uinput")
             device_path = touchpad.get("device")
             if uinput_device:
+                from xpra.x11.uinput_device import UInputTouchpadDevice
                 root_w, root_h = self.get_root_window_size()
                 self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
         try:
