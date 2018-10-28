@@ -117,13 +117,70 @@ def load_glob_icon(submenu_data, main_dirname="categories"):
                                     return icondata
     return None
 
+def load_xdg_entry(de):
+    #not exposed:
+    #"MimeType" is an re
+    #"Version" is a float
+    props = export(de, (
+        "Type", "VersionString", "Name", "GenericName", "NoDisplay",
+        "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
+        "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
+        "Categories", "StartupNotify", "StartupWMClass", "URL",
+        ))
+    if de.getTryExec():
+        try:
+            command = de.findTryExec()
+        except:
+            command = de.getTryExec()
+    else:
+        command = de.getExec()
+    props["command"] = command
+    icondata = props.get("IconData")
+    if not icondata:
+        #try harder:
+        icondata = load_glob_icon(de, "apps")
+        if icondata:
+            bdata, ext = icondata
+            props["IconData"] = bdata
+            props["IconType"] = ext
+    return props
+
+def load_xdg_menu(submenu):
+    #log.info("submenu %s: %s, %s", name, submenu, dir(submenu))
+    submenu_data = export(submenu, [
+        "Name", "GenericName", "Comment",
+        "Path", "Icon",
+        ])
+    icondata = submenu_data.get("IconData")
+    if not icondata:
+        #try harder:
+        icondata = load_glob_icon(submenu_data, "categories")
+        if icondata:
+            bdata, ext = icondata
+            submenu_data["IconData"] = bdata
+            submenu_data["IconType"] = ext
+    entries_data = submenu_data.setdefault("Entries", {})
+    for entry in submenu.getEntries():
+        #TODO: can we have more than 2 levels of submenus?
+        from xdg.Menu import MenuEntry
+        if isinstance(entry, MenuEntry):
+            de = entry.DesktopEntry
+            name = de.getName()
+            try:
+                entries_data[name] = load_xdg_entry(de)
+            except Exception as e:
+                log("load_xdg_menu(%s)", submenu, exc_info=True)
+                log.error("Error loading desktop entry '%s':", name)
+                log.error(" %s", e)
+    return submenu_data
+
 
 xdg_menu_data = None
 def load_xdg_menu_data():
     global xdg_menu_data
     if not xdg_menu_data:
         try:
-            from xdg.Menu import parse, Menu, MenuEntry
+            from xdg.Menu import parse, Menu
         except ImportError:
             log("load_xdg_menu_data()", exc_info=True)
             log.warn("Warning: no xdg module, cannot use application menu data")
@@ -131,57 +188,18 @@ def load_xdg_menu_data():
             xdg_menu_data = {}
             try:
                 menu = parse()
+            except Exception as e:
+                log("load_xdg_menu_data()", exc_info=True)
+                log.error("Error parsing xdg menu data:")
+                log.error(" %s", e)
+            else:
                 for submenu in menu.getEntries():
                     if isinstance(submenu, Menu) and submenu.Visible:
                         name = submenu.getName()
-                        #log.info("submenu %s: %s, %s", name, submenu, dir(submenu))
-                        submenu_data = export(submenu, [
-                            "Name", "GenericName", "Comment",
-                            "Path", "Icon",
-                            ])
-                        xdg_menu_data[name] = submenu_data
-                        icondata = submenu_data.get("IconData")
-                        if not icondata:
-                            #try harder:
-                            icondata = load_glob_icon(submenu_data, "categories")
-                            if icondata:
-                                bdata, ext = icondata
-                                submenu_data["IconData"] = bdata
-                                submenu_data["IconType"] = ext
-                        entries_data = submenu_data.setdefault("Entries", {})
-                        for entry in submenu.getEntries():
-                            #TODO: can we have more than 2 levels of submenus?
-                            if isinstance(entry, MenuEntry):
-                                de = entry.DesktopEntry
-                                name = de.getName()
-                                #not exposed:
-                                #"MimeType" is an re
-                                #"Version" is a float
-                                props = export(de, (
-                                    "Type", "VersionString", "Name", "GenericName", "NoDisplay",
-                                    "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
-                                    "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
-                                    "Categories", "StartupNotify", "StartupWMClass", "URL",
-                                    ))
-                                if de.getTryExec():
-                                    try:
-                                        command = de.findTryExec()
-                                    except:
-                                        command = de.getTryExec()
-                                else:
-                                    command = de.getExec()
-                                props["command"] = command
-                                icondata = props.get("IconData")
-                                if not icondata:
-                                    #try harder:
-                                    icondata = load_glob_icon(de, "apps")
-                                    if icondata:
-                                        bdata, ext = icondata
-                                        props["IconData"] = bdata
-                                        props["IconType"] = ext
-                                entries_data[name] = props
-            except Exception as e:
-                log("load_xdg_menu_data()", exc_info=True)
-                log.error("Error loading xdg menu data:")
-                log.error(" %s", e)
+                        try:
+                            xdg_menu_data[name] = load_xdg_menu(submenu)
+                        except Exception as e:
+                            log("load_xdg_menu_data()", exc_info=True)
+                            log.error("Error loading submenu '%s':", name)
+                            log.error(" %s", e)
     return xdg_menu_data
