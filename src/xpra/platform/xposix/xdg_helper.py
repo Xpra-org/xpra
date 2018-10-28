@@ -7,7 +7,7 @@ import os
 import sys
 
 from xpra.util import envbool
-from xpra.os_util import load_binary_file
+from xpra.os_util import load_binary_file, BytesIOClass
 from xpra.log import Logger
 log = Logger("exec", "util")
 
@@ -57,9 +57,24 @@ def export(entry, properties=[]):
         icon = props.get("Icon")
         icondata = load_icon_from_theme(icon)
         if icondata:
-            props["IconData"] = icondata
+            bdata, ext = icondata
+            props["IconData"] = bdata
+            props["IconType"] = ext
     l("properties(%s)=%s", name, props)
     return props
+
+def load_icon_from_file(filename):
+    if filename.endswith("xpm"):
+        from PIL import Image
+        img = Image.open(filename)
+        buf = BytesIOClass()
+        img.save(buf, "PNG")
+        pngicondata = buf.getvalue()
+        buf.close()
+        return pngicondata, "png"
+    icondata = load_binary_file(filename)
+    log("got icon data from '%s': %i bytes", filename, len(icondata))
+    return icondata, os.path.splitext(filename)[1].rstrip(".")
 
 def load_icon_from_theme(icon_name, theme=None):
     if not EXPORT_ICONS or not icon_name:
@@ -68,11 +83,7 @@ def load_icon_from_theme(icon_name, theme=None):
     filename = IconTheme.getIconPath(icon_name, theme=theme)
     if not filename:
         return None
-    icondata = load_binary_file(filename)
-    if not icondata:
-        return None
-    log("'%s': got icon data from '%s': %i bytes", icon_name, filename, len(icondata))
-    return icondata
+    return load_icon_from_file(filename)
 
 def load_glob_icon(submenu_data, main_dirname="categories"):
     if not LOAD_GLOB:
@@ -100,7 +111,7 @@ def load_glob_icon(submenu_data, main_dirname="categories"):
                         filenames = glob.glob(pathname)
                         if filenames:
                             for f in filenames:
-                                icondata = load_binary_file(f)
+                                icondata = load_icon_from_file(f)
                                 if icondata:
                                     log("found icon for '%s' with glob '%s': %s", v, pathname, f)
                                     return icondata
@@ -134,7 +145,9 @@ def load_xdg_menu_data():
                             #try harder:
                             icondata = load_glob_icon(submenu_data, "categories")
                             if icondata:
-                                submenu_data["IconData"] = icondata
+                                bdata, ext = icondata
+                                submenu_data["IconData"] = bdata
+                                submenu_data["IconType"] = ext
                         entries_data = submenu_data.setdefault("Entries", {})
                         for entry in submenu.getEntries():
                             #TODO: can we have more than 2 levels of submenus?
@@ -163,7 +176,9 @@ def load_xdg_menu_data():
                                     #try harder:
                                     icondata = load_glob_icon(de, "apps")
                                     if icondata:
-                                        props["IconData"] = icondata
+                                        bdata, ext = icondata
+                                        props["IconData"] = bdata
+                                        props["IconType"] = ext
                                 entries_data[name] = props
             except Exception as e:
                 log("load_xdg_menu_data()", exc_info=True)
