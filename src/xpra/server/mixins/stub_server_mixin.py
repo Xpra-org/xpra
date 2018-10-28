@@ -111,6 +111,12 @@ class StubServerMixin(object):
         pass
 
     """
+    A new connection has been accepted, send initial data.
+    """
+    def send_initial_data(self, ss, caps, send_ui, share_count):
+        pass
+
+    """
     Cleanup method for a specific connection.
     (to cleanup / free up resources associated with a specific client or connection)
     """

@@ -76,6 +76,11 @@ class WindowServer(StubServerMixin):
     def parse_hello_ui_window_settings(self, ss, c):
         pass
 
+    def send_initial_data(self, ss, caps, send_ui, share_count):
+        if send_ui:
+            self.send_initial_windows(ss, share_count>0)
+            self.send_initial_cursors(ss, share_count>0)
+
 
     def is_shown(self, _window):
         return True
