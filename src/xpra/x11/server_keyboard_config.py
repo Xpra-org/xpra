@@ -12,7 +12,7 @@ log = Logger("keyboard")
 
 
 from xpra.util import csv, nonl, envbool
-from xpra.os_util import bytestostr, strtobytes
+from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, get_default_root_window
