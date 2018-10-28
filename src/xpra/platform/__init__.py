@@ -32,6 +32,9 @@ def init(prgname=None, appname=None):
 def do_init():
     pass
 
+def threaded_server_init():
+    pass
+
 
 class program_context(object):
     def __init__(self, prgname=None, appname=None):
@@ -161,5 +164,6 @@ def platform_import(where, pm, required, *imports):
         where[x] = v
 
 platform_import(globals(), None, True, "do_init", "do_clean")
-platform_import(globals(), None, False, "set_prgname", "set_application_name", "program_context",
+platform_import(globals(), None, False, "threaded_server_init",
+                "set_prgname", "set_application_name", "program_context",
                 "command_error", "command_info", "do_get_username")

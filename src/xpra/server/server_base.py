@@ -151,6 +151,8 @@ class ServerBase(ServerBaseClass):
     def threaded_init(self):
         log("threaded_init() start")
         sleep(0.1)
+        from xpra.platform import threaded_server_init
+        threaded_server_init()
         for c in SERVER_BASES:
             if c!=ServerCore:
                 c.threaded_setup(self)
