@@ -789,6 +789,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                         missing_cursor_names.add(cursor_name)
         #create cursor from the pixel data:
         encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
+        encoding = strtobytes(encoding)
         if encoding!=b"raw":
             cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
             return None
