@@ -26,7 +26,7 @@ grablog = Logger("client", "grab")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, csv, first_time, \
+from xpra.util import updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time, \
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX
 from xpra.simple_stats import std_unit
