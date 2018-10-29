@@ -30,6 +30,8 @@ class NotificationClient(StubClientMixin):
         self.notifications_enabled = False
         self.notifier = None
         self.tray = None
+        #override the default handler in client base:
+        self.may_notify = self.do_notify
 
     def init(self, opts, _extra_args=[]):
         if opts.notifications:
@@ -100,8 +102,8 @@ class NotificationClient(StubClientMixin):
             return []
         return get_native_notifier_classes()
 
-    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
-        log("may_notify%s client_supports_notifications=%s, notifier=%s", (nid, summary, body, actions, hints, expire_timeout, icon_name), self.client_supports_notifications, self.notifier)
+    def do_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
+        log("do_notify%s client_supports_notifications=%s, notifier=%s", (nid, summary, body, actions, hints, expire_timeout, icon_name), self.client_supports_notifications, self.notifier)
         n = self.notifier
         if not self.client_supports_notifications or not n:
             #just log it instead:
