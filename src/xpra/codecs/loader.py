@@ -199,6 +199,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         log("* %s : %s" % (name.ljust(20), version))
 
 
+def is_loaded():
+    return loaded
+
 def get_codec_error(name):
     assert loaded
     return codec_errors.get(name)

@@ -983,7 +983,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
-            from xpra.client.gl.window_backend import get_opengl_backends, get_gl_client_window_module
+            from xpra.client.gl.window_backend import get_opengl_backends, get_gl_client_window_module, test_gl_client_window
             backends = get_opengl_backends(enable_opengl)
             opengllog("init_opengl: backend options: %s", backends)
             force_enable = enable_option in TRUE_OPTIONS
@@ -1024,38 +1024,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i", self.gl_texture_size_limit, self.gl_texture_size_limit)
                 l(" for OpenGL %s renderer '%s'", pver(self.opengl_props.get("opengl", "")), self.opengl_props.get("renderer", "unknown"))
             if self.opengl_enabled:
-                #try to render using a temporary window:
-                draw_result = {}
-                window = None
-                try:
-                    w, h = 50, 50
-                    window = self.GLClientWindowClass(self, None, None, 2**32-1, -100, -100, w, h, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
-                    window.realize()
-                    pixel_format = "BGRX"
-                    bpp = len(pixel_format)
-                    options = typedict({"pixel_format" : pixel_format})
-                    stride = bpp*w
-                    img_data = "\0"*stride*h
-                    coding = "rgb32"
-                    #we have to suspend idle_add to make this synchronous
-                    #we can do this because this method must be running in the UI thread already:
-                    def no_idle_add(*args, **kwargs):
-                        args[0](*args[1:], **kwargs)
-                    window._backing.idle_add = no_idle_add
-                    widget = window._backing._backing
-                    widget.realize()
-                    def paint_callback(success, message):
-                        opengllog("paint_callback(%s, %s)", success, message)
-                        draw_result.update({
-                            "success"   : success,
-                            "message"   : message,
-                            })
-                    opengllog("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
-                    window.draw_region(0, 0, w, h, coding, img_data, stride, 1, options, [paint_callback])
-                finally:
-                    if window:
-                        window.destroy()
-                if not draw_result.get("success"):
+                draw_result = test_gl_client_window(self.GLClientWindowClass, max_window_size=self.max_window_size, pixel_depth=self.pixel_depth)
+                if not draw_result.get("success", False):
                     err("OpenGL test rendering failed:", draw_result.get("message", "unknown error"))
                     return
                 log("OpenGL test rendering succeeded")

@@ -1616,21 +1616,30 @@ def run_glprobe(opts):
     #suspend all logging:
     saved_level = None
     from xpra.log import Logger, is_debug_enabled
+    log = Logger("opengl")
     if not is_debug_enabled("opengl"):
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
     try:
-        from xpra.client.gl.window_backend import get_opengl_backends, get_gl_client_window_module
+        from xpra.client.gl.window_backend import get_opengl_backends, get_gl_client_window_module, test_gl_client_window
         opengl_str = (opts.opengl or "").lower()
         force_enable = opengl_str.split(":")[0] in TRUE_OPTIONS
         backends = get_opengl_backends(opengl_str)
+        log("run_glprobe() backends=%s", backends)
         opengl_props, gl_client_window_module = get_gl_client_window_module(backends, force_enable)
+        log("run_glprobe() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
         if gl_client_window_module and opengl_props.get("safe", False):
-            return 0
+            gl_client_window_class = gl_client_window_module.GLClientWindow
+            pixel_depth = int(opts.pixel_depth)
+            log("run_glprobe() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
+            if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
+                pixel_depth = 0
+            draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth)
+            if draw_result.get("success", False):
+                return 0
         return 1
     except Exception as e:
         if is_debug_enabled("opengl"):
-            log = Logger("opengl")
             log("run_glprobe(..)", exc_info=True)
         sys.stderr.write("error=%s\n" % e)
         return 2
