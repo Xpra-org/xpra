@@ -104,6 +104,11 @@ class NotificationClient(StubClientMixin):
         log("may_notify%s client_supports_notifications=%s, notifier=%s", (nid, summary, body, actions, hints, expire_timeout, icon_name), self.client_supports_notifications, self.notifier)
         n = self.notifier
         if not self.client_supports_notifications or not n:
+            #just log it instead:
+            log.info("%s", summary)
+            if body:
+                for x in body.splitlines():
+                    log.info(" %s", x)
             return
         try:
             from xpra.notifications.common import parse_image_path
