@@ -367,7 +367,8 @@ keymd5(host_key),
                     log.info("SSH authentication using key '%s' failed:", keyfile_path)
                     log.info(" %s", e)
                 else:
-                    break
+                    if transport.is_authenticated():
+                        break
 
     def auth_none():
         log("trying none authentication")
