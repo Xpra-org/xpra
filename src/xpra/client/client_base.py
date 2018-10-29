@@ -175,10 +175,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def may_notify(self, nid, summary, body, *args, **kwargs):
         notifylog = Logger("notify")
         notifylog("may_notify(%s, %s, %s, %s, %s)", nid, summary, body, args, kwargs)
-        log.info("%s", summary)
+        notifylog.info("%s", summary)
         if body:
             for x in body.splitlines():
-                log.info("%s", x)
+                notifylog.info(" %s", x)
 
 
     def handle_deadly_signal(self, signum, _frame=None):
