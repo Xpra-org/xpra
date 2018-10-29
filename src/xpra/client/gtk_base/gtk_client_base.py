@@ -922,7 +922,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def opengl_setup_failure(self, summary = "Xpra OpenGL Acceleration Failure", body=""):
         def delayed_notify():
             if self.exit_code is None:
-                log.warn("may_notify=%s", self.may_notify)
                 self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, icon_name="opengl")
         #wait for the main loop to run:
         self.timeout_add(2*1000, delayed_notify)
