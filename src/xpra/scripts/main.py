@@ -115,7 +115,11 @@ def main(script_file, cmdline):
 
 
 def configure_logging(options, mode):
-    if mode in ("showconfig", "info", "id", "control", "list", "list-mdns", "sessions", "mdns-gui", "attach", "launcher", "stop", "print", "opengl", "test-connect"):
+    if mode in (
+        "showconfig", "info", "id", "attach", "launcher", "stop", "print",
+        "control", "list", "list-mdns", "sessions", "mdns-gui",
+        "opengl", "opengl-probe", "test-connect",
+        ):
         s = sys.stdout
     else:
         s = sys.stderr
@@ -134,7 +138,13 @@ def configure_logging(options, mode):
     #the logging system every time, and just undo things here..
     from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
     setloghandler(logging.StreamHandler(to))
-    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start", "request-start-desktop", "request-shadow", "_dialog", "_pass"):
+    if mode in (
+        "start", "start-desktop", "upgrade", "attach", "shadow", "proxy",
+        "_sound_record", "_sound_play",
+        "stop", "print", "showconfig",
+        "request-start", "request-start-desktop", "request-shadow",
+        "_dialog", "_pass",
+        ):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
@@ -1604,8 +1614,11 @@ def no_gtk():
 
 def run_glprobe(opts):
     #suspend all logging:
-    saved_level = logging.root.getEffectiveLevel()
-    logging.root.setLevel(logging.WARN)
+    saved_level = None
+    from xpra.log import Logger, is_debug_enabled
+    if not is_debug_enabled("opengl"):
+        saved_level = logging.root.getEffectiveLevel()
+        logging.root.setLevel(logging.WARN)
     try:
         from xpra.client.gl.gtk_base.gtkgl_check import check_support
         opengl_props = check_support(force_enable=opts.opengl)
@@ -1613,10 +1626,14 @@ def run_glprobe(opts):
             return 0
         return 1
     except Exception as e:
+        if is_debug_enabled("opengl"):
+            log = Logger("opengl")
+            log("run_glprobe(..)", exc_info=True)
         sys.stderr.write("error=%s\n" % e)
         return 2
     finally:
-        logging.root.setLevel(saved_level)
+        if saved_level is not None:
+            logging.root.setLevel(saved_level)
 
 def run_glcheck(opts):
     from xpra.util import pver
