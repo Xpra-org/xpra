@@ -338,7 +338,7 @@ keymd5(host_key),
             if not transport.is_authenticated():
                 log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
 
-    def auth_pulickey():
+    def auth_publickey():
         log("trying public key authentication")
         for keyfile in ("id_rsa", "id_dsa"):
             keyfile_path = osexpand(os.path.join("~/", ".ssh", keyfile))
@@ -401,7 +401,7 @@ keymd5(host_key),
         auth_agent()
 
     if not transport.is_authenticated() and KEY_AUTH:
-        auth_pulickey()
+        auth_publickey()
 
     if not transport.is_authenticated() and PASSWORD_AUTH and not password:
         for _ in range(1+PASSWORD_RETRY):
