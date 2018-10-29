@@ -7,7 +7,7 @@
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
-from xpra.os_util import PYTHON3, strtobytes
+from xpra.os_util import PYTHON3
 from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
 
 from xpra.util import envbool
