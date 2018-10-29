@@ -28,7 +28,7 @@ from xpra.scripts.parsing import info, warn, error, \
     parse_vsock, parse_env, is_local, \
     fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help, \
     supports_shadow, supports_server, supports_proxy, supports_mdns
-from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, OPTIONS_COMPAT_NAMES, \
+from xpra.scripts.config import OPTION_TYPES, TRUE_OPTIONS, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, OPTIONS_COMPAT_NAMES, \
     InitException, InitInfo, InitExit, \
     fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, has_sound_support, name_to_field
@@ -1620,9 +1620,12 @@ def run_glprobe(opts):
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
     try:
-        from xpra.client.gl.gtk_base.gtkgl_check import check_support
-        opengl_props = check_support(force_enable=opts.opengl)
-        if opengl_props.get("safe", False):
+        from xpra.client.gl.window_backend import get_opengl_backends, get_gl_client_window_module
+        opengl_str = (opts.opengl or "").lower()
+        force_enable = opengl_str.split(":")[0] in TRUE_OPTIONS
+        backends = get_opengl_backends(opengl_str)
+        opengl_props, gl_client_window_module = get_gl_client_window_module(backends, force_enable)
+        if gl_client_window_module and opengl_props.get("safe", False):
             return 0
         return 1
     except Exception as e:

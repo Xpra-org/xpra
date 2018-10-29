@@ -7,7 +7,7 @@
 
 import os
 import weakref
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_pango, gtk_version, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_pango, is_gtk3
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 gobject = import_gobject()
 gtk = import_gtk()
@@ -28,7 +28,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, csv, first_time, \
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID
-from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
@@ -942,15 +942,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.opengl_props["info"] = "disabled, %s" % msg
             self.opengl_setup_failure(body=msg)
             return
-        if len(parts)==2:
-            backends = parts[1].split(",")  #ie: "native", "gtk"
-        else:
-            if enable_opengl in ("native", "gtk") or enable_opengl.find(",")>0:
-                backends = enable_opengl.split(",")
-            elif PYTHON3:
-                backends = "native",
-            else:
-                backends = "gtk", "native"
         if enable_option in FALSE_OPTIONS:
             self.opengl_props["info"] = "disabled by configuration"
             return
@@ -992,26 +983,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
+            from xpra.client.gl.window_backend import get_opengl_backends, get_gl_client_window_module
+            backends = get_opengl_backends(enable_opengl)
             opengllog("init_opengl: backend options: %s", backends)
-            gl_client_window_module = None
-            for impl in backends:
-                opengllog("attempting to load '%s' OpenGL backend", impl)
-                GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.%sgl_client_window" % (gtk_version(), impl)
-                opengllog("importing %s", GL_CLIENT_WINDOW_MODULE)
-                try:
-                    gl_client_window_module = __import__(GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow", "check_support"])
-                except ImportError as e:
-                    opengllog("cannot import %s", GL_CLIENT_WINDOW_MODULE, exc_info=True)
-                    opengllog.warn("Warning: cannot import %s OpenGL module", impl)
-                    opengllog.warn(" %s", e)
-                    del e
-                    continue
-                opengllog("%s=%s", GL_CLIENT_WINDOW_MODULE, gl_client_window_module)
-                force_enable = enable_option in TRUE_OPTIONS
-                self.opengl_props = gl_client_window_module.check_support(force_enable)
-                opengllog("check_support(%s)=%s", force_enable, self.opengl_props)
-                if self.opengl_props:
-                    break
+            force_enable = enable_option in TRUE_OPTIONS
+            self.opengl_props, gl_client_window_module = get_gl_client_window_module(backends, force_enable)
             if not gl_client_window_module:
                 opengllog.warn("Warning: no OpenGL backends found")
                 self.client_supports_opengl = False
