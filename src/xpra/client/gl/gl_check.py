@@ -149,6 +149,7 @@ def check_PyOpenGL_support(force_enable):
                 log.warn(" %s vs %s", pyopengl_version, accel_version)
                 log.warn(" this may cause crashes")
                 _version_warning_shown = True
+                gl_check_error("PyOpenGL vs accelerate version mismatch: %s vs %s" % (pyopengl_version, accel_version))
         vsplit = pyopengl_version.split('.')
         #we now require PyOpenGL 3.1 or later
         if vsplit[:3]<['3','1'] and not force_enable:
