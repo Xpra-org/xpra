@@ -591,7 +591,6 @@ class WindowBackingBase(object):
                     rgb_format = "RGBX"
                 if rowstride==0:
                     rowstride = width * Bpp
-                log.info("paint-rgb: %s", self.paint_rgb)
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
