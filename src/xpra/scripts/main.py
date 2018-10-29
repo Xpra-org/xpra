@@ -1603,6 +1603,9 @@ def no_gtk():
 
 
 def run_glprobe(opts):
+    #suspend all logging:
+    saved_level = logging.root.getEffectiveLevel()
+    logging.root.setLevel(logging.WARN)
     try:
         from xpra.client.gl.gtk_base.gtkgl_check import check_support
         opengl_props = check_support(force_enable=opts.opengl)
@@ -1612,6 +1615,8 @@ def run_glprobe(opts):
     except Exception as e:
         sys.stderr.write("error=%s\n" % e)
         return 2
+    finally:
+        logging.root.setLevel(saved_level)
 
 def run_glcheck(opts):
     from xpra.util import pver
