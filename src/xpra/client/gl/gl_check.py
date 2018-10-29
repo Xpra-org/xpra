@@ -7,7 +7,7 @@
 
 import sys
 import logging
-from xpra.util import envbool, csv
+from xpra.util import envbool, envint, csv
 from xpra.os_util import POSIX, OSX, WIN32, PYTHON3, bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST
@@ -32,6 +32,9 @@ CAN_DOUBLE_BUFFER = not PYTHON3
 #needed on win32?:
 DEFAULT_DOUBLE_BUFFERED = WIN32 or CAN_DOUBLE_BUFFER
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
+
+CRASH = envbool("XPRA_OPENGL_FORCE_CRASH", False)
+TIMEOUT = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)
 
 
 #by default, we raise an ImportError as soon as we find something missing:
@@ -87,6 +90,13 @@ def check_functions(*functions):
 def check_PyOpenGL_support(force_enable):
     props = {}
     try:
+        if CRASH:
+            import ctypes;
+            ctypes.string_at(0)
+            raise Exception("should have crashed!")
+        elif TIMEOUT>0:
+            import time
+            time.sleep(TIMEOUT)
         #log redirection:
         def redirect_log(logger_name):
             logger = logging.getLogger(logger_name)

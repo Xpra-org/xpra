@@ -20,7 +20,10 @@ import traceback
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, repr_ellipsized, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR
-from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import (
+    get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr,
+    WIN32, OSX, POSIX, PYTHON3, SIGNAMES,
+    )
 from xpra.scripts.parsing import info, warn, error, \
     parse_vsock, parse_env, is_local, \
     fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help, \
@@ -411,6 +414,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_pass(args)
         elif mode=="opengl":
             return run_glcheck(options)
+        elif mode=="opengl-probe":
+            return run_glprobe(options)
         elif mode == "initenv":
             from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
@@ -1271,6 +1276,28 @@ def get_client_app(error_cb, opts, extra_args, mode):
     else:
         if PYTHON3 and POSIX and os.environ.get("GDK_BACKEND") is None:
             os.environ["GDK_BACKEND"] = "x11"
+        if opts.opengl=="probe":
+            from xpra.os_util import pollwait
+            from xpra.platform.paths import get_xpra_command
+            cmd = get_xpra_command()+["opengl-probe"]
+            proc = Popen(cmd, shell=False, close_fds=True)
+            r = pollwait(proc)
+            from xpra.log import Logger
+            log = Logger("opengl")
+            log("OpenGL probe command returned %s", r)
+            if r==0:
+                opts.opengl = "probe-success"
+            else:
+                if r is None:
+                    msg = "timeout"
+                elif r==1:
+                    msg = "unsafe"
+                elif r==2:
+                    msg = "error"
+                else:
+                    msg = SIGNAMES.get(-r) or SIGNAMES.get(r-128) or r
+                log.warn("OpenGL probe failed: %s", msg)
+                opts.opengl = "probe-failed:%s" % msg
         try:
             from xpra.platform.gui import init as gui_init
             gui_init()
@@ -1574,6 +1601,17 @@ def no_gtk():
         return
     raise Exception("the gtk module is already loaded: %s" % gtk)
 
+
+def run_glprobe(opts):
+    try:
+        from xpra.client.gl.gtk_base.gtkgl_check import check_support
+        opengl_props = check_support(force_enable=opts.opengl)
+        if opengl_props.get("safe", False):
+            return 0
+        return 1
+    except Exception as e:
+        sys.stderr.write("error=%s\n" % e)
+        return 2
 
 def run_glcheck(opts):
     from xpra.util import pver

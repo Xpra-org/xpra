@@ -919,14 +919,30 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             window.present()
 
 
+    def opengl_setup_failure(self, summary = "Xpra OpenGL Acceleration Failure", body=""):
+        def delayed_notify():
+            if self.exit_code is None:
+                log.warn("may_notify=%s", self.may_notify)
+                self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, icon_name="opengl")
+        #wait for the main loop to run:
+        self.timeout_add(2*1000, delayed_notify)
+
     #OpenGL bits:
     def init_opengl(self, enable_opengl):
         opengllog("init_opengl(%s)", enable_opengl)
-        #enable_opengl can be True, False or None (auto-detect)
+        #enable_opengl can be True, False, probe-failed, probe-success, or None (auto-detect)
         #ie: "on:native,gtk", "auto", "no"
+        #ie: "probe-failed:SIGSEGV"
+        #ie: "probe-success"
         enable_opengl = (enable_opengl or "").lower()
         parts = enable_opengl.split(":", 1)
         enable_option = parts[0]            #ie: "on"
+        opengllog("init_opengl: enable_option=%s", enable_option)
+        if enable_option=="probe-failed":
+            msg = "probe failed: %s" % csv(parts[1:])
+            self.opengl_props["info"] = "disabled, %s" % msg
+            self.opengl_setup_failure(body=msg)
+            return
         if len(parts)==2:
             backends = parts[1].split(",")  #ie: "native", "gtk"
         else:
@@ -958,12 +974,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             for x in str(e).split("\n"):
                 opengllog.error(" %s", x)
             self.opengl_props["info"] = str(e)
-            summary = "Xpra OpenGL Acceleration Failure"
-            body = str(e)
-            def delayed_notify():
-                if self.exit_code is None:
-                    self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, icon_name="opengl")
-            self.timeout_add(2*1000, delayed_notify)
+            self.opengl_setup_failure(body=str(e))
 
         if warnings:
             if enable_option in ("", "auto"):
@@ -972,10 +983,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     opengllog.warn(" %s", warning)
                 self.opengl_props["info"] = "disabled: %s" % csv(warnings)
                 return
-            opengllog.warn("OpenGL safety warning (enabled at your own risk):")
+            elif enable_option=="probe-success":
+                opengllog.warn("OpenGL enabled, despite some warnings:")
+            else:
+                opengllog.warn("OpenGL safety warning (enabled at your own risk):")
             for warning in warnings:
                 opengllog.warn(" %s", warning)
-            self.opengl_props["info"] = "forced enabled despite: %s" % csv(warnings)
+            self.opengl_props["info"] = "enabled despite: %s" % csv(warnings)
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
