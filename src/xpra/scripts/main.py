@@ -1287,13 +1287,13 @@ def get_client_app(error_cb, opts, extra_args, mode):
             log("OpenGL probe command returned %s", r)
             if r==0:
                 opts.opengl = "probe-success"
+            elif r==1:
+                opts.opengl = "probe-warning"
+            elif r==2:
+                opts.opengl = "probe-error"
             else:
                 if r is None:
                     msg = "timeout"
-                elif r==1:
-                    msg = "unsafe"
-                elif r==2:
-                    msg = "error"
                 else:
                     msg = SIGNAMES.get(-r) or SIGNAMES.get(r-128) or r
                 log.warn("OpenGL probe failed: %s", msg)
