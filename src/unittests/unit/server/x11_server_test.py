@@ -6,7 +6,7 @@
 
 import time
 import unittest
-from xpra.os_util import pollwait, OSX, POSIX, PYTHON2
+from xpra.os_util import pollwait, OSX, POSIX
 from unit.server_test_util import ServerTestUtil, log
 
 
