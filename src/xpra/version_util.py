@@ -16,10 +16,10 @@ from xpra.os_util import get_linux_distribution, PYTHON3, BITS
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
 
-def log(msg, *args):
-    get_util_logger().debug(msg, *args)
-def warn(msg, *args):
-    get_util_logger().warn(msg, *args)
+def log(msg, *args, **kwargs):
+    get_util_logger().debug(msg, *args, **kwargs)
+def warn(msg, *args, **kwargs):
+    get_util_logger().warn(msg, *args, **kwargs)
 
 
 def full_version_str():
