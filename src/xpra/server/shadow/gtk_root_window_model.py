@@ -8,9 +8,9 @@
 from xpra.log import Logger
 log = Logger("shadow")
 
-from xpra.os_util import monotonic_time, strtobytes
+from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.gtk_common.gtk_util import get_pixbuf_from_window, is_gtk3
+from xpra.gtk_common.gtk_util import get_pixbuf_from_window, pixbuf_save_to_memory
 
 
 def get_rgb_rawdata(window, x, y, width, height):
@@ -41,16 +41,9 @@ def take_png_screenshot(window):
     log("grabbing screenshot")
     w,h = window.get_geometry()[2:4]
     pixbuf = get_pixbuf_from_window(window, 0, 0, w, h)
-    buf = []
-    def save_to_memory(data, *_args, **_kwargs):
-        buf.append(strtobytes(data))
-        return True
-    if is_gtk3():
-        pixbuf.save_to_callbackv(save_to_memory, None, "png", [], [])
-    else:
-        pixbuf.save_to_callback(save_to_memory, "png", {}, buf)
+    data = pixbuf_save_to_memory(pixbuf, "png")
     rowstride = w*3
-    return w, h, "png", rowstride, b"".join(buf)
+    return w, h, "png", rowstride, data
 
 
 class GTKImageCapture(object):

@@ -65,13 +65,29 @@ def export(entry, properties=[]):
 
 def load_icon_from_file(filename):
     if filename.endswith("xpm"):
+        try:
+            from xpra.gtk_common.gobject_compat import import_pixbufloader
+            from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
+            data = load_binary_file(filename)
+            loader = import_pixbufloader()()
+            loader.write(data)
+            loader.close()
+            pixbuf = loader.get_pixbuf()
+            pngicondata = pixbuf_save_to_memory(pixbuf, "png")
+            return pngicondata, "png"
+        except Exception as e:
+            log("pixbuf error loading %s", filename, exc_info=True)
+            log.error("Error loading '%s':", filename)
+            log.error(" %s", e)
+        #try PIL:
         from PIL import Image
         try:
             img = Image.open(filename)
-        except Exception:
+        except Exception as e:
             log("Image.open(%s)", filename, exc_info=True)
-            log.error("Error loading '%s'", filename)
-            raise
+            log.error("Error loading '%s':", filename)
+            log.error(" %s", e)
+            return None
         buf = BytesIOClass()
         img.save(buf, "PNG")
         pngicondata = buf.getvalue()

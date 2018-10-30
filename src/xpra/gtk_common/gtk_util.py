@@ -88,6 +88,17 @@ def popup_menu_workaround(*args):
     #only implemented with GTK2 on win32 below
     pass
 
+def pixbuf_save_to_memory(pixbuf, fmt="png"):
+    buf = []
+    def save_to_memory(data, *_args, **_kwargs):
+        buf.append(strtobytes(data))
+        return True
+    if is_gtk3():
+        pixbuf.save_to_callbackv(save_to_memory, None, fmt, [], [])
+    else:
+        pixbuf.save_to_callback(save_to_memory, fmt, {}, buf)
+    return b"".join(buf)
+
 
 if is_gtk3():
     def is_realized(widget):
