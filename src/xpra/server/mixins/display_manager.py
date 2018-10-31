@@ -236,9 +236,11 @@ class DisplayManager(StubServerMixin):
                     #older clients send strings,
                     #newer clients send bytes...
                     try :
-                        name = dn.decode("utf8")
+                        v = dn.decode("utf8")
                     except:
-                        name = dn
+                        v = dn
+                    if v!="0" or i!=0:
+                        name = v
             names.append(name)
         self.set_desktops(names)
 
