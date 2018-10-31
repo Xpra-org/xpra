@@ -135,7 +135,7 @@ class ServerSocketsTest(ServerTestUtil):
 			test_connect("wss://127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
 			#ws socket should upgrade to ssl:
 			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_OK, noverify)
-			
+
 			#self signed cert should fail without noverify:
 			test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_SSL_FAILURE)
 			test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_SSL_FAILURE)

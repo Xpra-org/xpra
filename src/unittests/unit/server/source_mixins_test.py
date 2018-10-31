@@ -115,8 +115,7 @@ class SourceMixinsTest(unittest.TestCase):
 			assert i
 			avi = i.get("av-sync")
 			assert avi and avi.get("enabled", not e)==e
-		
-		
+
 
 def main():
 	unittest.main()
