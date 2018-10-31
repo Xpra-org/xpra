@@ -343,7 +343,8 @@ class WindowModel(BaseWindowModel):
     #########################################
 
     def raise_window(self):
-        self.corral_window.raise_()
+        X11Window.XRaiseWindow(get_xwindow(self.corral_window))
+        X11Window.XRaiseWindow(get_xwindow(self.client_window))
 
     def unmap(self):
         with xsync:

@@ -217,6 +217,7 @@ cdef extern from "X11/Xlib.h":
     int XMapRaised(Display *, Window)
     Status XWithdrawWindow(Display *, Window, int screen_number)
     void XReparentWindow(Display *, Window w, Window parent, int x, int y)
+    void XRaiseWindow(Display *display, Window w)
 
     ctypedef struct Visual:
         void    *ext_data       #XExtData *ext_data;     /* hook for extension to hang data */
@@ -526,6 +527,8 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         XGetInputFocus(self.display, &w, &revert_to)
         return int(w), int(revert_to)
 
+    def XRaiseWindow(self, Window window):
+        XRaiseWindow(self.display, window)
 
     ###################################
     # XKillClient

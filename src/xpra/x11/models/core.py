@@ -675,7 +675,7 @@ class CoreX11WindowModel(WindowModelStub):
     ################################
 
     def raise_window(self):
-        self.client_window.raise_()
+        X11Window.XRaiseWindow(get_xwindow(self.client_window))
 
     def set_active(self):
         root = self.client_window.get_screen().get_root_window()
