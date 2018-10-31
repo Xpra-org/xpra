@@ -733,7 +733,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             focuslog.warn("Warning: window %s is no longer managed!", window)
             return
         focuslog("focus: giving focus to %s", window)
-        window.raise_window()
+        with xswallow:
+            window.raise_window()
         window.give_client_focus()
         if server_source and modifiers is not None:
             make_keymask_match = getattr(server_source, "make_keymask_match", None)
@@ -1050,7 +1051,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
             else:
                 mouselog("raising %s", window)
-                with xsync:
+                with xswallow:
                     window.raise_window()
         X11ServerBase._move_pointer(self, wid, pos, *args)
 
