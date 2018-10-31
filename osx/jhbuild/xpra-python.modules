@@ -634,7 +634,7 @@
 	<distutils id="python-pyobjc-framework-quartz">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/ae/46/08a8f3a0e9fcb6d911ebbc905af41263a90f71b0dca27cac6a1ccbfef5e9/pyobjc-framework-Quartz-5.1.1.tar.gz"
-			hash="sha256:60d016356a7ce417ff143309bb336ae426f7cc977ffb93f2f95e3d655af7bee4"
+			hash="sha256:fac08a6fbc9ca63bff6888a9ddaf4e1ad00d377fb4a6f1c227696a2fedc48af7"
 			version="5.1.1"/>
 		<dependencies>
 			<dep package="python"/>
