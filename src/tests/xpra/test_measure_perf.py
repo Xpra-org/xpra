@@ -81,7 +81,7 @@ for x in XPRA_VERSION_OUTPUT.splitlines():
 XPRA_VERSION = XPRA_VERSION.split("-")[0]
 XPRA_VERSION_NO = [int(x) for x in XPRA_VERSION.split(".")]
 XPRA_SERVER_STOP_COMMANDS = [
-                             [XPRA_BIN, "stop", ":%s" % config.DISPLAY_NO],
+                             "%s stop :%s" % (XPRA_BIN, config.DISPLAY_NO),
                              "ps -ef | grep -i [X]org-for-Xpra-:%s | awk '{print $2}' | xargs kill" % config.DISPLAY_NO
                              ]
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", "tcp:%s:%s" % (config.IP, config.PORT)]
