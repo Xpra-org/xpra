@@ -265,7 +265,7 @@ if [ "$STRIP_OPENGL" == "1" ]; then
 fi
 if [ "${ZIP_MODULES}" == "1" ]; then
 	pushd $LIBDIR/python
-	zip --move -ur site-packges.zip OpenGL
+	zip --move -ur site-packages.zip OpenGL
 	popd
 fi
 echo " * add gobject-introspection (py2app refuses to do it)"
