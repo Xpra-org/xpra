@@ -529,6 +529,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _new_window_signaled(self, _wm, window):
+        self.last_raised = None
         self._add_new_window(window)
 
     def do_xpra_child_map_event(self, event):
@@ -702,6 +703,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _focus(self, server_source, wid, modifiers):
         focuslog("focus wid=%s has_focus=%s", wid, self._has_focus)
+        if self.last_raised!=wid:
+            self.last_raised = None
         if self._has_focus==wid:
             #nothing to do!
             return
@@ -807,6 +810,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _raised_window(self, window, event):
         wid = self._window_to_id[window]
         windowlog("raised window: %s (%s) wid=%s, current focus=%s", window, event, wid, self._has_focus)
+        if self.last_raised!=wid:
+            self.last_raised = None
         if self._has_focus==wid:
             return
         for ss in self._server_sources.values():
