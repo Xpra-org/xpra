@@ -22,7 +22,7 @@ def dump_windows():
     root = gdk.get_default_root_window()
     log("root window: %s" % root)
     try:
-        from xpra.x11.gtk2.gdk_bindings import get_children #@UnresolvedImport
+        from xpra.x11.gtk_x11.gdk_bindings import get_children #@UnresolvedImport
     except ImportError:
         pass
     else:
