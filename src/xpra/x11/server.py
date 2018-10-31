@@ -1050,7 +1050,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
             else:
                 mouselog("raising %s", window)
-                window.raise_window()
+                with xsync:
+                    window.raise_window()
         X11ServerBase._move_pointer(self, wid, pos, *args)
 
 

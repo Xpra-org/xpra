@@ -528,6 +528,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         return int(w), int(revert_to)
 
     def XRaiseWindow(self, Window window):
+        self.context_check()
         XRaiseWindow(self.display, window)
 
     ###################################
