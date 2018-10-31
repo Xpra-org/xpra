@@ -203,6 +203,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.repaint_root_overlay_timer = None
         self.configure_damage_timers = {}
         self._tray = None
+        self.last_raised = None
         self.system_tray = False
         self.global_menus = False
         gobject.GObject.__init__(self)
@@ -1045,11 +1046,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
     """ override so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus) """
     def _move_pointer(self, wid, pos, *args):
-        if wid>0:
+        if wid>0 and self.last_raised!=wid:
             window = self._lookup_window(wid)
             if not window:
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
             else:
+                self.last_raised = wid
                 mouselog("raising %s", window)
                 with xswallow:
                     window.raise_window()
