@@ -1137,7 +1137,7 @@ class WindowSource(WindowIconSource):
             self.statistics.last_resized = now
             self.window_dimensions = ww, wh
             log("window dimensions changed: %ix%i", ww, wh)
-            self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE/(ww*wh*4)))
+            self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
         self.do_damage(ww, wh, x, y, w, h, options)
@@ -1463,7 +1463,7 @@ class WindowSource(WindowIconSource):
 
         regions = tuple(set(regions))
         if MERGE_REGIONS:
-            bytes_threshold = ww*wh*self.max_bytes_percent/100
+            bytes_threshold = ww*wh*self.max_bytes_percent//100
             pixel_count = sum(rect.width*rect.height for rect in regions)
             bytes_cost = pixel_count+self.small_packet_cost*len(regions)
             log("send_delayed_regions: bytes_cost=%s, bytes_threshold=%s, pixel_count=%s", bytes_cost, bytes_threshold, pixel_count)
@@ -1669,14 +1669,14 @@ class WindowSource(WindowIconSource):
             if not self.refresh_timer:
                 #we must schedule a new refresh timer
                 self.refresh_event_time = now
-                sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * sqrt(pct) / 10.0))
+                sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * sqrt(pct) // 10))
                 self.refresh_target_time = now + sched_delay/1000.0
                 self.refresh_timer = self.timeout_add(sched_delay, self.refresh_timer_function, options)
                 msg += ", scheduling refresh in %sms (pct=%i, batch=%i)" % (sched_delay, pct, self.batch_config.delay)
             else:
                 #add to the target time,
                 #but don't use sqrt() so this will not move it forwards for small updates following bigger ones:
-                sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * pct / 100.0))
+                sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * pct // 100))
                 target_time = self.refresh_target_time
                 self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                 msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
@@ -1869,7 +1869,7 @@ class WindowSource(WindowIconSource):
             if t>=4 and t<=10:
                 #calculate the send speed over that interval:
                 bcount = svalue1-svalue2
-                avg_send_speed = int(bcount*8/t)
+                avg_send_speed = int(bcount*8//t)
                 if cur_send_speed:
                     #weighted average,
                     #when we're very late, the value is much more likely to be correct
@@ -2142,7 +2142,7 @@ class WindowSource(WindowIconSource):
             client_options["ts"] = image.get_timestamp()
         end = monotonic_time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
-                 (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
+                 (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize//1024, csize//1024, self._damage_packet_sequence, client_options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
