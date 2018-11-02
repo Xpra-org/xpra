@@ -127,6 +127,7 @@ def guess_content_type_from_defs(window):
             prop_value = get_proc_cmdline(pid)
         #some properties return lists of values,
         #in which case we try to match any of them:
+        log("guess_content_type_from_defs(%s) prop(%s)=%s", window, prop_name, prop_value)
         if isinstance(prop_value, (list,tuple)):
             values = prop_value
         else:
