@@ -133,7 +133,9 @@ cdef class _X11CoreBindings:
 
     def XGetAtomName(self, Atom atom):
         self.context_check()
-        v = XGetAtomName(self.display, atom)
+        cdef char *v = XGetAtomName(self.display, atom)
+        if v==NULL:
+            return None
         return v[:]
 
     def get_error_text(self, code):
