@@ -567,11 +567,6 @@ class WindowVideoSource(WindowSource):
         WindowSource.client_decode_error(self, error, message)
 
 
-    def timer_full_refresh(self):
-        self.flush_video_encoder_now()
-        WindowSource.timer_full_refresh(self)
-
-
     def get_refresh_exclude(self):
         #exclude video region (if any) from lossless refresh:
         return self.video_subregion.rectangle
