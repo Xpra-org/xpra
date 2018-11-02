@@ -431,33 +431,29 @@ class WindowVideoSource(WindowSource):
             #raise the quality as the areas around video tend to not be graphics
             return nonvideo(quality+30, "not the video region")
 
-        if now-self.global_statistics.last_congestion_time>5:
-            lde = tuple(self.statistics.last_damage_events)
-            lim = now-4
-            pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-            if pixels_last_4secs<3*videomin:
-                return nonvideo(quality+30, "not enough frames")
-            lim = now-1
-            pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
-            if pixels_last_sec<pixels_last_4secs//8:
-                #framerate is dropping?
-                return nonvideo(quality+30, "framerate lowered")
+        if not video_hint:
+            if now-self.global_statistics.last_congestion_time>5:
+                lde = tuple(self.statistics.last_damage_events)
+                lim = now-4
+                pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
+                if pixels_last_4secs<3*videomin:
+                    return nonvideo(quality+30, "not enough frames")
+                lim = now-1
+                pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
+                if pixels_last_sec<pixels_last_4secs//8:
+                    #framerate is dropping?
+                    return nonvideo(quality+30, "framerate lowered")
 
-        #calculate the threshold for using video vs small regions:
-        factors = (max(1, (speed-75)/5.0),                      #speed multiplier
-                   1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
-                   max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
-                   1.0 / (int(bool(self._video_encoder)) + 1),  #if we have a video encoder already, make it more likely we'll use it:
-                   (1-video_hint/2.0),                          #video hint lowers the threshold
-                   )
-        max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
-        if pixel_count<=max_nvp:
-            #below threshold
-            return nonvideo(quality+30, "not enough pixels")
-
-        if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
-            #failsafe:
-            return nonvideo(info="size out of range")
+            #calculate the threshold for using video vs small regions:
+            factors = (max(1, (speed-75)/5.0),                      #speed multiplier
+                       1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
+                       max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
+                       1.0 / (int(bool(self._video_encoder)) + 1),  #if we have a video encoder already, make it more likely we'll use it:
+                       )
+            max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
+            if pixel_count<=max_nvp:
+                #below threshold
+                return nonvideo(quality+30, "not enough pixels")
         return current_encoding
 
     def get_best_nonvideo_encoding(self, ww, wh, speed, quality, current_encoding=None, options=[]):
