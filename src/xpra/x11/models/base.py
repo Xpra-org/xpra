@@ -121,6 +121,10 @@ class BaseWindowModel(CoreX11WindowModel):
         "menu": (gobject.TYPE_PYOBJECT,
                   "Application menu, or None", "",
                   PARAM_READABLE),
+        #for our own use:
+        "content-type": (gobject.TYPE_PYOBJECT,
+                  "What type of content is shown in this window", "",
+                  PARAM_READABLE),
         #from _NET_WM_DESKTOP
         "workspace": (gobject.TYPE_UINT,
                 "The workspace this window is on", "",
@@ -184,11 +188,11 @@ class BaseWindowModel(CoreX11WindowModel):
         })
     _property_names = CoreX11WindowModel._property_names + [
                       "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut", "opacity",
-                      "menu",
+                      "menu", "content-type",
                       #virtual attributes:
                       "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
-                              "attention-requested",
+                              "attention-requested", "content-type",
                               "menu", "workspace", "opacity",
                               "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
@@ -484,6 +488,11 @@ class BaseWindowModel(CoreX11WindowModel):
         actions_iface.Activate(action, state, pdata)
 
 
+    def _handle_xpra_content_type_change(self):
+        content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True) or ""
+        metalog("content_type=%s", content_type)
+        self._updateprop("content-type", content_type)
+
     _x11_property_handlers = CoreX11WindowModel._x11_property_handlers.copy()
     _x11_property_handlers.update({
         "WM_TRANSIENT_FOR"              : _handle_transient_for_change,
@@ -500,6 +509,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "_GTK_APPLICATION_OBJECT_PATH"  : _handle_gtk_app_menu_change,
         "_GTK_APP_MENU_OBJECT_PATH"     : _handle_gtk_app_menu_change,
         "_GTK_WINDOW_OBJECT_PATH"       : _handle_gtk_app_menu_change,
+        "_XPRA_CONTENT_TYPE"            : _handle_xpra_content_type_change,
         })
 
 

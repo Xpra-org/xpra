@@ -192,7 +192,7 @@ class WindowSource(WindowIconSource):
         self.content_type = ""
         self.window_signal_handlers = []
         #watch for changes to properties that are used to derive the content-type:
-        for x in get_content_type_properties():
+        for x in ["content-type"] + list(get_content_type_properties()):
             if x in window.get_dynamic_property_names():
                 sid = window.connect("notify::%s" % x, self.content_type_changed)
                 self.window_signal_handlers.append(sid)
@@ -574,10 +574,10 @@ class WindowSource(WindowIconSource):
         else:
             self.no_idle()
 
-    def content_type_changed(self, window, *_args):
+    def content_type_changed(self, window, *args):
         self.content_type = window.get("content-type") or guess_content_type(window)
-        log("class-changed(%s, %s) content-type=%s", window, _args, self.content_type)
-
+        log("content_type_changed(%s, %s) content-type=%s", window, args, self.content_type)
+        return True
 
     def set_client_properties(self, properties):
         #filter out stuff we don't care about
