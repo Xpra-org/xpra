@@ -333,8 +333,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #hook up the X11 gdk event notifications so we can get focus-out when grabs are active:
         if POSIX and not OSX:
             try:
-                from xpra.x11.gtk_x11 import add_event_receiver
+                from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver
             except ImportError as e:
+                log("do_init_focus()", exc_info=True)
                 log.warn("Warning: missing gdk bindings:")
                 log.warn(" %s", e)
             else:
