@@ -462,8 +462,12 @@ cdef class _X11WindowBindings(_X11CoreBindings):
 
 
     cpdef XGetAtomName(self, Atom atom):
-        v = XGetAtomName(self.display, atom)
-        return v[:]
+        cdef char *v = XGetAtomName(self.display, atom)
+        if v==NULL:
+            return None
+        r = v[:]
+        XFree(v)
+        return r
 
     def MapWindow(self, Window xwindow):
         XMapWindow(self.display, xwindow)
