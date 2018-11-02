@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 
 import os
+import re
+
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
 gtk = import_gtk()
 glib = import_glib()
@@ -1607,6 +1609,7 @@ class GTKTrayMenuBase(object):
         app_menu_item = self.handshake_menuitem(app_name.decode("utf-8"), image=image)
         def app_launch(*_args):
             command = command_props.get(b"command")
+            command = re.sub('\%[fFuU]', '', command)
             log("command=%s", command)
             if command:
                 self.client.send_start_command(app_name, command, False, self.client.server_sharing)
