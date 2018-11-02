@@ -136,7 +136,9 @@ cdef class _X11CoreBindings:
         cdef char *v = XGetAtomName(self.display, atom)
         if v==NULL:
             return None
-        return v[:]
+        r = v[:]
+        XFree(v)
+        return r
 
     def get_error_text(self, code):
         assert self.display!=NULL, "display is closed"
