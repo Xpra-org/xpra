@@ -487,7 +487,12 @@ class CoreX11WindowModel(WindowModelStub):
             return
         handler = self._x11_property_handlers.get(name)
         if handler:
-            handler(self)
+            try:
+                handler(self)
+            except XError as e:
+                log("_handle_property_change", exc_info=True)
+                log.error("Error processing property change for '%s':", name)
+                log.error(" %s", e)
 
     #specific properties:
     def _handle_pid_change(self):
