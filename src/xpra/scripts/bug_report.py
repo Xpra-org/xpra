@@ -6,7 +6,7 @@
 
 import signal, sys
 
-def main():
+def main(argv=[]):
     from xpra.platform import program_context
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
         from xpra.log import enable_color
@@ -15,7 +15,7 @@ def main():
         from xpra.log import Logger, enable_debug_for
         log = Logger("util")
         #logging init:
-        if "-v" in sys.argv:
+        if "-v" in argv:
             enable_debug_for("util")
 
         from xpra.gtk_common.gobject_compat import import_gobject
@@ -47,5 +47,5 @@ def main():
 
 
 if __name__ == "__main__":
-    v = main()
+    v = main(sys.argv)
     sys.exit(v)

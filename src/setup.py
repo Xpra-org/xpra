@@ -1942,6 +1942,7 @@ if client_ENABLED:
     add_modules("xpra.client", "xpra.client.mixins")
     add_modules("xpra.scripts.gtk_info")
     add_modules("xpra.scripts.show_webcam")
+add_modules("xpra.scripts.bug_report")    
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")

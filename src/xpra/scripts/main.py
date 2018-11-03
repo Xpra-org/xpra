@@ -117,7 +117,7 @@ def main(script_file, cmdline):
 def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "launcher", "stop", "print",
-        "control", "list", "list-mdns", "sessions", "mdns-gui",
+        "control", "list", "list-mdns", "sessions", "mdns-gui", "bug-report",
         "opengl", "opengl-probe", "test-connect",
         ):
         s = sys.stdout
@@ -410,6 +410,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode == "gui":
             from xpra.gtk_common.gui import main        #@Reimport
             return main()
+        elif mode == "bug-report":
+            from xpra.scripts.bug_report import main    #@Reimport
+            main(["xpra"]+args)
         elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
