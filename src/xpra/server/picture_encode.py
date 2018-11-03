@@ -115,7 +115,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         bpp = 32
     else:
         bpp = 24
-    log("rgb_encode using level=%s for %5i pixels at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s", level, l, speed, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cwrapper.data))
+    log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s", level, l, speed, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cwrapper.data))
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, options, width, height, stride, bpp
