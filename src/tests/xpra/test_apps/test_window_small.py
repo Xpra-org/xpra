@@ -18,12 +18,19 @@ def make_win(window_type=gtk.WINDOW_TOPLEVEL, min_width=-1, min_height=-1, max_w
 							#min_aspect=1, max_aspect=1,
 							)
 	window.set_decorated(decorated)
+	window.set_size_request(min_width, min_height)
+	window.set_geometry_hints(None,
+							min_width=min_width, min_height=min_height,
+							max_width=max_width, max_height=max_height)
+	window.set_resizable(min_width!=max_width or min_height!=max_height)
 	window.show_all()
 
 def main():
 	make_win(gtk.WINDOW_TOPLEVEL, width, height, width, height)
-	make_win(gtk.WINDOW_TOPLEVEL, width, height, width, height, False)
-	make_win(gtk.WINDOW_POPUP, width, height, width, height)
+	#make_win(gtk.WINDOW_TOPLEVEL, width, height, width, height, False)
+	make_win(gtk.WINDOW_TOPLEVEL, width, height, -1, -1)
+	#make_win(gtk.WINDOW_TOPLEVEL, width, height, -1, -1, False)
+	#make_win(gtk.WINDOW_POPUP, width, height, width, height)
 	gtk.main()
 
 
