@@ -481,8 +481,8 @@ class ClientWindowBase(ClientWidgetBase):
         for window_type in window_types:
             #win32 workaround:
             if AWT_DIALOG_WORKAROUND and window_type=="DIALOG" and self._metadata.boolget("skip-taskbar"):
-                wm_class = self._metadata.strlistget("class-instance")
-                if wm_class and len(wm_class)==2 and wm_class[0].startswith("sun-awt-X11"):
+                wm_class = self._metadata.strlistget("class-instance", (None, None), 2, 2)
+                if wm_class and len(wm_class)==2 and wm_class[0] and wm_class[0].startswith("sun-awt-X11"):
                     #replace "DIALOG" with "NORMAL":
                     if "NORMAL" in window_types:
                         continue

@@ -734,16 +734,17 @@ class WindowClient(StubClientMixin):
         if not OR_FORCE_GRAB:
             return
         window_types = metadata.get("window-type", [])
-        wm_class = metadata.get("class-instance")
+        wm_class = metadata.strlistget("class-instance", [None, None], 2, 2)
         c = None
         if wm_class:
             c = wm_class[0]
-        for window_type, force_wm_classes in OR_FORCE_GRAB.items():
-            #ie: DIALOG : ["sun-awt-X11"]
-            if window_type=="*" or window_type in window_types:
-                for wmc in force_wm_classes:
-                    if wmc=="*" or c and c.startswith(wmc):
-                        return True
+        if c:
+            for window_type, force_wm_classes in OR_FORCE_GRAB.items():
+                #ie: DIALOG : ["sun-awt-X11"]
+                if window_type=="*" or window_type in window_types:
+                    for wmc in force_wm_classes:
+                        if wmc=="*" or c and c.startswith(wmc):
+                            return True
         return False
 
     ######################################################################
@@ -1031,7 +1032,7 @@ class WindowClient(StubClientMixin):
             if window:
                 metadata = getattr(window, "_metadata", {})
                 log("window_close_event(%i) metadata=%s", wid, metadata)
-                class_instance = metadata.get("class-instance")
+                class_instance = metadata.strlistget("class-instance", (None, None), 2, 2)
                 title = metadata.get("title", "")
                 log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
                 matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
