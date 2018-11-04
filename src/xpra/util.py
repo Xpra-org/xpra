@@ -346,7 +346,7 @@ class typedict(dict):
         return self.listget(k, default_value, int, min_items, max_items)
 
     def listget(self, k, default_value=[], item_type=None, min_items=None, max_items=None):
-        v = self.capsget(k, default_value)
+        v = self.capsget(k)
         if v is None:
             return default_value
         if type(v) not in (list, tuple):
