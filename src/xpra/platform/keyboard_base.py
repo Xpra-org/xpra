@@ -32,11 +32,28 @@ class KeyboardBase(object):
         self.modifier_keys = {}
         self.modifier_keycodes = {}
         for modifier, keys in mappings.items():
-            for keycode,keyname in keys:
-                self.modifier_keys[keyname] = modifier
-                keycodes = self.modifier_keycodes.setdefault(keyname, [])
-                if keycode not in keycodes:
-                    keycodes.append(keycode)
+            for a, b in keys:
+                #log.info("%s (%s), %s (%s)", keycode, type(keycode), keyname, type(keyname))
+                if isinstance(a, int) and isinstance(b, (bytes, str)):
+                    keycode = a
+                    keynames = (b,)
+                elif isinstance(a, (str,bytes)) and isinstance(b, int):
+                    keynames = (a,)
+                    #level = b
+                    keycode = 0
+                elif isinstance(a, (bytes,str)) and isinstance(b, (bytes,str)):
+                    keynames = (a, b)
+                    keycode = 0
+                else:
+                    log.warn("Warning: unexpected key definition: %s, %s", type(a), type(b))
+                    log.warn(" values: %s, %s", a, b)
+                    continue
+                for keyname in keynames:
+                    self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
+                    if keycode:
+                        keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
+                        if keycode not in keycodes:
+                            keycodes.append(keycode)
         log("modifier_keys=%s", self.modifier_keys)
         log("modifier_keycodes=%s", self.modifier_keycodes)
 
