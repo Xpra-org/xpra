@@ -987,8 +987,18 @@ class WindowVideoSource(WindowSource):
                 ww, wh = self.window_dimensions
                 vs.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
                 newrect = vs.rectangle
-                if newrect is None or old is None or newrect!=old:
-                    self.cleanup_codecs()
+                if ((newrect is None) ^ (old is None)) or newrect!=old:
+                    if old is None and newrect and newrect.get_geometry()==(0, 0, ww, wh):
+                        #not actually changed!
+                        #the region is the whole window
+                        pass
+                    elif newrect is None and old and old.get_geometry()==(0, 0, ww, wh):
+                        #not actually changed!
+                        #the region is the whole window
+                        pass
+                    else:
+                        videolog("video subregion was %s, now %s (window size: %i,%i)", old, newrect, ww, wh)
+                        self.cleanup_codecs()
                 if newrect:
                     #remove this from regular refresh:
                     if old is None or old!=newrect:
