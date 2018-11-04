@@ -761,7 +761,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--min-size", action="store",
                       dest="min_size", default=defaults.min_size,
                       metavar="MIN_SIZE",
-                      help="The minimum size for normal windows, ie: 100x20. Default: '%default'.")
+                      help="The minimum size for normal decorated windows, ie: 100x20. Default: '%default'.")
     group.add_option("--max-size", action="store",
                       dest="max_size", default=defaults.max_size,
                       metavar="MAX_SIZE",
