@@ -71,6 +71,8 @@ if SCALING_OPTIONS_STR:
 del SCALING_OPTIONS_STR
 scalinglog("scaling options: SCALING=%s, HARDCODED=%s, PPS_TARGET=%i, MIN_PPS=%i, OPTIONS=%s", SCALING, SCALING_HARDCODED, SCALING_PPS_TARGET, SCALING_MIN_PPS, SCALING_OPTIONS)
 
+DEBUG_VIDEO_CLEAN = envbool("XPRA_DEBUG_VIDEO_CLEAN", False)
+
 FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
@@ -292,9 +294,15 @@ class WindowVideoSource(WindowSource):
         csce = self._csc_encoder
         ve = self._video_encoder
         if csce or ve:
+            if DEBUG_VIDEO_CLEAN:
+                log.warn("video_context_clean()")
+                import traceback
+                traceback.print_stack()
             self._csc_encoder = None
             self._video_encoder = None
             def clean():
+                if DEBUG_VIDEO_CLEAN:
+                    log.warn("video_context_clean() done")
                 self.csc_clean(csce)
                 self.ve_clean(ve)
             self.call_in_encode_thread(False, clean)
