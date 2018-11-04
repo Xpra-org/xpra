@@ -293,8 +293,8 @@ class EncodingsMixin(StubSourceMixin):
         for k in c.keys():
             #yaml gives us str..
             k = strtobytes(k)
-            if k.startswith(b"theme.") or  k.startswith(b"encoding.icons."):
-                self.icons_encoding_options[k.replace(b"encoding.icons.", b"").replace(b"theme.", b"")] = c.strget(k)
+            if k.startswith(b"theme.") or k.startswith(b"encoding.icons."):
+                self.icons_encoding_options[k.replace(b"encoding.icons.", b"").replace(b"theme.", b"")] = c.strlistget(k)
             elif k.startswith(b"encoding."):
                 stripped_k = k[len(b"encoding."):]
                 if stripped_k in (b"transparency",
