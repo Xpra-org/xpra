@@ -144,8 +144,8 @@ class ChildReaper(object):
         return True
 
     def sigchld(self, signum, frame):
-        self.glib.idle_add(log, "sigchld(%s, %s)", signum, frame)
-        self.glib.idle_add(self.reap)
+        log("sigchld(%s, %s)", signum, frame)
+        self.reap()
 
     def get_proc_info(self, pid):
         for proc_info in tuple(self._proc_info):
@@ -177,7 +177,7 @@ class ChildReaper(object):
             return
         if process and cb:
             procinfo.callback = None
-            cb(process)
+            self.glib.idle_add(cb, process)
         #once it's dead, clear the reference to the process:
         #this should free up some resources
         #and also help to ensure we don't end up here again
