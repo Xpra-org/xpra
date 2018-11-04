@@ -68,7 +68,7 @@ ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 MODAL_WINDOWS = envbool("XPRA_MODAL_WINDOWS", False)
-SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", False)
+SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", True)
 
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
