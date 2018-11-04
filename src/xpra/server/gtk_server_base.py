@@ -22,7 +22,10 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
 from xpra.server.server_base import ServerBase
-from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main, display_get_default, get_root_size, keymap_get_for_display
+from xpra.gtk_common.gtk_util import (
+    get_gtk_version_info, gtk_main, display_get_default, get_root_size,
+    keymap_get_for_display, icon_theme_get_default,
+    )
 
 glib = import_glib()
 glib.threads_init()
@@ -244,7 +247,7 @@ class GTKServerBase(ServerBase):
                 w, h = img.size
         else:
             #try to find it in the theme:
-            theme = gtk.icon_theme_get_default()
+            theme = icon_theme_get_default()
             if theme:
                 try:
                     icon = theme.load_icon(icon_string, gtk.ICON_SIZE_BUTTON, 0)

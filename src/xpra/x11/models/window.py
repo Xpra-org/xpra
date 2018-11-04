@@ -23,7 +23,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     x11_get_server_time,
     )
 from xpra.gtk_common.gtk_util import (
-    get_default_root_window, get_xwindow,
+    get_default_root_window, get_xwindow, icon_theme_get_default,
     GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
     )
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
@@ -751,7 +751,7 @@ class WindowModel(BaseWindowModel):
         iconlog("get_default_window_icon() using %s", (wmclass_name, wmclass_class))
         if not wmclass_name:
             return None
-        it = gtk.icon_theme_get_default()
+        it = icon_theme_get_default()
         p = None
         for fmt in ("%s-color", "%s", "%s_48x48", "application-x-%s", "%s-symbolic", "%s.symbolic"):
             icon_name = fmt % wmclass_name
