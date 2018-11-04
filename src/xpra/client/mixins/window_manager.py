@@ -792,6 +792,9 @@ class WindowClient(StubClientMixin):
         if cb_condition==glib.IO_HUP:
             proc.stdout_io_watch = None
             return False
+        if proc.stdout_io_watch is None:
+            #no longer watched
+            return False
         if cb_condition==glib.IO_IN:
             try:
                 signame = proc.stdout.readline().strip("\n\r")
@@ -1080,14 +1083,25 @@ class WindowClient(StubClientMixin):
                     log("last window, removing watcher %s", signalwatcher)
                     try:
                         del self._signalwatcher_to_wids[signalwatcher]
-                        if signalwatcher.poll() is None:
-                            os.kill(signalwatcher.pid, signal.SIGKILL)
+                        self.kill_signalwatcher(signalwatcher)
                     except:
                         log("destroy_window(%i, %s) error killing signal watcher %s", wid, window, signalwatcher, exc_info=True)
                     #now remove any pids that use this watcher:
                     for pid, w in tuple(self._pid_to_signalwatcher.items()):
                         if w==signalwatcher:
                             del self._pid_to_signalwatcher[pid]
+
+    def kill_signalwatcher(self, proc):
+        if proc.poll() is None:
+            stdout_io_watch = proc.stdout_io_watch
+            if stdout_io_watch:
+                proc.stdout_io_watch = None
+                self.source_remove(stdout_io_watch)
+            try:
+                proc.stdout.close()
+            except:
+                pass
+            os.kill(proc.pid, signal.SIGKILL)
 
     def destroy_all_windows(self):
         for wid, window in self._id_to_window.items():
@@ -1102,8 +1116,7 @@ class WindowClient(StubClientMixin):
         #make sure we don't leave any behind:
         for signalwatcher in tuple(self._signalwatcher_to_wids.keys()):
             try:
-                if signalwatcher.poll() is None:
-                    os.kill(signalwatcher.pid, signal.SIGKILL)
+                self.kill_signalwatcher(signalwatcher)
             except:
                 log("destroy_all_windows() error killing signal watcher %s", signalwatcher, exc_info=True)
 
