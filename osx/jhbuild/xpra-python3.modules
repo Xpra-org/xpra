@@ -403,11 +403,9 @@
 
 	<distutils id="python3-lz4" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/13/3f/8b3e574344c7ed9fb76c240f8fe96a95648762dce3bb481527d3a414670c/lz4-2.1.0.tar.gz"
-			hash="sha256:166aff2fbb2fee39f4ed58e8e7c1ed8a8ce72915832a100ced7a1634ac655a6f"
-			version="2.1.0">
-			<!-- Warning: must update the patch with any version bump -->
-			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/python-lz4-distributionnotfound.patch" strip="1" />
+			module="/packages/f1/4f/878f1827042c5b6828bc23d160f31e242ec820810b8bd04b30b631029952/lz4-2.1.2.tar.gz"
+			hash="sha256:ec265f7c3fc3df706e9579bde632ceeef9278858d7ae87c376a2954d11e9ea39"
+			version="2.1.2">
 		</branch>
 		<dependencies>
 			<dep package="lz4"/>
