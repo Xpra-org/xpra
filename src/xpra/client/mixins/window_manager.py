@@ -1099,10 +1099,10 @@ class WindowClient(StubClientMixin):
                 proc.stdout_io_watch = None
                 self.source_remove(stdout_io_watch)
             try:
-                proc.stdin.write("exit\n")
+                proc.stdin.write(b"exit\n")
                 proc.stdin.flush()
             except:
-                pass
+                log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
             def force_kill():
                 if proc.poll() is None:
                     log.warn("Warning: signal watcher %i is still running", proc.pid)
