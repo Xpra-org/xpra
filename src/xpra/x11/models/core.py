@@ -488,7 +488,8 @@ class CoreX11WindowModel(WindowModelStub):
         handler = self._x11_property_handlers.get(name)
         if handler:
             try:
-                handler(self)
+                with xsync:
+                    handler(self)
             except XError as e:
                 log("_handle_property_change", exc_info=True)
                 log.error("Error processing property change for '%s'", name)
@@ -534,10 +535,11 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("command", command)
 
     def _handle_class_change(self):
-        with xswallow:
-            class_instance = (X11Window.getClassHint(self.xid) or b"").decode("latin1")
-            metalog("WM_CLASS=%s", class_instance)
-            self._updateprop("class-instance", class_instance)
+        class_instance = X11Window.getClassHint(self.xid)
+        if class_instance:
+            class_instance = tuple(v.decode("latin1") for v in class_instance)
+        metalog("WM_CLASS=%s", class_instance)
+        self._updateprop("class-instance", class_instance)
 
     #these handlers must not generate X11 errors (must use XSync)
     _x11_property_handlers = {
