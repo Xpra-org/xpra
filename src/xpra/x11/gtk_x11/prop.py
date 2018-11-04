@@ -37,6 +37,9 @@ log = Logger("x11", "window")
 
 def _get_atom(_disp, d):
     unpacked = struct.unpack(b"@I", d)[0]
+    if unpacked==0:
+        log.warn("Warning: invalid zero atom value")
+        return None
     with xsync:
         pyatom = X11Window.XGetAtomName(unpacked)
     if not pyatom:
