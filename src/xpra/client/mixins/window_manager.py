@@ -758,7 +758,7 @@ class WindowClient(StubClientMixin):
             from xpra.child_reaper import getChildReaper
             import subprocess
             try:
-                proc = subprocess.Popen("xpra_signal_listener", stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
+                proc = subprocess.Popen("xpra_signal_listener", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True, preexec_fn=os.setsid)
             except OSError as e:
                 log("assign_signal_watcher_pid(%s, %s)", wid, pid, exc_info=True)
                 log.error("Error: cannot execute signal listener")
@@ -1092,16 +1092,23 @@ class WindowClient(StubClientMixin):
                             del self._pid_to_signalwatcher[pid]
 
     def kill_signalwatcher(self, proc):
+        log("kill_signalwatcher(%s)", proc)
         if proc.poll() is None:
             stdout_io_watch = proc.stdout_io_watch
             if stdout_io_watch:
                 proc.stdout_io_watch = None
                 self.source_remove(stdout_io_watch)
             try:
-                proc.stdout.close()
+                proc.stdin.write("exit\n")
+                proc.stdin.flush()
             except:
                 pass
-            os.kill(proc.pid, signal.SIGKILL)
+            def force_kill():
+                if proc.poll() is None:
+                    log.warn("Warning: signal watcher %i is still running", proc.pid)
+                    log.warn(" killing it")
+                    os.kill(proc.pid, signal.SIGKILL)
+            self.timeout_add(1000, force_kill)
 
     def destroy_all_windows(self):
         for wid, window in self._id_to_window.items():
