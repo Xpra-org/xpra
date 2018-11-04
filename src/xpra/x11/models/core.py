@@ -491,7 +491,8 @@ class CoreX11WindowModel(WindowModelStub):
                 handler(self)
             except XError as e:
                 log("_handle_property_change", exc_info=True)
-                log.error("Error processing property change for '%s':", name)
+                log.error("Error processing property change for '%s'", name)
+                log.error(" on window %#x", self.xid)
                 log.error(" %s", e)
 
     #specific properties:
