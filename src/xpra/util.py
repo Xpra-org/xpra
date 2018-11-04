@@ -357,7 +357,7 @@ class typedict(dict):
         if item_type:
             for i in range(len(aslist)):
                 x = aslist[i]
-                if sys.version > '3' and type(x)==bytes and item_type==str:
+                if sys.version_info[0]>=3 and type(x)==bytes and item_type==str:
                     from xpra.os_util import bytestostr
                     x = bytestostr(x)
                     aslist[i] = x
