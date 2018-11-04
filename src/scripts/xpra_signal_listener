@@ -18,5 +18,5 @@ for x in WINDOW_SIGNALS:
     addsignalhandler(x)
 
 while True:
-    if sys.stdin.read():
+    if sys.stdin.readline():
         break
