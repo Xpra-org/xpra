@@ -29,7 +29,7 @@ from xpra.x11.bindings.window_bindings import (
                 X11WindowBindings,          #@UnresolvedImport
                 PropertyError)              #@UnresolvedImport
 X11Window = X11WindowBindings()
-from xpra.gtk_common.error import xsync, XError
+from xpra.gtk_common.error import xsync, XError, XSyncContext
 
 from xpra.log import Logger
 log = Logger("x11", "window")
@@ -135,7 +135,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
         scalar_type = etype
     (_, atom, _, _, _, _) = PROP_TYPES[scalar_type]
     try:
-        with xsync:
+        with XSyncContext():
             data = X11Window.XGetWindowProperty(get_xwindow(target), key, atom, etype)
         if data is None:
             if not ignore_errors:
@@ -153,13 +153,16 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
             log.info("Missing property or wrong property type %s (%s)", key, etype)
         return None
     try:
-        return prop_decode(target, etype, data)
-    except:
-        if not ignore_errors:
-            log.warn("Error parsing property %s (type %s); this may be a"
-                     + " misbehaving application, or bug in Xpra\n"
-                     + "  Data: %r[...?]",
-                     key, etype, data[:160], exc_info=True)
+        with XSyncContext():
+            return prop_decode(target, etype, data)
+    except :
+        if ignore_errors:
+            log("prop_get%s", (target, key, etype, ignore_errors, raise_xerrors), exc_info=True)
+            return None
+        log.warn("Error parsing property %s (type %s); this may be a"
+                 + " misbehaving application, or bug in Xpra\n"
+                 + "  Data: %r[...?]",
+                 key, etype, data[:160], exc_info=True)
         raise
 
 def prop_del(target, key):
