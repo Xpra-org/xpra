@@ -790,16 +790,17 @@ class WindowVideoSource(WindowSource):
         if coding in self.video_encodings and self.edge_encoding and not VIDEO_SKIP_EDGE:
             dw = w - (w & self.width_mask)
             dh = h - (h & self.height_mask)
-            if dw>0:
+            if dw>0 and h>0:
                 sub = image.get_sub_image(w-dw, 0, dw, h)
                 call_encode(dw, h, sub, self.edge_encoding, flush+1+int(dh>0))
                 w = w & self.width_mask
-            if dh>0:
+            if dh>0 and w>0:
                 sub = image.get_sub_image(0, h-dh, w, dh)
                 call_encode(dw, h, sub, self.edge_encoding, flush+1)
                 h = h & self.height_mask
         #the main area:
-        call_encode(w, h, image, coding, flush)
+        if w>0 and h>0:
+            call_encode(w, h, image, coding, flush)
 
     def get_frame_encode_delay(self, options):
         if FORCE_AV_DELAY>0:
