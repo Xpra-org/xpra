@@ -604,37 +604,37 @@ class WindowModel(BaseWindowModel):
         hmaxw, hmaxh = mhints.intlistget("maximum-size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
         d = self.get("decorations", 0)
         decorated = d!=0 and any((d & 2**b) for b in (MotifWMHints.ALL_BIT, MotifWMHints.TITLE_BIT, MotifWMHints.MINIMIZE_BIT, MotifWMHints.MAXIMIZE_BIT))
+        cminw, cminh, cmaxw, cmaxh = self.size_constraints
         if decorated:
-            cminw, cminh, cmaxw, cmaxh = self.size_constraints
             if cminw>0 or cminh>0:
                 if cminw>hminw or cminh>hminh:
                     if cminw>0:
                         hminw = max(cminw, hminw)
                     if cminh>0:
                         hminh = max(cminh, hminh)
-            if cmaxw<MAX_WINDOW_SIZE or cmaxh<MAX_WINDOW_SIZE:
-                if cmaxw>hmaxw or cmaxh>hmaxh:
-                    if cmaxw>0:
-                        hmaxw = min(cmaxw, hmaxw)
-                    if cmaxh>0:
-                        hmaxh = min(cmaxh, hmaxh)
-            #sanity checks:
-            if hminw>0 and hminw>hmaxw:
-                #min higher than max!
-                if hminw<=256:
-                    hmaxw = hminw
-                elif hmaxw>=256:
-                    hminw = hmaxw
-                else:
-                    hminw = hmaxw = 256
-            if hminh>0 and hminh>hmaxh:
-                #min higher than max!
-                if hminh<=256:
-                    hmaxh = hminh
-                elif hmaxh>=256:
-                    hminh = hmaxh
-                else:
-                    hminh = hmaxh = 256
+        if cmaxw<MAX_WINDOW_SIZE or cmaxh<MAX_WINDOW_SIZE:
+            if cmaxw>hmaxw or cmaxh>hmaxh:
+                if cmaxw>0:
+                    hmaxw = min(cmaxw, hmaxw)
+                if cmaxh>0:
+                    hmaxh = min(cmaxh, hmaxh)
+        #sanity checks:
+        if hminw>0 and hminw>hmaxw:
+            #min higher than max!
+            if hminw<=256:
+                hmaxw = hminw
+            elif hmaxw>=256:
+                hminw = hmaxw
+            else:
+                hminw = hmaxw = 256
+        if hminh>0 and hminh>hmaxh:
+            #min higher than max!
+            if hminh<=256:
+                hmaxh = hminh
+            elif hmaxh>=256:
+                hminh = hmaxh
+            else:
+                hminh = hmaxh = 256
         if hminw>0 or hminh>0:
             mhints["minimum-size"] = hminw, hminh
         if hmaxw>0 or hmaxh>0:
