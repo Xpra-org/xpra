@@ -1239,6 +1239,10 @@ if WIN32:
             add_DLLs("gtk-win32", "gdk-win32",
                      "gdk_pixbuf", "pyglib-2.0-python2")
 
+        if client_ENABLED:
+            #svg pixbuf loader:
+            add_DLLs("rsvg", "croco")
+
         if sound_ENABLED:
             add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
             add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
