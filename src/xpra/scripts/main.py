@@ -517,13 +517,22 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     scpos = display_name.find(":")
     slpos = display_name.find("/")
     if scpos<0 and slpos<0:
-        if session_name_lookup:
+        match = None
+        if POSIX:
+            #maybe this is just the display number without the ":" prefix?
+            try:
+                display_name = ":%i" % int(display_name)
+                match = True
+            except ValueError:
+                pass
+        if session_name_lookup and not match:
             #try to find a session whose "session-name" matches:
             match = find_session_by_name(opts, display_name)
             if match:
                 display_name = match
-                scpos = display_name.find(":")
-                slpos = display_name.find("/")
+    #display_name may have been updated, re-parse it:
+    scpos = display_name.find(":")
+    slpos = display_name.find("/")
     if scpos<0 and slpos<0:
         error_cb("unknown format for display name: %s" % display_name)
     if scpos<0:
