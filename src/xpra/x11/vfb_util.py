@@ -39,6 +39,11 @@ def get_vfb_logger():
         vfb_logger = Logger("server", "x11")
     return vfb_logger
 
+def osclose(fd):
+    try:
+        os.close(fd)
+    except:
+        pass
 
 def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
     log = get_vfb_logger()
@@ -238,9 +243,24 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
             raise InitException("failed to execute xvfb command %s: %s" % (xvfb_cmd, e))
         # Read the display number from the pipe we gave to Xvfb
-        buf = read_displayfd(r_pipe)
-        os.close(r_pipe)
-        os.close(w_pipe)
+        e = None
+        try:
+            buf = read_displayfd(r_pipe)
+        except Exception as e:
+            raise
+        finally:
+            osclose(r_pipe)
+            osclose(w_pipe)
+            if e:
+                log.error("Error reading displayfd pipe %s:", r_pipe)
+                log.error(" %s", e)
+                if xvfb.poll() is None:
+                    log.error(" stopping vfb process with pid %i", xvfb.pid)
+                    try:
+                        xvfb.terminate()
+                    except Exception as e:
+                        log.error("Error stopping vfb process:")
+                        log.error(" %s", e)
         def displayfd_err(msg):
             raise InitException("%s: %s" % (xvfb_executable, msg))
         n = parse_displayfd(buf, displayfd_err)
