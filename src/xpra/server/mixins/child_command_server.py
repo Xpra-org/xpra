@@ -176,7 +176,7 @@ class ChildCommandServer(StubServerMixin):
             return proc
         except OSError as e:
             log("start_command%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), exc_info=True)
-            log.error("Error spawning child '%s': %s\n" % (child_cmd,))
+            log.error("Error spawning child '%s':" % (child_cmd, ))
             log.error(" %s" % (e,))
             return None
 
