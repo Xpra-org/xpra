@@ -7,7 +7,7 @@ import os
 from xpra.os_util import monotonic_time
 from xpra.util import envint
 
-DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 10)
+DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
 
 def eerrno(e):
     try:
