@@ -62,8 +62,7 @@ def check_mdns(gui):
             dll_file = os.path.join(d, "Bonjour", "mdnsNSP.dll")
             if os.path.exists(dll_file):
                 log("check_mdns() found bonjour DLL: %s", dll_file)
-                pass
-                #return True
+                return True
         #bonjour not found:
         glib.timeout_add(1000, win32_bonjour_download_warning, gui)
     return True
