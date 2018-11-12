@@ -266,7 +266,8 @@ class ClientConnection(ClientConnectionClass):
         if self.server_bandwidth_limit is None:
             server_bandwidth_limit = self.get_socket_bandwidth_limit() or bandwidth_limit
         self.bandwidth_limit = min(server_bandwidth_limit, bandwidth_limit)
-        self.bandwidth_detection = c.boolget("bandwidth-detection", True)
+        if self.bandwidth_detection:
+            self.bandwidth_detection = c.boolget("bandwidth-detection", True)
         cd = typedict(c.dictget("connection-data"))
         self.jitter = cd.intget("jitter", 0)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s", server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
