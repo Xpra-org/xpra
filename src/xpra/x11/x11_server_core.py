@@ -219,6 +219,9 @@ class X11ServerCore(GTKServerBase):
                         if x.startswith("RuntimeError: "):
                             error = x[len("RuntimeError: "):]
                             break
+                        if x.startswith("ImportError: "):
+                            error = x[len("ImportError: "):]
+                            break
                     self.opengl_props["error"] = error
                     log.warn("Warning: OpenGL support check failed:")
                     log.warn(" %s", error)
