@@ -273,8 +273,8 @@ pushd ${DIST}/lib > /dev/null
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
 #trim tests from numpy
 pushd numpy > /dev/null
-rm -fr ./f2py/docs
-for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing; do
+rm -fr ./f2py/docs ./tests ./doc
+for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing compat fft; do
 	rm -fr ./$x/tests
 done
 popd > /dev/null
