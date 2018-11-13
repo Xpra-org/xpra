@@ -27,11 +27,11 @@ BLACKLIST = {
     "renderer" :
         [
             "Software Rasterizer",
-            "Mesa DRI Intel(R) Ivybridge Desktop"
+            #"Mesa DRI Intel(R) Ivybridge Desktop"
         ],
     "vendor"    : [
-        "VMware, Inc.",
-        "Humper",
+        #"VMware, Inc.",
+        #"Humper",
         #to disable nvidia, uncomment this:
         #"NVIDIA Corporation",
         ]
