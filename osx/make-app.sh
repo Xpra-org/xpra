@@ -282,8 +282,8 @@ done
 if [ "$STRIP_NUMPY" == "1" ]; then
 	echo " * trim numpy"
 	pushd $LIBDIR/python/numpy
-	rm -fr ./f2py/docs
-	for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing; do
+	rm -fr ./f2py/docs ./tests ./doc
+	for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing compat fft; do
 		rm -fr ./$x/tests
 	done
 	popd
