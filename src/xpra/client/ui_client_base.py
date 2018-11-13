@@ -21,7 +21,11 @@ from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
-from xpra.util import std, envbool, typedict, updict, repr_ellipsized, XPRA_AUDIO_NOTIFICATION_ID
+from xpra.util import (
+    std, envbool, typedict, updict, repr_ellipsized,
+    XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
+    )
+from xpra.exit_codes import EXIT_FAILURE, EXIT_OK
 from xpra.version_util import get_version_info_full, get_platform_info
 
 
@@ -291,6 +295,26 @@ class UIXpraClient(ClientBaseClass):
 
     def get_version_info(self):
         return get_version_info_full()
+
+
+    ######################################################################
+    # trigger notifications on disconnection,
+    # and wait before actually exiting so the notification has a chance of being seen
+    def server_disconnect_warning(self, reason, *info):
+        body = "\n".join(info)
+        self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID, "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
+        self.exit_code = EXIT_FAILURE
+        delay = 5000*mixin_features.notifications
+        self.timeout_add(delay, XpraClientBase.server_disconnect_warning, self, reason, *info)
+        self.cleanup()
+
+    def server_disconnect(self, reason, *info):
+        body = "\n".join(info)
+        self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID, "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
+        self.exit_code = EXIT_OK
+        delay = 5000*mixin_features.notifications
+        self.timeout_add(delay, XpraClientBase.server_disconnect, self, reason, *info)
+        self.cleanup()
 
 
     ######################################################################

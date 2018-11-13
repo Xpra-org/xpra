@@ -557,28 +557,36 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def _process_disconnect(self, packet):
         #ie: ("disconnect", "version error", "incompatible version")
-        reason = bytestostr(packet[1])
-        info = packet[2:]
-        s = nonl(reason)
-        if len(info):
-            s += " (%s)" % csv(nonl(bytestostr(x)) for x in info)
+        info = tuple(nonl(bytestostr(x)) for x in packet[1:])
+        reason = info[0]
         if self.server_capabilities is None or len(self.server_capabilities)==0:
             #server never sent hello to us - so disconnect is an error
             #(but we don't know which one - the info message may help)
-            log.warn("server failure: disconnected before the session could be established")
-            e = EXIT_FAILURE
+            self.server_disconnect_warning("disconnected before the session could be established", *info)
+            return
         elif disconnect_is_an_error(reason):
-            log.warn("server failure: %s", reason)
-            e = EXIT_FAILURE
+            self.server_disconnect_warning(*info)
+            return
         else:
             if self.exit_code is None:
                 #we're not in the process of exiting already,
                 #tell the user why the server is disconnecting us
-                log.info("server requested disconnect:")
-                log.info(" %s", s)
-            self.quit(EXIT_OK)
-            return
-        self.warn_and_quit(e, "server requested disconnect: %s" % s)
+                self.server_disconnect(*info)
+
+    def server_disconnect_warning(self, reason, *extra_info):
+        log.warn("Warning: server connection failure:")
+        log.warn(" %s", reason)
+        for x in extra_info:
+            log.warn(" %s", x)
+        self.warn_and_quit(EXIT_FAILURE, "server requested disconnect: %s" % reason)
+
+    def server_disconnect(self, reason, *extra_info):
+        log.info("server requested disconnect:")
+        log.info(" %s", reason)
+        for x in extra_info:
+            log.info(" %s", x)
+        self.quit(EXIT_OK)
+
 
     def _process_connection_lost(self, _packet):
         p = self._protocol
