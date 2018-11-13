@@ -1,7 +1,7 @@
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.31.20180904git9a07219%{?dist}
+Release:	0.31.20180904git9a07219.1%{?dist}
 License:	BSD
 Url:		https://chromium.googlesource.com/libyuv/libyuv
 VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
@@ -51,9 +51,19 @@ Additional header files for development with %{name}.
 %{cmake} -DTEST=true
 %endif
 
-
 %install
 %{make_install}
+mkdir -p %{buildroot}%{_libdir}/pkgconfig
+cat > %{buildroot}%{_libdir}/pkgconfig/%{name}.pc <<EOF
+prefix=%{_prefix}
+libdir=%{_libdir}
+includedir=%{_includedir}
+
+Name: %{name}
+Description: YUV conversion and scaling functionality library
+Version: 0
+Libs: -lyuv -ljpeg
+EOF
 
 
 %check
@@ -71,9 +81,13 @@ Additional header files for development with %{name}.
 %{_includedir}/%{name}
 %{_includedir}/%{name}.h
 %{_libdir}/%{name}.so
+%{_libdir}/pkgconfig/%{name}.pc
 
 
 %changelog
+* Tue Nov 13 2018 Peter Lemenkov <lemenkov@gmail.com> - 0-0.31.20180904git9a07219.1
+- add pkgconfig file
+
 * Mon Sep 24 2018 Peter Lemenkov <lemenkov@gmail.com> - 0-0.31.20180904git9a07219
 - Update to the latest git snapshot
 
