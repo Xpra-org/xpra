@@ -31,7 +31,7 @@ class WindowServer(StubServerMixin):
         self.window_max_size = 2**15-1, 2**15-1
 
     def init(self, opts):
-        def parse_window_size(v, attribute="max-size", default_value=(0, 0)):
+        def parse_window_size(v, default_value=(0, 0)):
             try:
                 #split on "," or "x":
                 pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
@@ -41,8 +41,8 @@ class WindowServer(StubServerMixin):
                 return w, h
             except:
                 return default_value
-        self.window_min_size = parse_window_size(opts.min_size, "min-size", (0, 0))
-        self.window_max_size = parse_window_size(opts.max_size, "max-size", (2**15-1, 2**15-1))
+        self.window_min_size = parse_window_size(opts.min_size, (0, 0))
+        self.window_max_size = parse_window_size(opts.max_size, (2**15-1, 2**15-1))
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         self.update_size_constraints(minw, minh, maxw, maxh)
