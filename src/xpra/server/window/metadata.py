@@ -42,7 +42,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     elif propname == "size-hints":
         #just to confuse things, this is renamed
         #and we have to filter out ratios as floats (already exported as pairs anyway)
-        v = dict((k,v) for k,v in raw().items() if k not in("max_aspect", "min_aspect"))
+        v = dict(raw())
         return {"size-constraints": v}
     elif propname == "strut":
         strut = raw()

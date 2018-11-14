@@ -1108,8 +1108,6 @@ cdef class _X11WindowBindings(_X11CoreBindings):
             hints["resize_inc"] = size_hints.width_inc, size_hints.height_inc
         if size_hints.flags & PAspect:
             try:
-                hints["min_aspect"] = size_hints.min_aspect.x * 1.0 / size_hints.min_aspect.y
-                hints["max_aspect"] = size_hints.max_aspect.x * 1.0 / size_hints.max_aspect.y
                 hints["min_aspect_ratio"] = size_hints.min_aspect.x, size_hints.min_aspect.y
                 hints["max_aspect_ratio"] = size_hints.max_aspect.x, size_hints.max_aspect.y
             except ZeroDivisionError:
