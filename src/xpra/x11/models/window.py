@@ -603,21 +603,17 @@ class WindowModel(BaseWindowModel):
         hminw, hminh = mhints.intlistget("minimum-size", (0, 0), 2, 2)
         hmaxw, hmaxh = mhints.intlistget("maximum-size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
         d = self.get("decorations", -1)
-        decorated = d>0 and any((d & 2**b) for b in (MotifWMHints.ALL_BIT, MotifWMHints.TITLE_BIT, MotifWMHints.MINIMIZE_BIT, MotifWMHints.MAXIMIZE_BIT))
+        decorated = d==-1 or any((d & 2**b) for b in (MotifWMHints.ALL_BIT, MotifWMHints.TITLE_BIT, MotifWMHints.MINIMIZE_BIT, MotifWMHints.MAXIMIZE_BIT))
         cminw, cminh, cmaxw, cmaxh = self.size_constraints
         if decorated:
-            if cminw>0 or cminh>0:
-                if cminw>hminw or cminh>hminh:
-                    if cminw>0:
-                        hminw = max(cminw, hminw)
-                    if cminh>0:
-                        hminh = max(cminh, hminh)
-        if cmaxw<MAX_WINDOW_SIZE or cmaxh<MAX_WINDOW_SIZE:
-            if cmaxw>hmaxw or cmaxh>hmaxh:
-                if cmaxw>0:
-                    hmaxw = min(cmaxw, hmaxw)
-                if cmaxh>0:
-                    hmaxh = min(cmaxh, hmaxh)
+            if cminw>0 and cminw>hminw:
+                hminw = cminw
+            if cminh>0 and cminh>hminh:
+                hminh = cminh
+        if cmaxw>0 and cmaxw<hmaxw:
+            hmaxw = cmaxw
+        if cmaxh>0 and cmaxh<hmaxh:
+            hmaxh = cmaxh
         #sanity checks:
         if hminw>0 and hminw>hmaxw:
             #min higher than max!
