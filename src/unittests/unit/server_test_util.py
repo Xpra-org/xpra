@@ -192,7 +192,7 @@ class ServerTestUtil(unittest.TestCase):
 
 
 	def _temp_file(self, data=None, prefix="xpra-"):
-		f = tempfile.NamedTemporaryFile(prefix=prefix, delete=DELETE_TEMP_FILES, delete=False)
+		f = tempfile.NamedTemporaryFile(prefix=prefix, delete=False)
 		if data:
 			f.file.write(data)
 		f.file.flush()
