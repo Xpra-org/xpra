@@ -602,8 +602,8 @@ class WindowModel(BaseWindowModel):
         mhints = typedict(hints)
         hminw, hminh = mhints.intlistget("minimum-size", (0, 0), 2, 2)
         hmaxw, hmaxh = mhints.intlistget("maximum-size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
-        d = self.get("decorations", 0)
-        decorated = d!=0 and any((d & 2**b) for b in (MotifWMHints.ALL_BIT, MotifWMHints.TITLE_BIT, MotifWMHints.MINIMIZE_BIT, MotifWMHints.MAXIMIZE_BIT))
+        d = self.get("decorations", -1)
+        decorated = d>0 and any((d & 2**b) for b in (MotifWMHints.ALL_BIT, MotifWMHints.TITLE_BIT, MotifWMHints.MINIMIZE_BIT, MotifWMHints.MAXIMIZE_BIT))
         cminw, cminh, cmaxw, cmaxh = self.size_constraints
         if decorated:
             if cminw>0 or cminh>0:
