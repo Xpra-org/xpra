@@ -261,7 +261,6 @@ class WindowModel(BaseWindowModel):
 
     def _read_initial_X11_properties(self):
         metalog("read_initial_X11_properties() window")
-        super(WindowModel, self)._read_initial_X11_properties()
         def pget(key, ptype):
             return self.prop_get(key, ptype, raise_xerrors=True)
         # WARNING: have to handle _NET_WM_STATE before we look at WM_HINTS;
@@ -286,6 +285,10 @@ class WindowModel(BaseWindowModel):
                 assert self.get_property(propname) is not None
             except:
                 self._internal_set_property(propname, value)
+        #"decorations" needs to be set before reading the X11 properties
+        #because handle_wm_normal_hints_change reads it:
+        set_if_unset("decorations", -1)
+        super(WindowModel, self)._read_initial_X11_properties()
         net_wm_state = self.get_property("state")
         assert net_wm_state is not None, "_NET_WM_STATE should have been read already"
         #initial position and size, from the Window object,
@@ -298,7 +301,6 @@ class WindowModel(BaseWindowModel):
         set_if_unset("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
         set_if_unset("requested-position", (ax, ay))
         set_if_unset("requested-size", (aw, ah))
-        set_if_unset("decorations", -1)
         #it may have been set already:
         try:
             v = self.get_property("set-initial-position")
@@ -600,41 +602,6 @@ class WindowModel(BaseWindowModel):
 
     def calc_constrained_size(self, w, h, hints):
         mhints = typedict(hints)
-        hminw, hminh = mhints.intlistget("minimum-size", (0, 0), 2, 2)
-        hmaxw, hmaxh = mhints.intlistget("maximum-size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
-        d = self.get("decorations", -1)
-        decorated = d==-1 or any((d & 2**b) for b in (MotifWMHints.ALL_BIT, MotifWMHints.TITLE_BIT, MotifWMHints.MINIMIZE_BIT, MotifWMHints.MAXIMIZE_BIT))
-        cminw, cminh, cmaxw, cmaxh = self.size_constraints
-        if decorated:
-            if cminw>0 and cminw>hminw:
-                hminw = cminw
-            if cminh>0 and cminh>hminh:
-                hminh = cminh
-        if cmaxw>0 and cmaxw<hmaxw:
-            hmaxw = cmaxw
-        if cmaxh>0 and cmaxh<hmaxh:
-            hmaxh = cmaxh
-        #sanity checks:
-        if hminw>0 and hminw>hmaxw:
-            #min higher than max!
-            if hminw<=256:
-                hmaxw = hminw
-            elif hmaxw>=256:
-                hminw = hmaxw
-            else:
-                hminw = hmaxw = 256
-        if hminh>0 and hminh>hmaxh:
-            #min higher than max!
-            if hminh<=256:
-                hmaxh = hminh
-            elif hmaxh>=256:
-                hminh = hmaxh
-            else:
-                hminh = hmaxh = 256
-        if hminw>0 or hminh>0:
-            mhints["minimum-size"] = hminw, hminh
-        if hmaxw>0 or hmaxh>0:
-            mhints["maximum-size"] = hmaxw, hmaxh
         cw, ch = calc_constrained_size(w, h, mhints)
         geomlog("calc_constrained_size%s=%s (size_constraints=%s)", (w, h, mhints), (cw, ch), self.size_constraints)
         return cw, ch
@@ -669,7 +636,9 @@ class WindowModel(BaseWindowModel):
         metalog("_MOTIF_WM_HINTS=%s", motif_hints)
         if motif_hints:
             if motif_hints.flags & (2**MotifWMHints.DECORATIONS_BIT):
-                self._updateprop("decorations", motif_hints.decorations)
+                if self._updateprop("decorations", motif_hints.decorations):
+                    #we may need to clamp the window size:
+                    self._handle_wm_normal_hints_change()
             if motif_hints.flags & (2**MotifWMHints.INPUT_MODE_BIT):
                 self._updateprop("modal", int(motif_hints.input_mode))
 
@@ -683,13 +652,43 @@ class WindowModel(BaseWindowModel):
         #so rename the fields:
         hints = {}
         if size_hints:
+            TRANSLATED_NAMES = {
+                "position"          : "position",
+                "size"              : "size",
+                "base_size"         : "base-size",
+                "resize_inc"        : "increment",
+                "win_gravity"       : "gravity",
+                "min_aspect_ratio"  : "minimum-aspect-ratio",
+                "max_aspect_ratio"  : "maximum-aspect-ratio",
+                }
             for k,v in size_hints.items():
-                hints[{"min_size"       : "minimum-size",
-                       "max_size"       : "maximum-size",
-                       "base_size"      : "base-size",
-                       "resize_inc"     : "increment",
-                       "win_gravity"    : "gravity",
-                       }.get(k, k)] = v
+                trans_name = TRANSLATED_NAMES.get(k)
+                if trans_name:
+                    hints[trans_name] = v
+        #handle min-size and max-size,
+        #applying our size constraints if we have any:
+        mhints = typedict(size_hints)
+        hminw, hminh = mhints.intlistget("min_size", (0, 0), 2, 2)
+        hmaxw, hmaxh = mhints.intlistget("max_size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
+        d = self.get("decorations", -1)
+        decorated = d==-1 or any((d & 2**b) for b in (MotifWMHints.ALL_BIT, MotifWMHints.TITLE_BIT, MotifWMHints.MINIMIZE_BIT, MotifWMHints.MAXIMIZE_BIT))
+        cminw, cminh, cmaxw, cmaxh = self.size_constraints
+        if decorated:
+            #min-size only applies to decorated windows
+            if cminw>0 and cminw>hminw:
+                hminw = cminw
+            if cminh>0 and cminh>hminh:
+                hminh = cminh
+        #max-size applies to all windows:
+        if cmaxw>0 and cmaxw<hmaxw:
+            hmaxw = cmaxw
+        if cmaxh>0 and cmaxh<hmaxh:
+            hmaxh = cmaxh
+        #if the values mean something, expose them:
+        if hminw>0 or hminw>0:
+            hints["minimum-size"] = hminw, hminh
+        if hmaxw<MAX_WINDOW_SIZE or hmaxh<MAX_WINDOW_SIZE:
+            hints["maximum-size"] = hmaxw, hmaxh
         sanitize_size_hints(hints)
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
