@@ -563,15 +563,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             #server never sent hello to us - so disconnect is an error
             #(but we don't know which one - the info message may help)
             self.server_disconnect_warning("disconnected before the session could be established", *info)
-            return
         elif disconnect_is_an_error(reason):
             self.server_disconnect_warning(*info)
-            return
-        else:
-            if self.exit_code is None:
-                #we're not in the process of exiting already,
-                #tell the user why the server is disconnecting us
-                self.server_disconnect(*info)
+        elif self.exit_code is None:
+            #we're not in the process of exiting already,
+            #tell the user why the server is disconnecting us
+            self.server_disconnect(*info)
 
     def server_disconnect_warning(self, reason, *extra_info):
         log.warn("Warning: server connection failure:")
