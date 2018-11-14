@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("gobject", "client")
 
 import sys
-from xpra.util import nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, DONE
+from xpra.util import nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, disconnect_is_an_error, DONE
 from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
@@ -185,6 +185,19 @@ class HelloRequestClient(SendCommandConnectClient):
 
     def do_command(self):
         self.quit(EXIT_OK)
+
+    def _process_disconnect(self, packet):
+        #overriden method so we can avoid printing a warning,
+        #we haven't received the hello back from the server
+        #but that's fine for a request client
+        info = tuple(nonl(bytestostr(x)) for x in packet[1:])
+        reason = info[0]
+        if disconnect_is_an_error(reason):
+            self.server_disconnect_warning(*info)
+        elif self.exit_code is None:
+            #we're not in the process of exiting already,
+            #tell the user why the server is disconnecting us
+            self.server_disconnect(*info)
 
 
 class ScreenshotXpraClient(CommandConnectClient):
