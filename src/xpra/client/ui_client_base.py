@@ -22,7 +22,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
 from xpra.util import (
-    std, envbool, typedict, updict, repr_ellipsized,
+    std, envbool, envint, typedict, updict, repr_ellipsized,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
 from xpra.exit_codes import EXIT_FAILURE, EXIT_OK
@@ -73,6 +73,7 @@ ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 
+NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
 
 
@@ -304,16 +305,16 @@ class UIXpraClient(ClientBaseClass):
         body = "\n".join(info)
         self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID, "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
         self.exit_code = EXIT_FAILURE
-        delay = 5000*mixin_features.notifications
-        self.timeout_add(delay, XpraClientBase.server_disconnect_warning, self, reason, *info)
+        delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
+        self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, reason, *info)
         self.cleanup()
 
     def server_disconnect(self, reason, *info):
         body = "\n".join(info)
         self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID, "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
         self.exit_code = EXIT_OK
-        delay = 5000*mixin_features.notifications
-        self.timeout_add(delay, XpraClientBase.server_disconnect, self, reason, *info)
+        delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
+        self.timeout_add(delay*1000, XpraClientBase.server_disconnect, self, reason, *info)
         self.cleanup()
 
 
