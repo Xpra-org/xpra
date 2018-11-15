@@ -56,9 +56,6 @@ make
 #fix symlink not installed as a symlink:
 rm %{buildroot}/usr/bin/lz4c
 ln -sf lz4 %{buildroot}/usr/bin/lz4c
-#fix man page installed in the wrong dir:
-mkdir %{buildroot}/usr/share/man/man1
-mv %{buildroot}/usr/share/man/*lz4* %{buildroot}/usr/share/man/man1/
 chmod -x %{buildroot}%{_includedir}/*.h
 
 
