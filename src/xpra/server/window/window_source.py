@@ -226,7 +226,9 @@ class WindowSource(WindowIconSource):
 
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
+        self._encoding_quality_info = {}
         self._encoding_speed = deque(maxlen=100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
+        self._encoding_speed_info = {}
         # they may have fixed values:
         def capr(v):
             return min(100, max(0, int(v)))
@@ -337,7 +339,9 @@ class WindowSource(WindowIconSource):
         self.small_packet_cost = 0
         #
         self._encoding_quality = []
+        self._encoding_quality_info = {}
         self._encoding_speed = []
+        self._encoding_speed_info = {}
         #
         self._fixed_quality = 0
         self._fixed_min_quality = 0
@@ -481,19 +485,18 @@ class WindowSource(WindowIconSource):
 
     def get_quality_speed_info(self):
         info = {}
-        def add_list_info(prefix, v):
+        def add_list_info(prefix, v, vinfo):
             if not v:
                 return
             l = tuple(v)
             if len(l)==0:
-                return
-            li = get_list_stats(x for _, _, x in l)
-            #last record
-            _, descr, _ = l[-1]
-            li.update(descr)
+                li = {}
+            else:
+                li = get_list_stats(x for _, x in l)
+            li.update(vinfo)
             info[prefix] = li
-        add_list_info("quality", self._encoding_quality)
-        add_list_info("speed", self._encoding_speed)
+        add_list_info("quality", self._encoding_quality, self._encoding_quality_info)
+        add_list_info("speed", self._encoding_speed, self._encoding_speed_info)
         return info
 
     def get_property_info(self):
@@ -964,24 +967,31 @@ class WindowSource(WindowIconSource):
         self.may_update_av_sync_delay()
 
     def update_speed(self):
-        if self.suspended or self._mmap or self._sequence<10:
+        if self.suspended:
+            self._encoding_speed_info = {"suspended" : True}
+            return
+        if self._mmap:
+            self._encoding_speed_info = {"mmap" : True}
+            return
+        if self._sequence<10:
+            self._encoding_speed_info = {"pending" : True}
             return
         speed = self._fixed_speed
-        if speed<=0:
-            #make a copy to work on (and discard "info")
-            speed_data = [(event_time, speed) for event_time, _, speed in tuple(self._encoding_speed)]
-            info, target_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
-            speed_data.append((monotonic_time(), target_speed))
-            speed = max(self._fixed_min_speed, time_weighted_average(speed_data, min_offset=1, rpow=1.1))
-            speed = min(99, speed)
-        else:
-            info = {}
-            speed = min(100, speed)
-        speed = int(speed)
-        self._current_speed = speed
-        statslog("update_speed() wid=%s, info=%s, speed=%s", self.wid, info, speed)
-        self._encoding_speed.append((monotonic_time(), info, speed))
+        if speed>0:
+            self._current_speed = speed
+            self._encoding_speed_info = {"fixed" : True}
+            return
         now = monotonic_time()
+        #make a copy to work on:
+        speed_data = list(self._encoding_speed)
+        info, target_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
+        speed_data.append((monotonic_time(), target_speed))
+        speed = max(self._fixed_min_speed, time_weighted_average(speed_data, min_offset=1, rpow=1.1))
+        speed = min(99, speed)
+        self._current_speed = int(speed)
+        statslog("update_speed() wid=%s, info=%s, speed=%s", self.wid, info, speed)
+        self._encoding_speed_info = info
+        self._encoding_speed.append((monotonic_time(), speed))
         ww, wh = self.window_dimensions
         self.global_statistics.speed.append((now, ww*wh, speed))
 
@@ -1000,29 +1010,37 @@ class WindowSource(WindowIconSource):
 
 
     def update_quality(self):
-        if self.suspended or self._mmap or self._sequence<10:
+        if self.suspended:
+            self._encoding_quality_info = {"suspended" : True}
+            return
+        if self._mmap:
+            self._encoding_quality_info = {"mmap" : True}
+            return
+        if self._sequence<10:
+            self._encoding_quality_info = {"pending" : True}
             return
         if self.encoding in LOSSLESS_ENCODINGS:
             #the user has selected an encoding which does not use quality
             #so skip the calculations!
+            self._encoding_quality_info = {"lossless" : self.encoding}
             self._current_quality = 100
             return
         quality = self._fixed_quality
-        if quality<=0:
-            info, quality = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
-            #make a copy to work on (and discard "info")
-            ves_copy = [(event_time, speed) for event_time, _, speed in tuple(self._encoding_quality)]
-            ves_copy.append((monotonic_time(), quality))
-            quality = max(self._fixed_min_quality, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
-            quality = min(99, quality)
-        else:
-            info = {}
-            quality = min(100, quality)
-        quality = int(quality)
-        self._current_quality = quality
-        statslog("update_quality() wid=%i, info=%s, quality=%s", self.wid, info, quality)
+        if quality>0:
+            self._current_quality = int(min(100, quality))
+            self._encoding_quality_info = {"fixed" : True}
+            return
         now = monotonic_time()
-        self._encoding_quality.append((now, info, quality))
+        info, quality = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
+        #make a copy to work on:
+        ves_copy = list(self._encoding_quality)
+        ves_copy.append((now, quality))
+        quality = max(self._fixed_min_quality, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
+        quality = min(99, quality)
+        self._current_quality = int(quality)
+        statslog("update_quality() wid=%i, info=%s, quality=%s", self.wid, info, quality)
+        self._encoding_quality_info = info
+        self._encoding_quality.append((now, quality))
         ww, wh = self.window_dimensions
         self.global_statistics.quality.append((now, ww*wh, quality))
 
