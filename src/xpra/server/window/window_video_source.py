@@ -439,7 +439,7 @@ class WindowVideoSource(WindowSource):
             #raise the quality as the areas around video tend to not be graphics
             return nonvideo(quality+30, "not the video region")
 
-        if not video_hint:
+        if not video_hint and not self.is_shadow:
             if now-self.global_statistics.last_congestion_time>5:
                 lde = tuple(self.statistics.last_damage_events)
                 lim = now-4
