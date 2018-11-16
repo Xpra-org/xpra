@@ -990,7 +990,7 @@ class WindowSource(WindowIconSource):
         speed = max(0, self._fixed_min_speed, speed)
         speed = int(min(99, speed))
         self._current_speed = speed
-        statslog("update_speed() wid=%s, info=%s, speed=%i (target=%i)", self.wid, info, speed, target)
+        statslog("update_speed() speed=%2i (target=%2i) for wid=%i, info=%s", speed, target, self.wid, info)
         self._encoding_speed_info = info
         self._encoding_speed.append((monotonic_time(), speed))
         ww, wh = self.window_dimensions
@@ -1040,7 +1040,7 @@ class WindowSource(WindowIconSource):
         quality = max(0, self._fixed_min_quality, quality)
         quality = int(min(99, quality))
         self._current_quality = quality
-        statslog("update_quality() wid=%i, info=%s, quality=%i (target=%i)", self.wid, info, quality, target)
+        statslog("update_quality() quality=%2i (target=%2i) for wid=%i, info=%s", quality, target, self.wid, info)
         self._encoding_quality_info = info
         self._encoding_quality.append((now, quality))
         ww, wh = self.window_dimensions
