@@ -114,7 +114,7 @@ rm -rf %{buildroot}
 * Thu Feb 01 2018 Antoine Martin <antoine@xpra.org> - 0.19.2-1
 - New upstream release
 
-* Sun Jan 22 2018 Antoine Martin <antoine@xpra.org> - 0.19.1-1
+* Mon Jan 22 2018 Antoine Martin <antoine@xpra.org> - 0.19.1-1
 - New upstream release
 
 * Mon Jan 01 2018 Antoine Martin <antoine@xpra.org> - 0.18.1-1
