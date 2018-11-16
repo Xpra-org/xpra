@@ -984,12 +984,13 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         #make a copy to work on:
         speed_data = list(self._encoding_speed)
-        info, target_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
-        speed_data.append((monotonic_time(), target_speed))
-        speed = max(self._fixed_min_speed, time_weighted_average(speed_data, min_offset=1, rpow=1.1))
-        speed = min(99, speed)
-        self._current_speed = int(speed)
-        statslog("update_speed() wid=%s, info=%s, speed=%s", self.wid, info, speed)
+        info, target = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
+        speed_data.append((monotonic_time(), target))
+        speed = int(time_weighted_average(speed_data, min_offset=1, rpow=1.1))
+        speed = max(0, self._fixed_min_speed, speed)
+        speed = int(min(99, speed))
+        self._current_speed = speed
+        statslog("update_speed() wid=%s, info=%s, speed=%i (target=%i)", self.wid, info, speed, target)
         self._encoding_speed_info = info
         self._encoding_speed.append((monotonic_time(), speed))
         ww, wh = self.window_dimensions
@@ -1031,14 +1032,15 @@ class WindowSource(WindowIconSource):
             self._encoding_quality_info = {"fixed" : True}
             return
         now = monotonic_time()
-        info, quality = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
+        info, target = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
         #make a copy to work on:
         ves_copy = list(self._encoding_quality)
-        ves_copy.append((now, quality))
-        quality = max(self._fixed_min_quality, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
-        quality = min(99, quality)
-        self._current_quality = int(quality)
-        statslog("update_quality() wid=%i, info=%s, quality=%s", self.wid, info, quality)
+        ves_copy.append((now, target))
+        quality = int(time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
+        quality = max(0, self._fixed_min_quality, quality)
+        quality = int(min(99, quality))
+        self._current_quality = quality
+        statslog("update_quality() wid=%i, info=%s, quality=%i (target=%i)", self.wid, info, quality, target)
         self._encoding_quality_info = info
         self._encoding_quality.append((now, quality))
         ww, wh = self.window_dimensions

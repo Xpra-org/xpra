@@ -203,7 +203,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
                                            },
             "congestion-value"          : int(1000*global_statistics.congestion_value),
             }
-    return info, target_speed
+    return info, int(target_speed)
 
 
 def get_target_quality(window_dimensions, batch, global_statistics, statistics, bandwidth_limit, min_quality, min_speed):
@@ -296,4 +296,4 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
     #apply min-quality:
     mq = min(100.0, max(min_quality, 0.0))
     target_quality = mq + (100.0-mq) * target
-    return info, target_quality
+    return info, int(target_quality)
