@@ -905,7 +905,7 @@ cdef class _XImageBindings(_X11CoreBindings):
             xshmlog.warn("Warning: no XShm support on display %s", get_display_name())
 
     def has_XShm(self):
-        return self.has_xshm
+        return bool(self.has_xshm)
 
     def get_XShmWrapper(self, xwindow):
         self.context_check()
