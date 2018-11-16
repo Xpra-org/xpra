@@ -112,14 +112,17 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     #    100  for lowest compression/fast
     # here we try to minimize damage-latency and client decoding speed
 
+    max_speed = 1
+    speed = min_speed
     #megapixels per second:
     mpixels = low_limit/1024.0/1024.0
     #for larger window sizes, we should be downscaling,
     #and don't want to wait too long for those anyway:
     ref_damage_latency = 0.010 + 0.025 * (1+mathlog(max(1, mpixels)))
 
-    #abs: try to never go higher than 5 times reference latency:
-    dam_lat_abs = max(0, ((statistics.avg_damage_in_latency or 0)-ref_damage_latency) / (ref_damage_latency * 4.0))
+    adil = statistics.avg_damage_in_latency or 0
+    #abs: try to never go higher than N times the reference latency:
+    dam_lat_abs = max(0, (adil-ref_damage_latency) / (ref_damage_latency * 3.0))
 
     if batch.locked:
         target_damage_latency = ref_damage_latency
@@ -133,16 +136,17 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
             #average recent actual delay:
             avg_delay = time_weighted_average(delays)
         #and average that with the current delay (which is lower or equal):
-        frame_delay = (avg_delay + batch.delay) / 2.0
+        frame_delay = int((avg_delay + batch.delay) // 2)
         #ensure we always spend at least as much time encoding as we spend batching:
         #(one frame encoding whilst one frame is batching is our ideal result)
         target_damage_latency = max(ref_damage_latency, frame_delay/1000.0)
-        #current speed:
-        speed = min_speed
         if len(speed_data)>0:
             speed = max(min_speed, time_weighted_average(speed_data))
-        #rel: do we need to increase or decrease speed to reach the target:
-        dam_lat_rel = speed/100.0 * statistics.avg_damage_in_latency / target_damage_latency
+        #rel: do we need to increase speed to reach the target:
+        dam_lat_rel = speed/100.0 * adil / target_damage_latency
+        #cap the speed if we're delaying frames longer than we should:
+        #(so we spend more of that time compressing them better instead):
+        max_speed = min(max_speed, (2.0*ref_damage_latency*1000)/frame_delay)
 
     #ensure we decode at a reasonable speed (for slow / low-power clients)
     #maybe this should be configurable?
@@ -150,7 +154,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     dec_lat = 0
     ads = statistics.avg_decode_speed
     if ads>0 and ads<(4*min_decode_speed):
-        dec_lat = min_decode_speed/ads
+        dec_lat = min_decode_speed/float(ads)
 
     #if we have more pixels to encode, we may need to go faster
     #(this is important because the damage latency used by the other factors
@@ -159,19 +163,18 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     #only count the last second's worth:
     now = monotonic_time()
     lim = now-1.0
-    lde = [w*h for t,_,_,w,h in tuple(statistics.last_damage_events) if t>=lim]
+    lde = tuple(w*h for t,_,_,w,h in tuple(statistics.last_damage_events) if t>=lim)
     pixels = sum(lde)
-    mpixels_per_s = pixels/1024.0/1024.0
+    mpixels_per_s = pixels//(1024*1024)
     pps = 0.0
     if len(lde)>5:
         #above 50 MPixels/s, we should reach 100% speed
         #(even x264 peaks at tens of MPixels/s)
         pps = mpixels_per_s/50.0
 
-    max_speed = 1
     if bandwidth_limit>0:
         #below 10Mbps, lower the speed ceiling
-        max_speed = sqrt(bandwidth_limit/(10.0*1000*1000))
+        max_speed = min(max_speed, sqrt(bandwidth_limit/(10.0*1000*1000)))
 
     #combine factors: use the highest one:
     target = min(1.0, max_speed, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0.0))
@@ -184,14 +187,14 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
 
     #expose data we used:
     info = {
-            "max-speed-range"           : int(100*max_speed),
+            "max-speed"                 : int(100*max_speed),
             "low_limit"                 : int(low_limit),
             "min_speed"                 : int(min_speed),
             "frame_delay"               : int(frame_delay),
             "mpixels"                   : int(mpixels_per_s),
             "damage_latency"            : {
                                            "ref"        : int(1000.0*ref_damage_latency),
-                                           "avg"        : int(1000.0*statistics.avg_damage_in_latency),
+                                           "avg"        : int(1000.0*adil),
                                            "target"     : int(1000.0*target_damage_latency),
                                            "abs_factor" : int(100.0*dam_lat_abs),
                                            "rel_factor" : int(100.0*dam_lat_rel),
