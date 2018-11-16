@@ -179,8 +179,8 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     target /= (1.0 + global_statistics.congestion_value*20)
 
     #scale target between min_speed and 100:
-    ms = min(100.0, max(min_speed, 0.0))
-    target_speed = int(ms + (100.0-ms) * target)
+    ms = min(100, max(min_speed, 0))
+    target_speed = int(ms + (100-ms) * target)
 
     #expose data we used:
     info = {
@@ -230,10 +230,10 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
             #weighted average between start delay and min_delay
             #so when we start and we don't have any records, we don't lower quality
             #just because the start delay is higher than min_delay
-            ref_delay = (batch.START_DELAY*10 + batch.min_delay*recs) / (recs+10)
+            ref_delay = (batch.START_DELAY*10 + batch.min_delay*recs) // (recs+10)
             #anything less than N times the reference delay is good enough:
             N = 4
-            batch_q = N * ref_delay / max(1, batch.min_delay, batch.delay)
+            batch_q = float(N * ref_delay) / max(1, batch.min_delay, batch.delay)
             info["batch-delay-ratio"] = int(100.0*batch_q)
             target = min(1.0, target, batch_q)
     #from here on, the compression ratio integer value is in per-1000:
@@ -269,7 +269,7 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
         max_quality = sqrt(bandwidth_limit/(10.0*1000*1000))
         info["max-quality-range"] = int(100*max_quality)
 
-    target = min(max_quality, max(0.0, target))
+    target = min(1, max_quality, max(0, target))
     if min_speed>0:
         #discount the quality more aggressively if we have speed requirements to satisfy:
         #ie: for min_speed=50:
@@ -286,7 +286,7 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
         pixl5 = sum(v for lim,v in damage_pixel_count.items() if lim<=5)
         pixn5 = sum(v for lim,v in damage_pixel_count.items() if lim>5)
         pctpixdamaged = float(pixl5)/(ww*wh)
-        log("get_target_quality: target=%i%% (window %ix%i) pctpixdamaged=%i%%, dpc=%s", 100*target, ww, wh, pctpixdamaged*100, damage_pixel_count)
+        log("get_target_quality: target=%3i%% (window %4ix%-4i) pctpixdamaged=%3i%%, dpc=%s", 100*target, ww, wh, pctpixdamaged*100, damage_pixel_count)
         if pctpixdamaged<=0.5:
             target = min(1.0, target + (1.0-pctpixdamaged*2))
         if pixl5<pixn5:
@@ -294,6 +294,6 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
     #discount for congestion:
     target /= (1.0 + global_statistics.congestion_value*10)
     #apply min-quality:
-    mq = min(100.0, max(min_quality, 0.0))
-    target_quality = mq + (100.0-mq) * target
+    mq = min(100, max(min_quality, 0))
+    target_quality = mq + (100-mq) * target
     return info, int(target_quality)
