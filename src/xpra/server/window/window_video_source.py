@@ -444,7 +444,8 @@ class WindowVideoSource(WindowSource):
                 lde = tuple(self.statistics.last_damage_events)
                 lim = now-4
                 pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-                if pixels_last_4secs<3*videomin:
+                text_hint = self.content_type=="text"
+                if pixels_last_4secs<((3+text_hint*3)*videomin):
                     return nonvideo(quality+30, "not enough frames")
                 lim = now-1
                 pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
