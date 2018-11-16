@@ -281,16 +281,18 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
     #raise the quality when there are not many recent damage events:
     ww, wh = window_dimensions
     if ww>0 and wh>0:
-        now = monotonic_time()
-        damage_pixel_count = dict((lim, sum([w*h for t,_,_,w,h in tuple(statistics.last_damage_events) if t>=now-lim and t<now-lim+1])) for lim in range(1,11))
-        pixl5 = sum(v for lim,v in damage_pixel_count.items() if lim<=5)
-        pixn5 = sum(v for lim,v in damage_pixel_count.items() if lim>5)
-        pctpixdamaged = float(pixl5)/(ww*wh)
-        log("get_target_quality: target=%3i%% (window %4ix%-4i) pctpixdamaged=%3i%%, dpc=%s", 100*target, ww, wh, pctpixdamaged*100, damage_pixel_count)
-        if pctpixdamaged<=0.5:
-            target = min(1.0, target + (1.0-pctpixdamaged*2))
-        if pixl5<pixn5:
-            target = sqrt(target)
+        lde = tuple(statistics.last_damage_events)
+        if lde:
+            now = monotonic_time()
+            damage_pixel_count = tuple((lim, sum([w*h for t,_,_,w,h in lde if t>=now-lim and t<now-lim+1])) for lim in range(1,11))
+            pixl5 = sum(v for lim,v in damage_pixel_count if lim<=5)
+            pixn5 = sum(v for lim,v in damage_pixel_count if lim>5)
+            pctpixdamaged = float(pixl5)/(ww*wh)
+            log("get_target_quality: target=%3i%% (window %4ix%-4i) pctpixdamaged=%3i%%, dpc=%s", 100*target, ww, wh, pctpixdamaged*100, damage_pixel_count)
+            if pctpixdamaged<=0.5:
+                target = min(1.0, target + (1.0-pctpixdamaged*2))
+            if pixl5<pixn5:
+                target = sqrt(target)
     #discount for congestion:
     target /= (1.0 + global_statistics.congestion_value*10)
     #apply min-quality:
