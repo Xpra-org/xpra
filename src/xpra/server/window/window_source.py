@@ -1149,7 +1149,7 @@ class WindowSource(WindowIconSource):
             damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
             return
         now = monotonic_time()
-        if not options.get("auto_refresh", False) and not options.get("polling", False):
+        if not options.get("auto_refresh", False) and not options.get("polling", False) and not self.is_shadow:
             self.statistics.last_damage_events.append((now, x,y,w,h))
         self.global_statistics.damage_events_count += 1
         self.statistics.damage_events_count += 1
