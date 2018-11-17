@@ -984,13 +984,13 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         #make a copy to work on:
         speed_data = list(self._encoding_speed)
-        info, target = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
+        info, target, max_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
         speed_data.append((monotonic_time(), target))
         speed = int(time_weighted_average(speed_data, min_offset=1, rpow=1.1))
         speed = max(0, self._fixed_min_speed, speed)
-        speed = int(min(99, speed))
+        speed = int(min(max_speed, speed))
         self._current_speed = speed
-        statslog("update_speed() speed=%2i (target=%2i) for wid=%i, info=%s", speed, target, self.wid, info)
+        statslog("update_speed() speed=%2i (target=%2i, max=%2i) for wid=%i, info=%s", speed, target, max_speed, self.wid, info)
         self._encoding_speed_info = info
         self._encoding_speed.append((monotonic_time(), speed))
         ww, wh = self.window_dimensions

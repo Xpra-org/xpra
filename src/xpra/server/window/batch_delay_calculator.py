@@ -112,8 +112,6 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     #    100  for lowest compression/fast
     # here we try to minimize damage-latency and client decoding speed
 
-    max_speed = 1
-    speed = min_speed
     #megapixels per second:
     mpixels = low_limit/1024.0/1024.0
     #for larger window sizes, we should be downscaling,
@@ -128,6 +126,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
         target_damage_latency = ref_damage_latency
         dam_lat_rel = 0
         frame_delay = 0
+        dam_lat_s = 100
     else:
         #calculate a target latency and try to get close to it
         avg_delay = batch.delay
@@ -140,21 +139,14 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
         #ensure we always spend at least as much time encoding as we spend batching:
         #(one frame encoding whilst one frame is batching is our ideal result)
         target_damage_latency = max(ref_damage_latency, frame_delay/1000.0)
+        dam_target_speed = min_speed
         if len(speed_data)>0:
-            speed = max(min_speed, time_weighted_average(speed_data))
+            dam_target_speed = max(min_speed, time_weighted_average(speed_data))
         #rel: do we need to increase speed to reach the target:
-        dam_lat_rel = speed/100.0 * adil / target_damage_latency
+        dam_lat_rel = dam_target_speed/100.0 * adil / target_damage_latency
         #cap the speed if we're delaying frames longer than we should:
         #(so we spend more of that time compressing them better instead):
-        max_speed = min(max_speed, (2.0*ref_damage_latency*1000)/frame_delay)
-
-    #ensure we decode at a reasonable speed (for slow / low-power clients)
-    #maybe this should be configurable?
-    min_decode_speed = 1*1000*1000      #MPixels/s
-    dec_lat = 0
-    ads = statistics.avg_decode_speed
-    if ads>0 and ads<(4*min_decode_speed):
-        dec_lat = min_decode_speed/float(ads)
+        dam_lat_s = int(100*2*ref_damage_latency*1000//frame_delay)
 
     #if we have more pixels to encode, we may need to go faster
     #(this is important because the damage latency used by the other factors
@@ -165,56 +157,71 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     lim = now-1.0
     lde = tuple(w*h for t,_,_,w,h in tuple(statistics.last_damage_events) if t>=lim)
     pixels = sum(lde)
-    mpixels_per_s = pixels//(1024*1024)
+    mpixels_per_s = float(pixels)/(1024*1024)
     pps = 0.0
-    if len(lde)>5:
+    pixel_rate_s = 100
+    if len(lde)>5 and mpixels_per_s>=1:
         #above 50 MPixels/s, we should reach 100% speed
         #(even x264 peaks at tens of MPixels/s)
-        pps = mpixels_per_s/50.0
+        pps = sqrt(mpixels_per_s/50.0)
+        #if there aren't many pixels,
+        #we can spend more time compressing them better:
+        #(since it isn't going to cost too much to compress)
+        #ie: 2MPixels/s -> max_speed=60%
+        pixel_rate_s = 20+int(mpixels_per_s*20)
 
+    bandwidth_s = 100
     if bandwidth_limit>0:
-        #below 10Mbps, lower the speed ceiling
-        max_speed = min(max_speed, sqrt(bandwidth_limit/(10.0*1000*1000)))
+        #below N Mbps, lower the speed ceiling,
+        #so we will compress better:
+        N = 10
+        bandwidth_s = int(100*sqrt(float(bandwidth_limit)/(N*1000*1000)))
 
+    gcv = global_statistics.congestion_value
+    congestion_s = 100
+    if gcv>0:
+        #apply strict limit for congestion events:
+        congestion_s = max(0, int(100-gcv*1000))
+
+    #ensure we decode at a reasonable speed (for slow / low-power clients)
+    #maybe this should be configurable?
+    min_decode_speed = 1*1000*1000      #MPixels/s
+    ads = statistics.avg_decode_speed or 0
+    dec_lat = 0
+    if ads>0:
+        dec_lat = min_decode_speed/float(ads)
+
+    max_speed = max(0, min(dam_lat_s, pixel_rate_s, bandwidth_s, congestion_s))
     #combine factors: use the highest one:
-    target = min(1.0, max_speed, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0.0))
-    #discount for congestion:
-    target /= (1.0 + global_statistics.congestion_value*20)
-
+    target = min(1, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0))
     #scale target between min_speed and 100:
     ms = min(100, max(min_speed, 0))
-    target_speed = int(ms + (100-ms) * target)
+    max_speed = max(ms, max_speed)
+    speed = int(ms + (100-ms) * target)
+    speed = max(ms, min(max_speed, speed))
 
     #expose data we used:
     info = {
-            "max-speed"                 : int(100*max_speed),
-            "low_limit"                 : int(low_limit),
-            "min_speed"                 : int(min_speed),
-            "frame_delay"               : int(frame_delay),
-            "mpixels"                   : int(mpixels_per_s),
-            "damage_latency"            : {
-                                           "ref"        : int(1000.0*ref_damage_latency),
-                                           "avg"        : int(1000.0*adil),
-                                           "target"     : int(1000.0*target_damage_latency),
-                                           "abs_factor" : int(100.0*dam_lat_abs),
-                                           "rel_factor" : int(100.0*dam_lat_rel),
-                                           },
-            "decoding_latency"          : {
-                                           "avg"      : int(statistics.avg_decode_speed or 0),
-                                           "min"      : int(min_decode_speed),
-                                           "factor"   : int(100.0*dec_lat),
-                                           },
-            "congestion-value"          : int(1000*global_statistics.congestion_value),
+            "low-limit"                 : int(low_limit),
+            "max-speed"                 : int(max_speed),
+            "min-speed"                 : int(min_speed),
+            "factors"                   : {
+                "damage-latency-abs"    : int(dam_lat_abs*100),
+                "damage-latency-rel"    : int(dam_lat_rel*100),
+                "decoding-latency"      : int(dec_lat*100),
+                "pixel-rate"            : int(pps*100),
+                },
+            "limits"                    : {
+                "damage-latency"        : dam_lat_s,
+                "pixel-rate"            : pixel_rate_s,
+                "bandwidth-limit"       : bandwidth_s,
+                "congestion"            : congestion_s,
+                },
             }
-    return info, int(target_speed)
+    return info, int(speed), max_speed
 
 
 def get_target_quality(window_dimensions, batch, global_statistics, statistics, bandwidth_limit, min_quality, min_speed):
-    info = {
-        "min_quality"   : min_quality,
-        "min_speed"     : min_speed,
-        "congestion-value" : int(1000*global_statistics.congestion_value),
-        }
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
     #***********************************************************
     # quality:
@@ -222,11 +229,24 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
     #    100  for best quality (high bandwidth usage)
     # here we try minimize client-latency, packet-backlog and batch.delay
     # the compression ratio tells us if we can increase the quality
+
+    #backlog factor:
     packets_backlog, pixels_backlog, _ = statistics.get_client_backlog()
     pb_ratio = float(pixels_backlog)/low_limit
-    pixels_bl = 1.0 - logp(pb_ratio/4.0)     #4 frames behind -> min quality
-    info["backlog_factor"] = packets_backlog, pixels_backlog, low_limit, int(pb_ratio), int(100.0*pixels_bl)
-    target = pixels_bl
+    pixels_bl_q = 1 - logp(pb_ratio/4)    #4 frames behind or more -> min quality
+
+    #bandwidth limit factor:
+    bandwidth_q = 1
+    if bandwidth_limit>0:
+        #below 10Mbps, lower the quality
+        bandwidth_q = int(100*sqrt(bandwidth_limit/(10.0*1000*1000)))
+
+    #congestion factor:
+    gcv = global_statistics.congestion_value
+    congestion_q = 1 - gcv*10
+
+    #batch delay factor:
+    batch_q = 1
     if batch is not None:
         recs = len(batch.last_actual_delays)
         if recs>0 and not batch.locked:
@@ -237,50 +257,50 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
             #anything less than N times the reference delay is good enough:
             N = 4
             batch_q = float(N * ref_delay) / max(1, batch.min_delay, batch.delay)
-            info["batch-delay-ratio"] = int(100.0*batch_q)
-            target = min(1.0, target, batch_q)
+
+    #latency limit factor:
+    latency_q = 1
+    if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
+        #if the recent latency is too high, keep quality lower:
+        latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
+
+    #target is the lowest value of all those limits:
+    target = max(0, min(1, pixels_bl_q, bandwidth_q, congestion_q, batch_q, latency_q))
+
+    info = {}
+    #boost based on recent compression ratio
+    comp_boost = 0
     #from here on, the compression ratio integer value is in per-1000:
     es = [(t, pixels, 1000*compressed_size*bpp//pixels//32) for (t, _, pixels, bpp, compressed_size, _) in tuple(statistics.encoding_stats) if pixels>=4096]
     if len(es)>=2:
         #use the recent vs average compression ratio
         #(add value to smooth things out a bit, so very low compression ratios don't skew things)
+        comp_boost = 0
         ascore, rscore = calculate_timesize_weighted_average_score(es)
-        bump = 0
         if ascore>rscore:
             #raise the quality
-            #only if there is no backlog:
+            #but only if there is no backlog:
             if packets_backlog==0:
                 smooth = 150
-                bump = logp((float(smooth+ascore)/(smooth+rscore)))-1.0
+                comp_boost = logp((float(smooth+ascore)/(smooth+rscore)))-1.0
         else:
             #lower the quality
             #more so if the compression is not doing very well:
             mult = (1000 + rscore)/2000.0           #mult should be in the range 0.5 to ~1.0
             smooth = 50
-            bump = -logp((float(smooth+rscore)/(smooth+ascore))-1.0) * mult
-        target += bump
-        info["compression-ratio"] = ascore, rscore, int(100*bump)
-    if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
-        #if the latency is too high, lower quality target:
-        latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
-        target = min(target, latency_q)
-        info["latency"] = int(100.0*latency_q)
+            comp_boost = -logp((float(smooth+rscore)/(smooth+ascore))-1.0) * mult
+        info["compression-ratio"] = ascore, rscore
+        target = max(0, target+comp_boost)
 
-    max_quality = 1
-    if bandwidth_limit>0:
-        #below 10Mbps, lower the quality ceiling
-        max_quality = sqrt(bandwidth_limit/(10.0*1000*1000))
-        info["max-quality-range"] = int(100*max_quality)
-
-    target = min(1, max_quality, max(0, target))
+    #discount the quality more aggressively if we have speed requirements to satisfy:
     if min_speed>0:
-        #discount the quality more aggressively if we have speed requirements to satisfy:
         #ie: for min_speed=50:
         #target=1.0   -> target=1.0
         #target=0.8   -> target=0.51
         #target=0.5   -> target=0.125
         #target=0     -> target=0
         target = target ** ((100.0 + 4*min_speed)/100.0)
+
     #raise the quality when there are not many recent damage events:
     ww, wh = window_dimensions
     if ww>0 and wh>0:
@@ -296,9 +316,23 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
                 target *= (1.5-pctpixdamaged)
             if pixl5<pixn5:
                 target = sqrt(target)
-    #discount for congestion:
-    target /= (1.0 + global_statistics.congestion_value*10)
+
     #apply min-quality:
     mq = min(100, max(min_quality, 0))
-    target_quality = mq + (100-mq) * target
-    return info, int(target_quality)
+    quality = int(mq + (100-mq) * target)
+    quality = max(0, mq, min(100, quality))
+
+    info.update({
+        "min-quality"       : min_quality,
+        "min-speed"         : min_speed,
+        "backlog"           : (packets_backlog, pixels_backlog, low_limit, int(100*pb_ratio)),
+        "limits"           : {
+            "backlog"       : int(pixels_bl_q*100),
+            "bandwidth"     : int(bandwidth_q*100),
+            "congestion"    : int(congestion_q*100),
+            "batch"         : int(batch_q*100),
+            "latency"       : int(latency_q*100),
+            "boost"         : int(comp_boost*100),
+            },
+        })
+    return info, int(quality)
