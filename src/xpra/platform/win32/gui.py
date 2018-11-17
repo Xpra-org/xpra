@@ -871,7 +871,7 @@ def take_screenshot():
     from xpra.platform.win32.gdi_screen_capture import GDICapture
     gdic = GDICapture()
     v = gdic.take_screenshot()
-    gdic.cleanup()
+    gdic.clean()
     return v
 
 
