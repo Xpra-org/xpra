@@ -235,7 +235,7 @@ def main():
         filename = os.path.join(get_download_dir(), "gdi-screenshot-%i.png" % time.time())
         with open(filename, 'wb') as f:
             f.write(image[4])
-
+        capture.clean()
 
 if __name__ == "__main__":
     main()
