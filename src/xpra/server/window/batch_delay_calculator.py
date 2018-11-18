@@ -112,6 +112,11 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     #    100  for lowest compression/fast
     # here we try to minimize damage-latency and client decoding speed
 
+    #backlog factor:
+    _, pixels_backlog, _ = statistics.get_client_backlog()
+    pb_ratio = float(pixels_backlog)/low_limit
+    pixels_bl_s = 1 - logp(pb_ratio/4)    #4 frames behind or more -> compress more
+
     #megapixels per second:
     mpixels = low_limit/1024.0/1024.0
     #for larger window sizes, we should be downscaling,
@@ -191,7 +196,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     if ads>0:
         dec_lat = min_decode_speed/float(ads)
 
-    max_speed = max(0, min(dam_lat_s, pixel_rate_s, bandwidth_s, congestion_s))
+    max_speed = max(0, min(pixels_bl_s, dam_lat_s, pixel_rate_s, bandwidth_s, congestion_s))
     #combine factors: use the highest one:
     target = min(1, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0))
     #scale target between min_speed and 100:
@@ -206,6 +211,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
             "max-speed"                 : int(max_speed),
             "min-speed"                 : int(min_speed),
             "factors"                   : {
+                "backlog"               : int(pixels_bl_s*100),
                 "damage-latency-abs"    : int(dam_lat_abs*100),
                 "damage-latency-rel"    : int(dam_lat_rel*100),
                 "decoding-latency"      : int(dec_lat*100),
