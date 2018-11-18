@@ -115,7 +115,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     #backlog factor:
     _, pixels_backlog, _ = statistics.get_client_backlog()
     pb_ratio = float(pixels_backlog)/low_limit
-    pixels_bl_s = 1 - logp(pb_ratio/4)    #4 frames behind or more -> compress more
+    pixels_bl_s = 100 - int(100*logp(pb_ratio/4))    #4 frames behind or more -> compress more
 
     #megapixels per second:
     mpixels = low_limit/1024.0/1024.0
@@ -211,13 +211,13 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
             "max-speed"                 : int(max_speed),
             "min-speed"                 : int(min_speed),
             "factors"                   : {
-                "backlog"               : int(pixels_bl_s*100),
                 "damage-latency-abs"    : int(dam_lat_abs*100),
                 "damage-latency-rel"    : int(dam_lat_rel*100),
                 "decoding-latency"      : int(dec_lat*100),
                 "pixel-rate"            : int(pps*100),
                 },
             "limits"                    : {
+                "backlog"               : pixels_bl_s,
                 "damage-latency"        : dam_lat_s,
                 "pixel-rate"            : pixel_rate_s,
                 "bandwidth-limit"       : bandwidth_s,
