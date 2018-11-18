@@ -1329,7 +1329,7 @@ class WindowVideoSource(WindowSource):
                         target = SCALING_PPS_TARGET             #ie: 1080p
                     if self.is_shadow:
                         #shadow servers look ugly when scaled:
-                        target *= 2
+                        target *= 4
                     elif self.content_type=="text":
                         #try to avoid scaling:
                         target *= 4
