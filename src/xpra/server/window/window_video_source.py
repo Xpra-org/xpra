@@ -295,7 +295,7 @@ class WindowVideoSource(WindowSource):
         ve = self._video_encoder
         if csce or ve:
             if DEBUG_VIDEO_CLEAN:
-                log.warn("video_context_clean()")
+                log.warn("video_context_clean() for wid %i: %s and %s", self.wid, csce, ve)
                 import traceback
                 traceback.print_stack()
             self._csc_encoder = None
