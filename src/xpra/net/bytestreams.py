@@ -78,6 +78,7 @@ def set_continue_wait(v):
     continue_wait = v
 
 CAN_RETRY_EXCEPTIONS = ()
+CLOSED_EXCEPTIONS = ()
 
 def can_retry(e):
     if isinstance(e, socket.timeout):
@@ -101,6 +102,8 @@ def can_retry(e):
             errno = getattr(e, "errno", None)
             log("can_retry: %s, args=%s, errno=%s, code=%s, abort=%s", type(e), e.args, errno, code, abort)
             raise ConnectionClosedException(e)
+    if isinstance(e, CLOSED_EXCEPTIONS):
+        raise ConnectionClosedException(e)
     return False
 
 def untilConcludes(is_active_cb, can_retry, f, *a, **kw):
@@ -331,6 +334,11 @@ class SocketConnection(Connection):
             s.close()
         except EOFError:
             log("%s.close()", s, exc_info=True)
+        except Exception as e:
+            if isinstance(e, CLOSED_EXCEPTIONS):
+                log("%s.close() already closed!", s)
+            else:
+                raise
         log("%s.close() done", self)
 
     def __repr__(self):
