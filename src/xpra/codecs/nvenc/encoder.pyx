@@ -2275,7 +2275,7 @@ cdef class Encoder:
                 log.error(" from %s to %s, length=%i", tmp, buf, copy_len)
                 log.error(" original pixel buffer: %s", type(pixels))
                 log.error(" for image %s", image)
-                raise
+                log.error(" input buffer: %i x %i", self.inputPitch, self.input_height)
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
@@ -2293,7 +2293,8 @@ cdef class Encoder:
                     log.error(" from %s to %s, length=%i", pixels, buf, min_stride)
                     log.error(" for image %s", image)
                     log.error(" original pixel buffer: %s", type(pixels))
-                    log.error(" at line %i of %i", i, h)
+                    log.error(" input buffer: %i x %i", self.inputPitch, self.input_height)
+                    log.error(" at line %i of %i", i+1, h)
                     raise
             copy_len = min_stride * h
         cdef double end = monotonic_time()
