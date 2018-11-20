@@ -47,6 +47,8 @@ cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
 cdef int DEBUG_API = envbool("XPRA_NVENC_DEBUG_API", False)
 cdef int GPU_MEMCOPY = envbool("XPRA_NVENC_GPU_MEMCOPY", True)
+cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
+
 
 cdef int QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
 
@@ -1316,11 +1318,11 @@ cdef double last_context_failure = 0
 def get_runtime_factor():
     global last_context_failure, context_counter
     device_count = len(init_all_devices())
-    max_contexts = 32 * device_count
+    max_contexts = CONTEXT_LIMIT * device_count
     cc = context_counter.get()
     #try to avoid using too many contexts
     #(usually, we can have up to 32 contexts per card)
-    low_limit = 16 * device_count
+    low_limit = CONTEXT_LIMIT * device_count // 2
     f = max(0, 1.0 - (max(0, cc-low_limit)/max(1, max_contexts-low_limit)))
     #if we have had errors recently, lower our chances further:
     cdef double failure_elapsed = monotonic_time()-last_context_failure
@@ -2740,7 +2742,7 @@ cdef class Encoder:
             raise TransientCodecException(msg)
         if self.context==NULL:
             last_context_failure = monotonic_time()
-            raise TransientCodecException("cannot open encoding session, context is NULL")
+            raise TransientCodecException("cannot open encoding session, context is NULL, %i contexts are in use" % context_counter.get())
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
