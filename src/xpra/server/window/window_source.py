@@ -1150,6 +1150,7 @@ class WindowSource(WindowIconSource):
             return
         now = monotonic_time()
         if options.pop("damage", False):
+            damagelog("damage%s wid=%i", (x, y, w, h, options), self.wid)
             self.statistics.last_damage_events.append((now, x,y,w,h))
             self.global_statistics.damage_events_count += 1
             self.statistics.damage_events_count += 1
@@ -1185,7 +1186,7 @@ class WindowSource(WindowIconSource):
                         continue
                     if override or k not in existing_options:
                         existing_options[k] = options[k]
-            damagelog("damage%-24s wid=%s, using existing delayed %s regions created %.1fms ago",
+            damagelog("do_damage%-24s wid=%s, using existing delayed %s regions created %.1fms ago",
                 (x, y, w, h, options), self.wid, delayed[3], now-delayed[0])
             if not self.expire_timer and not self.soft_timer and self.soft_expired==0:
                 log.error("Error: bug, found a delayed region without a timer!")
@@ -1224,7 +1225,7 @@ class WindowSource(WindowIconSource):
         # - no more than 10 regions waiting to be encoded
         if not self.must_batch(delay) and (packets_backlog==0 and pixels_encoding_backlog<ww*wh and enc_backlog_count<=10):
             #send without batching:
-            damagelog("damage%-24s wid=%s, sending now with sequence %s", (x, y, w, h, options), self.wid, self._sequence)
+            damagelog("do_damage%-24s wid=%s, sending now with sequence %s", (x, y, w, h, options), self.wid, self._sequence)
             actual_encoding = options.get("encoding")
             if actual_encoding is None:
                 q = options.get("quality") or self._current_quality
@@ -1249,7 +1250,7 @@ class WindowSource(WindowIconSource):
         self._damage_delayed_expired = False
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = now, regions, actual_encoding, options or {}
-        damagelog("damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms", (x, y, w, h, options), self.wid, self._sequence, delay)
+        damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms", (x, y, w, h, options), self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
 
