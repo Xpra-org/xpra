@@ -1489,12 +1489,12 @@ class WindowSource(WindowIconSource):
             regions = tuple(non_ex)
 
         if MERGE_REGIONS and len(regions)>1:
-            bytes_threshold = ww*wh*self.max_bytes_percent//100
+            merge_threshold = ww*wh*self.max_bytes_percent//100
             pixel_count = sum(rect.width*rect.height for rect in regions)
-            bytes_cost = pixel_count+self.small_packet_cost*len(regions)
-            log("send_delayed_regions: bytes_cost=%s, bytes_threshold=%s, pixel_count=%s", bytes_cost, bytes_threshold, pixel_count)
-            if bytes_cost>=bytes_threshold and exclude_region is None:
-                send_full_window_update("bytes cost (%i) too high (max %i)" % (bytes_cost, bytes_threshold))
+            packet_cost = pixel_count+self.small_packet_cost*len(regions)
+            log("send_delayed_regions: packet_cost=%s, merge_threshold=%s, pixel_count=%s", packet_cost, merge_threshold, pixel_count)
+            if packet_cost>=merge_threshold and exclude_region is None:
+                send_full_window_update("bytes cost (%i) too high (max %i)" % (packet_cost, merge_threshold))
                 return
             #try to merge all the regions to see if we save anything:
             merged = merge_all(regions)
@@ -1504,10 +1504,10 @@ class WindowSource(WindowIconSource):
             else:
                 merged_rects = (merged,)
                 merged_pixel_count = merged.width*merged.height
-            merged_bytes_cost = merged_pixel_count+self.small_packet_cost*len(merged_rects)
+            merged_packet_cost = merged_pixel_count+self.small_packet_cost*len(merged_rects)
             log("send_delayed_regions: merged=%s, merged_bytes_cost=%s, bytes_cost=%s, merged_pixel_count=%s, pixel_count=%s",
-                     merged_rects, merged_bytes_cost, bytes_cost, merged_pixel_count, pixel_count)
-            if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
+                     merged_rects, merged_packet_cost, packet_cost, merged_pixel_count, pixel_count)
+            if merged_packet_cost<packet_cost or merged_pixel_count<pixel_count:
                 #better, so replace with merged regions:
                 regions = merged_rects
 
