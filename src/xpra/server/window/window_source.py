@@ -1461,24 +1461,24 @@ class WindowSource(WindowIconSource):
         def get_encoding(w, h):
             return get_best_encoding(w, h, speed, quality, coding)
 
-        def send_full_window_update():
+        def send_full_window_update(cause):
             actual_encoding = get_encoding(ww, wh)
-            log("send_delayed_regions: using full window update %sx%s as %5s, from %s", ww, wh, actual_encoding, get_best_encoding)
+            log("send_delayed_regions: using full window update %sx%s as %5s: %s, from %s", ww, wh, actual_encoding, cause, get_best_encoding)
             assert actual_encoding is not None
             self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
 
         if exclude_region is None:
             if self.full_frames_only:
-                send_full_window_update()
+                send_full_window_update("full-frames-only set")
                 return
 
             if len(regions)>self.max_small_regions:
                 #too many regions!
-                send_full_window_update()
+                send_full_window_update("too many regions: %i" % len(regions))
                 return
             if ww*wh<=MIN_WINDOW_REGION_SIZE:
                 #size is too small to bother with regions:
-                send_full_window_update()
+                send_full_window_update("small window: %ix%i" % (ww, wh))
                 return
 
         regions = tuple(set(regions))
@@ -1490,7 +1490,7 @@ class WindowSource(WindowIconSource):
             if bytes_cost>=bytes_threshold:
                 #too many bytes to send lots of small regions..
                 if exclude_region is None:
-                    send_full_window_update()
+                    send_full_window_update("bytes cost (%i) too high (max %i)" % (bytes_cost, bytes_threshold))
                     return
                 #make regions out of the rest of the window area:
                 non_exclude = rectangle(0, 0, ww, wh).substract_rect(exclude_region)
@@ -1523,7 +1523,7 @@ class WindowSource(WindowIconSource):
             #if we find one region covering almost the entire window,
             #refresh the whole window (ie: when the video encoder mask rounded the dimensions down)
             if merged.x<=1 and merged.y<=1 and abs(ww-merged.width)<2 and abs(wh-merged.height)<2:
-                send_full_window_update()
+                send_full_window_update("merged region covers most of the window")
                 return
 
         #we're processing a number of regions separately,
