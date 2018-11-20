@@ -2239,7 +2239,8 @@ cdef class Encoder:
         if DEBUG_API:
             log("copy_image(%s, %s, %i, %i)", image, strict_stride)
         cdef unsigned int image_stride = image.get_rowstride()
-        cdef unsigned int h = image.get_height()
+        #input_height may be smaller if we have rounded down:
+        cdef unsigned int h = min(image.get_height(), self.input_height)
         cdef unsigned int i, stride, min_stride, x, y
         pixels = image.get_pixels()
         assert pixels is not None, "failed to get pixels from %s" % image
