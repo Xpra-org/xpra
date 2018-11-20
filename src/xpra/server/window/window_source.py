@@ -121,6 +121,7 @@ class WindowSource(WindowIconSource):
 
         self.init_vars()
 
+        self.start_time = monotonic_time()
         self.ui_thread = threading.current_thread()
 
         self.record_congestion_event = record_congestion_event  #callback for send latency problems
@@ -472,16 +473,21 @@ class WindowSource(WindowIconSource):
         ma = self.mapped_at
         if ma:
             info["mapped-at"] = ma
-        now = monotonic_time()
-        cutoff = now-5
-        lde = [x for x in tuple(self.statistics.last_damage_events) if x[0]>=cutoff]
-        dfps = 0
-        if lde:
-            dfps = len(lde) // 5
-        info["damage.fps"] = dfps
+        info["damage.fps"] = self.get_damage_fps()
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
         return info
+
+    def get_damage_fps(self):
+        now = monotonic_time()
+        cutoff = now-5
+        lde = tuple(x[0] for x in tuple(self.statistics.last_damage_events) if x[0]>=cutoff)
+        fps = 0
+        if len(lde)>=2:
+            elapsed = now-min(lde)
+            if elapsed>0:
+                fps = len(lde) // elapsed
+        return fps
 
     def get_quality_speed_info(self):
         info = {}

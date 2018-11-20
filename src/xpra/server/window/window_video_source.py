@@ -79,6 +79,7 @@ VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 30)))
 
+SAVE_VIDEO_STREAMS = envbool("XPRA_SAVE_VIDEO_STREAMS", False)
 SAVE_VIDEO_FRAMES = os.environ.get("XPRA_SAVE_VIDEO_FRAMES")
 if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
     log.warn("Warning: invalid value for 'XPRA_SAVE_VIDEO_FRAMES'")
@@ -106,6 +107,7 @@ class WindowVideoSource(WindowSource):
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
         self.video_max_size = self.encoding_options.intlistget("video_max_size", (8192, 8192), 2, 2)
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
+        self.video_stream_file = None
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
@@ -321,6 +323,17 @@ class WindowVideoSource(WindowSource):
             if self.supports_eos and self._video_encoder==ve:
                 log("sending eos for wid %i", self.wid)
                 self.queue_packet(("eos", self.wid))
+            if SAVE_VIDEO_STREAMS:
+                self.close_video_stream_file()
+
+    def close_video_stream_file(self):
+        vsf = self.video_stream_file
+        if vsf:
+            self.video_stream_file = None
+            try:
+                vsf.close()
+            except:
+                log.error("Error closing video stream file", exc_info=True)
 
     def ui_cleanup(self):
         WindowSource.ui_cleanup(self)
@@ -1212,7 +1225,8 @@ class WindowVideoSource(WindowSource):
                     client_score_delta = self.encoding_options.get("%s.score-delta" % encoding, 0)
                     score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
                                                     target_q, min_q, target_s, min_s,
-                                                    self._csc_encoder, self._video_encoder, client_score_delta)
+                                                    self._csc_encoder, self._video_encoder,
+                                                    client_score_delta)
                     if score_data:
                         scores.append(score_data)
             if not FORCE_CSC or src_format==FORCE_CSC_MODE:
@@ -1246,6 +1260,28 @@ class WindowVideoSource(WindowSource):
         return {"NV12" : "YUV420P",
                 "BGRX" : "YUV444P"}.get(csc_mode, csc_mode)
 
+
+    def get_video_fps(self, width, height):
+        mvsub = self.matches_video_subregion(width, height)
+        vs = self.video_subregion
+        if vs and mvsub:
+            #matches the video subregion,
+            #for which we have the fps already:
+            return self.video_subregion.fps
+        return self.do_get_video_fps(width, height)
+
+    def do_get_video_fps(self, width, height):
+        now = monotonic_time()
+        #calculate full frames per second (measured in pixels vs window size):
+        stime = now-5           #only look at the last 5 seconds max
+        lde = tuple((t,w,h) for t,_,_,w,h in tuple(self.statistics.last_damage_events) if t>stime)
+        if len(lde)>=10:
+            #the first event's first element is the oldest event time:
+            otime = lde[0][0]
+            if now>otime:
+                pixels = sum(w*h for _,w,h in lde)
+                return int(float(pixels)/(width*height)/(now - otime))
+        return 0
 
     def calculate_scaling(self, width, height, max_w=4096, max_h=4096):
         if width==0 or height==0:
@@ -1296,22 +1332,8 @@ class WindowVideoSource(WindowSource):
         else:
             #use heuristics to choose the best scaling ratio:
             mvsub = self.matches_video_subregion(width, height)
-            vs = self.video_subregion
             video = (bool(mvsub) and self.subregion_is_video()) or self.content_type=="video"
-            def getfps():
-                if vs and mvsub:
-                    return self.video_subregion.fps
-                #calculate full frames per second (measured in pixels vs window size):
-                stime = now-5           #only look at the last 5 seconds max
-                lde = [x for x in tuple(self.statistics.last_damage_events) if x[0]>stime]
-                if len(lde)>=10:
-                    #the first event's first element is the oldest event time:
-                    otime = lde[0][0]
-                    if now>otime:
-                        pixels = sum(w*h for _,_,_,w,h in lde)
-                        return int(pixels/(width*height)/(now - otime))
-                return 0
-            ffps = getfps()
+            ffps = self.get_video_fps(width, height)
 
             if self.scaling_control is None:
                 #None==auto mode, derive from quality and speed only:
@@ -1601,7 +1623,7 @@ class WindowVideoSource(WindowSource):
         videolog("setup_pipeline: csc=%s, video encoder=%s, info: %s, setup took %.2fms",
                 csce, ve, ve.get_info(), (enc_end-enc_start)*1000.0)
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
-        return  True
+        return True
 
     def get_video_encoder_options(self, encoding, width, height):
         #tweaks for "real" video:
@@ -1956,6 +1978,15 @@ class WindowVideoSource(WindowSource):
             #as it must have received a non-video frame already
             client_options["paint"] = False
 
+        if frame==0 and SAVE_VIDEO_STREAMS:
+            self.close_video_stream_file()
+            stream_filename = "window-%i-%.1f.%s" % (self.wid, monotonic_time()-self.start_time, ve.get_encoding())
+            self.video_stream_file = open(stream_filename, "wb")
+            log.info("saving new %s stream for window %i to %s", ve.get_encoding(), self.wid, stream_filename)
+        if self.video_stream_file:
+            self.video_stream_file.write(data)
+            self.video_stream_file.flush()
+
         #tell the client which colour subsampling we used:
         #(note: see csc_equiv!)
         client_options["csc"] = self.csc_equiv(csc)
@@ -2045,6 +2076,9 @@ class WindowVideoSource(WindowSource):
         if not data:
             videolog("do_flush_video_encoder: %s no data: %s", flush_data, v)
             return
+        if self.video_stream_file:
+            self.video_stream_file.write(data)
+            self.video_stream_file.flush()
         client_options["csc"] = self.csc_equiv(csc)
         if frame<self.start_video_frame:
             client_options["paint"] = False
