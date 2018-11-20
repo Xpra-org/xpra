@@ -1320,7 +1320,7 @@ def get_runtime_factor():
     cc = context_counter.get()
     #try to avoid using too many contexts
     #(usually, we can have up to 32 contexts per card)
-    low_limit = 16
+    low_limit = 16 * device_count
     f = max(0, 1.0 - (max(0, cc-low_limit)/max(1, max_contexts-low_limit)))
     #if we have had errors recently, lower our chances further:
     cdef double failure_elapsed = monotonic_time()-last_context_failure
@@ -2739,6 +2739,7 @@ cdef class Encoder:
             log(msg)
             raise TransientCodecException(msg)
         if self.context==NULL:
+            last_context_failure = monotonic_time()
             raise TransientCodecException("cannot open encoding session, context is NULL")
         raiseNVENC(r, "opening session")
         context_counter.increase()
