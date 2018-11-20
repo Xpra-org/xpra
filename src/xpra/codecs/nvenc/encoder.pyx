@@ -2267,18 +2267,35 @@ cdef class Encoder:
                 tmp = numpy.asarray(pixels, numpy.int8)
             else:
                 tmp = numpy.frombuffer(pixels, numpy.int8)
-            buf[:copy_len] = tmp[:copy_len]
+            try:
+                buf[:copy_len] = tmp[:copy_len]
+            except Exception as e:
+                log("copy_image%s", (image, target_buffer, target_stride, strict_stride), exc_info=True)
+                log.error("Error: numpy one shot buffer copy failed")
+                log.error(" from %s to %s, length=%i", tmp, buf, copy_len)
+                log.error(" original pixel buffer: %s", type(pixels))
+                log.error(" for image %s", image)
+                raise
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
             stride = target_stride
             min_stride = min(stride, image_stride)
             log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i, target stride=%i)", stride*h, type(pixels), type(target_buffer), min_stride, image_stride, target_stride)
-            copy_len = min_stride * h
             for i in range(h):
                 x = i*stride
                 y = i*image_stride
-                buf[x:x+min_stride] = pixels[y:y+min_stride]
+                try:
+                    buf[x:x+min_stride] = pixels[y:y+min_stride]
+                except Exception as e:
+                    log("copy_image%s", (image, target_buffer, target_stride, strict_stride), exc_info=True)
+                    log.error("Error: numpy partial line buffer copy failed")
+                    log.error(" from %s to %s, length=%i", pixels, buf, min_stride)
+                    log.error(" for image %s", image)
+                    log.error(" original pixel buffer: %s", type(pixels))
+                    log.error(" at line %i of %i", i, h)
+                    raise
+            copy_len = min_stride * h
         cdef double end = monotonic_time()
         cdef double elapsed = end-start
         if elapsed==0:
