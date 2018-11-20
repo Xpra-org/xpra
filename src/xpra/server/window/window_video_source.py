@@ -1981,7 +1981,7 @@ class WindowVideoSource(WindowSource):
 
         if frame==0 and SAVE_VIDEO_STREAMS:
             self.close_video_stream_file()
-            stream_filename = "window-%i-%.1f.%s" % (self.wid, monotonic_time()-self.start_time, ve.get_encoding())
+            stream_filename = "window-%i-%.1f-%s.%s" % (self.wid, monotonic_time()-self.start_time, ve.get_type(), ve.get_encoding())
             self.video_stream_file = open(stream_filename, "wb")
             log.info("saving new %s stream for window %i to %s", ve.get_encoding(), self.wid, stream_filename)
         if self.video_stream_file:
