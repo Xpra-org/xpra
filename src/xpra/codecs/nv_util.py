@@ -114,13 +114,19 @@ def identify_cards():
                             }
                 def pciinfo(pci):
                     i = {}
-                    for x in ("domain", "bus", "device", "pciDeviceId", "pciSubSystemId"):
+                    for nvname, pubname in {
+                        "domain"            : "domain",
+                        "bus"               : "bus",
+                        "device"            : "device",
+                        "pciDeviceId"       : "pci-device-id",
+                        "pciSubSystemId"    : "pci-subsystem-id",
+                        }.items():
                         try:
-                            i[x] = int(getattr(pci, x))
+                            i[pubname] = int(getattr(pci, nvname))
                         except:
                             pass
                     try:
-                        i["busId"] = bytestostr(pci.busId)
+                        i["bus-id"] = bytestostr(pci.busId)
                     except:
                         pass
                     return i
