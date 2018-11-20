@@ -1480,62 +1480,49 @@ class WindowSource(WindowIconSource):
                 #size is too small to bother with regions:
                 send_full_window_update("small window: %ix%i" % (ww, wh))
                 return
+            regions = tuple(set(regions))
+        else:
+            non_ex = set()
+            for r in regions:
+                for v in r.substract_rect(exclude_region):
+                    non_ex.add(v)
+            regions = tuple(non_ex)
 
-        regions = tuple(set(regions))
-        if MERGE_REGIONS:
+        if MERGE_REGIONS and len(regions)>1:
             bytes_threshold = ww*wh*self.max_bytes_percent//100
             pixel_count = sum(rect.width*rect.height for rect in regions)
             bytes_cost = pixel_count+self.small_packet_cost*len(regions)
             log("send_delayed_regions: bytes_cost=%s, bytes_threshold=%s, pixel_count=%s", bytes_cost, bytes_threshold, pixel_count)
-            if bytes_cost>=bytes_threshold:
-                #too many bytes to send lots of small regions..
-                if exclude_region is None:
-                    send_full_window_update("bytes cost (%i) too high (max %i)" % (bytes_cost, bytes_threshold))
-                    return
-                #make regions out of the rest of the window area:
-                non_exclude = rectangle(0, 0, ww, wh).substract_rect(exclude_region)
-                #and keep those that have damage areas in them:
-                regions = [x for x in non_exclude if any(y for y in regions if x.intersects_rect(y))]
-                #TODO: should verify that is still better than what we had before..
-            elif len(regions)>1:
-                #try to merge all the regions to see if we save anything:
-                merged = merge_all(regions)
-                #remove the exclude region if needed:
-                if exclude_region:
-                    merged_rects = merged.substract_rect(exclude_region)
-                else:
-                    merged_rects = [merged]
-                merged_pixel_count = sum(r.width*r.height for r in merged_rects)
-                merged_bytes_cost = merged_pixel_count+self.small_packet_cost*len(merged_rects)
-                log("send_delayed_regions: merged=%s, merged_bytes_cost=%s, bytes_cost=%s, merged_pixel_count=%s, pixel_count=%s",
-                         merged_rects, merged_bytes_cost, bytes_cost, merged_pixel_count, pixel_count)
-                if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
-                    #better, so replace with merged regions:
-                    regions = merged_rects
-
-            if not regions:
-                #nothing left after removing the exclude region
+            if bytes_cost>=bytes_threshold and exclude_region is None:
+                send_full_window_update("bytes cost (%i) too high (max %i)" % (bytes_cost, bytes_threshold))
                 return
-            elif len(regions)==1:
-                merged = regions[0]
+            #try to merge all the regions to see if we save anything:
+            merged = merge_all(regions)
+            if exclude_region:
+                merged_rects = merged.substract_rect(exclude_region)
+                merged_pixel_count = sum(r.width*r.height for r in merged_rects)
             else:
-                merged = merge_all(regions)
-            #if we find one region covering almost the entire window,
+                merged_rects = (merged,)
+                merged_pixel_count = merged.width*merged.height
+            merged_bytes_cost = merged_pixel_count+self.small_packet_cost*len(merged_rects)
+            log("send_delayed_regions: merged=%s, merged_bytes_cost=%s, bytes_cost=%s, merged_pixel_count=%s, pixel_count=%s",
+                     merged_rects, merged_bytes_cost, bytes_cost, merged_pixel_count, pixel_count)
+            if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
+                #better, so replace with merged regions:
+                regions = merged_rects
+
+        if not regions:
+            #nothing left after removing the exclude region
+            return
+        elif len(regions)==1:
+            merged = regions[0]
+            #if we end up with just one region covering almost the entire window,
             #refresh the whole window (ie: when the video encoder mask rounded the dimensions down)
             if merged.x<=1 and merged.y<=1 and abs(ww-merged.width)<2 and abs(wh-merged.height)<2:
-                send_full_window_update("merged region covers most of the window")
+                send_full_window_update("merged region covers almost the whole window")
                 return
 
-        #we're processing a number of regions separately,
-        #start by removing the exclude region if there is one:
-        if exclude_region:
-            e_regions = []
-            for r in regions:
-                for v in r.substract_rect(exclude_region):
-                    e_regions.append(v)
-            regions = e_regions
-            log("send_delayed_regions: remaining regions for exclude=%s : %s", exclude_region, len(regions))
-        #then figure out which encoding will get used,
+        #figure out which encoding will get used,
         #and shortcut out if this needs to be a full window update:
         i_reg_enc = []
         for i,region in enumerate(regions):
