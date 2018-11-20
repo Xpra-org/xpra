@@ -1151,8 +1151,8 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         if not options.get("auto_refresh", False) and not options.get("polling", False) and not self.is_shadow:
             self.statistics.last_damage_events.append((now, x,y,w,h))
-        self.global_statistics.damage_events_count += 1
-        self.statistics.damage_events_count += 1
+            self.global_statistics.damage_events_count += 1
+            self.statistics.damage_events_count += 1
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
             self.window_dimensions = ww, wh
