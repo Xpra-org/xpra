@@ -1223,10 +1223,11 @@ class WindowVideoSource(WindowSource):
                     max_h = min(encoder_spec.max_h, vmh)
                     scaling = self.calculate_scaling(width, height, max_w, max_h)
                     client_score_delta = self.encoding_options.get("%s.score-delta" % encoding, 0)
+                    ffps = self.get_video_fps(width, height)
                     score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
                                                     target_q, min_q, target_s, min_s,
                                                     self._csc_encoder, self._video_encoder,
-                                                    client_score_delta)
+                                                    client_score_delta, ffps)
                     if score_data:
                         scores.append(score_data)
             if not FORCE_CSC or src_format==FORCE_CSC_MODE:

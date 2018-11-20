@@ -11,6 +11,7 @@ from xpra.log import Logger
 scorelog = Logger("score")
 
 GPU_BIAS = envint("XPRA_GPU_BIAS", 100)
+MIN_FPS_COST = envint("XPRA_MIN_FPS_COST", 4)
 
 
 def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_quality=100, min_quality=0):
@@ -80,7 +81,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
                        target_quality, min_quality,
                        target_speed, min_speed,
                        current_csce, current_ve,
-                       client_score_delta):
+                       client_score_delta, ffps):
     """
         Given an optional csc step (csc_format and csc_spec), and
         and a required encoding step (encoder_spec and width/height),
@@ -98,6 +99,10 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
         return max(0, min(100, v))
     qscore = clamp(get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling, target_quality, min_quality))
     sscore = clamp(get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed, min_speed))
+
+    #multiplier for setup_cost:
+    #(lose points if we have less than N fps)
+    setup_cost_mult = 1+max(0, MIN_FPS_COST-ffps)
 
     #how well the codec deals with larger screen sizes:
     sizescore = 100
@@ -131,7 +136,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
            type(current_csce)!=csc_spec.codec_class or \
            current_csce.get_src_width()!=csc_width or current_csce.get_src_height()!=csc_height:
             #if we have to change csc, account for new csc setup cost:
-            ecsc_score = max(0, 80 - csc_spec.setup_cost*80.0/100.0)
+            ecsc_score = max(0, 80 - int(csc_spec.setup_cost*setup_cost_mult*80//100))
         else:
             ecsc_score = 80
         ecsc_score += csc_spec.score_boost
@@ -175,10 +180,10 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
        current_ve.get_src_format()!=enc_in_format or \
        current_ve.get_width()!=enc_width or current_ve.get_height()!=enc_height:
         #account for new encoder setup cost:
-        ee_score = 100 - encoder_spec.setup_cost
+        ee_score = 100 - int(encoder_spec.setup_cost*setup_cost_mult)
         ee_score += encoder_spec.score_boost
     #edge resistance score: average of csc and encoder score:
-    er_score = (ecsc_score + ee_score) / 2.0
+    er_score = (ecsc_score + ee_score) // 2
     #gpu vs cpu
     gpu_score = max(0, GPU_BIAS-50)*encoder_spec.gpu_cost//50
     cpu_score = max(0, 50-GPU_BIAS)*encoder_spec.cpu_cost//50
