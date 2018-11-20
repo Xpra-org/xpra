@@ -2240,7 +2240,7 @@ cdef class Encoder:
             log("copy_image(%s, %s, %i, %i)", image, target_buffer, target_stride, strict_stride)
         cdef unsigned int image_stride = image.get_rowstride()
         cdef unsigned int h = image.get_height()
-        cdef unsigned int i, stride, min_stride
+        cdef unsigned int i, stride, min_stride, x, y
         pixels = image.get_pixels()
         assert pixels is not None, "failed to get pixels from %s" % image
         #copy to input buffer:
@@ -2282,20 +2282,20 @@ cdef class Encoder:
             stride = target_stride
             min_stride = min(stride, image_stride)
             log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i, target stride=%i)", stride*h, type(pixels), type(target_buffer), min_stride, image_stride, target_stride)
-            for i in range(h):
-                x = i*stride
-                y = i*image_stride
-                try:
+            try:
+                for i in range(h):
+                    x = i*stride
+                    y = i*image_stride
                     buf[x:x+min_stride] = pixels[y:y+min_stride]
-                except Exception as e:
-                    log("copy_image%s", (image, target_buffer, target_stride, strict_stride), exc_info=True)
-                    log.error("Error: numpy partial line buffer copy failed")
-                    log.error(" from %s to %s, length=%i", pixels, buf, min_stride)
-                    log.error(" for image %s", image)
-                    log.error(" original pixel buffer: %s", type(pixels))
-                    log.error(" input buffer: %i x %i", self.inputPitch, self.input_height)
-                    log.error(" at line %i of %i", i+1, h)
-                    raise
+            except Exception as e:
+                log("copy_image%s", (image, target_buffer, target_stride, strict_stride), exc_info=True)
+                log.error("Error: numpy partial line buffer copy failed")
+                log.error(" from %s to %s, length=%i", pixels, buf, min_stride)
+                log.error(" for image %s", image)
+                log.error(" original pixel buffer: %s", type(pixels))
+                log.error(" input buffer: %i x %i", self.inputPitch, self.input_height)
+                log.error(" at line %i of %i", i+1, h)
+                raise
             copy_len = min_stride * h
         cdef double end = monotonic_time()
         cdef double elapsed = end-start
