@@ -167,7 +167,7 @@ class EncodingServer(StubServerMixin):
             wids = None
             wid_windows = self._id_to_window
         ss.set_encoding(encoding, wids)
-        self.refresh_windows(proto, wid_windows)
+        self._refresh_windows(proto, wid_windows)
 
     def _process_quality(self, proto, packet):
         quality = packet[1]
