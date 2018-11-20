@@ -21,6 +21,8 @@ DEFAULT_ENV = [
              "MWWM=allwm",
              "#force GTK3 applications to use X11 so we can intercept them:",
              "GDK_BACKEND=x11",
+             "#force Qt applications to use X11 so we can intercept them:",
+             "QT_QPA_PLATFORM=xcb",
              ]
 
 DEFAULT_SSH_CMD = "ssh"
