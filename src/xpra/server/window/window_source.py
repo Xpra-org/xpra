@@ -1495,7 +1495,7 @@ class WindowSource(WindowIconSource):
                 #make regions out of the rest of the window area:
                 non_exclude = rectangle(0, 0, ww, wh).substract_rect(exclude_region)
                 #and keep those that have damage areas in them:
-                regions = [x for x in non_exclude if len([y for y in regions if x.intersects_rect(y)])>0]
+                regions = [x for x in non_exclude if any(y for y in regions if x.intersects_rect(y))]
                 #TODO: should verify that is still better than what we had before..
             elif len(regions)>1:
                 #try to merge all the regions to see if we save anything:
