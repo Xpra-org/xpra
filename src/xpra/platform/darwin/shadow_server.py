@@ -124,7 +124,7 @@ class ShadowServer(GTKShadowServerBase):
                 mrect = rect.intersection(x, y, w, h)
                 #log("screen refresh intersection of %s and %24s: %s", model, (x, y, w, h), mrect)
                 if mrect:
-                    self._damage(model, mrect.x-rect.x, mrect.y-rect.y, mrect.width, mrect.height)
+                    self.refresh_window_area(model, mrect.x-rect.x, mrect.y-rect.y, mrect.width, mrect.height, {"damage" : True})
 
     def start_refresh(self, wid):
         #don't use the timer, get damage notifications:

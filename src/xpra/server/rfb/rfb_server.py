@@ -179,7 +179,7 @@ class RFBServer(object):
         log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
         if not inc:
             model = self._get_rfb_desktop_model()
-            self._damage(model, x, y, w, h)
+            self.refresh_window_area(model, x, y, w, h)
 
     def _process_rfb_ClientCutText(self, _proto, packet):
         #l = packet[4]

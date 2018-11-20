@@ -95,8 +95,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 self.recreate_window_models()
                 return False
         for window in self._id_to_window.values():
-            w, h = window.get_dimensions()
-            self._damage(window, 0, 0, w, h, {"polling" : True})
+            self.refresh_window(window)
         return True
 
 

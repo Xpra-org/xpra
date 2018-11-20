@@ -455,7 +455,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def _contents_changed(self, window, event):
         log("contents changed on %s: %s", window, event)
-        self._damage(window, event.x, event.y, event.width, event.height)
+        self.refresh_window_area(window, event.x, event.y, event.width, event.height)
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
@@ -496,7 +496,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
             self._set_window_state(proto, wid, window, packet[7])
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
-        self._damage(window, 0, 0, w, h)
+        self.refresh_window_area(window, 0, 0, w, h)
 
 
     def _process_unmap_window(self, proto, packet):
@@ -545,7 +545,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
                 self._set_client_properties(proto, wid, window, cprops)
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if damage:
-            self._damage(window, 0, 0, w, h)
+            self.refresh_window_area(window, 0, 0, w, h)
 
 
     def _adjust_pointer(self, proto, wid, pointer):

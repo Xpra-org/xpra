@@ -383,7 +383,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         wid, x, y, width, height = packet[1:6]
         window = self._process_window_common(wid)
         self._window_mapped_at(proto, wid, window, (x, y, width, height))
-        self._damage(window, 0, 0, width, height)
+        self.refresh_window_area(window, 0, 0, width, height)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
         self.start_refresh(wid)
@@ -401,7 +401,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         wid, x, y, w, h = packet[1:6]
         window = self._process_window_common(wid)
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
-        self._damage(window, 0, 0, w, h)
+        self.refresh_window_area(window, 0, 0, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
 

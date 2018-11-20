@@ -624,7 +624,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if window.is_managed():
                 windowlog("found existing window model %s for %#x, will refresh it", type(window), xid)
                 ww, wh = window.get_dimensions()
-                self._damage(window, 0, 0, ww, wh, options={"min_delay" : 50})
+                self.refresh_window_area(window, 0, 0, ww, wh, options={"min_delay" : 50})
                 return
             windowlog("found existing model %s (but no longer managed!) for %#x", type(window), xid)
             #we could try to re-use the existing model and window ID,
@@ -758,14 +758,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _send_new_or_window_packet(self, window):
         geometry = window.get_property("geometry")
         self._do_send_new_window_packet("new-override-redirect", window, geometry)
-        ww, wh = window.get_dimensions()
-        self._damage(window, 0, 0, ww, wh)
+        self.refresh_window(window)
 
     def _send_new_tray_window_packet(self, wid, window):
         ww, wh = window.get_dimensions()
         for ss in self._server_sources.values():
             ss.new_tray(wid, window, ww, wh)
-        self._damage(window, 0, 0, ww, wh)
+        self.refresh_window(window)
 
 
     def _lost_window(self, window, wm_exiting=False):
@@ -776,7 +775,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _contents_changed(self, window, event):
         if window.is_OR() or window.is_tray() or self._desktop_manager.visible(window):
-            self._damage(window, event.x, event.y, event.width, event.height)
+            self.refresh_window_area(window, event.x, event.y, event.width, event.height, options={"damage" : True})
 
 
     def _window_grab(self, window, event):
@@ -880,7 +879,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h)
             self._desktop_manager.configure_window(window, ax, ay, aw, ah)
             self._desktop_manager.show_window(window)
-        self._damage(window, 0, 0, w, h)
+        self.refresh_window_area(window, 0, 0, w, h)
 
 
     def _process_unmap_window(self, proto, packet):
@@ -1013,8 +1012,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 pass
             window = self._lookup_window(wid)
             if window and window.is_managed():
-                w, h = window.get_dimensions()
-                self._damage(window, 0, 0, w, h)
+                self.refresh_window(window)
         self.configure_damage_timers[wid] = self.timeout_add(CONFIGURE_DAMAGE_RATE, damage)
 
     def cancel_configure_damage(self, wid):
@@ -1101,8 +1099,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log.error(" %s", e)
 
 
-    def _damage(self, window, x, y, width, height, options=None):
-        super(XpraServer, self)._damage(window, x, y, width, height, options)
+    def refresh_window_area(self, window, x, y, width, height, options=None):
+        super(XpraServer, self).refresh_window_area(window, x, y, width, height, options)
         if self.root_overlay:
             image = window.get_image(x, y, width, height)
             if image:
