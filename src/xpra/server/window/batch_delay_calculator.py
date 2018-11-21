@@ -140,7 +140,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
             #average recent actual delay:
             avg_delay = time_weighted_average(delays)
         #and average that with the current delay (which is lower or equal):
-        frame_delay = int((avg_delay + batch.delay) // 2)
+        frame_delay = max(10, int((avg_delay + batch.delay) // 2))
         #ensure we always spend at least as much time encoding as we spend batching:
         #(one frame encoding whilst one frame is batching is our ideal result)
         target_damage_latency = max(ref_damage_latency, frame_delay/1000.0)
