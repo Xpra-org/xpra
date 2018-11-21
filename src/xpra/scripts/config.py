@@ -198,7 +198,7 @@ def OpenGL_safety_check():
             return "VirtualBox is present (VBoxMiniRdrDN)"
     return None
 
-OPENGL_DEFAULT = "auto"       #will auto-detect by probing
+OPENGL_DEFAULT = "probe"       #will auto-detect by probing
 def get_opengl_default():
     global OPENGL_DEFAULT
     if OpenGL_safety_check() is not None:
