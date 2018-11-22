@@ -27,6 +27,7 @@ class RemoteLogging(StubClientMixin):
         self.in_remote_logging = False
         self.local_logging = None
         self.log_both = False
+        self.monotonic_start_time = monotonic_time()
 
     def init(self, opts, _extra_args=[]):
         self.log_both = (opts.remote_logging or "").lower()=="both"
@@ -67,7 +68,7 @@ class RemoteLogging(StubClientMixin):
             except:
                 return strtobytes(x)
         try:
-            dtime = int(1000*(monotonic_time() - self.start_time))
+            dtime = int(1000*(monotonic_time() - self.monotonic_start_time))
             data = self.compressed_wrapper("text", enc(msg % args), level=1)
             self.send("logging", level, data, dtime)
             exc_info = kwargs.get("exc_info")

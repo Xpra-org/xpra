@@ -8,6 +8,7 @@
 
 import os
 import sys
+import time
 import socket
 import signal
 import binascii
@@ -169,7 +170,7 @@ class ServerCore(object):
 
     def __init__(self):
         log("ServerCore.__init__()")
-        self.start_time = monotonic_time()
+        self.start_time = time.time()
         self.auth_classes = {}
         self._when_ready = []
         self.child_reaper = None
@@ -1672,7 +1673,7 @@ class ServerCore(object):
 
 
     def make_hello(self, source=None):
-        now = monotonic_time()
+        now = time.time()
         capabilities = flatten_dict(get_network_caps())
         if source is None or source.wants_versions:
             capabilities.update(flatten_dict(get_server_info()))

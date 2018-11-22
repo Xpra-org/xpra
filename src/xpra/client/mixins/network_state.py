@@ -112,7 +112,9 @@ class NetworkState(StubClientMixin):
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
-        self.server_start_time = c.intget("start_time", -1)
+        #make sure the server doesn't provide a start time in the future:
+        import time
+        self.server_start_time = min(time.time(), c.intget("start_time", -1))
         self.server_bandwidth_limit_change = c.boolget("network.bandwidth-limit-change")
         self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
         bandwidthlog("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s", self.server_bandwidth_limit_change, self.server_bandwidth_limit)

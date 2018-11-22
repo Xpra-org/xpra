@@ -4,8 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-
-from xpra.os_util import monotonic_time
+import time
 
 
 class StubClientMixin(object):
@@ -13,7 +12,7 @@ class StubClientMixin(object):
     __signals__ = {}
     def __init__(self):
         self.exit_code = None
-        self.start_time = int(monotonic_time())
+        self.start_time = int(time.time())
 
     """
     Initialize this instance with the options given.

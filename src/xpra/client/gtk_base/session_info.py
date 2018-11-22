@@ -781,7 +781,8 @@ class SessionInfo(gtk.Window):
 
     def populate_connection(self):
         def settimedeltastr(label, from_time):
-            delta = datetime.timedelta(seconds=(int(monotonic_time())-int(from_time)))
+            import time
+            delta = datetime.timedelta(seconds=(int(time.time())-int(from_time)))
             label.set_text(str(delta))
         if self.client.server_load:
             self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
