@@ -769,21 +769,16 @@ class ServerBase(ServerBaseClass):
             del self._potential_protocols[protocol]
         except:
             pass
-        source = self._server_sources.get(protocol)
+        source = self._server_sources.pop(protocol, None)
         if source:
             self.cleanup_source(source)
-            try:
-                del self._server_sources[protocol]
-            except:
-                pass
         for c in SERVER_BASES:
             c.cleanup_protocol(self, protocol)
         return source
 
     def cleanup_source(self, source):
-        had_client = len(self._server_sources)>0
         self.server_event("connection-lost", source.uuid)
-        remaining_sources = tuple(x for x in self._server_sources.values() if x!=source)
+        remaining_sources = tuple(self._server_sources.values())
         if self.ui_driver==source.uuid:
             if len(remaining_sources)==1:
                 self.set_ui_driver(remaining_sources[0])
@@ -793,7 +788,7 @@ class ServerBase(ServerBaseClass):
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("xpra client %i disconnected.", source.counter)
         has_client = len(remaining_sources)>0
-        if had_client and not has_client:
+        if not has_client:
             self.idle_add(self.last_client_exited)
 
     def last_client_exited(self):
