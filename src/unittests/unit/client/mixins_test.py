@@ -4,10 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import unittest
 
 from xpra.util import AdHocStruct, typedict
-from xpra.os_util import monotonic_time, get_hex_uuid
+from xpra.os_util import get_hex_uuid
 from xpra.client.mixins.network_state import NetworkState
 from xpra.client.mixins.mmap import MmapClient
 from xpra.client.mixins.remote_logging import RemoteLogging
@@ -26,7 +27,7 @@ class MixinsTest(unittest.TestCase):
 		opts.bandwidth_detection = True
 		x.init(opts)
 		assert x.get_caps() is not None
-		x.server_capabilities = typedict({"start_time" : monotonic_time()})
+		x.server_capabilities = typedict({"start_time" : time.time()})
 		x.parse_server_capabilities()
 		assert x.server_start_time>=x.start_time, "server_start_time=%s vs start_time=%s" % (x.server_start_time, x.start_time)
 		x.uuid = get_hex_uuid()
