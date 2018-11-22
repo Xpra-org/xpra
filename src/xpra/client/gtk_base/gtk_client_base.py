@@ -980,6 +980,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             for warning in warnings:
                 opengllog.warn(" %s", warning)
             self.opengl_props["info"] = "enabled despite: %s" % csv(warnings)
+        from xpra.client.gl.gl_drivers import OpenGLFatalError
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])

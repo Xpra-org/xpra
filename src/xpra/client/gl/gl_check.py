@@ -10,7 +10,7 @@ import logging
 from xpra.util import envbool, envint, csv
 from xpra.os_util import POSIX, OSX, WIN32, PYTHON3, bytestostr
 from xpra.log import Logger, CaptureHandler
-from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST
+from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST, OpenGLFatalError
 log = Logger("opengl")
 
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
@@ -40,8 +40,10 @@ TIMEOUT = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)
 #by default, we raise an ImportError as soon as we find something missing:
 def raise_error(msg):
     raise ImportError(msg)
+def raise_fatal_error(msg):
+    raise OpenGLFatalError(msg)
 gl_check_error = raise_error
-
+gl_fatal_error = raise_fatal_error
 
 _version_warning_shown = False
 #support for memory views requires Python 2.7 and PyOpenGL 3.1
@@ -82,7 +84,7 @@ def check_functions(*functions):
         else:
             available.append(name)
     if len(missing)>0:
-        gl_check_error("some required OpenGL functions are not available: %s" % csv(missing))
+        raise_fatal_error("some required OpenGL functions are not available: %s" % csv(missing))
     else:
         log("All the required OpenGL functions are available: %s " % csv(available))
 
@@ -118,14 +120,14 @@ def check_PyOpenGL_support(force_enable):
         from OpenGL.GL import glGetString, glGetInteger, glGetIntegerv
         gl_version_str = glGetString(GL_VERSION)
         if gl_version_str is None:
-            gl_check_error("OpenGL version is missing - cannot continue")
+            raise_fatal_error("OpenGL version is missing - cannot continue")
             return  {}
         gl_major = int(bytestostr(gl_version_str)[0])
         gl_minor = int(bytestostr(gl_version_str)[2])
         props["opengl"] = gl_major, gl_minor
         MIN_VERSION = (1,1)
         if (gl_major, gl_minor) < MIN_VERSION:
-            gl_check_error("OpenGL output requires version %s or greater, not %s.%s" %
+            raise_fatal_error("OpenGL output requires version %s or greater, not %s.%s" %
                               (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
         else:
             log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
@@ -153,7 +155,7 @@ def check_PyOpenGL_support(force_enable):
         vsplit = pyopengl_version.split('.')
         #we now require PyOpenGL 3.1 or later
         if vsplit[:3]<['3','1'] and not force_enable:
-            gl_check_error("PyOpenGL version %s is too old and buggy" % pyopengl_version)
+            raise_fatal_error("PyOpenGL version %s is too old and buggy" % pyopengl_version)
             return {}
         props["zerocopy"] = bool(OpenGL_accelerate) and is_pyopengl_memoryview_safe(pyopengl_version, accel_version)
 
@@ -162,7 +164,7 @@ def check_PyOpenGL_support(force_enable):
         except:
             log("error querying extensions", exc_info=True)
             extensions = []
-            gl_check_error("OpenGL could not find the list of GL extensions - does the graphics driver support OpenGL?")
+            raise_fatal_error("OpenGL could not find the list of GL extensions - does the graphics driver support OpenGL?")
         log("OpenGL extensions found: %s", csv(extensions))
         props["extensions"] = extensions
 
@@ -229,7 +231,7 @@ def check_PyOpenGL_support(force_enable):
                 log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
                 log.warn(" force enabled by option")
             else:
-                gl_check_error("%s '%s' is blacklisted!" % (blacklisted))
+                raise_fatal_error("%s '%s' is blacklisted!" % (blacklisted))
         safe = bool(whitelisted) or not bool(blacklisted)
         if greylisted and not whitelisted:
             log.warn("Warning: %s '%s' is greylisted,", *greylisted)
@@ -273,7 +275,7 @@ def check_PyOpenGL_support(force_enable):
 
         for ext in required_extensions:
             if ext not in extensions:
-                gl_check_error("OpenGL driver lacks support for extension: %s" % ext)
+                raise_fatal_error("OpenGL driver lacks support for extension: %s" % ext)
             else:
                 log("Extension %s is present", ext)
 
@@ -281,13 +283,13 @@ def check_PyOpenGL_support(force_enable):
         #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
         from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
         if not glInitFragmentProgramARB():
-            gl_check_error("OpenGL output requires glInitFragmentProgramARB")
+            raise_fatal_error("OpenGL output requires glInitFragmentProgramARB")
         else:
             log("glInitFragmentProgramARB works")
 
         from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
         if not glInitTextureRectangleARB():
-            gl_check_error("OpenGL output requires glInitTextureRectangleARB")
+            raise_fatal_error("OpenGL output requires glInitTextureRectangleARB")
         else:
             log("glInitTextureRectangleARB works")
 
@@ -411,12 +413,13 @@ def main():
         gl_context = GLContext()
         log("GLContext=%s", gl_context)
         #replace ImportError with a log message:
-        global gl_check_error
+        global gl_check_error, raise_fatal_error
         errors = []
         def log_error(msg):
             log.error("ERROR: %s", msg)
             errors.append(msg)
         gl_check_error = log_error
+        raise_fatal_error = log_error
         try:
             props = gl_context.check_support(force_enable)
         except Exception as e:

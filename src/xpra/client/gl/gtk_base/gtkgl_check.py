@@ -9,7 +9,7 @@ import sys
 
 from xpra.gtk_common.gtk_util import VISUAL_NAMES, BYTE_ORDER_NAMES
 from xpra.client.gl.gtk_base.gtk_compat import get_DISPLAY_MODE, get_MODE_names
-from xpra.client.gl.gl_check import check_PyOpenGL_support, gl_check_error, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
+from xpra.client.gl.gl_check import check_PyOpenGL_support, gl_check_error, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, OpenGLFatalError
 
 from xpra.util import envbool
 from xpra.log import Logger
@@ -170,6 +170,9 @@ def test_gtkgl_rendering(glconfig, force_enable=False, check_colormap=False):
                 if w:
                     w.destroy()
                 del glext, glconfig
+    except OpenGLFatalError as e:
+        log("check_support failed", exc_info=True)
+        raise
     except Exception as e:
         log("check_support failed", exc_info=True)
         log.error("Error: gtkgl rendering failed its sanity checks:")

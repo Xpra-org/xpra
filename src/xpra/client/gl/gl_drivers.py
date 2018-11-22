@@ -36,3 +36,6 @@ BLACKLIST = {
         #"NVIDIA Corporation",
         ]
     }
+
+class OpenGLFatalError(ImportError):
+    pass
