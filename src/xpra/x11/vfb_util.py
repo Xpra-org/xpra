@@ -225,74 +225,75 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:
         xvfb_cmd.append("-depth")
         xvfb_cmd.append(str(pixel_depth))
-    if use_display_fd:
-        r_pipe, w_pipe = os.pipe()
-        if PYTHON3:
-            os.set_inheritable(w_pipe, True)
-        xvfb_cmd += ["-displayfd", str(w_pipe)]
-        xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
-        def preexec():
-            setsid()
-            if getuid()==0 and uid:
-                setuidgid(uid, gid)
-            close_fds([0, 1, 2, r_pipe, w_pipe])
-        try:
-            xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
-                                    stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
-        except OSError as e:
-            log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
-            raise InitException("failed to execute xvfb command %s: %s" % (xvfb_cmd, e))
-        # Read the display number from the pipe we gave to Xvfb
-        e = None
-        try:
-            buf = read_displayfd(r_pipe)
-        except Exception as e:
-            raise
-        finally:
-            osclose(r_pipe)
-            osclose(w_pipe)
-            if e:
-                log.error("Error reading displayfd pipe %s:", r_pipe)
-                log.error(" %s", e)
-                if xvfb.poll() is None:
-                    log.error(" stopping vfb process with pid %i", xvfb.pid)
-                    try:
-                        xvfb.terminate()
-                    except Exception as e:
-                        log.error("Error stopping vfb process:")
-                        log.error(" %s", e)
-        def displayfd_err(msg):
-            raise InitException("%s: %s" % (xvfb_executable, msg))
-        n = parse_displayfd(buf, displayfd_err)
-        new_display_name = ":%s" % n
-        log("Using display number provided by %s: %s", xvfb_executable, new_display_name)
-        if tmp_xorg_log_file != None:
-            #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
-            f0 = shellsub(tmp_xorg_log_file, subs)
-            subs["DISPLAY"] = new_display_name
-            #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.:1.log
-            f1 = shellsub(tmp_xorg_log_file, subs)
-            if f0 != f1:
+    xvfb = None
+    try:
+        if use_display_fd:
+            r_pipe, w_pipe = os.pipe()
+            try:
+                if PYTHON3:
+                    os.set_inheritable(w_pipe, True)
+                xvfb_cmd += ["-displayfd", str(w_pipe)]
+                xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+                def preexec():
+                    setsid()
+                    if getuid()==0 and uid:
+                        setuidgid(uid, gid)
+                    close_fds([0, 1, 2, r_pipe, w_pipe])
                 try:
-                    os.rename(f0, f1)
+                    xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
+                                            stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
+                except OSError as e:
+                    log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
+                    raise InitException("failed to execute xvfb command %s: %s" % (xvfb_cmd, e))
+                assert xvfb.poll() is None, "xvfb command failed"
+                # Read the display number from the pipe we gave to Xvfb
+                try:
+                    buf = read_displayfd(r_pipe)
                 except Exception as e:
-                    log.warn("Warning: failed to rename Xorg log file,")
-                    log.warn(" from '%s' to '%s'" % (f0, f1))
-                    log.warn(" %s" % e)
-        display_name = new_display_name
-    else:
-        # use display specified
-        xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
-        xvfb_cmd.append(display_name)
-        def preexec():
-            if getuid()==0 and (uid!=0 or gid!=0):
-                setuidgid(uid, gid)
-            else:
-                setsid()
-        log("xvfb_cmd=%s", xvfb_cmd)
-        xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
-                                stdin=subprocess.PIPE, preexec_fn=preexec)
-    xauth_add(xauthority, display_name, xauth_data, uid, gid)
+                    log("read_displayfd(%s)", r_pipe, exc_info=True)
+                    log.error("Error reading displayfd pipe %s:", r_pipe)
+                    log.error(" %s", e)
+            finally:
+                osclose(r_pipe)
+                osclose(w_pipe)
+            def displayfd_err(msg):
+                raise InitException("%s: %s" % (xvfb_executable, msg))
+            n = parse_displayfd(buf, displayfd_err)
+            new_display_name = ":%s" % n
+            log("Using display number provided by %s: %s", xvfb_executable, new_display_name)
+            if tmp_xorg_log_file != None:
+                #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
+                f0 = shellsub(tmp_xorg_log_file, subs)
+                subs["DISPLAY"] = new_display_name
+                #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.:1.log
+                f1 = shellsub(tmp_xorg_log_file, subs)
+                if f0 != f1:
+                    try:
+                        os.rename(f0, f1)
+                    except Exception as e:
+                        log.warn("Warning: failed to rename Xorg log file,")
+                        log.warn(" from '%s' to '%s'" % (f0, f1))
+                        log.warn(" %s" % e)
+            display_name = new_display_name
+        else:
+            # use display specified
+            xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+            xvfb_cmd.append(display_name)
+            def preexec():
+                if getuid()==0 and (uid!=0 or gid!=0):
+                    setuidgid(uid, gid)
+                else:
+                    setsid()
+            log("xvfb_cmd=%s", xvfb_cmd)
+            xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
+                                    stdin=subprocess.PIPE, preexec_fn=preexec)
+
+        xauth_add(xauthority, display_name, xauth_data, uid, gid)
+    except Exception as e:
+        if xvfb and xvfb.poll() is None:
+            log.error(" stopping vfb process with pid %i", xvfb.pid)
+            xvfb.terminate()
+        raise
     log("xvfb process=%s", xvfb)
     log("display_name=%s", display_name)
     return xvfb, display_name, cleanups
