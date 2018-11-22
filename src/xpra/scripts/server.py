@@ -539,8 +539,18 @@ def create_sockets(opts, error_cb):
                     add_mdns(mdns_recs, "tcp", host, iport)
     return sockets, mdns_recs, wrap_socket_fn
 
-
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
+    #add finally hook to ensure we will run the cleanups
+    #even if we exit because of an exception:
+    try:
+        return do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display)
+    finally:
+        run_cleanups()
+        import gc
+        gc.collect()
+
+
+def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     try:
         cwd = os.getcwd()
     except:
@@ -1158,26 +1168,21 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         log("%s()=%s", app.run, r)
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
-        r = 0
+        return 0
     except Exception:
         log.error("server error", exc_info=True)
-        r = -128
-    if r>0:
-        # Upgrading/exiting, so leave X and dbus servers running
-        if kill_display:
-            _cleanups.remove(kill_display)
-        if kill_dbus:
-            _cleanups.remove(kill_dbus)
-        from xpra.server import EXITING_CODE
-        if r==EXITING_CODE:
-            log.info("exiting: not cleaning up Xvfb")
-        else:
-            log.info("upgrading: not cleaning up Xvfb")
-        r = 0
-    log("cleanups=%s", _cleanups)
-    try:
-        return r
-    finally:
-        run_cleanups()
-        import gc
-        gc.collect()
+        return -128
+    else:
+        if r>=0:
+            # Upgrading/exiting, so leave X and dbus servers running
+            if kill_display:
+                _cleanups.remove(kill_display)
+            if kill_dbus:
+                _cleanups.remove(kill_dbus)
+            from xpra.server import EXITING_CODE
+            if r==EXITING_CODE:
+                log.info("exiting: not cleaning up Xvfb")
+            else:
+                log.info("upgrading: not cleaning up Xvfb")
+            r = 0
+    return r
