@@ -40,7 +40,7 @@ class DisplayManager(StubServerMixin):
             self.parse_screen_info(ss)
 
 
-    def reset_state(self):
+    def last_client_exited(self):
         self.reset_icc_profile()
 
 

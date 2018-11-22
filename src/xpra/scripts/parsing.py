@@ -265,22 +265,28 @@ def do_parse_cmdline(cmdline, defaults):
     #we support remote start, so we need those even if we don't have server support:
     group.add_option("--start", action="append",
                       dest="start", metavar="CMD", default=list(defaults.start or []),
-                      help="program to spawn in new server (may be repeated). Default: %default.")
+                      help="program to spawn in server (may be repeated). Default: %default.")
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
-                      help="program to spawn in new server, taken into account by the exit-with-children option (may be repeated to run multiple commands). Default: %default.")
+                      help="program to spawn in server, taken into account by the exit-with-children option (may be repeated to run multiple commands). Default: %default.")
     group.add_option("--start-after-connect", action="append",
                       dest="start_after_connect", default=defaults.start_after_connect,
-                      help="program to spawn in new server after the first client has connected (may be repeated). Default: %default.")
+                      help="program to spawn in server after the first client has connected (may be repeated). Default: %default.")
     group.add_option("--start-child-after-connect", action="append",
                       dest="start_child_after_connect", default=defaults.start_child_after_connect,
-                      help="program to spawn in new server after the first client has connected, taken into account by the exit-with-children option (may be repeated to run multiple commands). Default: %default.")
+                      help="program to spawn in server after the first client has connected, taken into account by the exit-with-children option (may be repeated to run multiple commands). Default: %default.")
     group.add_option("--start-on-connect", action="append",
                       dest="start_on_connect", default=defaults.start_on_connect,
-                      help="program to spawn in new server every time a client connects (may be repeated). Default: %default.")
+                      help="program to spawn in server every time a client connects (may be repeated). Default: %default.")
     group.add_option("--start-child-on-connect", action="append",
                       dest="start_child_on_connect", default=defaults.start_child_on_connect,
-                      help="program to spawn in new server every time a client connects, taken into account by the exit-with-children option (may be repeated). Default: %default.")
+                      help="program to spawn in server every time a client connects, taken into account by the exit-with-children option (may be repeated). Default: %default.")
+    group.add_option("--start-on-last-client-exit", action="append",
+                      dest="start_on_last_client_exit", default=defaults.start_on_last_client_exit,
+                      help="program to spawn in server every time a client disconnects and there are no other clients left (may be repeated). Default: %default.")
+    group.add_option("--start-child-on-last-client-exit", action="append",
+                      dest="start_child_on_last_client_exit", default=defaults.start_child_on_last_client_exit,
+                      help="program to spawn in server every time a client disconnects and there are no other clients left, taken into account by the exit-with-children option (may be repeated). Default: %default.")
     group.add_option("--exec-wrapper", action="store",
                       dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
                       help="Wrapper for executing commands. Default: %default.")

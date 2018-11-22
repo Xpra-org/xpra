@@ -58,7 +58,7 @@ class WindowServer(StubServerMixin):
         #self._id_to_window = {}
 
 
-    def reset_state(self):
+    def last_client_exited(self):
         self._focus(None, 0, [])
 
 

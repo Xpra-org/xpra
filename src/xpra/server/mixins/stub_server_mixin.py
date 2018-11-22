@@ -34,7 +34,7 @@ class StubServerMixin(object):
     Called when the last client has exited,
     so we can reset things to their original state.
     """
-    def reset_state(self):
+    def last_client_exited(self):
         pass
 
     """

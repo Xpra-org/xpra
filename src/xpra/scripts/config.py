@@ -602,6 +602,8 @@ OPTION_TYPES = {
                     "start-child-after-connect" : list,
                     "start-on-connect"          : list,
                     "start-child-on-connect"    : list,
+                    "start-on-last-client-exit" : list,
+                    "start-child-on-last-client-exit"   : list,
                     "bind"              : list,
                     "bind-vsock"        : list,
                     "bind-tcp"          : list,
@@ -637,6 +639,7 @@ START_COMMAND_OPTIONS = [
     "start", "start-child",
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
+    "start-on-last-client-exit", "start-child-on-last-client-exit",
     ]
 BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb"]
 
@@ -717,6 +720,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "start", "start-child",
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
+    "start-on-last-client-exit", "start-child-on-last-client-exit",
     ]
 tmp = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
 if tmp:
@@ -1015,6 +1019,8 @@ def get_defaults():
                     "start-child-after-connect" : [],
                     "start-on-connect"          : [],
                     "start-child-on-connect"    : [],
+                    "start-on-last-client-exit" : [],
+                    "start-child-on-last-client-exit"   : [],
                     "start-env"         : DEFAULT_ENV,
                     "env"               : [],
                     }

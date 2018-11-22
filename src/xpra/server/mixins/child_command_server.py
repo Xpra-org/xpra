@@ -36,6 +36,8 @@ class ChildCommandServer(StubServerMixin):
         self.start_child_after_connect = []
         self.start_on_connect = []
         self.start_child_on_connect = []
+        self.start_on_last_client_exit = []
+        self.start_child_on_last_client_exit = []
         self.exit_with_children = False
         self.start_after_connect_done = False
         self.start_new_commands = False
@@ -56,6 +58,8 @@ class ChildCommandServer(StubServerMixin):
         self.start_child_after_connect   = opts.start_child_after_connect
         self.start_on_connect            = opts.start_on_connect
         self.start_child_on_connect      = opts.start_child_on_connect
+        self.start_on_last_client_exit   = opts.start_on_last_client_exit
+        self.start_child_on_last_client_exit = opts.start_child_on_last_client_exit
         if opts.exec_wrapper:
             import shlex
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
@@ -109,6 +113,10 @@ class ChildCommandServer(StubServerMixin):
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
         return {"commands": info}
+
+
+    def last_client_exited(self):
+        self._exec_commands(self.start_on_last_client_exit, self.start_child_on_last_client_exit)
 
 
     def get_child_env(self):

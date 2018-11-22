@@ -803,9 +803,9 @@ class ServerBase(ServerBaseClass):
             for c in SERVER_BASES:
                 if c!=ServerCore:
                     try:
-                        c.reset_state(self)
+                        c.last_client_exited(self)
                     except:
-                        log("last_client_exited calling %s", c.reset_state, exc_info=True)
+                        log("last_client_exited calling %s", c.last_client_exited, exc_info=True)
 
 
     def set_ui_driver(self, source):

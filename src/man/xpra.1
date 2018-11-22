@@ -813,6 +813,15 @@ Execute this command every time a client connects.
 Execute this child command every time a client connects.
 See \fIstart\-child\fP.
 .TP
+\fB\-\-start\-on\-last\-client\-exit\fP=\fICMD\fP
+Execute this command every time a client disconnects and there are
+no other clients left.
+.TP
+\fB\-\-start\-child\-on\-last\-client\-exit\fP=\fICMD\fP
+Execute this child command every time a client disconnects and there are
+no other clients left.
+See \fIstart\-child\fP.
+.TP
 \fB\-\-terminate\-children\fP=\fIyes\fP|\fIno\fP
 On server \fBstop\fP, terminate all the child commands that have been started
 by the server. This does not affect server \fBexit\fP.

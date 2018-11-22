@@ -145,7 +145,7 @@ class ClipboardServer(StubServerMixin):
             ch.enable_selections([])
 
 
-    def reset_state(self):
+    def last_client_exited(self):
         ch = self._clipboard_helper
         if ch:
             ch.client_reset()

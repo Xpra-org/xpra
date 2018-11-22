@@ -51,7 +51,7 @@ class InputServer(StubServerMixin):
     def reset_focus(self):
         self.clear_keys_pressed()
 
-    def reset_state(self):
+    def last_client_exited(self):
         self.clear_keys_pressed()
 
     def get_info(self, _proto):

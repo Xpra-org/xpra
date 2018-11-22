@@ -50,6 +50,11 @@ exit-with-children = no
 #start-on-connect = touch ~/.xpra/login
 #start-child-on-connect = xterm
 
+# Commands to run when the last client exits:
+#start-on-last-client-exit = xterm
+#start-child-on-last-client-exit = xterm
+
+
 # Start a dbus-daemon:
 # dbus-launch =
 # dbus-launch = /usr/bin/dbus-launch --close-stderr

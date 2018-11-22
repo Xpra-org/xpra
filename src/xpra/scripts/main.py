@@ -1904,7 +1904,9 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
         #strip defaults, only keep extra ones:
         for x in ("start", "start-child",
                   "start-after-connect", "start-child-after-connect",
-                  "start-on-connect", "start-child-on-connect"):
+                  "start-on-connect", "start-child-on-connect",
+                  "start-on-last-client-exit", "start-child-on-last-client-exit",
+                  ):
             fn = x.replace("-", "_")
             v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
             setattr(opts, fn, v)
@@ -2229,6 +2231,7 @@ def run_showconfig(options, args):
                        "start", "start-child",
                        "start-after-connect", "start-child-after-connect",
                        "start-on-connect", "start-child-on-connect",
+                       "start-on-last-client-exit", "start-child-on-last-client-exit",
                        ]
         if WIN32:
             #"exit-ssh"?
