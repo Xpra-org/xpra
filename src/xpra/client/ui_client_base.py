@@ -1808,7 +1808,7 @@ class UIXpraClient(XpraClientBase):
         self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
         self.server_auto_video_encoding = c.boolget("auto-video-encoding")
-        self.server_start_time = c.intget("start_time", -1)
+        self.server_start_time = min(time.time(), c.intget("start_time", -1))
         self.server_platform = c.strget("platform")
 
         self.server_display = c.strget("display")
