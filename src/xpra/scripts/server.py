@@ -72,6 +72,12 @@ def deadly_signal(signum, frame):
     os._exit(128 + signum)
 
 
+def osclose(fd):
+    try:
+        os.close(fd)
+    except:
+        pass
+
 def _save_int(prop_name, pid):
     import gtk
     from xpra.x11.gtk_x11.prop import prop_set
@@ -873,14 +879,29 @@ def start_Xvfb(xvfb_str, display_name, cwd):
         # waiting up to 10 seconds for it to show up
         limit = time.time()+10
         buf = ""
-        while time.time()<limit and len(buf)<8:
-            r, _, _ = select.select([r_pipe], [], [], max(0, limit-time.time()))
-            if r_pipe in r:
-                buf += os.read(r_pipe, 8)
-                if buf[-1] == '\n':
-                    break
-        os.close(r_pipe)
-        os.close(w_pipe)
+        e = None
+        try:
+            while time.time()<limit and len(buf)<8:
+                r, _, _ = select.select([r_pipe], [], [], max(0, limit-time.time()))
+                if r_pipe in r:
+                    buf += os.read(r_pipe, 8)
+                    if buf[-1] == '\n':
+                        break
+        except Exception as e:
+            raise
+        finally:
+            osclose(r_pipe)
+            osclose(w_pipe)
+            if e:
+                log.error("Error reading displayfd pipe %s:", r_pipe)
+                log.error(" %s", e)
+                if xvfb.poll() is None:
+                    log.error(" stopping vfb process with pid %i", xvfb.pid)
+                    try:
+                        xvfb.terminate()
+                    except Exception as e:
+                        log.error("Error stopping vfb process:")
+                        log.error(" %s", e)
         if len(buf) == 0:
             raise OSError("%s did not provide a display number using -displayfd" % xvfb_executable)
         if buf[-1] != '\n':
