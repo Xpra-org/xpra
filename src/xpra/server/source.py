@@ -1755,7 +1755,6 @@ class ServerSource(FileTransferHandler):
             printlog.warn("Warning: client did not supply a UUID,")
             printlog.warn(" printer forwarding cannot be enabled")
             return
-        from xpra.platform.pycups_printing import remove_printer
         #remove the printers no longer defined
         #or those whose definition has changed (and we will re-add them):
         for k in list(self.printers.keys()):
@@ -1777,9 +1776,9 @@ class ServerSource(FileTransferHandler):
             #remove it:
             try:
                 del self.printers[k]
-                remove_printer(k)
-            except Exception as e:
-                printlog.warn("failed to remove printer %s: %s", k, e)
+            except KeyError:
+                pass
+            self.remove_printer(k)
         #expand it here so the xpraforwarder doesn't need to import anything xpra:
         attributes = {"display"         : os.environ.get("DISPLAY"),
                       "source"          : self.uuid}
@@ -1845,8 +1844,16 @@ class ServerSource(FileTransferHandler):
         printers = self.printers.copy()
         self.printers = {}
         for k in printers:
+            self.remove_printer(k)
+
+    def remove_printer(self, printer):
+        try:
             from xpra.platform.pycups_printing import remove_printer
-            remove_printer(k)
+            remove_printer(printer)
+        except Exception as e:
+            log("remove_printer(%s)", printer, exc_info=True)
+            log.error("Error: failed to remove printer %s:", printer)
+            log.error(" %s", e)
 
 
     def send_client_command(self, *args):
