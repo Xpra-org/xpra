@@ -939,13 +939,9 @@ class ServerBase(ServerCore):
             del self._potential_protocols[protocol]
         except:
             pass
-        source = self._server_sources.get(protocol)
+        source = self._server_sources.pop(protocol, None)
         if source:
             self.cleanup_source(source)
-            try:
-                del self._server_sources[protocol]
-            except:
-                pass
         return source
 
     def cleanup_source(self, source):
@@ -953,7 +949,7 @@ class ServerBase(ServerCore):
         if self.ui_driver==source.uuid:
             self.ui_driver = None
         source.close()
-        remaining_sources = [x for x in self._server_sources.values() if x!=source]
+        remaining_sources = tuple(self._server_sources.values())
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("xpra client %i disconnected.", source.counter)
         if len(remaining_sources)==0:
