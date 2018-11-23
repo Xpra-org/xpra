@@ -949,6 +949,9 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
+        if self._mmap and self._mmap_size>0:
+            scorelog("cannot score: mmap enabled")
+            return
         elapsed = time.time()-self._last_pipeline_check
         if not force_reload and elapsed<0.75:
             scorelog("cannot score: only %ims since last check", 1000*elapsed)
