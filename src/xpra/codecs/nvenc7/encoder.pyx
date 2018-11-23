@@ -2030,7 +2030,8 @@ cdef class Encoder:
         start = time.time()
         log("compress_image(%s, %s)", image, options)
         cdef unsigned int w = image.get_width()
-        cdef unsigned int h = image.get_height()
+        #input_height may be smaller if we have rounded down:
+        cdef unsigned int h = min(image.get_height(), self.input_height)
         pixels = image.get_pixels()
         cdef unsigned int image_stride = image.get_rowstride()
         cdef unsigned long input_size = self.inputPitch * self.input_height
