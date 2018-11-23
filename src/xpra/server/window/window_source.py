@@ -1036,7 +1036,7 @@ class WindowSource(object):
             #in which case the dimensions may be zero (if so configured by the client)
             return
         now = time.time()
-        if "auto_refresh" not in options:
+        if not options.get("auto_refresh", False) and not self.is_shadow:
             self.statistics.last_damage_events.append((now, x,y,w,h))
         self.global_statistics.damage_events_count += 1
         self.statistics.damage_events_count += 1

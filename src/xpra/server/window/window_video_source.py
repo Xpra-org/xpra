@@ -410,16 +410,17 @@ class WindowVideoSource(WindowSource):
             #framerate is dropping?
             return nonvideo(quality+30)
 
-        #calculate the threshold for using video vs small regions:
-        factors = (max(1, (speed-75)/5.0),                      #speed multiplier
-                   1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
-                   max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
-                   1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
-                   )
-        max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
-        if pixel_count<=max_nvp:
-            #below threshold
-            return nonvideo(quality+30)
+        if not self.is_shadow:
+            #calculate the threshold for using video vs small regions:
+            factors = (max(1, (speed-75)/5.0),                      #speed multiplier
+                       1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
+                       max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
+                       1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
+                       )
+            max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
+            if pixel_count<=max_nvp:
+                #below threshold
+                return nonvideo(quality+30)
 
         if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
             #failsafe:
