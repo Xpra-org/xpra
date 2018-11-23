@@ -468,7 +468,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         break   #we're done for this modifier
                     log("%s %s with keycode %s did not work", info, modifier, keycode)
                     if press and not nuisance:
-                        log(" trying to unpress it!", info, modifier, keycode)
+                        log(" trying to unpress it!")
                         X11Keyboard.xtest_fake_key(keycode, False)
                         #maybe doing the full keypress (down+up) worked:
                         new_mask = self.get_current_mask()
