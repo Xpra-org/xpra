@@ -613,7 +613,10 @@ fi
 
 
 %changelog
-* Mon Sep 03 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.13-2
+* Fri Nov 23 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.13-2
+- fix server crash with application setting invalid X11 atoms
+- fix missing windows with some mono applications (ignore invalid X11 atoms)
+- fix small X11 memory leak
 - fix painting of spinners with desktop-scaling and non-opengl backends
 - fix command line backwards compatibility
 - fix man page typos
@@ -624,6 +627,38 @@ fi
 - fix spurious error messages caused by video pipeline changes
 - fix handling of mixed clicks on system tray and the menu entries
 - fix URL parsing from launcher (ie: MacOS URL association)
+- fix session time going backwards
+- fix race condition causing the connection cleanup code to run twice
+- fix rare race condition when closing a connection
+- fix nvenc errors with odd image heights
+- fix logging error in modifier state change failure code path
+- fix statistics used by shadow servers
+- fix window size hints not being sanitized correctly
+- fix leaking xvfb processes when displayfd times out
+- fix virtual printer cleanup errors
+- fix cython compilation warnings
+- fix backwards compatibility in keyboard mapping
+- fix 'flush' client encoding options parsing
+- fix encoding of empty areas
+- fix HTML5 notifications title line getting cropped
+- fix HTML5 logging packet encoding
+- fix win32 tray icon handle leak
+- fix proxy server not honouring passwords specified in connection strings
+- fix potential file descriptor leak
+- fix unit test race condition
+- fix repeated clipboard warnings
+- fix Motif wm hints parsing
+- fix outdated pixels lingering in OpenGL windows padding area
+- fix invalid window padding values hiding top-left corner contents
+- fix missing .xpra file association with DEB packaging
+- fix cleanup code not being run, leaving sockets and xvfb behind
+- add missing entry in man page for 'swap-keys'
+- support newer distributions (Fedora 29, Ubuntu Cosmic, Debian Buster, etc)
+- support CUDA 10 and Volta cards with NVENC
+- make logging packet parsing more resilient
+- handle property change handlers errors more gracefully
+- skip unnecessary video tests when mmap is enabled
+- ensure Qt applications use the X11 backend so we can intercept them
 - use free colour profiles in all icon files
 - support base64 encoded SSL certificate data
 
