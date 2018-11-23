@@ -228,6 +228,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     xvfb = None
     try:
         if use_display_fd:
+            def displayfd_err(msg):
+                raise InitException("%s: %s" % (xvfb_executable, msg))
             r_pipe, w_pipe = os.pipe()
             try:
                 if PYTHON3:
@@ -251,13 +253,10 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                     buf = read_displayfd(r_pipe)
                 except Exception as e:
                     log("read_displayfd(%s)", r_pipe, exc_info=True)
-                    log.error("Error reading displayfd pipe %s:", r_pipe)
-                    log.error(" %s", e)
+                    displayfd_err("failed to read displayfd pipe %s: %s" % (r_pipe, e))
             finally:
                 osclose(r_pipe)
                 osclose(w_pipe)
-            def displayfd_err(msg):
-                raise InitException("%s: %s" % (xvfb_executable, msg))
             n = parse_displayfd(buf, displayfd_err)
             new_display_name = ":%s" % n
             log("Using display number provided by %s: %s", xvfb_executable, new_display_name)
