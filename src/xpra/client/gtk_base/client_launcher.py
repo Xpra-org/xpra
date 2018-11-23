@@ -803,9 +803,12 @@ class ApplicationWindow:
     def update_gui_from_config(self):
         #mode:
         mode = (self.config.mode or "").lower()
+        active = 0
         for i,e in enumerate(self.get_connection_modes()):
             if e.lower()==mode:
-                self.mode_combo.set_active(i)
+                active = i
+                break
+        self.mode_combo.set_active(active)
         if self.config.encoding and self.encoding_combo:
             index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
             log("setting encoding combo to %s / %s", self.config.encoding, index)
