@@ -68,24 +68,23 @@ class PasswordInputDialogWindow(object):
         al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
         al.add(hbox)
         vbox.pack_start(al)
-        for label, code, isdefault in [("Confirm", 0, True), ("Cancel", 1, False)]:
-            b = self.btn(label,  code, isdefault)
+        for label, isdefault, cb in [
+            ("Confirm", True, self.activate),
+            ("Cancel", False, self.quit),
+            ]:
+            b = self.btn(label, isdefault, cb)
             hbox.pack_start(b)
 
         add_close_accel(self.window, self.quit)
         vbox.show_all()
         self.window.add(vbox)
 
-    def btn(self, label, code, isdefault=False):
+    def btn(self, label, isdefault=False, cb=None):
         btn = gtk.Button(label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
-        def btn_clicked(*_args):
-            log("%s button clicked, returning %s", label, code)
-            self.exit_code = code
-            self.quit()
         btn.set_size_request(100, 48)
-        btn.connect("clicked", btn_clicked)
+        btn.connect("clicked", cb)
         btn.set_can_focus(True)
         btn.set_can_default(isdefault)
         if isdefault:
@@ -117,11 +116,15 @@ class PasswordInputDialogWindow(object):
         self.destroy()
         gtk.main_quit()
 
-
     def activate(self, *args):
         log("activate%s", args)
         sys.stdout.write(self.password_input.get_text())
         sys.stdout.flush()
+        self.quit()
+
+    def cancel(self, *args):
+        log("cancel%s", args)
+        self.exit_code = 1
         self.quit()
 
     def get_icon(self, icon_name):
