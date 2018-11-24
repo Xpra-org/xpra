@@ -909,10 +909,10 @@ XpraWindow.prototype._broadway_paint = function(buffer, enc_width, enc_height, w
 	img.data.set(buffer);
 	var x = this.broadway_paint_location[0];
 	var y = this.broadway_paint_location[1];
-	this.offscreen_canvas_ctx.putImageData(img, x, y);
+	this.offscreen_canvas_ctx.putImageData(img, x, y, 0, 0, enc_width, enc_height);
 	if(enc_width!=width || enc_height!=height) {
 		//scale it:
-		this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, x, y, p_width, p_height, x, y, width, height);
+		this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, x, y, enc_width, enc_height, x, y, width, height);
 	}
 };
 
