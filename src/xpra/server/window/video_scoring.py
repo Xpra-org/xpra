@@ -19,7 +19,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_qualit
     if csc_format in ("YUV420P", "YUV422P", "YUV444P"):
         #account for subsampling: reduces quality
         y,u,v = get_subsampling_divs(csc_format)
-        div = 0.5   #any colourspace convertion will lose at least some quality (due to rounding)
+        div = 0.2   #any colourspace convertion will lose at least some quality (due to rounding)
         for div_x, div_y in (y, u, v):
             div += (div_x+div_y)/2.0/3.0
         quality /= div
