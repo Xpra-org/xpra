@@ -1208,7 +1208,7 @@ class WindowVideoSource(WindowSource):
                 #find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
                 if not colorspace_specs:
-                    scorelog(" no matching colorspace specs for %s - %s", enc_in_format, info)
+                    #scorelog(" no matching colorspace specs for %s - %s", enc_in_format, info)
                     return
                 #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
                 for encoder_spec in colorspace_specs:
