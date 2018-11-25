@@ -1198,25 +1198,24 @@ class WindowVideoSource(WindowSource):
             #we must check that the output csc mode for each encoder is one of those
             supported_csc_modes = self.full_csc_modes.strlistget(encoding)
             if not supported_csc_modes:
-                scorelog("get_video_pipeline_options: no supported csc modes for %s", encoding)
+                scorelog(" no supported csc modes for %s", encoding)
                 continue
             encoder_specs = vh.get_encoder_specs(encoding)
             if not encoder_specs:
-                scorelog("get_video_pipeline_options: no encoder specs for %s", encoding)
+                scorelog(" no encoder specs for %s", encoding)
                 continue
             def add_scores(info, csc_spec, enc_in_format):
-                scorelog("add_scores(%s, %s, %s)", info, csc_spec, enc_in_format)
                 #find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
                 if not colorspace_specs:
-                    #scorelog("add_scores: no matching colorspace specs for %s", enc_in_format)
+                    scorelog(" no matching colorspace specs for %s - %s", enc_in_format, info)
                     return
                 #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
                 for encoder_spec in colorspace_specs:
                     #ensure that the output of the encoder can be processed by the client:
                     matches = [x for x in encoder_spec.output_colorspaces if strtobytes(x) in supported_csc_modes]
                     if not matches or self.is_cancelled():
-                        scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
+                        scorelog(" no matches for %s (%s and %s) - %s", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes, info)
                         continue
                     vmw, vmh = self.video_max_size
                     max_w = min(encoder_spec.max_w, vmw)

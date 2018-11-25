@@ -188,7 +188,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
     gpu_score = max(0, GPU_BIAS-50)*encoder_spec.gpu_cost//50
     cpu_score = max(0, 50-GPU_BIAS)*encoder_spec.cpu_cost//50
     score = int((qscore+sscore+er_score+sizescore+client_score_delta+gpu_score+cpu_score)*runtime_score//100//5)
-    scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i - %2i runtime: %2i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%2i",
+    scorelog("get_pipeline_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %3i, speed: %3i, setup: %3i - %3i runtime: %3i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%3i",
              enc_in_format, csc_spec, encoder_spec, width, height,
              qscore, sscore, ecsc_score, ee_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, client_score_delta,
              cpu_score, gpu_score, score)
