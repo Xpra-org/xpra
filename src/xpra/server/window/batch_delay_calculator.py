@@ -259,9 +259,11 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
             #weighted average between start delay and min_delay
             #so when we start and we don't have any records, we don't lower quality
             #just because the start delay is higher than min_delay
-            ref_delay = (batch.START_DELAY*10 + batch.min_delay*recs) // (recs+10)
             #anything less than N times the reference delay is good enough:
-            N = 4
+            N = 3.0-min_speed/50.0
+            #if the min-speed is high, reduce tolerance:
+            tolerance = 10-int(min_speed//10)
+            ref_delay = max(0, tolerance+N*(batch.START_DELAY*10 + batch.min_delay*recs) // (recs+10))
             batch_q = float(N * ref_delay) / max(1, batch.min_delay, batch.delay)
 
     #latency limit factor:
