@@ -171,14 +171,17 @@ class video_spec(_codec_spec):
         self.has_lossless_mode = has_lossless_mode
         self._exported_fields += ["encoding", "output_colorspaces"]
 
+    def info(self):
+        return "%s:%s" % (_codec_spec.info(self), self.encoding)
+
     def __repr__(self):
-        return "video_spec(%s)" % self.info()
+        return self.info()
 
 
 class csc_spec(_codec_spec):
 
     def __repr__(self):
-        return "video_spec(%s)" % self.info()
+        return "csc:%s" % self.info()
 
 
 def main():

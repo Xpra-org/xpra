@@ -46,36 +46,27 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_qualit
     return int(qscore)
 
 def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=100, min_speed=0):
+    #when subsampling, add the speed gains to the video encoder
+    #which now has less work to do:
+    mult = {
+        "YUV420P"   : 100,
+        "YUV422P"   : 80,
+        }.get(csc_format, 60)
     #score based on speed:
-    speed = encoder_spec.speed
+    speed = int(encoder_spec.speed*mult//100)
+    #the encoder speed matters less
+    #when the target speed is low:
+    ts = min(100, max(1, target_speed))
+    sscore = (50-ts//2) + speed*100//(100+ts)
     if csc_spec:
-        #when subsampling, add the speed gains to the video encoder
-        #which now has less work to do:
-        mult = 1.0
-        if csc_format and csc_format in ("YUV420P", "YUV422P", "YUV444P"):
-            #account for subsampling: increases encoding speed
-            y,u,v = get_subsampling_divs(csc_format)
-            mult = 0.0
-            for div_x, div_y in (y, u, v):
-                mult += (div_x+div_y)/2.0/3.0
-        #average and add 0.25 for the extra cost of doing the csc step:
-        speed = (encoder_spec.speed * mult + csc_spec.speed) / 2.25
-
-    #the lower the current speed
-    #the more we need a fast encoder/csc to cancel it out:
-    sscore = max(0, (100.0-target_speed) * speed/100.0)
-    if min_speed>=0:
-        #if the encoder speed is lower or close to min_speed
-        #then it isn't very suitable:
-        mss = max(0, speed - min_speed)*100/max(1, 100-min_speed)
-        sscore = (sscore + mss)/2.0
-    #then always favour fast encoders:
-    sscore += speed
-    sscore /= 2
-    #and fast csc:
-    if csc_spec:
-        sscore += csc_spec.speed//2
-    return int(sscore)
+        #if there is a csc step,
+        #then we lose some performance,
+        #but less if the csc is fast
+        sscore = sscore - 20 - (100-csc_spec.speed)//2
+    #when already downscaling, favour YUV420P subsampling:
+    if csc_format=="YUV420P" and scaling!=(1, 1):
+        sscore += 25
+    return max(0, min(100, sscore))
 
 def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
                        target_quality, min_quality,
@@ -106,13 +97,16 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
 
     #how well the codec deals with larger screen sizes:
     sizescore = 100
-    mpixels = width*height/(1024.0*1024.0)
-    if mpixels>1.0:
+    pixels = width*height
+    if scaling!=(1, 1):
+        n, d = scaling
+        pixels = pixels*n*n//d//d
+    if pixels>=1048576:
         #high size efficiency means sizescore stays high even with high number of mpixels,
         #ie: 1MPixels -> sizescore = 100
         #ie: 8MPixels -> sizescore = size_efficiency
-        sdisc = (100-encoder_spec.size_efficiency)
-        sizescore = max(0, 100-(mpixels-1)/7.0*sdisc)
+        sdisc = 100-encoder_spec.size_efficiency
+        sizescore = max(0, 100-pixels*sdisc//1048576//4)
 
     #runtime codec adjustements:
     runtime_score = 100
