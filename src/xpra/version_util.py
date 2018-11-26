@@ -102,7 +102,6 @@ def get_version_info_full():
         for k,bk in {
                     "date"                 : "BUILD_DATE",
                     "time"                 : "BUILD_TIME",
-                    "by"                   : "BUILT_ON",
                     "bit"                  : "BUILD_BIT",
                     "cpu"                  : "BUILD_CPU",
                     "compiler"             : "COMPILER_VERSION",

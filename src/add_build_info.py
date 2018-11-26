@@ -10,6 +10,7 @@ import subprocess
 import socket
 import platform
 import os.path
+import time
 import re
 import sys
 
@@ -222,14 +223,24 @@ def record_build_info(is_build=True):
     global BUILD_INFO_FILE
     props = get_properties(BUILD_INFO_FILE)
     if is_build:
-        try:
-            import getpass
-            set_prop(props, "BUILT_BY", getpass.getuser())
-        except:
-            set_prop(props, "BUILT_BY", os.environ.get("USER"))
-        set_prop(props, "BUILT_ON", socket.gethostname())
-        set_prop(props, "BUILD_DATE", datetime.date.today().isoformat())
-        set_prop(props, "BUILD_TIME", datetime.datetime.now().strftime("%H:%M"))
+        source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
+        if source_epoch:
+            #reproducible builds:
+            build_time = datetime.datetime.utcfromtimestamp(int(source_epoch))
+            build_date = build_time.date()
+        else:
+            #win32, macos and older build environments:
+            build_time = datetime.datetime.now()
+            build_date = datetime.date.today()
+            #also record username and hostname:
+            try:
+                import getpass
+                set_prop(props, "BUILT_BY", getpass.getuser())
+            except:
+                set_prop(props, "BUILT_BY", os.environ.get("USER"))
+            set_prop(props, "BUILT_ON", socket.gethostname())
+        set_prop(props, "BUILD_DATE", build_date.isoformat())
+        set_prop(props, "BUILD_TIME", build_time.strftime("%H:%M"))
         set_prop(props, "BUILD_MACHINE", get_machineinfo())
         set_prop(props, "BUILD_CPU", get_cpuinfo())
         set_prop(props, "BUILD_BIT", platform.architecture()[0])
