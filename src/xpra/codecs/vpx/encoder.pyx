@@ -318,7 +318,7 @@ def get_spec(encoding, colorspace):
     return video_spec(encoding=encoding, output_colorspaces=[colorspace], has_lossless_mode=has_lossless_mode,
                             codec_class=Encoder, codec_type=get_type(),
                             quality=quality, speed=speed,
-                            size_efficiency=80,
+                            size_efficiency=60,
                             setup_cost=20, max_w=max_w, max_h=max_h)
 
 
