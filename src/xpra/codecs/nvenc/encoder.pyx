@@ -1430,7 +1430,6 @@ cdef class Encoder:
     cdef unsigned int input_height
     cdef unsigned int encoder_width
     cdef unsigned int encoder_height
-    cdef unsigned int b_frames
     cdef object encoding
     cdef object src_format
     cdef object dst_formats
