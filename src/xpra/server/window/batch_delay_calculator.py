@@ -121,11 +121,11 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     mpixels = low_limit/1024.0/1024.0
     #for larger window sizes, we should be downscaling,
     #and don't want to wait too long for those anyway:
-    ref_damage_latency = 0.010 + 0.025 * (1+mathlog(max(1, mpixels)))
+    ref_damage_latency = (10 + 25 * (1+mathlog(max(1, mpixels))))/1000.0
 
     adil = statistics.avg_damage_in_latency or 0
     #abs: try to never go higher than N times the reference latency:
-    dam_lat_abs = max(0, (adil-ref_damage_latency) / (ref_damage_latency * 3.0))
+    dam_lat_abs = max(0, (adil-ref_damage_latency)) / (ref_damage_latency * 3)
 
     if batch.locked:
         target_damage_latency = ref_damage_latency
@@ -196,12 +196,11 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     if ads>0:
         dec_lat = min_decode_speed/float(ads)
 
-    max_speed = max(0, min(pixels_bl_s, dam_lat_s, pixel_rate_s, bandwidth_s, congestion_s))
+    ms = min(100, max(min_speed, 0))
+    max_speed = max(ms, min(pixels_bl_s, dam_lat_s, pixel_rate_s, bandwidth_s, congestion_s))
     #combine factors: use the highest one:
     target = min(1, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0))
     #scale target between min_speed and 100:
-    ms = min(100, max(min_speed, 0))
-    max_speed = max(ms, max_speed)
     speed = int(ms + (100-ms) * target)
     speed = max(ms, min(max_speed, speed))
 
