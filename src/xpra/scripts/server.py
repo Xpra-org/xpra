@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand, WIN32, OSX, is_Wayland
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -568,6 +568,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     proxying  = mode == "proxy"
     clobber   = upgrading or opts.use_display
     start_vfb = not shadowing and not proxying and not clobber
+
+    if shadowing and is_Wayland():
+        warn("shadow servers do not support Wayland, switch to X11")
 
     if opts.bind_rfb and (proxying or starting):
         get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
