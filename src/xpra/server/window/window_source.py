@@ -31,7 +31,7 @@ AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
 AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
 AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
-INITIAL_QUALITY = envint("XPRA_INITIAL_QUALITY", 40)
+INITIAL_QUALITY = envint("XPRA_INITIAL_QUALITY", 65)
 INITIAL_SPEED = envint("XPRA_INITIAL_SPEED", 40)
 
 LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
@@ -990,7 +990,7 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         #make a copy to work on:
         speed_data = list(self._encoding_speed)
-        info, target, max_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
+        info, target, max_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed, speed_data)
         speed_data.append((monotonic_time(), target))
         speed = int(time_weighted_average(speed_data, min_offset=1, rpow=1.1))
         speed = max(0, self._fixed_min_speed, speed)
@@ -1305,26 +1305,29 @@ class WindowSource(WindowIconSource):
             #got sent
             return False
         #the region has not been sent yet because we are waiting for damage ACKs from the client
-        if self.soft_expired<self.max_soft_expired:
+        max_soft_expired = min(1+self.statistics.damage_events_count//2, self.max_soft_expired)
+        if self.soft_expired<max_soft_expired:
             #there aren't too many regions soft expired yet
             #so use the "soft timer":
             self.soft_expired += 1
             #we have already waited for "delay" to get here, wait more as we soft expire more regions:
             self.soft_timer = self.timeout_add(int(self.soft_expired*delay), self.delayed_region_soft_timeout)
         else:
-            #only record this congestion if this is a new event,
-            #otherwise we end up perpetuating it
-            #because congestion events lower the latency tolerance
-            #which makes us more sensitive to packets backlog
-            celapsed = monotonic_time()-self.global_statistics.last_congestion_time
-            if celapsed<10:
-                late_pct = 2*100*self.soft_expired
-                self.networksend_congestion_event("soft-expire limit: %ims, %i/%i" % (delay, self.soft_expired, self.max_soft_expired), late_pct)
+            if max_soft_expired==self.max_soft_expired:
+                #only record this congestion if this is a new event,
+                #otherwise we end up perpetuating it
+                #because congestion events lower the latency tolerance
+                #which makes us more sensitive to packets backlog
+                celapsed = monotonic_time()-self.global_statistics.last_congestion_time
+                if celapsed<10 and max_soft_expired==self.max_soft_expired:
+                    late_pct = 2*100*self.soft_expired
+                    self.networksend_congestion_event("soft-expire limit: %ims, %i/%i" % (delay, self.soft_expired, self.max_soft_expired), late_pct)
             #NOTE: this should never happen...
             #the region should now get sent when we eventually receive the pending ACKs
             #but if somehow they go missing... clean it up from a timeout:
-            delayed_region_time = delayed[0]
-            self.timeout_timer = self.timeout_add(self.batch_config.timeout_delay, self.delayed_region_timeout, delayed_region_time)
+            if not self.timeout_timer:
+                delayed_region_time = delayed[0]
+                self.timeout_timer = self.timeout_add(self.batch_config.timeout_delay, self.delayed_region_timeout, delayed_region_time)
         return False
 
     def delayed_region_soft_timeout(self):
