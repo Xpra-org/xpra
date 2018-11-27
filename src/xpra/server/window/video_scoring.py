@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import envint
-from xpra.codecs.codec_constants import get_subsampling_divs, LOSSY_PIXEL_FORMATS
+from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 
 from xpra.log import Logger
 scorelog = Logger("score")
@@ -13,16 +13,19 @@ scorelog = Logger("score")
 GPU_BIAS = envint("XPRA_GPU_BIAS", 100)
 MIN_FPS_COST = envint("XPRA_MIN_FPS_COST", 4)
 
+SUBSAMPLING_QUALITY_LOSS = {
+    "YUV420P"   : 186,      #1.66 + 0.2
+    "YUV422P"   : 153,      #1.33 + 0.2
+    "YUV444P"   : 120,      #1.00 + 0.2
+    }
+
 
 def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_quality=100, min_quality=0):
     quality = encoder_spec.quality
-    if csc_format in ("YUV420P", "YUV422P", "YUV444P"):
-        #account for subsampling: reduces quality
-        y,u,v = get_subsampling_divs(csc_format)
-        div = 0.2   #any colourspace convertion will lose at least some quality (due to rounding)
-        for div_x, div_y in (y, u, v):
-            div += (div_x+div_y)/2.0/3.0
-        quality /= div
+    #any colourspace convertion will lose at least some quality (due to rounding)
+    #(so add 0.2 to the value we get from calculating the degradation using get_subsampling_divs)
+    div = SUBSAMPLING_QUALITY_LOSS.get(csc_format, 100)
+    quality = quality*100//div
 
     if csc_spec:
         #csc_spec.quality is the upper limit (up to 100):
