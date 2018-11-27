@@ -46,8 +46,8 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen
     factors.append(("focus", {"has_focus" : has_focus}, int(not has_focus), int(has_focus)))
     factors.append(("override-redirect", {"is_OR" : is_OR}, int(not is_OR), int(is_OR)))
     #if another window is fullscreen or maximized, slow us down:
-    factors.append(("fullscreen", {"other_is_fullscreen" : other_is_fullscreen}, 4*int(other_is_fullscreen), int(other_is_fullscreen)))
-    factors.append(("maximized", {"other_is_maximized" : other_is_maximized}, 4*int(other_is_maximized), int(other_is_maximized)))
+    factors.append(("fullscreen", {"other_is_fullscreen" : other_is_fullscreen}, 2*int(other_is_fullscreen), int(other_is_fullscreen)/2.0))
+    factors.append(("maximized", {"other_is_maximized" : other_is_maximized}, 2*int(other_is_maximized), int(other_is_maximized)/2.0))
     #soft expired regions is a strong indicator of problems:
     #(0 for none, up to max_soft_expired which is 5)
     factors.append(("soft-expired", {"count" : soft_expired}, soft_expired, int(bool(soft_expired))))
