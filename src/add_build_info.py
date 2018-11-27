@@ -10,7 +10,6 @@ import subprocess
 import socket
 import platform
 import os.path
-import time
 import re
 import sys
 
