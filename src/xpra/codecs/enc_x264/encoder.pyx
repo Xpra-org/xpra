@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("encoder", "x264")
 
 from xpra.util import nonl, envint, envbool, typedict, csv, AtomicInteger
-from xpra.os_util import bytestostr, strtobytes
+from xpra.os_util import bytestostr, strtobytes, get_cpu_count
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
 from xpra.buffers.membuf cimport object_as_buffer
@@ -21,8 +21,9 @@ from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
 
-THREADS = envint("XPRA_X264_THREADS")
-SLICED_THREADS = envint("XPRA_X264_SLICED_THREADS", 1)
+MAX_DELAYED_FRAMES = envint("XPRA_X264_MAX_DELAYED_FRAMES", 4)
+THREADS = envint("XPRA_X264_THREADS", min(4, max(1, get_cpu_count()//2)))
+SLICED_THREADS = envbool("XPRA_X264_SLICED_THREADS", True)
 MIN_SLICED_THREADS_SPEED = envint("XPRA_X264_SLICED_THREADS", 60)
 LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 PROFILE = os.environ.get("XPRA_X264_PROFILE")
@@ -476,6 +477,7 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
     cdef int b_frames
+    cdef int max_delayed
     cdef int delayed_frames
     cdef int export_nals
     cdef unsigned long bandwidth_limit
@@ -503,6 +505,7 @@ cdef class Encoder:
         self.content_type = options.strget("content-type", "unknown")      #ie: "video"
         self.b_frames = options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
+        self.max_delayed = options.intget("max-delayed", MAX_DELAYED_FRAMES) * int(not self.fast_decode) * int(self.b_frames)
         self.preset = self.get_preset_for_speed(speed)
         self.src_format = src_format
         self.colorspace = cs_info[0]
@@ -555,10 +558,13 @@ cdef class Encoder:
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     cdef tune_param(self, x264_param_t *param, options):
-        param.i_threads = THREADS
         param.i_lookahead_threads = 0
-        if self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
-            param.b_sliced_threads = SLICED_THREADS
+        if SLICED_THREADS and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
+            param.b_sliced_threads = 1
+            param.i_threads = THREADS
+        else:
+            #cap i_threads since i_thread_frames will be set to i_threads
+            param.i_threads = min(self.max_delayed, THREADS)
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = X264_KEYINT_MAX_INFINITE
         #we don't want IDR frames either:
@@ -583,6 +589,8 @@ cdef class Encoder:
             param.i_sync_lookahead = 0
             param.rc.b_mb_tree = 0
         else:
+            param.i_sync_lookahead = max(0, min(self.max_delayed-param.i_threads-param.rc.i_lookahead, param.i_sync_lookahead))
+            #don't use TRELLIS, which uses too many delayed frames:
             if param.i_bframe_adaptive==X264_B_ADAPT_TRELLIS:
                 param.i_bframe_adaptive = X264_B_ADAPT_FAST
         if self.content_type!="video":
@@ -644,6 +652,7 @@ cdef class Encoder:
             "profile"       : self.profile,
             "preset"        : get_preset_names()[self.preset],
             "fast-decode"   : bool(self.fast_decode),
+            "max-delayed"   : self.max_delayed,
             "b-frames"      : self.b_frames,
             "tune"          : self.tune or "",
             "frames"        : int(self.frames),
