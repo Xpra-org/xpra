@@ -41,16 +41,16 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen
     factors += global_statistics.get_factors(low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
-    factors.append(queue_inspect("damage-packet-queue-pixels", time_values, div=low_limit, smoothing=sqrt))
+    def mayaddfac(metric, info, factor, weight):
+        if factor>=0.01:
+            factors.append((metric, info, factor, weight))
+    mayaddfac(queue_inspect("damage-packet-queue-pixels", time_values, div=low_limit, smoothing=sqrt))
     #boost window that has focus and OR windows:
-    if has_focus:
-        factors.append(("focus", {"has_focus" : has_focus}, int(not has_focus), int(has_focus)))
-    if is_OR:
-        factors.append(("override-redirect", {"is_OR" : is_OR}, int(not is_OR), int(is_OR)))
+    mayaddfac("focus", {"has_focus" : has_focus}, int(not has_focus), int(has_focus))
+    mayaddfac("override-redirect", {"is_OR" : is_OR}, int(not is_OR), int(is_OR))
     #soft expired regions is a strong indicator of problems:
     #(0 for none, up to max_soft_expired which is 5)
-    if soft_expired:
-        factors.append(("soft-expired", {"count" : soft_expired}, soft_expired, int(bool(soft_expired))))
+    mayaddfac("soft-expired", {"count" : soft_expired}, soft_expired, int(bool(soft_expired)))
     #now use those factors to drive the delay change:
     min_delay = 0
     if batch.always:
