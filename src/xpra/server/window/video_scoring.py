@@ -75,7 +75,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
                        target_quality, min_quality,
                        target_speed, min_speed,
                        current_csce, current_ve,
-                       client_score_delta, ffps):
+                       score_delta, ffps):
     """
         Given an optional csc step (csc_format and csc_spec), and
         and a required encoding step (encoder_spec and width/height),
@@ -184,10 +184,10 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
     #gpu vs cpu
     gpu_score = max(0, GPU_BIAS-50)*encoder_spec.gpu_cost//50
     cpu_score = max(0, 50-GPU_BIAS)*encoder_spec.cpu_cost//50
-    score = int((qscore+sscore+er_score+sizescore+client_score_delta+gpu_score+cpu_score)*runtime_score//100//5)
+    score = int((qscore+sscore+er_score+sizescore+score_delta+gpu_score+cpu_score)*runtime_score//100//5)
     scorelog("get_pipeline_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %3i, speed: %3i, setup: %3i - %3i runtime: %3i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%3i",
              enc_in_format, csc_spec, encoder_spec, width, height,
-             qscore, sscore, ecsc_score, ee_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, client_score_delta,
+             qscore, sscore, ecsc_score, ee_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, score_delta,
              cpu_score, gpu_score, score)
     return score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec
 
