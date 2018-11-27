@@ -141,36 +141,39 @@ class GlobalPerformanceStatistics(object):
 
     def get_factors(self, pixel_count):
         factors = []
+        def mayaddfac(metric, info, factor, weight):
+            if factor>=0.01:
+                factors.append((metric, info, factor, weight))
         if len(self.client_latency)>0:
             #client latency: (we want to keep client latency as low as can be)
             metric = "client-latency"
             l = 0.005 + self.min_client_latency
             wm = logp(l / 0.020)
-            factors.append(calculate_for_target(metric, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            mayaddfac(*calculate_for_target(metric, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         if len(self.client_ping_latency)>0:
             metric = "client-ping-latency"
             l = 0.005 + self.min_client_ping_latency
             wm = logp(l / 0.050)
-            factors.append(calculate_for_target(metric, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            mayaddfac(*calculate_for_target(metric, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         if len(self.server_ping_latency)>0:
             metric = "server-ping-latency"
             l = 0.005 + self.min_server_ping_latency
             wm = logp(l / 0.050)
-            factors.append(calculate_for_target(metric, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            mayaddfac(*calculate_for_target(metric, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         #packet queue size: (includes packets from all windows)
-        factors.append(queue_inspect("packet-queue-size", self.packet_qsizes, smoothing=sqrt))
+        mayaddfac(*queue_inspect("packet-queue-size", self.packet_qsizes, smoothing=sqrt))
         #packet queue pixels (global):
         qpix_time_values = [(event_time, value) for event_time, _, value in tuple(self.damage_packet_qpixels)]
-        factors.append(queue_inspect("packet-queue-pixels", qpix_time_values, div=pixel_count, smoothing=sqrt))
+        mayaddfac(*queue_inspect("packet-queue-pixels", qpix_time_values, div=pixel_count, smoothing=sqrt))
         #compression data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
-        factors.append(queue_inspect("compression-work-queue", self.compression_work_qsizes))
+        mayaddfac(*queue_inspect("compression-work-queue", self.compression_work_qsizes))
         if self.mmap_size>0:
             #full: effective range is 0.0 to ~1.2
             full = 1.0-float(self.mmap_free_size)/self.mmap_size
             #aim for ~33%
-            factors.append(("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2))
+            mayaddfac("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2)
         if self.congestion_value>0:
-            factors.append(("congestion", {}, 1+self.congestion_value, self.congestion_value*10))
+            mayaddfac("congestion", {}, 1+self.congestion_value, self.congestion_value*10)
         return factors
 
     def get_connection_info(self):
