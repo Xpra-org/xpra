@@ -45,7 +45,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_qualit
             qscore *= 2.0
     return int(qscore)
 
-def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=100, min_speed=0):
+def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=100):
     #when subsampling, add the speed gains to the video encoder
     #which now has less work to do:
     mult = {
@@ -89,7 +89,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
     def clamp(v):
         return max(0, min(100, v))
     qscore = clamp(get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling, target_quality, min_quality))
-    sscore = clamp(get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed, min_speed))
+    sscore = clamp(get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed))
 
     #multiplier for setup_cost:
     #(lose points if we have less than N fps)
