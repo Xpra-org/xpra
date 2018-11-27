@@ -960,7 +960,7 @@ class WindowSource(WindowIconSource):
                 nbytes = sum(v[1] for v in since_last)
                 #less than 16KB/s since last time? (or <=64KB)
                 max_bytes = max(4, int(elapsed))*16*1024
-                if nbytes<=max_bytes:
+                if nbytes<=max_bytes and not self._mmap_size>0:
                     statslog("calculate_batch_delay for wid=%i, skipping - only %i bytes sent since the last update", self.wid, nbytes)
                     return
                 statslog("calculate_batch_delay for wid=%i, %i bytes sent since the last update", self.wid, nbytes)
