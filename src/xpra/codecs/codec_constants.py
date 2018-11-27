@@ -137,51 +137,32 @@ class _codec_spec(object):
             return max(0, 1.0 - (1.0*ic/mi)**2)
         return 1.0
 
-    def info(self):
-        try:
-            s = str(self.codec_class)
-            #regexp it?
-            p = s.find("xpra.codecs.")
-            if p>=0:
-                s = s[p+len("xpra.codecs."):]
-            p = s.find(".encoder.")
-            if p<0:
-                p = s.find(".colorspace_converter.")
-            if p>0:
-                s = s[:p]
-            if s=="csc_%s" % self.codec_type:
-                return self.codec_type
-            if s=="enc_%s" % self.codec_type:
-                return self.codec_type
-            if self.codec_type==s:
-                return self.codec_type
-            if s.startswith(self.codec_type):
-                return s
-            return "%s:%s" % (self.codec_type, s)
-        except:
-            return "%s" % (self.codec_type or self.codec_class)
-
 
 class video_spec(_codec_spec):
 
-    def __init__(self, encoding=None, output_colorspaces=None, has_lossless_mode=False, **kwargs):
-        _codec_spec.__init__(self, **kwargs)
+    def __init__(self, encoding, input_colorspace, output_colorspaces, has_lossless_mode,
+                 codec_class, codec_type, **kwargs):
         self.encoding = encoding                        #ie: "h264"
+        self.input_colorspace = input_colorspace
         self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
         self.has_lossless_mode = has_lossless_mode
-        self._exported_fields += ["encoding", "output_colorspaces"]
-
-    def info(self):
-        return "%s:%s" % (_codec_spec.info(self), self.encoding)
+        _codec_spec.__init__(self, codec_class, codec_type, **kwargs)
+        self._exported_fields += ["encoding", "input_colorspace", "output_colorspaces", "has_lossless_mode"]
 
     def __repr__(self):
-        return self.info()
+        return "%s(%s to %s)" % (self.codec_type, self.input_colorspace, self.encoding)
 
 
 class csc_spec(_codec_spec):
 
+    def __init__(self, input_colorspace, output_colorspace, codec_class, codec_type, **kwargs):
+        self.input_colorspace = input_colorspace
+        self.output_colorspace = output_colorspace
+        _codec_spec.__init__(self, codec_class, codec_type, **kwargs)
+        self._exported_fields += ["input_colorspace", "output_colorspace"]
+
     def __repr__(self):
-        return "csc:%s" % self.info()
+        return "%s(%s to %s)" % (self.codec_type, self.input_colorspace, self.output_colorspace)
 
 
 def main():

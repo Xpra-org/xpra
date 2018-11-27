@@ -418,11 +418,12 @@ def get_spec(encoding, colorspace):
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     has_lossless_mode = colorspace in ("YUV444P", "BGR", "BGRA", "BGRX", "RGB")
-    return video_spec(encoding=encoding, output_colorspaces=COLORSPACES[colorspace], has_lossless_mode=has_lossless_mode,
-                            codec_class=Encoder, codec_type=get_type(),
-                            quality=60+40*int(has_lossless_mode), speed=60,
-                            size_efficiency=60,
-                            setup_cost=20, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=COLORSPACES[colorspace],
+                      has_lossless_mode=has_lossless_mode,
+                      codec_class=Encoder, codec_type=get_type(),
+                      quality=60+40*int(has_lossless_mode), speed=60,
+                      size_efficiency=60,
+                      setup_cost=20, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 #maps a log level to one of our logger functions:

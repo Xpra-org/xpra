@@ -304,7 +304,7 @@ def get_spec(encoding, colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return video_spec(encoding=encoding, output_colorspaces=[colorspace],
+    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace], has_lossless_mode=False,
                       codec_class=Encoder, codec_type=get_type(),
                       min_w=64, min_h=64,
                       setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)

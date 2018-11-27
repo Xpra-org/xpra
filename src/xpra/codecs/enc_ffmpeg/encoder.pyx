@@ -729,10 +729,11 @@ MAX_WIDTH, MAX_HEIGHT = 4096, 4096
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
-    return video_spec(encoding=encoding, output_colorspaces=get_output_colorspaces(encoding, colorspace), has_lossless_mode=False,
-                            codec_class=Encoder, codec_type=get_type(),
-                            quality=40, speed=40,
-                            setup_cost=90, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+    return video_spec(encoding=encoding, input_colorspace=colorspace,
+                      output_colorspaces=get_output_colorspaces(encoding, colorspace), has_lossless_mode=False,
+                      codec_class=Encoder, codec_type=get_type(),
+                      quality=40, speed=40,
+                      setup_cost=90, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 cdef class Encoder(object):

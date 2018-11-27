@@ -245,7 +245,8 @@ def get_spec(in_colorspace, out_colorspace):
     #setup cost is very low (usually less than 1ms!)
     #there are restrictions on dimensions (8x2 minimum!)
     #swscale can be used to scale (obviously)
-    return csc_spec(ColorspaceConverter, codec_type=get_type(),
+    return csc_spec(in_colorspace, out_colorspace,
+                    ColorspaceConverter, codec_type=get_type(),
                     quality=100, speed=60,
                     setup_cost=20, min_w=8, min_h=2, can_scale=True,
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
