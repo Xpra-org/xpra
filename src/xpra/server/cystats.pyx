@@ -182,7 +182,7 @@ def calculate_for_target(metric, float target_value, float avg_value, float rece
             "smoothing" : smn(smoothing),
             "weight_multiplier" : int(1000.0*weight_multiplier),
             }
-    return metric, info , factor, weight
+    return metric, info, factor, weight
 
 def calculate_for_average(metric, float avg_value, float recent_value, float div=1.0, float weight_offset=0.5, float weight_div=1.0):
     """
@@ -195,7 +195,7 @@ def calculate_for_average(metric, float avg_value, float recent_value, float div
     cdef double weight = max(0, max(factor, 1.0/factor)-1.0+weight_offset)/weight_div
     info = {"avg"   : int(1000.0*avg),
             "recent": int(1000.0*recent)}
-    return  metric, info, float(factor), float(weight)
+    return metric, info, float(factor), float(weight)
 
 def queue_inspect(metric, time_values, float target=1.0, float div=1.0, smoothing=logp):
     """
@@ -204,7 +204,7 @@ def queue_inspect(metric, time_values, float target=1.0, float div=1.0, smoothin
     """
     #inspect a queue size history: figure out if things are better or worse than before
     if len(time_values)==0:
-        return  metric, {}, 1.0, 0.0
+        return metric, {}, 1.0, 0.0
     avg, recent = calculate_time_weighted_average(tuple(time_values))
     weight_multiplier = sqrt(max(avg, recent) / div / target)
-    return  calculate_for_target(metric, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing, weight_multiplier=weight_multiplier)
+    return calculate_for_target(metric, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing, weight_multiplier=weight_multiplier)
