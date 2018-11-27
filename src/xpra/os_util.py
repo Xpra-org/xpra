@@ -367,6 +367,21 @@ def get_generic_os_name():
             return v
     return sys.platform
 
+def get_cpu_count():
+    #sensible default:
+    cpus = 2
+    try:
+        try:
+            #python3:
+            cpus = os.cpu_count()
+        except AttributeError:
+            #python2:
+            import multiprocessing
+            cpus = multiprocessing.cpu_count()
+    except:
+        pass
+    return cpus
+
 
 def load_binary_file(filename):
     if not os.path.exists(filename):

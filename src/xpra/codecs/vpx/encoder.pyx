@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import bytestostr, WIN32, OSX, POSIX
+from xpra.os_util import get_cpu_count, bytestostr, WIN32, OSX, POSIX
 from xpra.util import AtomicInteger, envint, envbool
 from xpra.buffers.membuf cimport object_as_buffer
 
@@ -24,17 +24,7 @@ from xpra.monotonic_time cimport monotonic_time
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
-#sensible default:
-cpus = 2
-try:
-    cpus = os.cpu_count()
-except:
-    try:
-        import multiprocessing
-        cpus = multiprocessing.cpu_count()
-    except:
-        pass
-cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
+cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, get_cpu_count()-1))
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
