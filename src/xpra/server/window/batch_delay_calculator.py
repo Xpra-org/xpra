@@ -44,7 +44,7 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen
     def mayaddfac(metric, info, factor, weight):
         if factor>=0.01:
             factors.append((metric, info, factor, weight))
-    mayaddfac(queue_inspect("damage-packet-queue-pixels", time_values, div=low_limit, smoothing=sqrt))
+    mayaddfac(*queue_inspect("damage-packet-queue-pixels", time_values, div=low_limit, smoothing=sqrt))
     #boost window that has focus and OR windows:
     mayaddfac("focus", {"has_focus" : has_focus}, int(not has_focus), int(has_focus))
     mayaddfac("override-redirect", {"is_OR" : is_OR}, int(not is_OR), int(is_OR))
