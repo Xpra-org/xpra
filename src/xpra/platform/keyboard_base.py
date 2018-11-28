@@ -27,6 +27,32 @@ class KeyboardBase(object):
     def has_bell(self):
         return False
 
+    def _add_modifier_mapping(self, a, b, modifier):
+        #log.info("%s (%s), %s (%s)", keycode, type(keycode), keyname, type(keyname))
+        if isinstance(a, int) and isinstance(b, (bytes, str)):
+            self._do_add_modifier_mapping((b,), a, modifier)
+        elif isinstance(a, (str,bytes)) and isinstance(b, int):
+            #level = b
+            self._do_add_modifier_mapping((a,), 0, modifier)
+        elif isinstance(a, (bytes,str)) and isinstance(b, (bytes,str)):
+            self._do_add_modifier_mapping((a, b), 0, modifier)
+        elif isinstance(a, (tuple,list)) and isinstance(b, (bytes,str)):
+            #ie: a=(57, 'CapsLock'), b='CapsLock'
+            if len(a)==2:
+                self._add_modifier_mapping(a[0], a[1], modifier)
+            self._add_modifier_mapping((b,), 0, modifier)
+        else:
+            log.warn("Warning: unexpected key definition: %s, %s", type(a), type(b))
+            log.warn(" values: %s, %s", a, b)
+    
+    def _do_add_modifier_mapping(self, keynames, keycode, modifier):
+        for keyname in keynames:
+            self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
+            if keycode:
+                keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
+                if keycode not in keycodes:
+                    keycodes.append(keycode)
+
     def set_modifier_mappings(self, mappings):
         log("set_modifier_mappings(%s)", mappings)
         self.modifier_mappings = mappings
@@ -34,27 +60,7 @@ class KeyboardBase(object):
         self.modifier_keycodes = {}
         for modifier, keys in mappings.items():
             for a, b in keys:
-                #log.info("%s (%s), %s (%s)", keycode, type(keycode), keyname, type(keyname))
-                if isinstance(a, int) and isinstance(b, (bytes, str)):
-                    keycode = a
-                    keynames = (b,)
-                elif isinstance(a, (str,bytes)) and isinstance(b, int):
-                    keynames = (a,)
-                    #level = b
-                    keycode = 0
-                elif isinstance(a, (bytes,str)) and isinstance(b, (bytes,str)):
-                    keynames = (a, b)
-                    keycode = 0
-                else:
-                    log.warn("Warning: unexpected key definition: %s, %s", type(a), type(b))
-                    log.warn(" values: %s, %s", a, b)
-                    continue
-                for keyname in keynames:
-                    self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
-                    if keycode:
-                        keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
-                        if keycode not in keycodes:
-                            keycodes.append(keycode)
+                self._add_modifier_mapping(a, b, modifier)
         log("modifier_keys=%s", self.modifier_keys)
         log("modifier_keycodes=%s", self.modifier_keycodes)
 
