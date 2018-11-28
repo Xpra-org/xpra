@@ -844,7 +844,7 @@ class ClipboardProxy(gtk.Invisible):
                     if text_target in target_data:
                         text_data = target_data.get(text_target)
                         log("clipboard %s set to '%s'", self._selection, repr_ellipsized(text_data))
-                        set_clipboard_data(self._clipboard, text_data)
+                        set_clipboard_data(self._clipboard, text_data, text_target)
         if not claim:
             log("token packet without claim, not setting the token flag")
             #the other end is just telling us to send the token again next time something changes,
