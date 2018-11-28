@@ -85,6 +85,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return "shadow"
 
     def print_screen_info(self):
+        if not server_features.display:
+            return
         w, h = self.root.get_geometry()[2:4]
         display = os.environ.get("DISPLAY")
         self.do_print_screen_info(display, w, h)
@@ -94,7 +96,13 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             log.info(" on display %s of size %ix%i", display, w, h)
         else:
             log.info(" on display of size %ix%i", w, h)
-
+        l = len(self._id_to_window)
+        if l>1:
+            log.info(" with %i monitors:", l)
+            for window in self._id_to_window.values():
+                title = window.get_property("title")
+                x, y, w, h = window.geometry 
+                log.info("  %-16s %4ix%-4i at %4i,%-4i", title, w, h, x, y)
 
     def make_hello(self, _source):
         return {"shadow" : True}
