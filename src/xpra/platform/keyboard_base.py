@@ -43,7 +43,7 @@ class KeyboardBase(object):
             self._add_modifier_mapping((b,), 0, modifier)
         elif isinstance(a, (tuple,list)) and isinstance(b, (int)):
             #ie: a=('CapsLock'), b=0
-            self._add_modifier_mapping(a, 0, modifier)
+            self._do_add_modifier_mapping(a, 0, modifier)
         else:
             log.warn("Warning: unexpected key definition: %s, %s", type(a), type(b))
             log.warn(" values: %s, %s", a, b)
