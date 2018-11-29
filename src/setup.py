@@ -186,7 +186,8 @@ mdns_ENABLED            = DEFAULT
 
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
-enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
+#crashes on 32-bit windows:
+enc_x265_ENABLED        = (not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_ENABLED            = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
