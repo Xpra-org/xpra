@@ -93,7 +93,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def do_print_screen_info(self, display, w, h):
         if display:
-            log.info(" on display %s of size %ix%i", display, w, h)
+            log.info(" on display '%s' of size %ix%i", display, w, h)
         else:
             log.info(" on display of size %ix%i", w, h)
         l = len(self._id_to_window)
