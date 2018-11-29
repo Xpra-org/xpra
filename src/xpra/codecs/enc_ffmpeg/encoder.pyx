@@ -1019,7 +1019,6 @@ cdef class Encoder(object):
             if self.buffer!=NULL:
                 av_free(self.buffer)
                 self.buffer = NULL
-        cdef unsigned long ctx_key          #@DuplicatedSignature
         log("clean_encoder() freeing AVCodecContext: %#x", <uintptr_t> self.video_ctx)
         if self.video_ctx!=NULL:
             r = avcodec_close(self.video_ctx)

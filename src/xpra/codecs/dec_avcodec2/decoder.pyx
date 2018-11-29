@@ -426,7 +426,6 @@ cdef class Decoder:
             av_frame_free(&self.av_frame)
             #redundant: self.frame = NULL
 
-        cdef unsigned long ctx_key          #@DuplicatedSignature
         log("clean_decoder() freeing AVCodecContext: %#x", <uintptr_t> self.codec_ctx)
         if self.codec_ctx!=NULL:
             r = avcodec_close(self.codec_ctx)
@@ -507,7 +506,6 @@ cdef class Decoder:
         cdef int ret = 0
         cdef int nplanes
         cdef AVPacket avpkt
-        cdef unsigned long frame_key                #@DuplicatedSignature
         cdef AVFrameWrapper framewrapper
         cdef AVFrame *av_frame
         cdef object img
