@@ -21,10 +21,8 @@ from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer
 
 from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport uint8_t, uintptr_t
+from libc.stdlib cimport free
 
-
-cdef extern from "stdlib.h":
-    void free(void *ptr)
 
 cdef extern from "../../buffers/memalign.h":
     unsigned int MEMALIGN_ALIGNMENT
@@ -127,11 +125,12 @@ class YUVImageWrapper(ImageWrapper):
         return "libyuv.YUVImageWrapper"
 
     def free(self):                             #@DuplicatedSignature
-        log("libyuv.YUVImageWrapper.free() cython_buffer=%#x", <uintptr_t> self.cython_buffer)
+        cdef uintptr_t buf = self.cython_buffer
+        self.cython_buffer = 0
+        log("libyuv.YUVImageWrapper.free() cython_buffer=%#x", buf)
         ImageWrapper.free(self)
-        if self.cython_buffer>0:
-            free(<void *> (<uintptr_t> self.cython_buffer))
-            self.cython_buffer = 0
+        if buf!=0:
+            free(<void *> buf)
 
 
 cdef class ColorspaceConverter:
