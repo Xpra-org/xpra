@@ -1061,7 +1061,7 @@ def install_html5(install_dir="www"):
 if WIN32:
     MINGW_PREFIX = os.environ.get("MINGW_PREFIX")
     assert MINGW_PREFIX, "you must run this build from a MINGW environment"
-    add_packages("xpra.platform.win32")
+    add_packages("xpra.platform.win32", "xpra.platform.win32.namedpipes")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
 
     #this is where the win32 gi installer will put things:
