@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import get_cpu_count, bytestostr, WIN32, OSX, POSIX
+from xpra.os_util import get_cpu_count, bytestostr, WIN32, OSX, POSIX, BITS
 from xpra.util import AtomicInteger, envint, envbool
 from xpra.buffers.membuf cimport object_as_buffer
 
@@ -353,6 +353,13 @@ cdef class Encoder:
         assert scaling==(1,1), "vpx does not handle scaling"
         assert encoding in get_encodings()
         assert src_format in get_input_colorspaces(encoding)
+        if BITS==32 and WIN32:
+            dmaxw, dmaxh = MAX_SIZE[encoding]
+            if width>dmaxw or height>dmaxh:
+                #this can crash on win32, don't even try it
+                #(the unit tests would otherwise crash)
+                raise Exception("invalid dimensions %ix%i - maximum is %ix%i" % (width, height, dmaxw, dmaxh))
+        
         self.src_format = bytestostr(src_format)
         #log("vpx_encoder.init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
 
