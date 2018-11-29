@@ -15,6 +15,9 @@ from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
 from xpra.monotonic_time cimport monotonic_time
 from xpra.x11.bindings.display_source import get_display_name
 
+from libc.stdlib cimport free
+from libc.string cimport memcpy
+
 from xpra.log import Logger
 xshmlog = Logger("x11", "bindings", "ximage", "xshm")
 log = Logger("x11", "bindings", "ximage")
@@ -44,12 +47,8 @@ cdef inline unsigned int MIN(unsigned int a, unsigned int b):
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "string.h":
-    void *memcpy(void * destination, void * source, size_t num) nogil
-
 cdef extern from "stdlib.h":
     int posix_memalign(void **memptr, size_t alignment, size_t size)
-    void free(void* mem)
 
 cdef extern from "sys/ipc.h":
     ctypedef struct key_t:

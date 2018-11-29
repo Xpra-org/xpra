@@ -16,12 +16,10 @@ from xpra.os_util import bytestostr
 
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
+from libc.stdlib cimport free
 
 cdef extern from *:
     ctypedef unsigned long size_t
-
-cdef extern from "stdlib.h":
-    void free(void *ptr)
 
 
 cdef extern from "webp/decode.h":

@@ -18,13 +18,11 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "window")
 
 
+from libc.stdlib cimport free, malloc
+
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-    void free(void* mem)
-
 
 ######
 # Xlib primitives and constants

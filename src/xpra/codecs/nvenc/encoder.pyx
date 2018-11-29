@@ -31,6 +31,7 @@ import ctypes
 from ctypes import cdll as loader, POINTER
 
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t
+from libc.stdlib cimport free, malloc
 from xpra.monotonic_time cimport monotonic_time
 
 CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
@@ -72,10 +73,6 @@ cdef inline int MAX(int a, int b):
 cdef extern from "string.h":
     void* memset(void * ptr, int value, size_t num)
     void* memcpy(void * destination, void * source, size_t num)
-
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-    void free(void* mem)
 
 
 CUresult = ctypes.c_int

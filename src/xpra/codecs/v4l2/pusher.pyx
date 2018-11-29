@@ -22,9 +22,8 @@ from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 
 from libc.stdint cimport uint32_t, uint8_t
+from libc.stdlib cimport free
 
-cdef extern from "stdlib.h":
-    void free(void* ptr)
 
 cdef extern from "string.h":
     void *memcpy(void *destination, void *source, size_t num) nogil

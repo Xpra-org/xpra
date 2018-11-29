@@ -12,6 +12,9 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
+from libc.stdlib cimport free
+from libc.string cimport memset
+
 from xpra.buffers.membuf cimport object_as_buffer
 from xpra.os_util import bytestostr
 
@@ -35,14 +38,8 @@ cdef inline int MAX(int a, int b):
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 
-cdef extern from "string.h":
-    void * memset ( void * ptr, int value, size_t num )
-
 cdef extern from *:
     ctypedef unsigned long size_t
-
-cdef extern from "stdlib.h":
-    void free(void *ptr)
 
 
 DEF WEBP_MAX_DIMENSION = 16383

@@ -16,6 +16,7 @@ log = Logger("x11", "bindings", "keyboard")
 
 from xpra.os_util import bytestostr, strtobytes
 from libc.stdint cimport uintptr_t
+from libc.stdlib cimport free, malloc
 
 
 DEF PATH_MAX = 1024
@@ -25,10 +26,6 @@ DEF DFLT_XKB_CONFIG_ROOT = "/usr/share/X11/xkb"
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-    void free(void* mem)
-
 cdef extern from "locale.h":
     char *setlocale(int category, const char *locale)
     int LC_ALL

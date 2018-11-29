@@ -26,14 +26,8 @@ cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)
 
 
 from libc.stdint cimport uint8_t, int16_t, uint16_t, int16_t, uint64_t, uintptr_t
-
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-
-cdef extern from "string.h":
-    void free(void * ptr) nogil
-    void *memset(void * ptr, int value, size_t num) nogil
-    void *memcpy(void * destination, void * source, size_t num) nogil
+from libc.stdlib cimport free, malloc
+from libc.string cimport memset, memcpy
 
 
 DEF MIN_LINE_COUNT = 5

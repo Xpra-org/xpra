@@ -19,6 +19,8 @@ from xpra.util import AtomicInteger, envint, envbool
 from xpra.buffers.membuf cimport object_as_buffer
 
 from libc.stdint cimport uint8_t
+from libc.stdlib cimport free, malloc
+from libc.string cimport memset
 from xpra.monotonic_time cimport monotonic_time
 
 
@@ -44,13 +46,6 @@ cdef inline int MAX(int a, int b):
 
 
 from libc.stdint cimport int64_t
-
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-
-cdef extern from "string.h":
-    void *memset(void *ptr, int value, size_t num)
-    void free(void *ptr)
 
 
 ctypedef long vpx_img_fmt_t
