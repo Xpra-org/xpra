@@ -96,7 +96,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             log.info(" on display '%s' of size %ix%i", display, w, h)
         else:
             log.info(" on display of size %ix%i", w, h)
-        l = len(self._id_to_window)
+        try:
+            l = len(self._id_to_window)
+        except AttributeError as e:
+            log("no screen info: %s", e)
+            return
         if l>1:
             log.info(" with %i monitors:", l)
             for window in self._id_to_window.values():
