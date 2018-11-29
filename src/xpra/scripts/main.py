@@ -676,7 +676,6 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             host = parts[0]
         #ie: ssh=["/usr/bin/ssh", "-v"]
         ssh = parse_ssh_string(opts.ssh)
-        desc["ssh"] = ssh
         full_ssh = ssh
 
         #maybe restrict to win32 only?
