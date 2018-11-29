@@ -72,7 +72,7 @@ cdef inline uintptr_t roundupl(uintptr_t n, uintptr_t m):
     return (n + m - 1) & ~(m - 1)
 
 cdef inline uintptr_t memalign_ptr(uintptr_t ptr):
-    return <uintptr_t> roundupl(<unsigned long> ptr, MEMALIGN_ALIGNMENT)
+    return <uintptr_t> roundupl(<uintptr_t> ptr, MEMALIGN_ALIGNMENT)
 
 
 def init_module():

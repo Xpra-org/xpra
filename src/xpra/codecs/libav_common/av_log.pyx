@@ -91,7 +91,7 @@ cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list 
         if s.startswith("Warning: data is not aligned!"):
             #silence this crap, since there is nothing we can do about it
             l = log.debug
-        #l("log_callback_override(%#x, %i, %s, ..)", <unsigned long> avcl, level, fmt)
+        #l("log_callback_override(%#x, %i, %s, ..)", <uintptr_t> avcl, level, fmt)
         l("libav: %s", s)
     except Exception as e:
         log.error("Error in log callback at level %i", level)
