@@ -38,7 +38,7 @@ $PACMAN --noconfirm -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi ${XPKG}gss ${XPKG}openldap
 #python libraries and packaging tools:
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode; do
 	$PACMAN --noconfirm -S ${XPKG}python2-${x}
 	$PACMAN --noconfirm -S ${XPKG}python3-${x}
 done
@@ -48,7 +48,7 @@ $PACMAN --noconfirm -S ${XPKG}cython
 #build pynacl against the system library:
 export SODIUM_INSTALL=system
 easy_install-2.7 -U -Z enum34 enum-compat
-for x in rencode lz4 websocket-client netifaces comtypes websockify nvidia-ml-py setproctitle pyu2f python-ldap ldap3 bcrypt pynacl paramiko; do
+for x in lz4 websocket-client websockify nvidia-ml-py setproctitle pyu2f python-ldap ldap3 bcrypt pynacl; do
     easy_install-2.7 -U -Z $x
     easy_install-3.7 -U -Z $x
 done
