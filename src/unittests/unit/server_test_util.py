@@ -168,6 +168,7 @@ class ServerTestUtil(unittest.TestCase):
 		if not proc:
 			raise Exception("command failed to start: %s" % msg)
 		log.warn("%s failed:", proc.command)
+		log.warn("returncode=%s", proc.poll())
 		def showfile(fileobj, filetype="stdout"):
 			if fileobj and fileobj.name and os.path.exists(fileobj.name):
 				log.warn("contents of %s file '%s':", filetype, fileobj.name)
