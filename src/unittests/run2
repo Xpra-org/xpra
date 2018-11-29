@@ -16,11 +16,11 @@ pushd $SRC_DIR
 python2 ./setup.py install --home=$INSTALL_ROOT || die "failed to build"
 popd
 
-export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:.
 export PATH=$INSTALL_ROOT/bin:$PATH
 export XPRA_COMMAND=$INSTALL_ROOT/bin/xpra
 export XPRA_CONF_DIR=$INSTALL_ROOT/etc/xpra/
 
 pushd $UNITTESTS_DIR
+export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:`pwd`
 python2 ./unit/run.py "$@"
 popd
