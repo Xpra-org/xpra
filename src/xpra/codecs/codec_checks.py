@@ -142,12 +142,12 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
     def einfo():
-        return "%s %s" % (encoder_module.get_type(), encoder_module.get_version())
+        return "%s %s %s" % (encoder_module.get_type(), encoding, encoder_module.get_version())
     log("get_encoder_max_size%s", (encoder_module, encoding, limit_w, limit_h))
     maxw = w = 512
     while w<=limit_w:
         try:
-            do_testencoding(encoder_module, encoding, w, 64)
+            do_testencoding(encoder_module, encoding, w, 128)
             maxw = w
             w *= 2
         except Exception as e:
@@ -159,7 +159,7 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
     maxh = h = 512
     while h<=limit_h:
         try:
-            do_testencoding(encoder_module, encoding, 64, h)
+            do_testencoding(encoder_module, encoding, 128, h)
             maxh = h
             h *= 2
         except Exception as e:
