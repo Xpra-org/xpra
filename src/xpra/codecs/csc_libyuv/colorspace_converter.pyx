@@ -127,7 +127,7 @@ class YUVImageWrapper(ImageWrapper):
         return "libyuv.YUVImageWrapper"
 
     def free(self):                             #@DuplicatedSignature
-        log("libyuv.YUVImageWrapper.free() cython_buffer=%#x", <unsigned long> self.cython_buffer)
+        log("libyuv.YUVImageWrapper.free() cython_buffer=%#x", <uintptr_t> self.cython_buffer)
         ImageWrapper.free(self)
         if self.cython_buffer>0:
             free(<void *> (<uintptr_t> self.cython_buffer))
