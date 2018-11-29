@@ -60,7 +60,9 @@ class TestChildReaper(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    from xpra.os_util import WIN32
+    if not WIN32:
+        unittest.main()
 
 if __name__ == '__main__':
     main()
