@@ -1300,25 +1300,31 @@ def get_client_app(error_cb, opts, extra_args, mode):
         if opts.opengl=="probe":
             from xpra.os_util import pollwait
             from xpra.platform.paths import get_xpra_command
-            cmd = get_xpra_command()+["opengl-probe"]
-            proc = Popen(cmd, shell=False, close_fds=True)
-            r = pollwait(proc)
             from xpra.log import Logger
             log = Logger("opengl")
-            log("OpenGL probe command returned %s", r)
-            if r==0:
-                opts.opengl = "probe-success"
-            elif r==1:
-                opts.opengl = "probe-warning"
-            elif r==2:
-                opts.opengl = "probe-error"
+            cmd = get_xpra_command()+["opengl-probe"]
+            try:
+                proc = Popen(cmd, shell=False, close_fds=True)
+            except Exception as e:
+                log.warn("Warning: failed to execute OpenGL probe command")
+                log.warn(" %s", e)
+                opts.opengl = "probe-failed:%s" % e
             else:
-                if r is None:
-                    msg = "timeout"
+                r = pollwait(proc)
+                log("OpenGL probe command returned %s", r)
+                if r==0:
+                    opts.opengl = "probe-success"
+                elif r==1:
+                    opts.opengl = "probe-warning"
+                elif r==2:
+                    opts.opengl = "probe-error"
                 else:
-                    msg = SIGNAMES.get(-r) or SIGNAMES.get(r-128) or r
-                log.warn("OpenGL probe failed: %s", msg)
-                opts.opengl = "probe-failed:%s" % msg
+                    if r is None:
+                        msg = "timeout"
+                    else:
+                        msg = SIGNAMES.get(-r) or SIGNAMES.get(r-128) or r
+                    log.warn("OpenGL probe failed: %s", msg)
+                    opts.opengl = "probe-failed:%s" % msg
         try:
             from xpra.platform.gui import init as gui_init
             gui_init()
