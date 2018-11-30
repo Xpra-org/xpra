@@ -172,11 +172,11 @@ class DisplayManager(StubServerMixin):
         log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
             """ client did not specify size, just return what we have """
-            return    root_w, root_h
+            return root_w, root_h
         client_w, client_h = client_size
         w = min(client_w, root_w)
         h = min(client_h, root_h)
-        return    w, h
+        return w, h
 
     def configure_best_screen_size(self):
         root_w, root_h = self.get_root_window_size()
