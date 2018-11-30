@@ -411,8 +411,7 @@ if is_gtk3():
             return self.get_popup()
 
     gdk_window_process_all_updates = gdk.Window.process_all_updates
-    def gtk_main():
-        gtk.main()
+    gtk_main = gtk.main
 
     def gio_File(path):
         from gi.repository import Gio   #@UnresolvedImport
@@ -740,8 +739,7 @@ else:
 #no idea why, but trying to use the threads_init / threads_enter
 #causes deadlocks on win32:
 if WIN32:
-    def gtk_main():
-        gtk.main()
+    gtk_main = gtk.main
 gtk_main_quit = gtk.main_quit
 
 GRAB_STATUS_STRING = {
