@@ -312,7 +312,7 @@ def has_uinput():
         log.info(" %s", e)
         return False
     try:
-        uinput.fdopen()
+        uinput.fdopen()         #@UndefinedVariable
     except Exception as e:
         log = get_util_logger()
         log("has_uinput()", exc_info=True)

@@ -65,7 +65,7 @@ def is_wine():
             import _winreg as winreg
         except ImportError:
             import winreg   #@UnresolvedImport @Reimport
-        hKey = winreg.OpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
+        hKey = winreg.OpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")   #@UndefinedVariable
         return hKey is not None
     except:
         #no wine key, assume not present and wait for input

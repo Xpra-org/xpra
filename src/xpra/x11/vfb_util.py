@@ -233,7 +233,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             r_pipe, w_pipe = os.pipe()
             try:
                 if PYTHON3:
-                    os.set_inheritable(w_pipe, True)
+                    os.set_inheritable(w_pipe, True)        #@UndefinedVariable
                 xvfb_cmd += ["-displayfd", str(w_pipe)]
                 xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
                 def preexec():
