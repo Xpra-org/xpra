@@ -499,7 +499,8 @@ class StopXpraClient(HelloRequestClient):
             log.error(" the feature is disable on the server")
             self.quit(EXIT_FAILURE)
             return
-        self.idle_add(self.send_shutdown_server)
+        self.timeout_add(1000, self.send_shutdown_server)
+        #self.idle_add(self.send_shutdown_server)
         #not exiting the client here,
         #the server should send us the shutdown disconnection message anyway
         #and if not, we will then hit the timeout to tell us something went wrong

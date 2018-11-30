@@ -1,9 +1,9 @@
+#@PydevCodeAnalysisIgnore
 # This file is part of Xpra.
 # Copyright (C) 2013 eryksun
 # https://stackoverflow.com/questions/15748386/how-to-catch-printer-event-in-python
 # License:
 # https://creativecommons.org/licenses/by-sa/3.0/legalcode
-
 
 import ctypes
 from ctypes import wintypes

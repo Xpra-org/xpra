@@ -95,7 +95,7 @@ def get_cursor_data(hCursor):
         ii = ICONINFO()
         ii.cbSize = ctypes.sizeof(ICONINFO)
         if not GetIconInfo(hCursor, ctypes.byref(ii)):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         x = ii.xHotspot
         y = ii.yHotspot
         cursorlog("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x", hCursor, x, y, ii.hbmColor or 0, ii.hbmMask or 0)
@@ -105,12 +105,12 @@ def get_cursor_data(hCursor):
         iie = ICONINFOEXW()
         iie.cbSize = ctypes.sizeof(ICONINFOEXW)
         if not GetIconInfoExW(hCursor, ctypes.byref(iie)):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         name = iie.szResName[:MAX_PATH]
         cursorlog("wResID=%i, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
         bm = Bitmap()
         if not GetObjectA(ii.hbmColor, ctypes.sizeof(Bitmap), ctypes.byref(bm)):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         cursorlog("cursor bitmap: type=%i, width=%i, height=%i, width bytes=%i, planes=%i, bits pixel=%i, bits=%#x",
                   bm.bmType, bm.bmWidth, bm.bmHeight, bm.bmWidthBytes, bm.bmPlanes, bm.bmBitsPixel, bm.bmBits or 0)
         w = bm.bmWidth
@@ -130,7 +130,7 @@ def get_cursor_data(hCursor):
 
         #if not DrawIcon(memdc, 0, 0, hCursor):
         if not DrawIconEx(memdc, 0, 0, hCursor, w, h, 0, 0, win32con.DI_NORMAL):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
 
         buf_size = bm.bmWidthBytes*h
         buf = ctypes.create_string_buffer(b"", buf_size)
