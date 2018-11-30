@@ -304,6 +304,7 @@ class WindowClient(StubClientMixin):
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
+        self.window_buffer_refresh = c.boolget("window_refresh_config")
         self.window_configure_pointer = c.boolget("window.configure.pointer")
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
@@ -1235,6 +1236,8 @@ class WindowClient(StubClientMixin):
         self.reinit_window_icons()
 
     def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
+        if not self.window_buffer_refresh:
+            return
         packet = ["buffer-refresh", wid, 0, quality]
         options["refresh-now"] = bool(refresh)
         if suspend_resume is True:

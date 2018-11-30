@@ -53,6 +53,7 @@ class DisplayClient(StubClientMixin):
         self.desktop_scaling = False
         self.screen_size_change_timer = None
 
+        self.server_desktop_size = None
         self.server_actual_desktop_size = None
         self.server_max_desktop_size = None
         self.server_display = None
@@ -203,6 +204,8 @@ class DisplayClient(StubClientMixin):
     def parse_server_capabilities(self):
         c = self.server_capabilities
         self.server_display = c.strget("display")
+        self.server_desktop_size = c.intpair("desktop_size")
+        log("server desktop size=%s", self.server_desktop_size)
         self.server_max_desktop_size = c.intpair("max_desktop_size")
         self.server_actual_desktop_size = c.intpair("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
@@ -212,8 +215,6 @@ class DisplayClient(StubClientMixin):
 
     def process_ui_capabilities(self):
         c = self.server_capabilities
-        server_desktop_size = c.intlistget("desktop_size")
-        log("server desktop size=%s", server_desktop_size)
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
         skip_vfb_size_check = False           #if we decide not to use scaling, skip warnings
         if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):
@@ -442,7 +443,8 @@ class DisplayClient(StubClientMixin):
         root_w, root_h, sss = screen_settings[:3]
         log.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
         log_screen_sizes(root_w, root_h, sss)
-        self.send("desktop_size", *screen_settings)
+        if self.server_desktop_size:
+            self.send("desktop_size", *screen_settings)
         self._last_screen_settings = screen_settings
         #update the max packet size (may have gone up):
         self.set_max_packet_size()

@@ -64,8 +64,8 @@ class WindowServer(StubServerMixin):
 
     def get_server_features(self, _source):
         return {
-            #legacy flags:
             "window_refresh_config" : True,
+            #legacy flags:
             "window_unmap"          : True,
             "suspend-resume"        : True,
             #newer flags:
