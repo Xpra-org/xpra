@@ -353,34 +353,33 @@ def create_uinput_device(uuid, uid, events, name):
 def create_uinput_pointer_device(uuid, uid):
     if not envbool("XPRA_UINPUT_POINTER", True):
         return
-    import uinput
-    events = (
-        uinput.REL_X,
-        uinput.REL_Y,
-        uinput.REL_WHEEL,
-        #REL_HIRES_WHEEL = 0x10
-        #uinput.REL_HWHEEL,
-        uinput.BTN_LEFT,
-        uinput.BTN_RIGHT,
-        uinput.BTN_MIDDLE,
-        uinput.BTN_SIDE,
-        uinput.BTN_EXTRA,
-        uinput.BTN_FORWARD,
-        uinput.BTN_BACK,
+    from uinput import (
+        REL_X, REL_Y, REL_WHEEL,                    #@UnresolvedImport
+        BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE,  #@UnresolvedImport
+        BTN_EXTRA, BTN_FORWARD, BTN_BACK,           #@UnresolvedImport
         )
+    events = (
+        REL_X, REL_Y, REL_WHEEL,
+        BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE,
+        BTN_EXTRA, BTN_FORWARD, BTN_BACK,
+        )
+    #REL_HIRES_WHEEL = 0x10
+    #uinput.REL_HWHEEL,
     name = "Xpra Virtual Pointer %s" % uuid
     return create_uinput_device(uuid, uid, events, name)
 
 def create_uinput_touchpad_device(uuid, uid):
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return
-    import uinput
+    from uinput import (
+        BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,      #@UnresolvedImport
+        )
     events = (
-        uinput.BTN_TOUCH,
-        uinput.ABS_X + (0, 2**24-1, 0, 0),
-        uinput.ABS_Y + (0, 2**24-1, 0, 0),
-        uinput.ABS_PRESSURE + (0, 255, 0, 0),
-        #uinput.BTN_TOOL_PEN,
+        BTN_TOUCH,
+        ABS_X + (0, 2**24-1, 0, 0),
+        ABS_Y + (0, 2**24-1, 0, 0),
+        ABS_PRESSURE + (0, 255, 0, 0),
+        #BTN_TOOL_PEN,
         )
     name = "Xpra Virtual Touchpad %s" % uuid
     return create_uinput_device(uuid, uid, events, name)
