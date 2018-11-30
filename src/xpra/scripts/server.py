@@ -1176,7 +1176,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         log.error("server error", exc_info=True)
         return -128
     else:
-        if r>=0:
+        if r>0:
             # Upgrading/exiting, so leave X and dbus servers running
             if kill_display:
                 _cleanups.remove(kill_display)
