@@ -553,14 +553,14 @@ class KeyboardConfig(KeyboardConfigBase):
             log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
             fr = change_mask(current.difference(wanted), False, "remove")
             fa = change_mask(wanted.difference(current), True, "add")
+            if not fr or fa:
+                return
             if fr:
                 log.warn("Warning: failed to remove the following modifiers:")
                 log.warn(" %s", csv(fr))
-            elif fa:
+            if fa:
                 log.warn("Warning: failed to add the following modifiers:")
                 log.warn(" %s", csv(fa))
-            else:
-                return  #all good!
             #this should never happen.. but if it does?
             #something didn't work, use the big hammer and start again from scratch:
             log.warn(" keys still pressed=%s", X11Keyboard.get_keycodes_down())
