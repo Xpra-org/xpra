@@ -150,7 +150,7 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
         keycodes = indexed_mappings(xkbmap_x11_keycodes)
     else:
         keycodes = gtk_keycodes_to_mappings(xkbmap_keycodes)
-    log("set_keycode_translation(%s, %s) keycodes=%s", xkbmap_x11_keycodes, xkbmap_keycodes)
+    log("set_keycode_translation(%s, %s)", xkbmap_x11_keycodes, xkbmap_keycodes)
     log(" keycodes=%s", keycodes)
     #keycodes = {
     #     9: set([('', 1), ('Escape', 4), ('', 3), ('Escape', 0), ('Escape', 2)]),
