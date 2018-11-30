@@ -119,8 +119,8 @@ def do_get_download_dir():
         #use the internet explorer registry key:
         #HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer
         key_path = 'Software\\Microsoft\\Internet Explorer'
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
-        DOWNLOAD_PATH = winreg.QueryValueEx(key, 'Download Directory')[0]
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)    #@UndefinedVariable
+        DOWNLOAD_PATH = winreg.QueryValueEx(key, 'Download Directory')[0]               #@UndefinedVariable
     except:
         #fallback to what the documentation says is the default:
         DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")

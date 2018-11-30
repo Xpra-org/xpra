@@ -113,7 +113,7 @@ class NamedPipeListener(Thread):
         SD = SECURITY_DESCRIPTOR()
         InitializeSecurityDescriptor(ctypes.byref(SD), SECURITY_DESCRIPTOR.REVISION)
         if SetSecurityDescriptorDacl(ctypes.byref(SD), True, None, False)==0:
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         SA = SECURITY_ATTRIBUTES()
         SA.descriptor = SD
         SA.bInheritHandle = False
@@ -125,14 +125,14 @@ class NamedPipeListener(Thread):
         log("CreatePipeSecurityObject() GetCurrentProcess()=%#x", cur_proc)
         process = HANDLE()
         if OpenProcessToken(HANDLE(cur_proc), TOKEN_QUERY, ctypes.byref(process))==0:
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         log("CreatePipeSecurityObject() process=%s", process.value)
         data_size = DWORD()
         GetTokenInformation(process, TOKEN_QUERY, 0, 0, ctypes.byref(data_size))
         log("CreatePipeSecurityObject() GetTokenInformation data size %#x", data_size.value)
         data = ctypes.create_string_buffer(data_size.value)
         if GetTokenInformation(process, TOKEN_QUERY, ctypes.byref(data), ctypes.sizeof(data), ctypes.byref(data_size))==0:
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         user = ctypes.cast(data, ctypes.POINTER(TOKEN_USER)).contents
         log("CreatePipeSecurityObject() user: SID=%s, attributes=%#x", user.SID, user.ATTRIBUTES)
         SD = SECURITY_DESCRIPTOR()
