@@ -47,7 +47,7 @@ class KeyboardBase(object):
         else:
             log.warn("Warning: unexpected key definition: %s, %s", type(a), type(b))
             log.warn(" values: %s, %s", a, b)
-    
+
     def _do_add_modifier_mapping(self, keynames, keycode, modifier):
         for keyname in keynames:
             self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)

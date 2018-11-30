@@ -717,7 +717,7 @@ else:
         return gfile.load_contents_finish(res)
 
     def set_clipboard_data(clipboard, thevalue, vtype="STRING"):
-        TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")        
+        TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
         if OSX and vtype in TEXT_TARGETS:
             clipboard.set_text(thevalue, len(thevalue))
             return

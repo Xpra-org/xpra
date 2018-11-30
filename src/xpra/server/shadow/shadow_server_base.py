@@ -105,7 +105,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             log.info(" with %i monitors:", l)
             for window in self._id_to_window.values():
                 title = window.get_property("title")
-                x, y, w, h = window.geometry 
+                x, y, w, h = window.geometry
                 log.info("  %-16s %4ix%-4i at %4i,%-4i", title, w, h, x, y)
 
     def make_hello(self, _source):
