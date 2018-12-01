@@ -356,6 +356,17 @@ def getUbuntuVersion():
 def is_unity():
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("unity")
 
+def is_WSL():
+    if not POSIX:
+        return False
+    r = None
+    for f in ("/proc/sys/kernel/osrelease", "/proc/version"):
+        r = load_binary_file(f)
+        if r:
+            break
+    return r is not None and r.find(b"Microsoft")>=0
+
+
 def get_generic_os_name():
     for k,v in {
         "linux"     : "linux",

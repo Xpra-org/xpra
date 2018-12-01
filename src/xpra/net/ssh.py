@@ -17,7 +17,7 @@ from xpra.scripts.main import InitException, InitExit, shellquote
 from xpra.platform.paths import get_xpra_command, get_ssh_known_hosts_files
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
-from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, umask_context, WIN32, OSX, POSIX
+from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, umask_context, is_WSL, WIN32, OSX, POSIX
 from xpra.util import envint, envbool, nonl, engs
 
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
@@ -79,6 +79,9 @@ def exec_dialog_subprocess(cmd):
             env["XPRA_LOG_TO_FILE"] = "0"
             kwargs["env"] = env
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, **kwargs)
+        if is_WSL():
+            #WSL needs to wait before calling communicate?
+            proc.wait()
         stdout, stderr = proc.communicate()
         log("exec_dialog_subprocess(%s)", cmd)
         if stderr:
