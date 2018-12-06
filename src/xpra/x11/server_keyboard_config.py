@@ -121,6 +121,10 @@ class KeyboardConfig(KeyboardConfigBase):
         modsinfo["nuisance"] = tuple(self.xkbmap_mod_nuisance or [])
         info["modifier"] = modinfo
         info["modifiers"] = modsinfo
+        #this would need to always run in the UI thread:
+        #info["state"] = {
+        #    "modifiers" : self.get_current_mask(),
+        #    }
         log("keyboard info: %s", info)
         return info
 

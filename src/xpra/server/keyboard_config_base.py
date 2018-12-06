@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,6 +15,7 @@ class KeyboardConfigBase(object):
     def __init__(self):
         self.enabled = True
         self.owner = None
+        self.sync = True
         self.pressed_translation = {}
 
     def __repr__(self):
@@ -24,10 +25,11 @@ class KeyboardConfigBase(object):
         return {
                 "enabled"   : self.enabled,
                 "owner"     : self.owner or "",
+                "sync"      : self.sync,
                 }
 
     def parse_options(self, props):
-        pass
+        self.sync = props.boolget("keyboard_sync", True)
 
     def get_hash(self):
         return b""

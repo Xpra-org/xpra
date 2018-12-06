@@ -159,7 +159,8 @@ class RFBServer(object):
         keycode = source.keyboard_config.get_keycode(0, keyname, modifiers)
         log("rfb keycode(%s)=%s", keyname, keycode)
         if keycode:
-            self._handle_key(wid, bool(pressed), keyname, keyval, keycode, modifiers)
+            is_mod = source.is_modifier(keyname, keycode)
+            self._handle_key(wid, bool(pressed), keyname, keyval, keycode, modifiers, is_mod, True)
 
     def _process_rfb_SetEncodings(self, _proto, packet):
         n, encodings = packet[2:4]
