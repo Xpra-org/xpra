@@ -318,13 +318,14 @@ class ServerBase(ServerBaseClass):
 
         def drop_client(reason="unknown", *args):
             self.disconnect_client(proto, reason, *args)
-        from xpra.server.source.client_connection import ClientConnection
-        ss = ClientConnection(proto, drop_client,
-                          self.session_name, self,
-                          self.idle_add, self.timeout_add, self.source_remove,
-                          self.setting_changed,
-                          self._socket_dir, self.unix_socket_paths, not is_request, self.bandwidth_limit, self.bandwidth_detection,
-                          )
+        cc_class = self.get_client_connection_class()
+        ss = cc_class(proto, drop_client,
+                      self.session_name, self,
+                      self.idle_add, self.timeout_add, self.source_remove,
+                      self.setting_changed,
+                      self._socket_dir, self.unix_socket_paths, not is_request,
+                      self.bandwidth_limit, self.bandwidth_detection,
+                      )
         log("process_hello clientconnection=%s", ss)
         try:
             ss.parse_hello(c)
@@ -337,6 +338,11 @@ class ServerBase(ServerBaseClass):
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
+
+    def get_client_connection_class(self):
+        from xpra.server.source.client_connection import ClientConnection
+        return ClientConnection
+
 
     def _process_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #adds try:except around parse hello ui code:
