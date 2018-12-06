@@ -510,7 +510,7 @@ class ServerBase(ServerBaseClass):
             try:
                 merge_dicts(info, c.get_ui_info(self, proto, client_uuids, *args))
             except Exception:
-                log.error("Error gathering UI info", exc_info=True)
+                log.error("Error gathering UI info on %s", c, exc_info=True)
         return info
 
     def get_thread_info(self, proto):
