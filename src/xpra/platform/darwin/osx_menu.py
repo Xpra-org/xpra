@@ -62,7 +62,6 @@ class OSXMenuHelper(GTKTrayMenuBase):
         log("OSXMenuHelper(%s)", client)
         self.menu_bar = None
         self.hidden_window = None
-        self.keyboard = None
         self.menus = {}             #all the "top-level" menu items we manage
         self.app_menus = {}         #the ones added to the app_menu via insert_app_menu_item (which cannot be removed!)
         self.full = False
@@ -71,8 +70,6 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def set_client(self, client):
         self.client = client
-        if client and client.keyboard_helper:
-            self.keyboard = client.keyboard_helper.keyboard
         #if we call add_about before the main loop is ready,
         #things don't work...
         if client and SHOW_ABOUT_XPRA:
@@ -331,17 +328,24 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def set_speedmenu(self, *args):
         pass
 
+    def _get_keyboard(self):
+        if not self.client or not self.client.keyboard_helper:
+            return None
+        return self.client.keyboard_helper.keyboard
+
     def make_swapkeysmenuitem(self):
         def swapkeys_toggled(*args):
             v = self.swapkeys_menuitem.get_active()
-            log("swapkeys_toggled(%s) swap keys enabled=%s", args, v)
-            if self.keyboard:
-                self.keyboard.swap_keys = v
+            keyboard = self._get_keyboard()
+            log("swapkeys_toggled(%s) keyboard=%s, swap keys enabled=%s", args, keyboard, v)
+            if keyboard:
+                keyboard.swap_keys = v
         self.swapkeys_menuitem = self.checkitem("Control/Command Key Swap", swapkeys_toggled)
         def set_swapkeys_menuitem(*args):
-            if self.keyboard:
-                log("set_swapkeys_menuitem(%s) swap_keys=%s", args, self.keyboard.swap_keys)
-                self.swapkeys_menuitem.set_active(self.keyboard.swap_keys)
+            keyboard = self._get_keyboard()
+            if keyboard:
+                log("set_swapkeys_menuitem(%s) keyboard=%s, swap_keys=%s", args, keyboard, keyboard.swap_keys)
+                self.swapkeys_menuitem.set_active(keyboard.swap_keys)
             else:
                 log("set_swapkeys_menuitem(%s) no keyboard!", args)
                 self.swapkeys_menuitem.set_sensitive(False)
@@ -365,15 +369,17 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def make_numlockmenuitem(self):
         def numlock_toggled(*args):
             v = self.numlock_menuitem.get_active()
+            keyboard = self._get_keyboard()
             log("numlock_toggled(%s) menu active=%s", args, v)
-            if self.keyboard:
-                self.keyboard.num_lock_state = v
+            if keyboard:
+                keyboard.num_lock_state = v
         self.numlock_menuitem = self.checkitem("Num Lock", cb=numlock_toggled)
         self.numlock_menuitem.set_active(True)
         def set_numlock_menuitem(*args):
-            if self.keyboard:
-                log("set_numlock_menuitem(%s) num_lock_state=%s", args, self.keyboard.num_lock_state)
-                self.numlock_menuitem.set_active(self.keyboard.num_lock_state)
+            keyboard = self._get_keyboard()
+            if keyboard:
+                log("set_numlock_menuitem(%s) keyboard=%s, num_lock_state=%s", args, keyboard, keyboard.num_lock_state)
+                self.numlock_menuitem.set_active(keyboard.num_lock_state)
             else:
                 log("set_numlock_menuitem(%s) no keyboard!", args)
                 self.swapkeys_menuitem.set_sensitive(False)
