@@ -81,7 +81,6 @@ class InputServer(StubServerMixin):
         other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
         #parse client config:
         ss.keyboard_config = self.get_keyboard_config(c)
-        keylog.error("ss.keyboard_config.sync=%s", ss.keyboard_config.sync)
 
         if not other_ui_clients:
             #so only activate this feature afterwards:
