@@ -770,7 +770,9 @@ else
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 	/bin/systemctl restart xpra.socket >/dev/null 2>&1 || :
 fi
-udevadm control --reload-rules && udevadm trigger || :
+if [ -e "/bin/udevadm" ]; then
+	udevadm control --reload-rules && udevadm trigger || :
+fi
 #reload dbus to get our new policy:
 systemctl reload dbus
 
