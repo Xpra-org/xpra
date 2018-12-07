@@ -445,7 +445,7 @@ var Utilities = {
 		if(v===null) {
 			return default_value;
 		}
-		return ["true", "on", "1", "yes", "enabled"].includes(String(v).toLowerCase());
+		return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())!==-1;
 	},
 
 	getConnectionInfo : function() {
