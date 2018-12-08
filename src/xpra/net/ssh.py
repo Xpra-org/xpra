@@ -15,6 +15,7 @@ log = Logger("network", "ssh")
 
 from xpra.scripts.main import InitException, InitExit, shellquote
 from xpra.platform.paths import get_xpra_command, get_ssh_known_hosts_files
+from xpra.platform import get_username
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
 from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, umask_context, is_WSL, WIN32, OSX, POSIX
@@ -202,10 +203,9 @@ def ssh_paramiko_connect_to(display_desc):
     port = display_desc.get("ssh-port", 22)
     ipv6 = display_desc.get("ipv6", False)
     #ssh and command attributes:
-    username = display_desc.get("username")
-    if not username:
-        import getpass
-        username = getpass.getuser()
+    username = display_desc.get("username") or get_username()
+    if "proxy_host" in display_desc:
+        display_desc.setdefault("proxy_username", get_username())
     password = display_desc.get("password")
     target = ssh_target_string(display_desc)
     remote_xpra = display_desc["remote_xpra"]
@@ -252,16 +252,44 @@ def ssh_paramiko_connect_to(display_desc):
                     from paramiko.ssh_exception import ProxyCommandFailure
                     bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
                     return conn
+        from xpra.scripts.main import socket_connect
+        from paramiko.transport import Transport
+        from paramiko import SSHException
+        if "proxy_host" in display_desc:
+            proxy_host = display_desc["proxy_host"]
+            proxy_port = display_desc.get("proxy_port", 22)
+            proxy_username = display_desc.get("proxy_username", username)
+            proxy_password = display_desc.get("proxy_password", password)
+            proxy_ipv6 = display_desc.get("proxy_ipv6", False)
+            sock = socket_connect(dtype, proxy_host, proxy_port, proxy_ipv6)
+            middle_transport = Transport(sock)
+            middle_transport.use_compression(False)
+            try:
+                middle_transport.start_client()
+            except SSHException as e:
+                log("start_client()", exc_info=True)
+                raise InitException("SSH negotiation failed: %s" % e)
+            chan_to_middle = do_ssh_paramiko_connect_to(middle_transport, proxy_host, proxy_username, proxy_password, dest_host=host, dest_port=port)
+            transport = Transport(chan_to_middle)
+            transport.use_compression(False)
+            try:
+                transport.start_client()
+            except SSHException as e:
+                log("start_client()", exc_info=True)
+                raise InitException("SSH negotiation failed: %s" % e)
+            chan = do_ssh_paramiko_connect_to(transport, host, username, password, proxy_command, remote_xpra, socket_dir, display_as_args)
+            peername = (host, port)
+            conn = SSHProxyCommandConnection(chan, peername, target, socket_info)
+            conn.timeout = SOCKET_TIMEOUT
+            conn.start_stderr_reader()
+            return conn
 
         #plain TCP connection to the server,
         #we open it then give the socket to paramiko:
-        from xpra.scripts.main import socket_connect
         sock = socket_connect(dtype, host, port, ipv6)
         sockname = sock.getsockname()
         peername = sock.getpeername()
         log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)
-        from paramiko.transport import Transport
-        from paramiko import SSHException
         transport = Transport(sock)
         transport.use_compression(False)
         try:
@@ -284,9 +312,11 @@ class nogssapi_context(nomodule_context):
     def __init__(self):
         nomodule_context.__init__(self, "gssapi")
 
-
+# (1) If the arguments after "proxy_command" are "None", then we're opening a port-forward
+# (2) If "parachan" is set, that means we're using a port-forward
 def do_ssh_paramiko_connect_to(transport, host, username, password,
-                               xpra_proxy_command, remote_xpra, socket_dir, display_as_args):
+                               xpra_proxy_command=None, remote_xpra=None, socket_dir=None, display_as_args=None,
+                               dest_host=None, dest_port=None):
     from paramiko import SSHException, RSAKey, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
@@ -455,6 +485,27 @@ keymd5(host_key),
             log("auth_password(..)", exc_info=True)
             log.info("SSH password authentication failed: %s", e)
 
+    def auth_interactive():
+        log("trying interactive authentication")
+        class iauthhandler:
+            def __init__(self):
+                self.authcount = 0
+            def handlestuff(self, title, instructions, prompt_list):
+                p = []
+                for pent in prompt_list:
+                    if self.authcount==0 and password:
+                        p.append(password)
+                    else:
+                        p.append(input_pass(pent[0]))
+                    self.authcount += 1
+                return p
+        try:
+            myiauthhandler = iauthhandler()
+            transport.auth_interactive(username, myiauthhandler.handlestuff, "")
+        except SSHException as e:
+            log("auth_interactive(..)", exc_info=True)
+            log.info("SSH password authentication failed: %s", e)
+
     banner = transport.get_banner()
     if banner:
         log.info("SSH server banner:")
@@ -462,11 +513,17 @@ keymd5(host_key),
             log.info(" %s", x)
 
     log("starting authentication")
+    # per the RFC we probably should do none first always and read off the supported
+    # methods, however, the current code seems to work fine with OpenSSH
     if not transport.is_authenticated() and NONE_AUTH:
         auth_none()
 
+    # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
     if not transport.is_authenticated() and KEY_AUTH:
         auth_publickey()
+
+    if not transport.is_authenticated() and PASSWORD_AUTH:
+        auth_interactive()
 
     if not transport.is_authenticated() and PASSWORD_AUTH and password:
         auth_password()
@@ -485,7 +542,11 @@ keymd5(host_key),
 
     if not transport.is_authenticated():
         transport.close()
-        raise InitException("SSH Authentication failed")
+        raise InitException("SSH Authentication on %s failed" % host)
+
+    if remote_xpra is None:
+        log("Opening proxy channel")
+        return transport.open_channel("direct-tcpip", (dest_host, dest_port), ('localhost', 0))
 
     assert len(remote_xpra)>0
     log("will try to run xpra from: %s", remote_xpra)

@@ -88,7 +88,7 @@ Almost identical to the TCP mode, but using AF_VSOCK for transport.
 Connect using websocket protocol.
 .SS wss://[USERNAME[:PASSWORD]@]HOST:PORT/[DISPLAY]
 Connect using secure websocket protocol. (websocket with SSL)
-.SS ssh://[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]/DISPLAY
+.SS ssh://[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]/DISPLAY[?proxy=ssh://[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]]
 Further options can be specified using the \fB\-\-ssh\fP command line option.
 .P
 For backwards compatibility, SSH mode also supports the syntax:
@@ -101,6 +101,10 @@ separator.
 The password need only be specified when the server authentication module
 requires it. (ie: often when authenticating against MS Windows servers,
 or with \fBmultifile\fP and \fBsqlite\fP authentication modules)
+.P
+When the "?proxy=" option is set xpra will establish an SSH connection to the 
+specified "proxy" host.  From that host xpra will set up an SSH connection to
+the xpra server.
 .\" --------------------------------------------------------------------
 .SH EXAMPLES
 .TP \w'xpra\ 'u

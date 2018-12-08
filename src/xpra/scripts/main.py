@@ -511,8 +511,80 @@ def add_ssh_args(username, password, host, ssh_port, is_putty=False, is_paramiko
         args += ["-T", host]
     return args
 
+def add_ssh_proxy_args(username, password, host, ssh_port, pkey, ssh, is_putty=False, is_paramiko=False):
+    args = []
+    proxyline = ssh
+    if is_putty:
+        proxyline += ["-nc", "%host:%port"]
+        if pkey:
+            # tortoise plink works with either slash, backslash needs too much escaping 
+            # because of the weird way it's passed through as a ProxyCommand
+            proxyline += [ "-i", "\"" + pkey.replace("\\", "/") + "\""]
+    elif not is_paramiko:
+        proxyline += ["-W", "%h:%p"]
+    # the double quotes are in case the password has something like "&"
+    proxyline += add_ssh_args(username, password, host, ssh_port, is_putty, is_paramiko)
+    if is_putty:
+        args += ["-proxycmd", " ".join(proxyline)]
+    elif not is_paramiko:
+        args += ["-o", "ProxyCommand " + " ".join(proxyline)]
+    return args
+
+
+def parse_proxy_attributes(display_name):
+    import re
+    # Notes:
+    # (1) this regex permits a "?" in the password or username (because not just splitting at "?").
+    #     It doesn't look for the next  "?" until after the "@", where a "?" really indicates
+    #     another field.
+    # (2) all characters including "@"s go to "userpass" until the *last* "@" after which it all goes
+    #     to "hostport"
+    reout = re.search("\\?proxy=(?P<p>((?P<userpass>.+)@)?(?P<hostport>[^?]+))", display_name)
+    if not reout:
+        return display_name, {}
+    try:
+        desc_tmp = dict()
+        # This one should *always* return a host, and should end with an optional numeric port
+        hostport = reout.group("hostport")
+        hostport_match = re.match("(?P<host>[^:]+)($|:(?P<port>\d+)$)", hostport)
+        if not hostport_match:
+            raise RuntimeError("bad format for 'hostport': '%s'" % hostport)
+        host = hostport_match.group("host")
+        if not host:
+            raise RuntimeError("bad format: missing host in '%s'" % hostport)
+        desc_tmp["proxy_host"] = host
+        if hostport_match.group("port"):
+            desc_tmp["proxy_port"] = hostport_match.group("port")
+        userpass = reout.group("userpass")
+        if userpass:
+            # The username ends at the first colon. This decision was not unique: I could have
+            # allowed one colon in username if there were two in the string.
+            userpass_match = re.match("(?P<username>[^:]+)(:(?P<password>.+))?", userpass)
+            if not userpass_match:
+                raise RuntimeError("bad format for 'userpass': '%s'" % userpass)
+            # If there is a "userpass" part, then it *must* have a username
+            username = userpass_match.group("username")
+            if not username:
+                raise RuntimeError("bad format: missing username in '%s'" % userpass)
+            desc_tmp["proxy_username"] = username
+            password = userpass_match.group("password")
+            if password:
+                desc_tmp["proxy_password"] = password
+    except RuntimeError:
+        from xpra.log import Logger
+        sshlog = Logger("ssh")
+        sshlog.error("bad proxy argument: " + reout.group(0))
+        return display_name, {}
+    else:
+        # rip out the part we've processed
+        display_name = display_name[:reout.start()] + display_name[reout.end():]
+        return display_name, desc_tmp
+
 def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     desc = {"display_name" : display_name}
+    display_name, proxy_attrs = parse_proxy_attributes(display_name)
+    desc.update(proxy_attrs)
+
     #split the display name on ":" or "/"
     scpos = display_name.find(":")
     slpos = display_name.find("/")
@@ -676,7 +748,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             host = parts[0]
         #ie: ssh=["/usr/bin/ssh", "-v"]
         ssh = parse_ssh_string(opts.ssh)
-        full_ssh = ssh
+        full_ssh = ssh[:]
 
         #maybe restrict to win32 only?
         ssh_cmd = ssh[0].lower()
@@ -698,6 +770,14 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         if ssh_port and ssh_port!=22:
             desc["ssh-port"] = ssh_port
         full_ssh += add_ssh_args(username, password, host, ssh_port, is_putty, is_paramiko)
+        if "proxy_host" in desc:
+            proxy_username = desc.get("proxy_username", "")
+            proxy_password = desc.get("proxy_password", "")
+            proxy_host = desc["proxy_host"]
+            proxy_port = desc.get("proxy_port", 22)
+            proxy_key = desc.get("proxy_key", "")
+            full_ssh += add_ssh_proxy_args(proxy_username, proxy_password, proxy_host, proxy_port,
+                                           proxy_key, ssh, is_putty, is_paramiko)
         desc.update({
                      "host"     : host,
                      "full_ssh" : full_ssh
