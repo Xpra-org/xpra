@@ -240,9 +240,9 @@ def ssh_paramiko_connect_to(display_desc):
                     ssh_client = SSHClient()
                     ssh_client.load_system_host_keys()
                     ssh_client.connect(host, port, sock=sock)
-                    chan = do_ssh_paramiko_connect_to(ssh_client.get_transport(),
-                                                      host, username, password,
-                                                      proxy_command, remote_xpra, socket_dir, display_as_args)
+                    transport = ssh_client.get_transport()
+                    do_ssh_paramiko_connect_to(transport, host, username, password)
+                    chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
                     conn = SSHProxyCommandConnection(chan, peername, target, socket_info)
                     conn.timeout = SOCKET_TIMEOUT
@@ -269,7 +269,10 @@ def ssh_paramiko_connect_to(display_desc):
             except SSHException as e:
                 log("start_client()", exc_info=True)
                 raise InitException("SSH negotiation failed: %s" % e)
-            chan_to_middle = do_ssh_paramiko_connect_to(middle_transport, proxy_host, proxy_username, proxy_password, dest_host=host, dest_port=port)
+            do_ssh_paramiko_connect_to(middle_transport, proxy_host, proxy_username, proxy_password)
+            log("Opening proxy channel")
+            chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
+
             transport = Transport(chan_to_middle)
             transport.use_compression(False)
             try:
@@ -277,7 +280,9 @@ def ssh_paramiko_connect_to(display_desc):
             except SSHException as e:
                 log("start_client()", exc_info=True)
                 raise InitException("SSH negotiation failed: %s" % e)
-            chan = do_ssh_paramiko_connect_to(transport, host, username, password, proxy_command, remote_xpra, socket_dir, display_as_args)
+            do_ssh_paramiko_connect_to(transport, host, username, password)
+            chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
+
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, target, socket_info)
             conn.timeout = SOCKET_TIMEOUT
@@ -297,9 +302,8 @@ def ssh_paramiko_connect_to(display_desc):
         except SSHException as e:
             log("start_client()", exc_info=True)
             raise InitException("SSH negotiation failed: %s" % e)
-        chan = do_ssh_paramiko_connect_to(transport,
-                                          host, username, password,
-                                          proxy_command, remote_xpra, socket_dir, display_as_args)
+        do_ssh_paramiko_connect_to(transport, host, username, password)
+        chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHSocketConnection(chan, sock, sockname, peername, target, socket_info)
         conn.timeout = SOCKET_TIMEOUT
         conn.start_stderr_reader()
@@ -312,11 +316,8 @@ class nogssapi_context(nomodule_context):
     def __init__(self):
         nomodule_context.__init__(self, "gssapi")
 
-# (1) If the arguments after "proxy_command" are "None", then we're opening a port-forward
-# (2) If "parachan" is set, that means we're using a port-forward
-def do_ssh_paramiko_connect_to(transport, host, username, password,
-                               xpra_proxy_command=None, remote_xpra=None, socket_dir=None, display_as_args=None,
-                               dest_host=None, dest_port=None):
+
+def do_ssh_paramiko_connect_to(transport, host, username, password):
     from paramiko import SSHException, RSAKey, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
@@ -544,10 +545,9 @@ keymd5(host_key),
         transport.close()
         raise InitException("SSH Authentication on %s failed" % host)
 
-    if remote_xpra is None:
-        log("Opening proxy channel")
-        return transport.open_channel("direct-tcpip", (dest_host, dest_port), ('localhost', 0))
 
+def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None, socket_dir=None, display_as_args=None):
+    from paramiko import SSHException
     assert len(remote_xpra)>0
     log("will try to run xpra from: %s", remote_xpra)
     for xpra_cmd in remote_xpra:
