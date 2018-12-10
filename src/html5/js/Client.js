@@ -1307,13 +1307,13 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
     		var btn_x = (px>=0) ? 6 : 7;
             var xdist = Math.round(px*1000/120);
             this.send(["wheel-motion", wid, btn_x, -xdist,
-            	(x, y), modifiers, buttons]);
+            	[x, y], modifiers, buttons]);
         }
         if (apy>0) {
     		var btn_y = (py>=0) ? 5 : 4;
             var ydist = Math.round(py*1000/120);
             this.send(["wheel-motion", wid, btn_y, -ydist,
-                (x, y), modifiers, buttons]);
+                [x, y], modifiers, buttons]);
         }
         return;
 	}
