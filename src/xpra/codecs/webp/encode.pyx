@@ -419,9 +419,11 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
     cdef int size = stride * height
     assert pic_buf_len>=size, "pixel buffer is too small: expected at least %s bytes but got %s" % (size, pic_buf_len)
 
+    cdef int threshold_delta = -int(content_type=="text")*20
+
     cdef int i
     cdef int alpha_int = int(supports_alpha and pixel_format.find("A")>=0)
-    cdef int use_argb = int(quality>=SUBSAMPLING_THRESHOLD)
+    cdef int use_argb = int(quality>=(SUBSAMPLING_THRESHOLD+threshold_delta))
     if alpha_int==0 and Bpp==4:
         #ensure webp will not decide to encode the alpha channel
         #(this is stupid: we should be able to pass a flag instead)
@@ -447,7 +449,7 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
         raise Exception("failed to set webp preset")
 
     #tune it:
-    config.lossless = quality>=LOSSLESS_THRESHOLD
+    config.lossless = quality>=(LOSSLESS_THRESHOLD+threshold_delta)
     if config.lossless:
         #not much to gain from setting a high quality here,
         #the latency will be higher for a negligible compression gain:
