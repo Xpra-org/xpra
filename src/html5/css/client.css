@@ -6,6 +6,10 @@ html, body {
 	overflow: hidden;
 }
 
+div.window canvas {
+	touch-action: none;
+}
+
 body.desktop {
 	background-color: #555;
 }

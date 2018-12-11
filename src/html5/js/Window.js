@@ -192,6 +192,44 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		div.addEventListener('DOMMouseScroll',	on_mousescroll, false); // for Firefox
 	}
 
+	this.pointer_down = -1;
+	this.pointer_last_x = 0;
+	this.pointer_last_y = 0;
+	if (window.PointerEvent) {
+		this.canvas.addEventListener("pointerdown", function(ev) {
+			me.debug("mouse", "pointerdown:", ev);
+			if (ev.pointerType=="touch") {
+				me.pointer_down = ev.pointerId;
+				me.pointer_last_x = ev.offsetX;
+				me.pointer_last_y = ev.offsetY;
+			}
+		});
+		this.canvas.addEventListener("pointermove", function(ev) {
+			me.debug("mouse", "pointermove:", ev);
+			if (me.pointer_down==event.pointerId) {
+				var dx = event.offsetX-me.pointer_last_x;
+				var dy = event.offsetY-me.pointer_last_y;
+				me.pointer_last_x = event.offsetX;
+				me.pointer_last_y = event.offsetY;
+				var mult = 20.0*(window.devicePixelRatio || 1);
+				ev.wheelDeltaX = Math.round(dx*mult);
+				ev.wheelDeltaY = Math.round(dy*mult);
+				on_mousescroll(ev);
+			}
+		});
+		this.canvas.addEventListener("pointerup", function(ev) {
+			me.debug("mouse", "pointerup:", ev);
+			me.pointer_down = -1;
+		});
+		this.canvas.addEventListener("pointercancel", function(ev) {
+			me.debug("mouse", "pointercancel:", ev);
+			me.pointer_down = -1;
+		});
+		this.canvas.addEventListener("pointerout", function(ev) {
+			me.debug("mouse", "pointerout:", ev);
+		});
+	}
+
 	// need to update the CSS geometry
 	this.ensure_visible();
 	this.updateCSSGeometry();
