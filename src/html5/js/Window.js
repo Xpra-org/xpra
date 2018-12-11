@@ -360,7 +360,7 @@ XpraWindow.prototype.on_mouseup = function(e) {
 
 XpraWindow.prototype.on_mousescroll = function(e) {
 	this.mouse_scroll_cb(this.client, e, this);
-	e.preventDefault();
+	//e.preventDefault();
 	return false;
 }
 
