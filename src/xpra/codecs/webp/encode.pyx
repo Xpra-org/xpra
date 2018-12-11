@@ -426,9 +426,17 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
         #ensure webp will not decide to encode the alpha channel
         #(this is stupid: we should be able to pass a flag instead)
         i = 3
-        while i<size:
-            pic_buf[i] = 0xff
-            i += 4
+        if size>524288:
+            #enough pixels that we should release the gil:
+            with nogil:
+                while i<size:
+                    pic_buf[i] = 0xff
+                    i += 4
+        else:
+            while i<size:
+                pic_buf[i] = 0xff
+                i += 4
+            
 
     ret = WebPConfigInit(&config)
     if not ret:
