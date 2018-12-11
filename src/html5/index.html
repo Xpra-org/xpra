@@ -66,6 +66,7 @@
 						<a href="#" id="about_link" onclick="show_about(event); return false">About</a>
 						<a href="#" id="sessioninfo_link" onclick="show_sessioninfo(event); return false">Session Info</a>
 						<a href="#" id="bugreport_link" onclick="show_bugreport(event); return false">Bug Report</a>
+						<a href="#" id="touchaction_link" onclick="toggle_touchaction(event); return false">Touch Action</a>
 						<a href="#" id="disconnect_link" onclick="client.disconnect_reason='User request'; client.close(); return false">Disconnect</a>
 					</div>
 					<button onclick="show_menu('server_menu', event);" class="menu-button">Server &#9660;</button>
@@ -344,6 +345,29 @@
 				    saveAs(content, "bugreport.zip");
 				});
 				hide_bugreport();
+			}
+
+			var touchaction_scroll = true;
+			function toggle_touchaction() {
+				touchaction_scroll = !touchaction_scroll;
+				set_touchaction();
+			}
+			function set_touchaction() {
+				var touchaction, label;
+				if (touchaction_scroll) {
+					touchaction = "none";
+					label = "zoom";
+				}
+				else {
+					touchaction = "auto";
+					label = "scroll";
+				}
+				cdebug("set_touchaction() touchaction=", touchaction, "label=", label);
+				$('div.window canvas').css("touch-action", touchaction);
+				$('#touchaction_link').html("Set Touch Action: "+label);
+				if (!Utilities.isEdge()) {
+					$('#touchaction_link').hide();
+				}
 			}
 
 			function init_client() {
@@ -778,6 +802,10 @@
 
 			var client = null;
 			$(document).ready(function() {
+				var touchaction = getparam("touchaction") || "scroll";
+				touchaction_scroll = touchaction == "scroll";
+				set_touchaction();
+				
 				client = init_client();
 			    client.connect();
 
