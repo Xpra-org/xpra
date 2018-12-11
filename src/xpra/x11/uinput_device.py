@@ -107,9 +107,10 @@ class UInputDevice(object):
             log.warn(" cannot handle wheel motion %i", button)
             log.warn(" this event has been dropped")
             return
-        delta = self.wheel_delta.get(ubutton, 0)+val
+        saved = self.wheel_delta.get(ubutton, 0)
+        delta = saved+val
         ival = int(delta)
-        log("UInput.wheel_motion(%i, %.4f) %s: %s+%s=%s, will emit %i", button, distance, BUTTON_STR.get(ubutton), self.wheel_delta, val, delta, ival)
+        log("UInput.wheel_motion(%i, %.4f) %s: %s+%s=%s, will emit %i", button, distance, BUTTON_STR.get(ubutton), saved, val, delta, ival)
         if ival!=0:
             self.device.emit(ubutton, ival)
         self.wheel_delta[ubutton] = delta-ival
