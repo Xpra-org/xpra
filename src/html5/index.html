@@ -459,7 +459,7 @@
 						debug_categories.push(category);
 					}
 				}
-				console.log("debug enabled for:", debug_categories);
+				clog("debug enabled for:", debug_categories);
 
 				// create the client
 				var client = new XpraClient('screen');
@@ -886,7 +886,7 @@
 				var screen_change_events = "webkitfullscreenchange mozfullscreenchange fullscreenchange MSFullscreenChange";
 				$(document).on(screen_change_events, function () {
 					var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
-					console.log("fullscreenchange:", f_el);
+					clog("fullscreenchange:", f_el);
 				    if (f_el == null) {
 				    	//we're not in fullscreen mode now, so show fullscreen icon again:
 						$('#fullscreen').attr('src', './icons/fullscreen.png');
