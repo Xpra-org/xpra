@@ -512,7 +512,7 @@ class ClipboardProtocolHelperBase(object):
         return wire_data
 
     def _process_clipboard_contents(self, packet):
-        request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:8]
+        request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:7]
         log("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
         log("clipboard wire -> raw: %r -> %r", (dtype, dformat, wire_encoding, wire_data), raw_data)
