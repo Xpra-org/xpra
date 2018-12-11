@@ -45,7 +45,7 @@ class UInputDevice(object):
     def __init__(self, device, device_path):
         self.device = device
         self.device_path = device_path
-        self.wheel_delta = 0
+        self.wheel_delta = {}
         #the first event always goes MIA:
         #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
         #so synthesize a dummy one now:
@@ -107,12 +107,12 @@ class UInputDevice(object):
             log.warn(" cannot handle wheel motion %i", button)
             log.warn(" this event has been dropped")
             return
-        delta = self.wheel_delta+val
-        log("UInput.wheel_motion(%i, %.4f) %s: %s+%s=%s", button, distance, BUTTON_STR.get(ubutton), self.wheel_delta, val, delta)
+        delta = self.wheel_delta.get(ubutton, 0)+val
         ival = int(delta)
+        log("UInput.wheel_motion(%i, %.4f) %s: %s+%s=%s, will emit %i", button, distance, BUTTON_STR.get(ubutton), self.wheel_delta, val, delta, ival)
         if ival!=0:
-            self.device.emit(REL_WHEEL, ival)
-            self.wheel_delta += val-ival
+            self.device.emit(ubutton, ival)
+        self.wheel_delta[ubutton] = delta-ival
 
     def close(self):
         pass
