@@ -201,6 +201,9 @@ var Utilities = {
 		var ua = navigator.userAgent.toLowerCase();
 		return ua.includes("safari") && !ua.includes('chrome');
 	},
+	isEdge : function() {
+		return navigator.userAgent.includes("Edge");
+	},	
 	isChrome : function () {
 		var isChromium = window.chrome,
 			winNav = window.navigator,
