@@ -106,7 +106,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #encoding bits:
         for name in ("quality", "min-quality", "speed", "min-speed"):
             fn = getattr(self, "control_command_%s" % name.replace("-", "_"))
-            self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn, min_args=1, max_args=1, validation=[from0to100])
+            self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn, min_args=1, validation=[from0to100])
 
 
     #########################################
