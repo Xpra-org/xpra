@@ -421,13 +421,16 @@ class WindowVideoSource(WindowSource):
         cww = ww & self.width_mask
         cwh = wh & self.height_mask
         video_hint = self.content_type=="video"
+        text_hint = self.content_type=="text"
 
         rgbmax = self._rgb_auto_threshold
-        videomin = min(640*480, cww*cwh) // (1+video_hint*2)
+        videomin = cww*cwh // (1+video_hint*2)
         sr = self.video_subregion.rectangle
         if sr:
             videomin = min(videomin, sr.width * sr.height)
             rgbmax = min(rgbmax, sr.width*sr.height//2)
+        elif not text_hint:
+            videomin = min(640*480, cww*cwh)
         if pixel_count<=rgbmax or cww<8 or cwh<8:
             return lossless("low pixel count")
 
@@ -457,8 +460,7 @@ class WindowVideoSource(WindowSource):
                 lde = tuple(self.statistics.last_damage_events)
                 lim = now-4
                 pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-                text_hint = self.content_type=="text"
-                if pixels_last_4secs<((3+text_hint*3)*videomin):
+                if pixels_last_4secs<((3+text_hint*6)*videomin):
                     return nonvideo(quality+30, "not enough frames")
                 lim = now-1
                 pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
