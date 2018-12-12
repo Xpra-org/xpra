@@ -32,6 +32,7 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboard_loop_uuids = {}
         self.server_clipboard_direction = ""
         self.server_clipboard_enable_selections = False
+        self.server_clipboard_contents_slice_fix = False
         self.server_clipboards = []
         self.clipboard_helper = None
 
@@ -62,6 +63,7 @@ class ClipboardClient(StubClientMixin):
                 #buggy osx and win32 clipboards:
                 "greedy"                    : CLIPBOARD_GREEDY,
                 "set_enabled"               : True,
+                "contents-slice-fix"        : True,
                 },
              })
         caps["clipboard"] = self.client_supports_clipboard
@@ -102,13 +104,17 @@ class ClipboardClient(StubClientMixin):
         log("client clipboard: supported=%s, direction=%s",
                      self.client_supports_clipboard, self.client_clipboard_direction)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
+        self.server_clipboard_contents_slice_fix = c.boolget("clipboard.contents-slice-fix")
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
+        if not self.server_clipboard_contents_slice_fix:
+            log.info("server clipboard does not include contents slice fix")
         return True
 
     def process_ui_capabilities(self):
         log("process_ui_capabilities() clipboard_enabled=%s", self.clipboard_enabled)
         if self.clipboard_enabled:
             ch = self.make_clipboard_helper()
+            ch.set_clipboard_contents_slice_fix(self.server_clipboard_contents_slice_fix)
             self.clipboard_helper = ch
             self.clipboard_enabled = ch is not None
             log("clipboard helper=%s", ch)

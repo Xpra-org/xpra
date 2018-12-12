@@ -480,11 +480,15 @@ class UIXpraClient(ClientBaseClass):
         setting = bytestostr(setting)
         #convert "hello" / "setting" variable names to client variables:
         if setting in (
+            "clipboard-limits",
+            ):
+            pass
+        elif setting in (
             "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
             "clipboard-direction", "session_name",
             "sharing", "sharing-toggle", "lock", "lock-toggle",
             "start-new-commands", "client-shutdown", "webcam",
-            "bandwidth-limit",
+            "bandwidth-limit", "clipboard-limits",
             ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:

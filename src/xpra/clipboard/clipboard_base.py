@@ -28,6 +28,8 @@ from xpra.platform.features import CLIPBOARD_GREEDY
 
 MIN_CLIPBOARD_COMPRESSION_SIZE = 512
 MAX_CLIPBOARD_PACKET_SIZE = 4*1024*1024
+MAX_CLIPBOARD_RECEIVE_SIZE = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
+MAX_CLIPBOARD_SEND_SIZE = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 ALL_CLIPBOARDS = [strtobytes(x) for x in PLATFORM_CLIPBOARDS]
@@ -98,6 +100,11 @@ def _filter_targets(targets):
     log("_filter_targets(%s)=%s", targets, f)
     return f
 
+#CARD32 can actually be 64-bits...
+CARD32_SIZE = sizeof_long*8
+def get_format_size(dformat):
+    return max(8, {32 : CARD32_SIZE}.get(dformat, dformat))
+
 
 class ClipboardProtocolHelperBase(object):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
@@ -106,7 +113,10 @@ class ClipboardProtocolHelperBase(object):
         self.progress_cb = progress_cb
         self.can_send = d.boolget("can-send", True)
         self.can_receive = d.boolget("can-receive", True)
-        self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
+        self.max_clipboard_packet_size = d.intget("max-packet-size", MAX_CLIPBOARD_PACKET_SIZE)
+        self.max_clipboard_receive_size = d.intget("max-receive-size", MAX_CLIPBOARD_RECEIVE_SIZE)
+        self.max_clipboard_send_size = d.intget("max-send-size", MAX_CLIPBOARD_SEND_SIZE)
+        self.clipboard_contents_slice_fix = False
         self.disabled_by_loop = []
         self.filter_res = []
         filter_res = d.strlistget("filters")
@@ -131,8 +141,10 @@ class ClipboardProtocolHelperBase(object):
 
     def get_info(self):
         info = {
-                "type"      : str(self).replace("ClipboardProtocolHelper", ""),
-                "max_size"  : self.max_clipboard_packet_size,
+                "type"      :       str(self).replace("ClipboardProtocolHelper", ""),
+                "max_size"  :       self.max_clipboard_packet_size,
+                "max_recv_size":    self.max_clipboard_receive_size,
+                "max_send_size":    self.max_clipboard_send_size,
                 "filters"   : [x.pattern for x in self.filter_res],
                 "requests"  : self._clipboard_request_counter,
                 "pending"   : tuple(self._clipboard_outstanding_requests.keys()),
@@ -199,11 +211,21 @@ class ClipboardProtocolHelperBase(object):
                         if selection not in self.disabled_by_loop:
                             self.disabled_by_loop.append(selection)
 
-    def set_direction(self, can_send, can_receive):
+    def set_direction(self, can_send, can_receive, max_send_size=None, max_receive_size=None):
         self.can_send = can_send
         self.can_receive = can_receive
+        self.set_limits(max_send_size, max_receive_size)
         for proxy in self._clipboard_proxies.values():
             proxy.set_direction(can_send, can_receive)
+
+    def set_limits(self, max_send_size, max_receive_size):
+        if max_send_size is not None:
+            self.max_clipboard_send_size = max_send_size
+        if max_receive_size is not None:
+            self.max_clipboard_receive_size = max_receive_size
+
+    def set_clipboard_contents_slice_fix(self, v):
+        self.clipboard_contents_slice_fix = v
 
     def enable_selections(self, selections):
         #when clients first connect or later through the "clipboard-enable-selections" packet,
@@ -435,6 +457,12 @@ class ClipboardProtocolHelperBase(object):
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
         log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s", encoding, dtype, dformat, len(data or ""))
+        if self.max_clipboard_receive_size > 0:
+            max_recv_datalen = self.max_clipboard_receive_size * 8 // get_format_size(dformat)
+            if len(data) > max_recv_datalen:
+                olen = len(data)
+                data = data[:max_recv_datalen]
+                log.info("Data copied out truncated because of clipboard policy %d to %d", olen, max_recv_datalen)
         if encoding == b"bytes":
             return data
         elif encoding == b"integers":
@@ -490,6 +518,13 @@ class ClipboardProtocolHelperBase(object):
             if dtype is None or data is None or (dformat==0 and data==b""):
                 no_contents()
                 return
+            log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
+            truncated = 0
+            if self.max_clipboard_send_size > 0:
+                max_send_datalen = self.max_clipboard_send_size * 8 // get_format_size(dformat)
+                if len(data) > max_send_datalen:
+                    truncated = len(data) - max_send_datalen
+                    data = data[:max_send_datalen]
             munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
             wire_encoding, wire_data = munged
             log("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
@@ -498,8 +533,12 @@ class ClipboardProtocolHelperBase(object):
                 return
             wire_data = self._may_compress(dtype, dformat, wire_data)
             if wire_data is not None:
-                self.send("clipboard-contents", request_id, selection,
-                       dtype, dformat, wire_encoding, wire_data)
+                packet = ["clipboard-contents", request_id, selection,
+                        dtype, dformat, wire_encoding, wire_data]
+                if self.clipboard_contents_slice_fix:
+                    #sending the extra argument requires the fix
+                    packet.append(truncated)
+                self.send(*packet)
         proxy.get_contents(target, got_contents)
 
     def _may_compress(self, dtype, dformat, wire_data):

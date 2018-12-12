@@ -67,8 +67,9 @@ class ClipboardServer(StubServerMixin):
             "clipboards"            : self._clipboards,
             "clipboard-direction"   : self.clipboard_direction,
             "clipboard" : {
-                ""                  : True,
-                "enable-selections" : True,
+                ""                      : True,
+                "enable-selections"     : True,
+                "contents-slice-fix"    : True,
                 },
             }
         if self._clipboard_helper:
@@ -141,6 +142,7 @@ class ClipboardServer(StubServerMixin):
             ch.set_greedy_client(ss.clipboard_greedy)
             ch.set_want_targets_client(ss.clipboard_want_targets)
             ch.enable_selections(ss.clipboard_client_selections)
+            ch.set_clipboard_contents_slice_fix(ss.clipboard_contents_slice_fix)
         else:
             ch.enable_selections([])
 

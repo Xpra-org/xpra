@@ -75,6 +75,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("compression",           "sets the packet compressor",       min_args=1, max_args=1),
             ArgsControlCommand("encoder",               "sets the packet encoder",          min_args=1, max_args=1),
             ArgsControlCommand("clipboard-direction",   "restrict clipboard transfers",     min_args=1, max_args=1),
+            ArgsControlCommand("clipboard-limits",      "restrict clipboard transfers size", min_args=2, max_args=2, validation=[int, int]),
             ArgsControlCommand("set-lock",              "modify the lock attribute",        min_args=1, max_args=1),
             ArgsControlCommand("set-sharing",           "modify the sharing attribute",     min_args=1, max_args=1),
             ArgsControlCommand("set-ui-driver",         "set the client connection driving the session", min_args=1, max_args=1),
@@ -447,10 +448,19 @@ class ServerBaseControlCommands(StubServerMixin):
         self.clipboard_direction = direction
         can_send = direction in ("to-server", "both")
         can_receive = direction in ("to-client", "both")
-        self._clipboard_helper.set_direction(can_send, can_receive)
+        ch.set_direction(can_send, can_receive)
         msg = "clipboard direction set to '%s'" % direction
         log(msg)
         self.setting_changed("clipboard_direction", direction)
+        return msg
+
+    def control_command_clipboard_limits(self, max_send, max_recv, *_args):
+        ch = self._clipboard_helper
+        assert self.clipboard and ch
+        ch.set_limits(max_send, max_recv)
+        msg = "clipboard send limit set to %d, recv limit set to %d (single copy/paste)" % (max_send, max_recv)
+        log(msg)
+        self.setting_changed("clipboard-limits", {'send': max_send, 'recv': max_recv})
         return msg
 
     def _control_video_subregions_from_wid(self, wid):
