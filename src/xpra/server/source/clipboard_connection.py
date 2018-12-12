@@ -59,7 +59,6 @@ class ClipboardConnection(StubSourceMixin):
                 "greedy"                : self.clipboard_greedy,
                 "want-targets"          : self.clipboard_want_targets,
                 "selections"            : self.clipboard_client_selections,
-                "contents-slice-fix"    : self.clipboard_contents_slice_fix,
                 },
             }
 
