@@ -7,10 +7,8 @@
 from __future__ import absolute_import
 
 import socket as pysocket
+from libc.string cimport memset
 
-
-cdef extern from "string.h":
-    void *memset(void * ptr, int value, size_t num) nogil
 
 cdef extern from "unistd.h":
     int close(int fd)
