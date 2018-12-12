@@ -17,15 +17,15 @@ from xpra.util import csv, engs
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:
 CODEC_TO_MODULE = {
-                   "vpx"        : ["vpx"],
-                   "x264"       : ["enc_x264"],
-                   "x265"       : ["enc_x265"],
-                   "nvenc"      : ["nvenc"],
-                   "swscale"    : ["csc_swscale"],
-                   "libyuv"     : ["csc_libyuv"],
-                   "avcodec2"   : ["dec_avcodec2"],
-                   "ffmpeg"     : ["enc_ffmpeg"],
-                   }
+    "vpx"        : "vpx",
+    "x264"       : "enc_x264",
+    "x265"       : "enc_x265",
+    "nvenc"      : "nvenc",
+    "swscale"    : "csc_swscale",
+    "libyuv"     : "csc_libyuv",
+    "avcodec2"   : "dec_avcodec2",
+    "ffmpeg"     : "enc_ffmpeg",
+    }
 
 def has_codec_module(module_name):
     top_module = "xpra.codecs.%s" % module_name
@@ -40,11 +40,10 @@ def has_codec_module(module_name):
 def try_import_modules(codec_names):
     names = []
     for codec_name in codec_names:
-        module_names = CODEC_TO_MODULE[codec_name]
-        for module_name in module_names:
-            if has_codec_module(module_name):
-                names.append(codec_name)
-                break
+        module_name = CODEC_TO_MODULE[codec_name]
+        if has_codec_module(module_name):
+            names.append(codec_name)
+            break
     return names
 
 #all the codecs we know about:
