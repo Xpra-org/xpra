@@ -32,6 +32,7 @@ from ctypes import cdll as loader, POINTER
 
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 from libc.stdlib cimport free, malloc
+from libc.string cimport memset, memcpy
 from xpra.monotonic_time cimport monotonic_time
 
 CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
@@ -68,11 +69,6 @@ cdef inline int MAX(int a, int b):
     if a>=b:
         return a
     return b
-
-
-cdef extern from "string.h":
-    void* memset(void * ptr, int value, size_t num)
-    void* memcpy(void * destination, void * source, size_t num)
 
 
 CUresult = ctypes.c_int

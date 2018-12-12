@@ -21,11 +21,8 @@ from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer
 
 from libc.stdint cimport uintptr_t, uint8_t
 from libc.stdlib cimport free
+from libc.string cimport memset, memcpy
 
-
-cdef extern from "string.h":
-    void * memcpy(void * destination, void * source, size_t num) nogil
-    void * memset(void * ptr, int value, size_t num) nogil
 
 cdef extern from "register_compat.h":
     void register_all()

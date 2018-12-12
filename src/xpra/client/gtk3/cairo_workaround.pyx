@@ -29,6 +29,7 @@ from __future__ import absolute_import
 import cairo
 from xpra.buffers.membuf cimport object_as_buffer
 from libc.stdint cimport uintptr_t
+from libc.string cimport memcpy
 
 
 cdef extern from "Python.h":
@@ -37,9 +38,6 @@ cdef extern from "Python.h":
     void * PyCapsule_Import(const char *name, int no_block)
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
-
-cdef extern from "string.h":
-    void* memcpy(void * destination, void * source, size_t num) nogil
 
 cdef extern from "cairo/cairo.h":
     ctypedef struct cairo_surface_t:

@@ -23,11 +23,8 @@ from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 from libc.stdint cimport uint32_t, uint8_t
 from libc.stdlib cimport free
+from libc.string cimport memset, memcpy
 
-
-cdef extern from "string.h":
-    void *memcpy(void *destination, void *source, size_t num) nogil
-    void *memset(void *ptr, int value, size_t num) nogil
 
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)

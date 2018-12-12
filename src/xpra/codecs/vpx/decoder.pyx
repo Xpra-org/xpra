@@ -20,6 +20,8 @@ from xpra.os_util import bytestostr, OSX
 from xpra.util import envint
 
 from libc.stdint cimport uint8_t, int64_t
+from libc.string cimport memset, memcpy
+from libc.stdlib cimport malloc
 from xpra.monotonic_time cimport monotonic_time
 
 
@@ -38,13 +40,6 @@ cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
-
-cdef extern from "stdlib.h":
-    void* malloc(size_t __size)
-
-cdef extern from "string.h":
-    void *memcpy(void * destination, void * source, size_t num) nogil
-    void *memset(void * ptr, int value, size_t num) nogil
 
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t

@@ -34,6 +34,7 @@ import ctypes
 from ctypes import wintypes
 
 from libc.stdint cimport uintptr_t, uint8_t, int64_t
+from libc.string cimport memset, memcpy
 from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport padbuf, MemBuf
 
@@ -44,9 +45,6 @@ CLIENT_KEYS_STRS = get_license_keys(basefilename="nvfbc")
 ctypedef unsigned long DWORD
 ctypedef int BOOL
 
-cdef extern from "string.h":
-    void * memcpy(void * destination, void * source, size_t num) nogil
-    void * memset(void * ptr, int value, size_t num) nogil
 
 cdef extern from "NvFBC/nvFBC.h":
     ctypedef int NVFBCRESULT
