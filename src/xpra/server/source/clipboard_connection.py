@@ -52,8 +52,15 @@ class ClipboardConnection(StubSourceMixin):
 
     def get_info(self):
         return {
-            "clipboard"                 : self.clipboard_enabled,
-            "clipboard_notifications"   : True,
+            "clipboard" : {
+                "enabled"               : self.clipboard_enabled,
+                "notifications"         : self.clipboard_notifications,
+                "set-enabled"           : self.clipboard_set_enabled,
+                "greedy"                : self.clipboard_greedy,
+                "want-targets"          : self.clipboard_want_targets,
+                "selections"            : self.clipboard_client_selections,
+                "contents-slice-fix"    : self.clipboard_contents_slice_fix,
+                },
             }
 
 
