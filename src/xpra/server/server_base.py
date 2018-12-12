@@ -1341,7 +1341,10 @@ class ServerBase(ServerCore):
                       "ogg-latency-fix" : True,
                       "eos-sequence"    : True,
                       }
-        f["clipboard"] = {"enable-selections" : True}
+        f["clipboard"] = {
+            "enable-selections" : True,
+            "contents-slice-fix" : True,
+            }
         f["encoding"] = {
                          "generic" : True,
                          }

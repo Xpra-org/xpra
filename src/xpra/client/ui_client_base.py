@@ -1465,6 +1465,7 @@ class UIXpraClient(XpraClientBase):
             #buggy osx and win32 clipboards:
             "greedy"                    : CLIPBOARD_GREEDY,
             "set_enabled"               : True,
+            "contents-slice-fix"        : True,
             })
         if B_FRAMES:
             video_b_frames = ["h264"]   #only tested with dec_avcodec2
