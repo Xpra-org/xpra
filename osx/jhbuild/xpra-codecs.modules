@@ -31,11 +31,10 @@
 	</autotools>
 
 	<autotools id="nasm" autogenargs="" autogen-sh="configure">
-		<branch module="/pub/nasm/releasebuilds/2.13/nasm-2.13.tar.xz"
-			version="2.13"
-			hash="sha256:ba854c2f02f34f0d6a4611c05e8cb65d9fae8c2b21a4def7fba91a7d67ffde97"
+		<branch module="/pub/nasm/releasebuilds/2.14/nasm-2.14.tar.xz"
+			version="2.14"
+			hash="sha256:97c615dbf02ef80e4e2b6c385f7e28368d51efc214daa98e600ca4572500eec0"
 			repo="www.nasm.us">
-			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
 		</branch>
 	</autotools>
 
