@@ -72,6 +72,7 @@ BuildRoot:			%{_tmppath}/%{name}-%{version}-root
 %if 0%{?el7}
 Patch0:				centos7-oldsystemd.patch
 Patch1:             selinux-nomap.patch
+Patch2:             centos7-oldturbojpeg.patch
 %endif
 %if 0%{?fedora}
 %if 0%{?fedora}<28
@@ -468,6 +469,8 @@ pushd $RPM_BUILD_DIR/xpra-%{version}
 #remove some systemd configuration options:
 %patch0 -p1
 %patch1 -p1
+#missing definitions in turbojpeg headers:
+%patch2 -p1
 %endif
 
 
