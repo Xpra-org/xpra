@@ -12,7 +12,7 @@ import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD
 
-from xpra.util import csv, nonl, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
+from xpra.util import csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
@@ -37,6 +37,9 @@ log = Logger("tray", "win32")
 
 log("loading ctypes NotifyIcon functions")
 sprintf = ctypes.cdll.msvcrt.sprintf
+
+
+TRAY_ALPHA = envbool("XPRA_TRAY_ALPHA", True)
 
 
 def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, dwSpMinorVersion=0):
@@ -145,14 +148,19 @@ BUTTON_MAP = {
 def image_to_ICONINFO(img):
     w, h = img.size
     from xpra.codecs.argb.argb import rgba_to_bgra       #@UnresolvedImport
-    bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", "BGRA")))
-    return make_ICONINFO(w, h, bgra)
+    if TRAY_ALPHA and img.mode.find("A")>=0:   #ie: RGBA
+        rgb_format = "BGRA"
+    else:
+        rgb_format = "BGR"
+    rgb_data = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", rgb_format)))
+    return make_ICONINFO(w, h, rgb_data, rgb_format=rgb_format)
 
-def make_ICONINFO(w, h, bgra):
+def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
     bitmap = 0
     mask = 0
     try:
-        bitmap = rgba_to_bitmap(bgra, w, h)
+        bytes_per_pixel = len(rgb_format)
+        bitmap = rgb_to_bitmap(rgb_data, bytes_per_pixel, w, h)
         mask = CreateBitmap(w, h, 1, 1, None)
 
         iconinfo = ICONINFO()
@@ -173,14 +181,14 @@ def make_ICONINFO(w, h, bgra):
         if bitmap:
             DeleteObject(bitmap)
 
-
-def rgba_to_bitmap(rgba, w, h):
+def rgb_to_bitmap(rgb_data, bytes_per_pixel, w, h):
+    assert bytes_per_pixel in (3, 4)        #only BGRA or BGR are supported
     header = BITMAPV5HEADER()
     header.bV5Size = sizeof(BITMAPV5HEADER)
     header.bV5Width = w
     header.bV5Height = -h
     header.bV5Planes = 1
-    header.bV5BitCount = 32
+    header.bV5BitCount = bytes_per_pixel*8
     header.bV5Compression = BI_RGB      #BI_BITFIELDS
     #header.bV5RedMask = 0x000000ff
     #header.bV5GreenMask = 0x0000ff00
@@ -196,8 +204,8 @@ def rgba_to_bitmap(rgba, w, h):
         ReleaseDC(None, hdc)
     assert dataptr and bitmap, "failed to create DIB section"
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
-    img_data = create_string_buffer(rgba)
-    ctypes.memmove(dataptr, byref(img_data), w*4*h)
+    img_data = create_string_buffer(rgb_data)
+    ctypes.memmove(dataptr, byref(img_data), w*h*bytes_per_pixel)
     return bitmap
 
 
