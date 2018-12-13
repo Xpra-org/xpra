@@ -1,0 +1,80 @@
+Index: xpra/codecs/jpeg/decoder.pyx
+===================================================================
+--- a/xpra/codecs/jpeg/decoder.pyx	(revision 21176)
++++ b/xpra/codecs/jpeg/decoder.pyx	(working copy)
+@@ -31,7 +31,7 @@
+     TJSAMP  TJSAMP_420
+     TJSAMP  TJSAMP_GRAY
+     TJSAMP  TJSAMP_440
+-    TJSAMP  TJSAMP_411
++    #TJSAMP  TJSAMP_411
+ 
+     TJPF    TJPF_RGB
+     TJPF    TJPF_BGR
+@@ -44,7 +44,7 @@
+     TJPF    TJPF_BGRA
+     TJPF    TJPF_ABGR
+     TJPF    TJPF_ARGB
+-    TJPF    TJPF_CMYK
++    #TJPF    TJPF_CMYK
+ 
+     TJCS    TJCS_RGB
+     TJCS    TJCS_YCbCr
+@@ -84,7 +84,7 @@
+     TJSAMP_420  : "420",
+     TJSAMP_GRAY : "GRAY",
+     TJSAMP_440  : "440",
+-    TJSAMP_411  : "411",
++    #TJSAMP_411  : "411",
+     }
+ 
+ TJCS_STR = {
+@@ -107,7 +107,7 @@
+     TJPF_BGRA   : "BGRA",
+     TJPF_ABGR   : "ABGR",
+     TJPF_ARGB   : "ARGB",
+-    TJPF_CMYK   : "CMYK",
++    #TJPF_CMYK   : "CMYK",
+     }
+ TJPF_VAL = dict((v,k) for k,v in TJPF_STR.items())
+ 
+Index: xpra/codecs/jpeg/encoder.pyx
+===================================================================
+--- a/xpra/codecs/jpeg/encoder.pyx	(revision 21176)
++++ b/xpra/codecs/jpeg/encoder.pyx	(working copy)
+@@ -31,7 +31,7 @@
+     TJSAMP  TJSAMP_420
+     TJSAMP  TJSAMP_GRAY
+     TJSAMP  TJSAMP_440
+-    TJSAMP  TJSAMP_411
++    #TJSAMP  TJSAMP_411
+ 
+     TJPF    TJPF_RGB
+     TJPF    TJPF_BGR
+@@ -44,7 +44,7 @@
+     TJPF    TJPF_BGRA
+     TJPF    TJPF_ABGR
+     TJPF    TJPF_ARGB
+-    TJPF    TJPF_CMYK
++    #TJPF    TJPF_CMYK
+ 
+     int TJFLAG_BOTTOMUP
+     int TJFLAG_FASTUPSAMPLE
+@@ -73,7 +73,7 @@
+     "BGRA"  : TJPF_BGRA,
+     "ABGR"  : TJPF_ABGR,
+     "ARGB"  : TJPF_ARGB,
+-    "CMYK"  : TJPF_CMYK,
++    #"CMYK"  : TJPF_CMYK,
+     }
+ TJSAMP_STR = {
+     TJSAMP_444  : "444",
+@@ -81,7 +81,7 @@
+     TJSAMP_420  : "420",
+     TJSAMP_GRAY : "GRAY",
+     TJSAMP_440  : "440",
+-    TJSAMP_411  : "411",
++    #TJSAMP_411  : "411",
+     }
+ 
+ 

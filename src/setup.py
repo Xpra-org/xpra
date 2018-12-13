@@ -190,7 +190,8 @@ enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
 enc_x265_ENABLED        = (not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
-jpeg_ENABLED            = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
+jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
+jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
@@ -222,7 +223,7 @@ rebuild_ENABLED         = True
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
-            "vpx", "webp", "pillow", "jpeg",
+            "vpx", "webp", "pillow", "jpeg_encoder", "jpeg_decoder",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
             "csc_libyuv",
@@ -2218,13 +2219,20 @@ if webp_ENABLED:
                 ["xpra/codecs/webp/decode.pyx"],
                 **webp_pkgconfig))
 
-toggle_packages(jpeg_ENABLED, "xpra.codecs.jpeg")
-if jpeg_ENABLED:
-    jpeg_pkgconfig = pkgconfig("libturbojpeg")
-    cython_add(Extension("xpra.codecs.jpeg.encoder",
+jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED
+toggle_packages(jpeg, "xpra.codecs.jpeg")
+if jpeg:
+    if jpeg_encoder_ENABLED:
+        jpeg_pkgconfig = pkgconfig("libturbojpeg")
+        if not pkg_config_version("1.4", "libturbojpeg"):
+            #older versions don't have const argument:
+            remove_from_keywords(jpeg_pkgconfig, 'extra_compile_args', "-Werror")
+        cython_add(Extension("xpra.codecs.jpeg.encoder",
                 ["xpra/codecs/jpeg/encoder.pyx"],
                 **jpeg_pkgconfig))
-    cython_add(Extension("xpra.codecs.jpeg.decoder",
+    if jpeg_decoder_ENABLED:
+        jpeg_pkgconfig = pkgconfig("libturbojpeg")
+        cython_add(Extension("xpra.codecs.jpeg.decoder",
                 ["xpra/codecs/jpeg/decoder.pyx"],
                 **jpeg_pkgconfig))
 
