@@ -17,13 +17,17 @@ log = Logger("util", "auth")
 from xpra.os_util import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer
 from libc.stdint cimport uintptr_t
-from libc.string import strdup
-from libc.stdlib import calloc
 from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
 
 
 cdef extern from "errno.h" nogil:
     int errno
+
+cdef extern from "string.h":
+    char *strdup(const char *s1)
+
+cdef extern from "stdlib.h":
+    void *calloc(size_t nitems, size_t size)
 
 cdef extern from "pam_misc.h":
     ctypedef struct pam_handle_t:
