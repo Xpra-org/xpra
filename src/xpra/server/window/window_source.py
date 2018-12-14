@@ -59,6 +59,7 @@ AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
 AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
+DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
@@ -1615,7 +1616,7 @@ class WindowSource(WindowIconSource):
         """
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         try:
-            packet = self.make_data_packet(image, coding, sequence, options, flush)
+            packet = self.make_data_packet(damage_time, process_damage_time, image, coding, sequence, options, flush)
         finally:
             self.free_image_wrapper(image)
             del image
@@ -2015,7 +2016,7 @@ class WindowSource(WindowIconSource):
             self.source_remove(dert)
 
 
-    def make_data_packet(self, image, coding, sequence, options, flush):
+    def make_data_packet(self, damage_time, process_damage_time, image, coding, sequence, options, flush):
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'
@@ -2158,6 +2159,10 @@ class WindowSource(WindowIconSource):
         if self.send_timetamps:
             client_options["ts"] = image.get_timestamp()
         end = monotonic_time()
+        if DAMAGE_STATISTICS:
+            client_options['damage_time'] = int(damage_time * 1000)
+            client_options['process_damage_time'] = int(process_damage_time * 1000)
+            client_options['damage_packet_time'] = int(end * 1000)
         compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                  (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize//1024, csize//1024, self._damage_packet_sequence, client_options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
