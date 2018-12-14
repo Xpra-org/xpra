@@ -43,7 +43,6 @@ def try_import_modules(codec_names):
         module_name = CODEC_TO_MODULE[codec_name]
         if has_codec_module(module_name):
             names.append(codec_name)
-            break
     return names
 
 #all the codecs we know about:
