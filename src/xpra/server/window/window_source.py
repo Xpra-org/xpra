@@ -86,6 +86,10 @@ TRANSPARENCY_ENCODINGS = ("webp", "png", "rgb32")
 LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L")
 REFRESH_ENCODINGS = ("webp", "png", "rgb24", "rgb32", "jpeg2000")
 
+
+def capr(v):
+    return min(100, max(0, int(v)))
+
 """
 We create a Window Source for each window we send pixels for.
 
@@ -232,20 +236,34 @@ class WindowSource(WindowIconSource):
         self._encoding_speed = deque(maxlen=100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
         self._encoding_speed_info = {}
         # they may have fixed values:
-        def capr(v):
-            return min(100, max(0, int(v)))
         self._fixed_quality = capr(default_encoding_options.get("quality", 0))
         self._fixed_min_quality = capr(default_encoding_options.get("min-quality", 0))
         self._fixed_speed = capr(default_encoding_options.get("speed", 0))
         self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
+        if "quality" in window.get_internal_property_names():
+            self._quality_hint = self.window.get_property("quality")
+            sid = window.connect("notify::quality", self.quality_changed)
+            self.window_signal_handlers.append(sid)
+        else:
+            self._quality_hint = -1
+        if "speed" in window.get_internal_property_names():
+            self._speed_hint = self.window.get_property("speed")
+            sid = window.connect("notify::speed", self.speed_changed)
+            self.window_signal_handlers.append(sid)
+        else:
+            self._speed_hint = -1
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
         nobwl = not (self.bandwidth_limit or 0)>0
-        if self._fixed_quality:
+        if self._quality_hint:
+            self._current_quality = capr(self._quality_hint)
+        elif self._fixed_quality:
             self._current_quality = capr(self._fixed_quality)
         else:
             self._current_quality = capr(encoding_options.intget("initial_quality", INITIAL_QUALITY*(1+int(nobwl))))
-        if self._fixed_speed:
+        if self._speed_hint:
+            self._current_speed = capr(self._speed_hint)
+        elif self._fixed_speed:
             self._current_speed = capr(self._fixed_speed)
         else:
             self._current_speed = capr(encoding_options.intget("initial_speed", INITIAL_SPEED*(1+int(nobwl))))
@@ -512,8 +530,10 @@ class WindowSource(WindowIconSource):
                 #speed / quality properties (not necessarily the same as the video encoder settings..):
                 "min_speed"             : self._fixed_min_speed,
                 "speed"                 : self._fixed_speed,
+                "speed-hint"            : self._speed_hint,
                 "min_quality"           : self._fixed_min_quality,
                 "quality"               : self._fixed_quality,
+                "quality-hint"          : self._quality_hint,
                 }
 
 
@@ -587,6 +607,16 @@ class WindowSource(WindowIconSource):
     def content_type_changed(self, window, *args):
         self.content_type = window.get("content-type") or guess_content_type(window)
         log("content_type_changed(%s, %s) content-type=%s", window, args, self.content_type)
+        return True
+
+    def quality_changed(self, window, *args):
+        self._quality_hint = window.get("quality") or -1
+        log("quality_changed(%s, %s) quality=%s", window, args, self._quality_hint)
+        return True
+
+    def speed_changed(self, window, *args):
+        self._speed_hint = window.get("speed") or -1
+        log("speed_changed(%s, %s) speed=%s", window, args, self._speed_hint)
         return True
 
     def set_client_properties(self, properties):
@@ -980,13 +1010,18 @@ class WindowSource(WindowIconSource):
         if self._mmap:
             self._encoding_speed_info = {"mmap" : True}
             return
-        if self._sequence<10:
-            self._encoding_speed_info = {"pending" : True}
+        speed = self._speed_hint
+        if speed>0:
+            self._current_speed = capr(speed)
+            self._encoding_speed_info = {"hint" : True}
             return
         speed = self._fixed_speed
         if speed>0:
-            self._current_speed = speed
+            self._current_speed = capr(speed)
             self._encoding_speed_info = {"fixed" : True}
+            return
+        if self._sequence<10:
+            self._encoding_speed_info = {"pending" : True}
             return
         now = monotonic_time()
         #make a copy to work on:
@@ -1024,8 +1059,15 @@ class WindowSource(WindowIconSource):
         if self._mmap:
             self._encoding_quality_info = {"mmap" : True}
             return
-        if self._sequence<10:
-            self._encoding_quality_info = {"pending" : True}
+        quality = self._quality_hint
+        if quality>0:
+            self._current_quality = capr(quality)
+            self._encoding_quality_info = {"hint" : True}
+            return
+        quality = self._fixed_quality
+        if quality>0:
+            self._current_quality = capr(quality)
+            self._encoding_quality_info = {"fixed" : True}
             return
         if self.encoding in LOSSLESS_ENCODINGS:
             #the user has selected an encoding which does not use quality
@@ -1033,10 +1075,8 @@ class WindowSource(WindowIconSource):
             self._encoding_quality_info = {"lossless" : self.encoding}
             self._current_quality = 100
             return
-        quality = self._fixed_quality
-        if quality>0:
-            self._current_quality = int(min(100, quality))
-            self._encoding_quality_info = {"fixed" : True}
+        if self._sequence<10:
+            self._encoding_quality_info = {"pending" : True}
             return
         now = monotonic_time()
         info, target = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
