@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -49,8 +49,9 @@ class DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def Focus(self, wid):
+        wid = ni(wid)
         self.log(".Focus(%i)", wid)
-        self.server.control_command_focus(ni(wid))
+        self.server.control_command_focus(wid)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Suspend(self):
@@ -70,29 +71,34 @@ class DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def Start(self, command):
-        self.log(".Start()")
-        self.server.do_control_command_start(True, ns(command))
+        c = ns(command)
+        self.log(".Start(%s)", c)
+        self.server.do_control_command_start(True, c)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def StartChild(self, command):
-        self.log(".StartChild(%s)", command)
-        self.server.do_control_command_start(False, ns(command))
+        c = ns(command)
+        self.log(".StartChild(%s)", c)
+        self.server.do_control_command_start(False, c)
 
     @dbus.service.method(INTERFACE, in_signature='sb')
     def ToggleFeature(self, feature, state):
-        self.log(".ToggleFeature(%s, %s)", feature, state)
-        self.server.control_command_toggle_feature(feature, state)
+        f, s = ns(feature), ns(state)
+        self.log(".ToggleFeature(%s, %s)", f, s)
+        self.server.control_command_toggle_feature(f, s)
 
 
-    @dbus.service.method(INTERFACE, in_signature='s')
+    @dbus.service.method(INTERFACE, in_signature='i')
     def KeyPress(self, keycode):
-        self.log(".KeyPress(%i)", keycode)
-        self.server.control_command_key(ns(keycode), press=True)
+        k = ni(keycode)
+        self.log(".KeyPress(%i)", k)
+        self.server.control_command_key(str(k), press=True)
 
-    @dbus.service.method(INTERFACE, in_signature='s')
+    @dbus.service.method(INTERFACE, in_signature='i')
     def KeyRelease(self, keycode):
-        self.log(".KeyRelease(%i)", keycode)
-        self.server.control_command_key(ns(keycode), press=False)
+        k = ni(keycode)
+        self.log(".KeyRelease(%i)", k)
+        self.server.control_command_key(str(k), press=False)
 
     @dbus.service.method(INTERFACE)
     def ClearKeysPressed(self):
@@ -101,68 +107,79 @@ class DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetKeyboardRepeat(self, repeat_delay, repeat_interval):
-        self.log(".SetKeyboardRepeat(%i, %i)", repeat_delay, repeat_interval)
-        self.server.set_keyboard_repeat(ni(repeat_delay), ni(repeat_interval))
+        d, i = ni(repeat_delay), ni(repeat_interval)
+        self.log(".SetKeyboardRepeat(%i, %i)", d, i)
+        self.server.set_keyboard_repeat(d, i)
 
 
     @dbus.service.method(INTERFACE, in_signature='iii')
     def MovePointer(self, wid, x, y):
+        wid, x, y = ni(wid), ni(x), ni(y)
         self.log(".MovePointer(%i, %i, %i)", wid, x, y)
         self.server._move_pointer(ni(wid), (ni(x), ni(y)))
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def MouseClick(self, button, pressed):
+        button, pressed = ni(button), nb(pressed)
         self.log(".MouseClick%s", (button, pressed))
         device_id = -1
-        self.server.button_action(None, ni(button), nb(pressed), device_id)
+        self.server.button_action(None, button, pressed, device_id)
 
 
     @dbus.service.method(INTERFACE, in_signature='iiii')
     def SetWorkarea(self, x, y, w, h):
+        x, y, w, h = ni(x), ni(y), ni(w), ni(h)
         self.log(".SetWorkarea%s", (x, y, w, h))
-        workarea = Rectangle(x=ni(x), y=ni(y), width=ni(w), height=ni(h))
+        workarea = Rectangle(x=x, y=y, width=w, height=h)
         self.server.set_workarea(workarea)
 
 
     @dbus.service.method(INTERFACE, in_signature='iiiii')
     def SetVideoRegion(self, wid, x, y, w, h):
+        wid, x, y, w, h = ni(wid), ni(x), ni(y), ni(w), ni(h)
         self.log(".SetVideoRegion%s", (wid, x, y, w, h))
-        self.server.control_command_video_region(ni(wid), ni(x), ni(y), ni(w), ni(h))
+        self.server.control_command_video_region(wid, x, y, w, h)
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionEnabled(self, wid, enabled):
+        wid, enabled = ni(wid), nb(enabled)
         self.log(".SetVideoRegionEnabled(%i, %s)", wid, enabled)
-        self.server.control_command_video_region_enabled(ni(wid), nb(enabled))
+        self.server.control_command_video_region_enabled(wid, enabled)
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionDetection(self, wid, detection):
+        wid, detection = ni(wid), nb(detection)
         self.log(".SetVideoRegionDetection(%i, %s)", wid, detection)
-        self.server.control_command_video_region_detection(ni(wid), nb(detection))
+        self.server.control_command_video_region_detection(wid, detection)
 
     @dbus.service.method(INTERFACE, in_signature='iaai')
     def SetVideoRegionExclusionZones(self, wid, zones):
-        log("SetVideoRegionExclusionZones(%i, %s)", wid, zones)
+        wid = ni(wid)
         nzones = []
         for zone in zones:
             nzones.append([ni(x) for x in zone])
-        self.server.control_command_video_region_exclusion_zones(ni(wid), nzones)
+        log("SetVideoRegionExclusionZones(%i, %s)", wid, nzones)
+        self.server.control_command_video_region_exclusion_zones(wid, nzones)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def ResetVideoRegion(self, wid):
+        wid = ni(wid)
         self.log(".ResetVideoRegion(%i)", wid)
-        self.server.control_command_reset_video_region(ni(wid))
+        self.server.control_command_reset_video_region(wid)
 
 
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def LockBatchDelay(self, wid, delay):
+        wid, delay = ni(wid), ni(delay)
         self.log(".LockBatchDelay(%i, %i)", wid, delay)
-        self.server.control_command_lock_batch_delay(ni(wid), ni(delay))
+        self.server.control_command_lock_batch_delay(wid, delay)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def UnlockBatchDelay(self, wid):
+        wid = ni(wid)
         self.log(".UnlockBatchDelay(%i)", wid)
-        self.server.control_command_unlock_batch_delay(ni(wid))
+        self.server.control_command_unlock_batch_delay(wid)
 
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{is}')
@@ -179,56 +196,65 @@ class DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetLock(self, lock):
-        self.log(".SetLock(%s)", lock)
-        self.server.control_command_set_lock(lock)
+        s = ns(lock)
+        self.log(".SetLock(%s)", s)
+        self.server.control_command_set_lock(s)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetSharing(self, sharing):
-        self.log(".SetSharing(%s)", sharing)
-        self.server.control_command_set_sharing(sharing)
+        s = ns(sharing)
+        self.log(".SetSharing(%s)", s)
+        self.server.control_command_set_sharing(s)
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetUIDriver(self, uuid):
-        self.log(".SetUIDriver(%s)", uuid)
-        self.server.control_command_set_ui_driver(uuid)
+        s = ns(uuid)
+        self.log(".SetUIDriver(%s)", s)
+        self.server.control_command_set_ui_driver(s)
 
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def MoveWindowToWorkspace(self, wid, workspace):
+        wid, workspace = ni(wid), ni(workspace)
         self.log(".MoveWindowToWorkspace(%i, %i)", wid, workspace)
-        self.server.control_command_workspace(ni(wid), ni(workspace))
+        self.server.control_command_workspace(wid, workspace)
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowScaling(self, wid, scaling):
+        wid, scaling = ni(wid), ns(scaling)
         self.log(".SetWindowScaling(%i, %s)", wid, scaling)
-        s = parse_scaling_value(ns(scaling))
-        self.server.control_command_scaling(s, ni(wid))
+        s = parse_scaling_value(scaling)
+        self.server.control_command_scaling(s, wid)
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowScalingControl(self, wid, scaling_control):
+        wid = ni(wid)
         self.log(".SetWindowScalingControl(%i, %s)", wid, scaling_control)
         if scaling_control.lower() in ("auto", "on"):
             sc = None
         else:
             sc = from0to100(int(ns(scaling_control)))
-        self.server.control_command_scaling_control(sc, ni(wid))
+        self.server.control_command_scaling_control(sc, wid)
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowEncoding(self, wid, encoding):
+        wid, encoding = ni(wid), ns(encoding)
         self.log(".SetWindowEncoding(%i, %i)", wid, encoding)
-        self.server.control_command_encoding(ns(encoding), ni(wid))
+        self.server.control_command_encoding(encoding, wid)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def RefreshWindow(self, wid):
+        wid = ni(wid)
         self.log(".RefreshWindow(%i)", wid)
-        self.server.control_command_refresh(ni(wid))
+        self.server.control_command_refresh(wid)
 
 
     @dbus.service.method(INTERFACE, in_signature='ai')
     def RefreshWindows(self, window_ids):
-        self.log(".RefreshWindows(%s)", window_ids)
-        self.server.control_command_refresh(*(ni(x) for x in window_ids))
+        wids = [ni(x) for x in window_ids]
+        self.log(".RefreshWindows(%s)", wids)
+        self.server.control_command_refresh(*wids)
 
     @dbus.service.method(INTERFACE)
     def RefreshAllWindows(self):
@@ -244,28 +270,30 @@ class DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def EnableDebug(self, category):
-        self.log(".EnableDebug(%s)", category)
         c = ns(category)
+        self.log(".EnableDebug(%s)", c)
         add_debug_category(c)
         enable_debug_for(c)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def DisableDebug(self, category):
-        self.log(".DisableDebug(%s)", category)
         c = ns(category)
+        self.log(".DisableDebug(%s)", c)
         remove_debug_category(c)
         disable_debug_for(c)
 
 
     @dbus.service.method(INTERFACE, in_signature='isss')
     def SendNotification(self, nid, title, message, uuids):
+        nid, title, message, uuids = ni(nid), ns(title), ns(message), ns(uuids)
         self.log(".SendNotification%s", (nid, title, message, uuids))
-        self.server.control_command_send_notification(ni(nid), ns(title), ns(message), ns(uuids))
+        self.server.control_command_send_notification(nid, title, message, uuids)
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def CloseNotification(self, nid, uuids):
+        nid, uuids = ni(nid), ns(uuids)
         self.log(".CloseNotification%s", (nid, uuids))
-        self.server.control_command_close_notification(ni(nid), ns(uuids))
+        self.server.control_command_close_notification(nid, uuids)
 
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')
@@ -281,9 +309,10 @@ class DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def DetachClient(self, uuid):
-        self.log(".DetachClient(%s)", uuid)
+        s = ns(uuid)
+        self.log(".DetachClient(%s)", s)
         for p, source in self.server._server_sources.items():
-            if source.uuid==uuid:
+            if source.uuid==s:
                 self.log("matched %s", source)
                 self.server.disconnect_client(p, DETACH_REQUEST)
 
