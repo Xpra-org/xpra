@@ -113,6 +113,7 @@ class InputMixin(StubSourceMixin):
                 kc.owner = self.uuid
             else:
                 log.info("keyboard mapping already configured (skipped)")
+                self.keyboard_config = current_keyboard_config
 
 
     def get_keycode(self, client_keycode, keyname, pressed, modifiers):
