@@ -214,6 +214,13 @@ class DBUS_Server(DBUS_Server_Base):
         self.server.control_command_set_ui_driver(s)
 
 
+    @dbus.service.method(INTERFACE, in_signature='i')
+    def SetIdleTimeout(self, value):
+        nvalue = ni(value)
+        self.log(".SetIdleTimeout(%s)", nvalue)
+        self.server.control_command_idle_timeout(nvalue)
+
+
     @dbus.service.method(INTERFACE, in_signature='ii')
     def MoveWindowToWorkspace(self, wid, workspace):
         wid, workspace = ni(wid), ni(workspace)
