@@ -33,10 +33,16 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     elif propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity"):
         v = raw()
         assert v is not None, "%s is None!" % propname
-        if ((v<0) or
-            (v==WORKSPACE_UNSET and propname=="workspace") or
-            (v==0 and propname=="bypass-compositor")) and skip_defaults:
-            #unset, so don't bother sending anything
+        default_value = {
+            "pid"               : 0,
+            "workspace"         : WORKSPACE_UNSET,
+            "bypass-compositor" : 0,
+            "depth"             : 24,
+            "opacity"           : 100,
+            }.get(propname, -1)
+        if (v<0 or v==default_value) and skip_defaults:
+            #unset or default value,
+            #so don't bother sending anything:
             return {}
         return {propname : v}
     elif propname == "size-hints":
