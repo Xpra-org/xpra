@@ -99,13 +99,15 @@ class DBUS_Source(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='b')
     def ShowDesktop(self, show):
+        show = nb(show)
         self.log(".ShowDesktop(%s)", show)
-        self.source.show_desktop(nb(show))
+        self.source.show_desktop(show)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def RaiseWindow(self, wid):
+        wid = ni(wid)
         self.log(".RaiseWindow(%s)", wid)
-        self.source.raise_window(ni(wid))
+        self.source.raise_window(wid)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def ResetWindowFilters(self):
@@ -143,8 +145,9 @@ class DBUS_Source(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def StartSpeaker(self, codec):
+        codec = ns(codec)
         self.log(".StartSpeaker(%s)", codec)
-        self.source.start_sending_sound(ns(codec))
+        self.source.start_sending_sound(codec)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def StopSpeaker(self):
@@ -154,14 +157,16 @@ class DBUS_Source(dbus.service.Object):
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def SetAVSyncDelay(self, delay):
-        self.log(".SetAVSyncDelay(%i)", delay)
-        self.source.set_av_sync_delay(delay)
+        d = ni(delay)
+        self.log(".SetAVSyncDelay(%i)", d)
+        self.source.set_av_sync_delay(d)
 
 
     @dbus.service.method(INTERFACE, in_signature='as')
     def SendClientCommand(self, args):
-        self.log(".SendClientCommand(%s)", args)
-        self.source.send_client_command(*args)
+        cmd = n(args)
+        self.log(".SendClientCommand(%s)", cmd)
+        self.source.send_client_command(*cmd)
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
