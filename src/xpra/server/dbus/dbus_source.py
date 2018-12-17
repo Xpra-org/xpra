@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.dbus.common import init_session_bus
-from xpra.util import AtomicInteger
+from xpra.util import AtomicInteger, DETACH_REQUEST
 import dbus.service
 
 from xpra.log import Logger
@@ -162,3 +162,12 @@ class DBUS_Source(dbus.service.Object):
     def SendClientCommand(self, args):
         self.log(".SendClientCommand(%s)", args)
         self.source.send_client_command(*args)
+
+
+    @dbus.service.method(INTERFACE, in_signature='s')
+    def Detach(self, reason):
+        proto = self.source.proto
+        rs = ns(reason)
+        self.log(".SendClientCommand(%s) protocol=%s", rs, proto)
+        assert proto, "no connection"
+        proto.send_disconnect(DETACH_REQUEST, rs)
