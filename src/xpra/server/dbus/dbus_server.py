@@ -303,6 +303,15 @@ class DBUS_Server(DBUS_Server_Base):
         self.server.control_command_close_notification(nid, uuids)
 
 
+    @dbus.service.method(INTERFACE, in_signature='sii')
+    def SetClipboardProperties(self, direction, max_copyin, max_copyout):
+        #keep direction unchanged if not specified
+        max_copyin, max_copyout = ni(max_copyin), ni(max_copyout)
+        direction = ns(direction) or self.server.clipboard_direction
+        self.log(".SetClipboardProperties%s", (direction, max_copyin, max_copyout))
+        self.server.control_command_clipboard_direction(direction, max_copyin, max_copyout)
+
+
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')
     def ListClients(self):
         d = {}
