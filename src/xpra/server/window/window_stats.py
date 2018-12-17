@@ -274,7 +274,7 @@ class WindowPerformanceStatistics(object):
         elapsed = recs[-1][0]-recs[0][0]
         if elapsed==0:
             return 0
-        return bits/elapsed
+        return int(bits/elapsed)
 
     def get_damage_pixels(self, elapsed=1):
         cutoff = monotonic_time()-elapsed
