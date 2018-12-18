@@ -870,7 +870,7 @@ class WindowSource(WindowIconSource):
             return "jpeg"
         if "jpeg2000" in co and w>=32 and h>=32:
             return "jpeg2000"
-        return [x for x in co if x!="rgb"][0]
+        return (x for x in co if x!="rgb").next()
 
     def get_current_or_rgb(self, pixel_count, *_args):
         if pixel_count<self._rgb_auto_threshold:
