@@ -126,14 +126,14 @@ class BaseWindowModel(CoreX11WindowModel):
                   "What type of content is shown in this window", "",
                   PARAM_READABLE),
         #from _XPRA_QUALITY
-        "quality": (gobject.TYPE_INT64,
+        "quality": (gobject.TYPE_INT,
                 "Quality", "",
-                -1, 0xffffffff, -1,
+                -1, 100, -1,
                 PARAM_READABLE),
         #from _XPRA_SPEED
-        "speed": (gobject.TYPE_INT64,
+        "speed": (gobject.TYPE_INT,
                 "Speed", "",
-                -1, 0xffffffff, -1,
+                -1, 100, -1,
                 PARAM_READABLE),
         #from _NET_WM_DESKTOP
         "workspace": (gobject.TYPE_UINT,
@@ -204,8 +204,10 @@ class BaseWindowModel(CoreX11WindowModel):
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
                               "attention-requested", "content-type",
                               "menu", "workspace", "opacity",
-                              "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
-    _internal_property_names = CoreX11WindowModel._internal_property_names+["state", "quality", "speed"]
+                              "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky",
+                              "quality", "speed",
+                              ]
+    _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
                               "WM_TRANSIENT_FOR",
                               "_NET_WM_WINDOW_TYPE",
@@ -509,12 +511,12 @@ class BaseWindowModel(CoreX11WindowModel):
     def _handle_xpra_quality_change(self):
         quality = self.prop_get("_XPRA_QUALITY", "u32", True) or -1
         metalog("quality=%s", quality)
-        self._updateprop("quality", quality)
+        self._updateprop("quality", max(-1, min(100, quality)))
 
     def _handle_xpra_speed_change(self):
         speed = self.prop_get("_XPRA_SPEED", "u32", True) or -1
         metalog("speed=%s", speed)
-        self._updateprop("speed", speed)
+        self._updateprop("speed", max(-1, min(100, speed)))
 
     _x11_property_handlers = CoreX11WindowModel._x11_property_handlers.copy()
     _x11_property_handlers.update({

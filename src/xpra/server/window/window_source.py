@@ -240,18 +240,14 @@ class WindowSource(WindowIconSource):
         self._fixed_min_quality = capr(default_encoding_options.get("min-quality", 0))
         self._fixed_speed = capr(default_encoding_options.get("speed", 0))
         self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
-        if "quality" in window.get_internal_property_names():
-            self._quality_hint = self.window.get_property("quality")
+        self._quality_hint = self.window.get("quality", -1)
+        if "quality" in window.get_dynamic_property_names():
             sid = window.connect("notify::quality", self.quality_changed)
             self.window_signal_handlers.append(sid)
-        else:
-            self._quality_hint = -1
-        if "speed" in window.get_internal_property_names():
-            self._speed_hint = self.window.get_property("speed")
+        self._speed_hint = self.window.get("speed", -1)
+        if "speed" in window.get_dynamic_property_names():
             sid = window.connect("notify::speed", self.speed_changed)
             self.window_signal_handlers.append(sid)
-        else:
-            self._speed_hint = -1
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
         nobwl = not (self.bandwidth_limit or 0)>0
@@ -610,12 +606,12 @@ class WindowSource(WindowIconSource):
         return True
 
     def quality_changed(self, window, *args):
-        self._quality_hint = window.get("quality") or -1
+        self._quality_hint = window.get("quality", -1)
         log("quality_changed(%s, %s) quality=%s", window, args, self._quality_hint)
         return True
 
     def speed_changed(self, window, *args):
-        self._speed_hint = window.get("speed") or -1
+        self._speed_hint = window.get("speed", -1)
         log("speed_changed(%s, %s) speed=%s", window, args, self._speed_hint)
         return True
 
