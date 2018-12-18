@@ -1940,7 +1940,7 @@ class WindowVideoSource(WindowSource):
         #dw and dh are the edges we don't handle here
         width = w & self.width_mask
         height = h & self.height_mask
-        videolog("video_encode%s image size: %sx%s, encoder/csc size: %sx%s", (encoding, image, options), w, h, width, height)
+        videolog("video_encode%s image size: %4ix%-4i, encoder/csc size: %4ix%-4i", (encoding, image, options), w, h, width, height)
 
         csce, csc_image, csc, enc_width, enc_height = self.csc_image(image, width, height)
 
@@ -2020,7 +2020,7 @@ class WindowVideoSource(WindowSource):
             #make sure we timeout the encoder if no new frames come through:
             self.schedule_video_encoder_timer()
         actual_encoding = ve.get_encoding()
-        videolog("video_encode %s encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
+        videolog("video_encode %s encoder: %4s %4ix%-4i result is %7i bytes, %6.1f MPixels/s, client options=%s",
                             ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
         return actual_encoding, Compressed(actual_encoding, data), client_options, width, height, 0, 24
 
@@ -2134,7 +2134,7 @@ class WindowVideoSource(WindowSource):
         start = monotonic_time()
         csc_image = csce.convert_image(image)
         end = monotonic_time()
-        csclog("csc_image(%s, %s, %s) converted to %s in %.1fms (%.1f MPixels/s)",
+        csclog("csc_image(%s, %s, %s) converted to %s in %.1fms, %6.1f MPixels/s",
                         image, width, height,
                         csc_image, (1000.0*end-1000.0*start), (width*height/(end-start+0.000001)/1024.0/1024.0))
         if not csc_image:
