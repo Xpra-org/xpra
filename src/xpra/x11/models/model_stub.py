@@ -125,12 +125,12 @@ class WindowModelStub(AutoPropGObjectMixin, gobject.GObject):
             returns the default value if the property does not exist.
         """
         l = self.get_logger(name)
-        if name in self._property_names:
+        if name in set(self._property_names + self._dynamic_property_names + self._internal_property_names):
             v = self.get_property(name)
             l("get(%s, %s) using get_property=%s", name, default_value, v)
         else:
             v = default_value
-            l("get(%s, %s) returning default value=%s", name, default_value, v)
+            l("get(%s, %s) not a property of %s, returning default value=%s", name, default_value, type(self), v)
         return v
 
 
