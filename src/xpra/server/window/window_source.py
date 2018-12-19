@@ -236,9 +236,9 @@ class WindowSource(WindowIconSource):
         self._encoding_speed = deque(maxlen=100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
         self._encoding_speed_info = {}
         # they may have fixed values:
-        self._fixed_quality = capr(default_encoding_options.get("quality", 0))
+        self._fixed_quality = default_encoding_options.get("quality", -1)
         self._fixed_min_quality = capr(default_encoding_options.get("min-quality", 0))
-        self._fixed_speed = capr(default_encoding_options.get("speed", 0))
+        self._fixed_speed = default_encoding_options.get("speed", -1)
         self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
         self._quality_hint = self.window.get("quality", -1)
         if "quality" in window.get_dynamic_property_names():
@@ -251,15 +251,15 @@ class WindowSource(WindowIconSource):
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
         nobwl = not (self.bandwidth_limit or 0)>0
-        if self._quality_hint:
+        if self._quality_hint>=0:
             self._current_quality = capr(self._quality_hint)
-        elif self._fixed_quality:
+        elif self._fixed_quality>=0:
             self._current_quality = capr(self._fixed_quality)
         else:
             self._current_quality = capr(encoding_options.intget("initial_quality", INITIAL_QUALITY*(1+int(nobwl))))
-        if self._speed_hint:
+        if self._speed_hint>=0:
             self._current_speed = capr(self._speed_hint)
-        elif self._fixed_speed:
+        elif self._fixed_speed>=0:
             self._current_speed = capr(self._fixed_speed)
         else:
             self._current_speed = capr(encoding_options.intget("initial_speed", INITIAL_SPEED*(1+int(nobwl))))
@@ -359,9 +359,9 @@ class WindowSource(WindowIconSource):
         self._encoding_speed = []
         self._encoding_speed_info = {}
         #
-        self._fixed_quality = 0
+        self._fixed_quality = -1
         self._fixed_min_quality = 0
-        self._fixed_speed = 0
+        self._fixed_speed = -1
         self._fixed_min_speed = 0
         #
         self._damage_delayed = None
@@ -1000,6 +1000,8 @@ class WindowSource(WindowIconSource):
         self.may_update_av_sync_delay()
 
     def update_speed(self):
+        statslog("update_speed() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
+                 self.suspended, bool(self._mmap), self._current_speed, self._speed_hint, self._fixed_speed, self.encoding, self._sequence)
         if self.suspended:
             self._encoding_speed_info = {"suspended" : True}
             return
@@ -1007,12 +1009,12 @@ class WindowSource(WindowIconSource):
             self._encoding_speed_info = {"mmap" : True}
             return
         speed = self._speed_hint
-        if speed>0:
+        if speed>=0:
             self._current_speed = capr(speed)
             self._encoding_speed_info = {"hint" : True}
             return
         speed = self._fixed_speed
-        if speed>0:
+        if speed>=0:
             self._current_speed = capr(speed)
             self._encoding_speed_info = {"fixed" : True}
             return
@@ -1049,6 +1051,8 @@ class WindowSource(WindowIconSource):
 
 
     def update_quality(self):
+        statslog("update_quality() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
+                 self.suspended, bool(self._mmap), self._current_quality, self._quality_hint, self._fixed_quality, self.encoding, self._sequence)
         if self.suspended:
             self._encoding_quality_info = {"suspended" : True}
             return
@@ -1056,12 +1060,12 @@ class WindowSource(WindowIconSource):
             self._encoding_quality_info = {"mmap" : True}
             return
         quality = self._quality_hint
-        if quality>0:
+        if quality>=0:
             self._current_quality = capr(quality)
             self._encoding_quality_info = {"hint" : True}
             return
         quality = self._fixed_quality
-        if quality>0:
+        if quality>=0:
             self._current_quality = capr(quality)
             self._encoding_quality_info = {"fixed" : True}
             return
