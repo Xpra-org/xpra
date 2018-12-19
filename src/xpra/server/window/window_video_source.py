@@ -1637,14 +1637,17 @@ class WindowVideoSource(WindowSource):
             #only allow bandwidth to drive video encoders
             #when we don't have strict quality or speed requirements:
             opts["bandwidth-limit"] = self.bandwidth_limit
-        if self.matches_video_subregion(width, height) and self.subregion_is_video() and (monotonic_time()-self.last_scroll_time)>5:
-            opts.update({
-                "content-type"  : "video",
-                #could take av-sync into account here to choose the number of b-frames:
-                "b-frames"      : int(B_FRAMES and (encoding in self.supports_video_b_frames)),
-                })
+        if self.content_type:
+            content_type = self.content_type
+        elif self.matches_video_subregion(width, height) and self.subregion_is_video() and (monotonic_time()-self.last_scroll_time)>5:
+            content_type = "video"
         else:
-            opts["content-type"] = self.content_type
+            content_type = None
+        if content_type:
+            opts["content-type"] = content_type
+            if content_type=="video":
+                if B_FRAMES and (encoding in self.supports_video_b_frames):
+                    opts["b-frames"] = True
         return opts
 
 
