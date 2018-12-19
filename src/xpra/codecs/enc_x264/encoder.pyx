@@ -573,7 +573,6 @@ cdef class Encoder:
         param.b_open_gop = 1        #allow open gop
         #param.b_opencl = self.opencl
         param.i_bframe = self.b_frames
-        self.bandwidth_limit = 2*1000*1000
         if self.bandwidth_limit>0 and self.bandwidth_limit<=5*1000*1000:
             #CBR mode:
             param.rc.i_rc_method = X264_RC_ABR
