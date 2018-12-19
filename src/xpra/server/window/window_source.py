@@ -1076,6 +1076,10 @@ class WindowSource(WindowIconSource):
             return
         now = monotonic_time()
         info, target = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
+        if self.content_type=="text":
+            target = min(100, target+20)
+        elif self.content_type=="video":
+            target = max(0, target-20)
         #make a copy to work on:
         ves_copy = list(self._encoding_quality)
         ves_copy.append((now, target))
