@@ -998,9 +998,9 @@ def do_parse_cmdline(cmdline, defaults):
                       help="The minimum port number allowed when creating UDP or TCP sockets (default: '%default')")
     ignore({"password"           : defaults.password})
     if POSIX:
-        group.add_option("--mmap-group", action="store_true",
+        group.add_option("--mmap-group", action="store",
                           dest="mmap_group", default=defaults.mmap_group,
-                          help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
+                          help="When creating the mmap file with the client, set the group permission on the mmap file to this group, use the special value 'auto' to use the same value as the owner of the server socket file we connect to (default: '%default')")
         group.add_option("--socket-permissions", action="store",
                           dest="socket_permissions", default=defaults.socket_permissions,
                           help="When creating the server unix domain socket, what file access mode to use (default: '%default')")

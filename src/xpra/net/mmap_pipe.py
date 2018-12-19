@@ -4,16 +4,42 @@
 # later version. See the file COPYING for details.
 
 import os
+
 from ctypes import c_ubyte, c_char, c_uint32
 from xpra.util import roundup
-from xpra.os_util import memoryview_to_bytes, shellsub, WIN32, POSIX
+from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, get_groups, WIN32, POSIX
+from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.simple_stats import std_unit
+
 from xpra.log import Logger
 log = Logger("mmap")
+
+MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra") 
+
 
 """
 Utility functions for communicating via mmap
 """
+
+def get_socket_group(socket_filename):
+    if isinstance(socket_filename, str) and os.path.exists(socket_filename):
+        s = os.stat(socket_filename)
+        return s.st_gid
+    log.warn("Warning: missing valid socket filename to set mmap group")
+    return -1
+
+def xpra_group():
+    if POSIX:
+        try:
+            username = os.getgroups()
+            groups = get_groups(username)
+            if MMAP_GROUP in groups:
+                group_id = get_group_id(MMAP_GROUP)
+                if group_id>=0:
+                    return group_id
+        except Exception:
+            log("xpra_group()", exc_info=True)
+    return 0
 
 
 def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, filename=None):
@@ -99,11 +125,29 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                 mmap_filename = temp.name
                 fd = temp.file.fileno()
             #set the group permissions and gid if the mmap-group option is specified
-            if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
-                from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
-                s = os.stat(socket_filename)
-                os.fchown(fd, -1, s.st_gid)
-                os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
+            mmap_group = (mmap_group or "")
+            if POSIX and mmap_group and mmap_group not in FALSE_OPTIONS:
+                group_id = None
+                if mmap_group=="SOCKET":
+                    group_id = get_socket_group(socket_filename)
+                elif mmap_group.lower()=="auto":
+                    group_id = xpra_group() or get_socket_group(socket_filename)
+                elif mmap_group.lower() in TRUE_OPTIONS:
+                    log.info("parsing legacy mmap-group value '%s' as 'auto'", mmap_group)
+                    log.info(" please update your configuration")
+                    group_id = xpra_group() or get_socket_group(socket_filename)
+                else:
+                    group_id = get_group_id(mmap_group)
+                if group_id>0:
+                    log("setting mmap file %s to group id=%i", mmap_filename, group_id)
+                    try:
+                        os.fchown(fd, -1, group_id)
+                    except OSError as e:
+                        log("fchown(%i, %i, %i) on %s", fd, -1, group_id, mmap_filename, exc_info=True)
+                        log.error("Error: failed to change group ownership of mmap file to '%s':", mmap_group)
+                        log.error(" %s", e)
+                    from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
+                    os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
             log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
             os.lseek(fd, mmap_size-1, os.SEEK_SET)
             assert os.write(fd, b'\x00')

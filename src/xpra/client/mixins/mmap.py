@@ -8,11 +8,15 @@ import os
 from xpra.log import Logger
 log = Logger("client")
 
+from xpra.util import envbool
 from xpra.exit_codes import EXIT_MMAP_TOKEN_FAILURE
 from xpra.platform.features import MMAP_SUPPORTED
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+
+
+KEEP_MMAP_FILE = envbool("XPRA_KEEP_MMAP_FILE", False)
 
 
 """
@@ -78,7 +82,8 @@ class MmapClient(StubClientMixin):
                 return
             log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
         #the server will have a handle on the mmap file by now, safe to delete:
-        self.clean_mmap()
+        if not KEEP_MMAP_FILE:
+            self.clean_mmap()
         return True
 
 

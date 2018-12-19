@@ -4,8 +4,15 @@
 # Enable shared memory transfers:
 mmap = %(mmap)s
 
-# Use server group ownership for mmap file:
-mmap-group = no
+# Set group ownership of the mmap file:
+#leave it as it is:
+#mmap-group = no
+#use a specific group:
+#mmap-group = xpra
+#use the server socket's group:
+#mmap-group = SOCKET
+#use the "xpra" group if possible, or fallback to the socket's group:
+mmap-group = auto
 
 # The file permissions set on the server's unix domain socket
 # (ignored when mmap-group is enabled)
