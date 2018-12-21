@@ -7,6 +7,7 @@ import os
 import sys
 
 from xpra.util import envbool
+from xpra.scripts.config import parse_bool
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 assert init and log #tests will disable logging from here
@@ -38,7 +39,7 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
         self.service = kwargs.pop("service", PAM_AUTH_SERVICE)
-        self.check_account = kwargs.pop("check-account", PAM_CHECK_ACCOUNT)
+        self.check_account = parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False)
         SysAuthenticator.__init__(self, username, **kwargs)
 
     def check(self, password):
