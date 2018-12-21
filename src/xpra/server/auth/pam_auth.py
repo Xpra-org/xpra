@@ -6,21 +6,31 @@
 import os
 import sys
 
+from xpra.util import envbool
+
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 assert init and log #tests will disable logging from here
 
+
 PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")
+PAM_CHECK_ACCOUNT = envbool("XPRA_PAM_CHECK_ACCOUNT", False)
 
 
-def check(username, password, service=PAM_AUTH_SERVICE):
+def check(username, password, service=PAM_AUTH_SERVICE, check_account=PAM_CHECK_ACCOUNT):
     log("pam check(%s, [..])", username)
     from xpra.server.pam import pam_session #@UnresolvedImport
     session = pam_session(username, password, service)
     if not session.start(password):
         return False
-    success = session.authenticate()
-    if success:
-        session.close()
+    try:
+        success = session.authenticate()
+        if success and check_account:
+            success = session.check_account()
+    finally:
+        try:
+            session.close()
+        except:
+            log("error closing session %s", session, exc_info=True)
     return success
 
 
@@ -28,13 +38,14 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
         self.service = kwargs.pop("service", PAM_AUTH_SERVICE)
+        self.check_account = kwargs.pop("check-account", PAM_CHECK_ACCOUNT)
         SysAuthenticator.__init__(self, username, **kwargs)
 
     def check(self, password):
         log("pam.check(..) pw=%s", self.pw)
         if self.pw is None:
             return False
-        return check(self.username, password, self.service)
+        return check(self.username, password, self.service, self.check_account)
 
     def get_challenge(self, digests):
         if "xor" not in digests:

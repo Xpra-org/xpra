@@ -61,6 +61,7 @@ cdef extern from "pam_appl.h":
     char **pam_getenvlist(pam_handle_t *pamh)
 
     int pam_authenticate(pam_handle_t *pamh, int flags)
+    int pam_acct_mgmt(pam_handle_t *pamh, int flags)
 
     int PAM_SERVICE             # The service name
     int PAM_USER                # The user name
@@ -249,6 +250,16 @@ cdef class pam_session(object):
         if r!=PAM_SUCCESS:
             log.warn("Warning: pam authentication failed: %s", PAM_ERR_STR.get(r, r))
             log.warn(" %s", pam_strerror(self.pam_handle, r))
+            return False
+        return True
+
+    def check_account(self):
+        assert self.pam_handle!=NULL
+        cdef int r = pam_acct_mgmt(self.pam_handle, 0)
+        if r!=PAM_SUCCESS:
+            self.pam_handle = NULL
+            log.error("Error: pam_acct_mgmt failed: %s", PAM_ERR_STR.get(r, r))
+            log.error(" %s", pam_strerror(self.pam_handle, r))
             return False
         return True
 
