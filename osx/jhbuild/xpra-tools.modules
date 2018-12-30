@@ -44,10 +44,10 @@
 	</autotools>
 
 	<autotools id="lz4" skip-autogen="true">
-		<branch module="https://codeload.github.com/lz4/lz4/tar.gz/v1.8.2"
-			version="1.8.2"
-			checkoutdir="lz4-1.8.2"
-			hash="sha256:0963fbe9ee90acd1d15e9f09e826eaaf8ea0312e854803caf2db0a6dd40f4464"
+		<branch module="/lz4/lz4/tar.gz/v1.8.3"
+			version="1.8.3"
+			checkoutdir="lz4-1.8.3"
+			hash="sha256:33af5936ac06536805f9745e0b6d61da606a1f8b4cc5c04dd3cbaca3b9b4fc43"
 			repo="github.com"/>
 	</autotools>
 
