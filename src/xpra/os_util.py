@@ -500,10 +500,8 @@ def osexpand(s, actual_username="", uid=0, gid=0, subs={}):
             from xpra.platform.xposix.paths import get_runtime_dir
             d["XDG_RUNTIME_DIR"] = os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
     if actual_username:
-        d.update({
-            "USERNAME"  : actual_username,
-            "USER"      : actual_username,
-            })
+        d["USERNAME"] = actual_username
+        d["USER"] = actual_username
     #first, expand the substitutions themselves,
     #as they may contain references to other variables:
     ssub = OrderedDict()
