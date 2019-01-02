@@ -564,6 +564,17 @@ class WindowVideoSource(WindowSource):
         WindowSource.full_quality_refresh(self, damage_options)
 
 
+    def quality_changed(self, window, *args):
+        WindowSource.quality_changed(self, window, args)
+        self.video_context_clean()
+        return True
+
+    def speed_changed(self, window, *args):
+        WindowSource.speed_changed(self, window, args)
+        self.video_context_clean()
+        return True
+
+
     def must_batch(self, delay):
         #force batching when using video region
         #because the video region code is in the send_delayed path
