@@ -50,7 +50,7 @@ ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 100)
 SLOW_SEND_THRESHOLD = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
-FORCE_BATCH = envint("XPRA_FORCE_BATCH", False)
+FORCE_BATCH = envint("XPRA_FORCE_BATCH", True)
 STRICT_MODE = envint("XPRA_ENCODING_STRICT_MODE", False)
 MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
 INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH", False)
@@ -1306,7 +1306,9 @@ class WindowSource(WindowIconSource):
         self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
 
     def must_batch(self, delay):
-        if FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay or self.bandwidth_limit>0:
+        if FORCE_BATCH:
+            return True
+        if self.batch_config.always or delay>self.batch_config.min_delay or self.bandwidth_limit>0:
             return True
         now = monotonic_time()
         gs = self.global_statistics
