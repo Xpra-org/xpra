@@ -96,7 +96,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
 
     #multiplier for setup_cost:
     #(lose points if we have less than N fps)
-    setup_cost_mult = 1+int(detection)*max(0, MIN_FPS_COST-ffps)
+    setup_cost_mult = int(detection)*(1+max(0, MIN_FPS_COST-ffps))
 
     #how well the codec deals with larger screen sizes:
     sizescore = 100
