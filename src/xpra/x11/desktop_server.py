@@ -556,7 +556,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         pointer = super(XpraDesktopServer, self)._adjust_pointer(proto, wid, pointer)
         #maybe the pointer is off-screen:
         ww, wh = window.get_dimensions()
-        x, y = pointer
+        x, y = pointer[:2]
         if x<0 or x>=ww or y<0 or y>=wh:
             self.suspend_cursor(proto)
             return None

@@ -325,7 +325,7 @@ class InputServer(StubServerMixin):
                             px, py = pointer[:2]
                             ax, ay = px+dx, py+dy
                             mouselog("client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s", ss.counter, pos, mapped_at, pointer, (ax, ay))
-                            return ax, ay
+                            return [ax, ay]+list(pointer[2:])
         return pointer
 
     def _process_mouse_common(self, proto, wid, opointer, *args):

@@ -158,14 +158,14 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         #the window may be at an offset (multi-window for multi-monitor):
         wx, wy, ww, wh = window.geometry
         #or maybe the pointer is off-screen:
-        x, y = pointer
+        x, y = pointer[:2]
         if x<0 or x>=ww or y<0 or y>=wh:
             self.suspend_cursor(proto)
             return None
         self.restore_cursor(proto)
         ax = x+wx
         ay = y+wy
-        return ax, ay
+        return [ax, ay]+list(pointer[2:])
 
     def get_pointer_position(self):
         return self.root.get_pointer()[-3:-1]
