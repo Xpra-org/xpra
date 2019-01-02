@@ -13,6 +13,7 @@ NRECS = 100
 
 from collections import deque
 from xpra.simple_stats import get_list_stats
+from xpra.os_util import monotonic_time
 
 import os
 
@@ -58,6 +59,7 @@ class DamageBatchConfig(object):
         self.delay = self.START_DELAY
         self.saved = self.START_DELAY
         self.locked = False                             #to force a specific delay
+        self.last_event = 0
         self.last_delays = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
         self.last_actual_delays = deque(maxlen=64)      #the delays we actually used (milliseconds)
         self.last_updated = 0
@@ -75,6 +77,8 @@ class DamageBatchConfig(object):
             "timeout-delay"     : self.timeout_delay,
             "locked"            : self.locked,
             }
+        if self.last_event>0:
+            info["last-event"] = int(monotonic_time()-self.last_event)
         if self.locked:
             info["delay"] = self.delay
         else:

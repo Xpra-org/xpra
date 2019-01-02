@@ -1243,16 +1243,6 @@ class WindowSource(WindowIconSource):
                 log.error("Error: bug, found a delayed region without a timer!")
                 self.expire_timer = self.timeout_add(0, self.expire_delayed_region, 0)
             return
-        elif self.batch_config.delay <= self.batch_config.min_delay and not self.batch_config.always:
-            #work out if we have too many damage requests
-            #or too many pixels in those requests
-            #for the last time_unit, and if so we force batching on
-            event_min_time = now-self.batch_config.time_unit
-            all_pixels = [pixels for _,event_time,pixels in self.global_statistics.damage_last_events if event_time>event_min_time]
-            eratio = float(len(all_pixels)) / self.batch_config.max_events
-            pratio = float(sum(all_pixels)) / self.batch_config.max_pixels
-            if eratio>1.0 or pratio>1.0:
-                self.batch_config.delay = int(self.batch_config.min_delay * max(eratio, pratio))
 
         delay = options.get("delay", self.batch_config.delay)
         if now-self.statistics.last_resized<0.250:
@@ -1268,6 +1258,11 @@ class WindowSource(WindowIconSource):
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
+        elapsed = now-self.batch_config.last_event
+        if elapsed>delay:
+            #batch delay has already elapsed since we last processed a screen update,
+            #so we don't need to wait much longer:
+            delay = self.batch_config.min_delay
         if not self.must_batch(delay):
             #send without batching:
             damagelog("do_damage%-24s wid=%s, sending now with sequence %s", (x, y, w, h, options), self.wid, self._sequence)
@@ -1286,6 +1281,7 @@ class WindowSource(WindowIconSource):
                 if self.is_cancelled():
                     return
                 self.window.acknowledge_changes()
+                self.batch_config.last_event = monotonic_time()
                 self.process_damage_region(now, x, y, w, h, actual_encoding, options)
             self.idle_add(damage_now)
             return
@@ -1325,6 +1321,17 @@ class WindowSource(WindowIconSource):
             return True
         ww, wh = self.window.get_dimensions()
         if pixels_encoding_backlog>ww*wh:
+            return True
+        #work out if we have too many damage requests
+        #or too many pixels in those requests
+        #for the last time_unit, and if so we force batching on
+        event_min_time = now-self.batch_config.time_unit
+        all_pixels = tuple(pixels for _,event_time,pixels in self.global_statistics.damage_last_events if event_time>event_min_time)
+        eratio = float(len(all_pixels)) / self.batch_config.max_events
+        if eratio>1.0:
+            return True
+        pratio = float(sum(all_pixels)) / self.batch_config.max_pixels
+        if pratio>1.0:
             return True
         try:
             t, _ = self.batch_config.last_delays[-5]
@@ -1514,6 +1521,7 @@ class WindowSource(WindowIconSource):
         if not self.window.is_managed():
             return
         self.window.acknowledge_changes()
+        self.batch_config.last_event = monotonic_time()
         if not self.is_cancelled():
             self.do_send_delayed_regions(damage_time, regions, coding, options)
 
