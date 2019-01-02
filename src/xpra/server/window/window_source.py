@@ -1268,13 +1268,7 @@ class WindowSource(WindowIconSource):
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
-        packets_backlog = self.get_packets_backlog()
-        pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
-        #only send without batching when things are going well:
-        # - no packets backlog from the client
-        # - the amount of pixels waiting to be encoded is less than one full frame refresh
-        # - no more than 10 regions waiting to be encoded
-        if not self.must_batch(delay) and (packets_backlog==0 and pixels_encoding_backlog<ww*wh and enc_backlog_count<=10):
+        if not self.must_batch(delay):
             #send without batching:
             damagelog("do_damage%-24s wid=%s, sending now with sequence %s", (x, y, w, h, options), self.wid, self._sequence)
             actual_encoding = options.get("encoding")
@@ -1318,6 +1312,19 @@ class WindowSource(WindowIconSource):
         if ldet and now-ldet<self.batch_config.min_delay:
             #last damage event was recent,
             #avoid swamping the encode queue / connection / client paint handler
+            return True
+        #only send without batching when things are going well:
+        # - no packets backlog from the client
+        # - the amount of pixels waiting to be encoded is less than one full frame refresh
+        # - no more than 10 regions waiting to be encoded
+        packets_backlog = self.get_packets_backlog()
+        if packets_backlog>0:
+            return True
+        pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
+        if enc_backlog_count>10:
+            return True
+        ww, wh = self.window.get_dimensions()
+        if pixels_encoding_backlog>ww*wh:
             return True
         try:
             t, _ = self.batch_config.last_delays[-5]
