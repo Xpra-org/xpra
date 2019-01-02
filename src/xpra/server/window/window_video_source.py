@@ -1240,10 +1240,12 @@ class WindowVideoSource(WindowSource):
                         #avoid subsampling with shadow servers:
                         score_delta -= 40
                     ffps = self.get_video_fps(width, height)
+                    vs = self.video_subregion
+                    detection = bool(vs) and vs.detection
                     score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
                                                     target_q, min_q, target_s, min_s,
                                                     self._csc_encoder, self._video_encoder,
-                                                    score_delta, ffps)
+                                                    score_delta, ffps, detection)
                     if score_data:
                         scores.append(score_data)
             if not FORCE_CSC or src_format==FORCE_CSC_MODE:
