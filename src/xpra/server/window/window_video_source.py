@@ -43,6 +43,7 @@ MIN_VIDEO_FPS = envint("XPRA_MIN_VIDEO_FPS", 10)
 MIN_VIDEO_EVENTS = envint("XPRA_MIN_VIDEO_EVENTS", 20)
 
 VIDEO_TIMEOUT = envint("XPRA_VIDEO_TIMEOUT", 10)
+VIDEO_NODETECT_TIMEOUT = envint("XPRA_VIDEO_NODETECT_TIMEOUT", 10*60)
 
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
 if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not in PIXEL_SUBSAMPLING:
@@ -2122,7 +2123,13 @@ class WindowVideoSource(WindowSource):
 
     def schedule_video_encoder_timer(self):
         if not self.video_encoder_timer:
-            self.video_encoder_timer = self.timeout_add(VIDEO_TIMEOUT*1000, self.video_encoder_timeout)
+            vs = self.video_subregion
+            if vs and vs.detection:
+                timeout = VIDEO_TIMEOUT
+            else:
+                timeout = VIDEO_NODETECT_TIMEOUT
+            if timeout>0:
+                self.video_encoder_timer = self.timeout_add(timeout*1000, self.video_encoder_timeout)
 
     def video_encoder_timeout(self):
         videolog("video_encoder_timeout() will close video encoder=%s", self._video_encoder)
