@@ -7,7 +7,7 @@
 import math
 
 from xpra.os_util import monotonic_time
-from xpra.util import MutableInteger, envint, envbool
+from xpra.util import envint, envbool
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
 from xpra.log import Logger
 
@@ -337,7 +337,7 @@ class VideoSubregion(object):
         for _,x,y,w,h in lde:
             rects = self.excluded_rectangles(rectangle(x,y,w,h), ww, wh)
             for r in rects:
-                dec.setdefault(r, MutableInteger()).increase()
+                dec[r] = dec.get(r, 0)+1
                 if w>=MIN_W:
                     wc.setdefault(w, dict()).setdefault(x, set()).add(r)
                 if h>=MIN_H:
