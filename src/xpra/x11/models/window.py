@@ -667,7 +667,7 @@ class WindowModel(BaseWindowModel):
                     hints[trans_name] = v
         #handle min-size and max-size,
         #applying our size constraints if we have any:
-        mhints = typedict(size_hints)
+        mhints = typedict(size_hints or {})
         hminw, hminh = mhints.intlistget("min_size", (0, 0), 2, 2)
         hmaxw, hmaxh = mhints.intlistget("max_size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
         d = self.get("decorations", -1)
