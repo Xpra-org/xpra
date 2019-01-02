@@ -755,7 +755,7 @@ class WindowVideoSource(WindowSource):
                         actual_vr = same_c[0]
 
         if actual_vr is None:
-            sublog("send_delayed_regions: video region %s not found in: %s", vr, regions)
+            sublog("do_send_delayed_regions: video region %s not found in: %s", vr, regions)
         else:
             #found the video region:
             #sanity check in case the window got resized since:
@@ -773,9 +773,9 @@ class WindowVideoSource(WindowSource):
             for r in regions:
                 trimmed += r.substract_rect(actual_vr)
             if not trimmed:
-                sublog("send_delayed_regions: nothing left after removing video region %s", actual_vr)
+                sublog("do_send_delayed_regions: nothing left after removing video region %s", actual_vr)
                 return
-            sublog("send_delayed_regions: subtracted %s from %s gives us %s", actual_vr, regions, trimmed)
+            sublog("do_send_delayed_regions: subtracted %s from %s gives us %s", actual_vr, regions, trimmed)
             regions = trimmed
 
         #merge existing damage delayed region if there is one:
@@ -800,7 +800,7 @@ class WindowVideoSource(WindowSource):
             send_nonvideo(regions=regions, encoding=None, exclude_region=actual_vr)
         else:
             self._damage_delayed = damage_time, regions, coding, options or {}
-            sublog("send_delayed_regions: delaying non video regions %s some more by %ims", regions, delay)
+            sublog("do_send_delayed_regions: delaying non video regions %s some more by %ims", regions, delay)
             self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
 
     def must_encode_full_frame(self, encoding):
