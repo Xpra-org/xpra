@@ -1010,8 +1010,9 @@ def socket_connect(dtype, host, port, ipv6=None):
         if matches:
             addrinfo = matches
     #default to the last one:
-    sockaddr = addrinfo[0][-1]
-    family = family or sockaddr[0]
+    addr = addrinfo[0]
+    sockaddr = addr[-1]
+    family = family or addr[0]
     sock = socket.socket(family, socktype)    
     if dtype!="udp":
         from xpra.net.bytestreams import SOCKET_TIMEOUT
