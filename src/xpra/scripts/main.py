@@ -41,6 +41,7 @@ SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
 LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
 VERIFY_X11_SOCKET_TIMEOUT = envint("XPRA_VERIFY_X11_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
+PREFER_IPV6 = envbool("XPRA_PREFER_IPV6", False)
 
 
 def nox():
@@ -977,8 +978,6 @@ def connect_or_fail(display_desc, opts):
         raise InitException("connection failed: %s" % e)
 
 
-
-
 def socket_connect(dtype, host, port, ipv6=None):
     if ipv6 is True:
         assert socket.has_ipv6, "no IPv6 support"
@@ -1002,6 +1001,14 @@ def socket_connect(dtype, host, port, ipv6=None):
             socket.AF_INET6 : " IPv6",
             socket.AF_INET  : " IPv4",
             }.get(family, ""), (host, port), e))
+    if ipv6 is None:
+        prefer = {
+            True    : socket.AF_INET6,
+            False   : socket.AF_INET,
+            }.get(PREFER_IPV6)
+        matches = [x for x in addrinfo if x[0]==prefer]
+        if matches:
+            addrinfo = matches
     #default to the last one:
     sockaddr = addrinfo[0][-1]
     sock = socket.socket(family, socktype)    
