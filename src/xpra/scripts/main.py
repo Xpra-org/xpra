@@ -1009,7 +1009,7 @@ def socket_connect(dtype, host, port, ipv6=None):
         matches = [x for x in addrinfo if x[0]==prefer]
         if matches:
             addrinfo = matches
-    #default to the last one:
+    #default to the first one:
     addr = addrinfo[0]
     sockaddr = addr[-1]
     family = family or addr[0]
