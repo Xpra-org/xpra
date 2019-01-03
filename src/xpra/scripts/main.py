@@ -1009,22 +1009,22 @@ def socket_connect(dtype, host, port, ipv6=None):
         matches = [x for x in addrinfo if x[0]==prefer]
         if matches:
             addrinfo = matches
-    #default to the first one:
-    addr = addrinfo[0]
-    sockaddr = addr[-1]
-    family = family or addr[0]
-    sock = socket.socket(family, socktype)    
-    if dtype!="udp":
-        from xpra.net.bytestreams import SOCKET_TIMEOUT
-        sock.settimeout(SOCKET_TIMEOUT)
-    try:
-        sock.connect(sockaddr)
-    except Exception as e:
-        get_util_logger().debug("failed to connect using %s%s", sock.connect, sockaddr, exc_info=True)
-        from xpra.net.bytestreams import pretty_socket
-        raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(sockaddr), e))
-    sock.settimeout(None)
-    return sock
+    #try each one:
+    for addr in addrinfo:
+        sockaddr = addr[-1]
+        family = addr[0]
+        sock = socket.socket(family, socktype)
+        if dtype!="udp":
+            from xpra.net.bytestreams import SOCKET_TIMEOUT
+            sock.settimeout(SOCKET_TIMEOUT)
+        try:
+            sock.connect(sockaddr)
+            sock.settimeout(None)
+            return sock
+        except Exception as e:
+            get_util_logger().debug("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
+    raise InitException("failed to connect to %s:%s" % (host, port))
+
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT, SocketConnection
