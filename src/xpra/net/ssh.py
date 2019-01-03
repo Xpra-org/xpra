@@ -201,7 +201,6 @@ def ssh_paramiko_connect_to(display_desc):
     dtype = display_desc["type"]
     host = display_desc["host"]
     port = display_desc.get("ssh-port", 22)
-    ipv6 = display_desc.get("ipv6", None)
     #ssh and command attributes:
     username = display_desc.get("username") or get_username()
     if "proxy_host" in display_desc:
@@ -260,8 +259,7 @@ def ssh_paramiko_connect_to(display_desc):
             proxy_port = display_desc.get("proxy_port", 22)
             proxy_username = display_desc.get("proxy_username", username)
             proxy_password = display_desc.get("proxy_password", password)
-            proxy_ipv6 = display_desc.get("proxy_ipv6", None)
-            sock = socket_connect(dtype, proxy_host, proxy_port, proxy_ipv6)
+            sock = socket_connect(dtype, proxy_host, proxy_port)
             middle_transport = Transport(sock)
             middle_transport.use_compression(False)
             try:
@@ -291,7 +289,7 @@ def ssh_paramiko_connect_to(display_desc):
 
         #plain TCP connection to the server,
         #we open it then give the socket to paramiko:
-        sock = socket_connect(dtype, host, port, ipv6)
+        sock = socket_connect(dtype, host, port)
         sockname = sock.getsockname()
         peername = sock.getpeername()
         log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)

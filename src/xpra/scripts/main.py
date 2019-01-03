@@ -41,7 +41,6 @@ SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
 LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
 VERIFY_X11_SOCKET_TIMEOUT = envint("XPRA_VERIFY_X11_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
-PREFER_IPV6 = envbool("XPRA_PREFER_IPV6", False)
 
 
 def nox():
@@ -702,7 +701,6 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                         #otherwise, we have to assume they are all part of IPv6
                         #we could count them at split at 8, but that would be just too fugly
                         pass
-            desc["ipv6"] = True
         elif host.find(":")>0:
             host, port_str = host.split(":", 1)
         if port_str:
@@ -978,14 +976,7 @@ def connect_or_fail(display_desc, opts):
         raise InitException("connection failed: %s" % e)
 
 
-def socket_connect(dtype, host, port, ipv6=None):
-    if ipv6 is True:
-        assert socket.has_ipv6, "no IPv6 support"
-        family = socket.AF_INET6
-    elif ipv6 is False:
-        family = socket.AF_INET
-    else:
-        family = 0  #any
+def socket_connect(dtype, host, port):
     if dtype=="udp":
         socktype = socket.SOCK_DGRAM
     else:
@@ -994,6 +985,7 @@ def socket_connect(dtype, host, port, ipv6=None):
         "host" : host,
         "port" : port,
         }
+    family = 0  #any
     try:
         addrinfo = socket.getaddrinfo(host, port, family, socktype)
     except Exception as e:
@@ -1001,14 +993,6 @@ def socket_connect(dtype, host, port, ipv6=None):
             socket.AF_INET6 : " IPv6",
             socket.AF_INET  : " IPv4",
             }.get(family, ""), (host, port), e))
-    if ipv6 is None:
-        prefer = {
-            True    : socket.AF_INET6,
-            False   : socket.AF_INET,
-            }.get(PREFER_IPV6)
-        matches = [x for x in addrinfo if x[0]==prefer]
-        if matches:
-            addrinfo = matches
     #try each one:
     for addr in addrinfo:
         sockaddr = addr[-1]
@@ -1090,10 +1074,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
 
     elif dtype in ("tcp", "ssl", "ws", "wss", "udp"):
-        ipv6 = display_desc.get("ipv6", None)
         host = display_desc["host"]
         port = display_desc["port"]
-        sock = socket_connect(dtype, host, port, ipv6)
+        sock = socket_connect(dtype, host, port)
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
 
