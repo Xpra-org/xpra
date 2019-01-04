@@ -16,6 +16,7 @@ log = Logger("network", "ssh")
 from xpra.scripts.main import InitException, InitExit, shellquote
 from xpra.platform.paths import get_xpra_command, get_ssh_known_hosts_files
 from xpra.platform import get_username
+from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
 from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, umask_context, is_WSL, WIN32, OSX, POSIX
@@ -220,6 +221,7 @@ def ssh_paramiko_connect_to(display_desc):
         ssh_config = SSHConfig()
         user_config_file = os.path.expanduser("~/.ssh/config")
         sock = None
+        host_config = None
         if os.path.exists(user_config_file):
             with open(user_config_file) as f:
                 ssh_config.parse(f)
@@ -240,7 +242,7 @@ def ssh_paramiko_connect_to(display_desc):
                     ssh_client.load_system_host_keys()
                     ssh_client.connect(host, port, sock=sock)
                     transport = ssh_client.get_transport()
-                    do_ssh_paramiko_connect_to(transport, host, username, password)
+                    do_ssh_paramiko_connect_to(transport, host, username, password, host_config or ssh_config.lookup("*"))
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
                     conn = SSHProxyCommandConnection(chan, peername, target, socket_info)
@@ -267,7 +269,8 @@ def ssh_paramiko_connect_to(display_desc):
             except SSHException as e:
                 log("start_client()", exc_info=True)
                 raise InitException("SSH negotiation failed: %s" % e)
-            do_ssh_paramiko_connect_to(middle_transport, proxy_host, proxy_username, proxy_password)
+            proxy_host_config = ssh_config.lookup(host)
+            do_ssh_paramiko_connect_to(middle_transport, proxy_host, proxy_username, proxy_password, proxy_host_config or ssh_config.lookup("*"))
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
 
@@ -278,7 +281,7 @@ def ssh_paramiko_connect_to(display_desc):
             except SSHException as e:
                 log("start_client()", exc_info=True)
                 raise InitException("SSH negotiation failed: %s" % e)
-            do_ssh_paramiko_connect_to(transport, host, username, password)
+            do_ssh_paramiko_connect_to(transport, host, username, password, host_config or ssh_config.lookup("*"))
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
 
             peername = (host, port)
@@ -300,7 +303,7 @@ def ssh_paramiko_connect_to(display_desc):
         except SSHException as e:
             log("start_client()", exc_info=True)
             raise InitException("SSH negotiation failed: %s" % e)
-        do_ssh_paramiko_connect_to(transport, host, username, password)
+        do_ssh_paramiko_connect_to(transport, host, username, password, host_config or ssh_config.lookup("*"))
         chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHSocketConnection(chan, sock, sockname, peername, target, socket_info)
         conn.timeout = SOCKET_TIMEOUT
@@ -315,10 +318,11 @@ class nogssapi_context(nomodule_context):
         nomodule_context.__init__(self, "gssapi")
 
 
-def do_ssh_paramiko_connect_to(transport, host, username, password):
+def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None):
     from paramiko import SSHException, RSAKey, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
+    log("do_ssh_paramiko_connect_to%s", (transport, host, username, password, host_config))
     log("SSH transport %s", transport)
 
     host_key = transport.get_remote_server_key()
@@ -349,7 +353,28 @@ def do_ssh_paramiko_connect_to(transport, host, username, password):
             assert host_key
             log("%s host key '%s' OK for host '%s'", keyname(), keymd5(host_key), host)
         else:
-            if known_host_key:
+            dnscheck = ""
+            if host_config:
+                verifyhostkeydns = host_config.get("verifyhostkeydns")
+                if verifyhostkeydns and verifyhostkeydns.lower() in TRUE_OPTIONS:
+                    try:
+                        from xpra.net.sshfp import check_host_key
+                        dnscheck = check_host_key(host, host_key)
+                    except ImportError as e:
+                        log("verifyhostkeydns failed", exc_info=True)
+                        log.warn("Warning: cannot check SSHFP DNS records")
+                        log.warn(" %s", e)
+            log.info("dnscheck=%s", dnscheck)
+            def adddnscheckinfo(q):
+                if dnscheck is not True:
+                    q += [
+                        "SSHFP validation failed:",
+                        dnscheck
+                        ]
+            if dnscheck is True:
+                #DNSSEC provided a matching record
+                log.info("found a valid SSHFP record for host %s", host)
+            elif known_host_key:
                 log.warn("Warning: SSH server key mismatch")
                 qinfo = [
 "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
@@ -359,6 +384,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password):
 "The fingerprint for the %s key sent by the remote host is" % keyname(),
 keymd5(host_key),
 ]
+                adddnscheckinfo(qinfo)
                 if VERIFY_STRICT:
                     log.warn("Host key verification failed.")
                     #TODO: show alert with no option to accept key
@@ -386,6 +412,7 @@ keymd5(host_key),
                     "%s key fingerprint is" % keyname(),
                     keymd5(host_key),
                     ]
+                adddnscheckinfo(qinfo)
                 if not confirm_key(qinfo):
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
