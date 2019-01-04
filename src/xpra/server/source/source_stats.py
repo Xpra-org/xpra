@@ -115,7 +115,7 @@ class GlobalPerformanceStatistics(object):
         #set to 0 if we have less than 2 events in the last 60 seconds:
         now = monotonic_time()
         min_time = now-60
-        css = tuple(x for x in self.congestion_send_speed if x[0]>min_time)
+        css = tuple(x for x in tuple(self.congestion_send_speed) if x[0]>min_time)
         acss = 0
         if len(css)>=2:
             #weighted average of the send speed over the last minute:
