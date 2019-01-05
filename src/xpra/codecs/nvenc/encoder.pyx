@@ -2037,6 +2037,7 @@ cdef class Encoder:
         self.last_frame_times = []
         self.bytes_in = 0
         self.bytes_out = 0
+        log("clean() done")
 
 
     cdef cuda_clean(self):
