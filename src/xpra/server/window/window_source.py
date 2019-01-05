@@ -1955,7 +1955,7 @@ class WindowSource(WindowIconSource):
                     send_speed = (avg_send_speed*100 + cur_send_speed*late_pct)//2//(100+late_pct)
                 else:
                     send_speed = avg_send_speed
-        bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps)", source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024)
+        bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps) for wid=%i", source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024, self.wid)
         rtt = self.refresh_target_time
         if rtt:
             #a refresh now would really hurt us!
@@ -2026,9 +2026,10 @@ class WindowSource(WindowIconSource):
                 live_time = int(1000*(now-self.statistics.init_time))
                 ack_tolerance = self.jitter + ACK_TOLERANCE + max(0, 200-live_time//10)
                 latency = netlatency + sendlatency + decode_time + ack_tolerance
-                eta = end_send_at + latency/1000.0
-                if now>eta and (live_time>=1000 or pixels>=4096):
-                    actual = int(1000*(now-start_send_at))
+                #late_by and latency are in ms, timestamps are in seconds:
+                actual = int(1000*(now-start_send_at))
+                late_by = actual-latency
+                if late_by>0 and (live_time>=1000 or pixels>=4096):
                     actual_send_latency = actual-netlatency-decode_time
                     late_pct = actual_send_latency*100//(1+sendlatency)
                     if pixels<=4096 or actual_send_latency<=0:
@@ -2038,7 +2039,7 @@ class WindowSource(WindowIconSource):
                     else:
                         send_speed = bytecount*8*1000//actual_send_latency
                     #statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps", latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
-                    self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, (now-eta)*1000, latency, (netlatency, sendlatency, decode_time, ack_tolerance)), late_pct, send_speed)
+                    self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, late_by, latency, (netlatency, sendlatency, decode_time, ack_tolerance)), late_pct, send_speed)
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
                 self.cancel_may_send_timer()
