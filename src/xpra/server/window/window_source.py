@@ -1380,7 +1380,7 @@ class WindowSource(WindowIconSource):
                 #because congestion events lower the latency tolerance
                 #which makes us more sensitive to packets backlog
                 celapsed = monotonic_time()-self.global_statistics.last_congestion_time
-                if celapsed<10 and max_soft_expired==self.max_soft_expired:
+                if celapsed<10:
                     late_pct = 2*100*self.soft_expired
                     self.networksend_congestion_event("soft-expire limit: %ims, %i/%i" % (delay, self.soft_expired, self.max_soft_expired), late_pct)
             #NOTE: this should never happen...
@@ -1445,7 +1445,7 @@ class WindowSource(WindowIconSource):
         damage_time = dd[0]
         packets_backlog = self.get_packets_backlog()
         now = monotonic_time()
-        actual_delay = int(1000.0 * (now-damage_time))
+        actual_delay = int(1000 * (now-damage_time))
         if packets_backlog>0:
             if actual_delay>self.batch_config.timeout_delay:
                 log.warn("send_delayed for wid %s, elapsed time %ims is above limit of %.1f", self.wid, actual_delay, self.batch_config.max_delay)
@@ -1504,7 +1504,7 @@ class WindowSource(WindowIconSource):
             self._damage_delayed = None
             damage_time = delayed[0]
             now = monotonic_time()
-            actual_delay = int(1000.0 * (now-damage_time))
+            actual_delay = int(1000 * (now-damage_time))
             self.batch_config.last_actual_delays.append((now, actual_delay))
             self.send_delayed_regions(*delayed)
         return False
