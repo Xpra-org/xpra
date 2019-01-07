@@ -65,6 +65,7 @@ def get_xorg_bin():
               "/usr/libexec/Xorg",              #fedora 22+
               "/usr/lib/xorg/Xorg",             #ubuntu 16.10
               "/usr/lib/xorg-server/Xorg",      #arch linux
+              "/usr/lib/Xorg",                  #arch linux (new 2019)
               "/usr/X11/bin/X",                 #OSX
               ):
         if os.path.exists(p):
