@@ -92,8 +92,8 @@ def update_batch_delay(batch, factors, min_delay=0):
             log.warn("invalid factor line: %s" % str(x))
         else:
             log("update_batch_delay: %-28s : %.2f,%.2f  %s", x[0], x[2], x[3], x[1])
-    valid_factors = [x for x in factors if x is not None and len(x)==4]
-    all_factors_weight = sum([w for _,_,_,w in valid_factors])
+    valid_factors = tuple(x for x in factors if x is not None and len(x)==4)
+    all_factors_weight = sum(w for _,_,_,w in valid_factors)
     if all_factors_weight==0:
         log("update_batch_delay: no weights yet!")
         return
