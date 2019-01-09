@@ -38,6 +38,7 @@ refreshlog = Logger("refresh")
 regionrefreshlog = Logger("regionrefresh")
 
 
+TEXT_USE_VIDEO = envbool("XPRA_TEXT_USE_VIDEO", False)
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
 MIN_VIDEO_FPS = envint("XPRA_MIN_VIDEO_FPS", 10)
 MIN_VIDEO_EVENTS = envint("XPRA_MIN_VIDEO_EVENTS", 20)
@@ -423,6 +424,8 @@ class WindowVideoSource(WindowSource):
         cwh = wh & self.height_mask
         video_hint = self.content_type=="video"
         text_hint = self.content_type=="text"
+        if text_hint and not TEXT_USE_VIDEO:
+            return nonvideo(info="text content-type")
 
         rgbmax = self._rgb_auto_threshold
         videomin = cww*cwh // (1+video_hint*2)
