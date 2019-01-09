@@ -76,16 +76,16 @@ def update_batch_delay(batch, factors, min_delay=0):
     decay = max(1, logp(current_delay/batch.min_delay)/5.0)
     max_delay = batch.max_delay
     for delays, d_weight in ((batch.last_delays, 0.25), (batch.last_actual_delays, 0.75)):
-        if delays is not None and len(delays)>0:
-            #get the weighted average
-            #older values matter less, we decay them according to how much we batch already
-            #(older values matter more when we batch a lot)
-            for when, delay in tuple(delays):
-                #newer matter more:
-                w = d_weight/(1.0+((now-when)/decay)**2)
-                d = max(0, min(max_delay, delay))
-                tv += d*w
-                tw += w
+        delays = tuple(delays or ())
+        #get the weighted average
+        #older values matter less, we decay them according to how much we batch already
+        #(older values matter more when we batch a lot)
+        for when, delay in delays:
+            #newer matter more:
+            w = d_weight/(1.0+((now-when)/decay)**2)
+            d = max(0, min(max_delay, delay))
+            tv += d*w
+            tw += w
     hist_w = tw
     for x in factors:
         if len(x)!=4:
