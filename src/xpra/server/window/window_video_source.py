@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -730,7 +730,7 @@ class WindowVideoSource(WindowSource):
         else:
             #find how many pixels are within the region (roughly):
             #find all unique regions that intersect with it:
-            inter = [x for x in (vr.intersection_rect(r) for r in regions) if x is not None]
+            inter = tuple(x for x in (vr.intersection_rect(r) for r in regions) if x is not None)
             if len(inter)>0:
                 #merge all regions into one:
                 in_region = merge_all(inter)
@@ -744,13 +744,13 @@ class WindowVideoSource(WindowSource):
             #still no luck?
             if actual_vr is None:
                 #try to find one that has the same dimensions:
-                same_d = [r for r in regions if r.width==vr.width and r.height==vr.height]
+                same_d = tuple(r for r in regions if r.width==vr.width and r.height==vr.height)
                 if len(same_d)==1:
                     #probably right..
                     actual_vr = same_d[0]
                 elif len(same_d)>1:
                     #find one that shares at least one coordinate:
-                    same_c = [r for r in same_d if r.x==vr.x or r.y==vr.y]
+                    same_c = tuple(r for r in same_d if r.x==vr.x or r.y==vr.y)
                     if len(same_c)==1:
                         actual_vr = same_c[0]
 
