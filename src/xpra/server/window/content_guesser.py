@@ -16,6 +16,7 @@ from xpra.log import Logger
 log = Logger("window", "util")
 
 DEFAULT_CONTENT_TYPE = os.environ.get("XPRA_DEFAULT_CONTENT_TYPE", "")
+CONTENT_TYPE_DEFS = os.environ.get("XPRA_CONTENT_TYPE_DEFS","")
 
 
 def get_proc_cmdline(pid):
@@ -46,6 +47,9 @@ def load_content_type_defs():
         load_content_type_dir(content_type_dir)
         for d in get_user_conf_dirs():
             load_content_type_dir(d)
+        for e in CONTENT_TYPE_DEFS.split(","):
+            if not process_content_type_entry(e):
+                log.warn(" invalid entry in environment variable")
     return content_type_defs
 
 def load_content_type_dir(d):
@@ -64,7 +68,6 @@ def load_content_type_dir(d):
                     log.error(" %s", e)
 
 def load_content_type_file(ct_file):
-    global content_type_defs
     if PYTHON2:
         mode = "rU"
     else:
@@ -72,37 +75,43 @@ def load_content_type_file(ct_file):
     with open(ct_file, mode) as f:
         l = 0
         for line in f:
+            if not process_content_type_entry(line):
+                log.warn(" line %i of file '%s'", l, ct_file)
             l += 1
-            line = line.rstrip("\n\r")
-            if line.startswith("#") or not (line.strip()):
-                continue
-            parts = line.rsplit("=", 1)
-            #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
-            if len(parts)!=2:
-                log.warn("Warning: invalid content-type definition")
-                log.warn(" found in '%s' at line %i", line, l)
-                log.warn(" '%s' is missing a '='", line)
-                continue
-            match, content_type = parts
-            parts = match.split(":", 1)
-            #ie: "title:helloworld" -> "title", "helloworld"
-            if len(parts)!=2:
-                log.warn("Warning: invalid content-type definition")
-                log.warn(" match string '%s' is missing a ':'", match)
-                continue
-            #ignore comments:
-            #"text    #some comments here" > "text"
-            content_type = content_type.split(":")[0].strip()
-            prop_name, regex = parts
-            try:
-                c = re.compile(regex)
-                content_type_defs.setdefault(prop_name, OrderedDict())[c]=(regex, content_type)
-                log("%16s matching '%s' is %s", prop_name, regex, content_type)
-            except Exception as e:
-                log.warn("Warning: invalid regular expression")
-                log.warn(" match string '%s':", regex)
-                log.warn(" %s", e)
-                continue
+
+def process_content_type_entry(entry):
+    global content_type_defs
+    entry = entry.rstrip("\n\r")
+    if entry.startswith("#") or not (entry.strip()):
+        return True
+    parts = entry.rsplit("=", 1)
+    #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
+    if len(parts)!=2:
+        log.warn("Warning: invalid content-type definition")
+        log.warn(" found in '%s'", entry)
+        log.warn(" '%s' is missing a '='", entry)
+        return False
+    match, content_type = parts
+    parts = match.split(":", 1)
+    #ie: "title:helloworld" -> "title", "helloworld"
+    if len(parts)!=2:
+        log.warn("Warning: invalid content-type definition")
+        log.warn(" match string '%s' is missing a ':'", match)
+        return False
+    #ignore comments:
+    #"text    #some comments here" > "text"
+    content_type = content_type.split(":")[0].strip()
+    prop_name, regex = parts
+    try:
+        c = re.compile(regex)
+        content_type_defs.setdefault(prop_name, OrderedDict())[c]=(regex, content_type)
+        log("%16s matching '%s' is %s", prop_name, regex, content_type)
+    except Exception as e:
+        log.warn("Warning: invalid regular expression")
+        log.warn(" match string '%s':", regex)
+        log.warn(" %s", e)
+        return False
+    return True
 
 
 def get_content_type_properties():
