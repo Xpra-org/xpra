@@ -13,7 +13,7 @@ from collections import OrderedDict
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
-from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB
+from xpra.server.window.window_source import WindowSource, DelayedRegions, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB
 from xpra.server.window.region import merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
@@ -782,8 +782,8 @@ class WindowVideoSource(WindowSource):
         #(this codepath can fire from a video region refresh callback)
         dr = self._damage_delayed
         if dr:
-            regions = dr[1] + regions
-            damage_time = min(damage_time, dr[0])
+            regions = dr.regions + regions
+            damage_time = min(damage_time, dr.damage_time)
             self._damage_delayed = None
             self.cancel_expire_timer()
         #decide if we want to send the rest now or delay some more,
@@ -794,14 +794,15 @@ class WindowVideoSource(WindowSource):
         else:
             #non-video is delayed at least 50ms, 4 times the batch delay, but no more than non_max_wait:
             elapsed = int(1000.0*(monotonic_time()-damage_time))
-            delay = max(self.batch_config.delay*4, 50)
+            delay = max(self.batch_config.delay*4, self.batch_config.expire_delay)
             delay = min(delay, self.video_subregion.non_max_wait-elapsed)
+            delay = int(delay)
         if delay<=25:
             send_nonvideo(regions=regions, encoding=None, exclude_region=actual_vr)
         else:
-            self._damage_delayed = damage_time, regions, coding, options or {}
+            self._damage_delayed = DelayedRegions(damage_time, regions, coding, options=options)
             sublog("do_send_delayed_regions: delaying non video regions %s some more by %ims", regions, delay)
-            self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region, delay)
+            self.expire_timer = self.timeout_add(delay, self.expire_delayed_region)
 
     def must_encode_full_frame(self, encoding):
         return self.full_frames_only or (encoding in self.video_encodings) or not self.non_video_encodings
