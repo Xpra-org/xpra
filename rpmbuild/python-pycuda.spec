@@ -79,7 +79,6 @@ cp -a . %{py3dir}
 %{__python2} ./configure.py \
 	--cuda-enable-gl \
 	--cuda-root=/usr/local/cuda \
-	--cudadrv-lib-dir=/usr/local/lib64 \
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
@@ -94,7 +93,6 @@ rm -f siteconf.py
 %{__python3} ./configure.py \
 	--cuda-enable-gl \
 	--cuda-root=/usr/local/cuda \
-	--cudadrv-lib-dir=/usr/local/lib64 \
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
