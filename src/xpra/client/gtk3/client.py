@@ -25,10 +25,10 @@ class XpraClient(GTKXpraClient):
         return "gtk3.client"
 
     def client_type(self):
-        return "Python/Gtk3"
+        return "Python/GTK3"
 
     def client_toolkit(self):
-        return "gtk3"
+        return "GTK3"
 
 
     def install_signal_handlers(self):

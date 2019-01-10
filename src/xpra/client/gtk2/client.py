@@ -20,10 +20,10 @@ class XpraClient(GTKXpraClient):
         return "gtk2.client"
 
     def client_type(self):
-        return "Python/Gtk2"
+        return "Python/GTK2"
 
     def client_toolkit(self):
-        return "gtk2"
+        return "GTK2"
 
 
     def get_tray_menu_helper_class(self):
