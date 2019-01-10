@@ -1,3 +1,5 @@
+%{!?__python2: %global __python2 python2}
+%{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %global modname websocket
 %global distname websocket-client
 %global eggname websocket_client
