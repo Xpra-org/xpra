@@ -17,7 +17,7 @@ Release:        1.xpra1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
-Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/3a/fb/3c03dbe4438dd596e1378b5299990b81041739658a76e0f4a301eded67f4/rencode-%{version}.tar.gz
 Provides:		python-rencode = %{version}-%{release}
 Obsoletes:		python-rencode < %{version}-%{release}
 Conflicts:		python-rencode < %{version}-%{release}
