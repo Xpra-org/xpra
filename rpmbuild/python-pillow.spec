@@ -33,7 +33,7 @@
 
 
 Name:           python2-pillow
-Version:        5.3.0
+Version:        5.4.1
 Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
@@ -296,6 +296,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Thu Jan 10 2019 Antoine Martin <antoine@xpra.org> - 5.4.1-1
+- new upstream release
+
 * Wed Oct 10 2018 Antoine Martin <antoine@xpra.org> - 5.3.0-1
 - new upstream release
 

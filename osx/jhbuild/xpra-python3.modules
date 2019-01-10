@@ -208,10 +208,10 @@
 	</distutils>
 
 	<distutils id="python3-pillow" python3="1">
-		<branch repo="github.com"
-			module="/python-pillow/Pillow/archive/5.4.0.tar.gz"
-			hash="sha256:158c0587f5f759c86225c68a0ee23a15f36d14bfc648253e42a5c3145b10b3c8"
-			version="5.4.0"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/3c/7e/443be24431324bd34d22dd9d11cc845d995bcd3b500676bcf23142756975/Pillow-5.4.1.tar.gz"
+			hash="sha256:5233664eadfa342c639b9b9977190d64ad7aca4edc51a966394d7e08e7f38a9f"
+			version="5.4.1"/>
 		<dependencies>
 			<dep package="python3"/>
 			<dep package="libwebp"/>
