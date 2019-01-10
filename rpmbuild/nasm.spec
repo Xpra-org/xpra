@@ -26,7 +26,7 @@ autoreconf
 make all
 
 %install
-make DESTDIR=$RPM_BUILD_ROOT install
+make INSTALLROOT=$RPM_BUILD_ROOT install
 
 %files
 %doc AUTHORS CHANGES README TODO
