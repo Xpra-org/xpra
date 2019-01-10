@@ -22,7 +22,6 @@ Provides:		python-rencode = %{version}-%{release}
 Obsoletes:		python-rencode < %{version}-%{release}
 Conflicts:		python-rencode < %{version}-%{release}
 Patch0:         python-rencode-py36-importwarning.patch
-Patch1:         python-rencode-py26-testcompat.patch
 
 
 %if 0%{?suse_version}
@@ -57,9 +56,6 @@ b-encodings.
 
 %prep
 %setup -qn rencode-%{version}
-%if 0%{?el6}
-%patch1 -p1
-%endif
 
 %if 0%{?with_python3}
 rm -rf %{py3dir}
