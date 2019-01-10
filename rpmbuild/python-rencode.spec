@@ -57,7 +57,7 @@ b-encodings.
 
 %prep
 %setup -qn rencode-%{version}
-%if 0%{el6}
+%if 0%{?el6}
 %patch1 -p1
 %endif
 
