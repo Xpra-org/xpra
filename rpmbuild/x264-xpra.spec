@@ -1,5 +1,5 @@
 Name:	     x264-xpra
-Version:     20180401
+Version:     20190109
 %define SNAPSHOTTYPE -stable
 %if 0%{?beta} < 1
 Release:     1%{?dist}
