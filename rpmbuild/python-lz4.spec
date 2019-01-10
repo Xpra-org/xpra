@@ -17,13 +17,13 @@
 
 
 Name:           python2-lz4
-Version:        2.1.2
+Version:        2.1.6
 Release:        1.xpra1%{?dist}
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
-Source:         https://github.com/python-lz4/python-lz4/archive/v%{version}.tar.gz
+Source:         https://files.pythonhosted.org/packages/b3/48/ef32029fc6ae23fb37568972216646deeaaf9f833c237afdf37c0d975bff/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -90,6 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Jan 10 2018 Antoine Martin <antoine@xpra.org> - 2.1.6-1
+- New upstream release
+
 * Sun Nov 04 2018 Antoine Martin <antoine@xpra.org> - 2.1.2-1
 - New upstream release
 
