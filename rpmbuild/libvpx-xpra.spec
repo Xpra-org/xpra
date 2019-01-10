@@ -6,7 +6,7 @@ Summary:     vpx library for xpra
 Group:       Applications/Multimedia
 License:     BSD
 URL:	     http://www.webmproject.org/code/
-Source0:     http://downloads.webmproject.org/releases/webm/libvpx-%{version}.tar.gz
+Source0:     https://chromium.googlesource.com/webm/libvpx/+archive/v%{version}.tar.gz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
@@ -37,6 +37,7 @@ This package contains the development files for %{name}.
 ./configure \
     --prefix="%{_prefix}" \
     --libdir="%{_libdir}/xpra" \
+    --as=yasm \
     --enable-pic \
     --disable-install-docs \
     --disable-install-bins \
