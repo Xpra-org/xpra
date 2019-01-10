@@ -131,7 +131,9 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                 if mmap_group=="SOCKET":
                     group_id = get_socket_group(socket_filename)
                 elif mmap_group.lower()=="auto":
-                    group_id = xpra_group() or get_socket_group(socket_filename)
+                    group_id = xpra_group()
+                    if not group_id and socket_filename:
+                        group_id = get_socket_group(socket_filename)
                 elif mmap_group.lower() in TRUE_OPTIONS:
                     log.info("parsing legacy mmap-group value '%s' as 'auto'", mmap_group)
                     log.info(" please update your configuration")
