@@ -3,7 +3,7 @@
 %global eggname websocket_client
 
 Name:		python-websocket-client
-Version:	0.53.0
+Version:	0.54.0
 Release:	1%{?dist}
 Summary:	WebSocket client for python
 Group:		Development/Libraries
@@ -52,6 +52,9 @@ find %{buildroot}/%{python2_sitelib} -type f -exec chmod -x {} \;
 %{_bindir}/wsdump
 
 %changelog
+* Thu Jan 10 2019 Antoine Martin <antoine@xpra.org> - 0.54.0-1
+- new upstream release
+
 * Wed Oct 10 2018 Antoine Martin <antoine@xpra.org> - 0.53.0-1
 - new upstream release
 
