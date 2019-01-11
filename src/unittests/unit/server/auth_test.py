@@ -315,7 +315,7 @@ class TestAuth(unittest.TestCase):
 				}
 			a = self._init_auth("exec", **kwargs)
 			assert not a.requires_challenge(), "%s should not require a challenge" % a
-			assert a.authenticate()==success, "%s should have %s using cmd=%s" % (["failed", "succeeded"][success], cmd)
+			assert a.authenticate()==success, "%s should have %s using cmd=%s" % (a, ["failed", "succeeded"][success], cmd)
 		exec_cmd("/usr/bin/true", True)
 		exec_cmd("/usr/bin/false", False)
 
