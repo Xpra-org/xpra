@@ -36,6 +36,9 @@ from libc.string cimport memset, memcpy
 from xpra.monotonic_time cimport monotonic_time
 
 CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
+TEST_ENCODINGS = os.environ.get("XPRA_NVENC_ENCODINGS", "h264,h265").split(",")
+assert (x for x in TEST_ENCODINGS in ("h264", "h265")), "invalid list of encodings: %s" % (TEST_ENCODINGS,)
+assert len(TEST_ENCODINGS)>0, "no encodings enabled!"
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 cdef int MIN_COMPUTE = 0x30
@@ -2769,7 +2772,6 @@ def init_module():
     valid_keys = []
     failed_keys = []
     try_keys = CLIENT_KEYS_STR or [None]
-    TEST_ENCODINGS = ["h264", "h265"]
     FAILED_ENCODINGS = set()
     global YUV444_ENABLED, YUV444_CODEC_SUPPORT, LOSSLESS_ENABLED, ENCODINGS, MAX_SIZE
     if not validate_driver_yuv444lossless():
