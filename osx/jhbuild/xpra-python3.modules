@@ -27,9 +27,9 @@
 
 	<distutils id="python3-setuptools" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/d3/3e/1d74cdcb393b68ab9ee18d78c11ae6df8447099f55fe86ee842f9c5b166c/setuptools-40.0.0.zip"
-			hash="sha256:012adb8e25fbfd64c652e99e7bab58799a3aaf05d39ab38561f69190a909015f"
-			version="40.0.0"/>
+			module="/packages/37/1b/b25507861991beeade31473868463dad0e58b1978c209de27384ae541b0b/setuptools-40.6.3.zip"
+			hash="sha256:3b474dad69c49f0d2d86696b68105f3a6f195f7ab655af12ef9a9c326d2b08f8"
+			version="40.6.3"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
