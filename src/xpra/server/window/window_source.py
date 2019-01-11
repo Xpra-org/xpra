@@ -1889,8 +1889,9 @@ class WindowSource(WindowIconSource):
         encoding = self.auto_refresh_encodings[0]
         new_options.update(self.get_refresh_options())
         refreshlog("full_quality_refresh() using %s with options=%s", encoding, new_options)
-        damage_time = monotonic_time()
-        self.send_delayed_regions(damage_time, refresh_regions, encoding, new_options)
+        now = monotonic_time()
+        damage = DelayedRegions(now, refresh_regions, encoding, new_options)
+        self.send_delayed_regions(damage)
         self.damage(0, 0, w, h, options=new_options)
 
     def get_refresh_options(self):
