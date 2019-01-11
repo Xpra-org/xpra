@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -20,9 +20,11 @@ from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.scripts.config import python_platform
 from xpra.client import mixin_features
-from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, \
-                        TableBuilder, imagebutton, scaled_image, get_preferred_size, get_gtk_version_info, \
-                        RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER
+from xpra.gtk_common.gtk_util import (
+    add_close_accel, label, title_box, \
+    TableBuilder, imagebutton, scaled_image, get_preferred_size, get_gtk_version_info, \
+    RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER,
+    )
 from xpra.net.net_util import get_network_caps
 from xpra.log import Logger
 log = Logger("info")
@@ -613,14 +615,17 @@ class SessionInfo(gtk.Window):
         self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
         if self.client.server_last_info:
             #populate running averages for graphs:
-            def getavg(name):
-                return dictlook(self.client.server_last_info, "%s.avg" % name)
-            def addavg(l, name):
-                v = getavg(name)
+            def getavg(*names):
+                return (
+                    newdictlook(self.client.server_last_info, list(names)+["avg"]) or
+                    newdictlook(self.client.server_last_info, ["client"]+list(names)+["avg"])
+                    )
+            def addavg(l, *names):
+                v = getavg(*names)
                 if v:
                     l.append(v)
-            addavg(self.avg_batch_delay, "batch.delay")
-            addavg(self.avg_damage_out_latency, "damage.out_latency")
+            addavg(self.avg_batch_delay, "batch", "delay")
+            addavg(self.avg_damage_out_latency, "damage", "out_latency")
             if len(self.client.server_ping_latency)>0 and len(self.client.client_ping_latency)>0:
                 spl = [1000.0*x for _,x in tuple(self.client.server_ping_latency)]
                 cpl = [1000.0*x for _,x in tuple(self.client.client_ping_latency)]
@@ -1063,7 +1068,9 @@ class SessionInfo(gtk.Window):
 
 
     def populate_graphs(self, *_args):
-        self.client.send_info_request("network", "damage", "state", "batch")
+        #older servers have 'batch' at top level,
+        #newer servers store it under client
+        self.client.send_info_request("network", "damage", "state", "batch", "client")
         box = self.tab_box
         _, h = get_preferred_size(box)
         _, bh = get_preferred_size(self.tab_button_box)
