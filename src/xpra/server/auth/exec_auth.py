@@ -7,6 +7,7 @@ import os
 from subprocess import Popen
 
 from xpra.util import envint
+from xpra.os_util import OSX, PYTHON2
 from xpra.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
@@ -63,7 +64,11 @@ class Authenticator(SysAuthenticator):
         #if required, make sure we kill the command when it times out:
         if self.timeout>0:
             self.timer = glib.timeout_add(self.timeout*1000, self.command_timedout)
-            getChildReaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
+            if not (OSX and PYTHON2):
+                #python2 on macos may set a 0 returncode when we use poll()
+                #so we cannot use the ChildReaper on macos,
+                #and we can't cancel the timer
+                getChildReaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
         v = proc.wait()
         log("authenticate(..) returncode(%s)=%s", cmd, v)
         if self.timeout_event:
@@ -78,10 +83,10 @@ class Authenticator(SysAuthenticator):
             glib.source_remove(t)
 
     def command_timedout(self):
-        log("exec auth.command_timedout()")
+        proc = self.proc
+        log("exec auth.command_timedout() proc=%s", proc)
         self.timeout_event = True
         self.timer = None
-        proc = self.proc
         if proc:
             try:
                 proc.terminate()
