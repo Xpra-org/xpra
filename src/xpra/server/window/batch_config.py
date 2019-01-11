@@ -59,6 +59,7 @@ class DamageBatchConfig(object):
         self.timeout_delay = self.TIMEOUT_DELAY
         self.expire_delay = self.EXPIRE_DELAY
         self.delay = self.START_DELAY
+        self.delay_per_megapixel = -1
         self.saved = self.START_DELAY
         self.locked = False                             #to force a specific delay
         self.last_event = 0
@@ -80,6 +81,8 @@ class DamageBatchConfig(object):
             "timeout-delay"     : self.timeout_delay,
             "locked"            : self.locked,
             }
+        if self.delay_per_megapixel>=0:
+            info["normalized"] = self.delay_per_megapixel
         if self.last_event>0:
             info["last-event"] = int(monotonic_time()-self.last_event)
         if self.locked:

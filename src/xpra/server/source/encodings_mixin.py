@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -139,8 +139,8 @@ class EncodingsMixin(StubSourceMixin):
         wids = tuple(self.calculate_window_ids)  #make a copy so we don't clobber new wids
         focus = self.get_focus()
         sources = self.window_sources.items()
-        maximized_wids = [wid for wid, source in sources if source is not None and source.maximized]
-        fullscreen_wids = [wid for wid, source in sources if source is not None and source.fullscreen]
+        maximized_wids = tuple(wid for wid, source in sources if source is not None and source.maximized)
+        fullscreen_wids = tuple(wid for wid, source in sources if source is not None and source.fullscreen)
         log("recalculate_delays() wids=%s, focus=%s, maximized=%s, fullscreen=%s", wids, focus, maximized_wids, fullscreen_wids)
         for wid in wids:
             #this is safe because we only add to this set from other threads:
@@ -174,17 +174,19 @@ class EncodingsMixin(StubSourceMixin):
             tsize += w*h
             tcount += 1
             time_w = 2.0+(now-ws.batch_config.last_updated)     #add 2 seconds to even things out
-            weight = w*h*time_w
+            weight = int(w*h*time_w)
             wdelay += ws.batch_config.delay*weight
             wdimsum += weight
         if wdimsum>0 and tcount>0:
             #weighted delay:
-            avg_size = tsize/tcount
-            wdelay = wdelay / wdimsum
-            #store the delay as a normalized value per megapixel:
-            delay = wdelay * 1000000 / avg_size
+            delay = wdelay // wdimsum
             self.global_batch_config.last_delays.append((now, delay))
             self.global_batch_config.delay = delay
+            #store the delay as a normalized value per megapixel
+            #so we can adapt it to different window sizes:
+            avg_size = tsize // tcount
+            normalized_delay = wdelay * 1000000 // avg_size
+            self.global_batch_config.delay_per_megapixel = normalized_delay
 
     def may_recalculate(self, wid, pixel_count):
         if wid in self.calculate_window_ids:
@@ -485,7 +487,9 @@ class EncodingsMixin(StubSourceMixin):
         #but use sqrt to smooth things and prevent excesses
         #(ie: a 4MPixel window, will start at 2 times the global delay)
         #(ie: a 0.5MPixel window will start at 0.7 times the global delay)
-        w, h = window.get_dimensions()
-        ratio = float(w*h) / 1000000
-        batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
+        dpm = self.global_batch_config.delay_per_megapixel
+        if dpm>=0:
+            w, h = window.get_dimensions()
+            ratio = float(w*h) / 1000000
+            batch_config.delay = dpm * sqrt(ratio)
         return batch_config
