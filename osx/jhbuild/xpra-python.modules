@@ -65,9 +65,9 @@
 
 	<distutils id="python-netifaces">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/81/39/4e9a026265ba944ddf1fea176dbb29e0fe50c43717ba4fcf3646d099fe38/netifaces-0.10.7.tar.gz"
-			hash="sha256:bd590fcb75421537d4149825e1e63cca225fd47dad861710c46bd1cb329d8cbd"
-			version="0.10.7"/>
+			module="/packages/0d/18/fd6e9c71a35b67a73160ec80a49da63d1eed2d2055054cc2995714949132/netifaces-0.10.9.tar.gz"
+			hash="sha256:2dee9ffdd16292878336a58d04a20f0ffe95555465fee7c9bd23b3490ef2abf3"
+			version="0.10.9"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>

@@ -1,6 +1,3 @@
-#
-# rpm spec for netifaces
-#
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
@@ -14,8 +11,8 @@
 Summary: Getting network addresses from Python
 Vendor: http://alastairs-place.net/netifaces/
 Name: python2-netifaces
-Version: 0.10.7
-Release: 2%{?dist}
+Version: 0.10.9
+Release: 1%{?dist}
 License: GPL3
 Requires: python
 Group: Networking
@@ -84,6 +81,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Jan 11 2018 Antoine Martin <antoine@xpra.org> - 0.10.9-1
+- new upstream release
+
 * Tue Nov 13 2018 Antoine Martin <antoine@xpra.org> - 0.10.7-2
 - force rebuild
 
