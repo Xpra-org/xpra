@@ -973,7 +973,7 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         lr = self.statistics.last_recalculate
         elapsed = now-lr
-        statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %i seconds ago", self.wid, self.batch_config.delay, elapsed)
+        statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %.1f seconds ago", self.wid, self.batch_config.delay, elapsed)
         if self.batch_config.delay<=2*DamageBatchConfig.START_DELAY and lr>0 and elapsed<60 and self.get_packets_backlog()==0:
             #delay is low-ish, figure out if we should bother updating it
             lde = tuple(self.statistics.last_damage_events)
