@@ -57,15 +57,16 @@ class Authenticator(SysAuthenticator):
     def authenticate(self, _challenge_response=None, _client_salt=None):
         info = "Connection request from %s" % self.connection_str
         cmd = [self.command, info, str(self.timeout)]
-        self.proc = Popen(cmd, close_fds=True, shell=False)
-        log("authenticate(..) Popen(%s)=%s", cmd, self.proc)
+        proc = Popen(cmd, close_fds=True, shell=False)
+        self.proc = proc
+        log("authenticate(..) Popen(%s)=%s", cmd, proc)
         #if required, make sure we kill the command when it times out:
         if self.timeout>0:
             self.timer = glib.timeout_add(self.timeout*1000, self.command_timedout)
-            getChildReaper().add_process(self.proc, "exec auth", cmd, True, True, self.command_ended)
-        v = self.proc.wait()
+            getChildReaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
+        v = proc.wait()
         log("authenticate(..) returncode(%s)=%s", cmd, v)
-        if self.timeout and self.timeout_event:
+        if self.timeout_event:
             return False
         return v==0
 
