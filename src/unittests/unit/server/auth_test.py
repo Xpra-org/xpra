@@ -314,8 +314,8 @@ class TestAuth(unittest.TestCase):
 				"timeout"		: 2,
 				}
 			a = self._init_auth("exec", **kwargs)
-			assert not a.requires_challenge()
-			assert a.authenticate()==success
+			assert not a.requires_challenge(), "%s should not require a challenge" % a
+			assert a.authenticate()==success, "%s should have %s using cmd=%s" % (["failed", "succeeded"][success], cmd)
 		exec_cmd("/usr/bin/true", True)
 		exec_cmd("/usr/bin/false", False)
 
