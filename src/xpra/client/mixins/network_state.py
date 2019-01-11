@@ -150,7 +150,7 @@ class NetworkState(StubClientMixin):
             logres = [re.compile(v) for v in items]
             log.info("info-response debug for %s:", csv(["'%s'" % x for x in items]))
             for k in sorted(self.server_last_info.keys()):
-                if any(lr.match(k) for lr in logres):
+                if LOG_INFO_RESPONSE=="all" or any(lr.match(k) for lr in logres):
                     log.info(" %s=%s", k, self.server_last_info[k])
 
     def send_info_request(self, *categories):
