@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -80,6 +80,12 @@ class Authenticator(SysAuthenticator):
         log("exec auth.command_timedout()")
         self.timeout_event = True
         self.timer = None
+        proc = self.proc
+        if proc:
+            try:
+                proc.terminate()
+            except:
+                log("error trying to terminate exec auth process %s", proc, exc_info=True)
 
     def __repr__(self):
         return "exec"
