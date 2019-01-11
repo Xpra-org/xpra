@@ -1873,8 +1873,10 @@ class WindowSource(WindowIconSource):
         return None
 
     def full_quality_refresh(self, damage_options={}):
-        #called on use request via xpra control,
-        #or when we need to resend the window after a send timeout
+        #can be called from:
+        # * xpra control channel
+        # * send timeout
+        # * client decoding error
         if not self.window or not self.window.is_managed():
             #this window is no longer managed
             return
@@ -1882,17 +1884,20 @@ class WindowSource(WindowIconSource):
             #can happen during cleanup
             return
         refresh_regions = self.refresh_regions
+        #since we're going to refresh the whole window,
+        #we don't need to track what needs refreshing:
         self.refresh_regions = []
         w, h = self.window_dimensions
-        refreshlog("full_quality_refresh() for %sx%s window with regions: %s", w, h, self.refresh_regions)
+        refreshlog("full_quality_refresh() for %sx%s window with pending refresh regions: %s", w, h, refresh_regions)
         new_options = damage_options.copy()
         encoding = self.auto_refresh_encodings[0]
         new_options.update(self.get_refresh_options())
         refreshlog("full_quality_refresh() using %s with options=%s", encoding, new_options)
+        #just refresh the whole window:
+        regions = [rectangle(0, 0, w, h)]
         now = monotonic_time()
-        damage = DelayedRegions(now, refresh_regions, encoding, new_options)
+        damage = DelayedRegions(now, regions, encoding, new_options)
         self.send_delayed_regions(damage)
-        self.damage(0, 0, w, h, options=new_options)
 
     def get_refresh_options(self):
         return {
