@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
-from xpra.os_util import getuid, getgid
+from xpra.os_util import getuid, getgid, is_Ubuntu, getUbuntuVersion
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -1175,9 +1175,13 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
     if mode in ("start", "start_desktop", "shadow") and not display_is_remote:
         systemd_run = parse_bool("systemd-run", options.systemd_run)
         if systemd_run is None:
-            #detect:
-            from xpra.os_util import is_systemd_pid1
-            systemd_run = is_systemd_pid1()
+            #detect if we should use it:
+            if is_Ubuntu() and getUbuntuVersion()>=(18,) and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")):
+                #would fail
+                systemd_run = False
+            else:
+                from xpra.os_util import is_systemd_pid1
+                systemd_run = is_systemd_pid1()
         if systemd_run:
             #check if we have wrapped it already (or if disabled via env var)
             wrapit = envbool("XPRA_SYSTEMD_RUN", True)
