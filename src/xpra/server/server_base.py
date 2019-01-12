@@ -2745,7 +2745,7 @@ class ServerBase(ServerCore):
                     wx, wy = pos
                     cx, cy = mapped_at[:2]
                     if wx!=cx or wy!=cy:
-                        px, py = pointer
+                        px, py = pointer[:2]
                         return px+(wx-cx), py+(wy-cy)
         return pointer
 
