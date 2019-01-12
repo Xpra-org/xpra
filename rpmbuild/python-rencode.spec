@@ -68,6 +68,9 @@ cp -a . %{py3dir}
 %endif
 
 %build
+%if 0%{?el6}
+cythonize ./rencode/_rencode.pyx
+%endif
 CFLAGS="%{optflags}" %{__python2} setup.py build
 
 %if 0%{?with_python3}
