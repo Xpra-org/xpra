@@ -21,7 +21,7 @@ Source0:        https://files.pythonhosted.org/packages/3a/fb/3c03dbe4438dd596e1
 Provides:		python-rencode = %{version}-%{release}
 Obsoletes:		python-rencode < %{version}-%{release}
 Conflicts:		python-rencode < %{version}-%{release}
-Patch0:         python-rencode-py36-importwarning.patch
+Patch0:         python-rencode-readdmissingpyx.patch
 
 
 %if 0%{?suse_version}
@@ -56,6 +56,7 @@ b-encodings.
 
 %prep
 %setup -qn rencode-%{version}
+%patch0 -p1
 
 %if 0%{?with_python3}
 rm -rf %{py3dir}
