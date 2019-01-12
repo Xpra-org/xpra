@@ -1,0 +1,11 @@
+--- a/setup.py	2019-01-12 19:10:59.689026006 +0700
++++ b/setup.py	2019-01-12 19:11:07.389973051 +0700
+@@ -42,7 +42,7 @@
+     Extension(
+         "rencode._rencode",
+         extra_compile_args=["-O3"],
+-        sources=["rencode/rencode" + source_ext],
++        sources=["rencode/_rencode" + source_ext],
+     ),
+ ]
+ 
