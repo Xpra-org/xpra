@@ -22,6 +22,7 @@ Provides:		python-rencode = %{version}-%{release}
 Obsoletes:		python-rencode < %{version}-%{release}
 Conflicts:		python-rencode < %{version}-%{release}
 Patch0:         python-rencode-readdmissingpyx.patch
+Patch1:         python-rencode-nowheelreq.patch
 
 
 %if 0%{?suse_version}
@@ -57,6 +58,7 @@ b-encodings.
 %prep
 %setup -qn rencode-%{version}
 %patch0 -p1
+%patch1 -p1
 
 %if 0%{?with_python3}
 rm -rf %{py3dir}
