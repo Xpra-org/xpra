@@ -61,9 +61,6 @@ b-encodings.
 %if 0%{?with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
-pushd %{py3dir}
-%patch0 -p1
-popd
 %endif
 
 %build
