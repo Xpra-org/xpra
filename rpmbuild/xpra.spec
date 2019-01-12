@@ -613,7 +613,7 @@ fi
 
 
 %changelog
-* Fri Nov 23 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.13-2
+* Sat Jan 12 2019 Antoine Martin <antoine@devloop.org.uk> 1.0.13-2
 - fix server crash with application setting invalid X11 atoms
 - fix missing windows with some mono applications (ignore invalid X11 atoms)
 - fix small X11 memory leak
@@ -652,6 +652,12 @@ fi
 - fix invalid window padding values hiding top-left corner contents
 - fix missing .xpra file association with DEB packaging
 - fix cleanup code not being run, leaving sockets and xvfb behind
+- fix locked batch delay with mmap connections
+- fix error handling clipboard-contents packets with more data than expected
+- fix session start failures via ssh on Ubuntu 18.04 and later (workaround systemd-run bug)
+- fix compatibility with newer ArchLinux Xorg path
+- fix errors handling relative pointer data
+- reduce unwanted refresh rate drop
 - add missing entry in man page for 'swap-keys'
 - support newer distributions (Fedora 29, Ubuntu Cosmic, Debian Buster, etc)
 - support CUDA 10 and Volta cards with NVENC
