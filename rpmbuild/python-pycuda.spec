@@ -16,7 +16,7 @@
 
 Name:           python2-pycuda
 Version:        2018.1.1
-Release:        1
+Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
@@ -30,6 +30,7 @@ Conflicts:      python-pycuda
 Requires:       python-decorator
 Requires:       numpy
 Requires:       python-pytools
+Requires:       python-six
 
 BuildRequires:  gcc-c++
 BuildRequires:  python-devel
@@ -55,6 +56,7 @@ Group:          Development/Libraries/Python
 Requires:       python3-decorator
 Requires:       python3-numpy
 Requires:       python3-pytools
+Requires:       python3-six
 
 BuildRequires:  gcc-c++
 BuildRequires:  python3-devel
@@ -128,6 +130,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Jan 13 2019 Antoine Martin <antoine@xpra.org> - 2018.1.1-2
+- add missing python six dependency
+
 * Tue Sep 18 2018 Antoine Martin <antoine@xpra.org> - 2018.1.1-1
 - new upstream release fixing Fedora 29 builds
 
