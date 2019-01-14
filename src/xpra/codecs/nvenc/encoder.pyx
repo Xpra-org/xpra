@@ -2235,7 +2235,7 @@ cdef class Encoder:
 
     cdef unsigned int copy_image(self, image, int strict_stride) except -1:
         if DEBUG_API:
-            log("copy_image(%s, %s, %i, %i)", image, strict_stride)
+            log("copy_image(%s, %i)", image, strict_stride)
         cdef unsigned int image_stride = image.get_rowstride()
         #input_height may be smaller if we have rounded down:
         cdef unsigned int h = min(image.get_height(), self.input_height)
