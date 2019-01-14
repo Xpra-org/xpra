@@ -15,10 +15,11 @@ import os
 import pycuda
 from pycuda import driver
 
-from xpra.util import engs, print_nested_dict, envbool
+from xpra.util import engs, print_nested_dict, envbool, envint
 from xpra.os_util import monotonic_time, bytestostr, PYTHON2
 
 IGNORE_BLACKLIST = envbool("XPRA_CUDA_IGNORE_BLACKLIST", False)
+MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 
 #record when we get failures/success:
 DEVICE_STATE = {}
@@ -233,6 +234,7 @@ def select_device(preferred_device_id=-1, preferred_device_name=None, min_comput
         for device_id in device_list:
             context = None
             try:
+                log("device %i", device_id)
                 device = driver.Device(device_id)
                 log("select_device: testing device %s: %s", device_id, device_info(device))
                 context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
@@ -253,7 +255,8 @@ def select_device(preferred_device_id=-1, preferred_device_name=None, min_comput
                 elif preferred_device_name and device_info(device).find(preferred_device_name)>=0:
                     log("device matches preferred device name: %s", preferred_device_name)
                     return device_id, device
-                elif tpct>free_pct:
+                elif tpct>=MIN_FREE_MEMORY and tpct>free_pct:
+                    log("device has enough free memory: %i (min=%i, current best device=%i)", tpct, MIN_FREE_MEMORY, free_pct)
                     selected_device = device
                     selected_device_id = device_id
                     free_pct = tpct
