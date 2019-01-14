@@ -2301,7 +2301,7 @@ cdef class Encoder:
         if elapsed==0:
             #mswindows monotonic time minimum precision is 1ms...
             elapsed = 0.0001
-        log("copy_image: %9i bytes uploaded in %3.1f ms: %5i MB/s", copy_len, int(1000*elapsed), copy_len/elapsed//1024//1024)
+        log("copy_image: %9i bytes uploaded in %3.1f ms: %5i MB/s", copy_len, 1000*elapsed, copy_len/elapsed//1024//1024)
         return stride
 
     cdef exec_kernel(self, unsigned int w, unsigned int h, unsigned int stride):
