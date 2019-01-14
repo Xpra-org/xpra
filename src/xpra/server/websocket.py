@@ -1,10 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import warnings
 import posixpath
+import mimetypes
 try:
     from urllib import unquote          #python2 @UnusedImport
 except:
@@ -14,25 +16,50 @@ from xpra.log import Logger
 log = Logger("network", "websocket")
 
 from xpra.util import envbool, std, AdHocStruct
-from xpra.os_util import memoryview_to_bytes, nomodule_context, PYTHON2, Queue
+from xpra.os_util import memoryview_to_bytes, nomodule_context, PYTHON2, Queue, DummyContextManager
 from xpra.net.bytestreams import SocketConnection
 
 
 WEBSOCKIFY_NUMPY = envbool("XPRA_WEBSOCKIFY_NUMPY", False)
 log("WEBSOCKIFY_NUMPY=%s", WEBSOCKIFY_NUMPY)
 if WEBSOCKIFY_NUMPY:
-    from websockify.websocket import WebSocketRequestHandler    #@UnusedImport
+    cm = DummyContextManager()
 else:
+    cm = nomodule_context("numpy")
     from xpra.codecs.xor.cyxor import hybi_unmask
-    with nomodule_context("numpy"):
-        from websockify.websocket import WebSocketRequestHandler    #@Reimport
-        def unmask(buf, hlen, plen):
-            pstart = hlen + 4
-            pend = pstart + plen
-            mask = buf[hlen:hlen+4]
-            data = buf[pstart:pend]
-            return hybi_unmask(mask, data)
-        WebSocketRequestHandler.unmask = staticmethod(unmask)
+    def _unmask(buf, hlen, plen):
+        pstart = hlen + 4
+        pend = pstart + plen
+        mask = buf[hlen:hlen+4]
+        data = buf[pstart:pend]
+        return hybi_unmask(mask, data)
+    unmask = staticmethod(_unmask)
+with cm:
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        import websockify
+        assert websockify
+        try:
+            #websockify 0.8.0 and earlier:
+            from websockify.websocket import WebSocketRequestHandler    #@UnusedImport
+            if not WEBSOCKIFY_NUMPY:
+                WebSocketRequestHandler.unmask = unmask
+        except ImportError:
+            from websockify.websockifyserver import WebSockifyRequestHandler as WebSocketRequestHandler
+            if not WEBSOCKIFY_NUMPY:
+                WebSocketRequestHandler._unmask = unmask
+        log("WebSocketRequestHandler=%s", WebSocketRequestHandler)
+        #print warnings except for numpy:
+        for x in w:
+            message = getattr(x, "message", None)
+            if message:
+                if str(message).find("numpy")>0 and not WEBSOCKIFY_NUMPY:
+                    log("numpy warning suppressed: %s", message)
+                else:
+                    log.warn("Warning: %s", message)
+            else:
+                log.warn("Warning: %s", x)
+
 
 WEBSOCKET_TCP_NODELAY = envbool("WEBSOCKET_TCP_NODELAY", True)
 WEBSOCKET_TCP_KEEPALIVE = envbool("WEBSOCKET_TCP_KEEPALIVE", True)
@@ -215,7 +242,6 @@ class WSRequestHandler(WebSocketRequestHandler):
             else:
                 #self.send_error(403, "Directory listing forbidden")
                 return self.list_directory(path).read()
-        ctype = self.guess_type(path)
         _, ext = os.path.splitext(path)
         f = None
         try:
@@ -225,9 +251,11 @@ class WSRequestHandler(WebSocketRequestHandler):
             f = open(path, 'rb')
             fs = os.fstat(f.fileno())
             content_length = fs[6]
-            headers = {
-                "Content-type"      : ctype,
-                }
+            headers = {}
+            ctype = mimetypes.guess_type(path, False)
+            log("guess_type(%s)=%s", path, ctype)
+            if ctype and ctype[0]:
+                headers["Content-type"] = ctype[0]
             accept = self.headers.get('accept-encoding', '').split(",")
             accept = [x.split(";")[0].strip() for x in accept]
             content = None
