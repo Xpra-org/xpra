@@ -283,7 +283,11 @@ class WSRequestHandler(WebSocketRequestHandler):
         except IOError as e:
             log("send_head()", exc_info=True)
             log.error("Error sending '%s':", path)
-            log.error(" %s", e)
+            emsg = str(e)
+            if emsg.endswith(": '%s'" % path):
+                log.error(" %s", emsg.rsplit(":", 1)[0])
+            else:
+                log.error(" %s", e)
             try:
                 self.send_error(404, "File not found")
             except:
