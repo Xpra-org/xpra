@@ -611,10 +611,9 @@ class nomodule_context(object):
 
     def __init__(self, module_name):
         self.module_name = module_name
-        self.saved_module = sys.modules.get(module_name)
-        sys.modules[module_name] = None
     def __enter__(self):
-        pass
+        self.saved_module = sys.modules.get(self.module_name)
+        sys.modules[self.module_name] = None
     def __exit__(self, *_args):
         if sys.modules.get(self.module_name) == None:
             if self.saved_module is None:
