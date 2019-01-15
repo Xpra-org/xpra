@@ -195,7 +195,7 @@ enc_ffmpeg_ENABLED      = False and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not sys.platform.startswith("freebsd"))
 #ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fallback=WIN32)
+dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fallback=False)
 # some version strings I found:
 # Fedora:
 # * 19: 54.92.100
