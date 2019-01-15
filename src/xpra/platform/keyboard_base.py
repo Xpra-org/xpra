@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
+from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("keyboard")
 
