@@ -149,6 +149,7 @@ if is_gtk3():
     FILE_CHOOSER_ACTION_OPEN    = gtk.FileChooserAction.OPEN
     PROPERTY_CHANGE_MASK = gdk.EventMask.PROPERTY_CHANGE_MASK
     BUTTON_PRESS_MASK    = gdk.EventMask.BUTTON_PRESS_MASK
+    BUTTON_RELEASE_MASK  = gdk.EventMask.BUTTON_RELEASE_MASK
     ACCEL_LOCKED = gtk.AccelFlags.LOCKED
     ACCEL_VISIBLE = gtk.AccelFlags.VISIBLE
     JUSTIFY_LEFT    = gtk.Justification.LEFT
@@ -304,6 +305,7 @@ else:
     FILE_CHOOSER_ACTION_OPEN    = gtk.FILE_CHOOSER_ACTION_OPEN
     PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
     BUTTON_PRESS_MASK    = gdk.BUTTON_PRESS_MASK
+    BUTTON_RELEASE_MASK  = gdk.BUTTON_RELEASE_MASK
     ACCEL_LOCKED = gtk.ACCEL_LOCKED
     ACCEL_VISIBLE = gtk.ACCEL_VISIBLE
     JUSTIFY_LEFT    = gtk.JUSTIFY_LEFT
@@ -846,7 +848,8 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
 
 def menuitem(title, image=None, tooltip=None, cb=None):
     """ Utility method for easily creating an ImageMenuItem """
-    menu_item = ImageMenuItemClass(title)
+    menu_item = ImageMenuItemClass()
+    menu_item.set_label(title)
     if image:
         menu_item.set_image(image)
         #override gtk defaults: we *want* icons:
