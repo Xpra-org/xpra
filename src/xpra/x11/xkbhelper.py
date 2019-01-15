@@ -503,8 +503,10 @@ def keymap_to_xmodmap(trans_keycodes):
                 if name!="":
                     missing_keysyms.append(name)
             else:
-                if keysyms[index] is not None:
-                    log.warn("we already have a keysym for %s at index %s: %s, entries=%s", server_keycode, index, keysyms[index], entries)
+                if keysyms[index] is not None and keysyms[index]!=keysym:
+                    log("we already have a keysym for keycode %i at index %i:", server_keycode, index)
+                    log(" %s instead of %s", keysyms[index], keysym)
+                    log(" entries=%s", entries)
                 else:
                     keysyms[index] = keysym
                     if keysym in DEBUG_KEYSYMS:
