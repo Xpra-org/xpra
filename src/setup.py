@@ -187,11 +187,11 @@ mdns_ENABLED            = DEFAULT
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
-enc_xvid_ENABLED        = DEFAULT and pkg_config_ok("--exists", "xvid")
+enc_xvid_ENABLED        = False and pkg_config_ok("--exists", "xvid")
 pillow_ENABLED          = DEFAULT
 webp_ENABLED            = False
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.3", "vpx", fallback=WIN32)
-enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
+enc_ffmpeg_ENABLED      = False and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not sys.platform.startswith("freebsd"))
 #ffmpeg 2 onwards:
