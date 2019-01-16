@@ -230,7 +230,7 @@ def get_machine_id():
             v = load_binary_file(filename)
             if v is not None:
                 break
-    if WIN32:
+    elif WIN32:
         v = uuid.getnode()
     return  str(v).strip("\n\r")
 
@@ -252,9 +252,7 @@ def get_user_uuid():
         uupdate(str(os.getuid()))
         uupdate(u"/")
         uupdate(str(os.getgid()))
-        uupdate(os.environ.get("HOME", ""))
-    if WIN32:
-        uupdate(os.environ.get("HOMEPATH",""))
+    uupdate(os.path.expanduser("~/"))
     return u.hexdigest()
 
 
