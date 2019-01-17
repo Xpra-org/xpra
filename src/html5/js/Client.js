@@ -765,7 +765,7 @@ XpraClient.prototype._make_hello = function() {
 		"screen_sizes"				: this._get_screen_sizes(),
 		"dpi"						: this._get_DPI(),
 		//not handled yet, but we will:
-		"clipboard_enabled"			: true,
+		"clipboard"			: true,
 		"clipboard.want_targets"	: true,
 		"clipboard.selections"		: ["CLIPBOARD"],
 		"notifications"				: true,
