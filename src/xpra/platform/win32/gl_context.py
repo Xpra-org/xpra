@@ -185,7 +185,7 @@ class WGLContext(object):
             "depth-size"        : pfd.cDepthBits,
             "stencil-size"      : pfd.cStencilBits,
             "aux-buffers"       : pfd.cAuxBuffers,
-            "visible-mask"      : pfd.dwVisibleMask,
+            "visible-mask"      : int(pfd.dwVisibleMask),
             "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
             })
         log("DescribePixelFormat: %s", self.pixel_format_props)
