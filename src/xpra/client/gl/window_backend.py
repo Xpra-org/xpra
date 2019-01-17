@@ -23,7 +23,7 @@ def get_opengl_backends(option_str):
     elif PYTHON3:
         return "native",
     else:
-        return "gtk", "native"
+        return "native", "gtk"
 
 def get_gl_client_window_module(backends, force_enable=False):
     gl_client_window_module = None
