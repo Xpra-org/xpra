@@ -23,7 +23,6 @@ from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
 MAX_DELAYED_FRAMES = envint("XPRA_X264_MAX_DELAYED_FRAMES", 4)
 THREADS = envint("XPRA_X264_THREADS", min(4, max(1, get_cpu_count()//2)))
-SLICED_THREADS = envbool("XPRA_X264_SLICED_THREADS", True)
 MIN_SLICED_THREADS_SPEED = envint("XPRA_X264_SLICED_THREADS", 60)
 LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 PROFILE = os.environ.get("XPRA_X264_PROFILE")
@@ -559,7 +558,7 @@ cdef class Encoder:
 
     cdef tune_param(self, x264_param_t *param, options):
         param.i_lookahead_threads = 0
-        if SLICED_THREADS and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
+        if MIN_SLICED_THREADS_SPEED>0 and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
             param.b_sliced_threads = 1
             param.i_threads = THREADS
         else:
