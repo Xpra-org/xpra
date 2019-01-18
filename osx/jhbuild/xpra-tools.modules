@@ -66,16 +66,16 @@
 	</autotools>
 
 	<autotools id="pcre" autogenargs="--enable-utf8" autogen-sh="configure">
-		<branch module="/pub/pcre/pcre-8.40.tar.gz"
-			version="8.40"
-			hash="sha256:1d75ce90ea3f81ee080cdc04e68c9c25a9fb984861a0618be7bbf676b18eda3e"
+		<branch module="/pub/pcre/pcre-8.42.tar.gz"
+			version="8.42"
+			hash="sha256:69acbc2fbdefb955d42a4c606dfde800c2885711d2979e356c0636efde9ec3b5"
 			repo="ftp.pcre.org"/>
 	</autotools>
 
 	<autotools id="grep" autogen-sh="configure">
-		<branch module="/gnu/grep/grep-3.0.tar.xz"
-			version="3.0"
-			hash="sha256:e2c81db5056e3e8c5995f0bb5d0d0e1cad1f6f45c3b2fc77b6e81435aed48ab5"
+		<branch module="/gnu/grep/grep-3.3.tar.xz"
+			version="3.3"
+			hash="sha256:b960541c499619efd6afe1fa795402e4733c8e11ebf9fafccc0bb4bccdc5b514"
 			repo="ftp.gnu.org"/>
 		<dependencies>
 			<dep package="pcre"/>
@@ -94,14 +94,14 @@
 	<autotools id="xar" autogen-sh="configure">
 		<branch module="/downloads/mackyle/xar/xar-1.6.1.tar.gz"
 			version="1.6.1"
-			hash="md5:a624535d6a1e8fdf420b36a6b334047b"
+			hash="sha256:5e7d50dab73f5cb1713b49fa67c455c2a0dd2b0a7770cbc81b675e21f6210e25"
 			repo="github.com"/>
 	</autotools>
 
 	<cmake id="brotli" autogen-sh="configure">
-		<branch module="/google/brotli/archive/v1.0.1.tar.gz"
-			version="1.0.1" checkoutdir="brotli-1.0.1"
-			hash="sha256:6870f9c2c63ef58d7da36e5212a3e1358427572f6ac5a8b5a73a815cf3e0c4a6"
+		<branch module="/google/brotli/archive/v1.0.7.tar.gz"
+			version="1.0.7" checkoutdir="brotli-1.0.7"
+			hash="sha256:4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c"
 			repo="github.com"/>
 	</cmake>
 
@@ -114,9 +114,9 @@
 	</autotools>
 
 	<autotools id="mpfr" autogen-sh="configure">
-		<branch module="/mpfr-3.1.6/mpfr-3.1.6.tar.xz"
-			hash="sha256:7a62ac1a04408614fccdc506e4844b10cf0ad2c2b1677097f8f35d3a1344a950"
-			version="3.1.6"
+		<branch module="/mpfr/mpfr-4.0.1.tar.xz"
+			hash="sha256:67874a60826303ee2fb6affc6dc0ddd3e749e9bfcb4c8655e3953d0458a6e16e"
+			version="4.0.1"
 			repo="www.mpfr.org">
 		</branch>
 		<dependencies>
@@ -147,9 +147,9 @@
 	</autotools>
 
 	<autotools id="curl" autogen-sh="configure">
-		<branch module="/download/curl-7.53.0.tar.bz2"
-			version="7.53.0"
-			hash="sha256:b2345a8bef87b4c229dedf637cb203b5e21db05e20277c8e1094f0d4da180801"
+		<branch module="/download/curl-7.63.0.tar.bz2"
+			version="7.63.0"
+			hash="sha256:9bab7ed4ecff77020a312d84cc5fb7eb02d58419d218f267477a724a17fd8dd8"
 			repo="curl.haxx.se"/>
 		<dependencies>
 			<dep package="openssl"/>
