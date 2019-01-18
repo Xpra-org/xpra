@@ -96,16 +96,16 @@
 	</autotools>
 
 	<autotools id="faac" autogenargs="" autogen-sh="configure">
-		<branch module="/src/faac-1.29.9.2.tar.bz2"
+		<branch module="/src/faac-1.29.9.2.tar.gz"
 			version="1.29.9.2"
 			hash="sha256:d45f209d837c49dae6deebcdd87b8cc3b04ea290880358faecf5e7737740c771"
 			repo="xpra.org"/>
 	</autotools>
 
 	<autotools id="faad2" autogenargs="" autogen-sh="configure">
-		<branch module="/src/faad2-2.8.6.tar.bz2"
-			version="2.8.6"
-			hash="sha256:654977adbf62eb81f4fca00152aca58ce3b6dd157181b9edd7bed687a7c73f21"
+		<branch module="/src/faad2-2.8.8.tar.gz"
+			version="2.8.8"
+			hash="sha256:985c3fadb9789d2815e50f4ff714511c79c2710ac27a4aaaf5c0c2662141426d"
 			repo="xpra.org"/>
 	</autotools>
 
