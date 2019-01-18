@@ -48,9 +48,9 @@
 
 
 	<autotools id="libogg" autogenargs="" autogen-sh="configure">
-		<branch module="/releases/ogg/libogg-1.3.2.tar.xz"
-			version="1.3.2"
-			hash="md5:5c3a34309d8b98640827e5d0991a4015"
+		<branch module="/pub/xiph/releases/ogg/libogg-1.3.3.tar.xz"
+			version="1.3.3"
+			hash="sha256:4f3fc6178a533d392064f14776b23c397ed4b9f48f5de297aba73b643f955c08"
 			repo="downloads.xiph.org"/>
 	</autotools>
 
@@ -107,17 +107,17 @@
 	</autotools>
 
 	<autotools id="faac" autogenargs="" autogen-sh="configure">
-		<branch module="/src/faac-1.28.tar.bz2"
-			version="1.28"
-			hash="md5:c5dde68840cefe46532089c9392d1df0"
-			repo="winswitch.org"/>
+		<branch module="/src/faac-1.29.9.2.tar.bz2"
+			version="1.29.9.2"
+			hash="sha256:d45f209d837c49dae6deebcdd87b8cc3b04ea290880358faecf5e7737740c771"
+			repo="xpra.org"/>
 	</autotools>
 
 	<autotools id="faad2" autogenargs="" autogen-sh="configure">
-		<branch module="/src/faad2-2.7.tar.bz2"
-			version="2.7"
-			hash="md5:4c332fa23febc0e4648064685a3d4332"
-			repo="winswitch.org"/>
+		<branch module="/src/faad2-2.8.6.tar.bz2"
+			version="2.8.6"
+			hash="sha256:654977adbf62eb81f4fca00152aca58ce3b6dd157181b9edd7bed687a7c73f21"
+			repo="xpra.org"/>
 	</autotools>
 
 	<autotools id="flac" autogenargs="--disable-asm-optimizations" autogen-sh="configure">
