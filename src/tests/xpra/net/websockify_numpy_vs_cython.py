@@ -32,10 +32,10 @@ def test_unmask(unmask_fn, slice_size, runs=10):
     return slice_size*runs//total_time
 
 def main():
-    for slice_size in (1024, 64*1024, 1024*1024, 16*1024*1024, 64*1024*1024):
+    for slice_size in (1024, 8*1024, 64*1024, 1024*1024, 16*1024*1024, 64*1024*1024):
         print("* slice size: %iKB" % (slice_size//1024))
-        print(" - websockify via numpy:    %iMB/s" % (test_unmask(WebSocketRequestHandler.unmask, slice_size)//1024//1024))
-        print(" - xpra cython         :    %iMB/s" % (test_unmask(cython_unmask, slice_size)//1024//1024))
+        print(" - websockify via numpy: %8iMB/s" % (test_unmask(WebSocketRequestHandler.unmask, slice_size)//1024//1024))
+        print(" - xpra cython         : %8iMB/s" % (test_unmask(cython_unmask, slice_size)//1024//1024))
 
 
 if __name__ == "__main__":
