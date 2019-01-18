@@ -5,7 +5,11 @@
 # later version. See the file COPYING for details.
 
 import numpy
+import binascii
 import unittest
+
+from xpra.os_util import memoryview_to_bytes
+from xpra.util import repr_ellipsized
 
 class Test_cyxor_hybi(unittest.TestCase):
 
@@ -20,21 +24,24 @@ class Test_cyxor_hybi(unittest.TestCase):
         except ImportError as e:
             print("Warning: cyxor_hybi test skipped because: %s" % (e,))
             return
-        def cython_unmask(buf, hlen, plen):
-            pstart = hlen + 4
-            pend = pstart + plen
-            mask = buf[hlen:hlen+4]
-            data = buf[pstart:pend]
-            return hybi_unmask(mask, data)
 
         def cmp_unmask(buf, hlen, plen):
-            c = cython_unmask(buf, hlen, plen)
+            c = memoryview_to_bytes(hybi_unmask(buf, hlen, plen))
             w = WebSocketRequestHandler.unmask(buf, hlen, plen)
-            assert c==w
+            assert w==c, "expected %s got %s" % (repr_ellipsized(binascii.hexlify(w)), repr_ellipsized(binascii.hexlify(c)))
+
+        cmp_unmask(b"\0"*8, 0, 4)
+        cmp_unmask(b"\0"*64, 0, 32)
+        cmp_unmask(b"".join(chr(i) for i in range(10)), 1, 5)   #1+5+4=10
+        cmp_unmask(b"".join(chr(i) for i in range(14)), 0, 10)
+        cmp_unmask(b"".join(chr(i) for i in range(14)), 1, 9)
+        cmp_unmask(b"".join(chr(i) for i in range(128)), 0, 128-4)
         
         BUF_SIZE = 1024*1024
         buf = numpy.random.randint(256, size=BUF_SIZE, dtype='B')
         buf = buf.tobytes()
+        cmp_unmask(buf, 1, 5)
+
         for offset in range(8):
             for div in range(8):
                 for extra in range(8):

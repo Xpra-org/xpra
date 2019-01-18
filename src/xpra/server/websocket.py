@@ -27,13 +27,7 @@ if WEBSOCKIFY_NUMPY:
 else:
     cm = nomodule_context("numpy")
     from xpra.codecs.xor.cyxor import hybi_unmask
-    def _unmask(buf, hlen, plen):
-        pstart = hlen + 4
-        pend = pstart + plen
-        mask = buf[hlen:hlen+4]
-        data = buf[pstart:pend]
-        return hybi_unmask(mask, data)
-    unmask = staticmethod(_unmask)
+    unmask = staticmethod(hybi_unmask)
 with cm:
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
