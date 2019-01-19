@@ -629,9 +629,14 @@ class WindowSource(WindowIconSource):
         return True
 
     def encoding_changed(self, window, *args):
-        self._encoding_hint = window.get("encoding", None)
-        log("encoding_changed(%s, %s) encoding=%s", window, args, self._encoding_hint)
+        v = window.get("encoding", None)
+        if v and v not in self._encoders:
+            log.warn("Warning: invalid encoding hint '%s'", v)
+            log.warn(" this encoding is not supported")
+            v = None
+        self._encoding_hint = v
         self.assign_encoding_getter()
+        log("encoding_changed(%s, %s) encoding-hint=%s, selection=%s", window, args, self._encoding_hint, self.get_best_encoding)
         return True
 
 
@@ -793,7 +798,7 @@ class WindowSource(WindowIconSource):
     def get_best_encoding_impl(self):
         if HARDCODED_ENCODING:
             return self.hardcoded_encoding
-        if self._encoding_hint:
+        if self._encoding_hint and self._encoding_hint in self._encoders:
             return self.encoding_is_hint
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
