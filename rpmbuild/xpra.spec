@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,9 +9,7 @@
 %endif
 
 %{!?__python2: %global __python2 python2}
-%{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 %define CFLAGS -O2
 %if 0%{?suse_version}
@@ -43,21 +41,15 @@
 %define requires_pygtk2 pygtk2
 %define requires_dbus dbus-python dbus-x11
 %define requires_crypto %{py2prefix}-cryptography
-%define py3requires_crypto python3-cryptography
-%define py3requires_lzo %{nil}
 #OpenGL bits:
 %define requires_opengl , %{py2prefix}-pyopengl, pygtkglext
-%define py3requires_opengl , python3-pyopengl
 %define requires_printing , %{py2prefix}-cups, cups-filters, cups-pdf
-%define py3requires_printing %{nil}
 #Anything extra (distro specific):
 %define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly
 #this requires rpmfusion:
 #gstreamer1-plugins-bad-free
 %define requires_sound %{gstreamer1}, python-gstreamer1, pulseaudio, pulseaudio-utils
-%define py3requires_sound %{gstreamer1}, python3-gstreamer1, pulseaudio, pulseaudio-utils
 #This would add support for mp3, but is not in the default repositories:
-%define with_python3 1
 %define with_selinux 1
 %global selinux_variants mls targeted
 
@@ -72,9 +64,6 @@
 #do not disable sound support, but do not declare deps for it either
 #(so it can be installed if desired):
 %define requires_sound %{nil}
-%define py3requires_sound %{nil}
-#don't have python3 by default:
-%define with_python3 0
 %endif
 
 %if 0%{?el6}
@@ -114,51 +103,9 @@
 
 %if 0%{?fedora}
 %define systemd 1
-#the only distro to provide py3k cups bindings:
-%define py3requires_printing , python3-cups
-#note: probably not working since we don't have gtkglext for Python3?
-%define py3requires_opengl , python3-pyopengl
-%endif
-%if 0%{?fedora}>=23
-#Fedora 23 has libvpx 1.4, no need for our own libvpx-xpra packages:
+#Fedora >=23 have libvpx 1.4 or better,
+#no need for our own libvpx-xpra packages:
 %define libvpx libvpx
-%endif
-
-%if 0%{?suse_version}
-%define systemd 1
-#the X11 tests would fail
-%define run_tests 0
-#untested:
-%define with_selinux 0
-#SUSE Leap aka 42.1 does not have python3-crypto, so skip the python3 build there
-%if 0%{?suse_version} == 1315
-%define with_python3 0
-%endif
-#causes problems with automatic dependency calculations:
-%global __requires_exclude typelib\\(.*\\)
-%define numpy python-numpy
-%define xvfb xorg-x11-server
-%define requires_setuptools python-setuptools
-%define requires_shadow shadow
-%define requires_xorg xauth, xf86-video-dummy
-%define requires_webcam , python-pyinotify
-%define requires_lzo %{nil}
-%define requires_cython python-Cython
-%define requires_pygobject2 python-gobject2
-%define requires_pygtk2 python-gtk
-%define requires_printing , python-cups
-%define requires_dbus dbus-1-python dbus-1-x11
-%define gstreamer1 , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly
-#no python-gstreamer in the standard repos:
-#(see recommends below)
-%define requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
-%define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
-%define requires_opengl , python-opengl, python-opengl-accelerate, python-gtkglext
-%define py3requires_opengl , python3-opengl, python3-opengl-accelerate
-%define requires_crypto python-pycrypto
-%define py3requires_crypto python3-pycrypto
-#different naming prefix ("python-") for pygtkglext:
-%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext
 %endif
 
 Name: xpra
@@ -260,16 +207,6 @@ Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 Requires: %{requires_crypto}
 
-%if %{with_python3}
-BuildRequires: python3-devel
-BuildRequires: python3-Cython
-BuildRequires: python3-numpy
-BuildRequires: gtk3-devel
-BuildRequires: python3-gobject
-BuildRequires: gobject-introspection-devel
-BuildRequires: python3-rencode
-%endif
-
 
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -287,53 +224,6 @@ This package contains the files which are common to both the Python 2 and Python
 
 %pre common
 getent group xpra > /dev/null || groupadd -r xpra
-
-
-#optional python3 package:
-%if %{with_python3}
-%package -n python3-xpra
-Summary: Xpra gives you "persistent remote applications" for X.
-Group: Networking
-Requires: python3 %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo} %{py3requires_printing}
-Requires: python3-lz4
-Requires: python3-gobject
-Requires: python3-pillow
-Requires: python3-xxhash
-Requires: %{py3requires_crypto}
-#TODO:
-#Requires: dbus-python
-Requires: python3-netifaces
-Requires: python3-rencode
-Requires: python3-pillow
-Requires: python3-numpy
-Requires: libfakeXinerama
-Requires: gtk3-immodule-xim
-Requires: xorg-x11-server-utils
-Requires: xorg-x11-drv-dummy
-Requires: %{requires_xorg}
-%if ! 0%{?suse_version}
-Requires: mesa-dri-drivers
-%endif
-Requires: %{libvpx}
-%if 0%{?fedora}
-Requires: libwebp
-Requires: libyuv
-%endif
-Requires: x264-xpra
-Requires: ffmpeg-xpra
-Requires: xpra-common = %{build_no}%{dist}
-#for running the tests:
-BuildRequires: %{py3requires_crypto}
-%if 0%{?fedora}
-BuildRequires: libwebp-devel
-BuildRequires: libyuv-devel
-%endif
-
-%description -n python3-xpra
-Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
-
-So basically it's screen for remote X apps.
-%endif
 
 
 %prep
@@ -357,34 +247,14 @@ pushd $RPM_BUILD_DIR/xpra-%{version}
 %endif
 
 popd
-mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
-%if %{with_python3}
-rm -rf $RPM_BUILD_DIR/xpra-%{version}-python3 $RPM_BUILD_DIR/xpra-%{version}
-bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
-%if 0%{?el6}
-cd $RPM_BUILD_DIR/xpra-%{version}
-%patch0 -p1
-%endif
-mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
-%endif
+mv $RPM_BUILD_DIR/xpra-%{version}
 
 
 %debug_package
 
 
 %build
-%if %{with_python3}
-pushd xpra-%{version}-python3
-rm -rf build install
-# set pkg_config_path for xpra video libs:
-CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python3} setup.py build \
-	%{build_args} \
-	--pkg-config-path=%{_libdir}/xpra/pkgconfig \
-	--rpath=%{_libdir}/xpra
-popd
-%endif
-
-pushd xpra-%{version}-python2
+pushd xpra-%{version}
 rm -rf build install
 # set pkg_config_path for xpra video libs
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python2} setup.py build \
@@ -405,12 +275,7 @@ popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%if %{with_python3}
-pushd xpra-%{version}-python3
-%{__python3} setup.py install -O1 %{build_args} --pkg-config-path=%{_libdir}/xpra/pkgconfig --prefix /usr --skip-build --root %{buildroot}
-popd
-%endif
-pushd xpra-%{version}-python2
+pushd xpra-%{version}
 %{__python2} setup.py install -O1 %{build_args} --pkg-config-path=%{_libdir}/xpra/pkgconfig --prefix /usr --skip-build --root %{buildroot}
 %if 0%{?with_selinux}
 for selinuxvariant in %{selinux_variants}
@@ -424,9 +289,6 @@ popd
 
 #fix permissions on shared objects
 find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
-%if 0%{?fedora}
-find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
-%endif
 
 # Ensure all .js files are not executeable
 find %{buildroot}%{_datadir}/xpra/www/js -name '*.js' -exec chmod 0644 {} \;
@@ -434,7 +296,6 @@ find %{buildroot}%{_datadir}/xpra/www/js -name '*.js' -exec chmod 0644 {} \;
 #remove the tests, not meant to be installed in the first place
 #(but I can't get distutils to play nice: I want them built, not installed)
 rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unittests
-rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 
 
 %clean
@@ -487,12 +348,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python2_sitearch}/xpra
 %{python2_sitearch}/xpra-*.egg-info
 
-%if %{with_python3}
-%files -n python3-xpra
-%{python3_sitearch}/xpra
-%{python3_sitearch}/xpra-*.egg-info
-%endif
-
 
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
@@ -508,13 +363,6 @@ pushd xpra-%{version}-python2/unittests
 rm -fr unit/client unit/server/*server*py
 PYTHONPATH="%{buildroot}%{python2_sitearch}:." PATH="`pwd`/../scripts/:$PATH" XPRA_COMMAND="`pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python2} ./unit/run.py
 popd
-
-%if 0%{?with_python3}
-pushd xpra-%{version}-python3/unittests
-rm -fr unit/client unit/server/*server*py
-PYTHONPATH="%{buildroot}%{python3_sitearch}:." PATH="`pwd`/../scripts/:$PATH" XPRA_COMMAND="`pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python3} ./unit/run.py
-popd
-%endif
 %endif
 
 
