@@ -249,6 +249,7 @@ class WindowSource(WindowIconSource):
         self._fixed_min_quality = capr(default_encoding_options.get("min-quality", 0))
         self._fixed_speed = default_encoding_options.get("speed", -1)
         self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
+        self._encoding_hint = None
         self._quality_hint = self.window.get("quality", -1)
         if "quality" in window.get_dynamic_property_names():
             sid = window.connect("notify::quality", self.quality_changed)
@@ -256,6 +257,9 @@ class WindowSource(WindowIconSource):
         self._speed_hint = self.window.get("speed", -1)
         if "speed" in window.get_dynamic_property_names():
             sid = window.connect("notify::speed", self.speed_changed)
+            self.window_signal_handlers.append(sid)
+        if "encoding" in window.get_dynamic_property_names():
+            sid = window.connect("notify::encoding", self.encoding_changed)
             self.window_signal_handlers.append(sid)
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
@@ -532,6 +536,7 @@ class WindowSource(WindowIconSource):
         return {
                 "fullscreen"            : self.fullscreen or False,
                 #speed / quality properties (not necessarily the same as the video encoder settings..):
+                "encoding-hint"         : self._encoding_hint or "",
                 "min_speed"             : self._fixed_min_speed,
                 "speed"                 : self._fixed_speed,
                 "speed-hint"            : self._speed_hint,
@@ -622,6 +627,13 @@ class WindowSource(WindowIconSource):
         self._speed_hint = window.get("speed", -1)
         log("speed_changed(%s, %s) speed=%s", window, args, self._speed_hint)
         return True
+
+    def encoding_changed(self, window, *args):
+        self._encoding_hint = window.get("encoding", None)
+        log("encoding_changed(%s, %s) encoding=%s", window, args, self._encoding_hint)
+        self.assign_encoding_getter()
+        return True
+
 
     def set_client_properties(self, properties):
         #filter out stuff we don't care about
@@ -771,13 +783,18 @@ class WindowSource(WindowIconSource):
             max_rgb_threshold = min(max_rgb_threshold, max(bwl//1000, 1024))
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
         self._rgb_auto_threshold = min(max_rgb_threshold, max(min_rgb_threshold, v))
-        self.get_best_encoding = self.get_best_encoding_impl()
+        self.assign_encoding_getter()
         log("update_encoding_options(%s) wid=%i, want_alpha=%s, speed=%i, quality=%i, bandwidth-limit=%i, lossless threshold: %s / %s, rgb auto threshold=%i (min=%i, max=%i), get_best_encoding=%s",
                         force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality, bwl, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, min_rgb_threshold, max_rgb_threshold, self.get_best_encoding)
+
+    def assign_encoding_getter(self):
+        self.get_best_encoding = self.get_best_encoding_impl()
 
     def get_best_encoding_impl(self):
         if HARDCODED_ENCODING:
             return self.hardcoded_encoding
+        if self._encoding_hint:
+            return self.encoding_is_hint
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
         if self._mmap and self._mmap_size>0:
@@ -825,6 +842,9 @@ class WindowSource(WindowIconSource):
 
     def hardcoded_encoding(self, *_args):
         return HARDCODED_ENCODING
+
+    def encoding_is_hint(self, *_args):
+        return self._encoding_hint
 
     def encoding_is_mmap(self, *_args):
         return "mmap"

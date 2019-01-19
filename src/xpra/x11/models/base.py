@@ -135,6 +135,10 @@ class BaseWindowModel(CoreX11WindowModel):
                 "Speed", "",
                 -1, 100, -1,
                 PARAM_READABLE),
+        #from _XPRA_ENCODING
+        "encoding": (gobject.TYPE_PYOBJECT,
+                "Encoding", "",
+                PARAM_READABLE),
         #from _NET_WM_DESKTOP
         "workspace": (gobject.TYPE_UINT,
                 "The workspace this window is on", "",
@@ -197,15 +201,19 @@ class BaseWindowModel(CoreX11WindowModel):
                        PARAM_READWRITE),
         })
     _property_names = CoreX11WindowModel._property_names + [
-                      "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut", "opacity",
+                      "transient-for", "fullscreen-monitors", "bypass-compositor",
+                      "group-leader", "window-type", "workspace", "strut", "opacity",
                       "menu", "content-type",
                       #virtual attributes:
-                      "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
+                      "fullscreen", "focused", "maximized", "above", "below", "shaded",
+                      "skip-taskbar", "skip-pager", "sticky",
+                      ]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
                               "attention-requested", "content-type",
                               "menu", "workspace", "opacity",
-                              "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky",
-                              "quality", "speed",
+                              "fullscreen", "focused", "maximized", "above", "below", "shaded",
+                              "skip-taskbar", "skip-pager", "sticky",
+                              "quality", "speed", "encoding",
                               ]
     _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
@@ -215,13 +223,15 @@ class BaseWindowModel(CoreX11WindowModel):
                               "_NET_WM_FULLSCREEN_MONITORS",
                               "_NET_WM_BYPASS_COMPOSITOR",
                               "_NET_WM_STRUT",
-                              "_NET_WM_STRUT_PARTIAL",      #redundant as it uses the same handler as _NET_WM_STRUT
+                              #redundant as it uses the same handler as _NET_WM_STRUT:
+                              "_NET_WM_STRUT_PARTIAL",
                               "_NET_WM_WINDOW_OPACITY",
                               "WM_HINTS",
                               "_GTK_APP_MENU_OBJECT_PATH",
                               "_XPRA_CONTENT_TYPE",
                               "_XPRA_QUALITY",
                               "_XPRA_SPEED",
+                              "_XPRA_ENCODING",
                               #redundant as they use the same function as _GTK_APP_MENU_OBJECT_PATH:
                               #(but the code will make sure we only call it once during setup)
                               "_GTK_APPLICATION_ID",
@@ -518,6 +528,12 @@ class BaseWindowModel(CoreX11WindowModel):
         metalog("speed=%s", speed)
         self._updateprop("speed", max(-1, min(100, speed)))
 
+    def _handle_xpra_encoding_change(self):
+        encoding = self.prop_get("_XPRA_ENCODING", "latin1", True) or ""
+        metalog("encoding=%s", encoding)
+        self._updateprop("encoding", encoding)
+
+
     _x11_property_handlers = CoreX11WindowModel._x11_property_handlers.copy()
     _x11_property_handlers.update({
         "WM_TRANSIENT_FOR"              : _handle_transient_for_change,
@@ -537,6 +553,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "_XPRA_CONTENT_TYPE"            : _handle_xpra_content_type_change,
         "_XPRA_QUALITY"                 : _handle_xpra_quality_change,
         "_XPRA_SPEED"                   : _handle_xpra_speed_change,
+        "_XPRA_ENCODING"                : _handle_xpra_encoding_change,
         })
 
 
