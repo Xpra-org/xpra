@@ -199,7 +199,7 @@ Requires:			python2-numpy
 BuildRequires:		python2-numpy
 %endif
 Recommends:			python2-paramiko
-Recommends:			python2-lzo
+#Recommends:			python2-lzo
 Recommends:         python2-kerberos
 Recommends:         python2-gssapi
 #webcam:
@@ -365,7 +365,7 @@ Recommends:			python3-dbus
 Recommends:			python3-avahi
 %if 0%{?fedora}
 Recommends:			python3-paramiko
-Recommends:			python3-lzo
+#Recommends:			python3-lzo
 Recommends:         python3-kerberos
 Recommends:         python3-gssapi
 Recommends:         python3-ldap
