@@ -65,6 +65,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #xenial:        ,python-lz4
 #bionic:        ,python-lz4
 #buster:        ,python-lz4
+#cosmic:        ,python-lz4
 #if you use Ubuntu, you will "want" this mess:
 #precise:		,python-appindicator
 #jessie:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
@@ -73,9 +74,11 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #xenial:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #bionic:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #buster:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
+#cosmic:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #trusty:        ,python-appindicator
 #xenial:        ,python-appindicator
-#yakkety:        ,python-appindicator
+#bionic:        ,python-appindicator
+#cosmic:        ,python-appindicator
 Recommends:
 # x264:
 #precise:        ,libx264-120
@@ -103,6 +106,7 @@ Recommends:
 #xenial:        ,python-cryptography
 #bionic:        ,python-cryptography
 #buster:        ,python-cryptography
+#cosmic:        ,python-cryptography
 # audio-related:
 #precise:        ,gstreamer0.10-plugins-base
 #wheezy:        ,gstreamer0.10-plugins-base
@@ -112,6 +116,7 @@ Recommends:
 #xenial:        ,gstreamer1.0-plugins-base
 #bionic:        ,gstreamer1.0-plugins-base
 #buster:        ,gstreamer1.0-plugins-base
+#cosmic:        ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
 #precise:        ,gstreamer0.10-plugins-good
 #wheezy:        ,gstreamer0.10-plugins-good
@@ -121,6 +126,7 @@ Recommends:
 #xenial:        ,gstreamer1.0-plugins-good
 #bionic:        ,gstreamer1.0-plugins-good
 #buster:        ,gstreamer1.0-plugins-good
+#cosmic:        ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
 #precise:        ,gstreamer0.10-plugins-ugly
 #wheezy:        ,gstreamer0.10-plugins-ugly
@@ -130,6 +136,7 @@ Recommends:
 #xenial:        ,gstreamer1.0-plugins-ugly
 #bionic:        ,gstreamer1.0-plugins-ugly
 #buster:        ,gstreamer1.0-plugins-ugly
+#cosmic:        ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
 #precise:        ,python-gst-0.10
 #wheezy:        ,python-gst-0.10
@@ -139,6 +146,7 @@ Recommends:
 #xenial:        ,python-gst-1.0
 #bionic:        ,python-gst-1.0
 #buster:        ,python-gst-1.0
+#cosmic:        ,python-gst-1.0
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 #for printer forwarding:
@@ -162,6 +170,7 @@ Recommends:
 #xenial:        ,python-lzo
 #bionic:        ,python-lzo
 #buster:        ,python-lzo
+#cosmic:        ,python-lzo
 #for html5 support:
         ,websockify
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
