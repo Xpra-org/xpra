@@ -415,7 +415,7 @@ class UDPProtocol(Protocol):
         log("_send_async(%s, %s)", packet, sync)
         chunks = self.encode(packet)
         if len(chunks)>1:
-            return Protocol.send_now(packet)
+            return Protocol.send_now(self, packet)
         proto_flags,index,level,data = chunks[0]
         from xpra.net.header import pack_header
         payload_size = len(data)
