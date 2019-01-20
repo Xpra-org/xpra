@@ -102,7 +102,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
         log("do_set_keymap using xkbmap_print")
         #try to guess the layout by parsing "setxkbmap -print"
         try:
-            sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
+            sym_re = re.compile(r"\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
             for line in xkbmap_print.splitlines():
                 m = sym_re.match(line)
                 if m:
