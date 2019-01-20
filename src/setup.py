@@ -1136,7 +1136,7 @@ if WIN32:
             dll_names = list(dll_names)
             dll_files = []
             import re
-            version_re = re.compile("\-[0-9\.\-]+$")
+            version_re = re.compile("-[0-9\.-]+$")
             dirs = os.environ.get("PATH").split(os.path.pathsep)
             if os.path.exists(gnome_include_path):
                 dirs.insert(0, gnome_include_path)
