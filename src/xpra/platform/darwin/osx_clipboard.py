@@ -155,9 +155,8 @@ def main():
 
         #init UI watcher with gobject (required by pasteboard monitoring code)
         from xpra.platform.ui_thread_watcher import get_UI_watcher
-        gobject.threads_init()
-        import gtk.gdk
-        gtk.gdk.threads_init()
+        from xpra.gtk_common.gtk_util import import_gtk
+        gtk = import_gtk()
         get_UI_watcher(glib.timeout_add)
 
         log.info("testing pasteboard")
