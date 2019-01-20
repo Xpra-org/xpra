@@ -4,10 +4,10 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections import deque
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import envint
-from collections import deque
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import hexstr, POSIX
 from xpra.log import Logger

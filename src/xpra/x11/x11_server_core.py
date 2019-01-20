@@ -392,8 +392,8 @@ class X11ServerCore(GTKServerBase):
                         "options"   : tuple(reversed(sorted(sizes))),
                         "exact"     : self.randr_exact_size,
                         }
-        except:
-            pass
+        except XError:
+            log("failed to query randr screen sizes", exc_info=True)
         return info
 
 
@@ -798,7 +798,8 @@ class X11ServerCore(GTKServerBase):
         #so we use wid=0 for that:
         wid = 0
         for ss in self._server_sources.values():
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
+            name = strtobytes(event.bell_name or "")
+            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def _bell_signaled(self, wm, event):
@@ -809,7 +810,7 @@ class X11ServerCore(GTKServerBase):
         if event.window!=get_default_root_window() and event.window_model is not None:
             try:
                 wid = self._window_to_id[event.window_model]
-            except:
+            except KeyError:
                 pass
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self._server_sources.values():

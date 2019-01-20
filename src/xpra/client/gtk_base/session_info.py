@@ -890,8 +890,8 @@ class SessionInfo(gtk.Window):
                     log("expected dictionary for %s", prop_path)
                     log(" got %s: %s", type(v), v)
                 else:
-                    getv = v.intget
-                    return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
+                    iget = v.intget
+                    return iget("cur"), iget("min"), iget("avg"), iget("90p"), iget("max")
 
         #legacy servers: sum up the values for all the windows found
         def avg(values):
@@ -932,12 +932,10 @@ class SessionInfo(gtk.Window):
         self.client.send_info_request()
         def setall(labels, values):
             assert len(labels)==len(values), "%s labels and %s values (%s vs %s)" % (len(labels), len(values), labels, values)
-            for i in range(len(labels)):
-                l = labels[i]
-                v = values[i]
-                l.set_text(str(v))
+            for i, l in enumerate(labels):
+                l.set_text(str(values[i]))
         def setlabels(labels, values, rounding=int):
-            if len(values)==0:
+            if not values:
                 return
             avg = sum(values)/len(values)
             svalues = sorted(values)
@@ -953,10 +951,10 @@ class SessionInfo(gtk.Window):
             rounded_values = [rounding(v) for v in disp]
             setall(labels, rounded_values)
 
-        if len(self.client.server_ping_latency)>0:
+        if self.client.server_ping_latency:
             spl = [1000.0*x for _,x in tuple(self.client.server_ping_latency)]
             setlabels(self.server_latency_labels, spl)
-        if len(self.client.client_ping_latency)>0:
+        if self.client.client_ping_latency:
             cpl = [1000.0*x for _,x in tuple(self.client.client_ping_latency)]
             setlabels(self.client_latency_labels, cpl)
         if mixin_features.windows and self.client.windows_enabled:
@@ -969,7 +967,7 @@ class SessionInfo(gtk.Window):
             rps = []
             pps = []
             decoding_latency = []
-            if len(self.client.pixel_counter)>0:
+            if self.client.pixel_counter:
                 min_time = None
                 max_time = None
                 regions_per_second = {}
@@ -1130,7 +1128,7 @@ class SessionInfo(gtk.Window):
             #(and skip if we don't have any)
             values, labels = [], []
             for l, name in items:
-                if len(l)==0:
+                if not l:
                     continue
                 l = list(l)
                 if len(l)<size:
@@ -1190,7 +1188,8 @@ class SessionInfo(gtk.Window):
         if response == gtk.RESPONSE_OK:
             if len(filenames)==1:
                 filename = filenames[0]
-                pixmaps = [image.get_pixmap()[0] for image in [self.bandwidth_graph, self.latency_graph, self.sound_queue_graph]]
+                pixmaps = tuple(image.get_pixmap()[0] for image in
+                                (self.bandwidth_graph, self.latency_graph, self.sound_queue_graph))
                 log("saving pixmaps %s and %s to %s", pixmaps, filename)
                 w, h = 0, 0
                 for pixmap in pixmaps:

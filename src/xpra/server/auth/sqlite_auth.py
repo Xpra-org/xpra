@@ -12,9 +12,6 @@ from xpra.os_util import getuid, getgid
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log, parse_uid, parse_gid
 assert init and log #tests will disable logging from here
 
-def init(opts):
-    pass
-
 
 class Authenticator(SysAuthenticator):
 
