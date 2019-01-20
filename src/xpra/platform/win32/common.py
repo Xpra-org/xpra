@@ -220,7 +220,7 @@ PostMessageA = user32.PostMessageA
 FindWindowA = user32.FindWindowA
 GetWindowRect = user32.GetWindowRect
 GetDoubleClickTime = user32.GetDoubleClickTime
-EnumDisplayMonitors = user32.EnumDisplayMonitors
+_EnumDisplayMonitors = user32.EnumDisplayMonitors
 MonitorFromWindow = user32.MonitorFromWindow
 MonitorFromWindow.restype = HMONITOR
 GetMonitorInfoW = user32.GetMonitorInfoW
@@ -408,9 +408,8 @@ GetObjectA.restype = INT
 
 #wrap EnumDisplayMonitors to hide the callback function:
 MonitorEnumProc = WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)
-EnumDisplayMonitors.argtypes = [HDC, POINTER(RECT), MonitorEnumProc, LPARAM]
-EnumDisplayMonitors.restype = BOOL
-_EnumDisplayMonitors = EnumDisplayMonitors
+_EnumDisplayMonitors.argtypes = [HDC, POINTER(RECT), MonitorEnumProc, LPARAM]
+_EnumDisplayMonitors.restype = BOOL
 def EnumDisplayMonitors():
     results = []
     def _callback(monitor, _dc, _rect, _data):
