@@ -4,15 +4,15 @@
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from xpra.log import Logger
-keylog = Logger("keyboard")
-mouselog = Logger("mouse")
+#pylint: disable-msg=E1101
 
 from xpra.os_util import monotonic_time, bytestostr
 from xpra.util import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
 
+keylog = Logger("keyboard")
+mouselog = Logger("mouse")
 
 """
 Mixin for servers that handle input devices
@@ -239,7 +239,8 @@ class InputServer(StubServerMixin):
     def _key_repeat_timeout(self, when, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod):
         self.key_repeat_timer = None
         now = monotonic_time()
-        keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
+        keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s",
+               keyname, keycode, now, when, delay_ms)
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
         self.keys_timedout[keycode] = now
 

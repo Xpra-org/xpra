@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from xpra.log import Logger
-log = Logger("client")
+#pylint: disable-msg=E1101
 
 from xpra.os_util import bytestostr
 from xpra.util import repr_ellipsized
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
+
+log = Logger("client")
 
 
 """
@@ -22,7 +23,7 @@ class LoggingServer(StubServerMixin):
         self.remote_logging = False
 
     def init(self, opts):
-        self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
+        self.remote_logging = not (opts.remote_logging or "").lower() in FALSE_OPTIONS
 
     def get_server_features(self, _source=None):
         return {

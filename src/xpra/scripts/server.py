@@ -406,7 +406,9 @@ def add_mdns(mdns_recs, socktype, host_str, port):
             recs.append(rec)
 
 def create_sockets(opts, error_cb):
-    from xpra.server.socket_util import parse_bind_ip, parse_bind_vsock, get_network_logger, setup_tcp_socket, setup_udp_socket, setup_vsock_socket
+    from xpra.server.socket_util import (
+        parse_bind_ip, parse_bind_vsock, get_network_logger, setup_tcp_socket, setup_udp_socket, setup_vsock_socket,
+        )
     log = get_network_logger()
 
     bind_tcp = parse_bind_ip(opts.bind_tcp)
