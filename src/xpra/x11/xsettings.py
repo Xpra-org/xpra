@@ -15,12 +15,13 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                get_pywindow,                #@UnresolvedImport
                get_xatom)                   #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
 from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+from xpra.log import Logger
+
+X11Window = X11WindowBindings()
 gtk = import_gtk()
 gobject = import_gobject()
 
-from xpra.log import Logger
 log = Logger("x11", "xsettings")
 
 #the X11 atom name for the XSETTINGS property:

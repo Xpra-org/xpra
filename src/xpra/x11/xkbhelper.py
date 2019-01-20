@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,15 +8,15 @@ import re
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-init_gdk_display_source()
-
 from xpra.util import std, csv
 from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.log import Logger
+
+init_gdk_display_source()
 X11Keyboard = X11KeyboardBindings()
 
-from xpra.log import Logger
 log = Logger("x11", "keyboard")
 
 DEBUG_KEYSYMS = [x for x in os.environ.get("XPRA_DEBUG_KEYSYMS", "").split(",") if len(x)>0]
@@ -24,17 +24,26 @@ DEBUG_KEYSYMS = [x for x in os.environ.get("XPRA_DEBUG_KEYSYMS", "").split(",") 
 #keys we choose not to map if the free space in the keymap is too limited
 #this list was generated using:
 #$ DISPLAY=:1 xmodmap -pke | awk -F= '{print $2}' | xargs -n 1 echo | sort -u | grep XF | xargs
-OPTIONAL_KEYS = ["XF86AudioForward", "XF86AudioLowerVolume", "XF86AudioMedia", "XF86AudioMicMute", "XF86AudioMute", "XF86AudioNext", "XF86AudioPause", "XF86AudioPlay", "XF86AudioPrev", "XF86AudioRaiseVolume", "XF86AudioRecord", "XF86AudioRewind", "XF86AudioStop",
-                 "XF86Back", "XF86Battery", "XF86Bluetooth", "XF86Calculator", "XF86ClearGrab", "XF86Close",
-                 "XF86Copy", "XF86Cut", "XF86Display", "XF86Documents", "XF86DOS", "XF86Eject", "XF86Explorer",
-                 "XF86Favorites", "XF86Finance", "XF86Forward", "XF86Game", "XF86Go", "XF86HomePage", "XF86KbdBrightnessDown", "XF86KbdBrightnessUp", "XF86KbdLightOnOff",
-                 "XF86Launch1", "XF86Launch2", "XF86Launch3", "XF86Launch4", "XF86Launch5", "XF86Launch6", "XF86Launch7", "XF86Launch8", "XF86Launch9", "XF86LaunchA", "XF86LaunchB",
-                 "XF86Mail", "XF86MailForward", "XF86MenuKB", "XF86Messenger", "XF86MonBrightnessDown", "XF86MonBrightnessUp", "XF86MyComputer",
-                 "XF86New", "XF86Next_VMode", "XF86Open", "XF86Paste", "XF86Phone", "XF86PowerOff",
-                 "XF86Prev_VMode", "XF86Reload", "XF86Reply", "XF86RotateWindows", "XF86Save", "XF86ScreenSaver",
-                 "XF86ScrollDown", "XF86ScrollUp", "XF86Search", "XF86Send", "XF86Shop", "XF86Sleep", "XF86Suspend",
-                 "XF86Switch_VT_1", "XF86Switch_VT_10", "XF86Switch_VT_11", "XF86Switch_VT_12", "XF86Switch_VT_2", "XF86Switch_VT_3", "XF86Switch_VT_4", "XF86Switch_VT_5", "XF86Switch_VT_6", "XF86Switch_VT_7", "XF86Switch_VT_8", "XF86Switch_VT_9",
-                 "XF86Tools", "XF86TouchpadOff", "XF86TouchpadOn", "XF86TouchpadToggle", "XF86Ungrab", "XF86WakeUp", "XF86WebCam", "XF86WLAN", "XF86WWW", "XF86Xfer"]
+OPTIONAL_KEYS = [
+    "XF86AudioForward", "XF86AudioLowerVolume", "XF86AudioMedia", "XF86AudioMicMute", "XF86AudioMute",
+    "XF86AudioNext", "XF86AudioPause", "XF86AudioPlay", "XF86AudioPrev", "XF86AudioRaiseVolume",
+    "XF86AudioRecord", "XF86AudioRewind", "XF86AudioStop",
+    "XF86Back", "XF86Battery", "XF86Bluetooth", "XF86Calculator", "XF86ClearGrab", "XF86Close",
+    "XF86Copy", "XF86Cut", "XF86Display", "XF86Documents", "XF86DOS", "XF86Eject", "XF86Explorer",
+    "XF86Favorites", "XF86Finance", "XF86Forward", "XF86Game", "XF86Go", "XF86HomePage", "XF86KbdBrightnessDown",
+    "XF86KbdBrightnessUp", "XF86KbdLightOnOff",
+    "XF86Launch1", "XF86Launch2", "XF86Launch3", "XF86Launch4", "XF86Launch5", "XF86Launch6",
+    "XF86Launch7", "XF86Launch8", "XF86Launch9", "XF86LaunchA", "XF86LaunchB",
+    "XF86Mail", "XF86MailForward", "XF86MenuKB", "XF86Messenger", "XF86MonBrightnessDown",
+    "XF86MonBrightnessUp", "XF86MyComputer",
+    "XF86New", "XF86Next_VMode", "XF86Open", "XF86Paste", "XF86Phone", "XF86PowerOff",
+    "XF86Prev_VMode", "XF86Reload", "XF86Reply", "XF86RotateWindows", "XF86Save", "XF86ScreenSaver",
+    "XF86ScrollDown", "XF86ScrollUp", "XF86Search", "XF86Send", "XF86Shop", "XF86Sleep", "XF86Suspend",
+    "XF86Switch_VT_1", "XF86Switch_VT_10", "XF86Switch_VT_11", "XF86Switch_VT_12", "XF86Switch_VT_2", "XF86Switch_VT_3",
+    "XF86Switch_VT_4", "XF86Switch_VT_5", "XF86Switch_VT_6", "XF86Switch_VT_7", "XF86Switch_VT_8", "XF86Switch_VT_9",
+    "XF86Tools", "XF86TouchpadOff", "XF86TouchpadOn", "XF86TouchpadToggle", "XF86Ungrab", "XF86WakeUp", "XF86WebCam",
+    "XF86WLAN", "XF86WWW", "XF86Xfer",
+    ]
 
 
 def clean_keyboard_state():
@@ -145,7 +154,7 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
         Translate the given keycodes into the existing keymap
     """
     #get the list of keycodes (either from x11 keycodes or gtk keycodes):
-    if xkbmap_x11_keycodes and len(xkbmap_x11_keycodes)>0:
+    if xkbmap_x11_keycodes:
         dump_dict(xkbmap_x11_keycodes)
         keycodes = indexed_mappings(xkbmap_x11_keycodes)
     else:
@@ -281,16 +290,17 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                 entries = [entry for entry in entries if mod in modifiers_for([entry])]
                 log.warn(" keeping: %s for %s", estr(entries), mod)
             #now remove entries for keysyms we don't have:
-            f_entries = set([(keysym, index) for keysym, index in entries if keysym and X11Keyboard.parse_keysym(keysym) is not None])
+            f_entries = set((keysym, index) for keysym, index in entries if keysym and X11Keyboard.parse_keysym(keysym) is not None)
             for keysym, _ in entries:
                 if keysym and X11Keyboard.parse_keysym(keysym) is None:
                     invalid_keysyms.add(keysym)
-            if len(f_entries)==0:
+            if not f_entries:
                 log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
                 continue
             if drop_extra_keys:
-                noopt = [keysym for keysym, index in entries if (X11Keyboard.parse_keysym(keysym) is not None and keysym not in OPTIONAL_KEYS)]
-                if len(noopt)==0:
+                if not any(keysym for keysym, index in entries if (
+                    X11Keyboard.parse_keysym(keysym) is not None and keysym not in OPTIONAL_KEYS)
+                ):
                     log("keymapping removed keycode entry %s pointing to optional keys: %s", keycode, entries)
                     continue
             filtered[keycode] = f_entries
@@ -300,7 +310,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         return filtered
 
     #get the list of keycodes (either from x11 keycodes or gtk keycodes):
-    if xkbmap_x11_keycodes and len(xkbmap_x11_keycodes)>0:
+    if xkbmap_x11_keycodes:
         log("using x11 keycodes: %s", xkbmap_x11_keycodes)
         dump_dict(xkbmap_x11_keycodes)
         keycodes = indexed_mappings(xkbmap_x11_keycodes)
@@ -323,7 +333,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         filtered_preserve_keycode_entries = filter_mappings(indexed_mappings(preserve_keycode_entries), try_harder)
         log("filtered_preserve_keycode_entries=%s", filtered_preserve_keycode_entries)
         trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax, keycodes, filtered_preserve_keycode_entries, keysym_to_modifier, try_harder)
-        if len(missing_keycodes)==0:
+        if not missing_keycodes:
             break
     instructions = keymap_to_xmodmap(new_keycodes)
     unset = apply_xmodmap(instructions)
@@ -350,8 +360,7 @@ def indexed_mappings(raw_mappings):
     for keycode, keysyms in raw_mappings.items():
         pairs = set()
         l = log
-        for i in range(0, len(keysyms)):
-            keysym = keysyms[i]
+        for i, keysym in enumerate(keysyms):
             if keysym in DEBUG_KEYSYMS:
                 l = log.info
             pairs.add((keysym, i))
@@ -439,7 +448,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             l("assign: keycode %s out of range (%s to %s)", server_keycode, kcmin, kcmax)
             server_keycode = -1
         if server_keycode<=0:
-            if len(free_keycodes)>0:
+            if free_keycodes:
                 server_keycode = free_keycodes[0]
                 l("set_keycodes key %s using free keycode=%s", entries, server_keycode)
             else:
@@ -466,11 +475,11 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         return server_keycode
 
     def assign(client_keycode, entries):
-        if len(entries)==0:
+        if not entries:
             return 0
         #all the keysyms for this keycode:
-        keysyms = set([keysym for keysym, _ in entries])
-        if len(keysyms)==0:
+        keysyms = set(keysym for keysym, _ in entries)
+        if not keysyms:
             return 0
         if len(keysyms)==1 and tuple(keysyms)[0]=='0xffffff':
             log("skipped invalid keysym: %s / %s", client_keycode, entries)
@@ -480,7 +489,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             l = log.info
         l("assign(%s, %s)", client_keycode, entries)
 
-        if len(preserve_keycode_entries)==0:
+        if not preserve_keycode_entries:
             return do_assign(client_keycode, client_keycode, entries)
         if len(keysyms)==1:
             #only one keysym, replace with single entry
@@ -495,7 +504,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 preserve_keycode_matches[keycode] = v
                 l("preserve_keycode_matches[%s]=%s", keycode, v)
 
-        if len(preserve_keycode_matches)==0:
+        if not preserve_keycode_matches:
             l("no preserve matches for %s", tuple(entries))
             return do_assign(client_keycode, -1, entries)         #nothing to preserve
 
@@ -511,7 +520,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
 
         #ignoring indexes, but requiring at least as many keysyms:
         for p_keycode, p_entries in preserve_keycode_matches.items():
-            p_keysyms = set([keysym for keysym,_ in p_entries])
+            p_keysyms = set(keysym for keysym,_ in p_entries)
             if keysyms.issubset(p_keysyms):
                 if len(p_entries)>len(entries):
                     l("found keysym preserve superset with more keys for %s : %s", tuple(entries), tuple(p_entries))
@@ -522,10 +531,10 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
 
         if try_harder:
             #try to match the main key only:
-            main_key = set([(keysym, index) for keysym, index in entries if index==0])
+            main_key = set((keysym, index) for keysym, index in entries if index==0)
             if len(main_key)==1:
                 for p_keycode, p_entries in preserve_keycode_matches.items():
-                    p_keysyms = set([keysym for keysym,_ in p_entries])
+                    p_keysyms = set(keysym for keysym,_ in p_entries)
                     if main_key.issubset(p_entries):
                         l("found main key superset for %s : %s", main_key, tuple(p_entries))
                         return do_assign(client_keycode, p_keycode, p_entries, override_server_keycode=True)
@@ -586,7 +595,7 @@ def keymap_to_xmodmap(trans_keycodes):
         names = [""]*keysyms_per_keycode
         sentries = sorted(entries, key=lambda x:x[1])
         for name, index in sentries:
-            assert 0<=index and index<keysyms_per_keycode
+            assert 0<=index<keysyms_per_keycode
             try:
                 keysym = X11Keyboard.parse_keysym(name)
             except:
@@ -621,7 +630,7 @@ def keymap_to_xmodmap(trans_keycodes):
                 if name in DEBUG_KEYSYMS:
                     log.info("keymap_to_xmodmap: keysyms[%s]=%s (%s)", index, keysym, name)
         #remove empty keysyms:
-        while len(keysyms)>0 and keysyms[0] is None:
+        while keysyms and keysyms[0] is None:
             keysyms = keysyms[1:]
         l = log
         if [k for k in keysyms if k in DEBUG_KEYSYMS]:
@@ -629,7 +638,7 @@ def keymap_to_xmodmap(trans_keycodes):
         l("%s: %s -> %s", server_keycode, names, keysyms)
         instructions.append(("keycode", server_keycode, keysyms))
 
-    if len(missing_keysyms)>0:
+    if missing_keysyms:
         log.error("cannot find the X11 keysym for the following key names: %s", set(missing_keysyms))
     log("instructions=%s", instructions)
     return  instructions
@@ -660,7 +669,7 @@ def set_modifiers(modifiers):
     def apply_or_trim(instructions):
         err = apply_xmodmap(instructions)
         log("set_modifiers: err=%s", err)
-        if len(err):
+        if err:
             log("set_modifiers %s failed, retrying one more at a time", instructions)
             l = len(instructions)
             for i in range(1, l):
@@ -668,7 +677,7 @@ def set_modifiers(modifiers):
                 log("set_modifiers testing with [:%s]=%s", i, subset)
                 err = apply_xmodmap(subset)
                 log("err=%s", err)
-                if len(err)>0:
+                if err:
                     log.warn("removing problematic modifier mapping: %s", instructions[i-1])
                     instructions = instructions[:i-1]+instructions[i:]
                     return apply_or_trim(instructions)
@@ -730,7 +739,8 @@ def map_missing_modifiers(keynames_for_mod):
     x11_keycodes = X11Keyboard.get_keycode_mappings()
     min_keycode, max_keycode = X11Keyboard.get_minmax_keycodes()
     free_keycodes = [x for x in range(min_keycode, max_keycode) if x not in x11_keycodes]
-    log("map_missing_modifiers(%s) min_keycode=%i max_keycode=%i, free_keycodes=%s", keynames_for_mod, min_keycode, max_keycode, free_keycodes)
+    log("map_missing_modifiers(%s) min_keycode=%i max_keycode=%i, free_keycodes=%s",
+        keynames_for_mod, min_keycode, max_keycode, free_keycodes)
     keysyms_to_keycode = {}
     for keycode, keysyms in x11_keycodes.items():
         for keysym in keysyms:
