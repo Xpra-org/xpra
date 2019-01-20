@@ -129,7 +129,8 @@ class BonjourPublisher:
 
 
 def main():
-    import random, signal
+    import random
+    import signal
     port = int(20000*random.random())+10000
     host = "0.0.0.0"
     host_ports = [(host, port)]

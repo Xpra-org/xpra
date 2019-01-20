@@ -1208,7 +1208,7 @@ def dict_to_validated_config(d={}, extras_defaults={}, extras_types={}, extras_v
 
 class XpraConfig(object):
     def __repr__(self):
-        return ("XpraConfig(%s)" % self.__dict__)
+        return "XpraConfig(%s)" % self.__dict__
 
 
 def fixup_debug_option(value):
@@ -1224,9 +1224,9 @@ def fixup_debug_option(value):
     return value
 
 def _csvstr(value):
-    if type(value) in (tuple, list):
+    if isinstance(value, (tuple, list)):
         return ",".join(str(x).lower().strip() for x in value if x)
-    elif type(value)==str:
+    if isinstance(value, str):
         return value.strip().lower()
     raise Exception("don't know how to convert %s to a csv list!" % type(value))
 
@@ -1269,15 +1269,15 @@ def fixup_socketdirs(options, defaults):
     if not options.socket_dirs:
         from xpra.platform.paths import get_socket_dirs
         options.socket_dirs = getattr(defaults, "socket_dirs", get_socket_dirs())
-    elif type(options.socket_dirs)==str:
+    elif isinstance(options.socket_dirs, str):
         options.socket_dirs = options.socket_dirs.split(os.path.pathsep)
     else:
-        assert type(options.socket_dirs) in (list, tuple)
+        assert isinstance(options.socket_dirs, (list, tuple))
         options.socket_dirs = [v for x in options.socket_dirs for v in x.split(os.path.pathsep)]
 
 def fixup_pings(options):
     #pings used to be a boolean, True mapped to "5"
-    if type(options.pings)==int:
+    if isinstance(options.pings, int):
         return
     try:
         pings = str(options.pings).lower()
@@ -1287,7 +1287,7 @@ def fixup_pings(options):
             options.pings = 0
         else:
             options.pings = int(options.pings)
-    except:
+    except ValueError:
         options.pings = 5
 
 def fixup_encodings(options):
@@ -1344,7 +1344,7 @@ def fixup_keyboard(options):
     def p(v):
         try:
             from xpra.util import remove_dupes
-            r = remove_dupes([x.strip() for x in v.split(",")])
+            r = remove_dupes(x.strip() for x in v.split(","))
             #remove empty string if that's the only value:
             if r and len(r)==1 and r[0]=="":
                 r = []
@@ -1363,7 +1363,7 @@ def fixup_clipboard(options):
         options.clipboard_direction = "to-client"
     elif cd=="both":
         options.clipboard_direction = "both"
-    elif cd=="disabled" or cd=="none":
+    elif cd in ("disabled", "none"):
         options.clipboard_direction = "disabled"
     else:
         warn("Warning: invalid value for clipboard-direction: '%s'" % options.clipboard_direction)
@@ -1409,7 +1409,7 @@ def main():
             v = getattr(o, name_to_field(k), "")
             if ot==bool and v is None:
                 v = "Auto"
-            if type(v)==list:
+            if isinstance(v, list):
                 v = csv(str(x) for x in v)
             print("* %-32s : %s" % (k, nonl(v)))
     from xpra.platform import program_context
@@ -1423,7 +1423,7 @@ def main():
                 print(args[0] % args[1:])
             args.remove("-v")
 
-        if len(args)>0:
+        if args:
             for filename in args:
                 print("")
                 print("Configuration file '%s':" % filename)

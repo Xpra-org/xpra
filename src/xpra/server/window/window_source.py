@@ -1879,7 +1879,8 @@ class WindowSource(WindowIconSource):
             now = monotonic_time()
             options = self.get_refresh_options()
             refresh_exclude = self.get_refresh_exclude()
-            refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s", 1000.0*(monotonic_time()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
+            refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s",
+                       1000.0*(monotonic_time()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
             WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
         return False
 

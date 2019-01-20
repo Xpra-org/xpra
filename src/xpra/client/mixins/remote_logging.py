@@ -28,7 +28,7 @@ class RemoteLogging(StubClientMixin):
         self.log_both = False
         self.monotonic_start_time = monotonic_time()
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts, _extra_args=None):
         self.log_both = (opts.remote_logging or "").lower()=="both"
         self.client_supports_remote_logging = self.log_both or parse_bool("remote-logging", opts.remote_logging)
 

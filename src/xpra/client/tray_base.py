@@ -1,13 +1,15 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from collections import deque
 
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 from xpra.os_util import monotonic_time
-from collections import deque
+
 log = Logger("tray")
 
 
@@ -46,10 +48,10 @@ class TrayBase(object):
         pass
 
     def show(self):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def hide(self):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def get_screen(self):
         return -1
@@ -58,7 +60,7 @@ class TrayBase(object):
         return None     #assume "HORIZONTAL"
 
     def get_geometry(self):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def get_size(self):
         g = self.get_geometry()
@@ -68,14 +70,14 @@ class TrayBase(object):
 
     def set_tooltip(self, tooltip=None):
         self.tooltip = tooltip
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def set_blinking(self, on):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def get_icon_filename(self, basename=None):
         return get_icon_filename(basename or self.default_icon_filename, self.default_icon_extension)
@@ -96,10 +98,11 @@ class TrayBase(object):
         self.icon_timestamp = monotonic_time()
 
     def do_set_icon_from_file(self, filename):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def recalculate_geometry(self, x, y, width, height):
-        log("recalculate_geometry%s guess=%s, tray event locations: %s", (x, y, width, height), self.geometry_guess, len(self.tray_event_locations))
+        log("recalculate_geometry%s guess=%s, tray event locations: %s",
+            (x, y, width, height), self.geometry_guess, len(self.tray_event_locations))
         if x is None or y is None:
             return
         if self.geometry_guess is None:
