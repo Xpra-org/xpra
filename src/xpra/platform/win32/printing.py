@@ -64,7 +64,7 @@ PROCESSES = {}
 
 printers_modified_callback = None
 def init_printing(callback=None):
-    global printers_modified_callback, GSVIEW_DIR, GSPRINT_EXE, GSWINXXC_EXE
+    global printers_modified_callback
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
     try:
@@ -183,7 +183,7 @@ def get_printers():
 
 def print_files(printer, filenames, title, options):
     log("win32.print_files%s", (printer, filenames, title, options))
-    global JOB_ID, PROCESSES, GSVIEW_DIR, GSPRINT_EXE, GSWINXXC_EXE
+    global JOB_ID, PROCESSES
     assert GSVIEW_DIR, "cannot print files without gsprint!"
     processes = []
     for filename in filenames:
