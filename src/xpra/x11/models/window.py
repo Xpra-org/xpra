@@ -261,8 +261,6 @@ class WindowModel(BaseWindowModel):
 
     def _read_initial_X11_properties(self):
         metalog("read_initial_X11_properties() window")
-        def pget(key, ptype):
-            return self.prop_get(key, ptype, raise_xerrors=True)
         # WARNING: have to handle _NET_WM_STATE before we look at WM_HINTS;
         # WM_HINTS assumes that our "state" property is already set.  This is
         # because there are four ways a window can get its urgency
@@ -453,7 +451,7 @@ class WindowModel(BaseWindowModel):
                 return self.get_property("requested-size")
             def window_position(_w, _h):
                 return self.get_property("requested-position")
-            geomlog("_update_client_geometry: using initial size=%s and position=%s", window_size(), window_position())
+            geomlog("_update_client_geometry: using initial size=%s and position=%s", window_size, window_position)
         else:
             geomlog("_update_client_geometry: ignored, owner=%s, setup_done=%s", owner, self._setup_done)
             def window_size():
