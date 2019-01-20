@@ -587,6 +587,9 @@ class OSEnvContext(object):
 
 class FDChangeCaptureContext(object):
 
+    def __init__(self):
+        self.enter_fds = []
+        self.exit_fds = []
     def __enter__(self):
         self.enter_fds = get_all_fds()
     def __exit__(self, *_args):
