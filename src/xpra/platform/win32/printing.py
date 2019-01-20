@@ -184,7 +184,6 @@ def get_printers():
 def print_files(printer, filenames, title, options):
     log("win32.print_files%s", (printer, filenames, title, options))
     global JOB_ID, PROCESSES
-    assert GSVIEW_DIR, "cannot print files without gsprint!"
     processes = []
     for filename in filenames:
         cwd = get_app_dir()
