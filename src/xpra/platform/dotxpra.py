@@ -19,9 +19,9 @@ def norm_makepath(dirpath, name):
         name = name[1:]
     return os.path.join(dirpath, PREFIX + name)
 
-def debug(msg, *args):
+def debug(msg, *args, **kwargs):
     log = get_util_logger()
-    log(msg, *args)
+    log(msg, *args, **kwargs)
 
 
 class DotXpra(object):
