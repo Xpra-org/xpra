@@ -190,6 +190,7 @@ def main(filename):
     buf.close()
     with open(filename, "wb") as f:
         f.write(data)
+    return 0
 
 if __name__ == "__main__":
     import sys
