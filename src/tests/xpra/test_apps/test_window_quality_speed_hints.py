@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
-import gobject
-import pygtk
-pygtk.require('2.0')
-import gtk
-
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()
+from xpra.gtk_common.gtk_util import import_gtk
+gtk = import_gtk()
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.gtk_common.error import xsync
 
@@ -38,6 +35,7 @@ def main():
         btn.connect('button-press-event', cb)
     add_button("change quality", change_quality)
     add_button("change speed", change_speed)
+    win.connect("destroy", gtk.main_quit)
     win.show_all()
     gtk.main()
     return 0
