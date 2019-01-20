@@ -1,15 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+#pylint: disable-msg=E1101
 
 import os
 from collections import OrderedDict
 
-from xpra.log import Logger
-log = Logger("webcam")
 from xpra.util import engs, envbool
 from xpra.os_util import is_Ubuntu, is_Debian
+from xpra.log import Logger
+
+log = Logger("webcam")
 
 #on Debian and Ubuntu, the v4l2loopback device is created with exclusive_caps=1,
 #so we cannot check the devices caps for the "VIDEO_CAPTURE" flag.
