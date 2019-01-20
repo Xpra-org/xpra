@@ -34,9 +34,9 @@ def _get_antialias_hintstyle(antialias):
     contrast = antialias.intget("contrast", -1)
     if contrast>1600:
         return "hintfull"
-    elif contrast>1000:
+    if contrast>1000:
         return "hintmedium"
-    elif contrast>0:
+    if contrast>0:
         return "hintslight"
     return "hintnone"
 
@@ -148,7 +148,8 @@ class X11ServerBase(X11ServerCore):
             screenlog("no icc data found in %s", icc)
             self.reset_icc_profile()
             return
-        screenlog("set_icc_profile() icc data for %s: %s (%i bytes)", ui_clients[0], hexstr(data or ""), len(data or ""))
+        screenlog("set_icc_profile() icc data for %s: %s (%i bytes)",
+                  ui_clients[0], hexstr(data or ""), len(data or ""))
         from xpra.x11.gtk_x11.prop import prop_set
         #each CARD32 contains just one 8-bit value - don't ask me why
         def o(x):
@@ -221,7 +222,8 @@ class X11ServerBase(X11ServerCore):
                     log.warn(" %s", e)
         old_settings = dict(self._settings)
         log("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
-        log("overrides: dpi=%s, double click time=%s, double click distance=%s", dpi, double_click_time, double_click_distance)
+        log("overrides: dpi=%s, double click time=%s, double click distance=%s",
+            dpi, double_click_time, double_click_distance)
         log("overrides: antialias=%s", antialias)
         self._settings.update(settings)
         for k, v in settings.items():
@@ -273,7 +275,8 @@ class X11ServerBase(X11ServerCore):
 
             #cook xsettings to add various settings:
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
-            if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
+            if k=="xsettings-blob" and \
+            (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
                 from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
                 def set_xsettings_value(name, value_type, value):
                     #remove existing one, if any:

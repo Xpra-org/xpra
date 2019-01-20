@@ -5,14 +5,15 @@
 # later version. See the file COPYING for details.
 
 import sys
+
+from xpra.log import Logger
 from xpra.os_util import strtobytes
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.gtk_common.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get, get_python_type
 from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
-window_bindings = X11WindowBindings()
 
-from xpra.log import Logger
+window_bindings = X11WindowBindings()
 log = Logger("x11", "filters")
 
 if sys.version > '3':

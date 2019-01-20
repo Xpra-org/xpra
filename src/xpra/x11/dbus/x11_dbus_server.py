@@ -4,10 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.server.dbus.dbus_server import DBUS_Server, INTERFACE
 import dbus.service
 
+from xpra.server.dbus.dbus_server import DBUS_Server, INTERFACE
 from xpra.log import Logger
+
 log = Logger("dbus", "server")
 
 

@@ -143,7 +143,7 @@ class X11ServerCore(GTKServerBase):
             if len(sizes)==1:
                 self.randr_exact_size = True
                 prop_set(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", 1)
-            elif len(sizes)==0:
+            elif not sizes:
                 #xwayland?
                 self.randr = False
                 self.randr_exact_size = False
@@ -461,7 +461,7 @@ class X11ServerCore(GTKServerBase):
         #make sure the timer doesn't fire and interfere:
         self.cancel_key_repeat_timer()
         #clear all the keys we know about:
-        if len(self.keys_pressed)>0:
+        if self.keys_pressed:
             keylog("clearing keys pressed: %s", self.keys_pressed)
             with xsync:
                 for keycode in self.keys_pressed.keys():
@@ -582,14 +582,15 @@ class X11ServerCore(GTKServerBase):
             new_size = w,h
         if not new_size:
             screenlog.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
-            if len(closest)>0:
+            if closest:
                 min_dist = sorted(closest.keys())[0]
                 new_size = closest[min_dist]
                 screenlog.warn(" using %sx%s instead", *new_size)
             else:
                 root_w, root_h = self.root_window.get_size()
                 return root_w, root_h
-        screenlog("best %s resolution for client(%sx%s) is: %s", ["smaller", "bigger"][bigger], desired_w, desired_h, new_size)
+        screenlog("best %s resolution for client(%sx%s) is: %s",
+                  ["smaller", "bigger"][bigger], desired_w, desired_h, new_size)
         w, h = new_size
         return w, h
 
@@ -618,7 +619,8 @@ class X11ServerCore(GTKServerBase):
             for ss in sss:
                 for s in ss.screen_sizes:
                     if len(s)>=10:
-                        #display_name, width, height, width_mm, height_mm, monitors, work_x, work_y, work_width, work_height
+                        #(display_name, width, height, width_mm, height_mm, monitors,
+                        # work_x, work_y, work_width, work_height)
                         client_w = max(client_w, s[1])
                         client_h = max(client_h, s[2])
                         wmm = max(wmm, s[3])
@@ -627,7 +629,8 @@ class X11ServerCore(GTKServerBase):
                 #calculate "real" dpi:
                 xdpi = iround(client_w * 25.4 / wmm)
                 ydpi = iround(client_h * 25.4 / hmm)
-                screenlog("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)", xdpi, ydpi, client_w, wmm, client_h, hmm)
+                screenlog("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)",
+                          xdpi, ydpi, client_w, wmm, client_h, hmm)
         self.set_dpi(xdpi, ydpi)
 
         #try to find the best screen size to resize to:
@@ -661,7 +664,7 @@ class X11ServerCore(GTKServerBase):
                             #use the number of extra pixels as key:
                             #(so we can choose the closest resolution)
                             temp[abs((tw*th) - (w*h))] = (tw, th)
-                if len(temp)==0:
+                if not temp:
                     screenlog.warn("cannot find a temporary resolution for Xinerama workaround!")
                 else:
                     k = sorted(temp.keys())[0]
@@ -810,7 +813,8 @@ class X11ServerCore(GTKServerBase):
                 pass
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self._server_sources.values():
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, strtobytes(event.bell_name or ""))
+            name = strtobytes(event.bell_name or "")
+            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def get_screen_number(self, _wid):
@@ -960,7 +964,7 @@ class X11ServerCore(GTKServerBase):
 
     def make_screenshot_packet_from_regions(self, regions):
         #regions = array of (wid, x, y, PIL.Image)
-        if len(regions)==0:
+        if not regions:
             log("screenshot: no regions found, returning empty 0x0 image!")
             return ["screenshot", 0, 0, "png", -1, ""]
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
@@ -987,7 +991,7 @@ class X11ServerCore(GTKServerBase):
                 pixels = pixels.tobytes()
             try:
                 window_image = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, img.get_rowstride())
-            except:
+            except Exception:
                 log.error("Error parsing window pixels in %s format for window %i", pixel_format, wid, exc_info=True)
                 continue
             tx = x-minx

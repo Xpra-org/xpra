@@ -69,7 +69,7 @@ def get_settings(disp, d):
         return cache
     settings = []
     pos = 12
-    while n_settings>len(settings) and len(d)>0:
+    while n_settings>len(settings) and d:
         istart = pos
         #parse header:
         setting_type, _, name_len = struct.unpack(b"=BBH", d[pos:pos+4])

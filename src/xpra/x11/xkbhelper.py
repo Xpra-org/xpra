@@ -91,7 +91,9 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
         variant = xkbmap_query_struct.get("variant")
         options = xkbmap_query_struct.get("options")
         if layout:
-            log.info("setting keymap: %s", csv("%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items() if k in ["rules", "model", "layout"] and v))
+            log.info("setting keymap: %s",
+                     csv("%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items()
+                         if k in ["rules", "model", "layout"] and v))
             safe_setxkbmap(rules, model, layout, variant, options)
         else:
             safe_setxkbmap(rules, model, "", "", "")
@@ -239,7 +241,8 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         We return a translation map for keycodes after setting them up,
         the key is (keycode, keysym) and the value is the server keycode.
     """
-    log("set_all_keycodes(%s.., %s.., %s.., %s)", str(xkbmap_x11_keycodes)[:60], str(xkbmap_keycodes)[:60], str(preserve_server_keycodes)[:60], modifiers)
+    log("set_all_keycodes(%s.., %s.., %s.., %s)",
+        str(xkbmap_x11_keycodes)[:60], str(xkbmap_keycodes)[:60], str(preserve_server_keycodes)[:60], modifiers)
 
     #so we can validate entries:
     keysym_to_modifier = {}
@@ -290,12 +293,14 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                 entries = [entry for entry in entries if mod in modifiers_for([entry])]
                 log.warn(" keeping: %s for %s", estr(entries), mod)
             #now remove entries for keysyms we don't have:
-            f_entries = set((keysym, index) for keysym, index in entries if keysym and X11Keyboard.parse_keysym(keysym) is not None)
+            f_entries = set((keysym, index) for keysym, index in entries
+                            if keysym and X11Keyboard.parse_keysym(keysym) is not None)
             for keysym, _ in entries:
                 if keysym and X11Keyboard.parse_keysym(keysym) is None:
                     invalid_keysyms.add(keysym)
             if not f_entries:
-                log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
+                log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s",
+                    keycode, entries)
                 continue
             if drop_extra_keys:
                 if not any(keysym for keysym, index in entries if (
@@ -418,7 +423,8 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         Note: a client_keycode of '0' is valid (osx uses that),
         but server_keycode generally starts at 8...
     """
-    log("translate_keycodes(%s, %s, %s, %s, %s, %s)", kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
+    log("translate_keycodes(%s, %s, %s, %s, %s, %s)",
+        kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
     #list of free keycodes we can use:
     free_keycodes = [i for i in range(kcmin, kcmax+1) if i not in preserve_keycode_entries]
     keycode_trans = {}              #translation map from client keycode to our server keycode
@@ -512,10 +518,12 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         #direct superset:
         for p_keycode, p_entries in preserve_keycode_matches.items():
             if entries.issubset(p_entries):
-                l("found direct preserve superset for client keycode %s %s -> server keycode %s %s", client_keycode, tuple(entries), p_keycode, tuple(p_entries))
+                l("found direct preserve superset for client keycode %s %s -> server keycode %s %s",
+                  client_keycode, tuple(entries), p_keycode, tuple(p_entries))
                 return do_assign(client_keycode, p_keycode, p_entries, override_server_keycode=True)
             if p_entries.issubset(entries):
-                l("found direct superset of preserve for client keycode %s %s -> server keycode %s %s", client_keycode, tuple(entries), p_keycode, tuple(p_entries))
+                l("found direct superset of preserve for client keycode %s %s -> server keycode %s %s",
+                  client_keycode, tuple(entries), p_keycode, tuple(p_entries))
                 return do_assign(client_keycode, p_keycode, entries, override_server_keycode=True)
 
         #ignoring indexes, but requiring at least as many keysyms:
