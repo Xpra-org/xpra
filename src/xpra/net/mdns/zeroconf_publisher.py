@@ -1,25 +1,28 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("network", "mdns")
-
 import socket
+from zeroconf import ServiceInfo, Zeroconf        #@UnresolvedImport
+
+from xpra.log import Logger
 from xpra.util import csv
 from xpra.net.net_util import get_interfaces_addresses
 from xpra.net.mdns import XPRA_MDNS_TYPE, SHOW_INTERFACE
-from zeroconf import ServiceInfo, Zeroconf        #@UnresolvedImport
-
 from xpra.net.net_util import get_iface
+
+
+log = Logger("network", "mdns")
+
 
 def get_interface_index(host):
     #we don't use interface numbers with zeroconf,
     #so just return the interface name,
     #which is also unique
     return get_iface(host)
+
 
 class ZeroconfPublishers(object):
     """
@@ -28,6 +31,7 @@ class ZeroconfPublishers(object):
 
     def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict={}):
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
+        self.zeroconf = None
         self.services = []
         self.registered = []
         errs = 0
@@ -113,8 +117,8 @@ def main():
     #host = "127.0.0.1"
     host = "0.0.0.0"
     host_ports = [(host, port)]
-    ID = "test %s" % int(random.random()*100000)
-    publisher = ZeroconfPublishers(host_ports, ID, XPRA_MDNS_TYPE, {"somename":"somevalue"})
+    service_name = "test %s" % int(random.random()*100000)
+    publisher = ZeroconfPublishers(host_ports, service_name, XPRA_MDNS_TYPE, {"somename":"somevalue"})
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
     glib.idle_add(publisher.start)

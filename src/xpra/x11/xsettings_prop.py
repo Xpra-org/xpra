@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,10 +18,11 @@ import sys
 import struct
 
 from xpra.log import Logger
-log = Logger("x11", "xsettings")
-
 from xpra.util import envbool
 from xpra.os_util import PYTHON3
+
+
+log = Logger("x11", "xsettings")
 
 DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
 
@@ -62,7 +63,8 @@ def get_settings(disp, d):
         log("get_settings(%s)", tuple(d))
     byte_order, _, _, _, serial, n_settings = struct.unpack(b"=BBBBII", d[:12])
     cache = XSETTINGS_CACHE.get(disp)
-    log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache(%s)=%s", byte_order, get_local_byteorder(), serial, n_settings, disp, cache)
+    log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache(%s)=%s",
+        byte_order, get_local_byteorder(), serial, n_settings, disp, cache)
     if cache and cache[0]==serial:
         log("get_settings(..) returning value from cache")
         return cache
@@ -81,7 +83,8 @@ def get_settings(disp, d):
         last_change_serial = struct.unpack(b"=I", d[pos:pos+4])[0]
         pos += 4
         if DEBUG_XSETTINGS:
-            log("get_settings(..) found property %s of type %s, serial=%s", prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
+            log("get_settings(..) found property %s of type %s, serial=%s",
+                prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
         #extract value:
         if setting_type==XSettingsTypeInteger:
             assert len(d)>=pos+4, "not enough data (%s bytes) to extract int (4 bytes needed)" % (len(d)-pos)
@@ -119,7 +122,8 @@ def set_settings(disp, d):
         setting_type, prop_name, value, last_change_serial = setting
         prop_name = str(prop_name).encode()
         try:
-            log("set_settings(..) processing property %s of type %s", prop_name, XSettingsNames.get(setting_type, "INVALID!"))
+            log("set_settings(..) processing property %s of type %s",
+                prop_name, XSettingsNames.get(setting_type, "INVALID!"))
             x = struct.pack(b"=BBH", setting_type, 0, len(prop_name))
             x += prop_name
             pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
