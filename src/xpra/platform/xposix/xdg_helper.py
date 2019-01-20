@@ -28,7 +28,7 @@ def isvalidtype(v):
         return all(isvalidtype(x) for x in v)
     return isinstance(v, (bytes, str, unicode, bool, int))
 
-def export(entry, properties=[]):
+def export(entry, properties):
     name = entry.getName()
     props = {}
     if any(x and name.lower().find(x.lower())>=0 for x in DEBUG_COMMANDS):
