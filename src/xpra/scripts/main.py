@@ -146,8 +146,8 @@ def configure_logging(options, mode):
         "_dialog", "_pass",
         ):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
-            info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
-            raise InitInfo("\n".join(info))
+            help = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
+            raise InitInfo("\n".join(help))
         fmt = LOG_FORMAT
         if mode in ("stop", "showconfig"):
             fmt = NOPREFIX_FORMAT
@@ -180,12 +180,12 @@ def configure_logging(options, mode):
             glib = import_glib()
             glib.idle_add(fn, *args)
         def sigusr1(*_args):
-            info = get_util_logger().info
-            info("SIGUSR1")
-            idle_add(dump_all_frames, info)
+            log = get_util_logger().info
+            log("SIGUSR1")
+            idle_add(dump_all_frames, log)
         def sigusr2(*_args):
-            info = get_util_logger().info
-            info("SIGUSR2")
+            log = get_util_logger().log
+            log("SIGUSR2")
             idle_add(dump_gc_frames, info)
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
@@ -796,8 +796,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                             desc["password"] = f.read()
                         break
                     except Exception as e:
-                        warn("Error: failed to read the password file '%s':\n", x)
-                        warn(" %s\n", e)
+                        warn("Error: failed to read the password file '%s':\n" % x)
+                        warn(" %s\n" % e)
         return desc
     elif protocol=="socket":
         #use the socketfile specified:
@@ -981,10 +981,6 @@ def socket_connect(dtype, host, port):
         socktype = socket.SOCK_DGRAM
     else:
         socktype = socket.SOCK_STREAM
-    info = {
-        "host" : host,
-        "port" : port,
-        }
     family = 0  #any
     try:
         addrinfo = socket.getaddrinfo(host, port, family, socktype)
@@ -1855,9 +1851,10 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                 r_pipe, w_pipe = os.pipe()
                 cmd.append("--displayfd=%s" % w_pipe)
                 close_fds = False
-                def preexec_fn():
+                def no_close_pipes():
                     from xpra.os_util import close_fds as osclose_fds
                     osclose_fds([0, 1, 2, r_pipe, w_pipe])
+                preexec_fn = no_close_pipes
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
         proc = Popen(cmd, shell=False, close_fds=close_fds, env=env, cwd=cwd, preexec_fn=preexec_fn)
         log("proc=%s", proc)
@@ -2191,7 +2188,7 @@ def run_list_mdns(error_cb, extra_args):
                 uri = "%s/%s@%s:%s/%s" % (mode, username, address, port, dstr)
                 print("   \"%s\"" % uri)
             shown.add(uq)
-    def mdns_add(interface, protocol, name, stype, domain, host, address, port, text):
+    def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text):
         text = text or {}
         iface = interface
         if if_indextoname:
