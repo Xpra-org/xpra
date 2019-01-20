@@ -1,15 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from xpra.log import Logger
-log = Logger("client", "rpc")
+#pylint: disable-msg=E1101
 
 from xpra.util import envint, AtomicInteger
 from xpra.os_util import monotonic_time
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.log import Logger
 
+log = Logger("client", "rpc")
 
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 

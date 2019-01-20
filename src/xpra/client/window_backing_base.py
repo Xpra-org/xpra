@@ -5,9 +5,6 @@
 # later version. See the file COPYING for details.
 
 import hashlib
-from xpra.log import Logger
-log = Logger("paint")
-deltalog = Logger("delta")
 
 from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
@@ -20,6 +17,10 @@ try:
     from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 except ImportError:
     from xpra.util import xor as xor_str
+from xpra.log import Logger
+
+log = Logger("paint")
+deltalog = Logger("delta")
 
 DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 5)
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
@@ -73,6 +74,8 @@ Generic superclass for all Backing code,
 see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
 """
 class WindowBackingBase(object):
+    RGB_MODES = ()
+
     def __init__(self, wid, window_alpha):
         load_csc_options()
         load_video_decoders()
@@ -200,7 +203,7 @@ class WindowBackingBase(object):
         rgb_format = options.strget(b"rgb_format")
         rgb_data = img_data
         if delta>=0:
-            assert bucket>=0 and bucket<DELTA_BUCKETS, "invalid delta bucket number: %s" % bucket
+            assert 0<=bucket<DELTA_BUCKETS, "invalid delta bucket number: %s" % bucket
             if self._delta_pixel_data[bucket] is None:
                 raise Exception("delta region bucket %s references pixmap data we do not have!" % bucket)
             lwidth, lheight, lrgb_format, seq, ldata = self._delta_pixel_data[bucket]
@@ -229,7 +232,6 @@ class WindowBackingBase(object):
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
         PIL = get_codec("PIL")
         assert PIL.Image, "PIL.Image not found"
         buf = BytesIOClass(img_data)

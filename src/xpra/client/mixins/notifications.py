@@ -1,18 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from xpra.log import Logger
-log = Logger("notify")
-
+#pylint: disable-msg=E1101
 
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.os_util import bytestostr
 from xpra.util import envbool, repr_ellipsized, make_instance, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.log import Logger
 
+log = Logger("notify")
 
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 

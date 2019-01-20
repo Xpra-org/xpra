@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+#pylint: disable-msg=E1101
 
-
+from xpra.util import typedict
+from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
+
 log = Logger("window")
 focuslog = Logger("focus")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
 eventslog = Logger("events")
-
-from xpra.util import typedict
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
 """

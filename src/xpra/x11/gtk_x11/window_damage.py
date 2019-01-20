@@ -1,11 +1,9 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("x11", "window")
 
 from xpra.util import envbool
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -18,8 +16,12 @@ from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gtk_util import get_xwindow
 
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
-XImage = XImageBindings()
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
+from xpra.log import Logger
+
+log = Logger("x11", "window")
+
+XImage = XImageBindings()
 X11Window = X11WindowBindings()
 X11Window.ensure_XDamage_support()
 
@@ -175,8 +177,8 @@ class WindowDamageHandler(object):
                     #log("get_image(..) XShm image: %s", shm_image)
                     if shm_image:
                         return shm_image
-        except Exception as e:
-            if type(e)==XError and e.msg=="BadMatch":
+        except XError as e:
+            if e.msg=="BadMatch":
                 log("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
                 log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
@@ -188,8 +190,8 @@ class WindowDamageHandler(object):
                 log("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
             with xsync:
                 return handle.get_image(x, y, w, h)
-        except Exception as e:
-            if type(e)==XError and e.msg=="BadMatch":
+        except XError as e:
+            if e.msg=="BadMatch":
                 log("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
                 log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)

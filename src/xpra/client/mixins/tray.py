@@ -1,16 +1,16 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from xpra.log import Logger
-log = Logger("tray")
+#pylint: disable-msg=E1101
 
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
 from xpra.os_util import bytestostr, strtobytes
 from xpra.util import nonl, envint, make_instance, CLIENT_EXIT, XPRA_APP_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.log import Logger
 
+log = Logger("tray")
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 
@@ -131,7 +131,7 @@ class TrayClient(StubClientMixin):
             conn = getattr(p, "_conn", None)
             if conn:
                 t.append(bytestostr(conn.target))
-        if len(t)==0:
+        if not t:
             t.insert(0, u"Xpra")
         v = u"\n".join(t)
         log("get_tray_title()=%s (items=%s)", nonl(v), tuple(strtobytes(x) for x in t))

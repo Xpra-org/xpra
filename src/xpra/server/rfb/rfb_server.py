@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+#pylint: disable-msg=E1101
 
 from xpra.util import nonl, csv
 from xpra.os_util import POSIX, OSX, bytestostr
@@ -12,8 +12,8 @@ from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
 from xpra.server import server_features
 from xpra.scripts.config import parse_bool, parse_number
-
 from xpra.log import Logger
+
 log = Logger("rfb")
 
 

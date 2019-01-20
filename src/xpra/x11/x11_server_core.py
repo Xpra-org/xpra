@@ -269,7 +269,7 @@ class X11ServerCore(GTKServerBase):
             try:
                 with xsync:
                     self.current_keyboard_group = X11Keyboard.set_layout_group(grp)
-            except Exception as e:
+            except XError as e:
                 keylog("set_keyboard_layout_group group=%s", grp, exc_info=True)
                 keylog.error("Error: failed to set keyboard layout group '%s'", grp)
                 keylog.error(" %s", e)
@@ -482,7 +482,7 @@ class X11ServerCore(GTKServerBase):
         try:
             with xsync:
                 return X11Keyboard.get_cursor_image()
-        except Exception as e:
+        except XError as e:
             cursorlog.error("Error getting cursor data:")
             cursorlog.error(" %s", e)
             return None
@@ -562,7 +562,7 @@ class X11ServerCore(GTKServerBase):
                         import time
                         time.sleep(0.5)
                         return v
-            except Exception as e:
+            except XError as e:
                 screenlog.warn("Warning: failed to add resolution %ix%i:", desired_w, desired_h)
                 screenlog.warn(" %s", e)
             #re-query:
@@ -684,7 +684,7 @@ class X11ServerCore(GTKServerBase):
                 try:
                     with xsync:
                         RandR.xrr_set_screen_size(w, h, self.xdpi or self.dpi, self.ydpi or self.dpi)
-                except Exception:
+                except XError:
                     screenlog("XRRSetScreenSize failed", exc_info=True)
             screenlog("calling RandR.get_screen_size()")
             with xsync:

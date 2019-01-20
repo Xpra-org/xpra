@@ -3,16 +3,17 @@
 # Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+#pylint: disable-msg=E1101
 
 import os.path
-
-from xpra.log import Logger
-log = Logger("webcam")
 
 from xpra.os_util import OSX, POSIX
 from xpra.util import engs
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
+
+log = Logger("webcam")
 
 
 """

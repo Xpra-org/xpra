@@ -3,11 +3,9 @@
 # Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+#pylint: disable-msg=E1101
 
 import os.path
-
-from xpra.log import Logger
-log = Logger("command")
 
 from xpra.util import parse_scaling_value, from0to100
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -15,9 +13,14 @@ from xpra.os_util import load_binary_file
 from xpra.util import csv
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
 
-TOGGLE_FEATURES = ("bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
-                   "start-new-commands", "client-shutdown", "webcam", )
+log = Logger("command")
+
+TOGGLE_FEATURES = (
+    "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
+    "start-new-commands", "client-shutdown", "webcam",
+    )
 
 
 """
@@ -33,10 +36,9 @@ class ServerBaseControlCommands(StubServerMixin):
         def parse_boolean_value(v):
             if str(v).lower() in TRUE_OPTIONS:
                 return True
-            elif str(v).lower() in FALSE_OPTIONS:
+            if str(v).lower() in FALSE_OPTIONS:
                 return False
-            else:
-                raise ControlError("a boolean is required, not %s" % v)
+            raise ControlError("a boolean is required, not %s" % v)
         def parse_4intlist(v):
             if not v:
                 return []

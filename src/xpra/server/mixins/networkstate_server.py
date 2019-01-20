@@ -3,21 +3,20 @@
 # Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+#pylint: disable-msg=E1101
 
 import os
 from time import sleep
 
-from xpra.log import Logger
-log = Logger("network")
-bandwidthlog = Logger("bandwidth")
-
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
-
 from xpra.scripts.config import parse_with_unit
 from xpra.simple_stats import std_unit
 from xpra.os_util import livefds, POSIX
 from xpra.util import envbool, detect_leaks
+from xpra.log import Logger
 
+log = Logger("network")
+bandwidthlog = Logger("bandwidth")
 
 DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)

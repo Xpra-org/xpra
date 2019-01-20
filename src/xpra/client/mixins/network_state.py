@@ -1,22 +1,22 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+#pylint: disable-msg=E1101
 
 import os
 import re
 from collections import deque
-
-from xpra.log import Logger
-log = Logger("network")
-bandwidthlog = Logger("bandwidth")
 
 from xpra.os_util import monotonic_time, POSIX
 from xpra.util import envint, csv
 from xpra.exit_codes import EXIT_TIMEOUT
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
+from xpra.log import Logger
 
+log = Logger("network")
+bandwidthlog = Logger("bandwidth")
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
