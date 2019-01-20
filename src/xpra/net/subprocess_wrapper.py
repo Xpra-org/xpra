@@ -348,13 +348,10 @@ class subprocess_caller(object):
         self._fire_callback("exit")
 
     def start(self):
-        self.start = self.fail_start
+        assert self.process is None, "already started"
         self.process = self.exec_subprocess()
         self.protocol = self.make_protocol()
         self.protocol.start()
-
-    def fail_start(self):
-        raise Exception("this wrapper has already been started")
 
     def abort_test(self, action):
         p = self.process
@@ -363,7 +360,9 @@ class subprocess_caller(object):
 
     def make_protocol(self):
         #make a connection using the process stdin / stdout
-        conn = TwoFileConnection(self.process.stdin, self.process.stdout, abort_test=self.abort_test, target=self.description, socktype=self.description, close_cb=self.subprocess_exit)
+        conn = TwoFileConnection(self.process.stdin, self.process.stdout,
+                                 abort_test=self.abort_test, target=self.description,
+                                 socktype=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
         protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
         setup_fastencoder_nocompression(protocol)

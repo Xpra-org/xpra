@@ -187,7 +187,8 @@ class X11ServerCore(GTKServerBase):
                 blacklisted_kernel_modules.append(mod)
         if blacklisted_kernel_modules:
             gllog.warn("Warning: skipped OpenGL probing,")
-            gllog.warn(" found %i blacklisted kernel module%s:", len(blacklisted_kernel_modules), engs(blacklisted_kernel_modules))
+            gllog.warn(" found %i blacklisted kernel module%s:",
+                       len(blacklisted_kernel_modules), engs(blacklisted_kernel_modules))
             gllog.warn(" %s", csv(blacklisted_kernel_modules))
             self.opengl_props["error"] = "VirtualBox guest detected: %s" % csv(blacklisted_kernel_modules)
         else:
@@ -403,7 +404,9 @@ class X11ServerCore(GTKServerBase):
         cd = self.last_cursor_image
         if cd is None:
             return {"" : "None"}
-        cinfo = {"is_default"   : bool(self.default_cursor_image and len(self.default_cursor_image)>=8 and len(cd)>=8 and cd[7]==cd[7])}
+        cinfo = {
+            "is_default"   : bool(self.default_cursor_image and len(self.default_cursor_image)>=8 and len(cd)>=8 and cd[7]==cd[7]),
+            }
         #all but pixels:
         for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
             if x:
@@ -911,7 +914,8 @@ class X11ServerCore(GTKServerBase):
         screen_no = self.get_screen_number(wid)
         device = self.get_pointer_device(deviceid)
         x, y = self._get_pointer_abs_coordinates(wid, pos)
-        mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s", wid, pos, deviceid, screen_no, device, (x, y))
+        mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s",
+                 wid, pos, deviceid, screen_no, device, (x, y))
         try:
             device.move_pointer(screen_no, x, y, *args)
         except Exception as e:
