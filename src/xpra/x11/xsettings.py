@@ -45,9 +45,9 @@ class XSettingsManager(object):
         self._window = self._manager.window()
 
     def set_settings(self, settings):
-        if type(settings)==list:
+        if isinstance(settings, list):
             settings = tuple(settings)
-        elif type(settings)!=tuple:
+        elif not isinstance(settings, tuple):
             log.warn("Warning: discarding xsettings because of incompatible format: %s", type(settings))
             return
         try:

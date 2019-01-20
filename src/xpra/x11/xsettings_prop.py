@@ -129,13 +129,13 @@ def set_settings(disp, d):
             x += b'\0'*pad_len
             x += struct.pack(b"=I", last_change_serial)
             if setting_type==XSettingsTypeInteger:
-                assert type(value) in (int, long), "invalid value type (int or long wanted): %s" % type(value)
+                assert isinstance(value, (int, long)), "invalid value type (int or long wanted): %s" % type(value)
                 x += struct.pack(b"=I", int(value))
             elif setting_type==XSettingsTypeString:
-                if type(value) in (str, unicode):
+                if isinstance(value, (str, unicode)):
                     value = str(value).encode()
                 else:
-                    assert type(value)==bytes, "invalid value type, wanted byte string, not %s" % type(value)
+                    assert isinstance(value, bytes), "invalid value type, wanted byte string, not %s" % type(value)
                 x += struct.pack(b"=I", len(value))
                 x += value
                 pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
