@@ -160,12 +160,12 @@ def parse_env(env):
                 continue
             v = ev.split("=", 1)
             if len(v)!=2:
-                warn("Warning: invalid environment option '%s'", ev)
+                warn("Warning: invalid environment option '%s'" % ev)
                 continue
             d[v[0]] = os.path.expandvars(v[1])
         except Exception as e:
-            warn("Warning: cannot parse environment option '%s':", ev)
-            warn(" %s", e)
+            warn("Warning: cannot parse environment option '%s':" % ev)
+            warn(" %s" % e)
     return d
 
 
@@ -1144,7 +1144,7 @@ def do_parse_cmdline(cmdline, defaults):
             assert w>=0 and h>0 and w<32768 and h<32768
             return w, h
         except:
-            raise InitException("invalid %s: %s" % (attribute, x))
+            raise InitException("invalid %s: %s" % (attribute, v))
     if options.min_size:
         options.min_size = "%sx%s" % parse_window_size(options.min_size, "min-size")
     if options.max_size:
