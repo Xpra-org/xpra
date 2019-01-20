@@ -5,13 +5,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import envbool
-from xpra.log import Logger
-log = Logger("win32", "window", "util")
-vlog = Logger("verbose")
-
 import ctypes
 from ctypes.wintypes import POINT
+
+from xpra.util import envbool
+from xpra.log import Logger
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import WNDPROC
@@ -23,6 +21,10 @@ GetSystemMetrics = user32.GetSystemMetrics
 SetWindowLongW = user32.SetWindowLongW
 GetWindowLongW = user32.GetWindowLongW
 CallWindowProcW = user32.CallWindowProcW
+
+
+log = Logger("win32", "window", "util")
+vlog = Logger("verbose")
 
 
 class MINMAXINFO(ctypes.Structure):

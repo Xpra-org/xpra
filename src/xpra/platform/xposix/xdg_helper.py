@@ -3,6 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+"""
+Utility functions for loading xdg menus
+using python-xdg
+"""
+
 import os
 import sys
 
@@ -23,7 +28,7 @@ else:
 
 def isvalidtype(v):
     if isinstance(v, (list, tuple, generator)):
-        if len(v)==0:
+        if not v:
             return True
         return all(isvalidtype(x) for x in v)
     return isinstance(v, (bytes, str, unicode, bool, int))

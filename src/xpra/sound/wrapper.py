@@ -7,9 +7,11 @@ import os
 import sys
 
 from collections import namedtuple
-from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, get_sink_plugins, get_default_sink, get_default_source, \
-                            import_gst, format_element_options, \
-                            can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
+from xpra.sound.gstreamer_util import (
+    parse_sound_source, get_source_plugins, get_sink_plugins, get_default_sink, get_default_source,
+    import_gst, format_element_options,
+    can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names,
+    )
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
 from xpra.os_util import WIN32, OSX, POSIX, BITS, monotonic_time, bytestostr
@@ -19,14 +21,15 @@ from xpra.log import Logger
 log = Logger("sound")
 
 DEBUG_SOUND = envbool("XPRA_SOUND_DEBUG", False)
-SUBPROCESS_DEBUG = [x.strip() for x in os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",") if x.strip()]
+SUBPROCESS_DEBUG = tuple(x.strip() for x in os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",") if x.strip())
 FAKE_START_FAILURE = envbool("XPRA_SOUND_FAKE_START_FAILURE", False)
 FAKE_EXIT = envbool("XPRA_SOUND_FAKE_EXIT", False)
 FAKE_CRASH = envbool("XPRA_SOUND_FAKE_CRASH", False)
 SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 5000)
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 
-DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS", "--windows=no --video-encoders=none --csc-modules=none --video-decoders=none --proxy-video-encoders=none").split(" ")
+DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS",
+                                            "--windows=no --video-encoders=none --csc-modules=none --video-decoders=none --proxy-video-encoders=none").split(" ")
 
 
 def get_full_sound_command():
@@ -190,7 +193,7 @@ def run_sound(mode, error_cb, options, args):
         #volume (optional):
         try:
             volume = int(args[6])
-        except:
+        except (ValueError, IndexError):
             volume = 1.0
 
         ss = None
