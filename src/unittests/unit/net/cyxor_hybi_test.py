@@ -8,7 +8,7 @@ import numpy
 import binascii
 import unittest
 
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.util import repr_ellipsized
 
 class Test_cyxor_hybi(unittest.TestCase):
@@ -27,58 +27,61 @@ class Test_cyxor_hybi(unittest.TestCase):
             print("Warning: cyxor_hybi test skipped because: %s" % (e,))
             return
 
-        def cmp_unmask(buf, hlen, plen):
+        def do_cmp_unmask(buf, hlen, plen):
             c = memoryview_to_bytes(hybi_unmask(buf, hlen, plen))
             w = numpy_unmask(buf, hlen, plen)
             assert w==c, "expected %s got %s" % (repr_ellipsized(binascii.hexlify(w)), repr_ellipsized(binascii.hexlify(c)))
+        def cmp_unmask(buf_len, hlen, plen):
+            buf = strtobytes("".join(chr(x%256) for x in range(buf_len)))
+            do_cmp_unmask(buf, hlen, plen)
 
         #tiny 1 byte buffer
         for hlen in range(8):
-            cmp_unmask(b"".join(chr(i) for i in range(hlen+4+1)), hlen, 1)
+            cmp_unmask(hlen+4+1, hlen, 1)
         #no header and small buffers:
-        cmp_unmask(b"\0"*8, 0, 4)
-        cmp_unmask(b"\0"*64, 0, 32)
+        cmp_unmask(8, 0, 4)
+        cmp_unmask(64, 0, 32)
 
-        def fail(buf, hlen, plen):
+        def fail(buf_len, hlen, plen):
             for backend, unmask_fn in (
                 ("cython", hybi_unmask),
                 ("numpy", numpy_unmask),
                 ):
                 try:
-                    unmask_fn(buf, hlen, plen)
+                    unmask_fn(buf_len, hlen, plen)
                 except:
                     pass
                 else:
                     raise Exception("%s umask should have failed for buffer of size %i with header=%i and packet len=%i" %
-                                    (backend, len(buf), hlen, plen))
+                                    (backend, buf_len, hlen, plen))
         for s in (1, 1024, 1024*1024):
             for header in range(1, 10):
                 #buffer too small:
-                fail(b"".join(chr(i%256) for i in range(s+4+header-1)), header, s)
+                fail(s+4+header-1, header, s)
                 #buffer empty:
-                fail(b"", header, s)
+                fail(0, header, s)
                 #invalid type:
                 fail(None, header, s)
 
         #test very small sizes:
         for s in range(1, 10):
-            cmp_unmask(b"".join(chr(i) for i in range(s+1+4)), 1, s)
-        cmp_unmask(b"".join(chr(i) for i in range(9)), 1, 4)   #1+4+4=9
-        cmp_unmask(b"".join(chr(i) for i in range(10)), 1, 5)   #1+5+4=10
-        cmp_unmask(b"".join(chr(i) for i in range(14)), 0, 10)
-        cmp_unmask(b"".join(chr(i) for i in range(14)), 1, 9)
-        cmp_unmask(b"".join(chr(i) for i in range(128)), 0, 128-4)
-        
+            cmp_unmask(s+1+4, 1, s)
+        cmp_unmask(9, 1, 4)   #1+4+4=9
+        cmp_unmask(10, 1, 5)   #1+5+4=10
+        cmp_unmask(14, 0, 10)
+        cmp_unmask(14, 1, 9)
+        cmp_unmask(128, 0, 128-4)
+
         BUF_SIZE = 1024*1024
         buf = numpy.random.randint(256, size=BUF_SIZE, dtype='B')
         buf = buf.tobytes()
-        cmp_unmask(buf, 1, 5)
+        do_cmp_unmask(buf, 1, 5)
 
         for offset in range(8):
             for div in range(8):
                 for extra in range(8):
                     size = BUF_SIZE//2//(2**div)+extra
-                    cmp_unmask(buf, offset, size)
+                    do_cmp_unmask(buf, offset, size)
 
 
 def main():
