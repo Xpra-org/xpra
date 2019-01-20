@@ -146,8 +146,8 @@ def configure_logging(options, mode):
         "_dialog", "_pass",
         ):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
-            help = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
-            raise InitInfo("\n".join(help))
+            codec_help = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
+            raise InitInfo("\n".join(codec_help))
         fmt = LOG_FORMAT
         if mode in ("stop", "showconfig"):
             fmt = NOPREFIX_FORMAT
