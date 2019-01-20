@@ -54,7 +54,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
         modes = PIL_conv_noalpha.get(pixel_format)
     assert modes, "no PIL conversion from %s" % (pixel_format)
     target_rgb = [(im,om) for (im,om) in modes if om in rgb_formats]
-    if len(target_rgb)==0:
+    if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
         #try argb module:
         assert argb_swap, "no argb codec"
@@ -71,14 +71,14 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     #PIL cannot use the memoryview directly:
     if isinstance(pixels, memoryview):
         pixels = pixels.tobytes()
-    #log("rgb_reformat: converting %s from %s to %s using PIL, %i bytes", image, input_format, target_format, len(pixels))
     img = Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
     rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
     data = img.tobytes("raw", target_format)
-    assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, len(data))
+    assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, target_format, len(data))
     image.set_pixels(data)
     image.set_rowstride(rowstride)
     image.set_pixel_format(target_format)
     end = monotonic_time()
-    log("rgb_reformat(%s, %s, %s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s", image, rgb_formats, supports_transparency, pixel_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
+    log("rgb_reformat(%s, %s, %s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s",
+        image, rgb_formats, supports_transparency, pixel_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
     return True
