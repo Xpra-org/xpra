@@ -102,7 +102,6 @@ class ServerBase(ServerBaseClass):
 
         self.idle_timeout = 0
         #duplicated from Server Source...
-        self.mem_bytes = 0
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
         self.mp3_stream_check_timer = None
 
@@ -528,8 +527,6 @@ class ServerBase(ServerBaseClass):
         start = monotonic_time()
         info = ServerCore.get_info(self, proto)
         server_info = info.setdefault("server", {})
-        if self.mem_bytes:
-            server_info["total-memory"] = self.mem_bytes
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:

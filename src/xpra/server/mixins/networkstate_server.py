@@ -33,6 +33,7 @@ class NetworkStateServer(StubServerMixin):
     def __init__(self):
         self.pings = False
         self.ping_timer = None
+        self.mem_bytes = 0
 
     def init(self, opts):
         self.pings = opts.pings
@@ -55,10 +56,13 @@ class NetworkStateServer(StubServerMixin):
 
 
     def get_info(self, _source=None):
-        return {
+        info = {
             "pings"             : self.pings,
             "bandwidth-limit"   : self.bandwidth_limit or 0,
             }
+        if self.mem_bytes:
+            info["total-memory"] = self.mem_bytes
+        return info
 
     def get_server_features(self, _source):
         return {
