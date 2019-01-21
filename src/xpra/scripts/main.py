@@ -550,7 +550,7 @@ def parse_proxy_attributes(display_name):
         desc_tmp = dict()
         # This one should *always* return a host, and should end with an optional numeric port
         hostport = reout.group("hostport")
-        hostport_match = re.match("(?P<host>[^:]+)($|:(?P<port>\d+)$)", hostport)
+        hostport_match = re.match(r"(?P<host>[^:]+)($|:(?P<port>\d+)$)", hostport)
         if not hostport_match:
             raise RuntimeError("bad format for 'hostport': '%s'" % hostport)
         host = hostport_match.group("host")
