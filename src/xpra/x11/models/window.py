@@ -291,7 +291,9 @@ class WindowModel(BaseWindowModel):
         assert net_wm_state is not None, "_NET_WM_STATE should have been read already"
         #initial position and size, from the Window object,
         #but allow size hints to override it is specified
-        x, y, w, h = X11Window.getGeometry(self.xid)[:4]
+        geom = X11Window.getGeometry(self.xid)
+        assert geom, "failed to get geometry for %#x" % self.xid
+        x, y, w, h = geom[:4]
         size_hints = self.get_property("size-hints")
         ax, ay = size_hints.get("position", (x, y))
         aw, ah = size_hints.get("size", (w, h))
