@@ -42,6 +42,8 @@ for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko com
 	$PACMAN --noconfirm -S ${XPKG}python2-${x}
 	$PACMAN --noconfirm -S ${XPKG}python3-${x}
 done
+#python2-cryptography 2.4.2 has an undeclared dependency on:
+$PACMAN --noconfirm -S ${XPKG}python2-ipaddress
 $PACMAN --noconfirm -S ${XPKG}cython2 ${XPKG}python2-setuptools
 $PACMAN --noconfirm -S ${XPKG}cython
 #using easy-install for python libraries which are not packaged by mingw:
