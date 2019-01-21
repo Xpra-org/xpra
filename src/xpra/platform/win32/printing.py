@@ -144,7 +144,7 @@ def get_info():
     return i
 
 def get_printers():
-    global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL, GSVIEW_DIR
+    global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL
     printers = {}
     for penum in PRINTER_ENUMS:
         try:
