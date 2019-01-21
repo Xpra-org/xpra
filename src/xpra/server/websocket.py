@@ -9,16 +9,15 @@ import posixpath
 import mimetypes
 try:
     from urllib import unquote          #python2 @UnusedImport
-except:
+except ImportError:
     from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
-
-from xpra.log import Logger
-log = Logger("network", "websocket")
 
 from xpra.util import envbool, std, AdHocStruct
 from xpra.os_util import memoryview_to_bytes, nomodule_context, PYTHON2, Queue, DummyContextManager
 from xpra.net.bytestreams import SocketConnection
+from xpra.log import Logger
 
+log = Logger("network", "websocket")
 
 WEBSOCKIFY_NUMPY = envbool("XPRA_WEBSOCKIFY_NUMPY", False)
 log("WEBSOCKIFY_NUMPY=%s", WEBSOCKIFY_NUMPY)
@@ -55,17 +54,12 @@ with cm:
                 log.warn("Warning: %s", x)
 
 
-WEBSOCKET_TCP_NODELAY = envbool("WEBSOCKET_TCP_NODELAY", True)
-WEBSOCKET_TCP_KEEPALIVE = envbool("WEBSOCKET_TCP_KEEPALIVE", True)
 WEBSOCKET_DEBUG = envbool("XPRA_WEBSOCKET_DEBUG", False)
-
 HTTP_ACCEPT_ENCODING = os.environ.get("XPRA_HTTP_ACCEPT_ENCODING", "br,gzip").split(",")
 
 
 class WSRequestHandler(WebSocketRequestHandler):
 
-    disable_nagle_algorithm = WEBSOCKET_TCP_NODELAY
-    keep_alive = WEBSOCKET_TCP_KEEPALIVE
     server_version = "Xpra-WebSockify"
 
     http_headers_cache = {}
@@ -122,7 +116,6 @@ class WSRequestHandler(WebSocketRequestHandler):
             log.error(fmt, *args)
 
     def log_message(self, fmt, *args):
-        #log.warn("%s", (fmt, args))
         log(fmt, *args)
 
     def print_traffic(self, token="."):
@@ -190,20 +183,25 @@ class WSRequestHandler(WebSocketRequestHandler):
             log.error("Error processing POST request", exc_info=True)
 
     def do_GET(self):
+        if self.only_upgrade or (self.headers.get('upgrade') and
+            self.headers.get('upgrade').lower() == 'websocket'):
+            try:
+                #>0.8
+                self.handle_upgrade()
+            except AttributeError:
+                #<=0.8
+                self.handle_websocket()
+            return
         self.handle_request()
 
     def handle_request(self):
-        """
-        Calls handle_websocket(). If unsuccessful,
-        and web server is enabled, SimpleHTTPRequestHandler.do_GET will be called.
-        """
-        if not self.handle_websocket():
-            if self.only_upgrade:
-                self.send_error(405, "Method Not Allowed")
-            else:
-                content = self.send_head()
-                if content:
-                    self.wfile.write(content)
+        if self.only_upgrade:
+            self.send_error(405, "Method Not Allowed")
+        else:
+            content = self.send_head()
+            if content:
+                self.wfile.write(content)
+            #self.wfile.close()
 
     def do_HEAD(self):
         if self.only_upgrade:
@@ -282,11 +280,13 @@ class WSRequestHandler(WebSocketRequestHandler):
                 break
             if not content:
                 content = f.read()
-                assert len(content)==content_length, "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
+                assert len(content)==content_length, \
+                    "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
                 if content_length>128 and ("gzip" in accept) and ("gzip" in HTTP_ACCEPT_ENCODING) and (ext not in (".png", )):
                     #gzip it on the fly:
                     import zlib
-                    assert len(content)==content_length, "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
+                    assert len(content)==content_length, \
+                        "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
                     gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
                     compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
                     if len(compressed_content)<content_length:
