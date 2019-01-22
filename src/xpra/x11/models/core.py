@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,10 +22,11 @@ from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
 from xpra.gtk_common.gobject_compat import import_gobject, import_glib
+from xpra.log import Logger
+
 glib = import_glib()
 gobject = import_gobject()
 
-from xpra.log import Logger
 log = Logger("x11", "window")
 metalog = Logger("x11", "window", "metadata")
 shapelog = Logger("x11", "window", "shape")

@@ -6,10 +6,11 @@
 
 
 from xpra.x11.common import MAX_WINDOW_SIZE
-MAX_ASPECT = 2**15-1
-
 from xpra.log import Logger
+
 log = Logger("x11", "window")
+
+MAX_ASPECT = 2**15-1
 
 
 def sanitize_size_hints(size_hints):

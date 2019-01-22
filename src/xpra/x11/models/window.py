@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -27,12 +27,12 @@ from xpra.gtk_common.gtk_util import (
     GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
     )
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
+from xpra.log import Logger
+
 gtk = import_gtk()
 gdk = import_gdk()
 cairo = import_cairo()
 
-
-from xpra.log import Logger
 log = Logger("x11", "window")
 workspacelog = Logger("x11", "window", "workspace")
 shapelog = Logger("x11", "window", "shape")

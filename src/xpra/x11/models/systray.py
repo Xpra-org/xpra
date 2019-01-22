@@ -6,6 +6,7 @@
 
 from xpra.x11.models.core import CoreX11WindowModel, gobject
 from xpra.log import Logger
+
 log = Logger("x11", "window", "tray")
 
 
