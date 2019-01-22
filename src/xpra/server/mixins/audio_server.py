@@ -7,17 +7,16 @@
 
 import os.path
 
-from xpra.log import Logger
-log = Logger("server")
-soundlog = Logger("sound")
-
 from xpra.os_util import pollwait, monotonic_time, bytestostr, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
 
+log = Logger("server")
+soundlog = Logger("sound")
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
 
