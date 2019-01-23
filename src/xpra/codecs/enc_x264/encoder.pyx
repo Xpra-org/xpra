@@ -37,11 +37,6 @@ FAST_DECODE_MIN_SPEED = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 cdef extern from "string.h":
     int vsnprintf(char * s, size_t n, const char * format, va_list arg)
 
-cdef extern from "stdint.h":
-    pass
-cdef extern from "inttypes.h":
-    pass
-
 cdef extern from "stdarg.h":
     ctypedef struct va_list:
         pass
