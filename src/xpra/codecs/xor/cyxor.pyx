@@ -53,7 +53,7 @@ def hybi_unmask(data, unsigned int offset, unsigned int datalen):
     cdef uintptr_t mp, dp, op
     cdef uintptr_t buf
     assert object_as_buffer(data, <const void **> &buf, &dlen)==0, "cannot get buffer pointer for %s" % type(data)
-    assert dlen>=offset+4+datalen, "buffer too small %i vs %i: offset=%i, datalen=%i" % (dlen, offset+4+datalen, offset, datalen)
+    assert (<unsigned int> dlen)>=offset+4+datalen, "buffer too small %i vs %i: offset=%i, datalen=%i" % (dlen, offset+4+datalen, offset, datalen)
     mp = buf+offset
     dp = buf+offset+4
     #we skip the first 'align' bytes in the output buffer,
