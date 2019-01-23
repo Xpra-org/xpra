@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -17,8 +17,31 @@ import traceback
 from weakref import WeakKeyDictionary
 from time import sleep
 
-from xpra.log import Logger
+from xpra.version_util import XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full, get_platform_info, get_host_info
+from xpra.scripts.server import deadly_signal
+from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
+from xpra.net.net_util import get_network_caps, get_info as get_net_info
+from xpra.net.protocol import Protocol, sanity_checks
+from xpra.net.digest import get_salt, gendigest, choose_digest
+from xpra.platform import set_name
 from xpra.platform.paths import get_app_dir
+from xpra.os_util import (
+    load_binary_file, get_machine_id, get_user_uuid, platform_name,
+    strtobytes, bytestostr, get_hex_uuid,
+    getuid, monotonic_time, get_peercred, hexstr,
+    SIGNAMES, WIN32, POSIX, PYTHON3, BITS,
+    )
+from xpra.server.background_worker import stop_worker, get_worker
+from xpra.make_thread import start_thread
+from xpra.util import (
+    csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
+    repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat,
+    SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
+    SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
+    )
+from xpra.log import Logger
+
 log = Logger("server")
 netlog = Logger("network")
 ssllog = Logger("ssl")
@@ -29,21 +52,6 @@ commandlog = Logger("command")
 authlog = Logger("auth")
 timeoutlog = Logger("timeout")
 dbuslog = Logger("dbus")
-
-from xpra.version_util import XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full, get_platform_info, get_host_info
-from xpra.scripts.server import deadly_signal
-from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
-from xpra.net.net_util import get_network_caps, get_info as get_net_info
-from xpra.net.protocol import Protocol, sanity_checks
-from xpra.net.digest import get_salt, gendigest, choose_digest
-from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, strtobytes, bytestostr, get_hex_uuid, \
-    getuid, monotonic_time, get_peercred, hexstr, SIGNAMES, WIN32, POSIX, PYTHON3, BITS
-from xpra.server.background_worker import stop_worker, get_worker
-from xpra.make_thread import start_thread
-from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat, \
-        SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT
 
 main_thread = threading.current_thread()
 
