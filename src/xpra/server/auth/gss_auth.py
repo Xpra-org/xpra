@@ -11,9 +11,6 @@ from xpra.net.digest import get_salt, get_digests, gendigest
 from xpra.util import xor
 assert init and log #tests will disable logging from here
 
-def init(opts):
-    pass
-
 
 class Authenticator(SysAuthenticatorBase):
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,10 +11,6 @@ from xpra.util import obsc
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
 assert init and log #tests will disable logging from here
-
-def init(opts):
-    pass
-
 
 LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
 

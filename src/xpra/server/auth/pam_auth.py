@@ -8,10 +8,8 @@ import sys
 
 from xpra.util import envbool
 from xpra.scripts.config import parse_bool
-
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 assert init and log #tests will disable logging from here
-
 
 PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")
 PAM_CHECK_ACCOUNT = envbool("XPRA_PAM_CHECK_ACCOUNT", False)

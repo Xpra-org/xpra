@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,14 +7,11 @@
 # username|password|uid|gid|displays|env_options|session_options
 
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
-from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init as file_init
+from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init
 from xpra.os_util import strtobytes, hexstr
 from xpra.util import parse_simple_dict
 from xpra.net.digest import verify_digest
-
-
-def init(opts):
-    file_init(opts)
+assert init and log #tests will disable logging from here
 
 
 def parse_auth_line(line):
