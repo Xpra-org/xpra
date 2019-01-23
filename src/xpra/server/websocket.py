@@ -38,9 +38,13 @@ with cm:
             if not WEBSOCKIFY_NUMPY:
                 WebSocketRequestHandler.unmask = unmask
         except ImportError:
-            from websockify.websockifyserver import WebSockifyRequestHandler as WebSocketRequestHandler
+            from websockify.websocketserver import WebSocketRequestHandler
             if not WEBSOCKIFY_NUMPY:
                 WebSocketRequestHandler._unmask = unmask
+            #patch WebSocket class so we always choose binary
+            #(why isn't this the default!?)
+            from websockify.websocket import WebSocket
+            WebSocket.select_subprotocol = lambda _self,_protocols: "binary"
         log("WebSocketRequestHandler=%s", WebSocketRequestHandler)
         #print warnings except for numpy:
         for x in w:
@@ -55,6 +59,7 @@ with cm:
 
 
 WEBSOCKET_DEBUG = envbool("XPRA_WEBSOCKET_DEBUG", False)
+WEBSOCKET_ONLY_UPGRADE = envbool("XPRA_WEBSOCKET_ONLY_UPGRADE", False)
 HTTP_ACCEPT_ENCODING = os.environ.get("XPRA_HTTP_ACCEPT_ENCODING", "br,gzip").split(",")
 
 
@@ -74,10 +79,12 @@ class WSRequestHandler(WebSocketRequestHandler):
         server.logger = log
         server.run_once = True
         server.verbose = WEBSOCKET_DEBUG
+        self.only_upgrade = server.only_upgrade = WEBSOCKET_ONLY_UPGRADE
         self.disable_nagle_algorithm = disable_nagle
         WebSocketRequestHandler.__init__(self, sock, addr, server)
 
     def new_websocket_client(self):
+        log("new_websocket_client() calling %s, request=%s (%s)", self._new_websocket_client, self.request, type(self.request))
         self._new_websocket_client(self)
 
     def translate_path(self, path):
