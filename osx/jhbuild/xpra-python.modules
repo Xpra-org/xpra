@@ -226,9 +226,9 @@
 
 	<distutils id="python-cython">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/c1/f2/d1207fd0dfe5cb4dbb06a035eb127653821510d896ce952b5c66ca3dafa4/Cython-0.29.2.tar.gz"
-			hash="sha256:2ac187ff998a95abb7fae452b5178f91e1a713698c9ced89836c94e6b1d3f41e"
-			version="0.29.2"/>
+			module="https://github.com/cython/cython/archive/0.29.3.tar.gz"
+			hash="sha256:4a33fd40c28e67413817f814adadfe2047a66ac3dcc81ff81651a54a03d6cbd0"
+			version="0.29.3"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
