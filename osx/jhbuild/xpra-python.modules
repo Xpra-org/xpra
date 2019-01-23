@@ -159,9 +159,9 @@
 
 	<distutils id="python-cryptography">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/f3/39/d3904df7c56f8654691c4ae1bdb270c1c9220d6da79bd3b1fbad91afd0e1/cryptography-2.4.2.tar.gz"
-			hash="sha256:05a6052c6a9f17ff78ba78f8e6eb1d777d25db3b763343a1ae89a7a8670386dd"
-			version="2.4.2"/>
+			module="/packages/69/ed/5e97b7f54237a9e4e6291b6e52173372b7fa45ca730d36ea90b790c0059a/cryptography-2.5.tar.gz"
+			hash="sha256:4946b67235b9d2ea7d31307be9d5ad5959d6c4a8f98f900157b47abddf698401"
+			version="2.5"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="openssl"/>
