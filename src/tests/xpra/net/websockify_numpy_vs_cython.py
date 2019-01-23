@@ -7,7 +7,16 @@
 import numpy
 import random
 from xpra.os_util import monotonic_time
-from websockify import WebSocketRequestHandler
+try:
+    from websockify import WebSocketRequestHandler
+    wsunmask = WebSocketRequestHandler.unmask
+except ImportError:
+    from websockify.websocket import WebSocket
+    ws = WebSocket()
+    def wsunmask(buf, hlen, length):
+        mask_key = buf[hlen-4:hlen]
+        payload = buf[hlen:(hlen+length)]
+        return ws._unmask(payload, mask_key)
 from xpra.codecs.xor.cyxor import hybi_unmask
 
 def test_unmask(unmask_fn, slice_size, runs=10):
@@ -27,7 +36,7 @@ def main():
     for slice_size in (1024, 8*1024, 64*1024, 1024*1024, 16*1024*1024, 64*1024*1024):
         print("* slice size: %iKB" % (slice_size//1024))
         print(" - xpra cython         : %8iMB/s" % (test_unmask(hybi_unmask, slice_size)//1024//1024))
-        print(" - websockify via numpy: %8iMB/s" % (test_unmask(WebSocketRequestHandler.unmask, slice_size)//1024//1024))
+        print(" - websockify via numpy: %8iMB/s" % (test_unmask(wsunmask, slice_size)//1024//1024))
 
 
 if __name__ == "__main__":
