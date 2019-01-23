@@ -1153,7 +1153,7 @@ class ServerCore(object):
         start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(socktype, conn, is_ssl, req_info, conn.remote))
 
     def start_websockify(self, socktype, conn, is_ssl, req_info, frominfo):
-        wslog("start_websockify(%s, %s, %s, %s, %s) www dir=%s, headers dir=%s", socktype, conn, is_ssl, req_info, frominfo, self._www_dir, self._http_headers_dir)
+        httplog("start_websockify(%s, %s, %s, %s, %s) www dir=%s, headers dir=%s", socktype, conn, is_ssl, req_info, frominfo, self._www_dir, self._http_headers_dir)
         from xpra.server.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
