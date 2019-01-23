@@ -42,17 +42,19 @@ with cm:
             from websockify.websocketserver import WebSocketRequestHandler
             if not WEBSOCKIFY_NUMPY:
                 WebSocketRequestHandler._unmask = unmask
-            #patch WebSocket class so we always choose binary
-            #(why isn't this the default!?)
-            from websockify.websocket import WebSocket
-            WebSocket.select_subprotocol = lambda _self,_protocols: "binary"
+            #in previous versions, this method was doing the socket upgrade work,
+            #but now this is where we need to trigger our new_websocket_client code...
+            def handle_websocket(handler):
+                return handler.new_websocket_client()
+            WebSocketRequestHandler.handle_websocket = handle_websocket
         log("WebSocketRequestHandler=%s", WebSocketRequestHandler)
         #print warnings except for numpy:
         for x in w:
             message = getattr(x, "message", None)
             if message:
                 if str(message).find("numpy")>0 and not WEBSOCKIFY_NUMPY:
-                    log("numpy warning suppressed: %s", message)
+                    log("numpy warning suppressed:")
+                    log(" %s", message)
                 else:
                     log.warn("Warning: %s", message)
             else:
@@ -119,9 +121,9 @@ class WSRequestHandler(WebSocketRequestHandler):
     def log_error(self, fmt, *args):
         #don't log 404s at error level:
         if len(args)==2 and args[0]==404:
-            log(fmt, *args)
+            httplog(fmt, *args)
         else:
-            log.error(fmt, *args)
+            httplog.error(fmt, *args)
 
     def log_message(self, fmt, *args):
         httplog(fmt, *args)
@@ -193,12 +195,7 @@ class WSRequestHandler(WebSocketRequestHandler):
     def do_GET(self):
         if self.only_upgrade or (self.headers.get('upgrade') and
             self.headers.get('upgrade').lower() == 'websocket'):
-            try:
-                #>0.8
-                self.handle_upgrade()
-            except AttributeError:
-                #<=0.8
-                self.handle_websocket()
+            self.handle_websocket()
             return
         self.handle_request()
 
@@ -331,40 +328,98 @@ class WSRequestHandler(WebSocketRequestHandler):
         return content
 
 
-class WebSocketConnection(SocketConnection):
+try:
+    #websockify version > 0.8
+    #patch WebSocket class so we always choose binary
+    #(why isn't this the default!?)
+    from websockify.websocket import WebSocket
+    WebSocket.select_subprotocol = lambda _self,_protocols: "binary"
+    class WebSocketConnection(SocketConnection):
+        def __init__(self, socket, local, remote, target, socktype, ws_handler):
+            SocketConnection.__init__(self, socket, local, remote, target, socktype)
+            self.protocol_type = "websocket"
+            self.request = ws_handler.request
+        
+        def close(self):
+            SocketConnection.close(self)
+            request = self.request
+            if request:
+                try:
+                    request.close()
+                except Exception:
+                    log("error closing %s", request, exc_info=True)
+        
+        def read(self, n):
+            #FIXME: we should try to honour n
+            #from websockify.websocket import WebSocketWantReadError, WebSocketWantWriteError
+            from websockify.websocket import WebSocketWantReadError
+            request = self.request
+            while self.is_active():
+                if request.close_code:
+                    log.warn("Warning: websocket connection already closed:")
+                    log.warn(" %i: %s", request.close_code, request.close_reason)
+                    self.close()
+                    return None
+                try:
+                    buf = request.recv()
+                except WebSocketWantReadError as e:
+                    log("waiting for data: %s", e)
+                    continue
+                else:
+                    if buf:
+                        self.input_bytecount += len(buf)
+                        return buf
+            return None
+        
+        def write(self, buf):
+            #log("write(%i bytes)", len(buf))
+            from websockify.websocket import WebSocketWantWriteError
+            request = self.request
+            while self.is_active():
+                try:
+                    l = request.send(memoryview_to_bytes(buf))
+                    self.output_bytecount += l
+                    return l
+                except WebSocketWantWriteError as e:
+                    log("waiting to write: %s", e)
+                    continue
+            return None
 
-    def __init__(self, socket, local, remote, target, socktype, ws_handler):
-        SocketConnection.__init__(self, socket, local, remote, target, socktype)
-        self.protocol_type = "websocket"
-        self.ws_handler = ws_handler
-        self.pending_read = Queue()
-
-    def close(self):
-        self.pending_read = Queue()
-        SocketConnection.close(self)
-
-    def read(self, n):
-        #FIXME: we should try to honour n
-        while self.is_active():
-            if self.pending_read.qsize():
-                buf = self.pending_read.get()
-                log("read() returning pending read buffer, len=%i", len(buf))
-                self.input_bytecount += len(buf)
-                return buf
-            bufs, closed_string = self.ws_handler.recv_frames()
-            if closed_string:
-                log("read() closed_string: %s", closed_string)
-                self.active = False
-            log("read() got %i ws frames", len(bufs))
-            if bufs:
-                buf = bufs[0]
-                if len(bufs) > 1:
-                    for v in bufs[1:]:
-                        self.pending_read.put(v)
-                self.input_bytecount += len(buf)
-                return buf
-
-    def write(self, buf):
-        self.ws_handler.send_frames([memoryview_to_bytes(buf)])
-        self.output_bytecount += len(buf)
-        return len(buf)
+except ImportError:
+    #websockify version 0.8 or older:
+    class WebSocketConnection(SocketConnection):
+        def __init__(self, socket, local, remote, target, socktype, ws_handler):
+            SocketConnection.__init__(self, socket, local, remote, target, socktype)
+            self.protocol_type = "websocket"
+            self.ws_handler = ws_handler
+            self.pending_read = Queue()
+    
+        def close(self):
+            self.pending_read = Queue()
+            SocketConnection.close(self)
+    
+        def read(self, n):
+            #FIXME: we should try to honour n
+            while self.is_active():
+                if self.pending_read.qsize():
+                    buf = self.pending_read.get()
+                    log("read() returning pending read buffer, len=%i", len(buf))
+                    self.input_bytecount += len(buf)
+                    return buf
+                bufs, closed_string = self.ws_handler.recv_frames()
+                if closed_string:
+                    log("read() closed_string: %s", closed_string)
+                    self.active = False
+                log("read() got %i ws frames", len(bufs))
+                if bufs:
+                    buf = bufs[0]
+                    if len(bufs) > 1:
+                        for v in bufs[1:]:
+                            self.pending_read.put(v)
+                    self.input_bytecount += len(buf)
+                    return buf
+    
+        def write(self, buf):
+            self.ws_handler.send_frames((memoryview_to_bytes(buf),))
+            self.output_bytecount += len(buf)
+            return len(buf)
