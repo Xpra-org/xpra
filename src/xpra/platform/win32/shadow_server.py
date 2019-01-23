@@ -1,25 +1,16 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import ctypes
-
+from collections import namedtuple
 from ctypes.wintypes import RECT, POINT, BYTE, MAX_PATH
 
-from xpra.log import Logger
 from xpra.os_util import strtobytes
-from xpra.util import envbool, prettify_plug_name, csv
-log = Logger("shadow", "win32")
-shapelog = Logger("shape")
-cursorlog = Logger("cursor")
-keylog = Logger("keyboard")
-screenlog = Logger("screen")
-
-from collections import namedtuple
-from xpra.util import XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
+from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase, MULTI_WINDOW
@@ -29,23 +20,30 @@ from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.win32_events import get_win32_event_listener, POWER_EVENTS
 from xpra.platform.win32.gdi_screen_capture import GDICapture
+from xpra.log import Logger
 
 #user32:
-from xpra.platform.win32.common import (EnumWindows, EnumWindowsProc, FindWindowA, IsWindowVisible,
-                                        GetWindowTextLengthW, GetWindowTextW,
-                                        GetWindowRect,
-                                        GetWindowThreadProcessId,
-                                        GetSystemMetrics,
-                                        SetPhysicalCursorPos,
-                                        GetPhysicalCursorPos,
-                                        GetCursorInfo, CURSORINFO,
-                                        GetDC, CreateCompatibleDC, CreateCompatibleBitmap, SelectObject, DeleteObject, ReleaseDC, DeleteDC, DrawIconEx, GetBitmapBits,
-                                        GetIconInfo, ICONINFO, Bitmap,
-                                        GetIconInfoExW, ICONINFOEXW,
-                                        GetObjectA,
-                                        GetKeyboardState, SetKeyboardState,
-                                        EnumDisplayMonitors, GetMonitorInfo,
-                                        mouse_event)
+from xpra.platform.win32.common import (
+    EnumWindows, EnumWindowsProc, FindWindowA, IsWindowVisible,
+    GetWindowTextLengthW, GetWindowTextW,
+    GetWindowRect,
+    GetWindowThreadProcessId,
+    GetSystemMetrics,
+    SetPhysicalCursorPos, GetPhysicalCursorPos, GetCursorInfo, CURSORINFO,
+    GetDC, CreateCompatibleDC, CreateCompatibleBitmap, SelectObject, DeleteObject,
+    ReleaseDC, DeleteDC, DrawIconEx, GetBitmapBits,
+    GetIconInfo, ICONINFO, Bitmap, GetIconInfoExW, ICONINFOEXW,
+    GetObjectA,
+    GetKeyboardState, SetKeyboardState,
+    EnumDisplayMonitors, GetMonitorInfo,
+    mouse_event,
+    )
+
+log = Logger("shadow", "win32")
+shapelog = Logger("shape")
+cursorlog = Logger("cursor")
+keylog = Logger("keyboard")
+screenlog = Logger("screen")
 
 NOEVENT = object()
 BUTTON_EVENTS = {
@@ -213,16 +211,15 @@ def init_capture(w, h, pixel_depth=32):
     return capture
 
 
-class Win32RootWindowModel(RootWindowModel):
+class SeamlessRootWindowModel(RootWindowModel):
 
     def __init__(self, root, capture):
         RootWindowModel.__init__(self, root, capture)
-        log("Win32RootWindowModel(%s, %s) SEAMLESS=%s", root, capture, SEAMLESS)
-        if SEAMLESS:
-            self.property_names.append("shape")
-            self.dynamic_property_names.append("shape")
-            self.rectangles = self.get_shape_rectangles(logit=True)
-            self.shape_notify = []
+        log("SeamlessRootWindowModel(%s, %s) SEAMLESS=%s", root, capture, SEAMLESS)
+        self.property_names.append("shape")
+        self.dynamic_property_names.append("shape")
+        self.rectangles = self.get_shape_rectangles(logit=True)
+        self.shape_notify = []
 
     def refresh_shape(self):
         rectangles = self.get_shape_rectangles()
@@ -329,7 +326,6 @@ class Win32RootWindowModel(RootWindowModel):
 
     def get_property(self, prop):
         if prop=="shape":
-            assert SEAMLESS
             shape = {"Bounding.rectangles" : self.rectangles}
             #provide clip rectangle? (based on workspace area?)
             return shape
@@ -411,15 +407,19 @@ class ShadowServer(GTKShadowServerBase):
     def makeRootWindowModels(self):
         log("makeRootWindowModels() root=%s", self.root)
         self.capture = self.setup_capture()
+        if SEAMLESS:
+            model_class = SeamlessRootWindowModel
+        else:
+            model_class = RootWindowModel
         if not MULTI_WINDOW:
-            return (RootWindowModel(self.root, self.capture),)
+            return (model_class(self.root, self.capture),)
         models = []
         monitors = get_monitors()
         for i, monitor in enumerate(monitors):
             geom = monitor["Monitor"]
             x1, y1, x2, y2 = geom
             assert x1<x2 and y1<y2
-            model = RootWindowModel(self.root, self.capture)
+            model = model_class(self.root, self.capture)
             model.title = monitor["Device"].lstrip("\\\\.\\")
             model.geometry = x1, y1, x2-x1, y2-y1
             screenlog("monitor %i: %10s geometry=%s (from %s)", i, model.title, model.geometry, geom)
@@ -544,7 +544,7 @@ class ShadowServer(GTKShadowServerBase):
 def main():
     from xpra.platform import program_context
     with program_context("Shadow-Test", "Shadow Server Screen Capture Test"):
-        rwm = Win32RootWindowModel(None)
+        rwm = RootWindowModel(None)
         pngdata = rwm.take_screenshot()
         FILENAME = "screenshot.png"
         with open(FILENAME , "wb") as f:
