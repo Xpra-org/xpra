@@ -18,6 +18,7 @@ from xpra.net.bytestreams import SocketConnection
 from xpra.log import Logger
 
 log = Logger("network", "websocket")
+httplog = Logger("network", "http")
 
 WEBSOCKIFY_NUMPY = envbool("XPRA_WEBSOCKIFY_NUMPY", False)
 log("WEBSOCKIFY_NUMPY=%s", WEBSOCKIFY_NUMPY)
@@ -111,7 +112,7 @@ class WSRequestHandler(WebSocketRequestHandler):
             path = os.path.join(path, word)
         if trailing_slash:
             path += '/'
-        log("translate_path(%s)=%s", s, path)
+        httplog("translate_path(%s)=%s", s, path)
         return path
 
 
@@ -123,7 +124,7 @@ class WSRequestHandler(WebSocketRequestHandler):
             log.error(fmt, *args)
 
     def log_message(self, fmt, *args):
-        log(fmt, *args)
+        httplog(fmt, *args)
 
     def print_traffic(self, token="."):
         """ Show traffic flow mode. """
@@ -152,7 +153,7 @@ class WSRequestHandler(WebSocketRequestHandler):
             cls.http_headers_cache[http_headers_dir] = {}
             return {}
         mtime = os.path.getmtime(http_headers_dir)
-        log("may_reload_headers() http headers time=%s, mtime=%s", cls.http_headers_time, mtime)
+        httplog("may_reload_headers() http headers time=%s, mtime=%s", cls.http_headers_time, mtime)
         if mtime<=cls.http_headers_time.get(http_headers_dir, -1):
             #no change
             return cls.http_headers_cache.get(http_headers_dir, {})
@@ -164,7 +165,7 @@ class WSRequestHandler(WebSocketRequestHandler):
         for f in sorted(os.listdir(http_headers_dir)):
             header_file = os.path.join(http_headers_dir, f)
             if os.path.isfile(header_file):
-                log("may_reload_headers() loading from '%s'", header_file)
+                httplog("may_reload_headers() loading from '%s'", header_file)
                 with open(header_file, mode) as f:
                     for line in f:
                         sline = line.strip().rstrip('\r\n').strip()
@@ -174,7 +175,7 @@ class WSRequestHandler(WebSocketRequestHandler):
                         if len(parts)!=2:
                             continue
                         headers[parts[0]] = parts[1]
-        log("may_reload_headers() headers=%s, mtime=%s", headers, mtime)
+        httplog("may_reload_headers() headers=%s, mtime=%s", headers, mtime)
         cls.http_headers_cache[http_headers_dir] = headers
         cls.http_headers_time[http_headers_dir] = mtime
         return headers
@@ -184,10 +185,10 @@ class WSRequestHandler(WebSocketRequestHandler):
         try:
             length = int(self.headers.get('content-length'))
             data = self.rfile.read(length)
-            log("POST data=%s (%i bytes)", data, length)
+            httplog("POST data=%s (%i bytes)", data, length)
             self.handle_request()
         except Exception:
-            log.error("Error processing POST request", exc_info=True)
+            httplog.error("Error processing POST request", exc_info=True)
 
     def do_GET(self):
         if self.only_upgrade or (self.headers.get('upgrade') and
@@ -220,9 +221,9 @@ class WSRequestHandler(WebSocketRequestHandler):
     def send_head(self):
         path = self.path.split("?",1)[0].split("#",1)[0]
         script = self.script_paths.get(path)
-        log("send_head() script(%s)=%s", path, script)
+        httplog("send_head() script(%s)=%s", path, script)
         if script:
-            log("request for %s handled using %s", path, script)
+            httplog("request for %s handled using %s", path, script)
             content = script(self)
             return content
         path = self.translate_path(self.path)
@@ -252,13 +253,13 @@ class WSRequestHandler(WebSocketRequestHandler):
             content_length = fs[6]
             headers = {}
             ctype = mimetypes.guess_type(path, False)
-            log("guess_type(%s)=%s", path, ctype)
+            httplog("guess_type(%s)=%s", path, ctype)
             if ctype and ctype[0]:
                 headers["Content-type"] = ctype[0]
             accept = self.headers.get('accept-encoding', '').split(",")
             accept = [x.split(";")[0].strip() for x in accept]
             content = None
-            log("accept-encoding=%s", accept)
+            httplog("accept-encoding=%s", accept)
             for enc in HTTP_ACCEPT_ENCODING:
                 #find a matching pre-compressed file:
                 if enc not in accept:
@@ -267,16 +268,16 @@ class WSRequestHandler(WebSocketRequestHandler):
                 if not os.path.exists(compressed_path):
                     continue
                 if not os.path.isfile(compressed_path):
-                    log.warn("Warning: '%s' is not a file!", compressed_path)
+                    httplog.warn("Warning: '%s' is not a file!", compressed_path)
                     continue
                 if not os.access(compressed_path, os.R_OK):
-                    log.warn("Warning: '%s' is not readable", compressed_path)
+                    httplog.warn("Warning: '%s' is not readable", compressed_path)
                     continue
                 st = os.stat(compressed_path)
                 if st.st_size==0:
-                    log.warn("Warning: '%s' is empty", compressed_path)
+                    httplog.warn("Warning: '%s' is empty", compressed_path)
                     continue
-                log("sending pre-compressed file '%s'", compressed_path)
+                httplog("sending pre-compressed file '%s'", compressed_path)
                 #read pre-gzipped file:
                 f.close()
                 f = None
@@ -297,7 +298,7 @@ class WSRequestHandler(WebSocketRequestHandler):
                     gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
                     compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
                     if len(compressed_content)<content_length:
-                        log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
+                        httplog("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
                         headers["Content-Encoding"] = "gzip"
                         content = compressed_content
             f.close()
@@ -310,17 +311,17 @@ class WSRequestHandler(WebSocketRequestHandler):
                 self.send_header(k, v)
             self.end_headers()
         except IOError as e:
-            log("send_head()", exc_info=True)
-            log.error("Error sending '%s':", path)
+            httplog("send_head()", exc_info=True)
+            httplog.error("Error sending '%s':", path)
             emsg = str(e)
             if emsg.endswith(": '%s'" % path):
-                log.error(" %s", emsg.rsplit(":", 1)[0])
+                httplog.error(" %s", emsg.rsplit(":", 1)[0])
             else:
-                log.error(" %s", e)
+                httplog.error(" %s", e)
             try:
                 self.send_error(404, "File not found")
             except:
-                log("failed to send 404 error - maybe some of the headers were already sent?")
+                httplog("failed to send 404 error - maybe some of the headers were already sent?")
             if f:
                 try:
                     f.close()
