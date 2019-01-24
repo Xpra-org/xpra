@@ -141,6 +141,13 @@ def do_get_download_dir():
     return d
 
 
+def do_get_desktop_background_paths():
+    return [
+        "/System/Library/CoreServices/DefaultDesktop.jpg",
+        "/Library/Desktop Pictures/*jpg",
+        ]
+
+
 def do_get_libexec_dir():
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
