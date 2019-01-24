@@ -1,7 +1,25 @@
 body {
-	padding-top: 40px;
-	padding-bottom: 40px;
-	background-color: #eee;
+}
+
+div.bg-image {
+	position:fixed;
+	height: 100%;
+    width: 100%;
+	padding:0;
+    margin:0;
+    top:0;
+    left:0;
+    background-image: url(../background.png);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 0.3;
+    z-index: -1000;
+}
+
+div.container {
+	margin-top: 40px;
+	margin-bottom: 40px;
 }
 
 .form-signin {
