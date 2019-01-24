@@ -184,7 +184,7 @@ def platform_release(release):
     return release
 
 
-def platform_name(sys_platform, release):
+def platform_name(sys_platform, release=None):
     if not sys_platform:
         return "unknown"
     PLATFORMS = {"win32"    : "Microsoft Windows",

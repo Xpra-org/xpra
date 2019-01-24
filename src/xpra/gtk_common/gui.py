@@ -16,7 +16,7 @@ glib = import_glib()
 glib.threads_init()
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX, WIN32, platform_name
 from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, pixbuf_new_from_file, add_window_accel, imagebutton, window_defaults, scaled_image, WIN_POS_CENTER
 
 from xpra.log import Logger
@@ -101,7 +101,7 @@ class GUI(gtk.Window):
             self.start_button = imagebutton("Start", icon, "Start a session", clicked_callback=self.start, icon_size=48, label_font=label_font)
             #not all builds and platforms can start sessions:
             if OSX or WIN32:
-                set_tooltip_text(self.start_button, "Starting sessions is not supported on %s" % sys.platform)
+                set_tooltip_text(self.start_button, "Starting sessions is not supported on %s" % platform_name(sys.platform))
                 self.start_button.set_sensitive(False)
             elif not has_server:
                 set_tooltip_text(self.start_button, "This build of Xpra does not support starting sessions")
