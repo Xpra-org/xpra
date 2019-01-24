@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,24 +15,25 @@ from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD
 from xpra.util import csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
-                                        GetSystemMetrics,
-                                        GetCursorPos,
-                                        PostMessageA,
-                                        CreateWindowExA,
-                                        CreatePopupMenu, AppendMenu,
-                                        LoadIconA,
-                                        DefWindowProcA, RegisterWindowMessageA,
-                                        RegisterClassExA,
-                                        ICONINFO, BITMAPV5HEADER,
-                                        LoadImageW, CreateIconIndirect,
-                                        GetDC, ReleaseDC,
-                                        CreateBitmap, CreateDIBSection,
-                                        UpdateWindow, DestroyWindow,
-                                        PostQuitMessage,
-                                        GetModuleHandleA,
-                                        GetStockObject, DeleteObject)
+from xpra.platform.win32.common import (
+    GUID, WNDCLASSEX, WNDPROC,
+    GetSystemMetrics,
+    GetCursorPos,
+    PostMessageA,
+    CreateWindowExA, CreatePopupMenu, AppendMenu,
+    LoadIconA,
+    DefWindowProcA, RegisterWindowMessageA, RegisterClassExA,
+    ICONINFO, BITMAPV5HEADER,
+    LoadImageW, CreateIconIndirect,
+    GetDC, ReleaseDC,
+    CreateBitmap, CreateDIBSection,
+    UpdateWindow, DestroyWindow,
+    PostQuitMessage,
+    GetModuleHandleA,
+    GetStockObject, DeleteObject,
+    )
 from xpra.log import Logger
+
 log = Logger("tray", "win32")
 
 log("loading ctypes NotifyIcon functions")
