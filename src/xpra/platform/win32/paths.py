@@ -192,11 +192,15 @@ def do_get_sound_command():
     return do_get_xpra_command()
 
 def do_get_xpra_command():
+    from xpra.platform.paths import default_do_get_xpra_command
+    d = default_do_get_xpra_command()
     mingw = os.environ.get("MINGW_PREFIX")
     if mingw:
         xpra_script = os.path.join(mingw, "bin", "xpra")
         py = os.path.join(mingw, "bin", "python%i.exe" % sys.version_info[0])
         if os.path.exists(xpra_script) and os.path.exists(py):
             return [py, xpra_script]
-    from xpra.platform.paths import default_do_get_xpra_command
-    return default_do_get_xpra_command()
+        elif len(d) == 1:
+            if not d[0].lower().endswith(".exe"):
+                return [sys.executable, d[0]]
+    return d

@@ -114,7 +114,7 @@ def confirm_key(info=[]):
     from xpra.platform.paths import get_icon_filename
     from xpra.os_util import use_tty
     if not use_tty():
-        icon = get_icon_filename("authentication", "png")
+        icon = get_icon_filename("authentication", "png") or ""
         prompt = "Are you sure you want to continue connecting?"
         code, out = dialog_confirm("Confirm Key", prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
         log.debug("dialog output: '%s', return code=%s", nonl(out), code)
@@ -132,7 +132,7 @@ def input_pass(prompt):
     from xpra.platform.paths import get_icon_filename
     from xpra.os_util import use_tty
     if not use_tty():
-        icon = get_icon_filename("authentication", "png")
+        icon = get_icon_filename("authentication", "png") or ""
         code, out = dialog_pass("Password Input", prompt, icon)
         log.debug("pass dialog output return code=%s", code)
         if code!=0:
