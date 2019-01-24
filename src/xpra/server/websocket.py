@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import glob
 import warnings
 import posixpath
 import mimetypes
@@ -14,6 +15,7 @@ except ImportError:
 
 from xpra.util import envbool, std, AdHocStruct
 from xpra.os_util import memoryview_to_bytes, nomodule_context, PYTHON2, Queue, DummyContextManager
+from xpra.platform.paths import get_desktop_background_paths
 from xpra.net.bytestreams import SocketConnection
 from xpra.log import Logger
 
@@ -114,6 +116,14 @@ class WSRequestHandler(WebSocketRequestHandler):
             path = os.path.join(path, word)
         if trailing_slash:
             path += '/'
+        #hack for locating the default desktop background at runtime:
+        if not os.path.exists(path) and s.endswith("/background.png"):
+            paths = get_desktop_background_paths()
+            for p in paths:
+                matches = glob.glob(p)
+                if matches:
+                    path = matches[0]
+                    break
         httplog("translate_path(%s)=%s", s, path)
         return path
 
