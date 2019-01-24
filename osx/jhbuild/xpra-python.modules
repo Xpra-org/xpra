@@ -133,7 +133,7 @@
 	<distutils id="python-packaging">
 		<branch repo="pypi.python.org"
 			module="/packages/16/51/d72654dbbaa4a4ffbf7cb0ecd7d12222979e0a660bf3f42acc47550bf098/packaging-19.0.tar.gz"
-			hash="sha256:0c98a5d0be38ed775798ece1b9727178c4469d9c3b4ada66e8e6b7849f8732af"
+			hash="sha256:03432ca3d87a962ab267f17fd59a16bbd43bb0eff9291c10b6801a002422b17a"
 			version="19.0"/>
 		<dependencies>
 			<dep package="python"/>
