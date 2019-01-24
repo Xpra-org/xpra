@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,19 +9,18 @@ import os.path
 import subprocess
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, import_glib
+from xpra.platform.paths import get_icon_dir, get_xpra_command
+from xpra.os_util import OSX, WIN32, platform_name
+from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, pixbuf_new_from_file, add_window_accel, imagebutton, window_defaults, scaled_image, WIN_POS_CENTER
+from xpra.log import Logger
+
+log = Logger("client", "util")
+
 gtk = import_gtk()
 gdk = import_gdk()
 pango = import_pango()
 glib = import_glib()
 glib.threads_init()
-
-from xpra.platform.paths import get_icon_dir, get_xpra_command
-from xpra.os_util import OSX, WIN32, platform_name
-from xpra.gtk_common.gtk_util import gtk_main, set_tooltip_text, add_close_accel, pixbuf_new_from_file, add_window_accel, imagebutton, window_defaults, scaled_image, WIN_POS_CENTER
-
-from xpra.log import Logger
-log = Logger("client", "util")
-
 
 try:
     from xpra import client
