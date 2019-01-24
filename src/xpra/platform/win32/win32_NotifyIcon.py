@@ -49,6 +49,7 @@ class win32NotifyIcon(object):
     def __init__(self, title, move_callbacks, click_callback, exit_callback, command_callback=None, iconPathName=None):
         self.title = title[:127]
         self.current_icon = None
+        self.image_cache = {}
         # Register the Window class.
         self.hinst = NIwc.hInstance
         # Create the Window.
@@ -61,7 +62,6 @@ class win32NotifyIcon(object):
         self.exit_callback = exit_callback
         self.command_callback = command_callback
         self.reset_function = None
-        self.image_cache = {}
 
     def create_tray_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
@@ -191,12 +191,13 @@ class win32NotifyIcon(object):
             if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
                 img_type = win32con.IMAGE_BITMAP
                 icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
+            
             log("LoadImage(%s) using image type=%s", iconPathName,
                                         {
                                             win32con.IMAGE_ICON    : "ICON",
                                             win32con.IMAGE_BITMAP  : "BITMAP",
                                          }.get(img_type))
-            v = LoadImageW(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
+            v = win32gui.LoadImage(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
         except:
             log.error("Error: failed to load icon '%s'", iconPathName, exc_info=True)
             return None
