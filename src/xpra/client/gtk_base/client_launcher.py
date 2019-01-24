@@ -54,6 +54,7 @@ SAVED_FIELDS = [
     "username", "password", "host", "port", "mode", "ssh_port",
     "encoding", "quality", "min-quality", "speed", "min-speed",
     "proxy_port", "proxy_username", "proxy_key", "proxy_password",
+    "proxy_host"
     ]
 
 #options not normally found in xpra config file
