@@ -1,6 +1,6 @@
 Name:           lame
-Version:        3.99.5
-Release:        3%{?dist}
+Version:        3.100
+Release:        1%{?dist}
 Summary:        Free MP3 audio compressor
 
 Group:          Applications/Multimedia
@@ -102,6 +102,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/lame.h
 
 %changelog
+* Thu Jan 24 2019 Antoine Martin <antoine@xpra.org> 3.100-1
+- new upstream release
+
 * Fri Oct 17 2014 Antoine Martin <antoine@xpra.org> 3.99.5-3
 - initial xpra package
 
