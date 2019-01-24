@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -159,19 +159,20 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                         os.chmod(br_dst, 0o644)
                     else:
                         print("Warning: brotli did not create '%s'" % br_dst)
-    if os.name=="posix":
-        #point the background.png to a local background image:
-        background_options = [
-                "/usr/share/backgrounds/images/default.png",
-                "/usr/share/backgrounds/images/*default*.png",
-                "/usr/share/backgrounds/*default*png",
-                "/usr/share/backgrounds/gnome/adwaita*.jpg",    #Debian Stretch
-                "/usr/share/backgrounds/images/*jpg",           #CentOS 7
-                ]
-        extra_symlinks = {"background.png" : background_options}
-        for f, symlink_options in extra_symlinks.items():
-            dst = os.path.join(install_dir, f)
-            install_symlink(symlink_options, dst)
+
+        if os.name=="posix":
+            try:
+                from xpra.platform.paths import get_desktop_background_paths
+            except ImportError as e:
+                print("cannot locate desktop background: %s" % (e,))
+            else:
+                paths = get_desktop_background_paths()
+                print("desktop background paths: %s" % (paths,))
+                if paths:
+                    extra_symlinks = {"background.png" : paths}
+                    for f, symlink_options in extra_symlinks.items():
+                        dst = os.path.join(install_dir, f)
+                        install_symlink(symlink_options, dst)
 
 
 def main():
