@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -102,6 +102,22 @@ def do_get_default_conf_dirs():
 def do_get_user_conf_dirs(_uid):
     #ie: "C:\Users\<user name>\AppData\Roaming"
     return [_get_data_dir()]
+
+
+def do_get_desktop_background_paths():
+    try:
+        try:
+            import _winreg as winreg
+        except ImportError:
+            import winreg   #@UnresolvedImport @Reimport
+        key_path = "Control Panel\\Desktop"
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)    #@UndefinedVariable
+        wallpaper = winreg.QueryValueEx(key, 'WallPaper')[0]    #@UndefinedVariable
+        return [wallpaper,]
+    except Exception:
+        log = get_util_logger()
+        log("do_get_desktop_background_paths()", exc_info=True)
+    return []
 
 
 def do_get_download_dir():

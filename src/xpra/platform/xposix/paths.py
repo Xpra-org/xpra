@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,6 +15,16 @@ SOUND_PYTHON3 = envbool("XPRA_SOUND_PYTHON3", False)
 # we no longer use "~/.xpra" on posix systems to store files or sockets,
 # but we still load config files from there if present
 LEGACY_DOTXPRA = envbool("XPRA_LEGACY_DOTXPRA", False)
+
+
+def do_get_desktop_background_paths():
+    return [
+        "/usr/share/backgrounds/images/default.png",
+        "/usr/share/backgrounds/images/*default*.png",
+        "/usr/share/backgrounds/*default*png",
+        "/usr/share/backgrounds/gnome/adwaita*.jpg",    #Debian Stretch
+        "/usr/share/backgrounds/images/*jpg",           #CentOS 7
+        ]
 
 
 def do_get_install_prefix():

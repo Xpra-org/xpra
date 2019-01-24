@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -231,6 +231,11 @@ def get_license_text(self):
     return LICENSE_TEXT
 
 
+def get_desktop_background_paths():
+    return envaslist_or_delegate("XPRA_DESKTOP_BACKGROUND_PATHS", do_get_desktop_background_paths)
+def do_get_desktop_background_paths():
+    return []
+
 
 def get_xpra_command():
     envvalue = os.environ.get("XPRA_COMMAND")
@@ -289,7 +294,9 @@ platform_import(globals(), "paths", False,
                 "do_get_libexec_dir",
                 "do_get_mmap_dir",
                 "do_get_xpra_tmp_dir",
-                "do_get_script_bin_dirs")
+                "do_get_script_bin_dirs",
+                "do_get_desktop_background_paths",
+                )
 
 def get_info():
     return {
@@ -306,6 +313,7 @@ def get_info():
             "mmap"              : {"dir"    : get_mmap_dir()},
             "xpra-tmp"          : {"dir"    : get_xpra_tmp_dir()},
             "app"               : {"default" : {"dir"   : default_get_app_dir()}},
+            "desktop-background": get_desktop_background_paths(),
             "resources"         : get_resources_dir(),
             "icons"             : get_icon_dir(),
             "home"              : os.path.expanduser("~"),
