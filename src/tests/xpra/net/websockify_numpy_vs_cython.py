@@ -14,8 +14,8 @@ except ImportError:
     from websockify.websocket import WebSocket
     ws = WebSocket()
     def wsunmask(buf, hlen, length):
-        mask_key = buf[hlen-4:hlen]
-        payload = buf[hlen:(hlen+length)]
+        mask_key = buf[hlen:hlen+4]
+        payload = buf[hlen+4:(hlen+4+length)]
         return ws._unmask(payload, mask_key)
 from xpra.codecs.xor.cyxor import hybi_unmask
 

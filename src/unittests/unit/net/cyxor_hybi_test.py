@@ -20,8 +20,13 @@ class Test_cyxor_hybi(unittest.TestCase):
                 from websockify.websocket import WebSocketRequestHandler    #@UnusedImport
                 numpy_unmask = WebSocketRequestHandler.unmask
             except ImportError:
-                from websockify.websockifyserver import WebSockifyRequestHandler as WebSocketRequestHandler
-                numpy_unmask = WebSocketRequestHandler._unmask
+                from websockify.websocket import WebSocket
+                ws = WebSocket()
+                def wsunmask(buf, hlen, length):
+                    mask_key = buf[hlen:hlen+4]
+                    payload = buf[hlen+4:(hlen+4+length)]
+                    return ws._unmask(payload, mask_key)
+                numpy_unmask = wsunmask
             from xpra.codecs.xor.cyxor import hybi_unmask
         except ImportError as e:
             print("Warning: cyxor_hybi test skipped because: %s" % (e,))
@@ -73,8 +78,11 @@ class Test_cyxor_hybi(unittest.TestCase):
         cmp_unmask(128, 0, 128-4)
 
         BUF_SIZE = 1024*1024
-        buf = numpy.random.randint(256, size=BUF_SIZE, dtype='B')
-        buf = buf.tobytes()
+        try:
+            buf = numpy.random.randint(256, size=BUF_SIZE, dtype='B')
+            buf = buf.tobytes()
+        except TypeError:
+            buf = binascii.unhexlify("00803EA1FA0673B9")*(BUF_SIZE//4)
         do_cmp_unmask(buf, 1, 5)
 
         for offset in range(8):
