@@ -526,9 +526,9 @@
 
 	<distutils id="python3-decorator" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/6f/24/15a229626c775aae5806312f6bf1e2a73785be3402c0acdec5dbddd8c11e/decorator-4.3.0.tar.gz"
-			hash="sha256:c39efa13fbdeb4506c476c9b3babf6a718da943dab7811c206005a4a956c080c"
-			version="4.3.0">
+			module="/packages/c4/26/b48aaa231644bc875bb348e162d156edb18b994da900a10f4493ea995a2f/decorator-4.3.2.tar.gz"
+			hash="sha256:33cd704aea07b4c28b3eb2c97d288a06918275dac0ecebdaf1bc8a48d98adb9e"
+			version="4.3.2">
 		</branch>
 		<dependencies>
 			<dep package="python3"/>
