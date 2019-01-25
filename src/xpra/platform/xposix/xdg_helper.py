@@ -99,6 +99,8 @@ def load_icon_from_file(filename):
         buf.close()
         return pngicondata, "png"
     icondata = load_binary_file(filename)
+    if not icondata:
+        return None
     log("got icon data from '%s': %i bytes", filename, len(icondata))
     return icondata, os.path.splitext(filename)[1].rstrip(".")
 
