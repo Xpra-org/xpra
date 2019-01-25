@@ -7,13 +7,9 @@
 
 #using easy-install for python libraries which are not packaged by mingw:
 # currently disabled, build from patched source only: websockify
-export SODIUM_INSTALL=system
-for x in lz4 websocket-client netifaces comtypes websockify nvidia-ml-py setproctitle pyu2f python-ldap ldap3 bcrypt pynacl; do
+for x in lz4 nvidia-ml-py; do
     easy_install-2.7 -U -Z $x
     easy_install-3.7 -U -Z $x
 done
 #broken updates:
 #PyOpenGL PyOpenGL_accelerate
-#
-#locked at 0.19.1 for python2:
-easy_install-3.7 -U -Z zeroconf
