@@ -1,3 +1,5 @@
+%define _build_id_links none
+
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     4.1

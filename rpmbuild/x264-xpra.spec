@@ -1,3 +1,5 @@
+%define _build_id_links none
+
 Name:	     x264-xpra
 Version:     20190109
 %define SNAPSHOTTYPE -stable
