@@ -625,7 +625,8 @@ class Protocol(object):
         conn = self._conn
         if not conn:
             return False
-        conn.set_nodelay(not more)
+        if more:
+            conn.set_nodelay(False)
         if start_cb:
             try:
                 start_cb(conn.output_bytecount)
@@ -633,6 +634,8 @@ class Protocol(object):
                 if not self._closed:
                     log.error("Error on write start callback %s", start_cb, exc_info=True)
         self.write_buffers(buf_data, fail_cb, synchronous)
+        if not more:
+            conn.set_nodelay(True)
         if end_cb:
             try:
                 end_cb(self._conn.output_bytecount)
