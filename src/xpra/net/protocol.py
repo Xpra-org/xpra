@@ -27,7 +27,7 @@ from xpra.net.packet_encoding import (
     decode, sanity_checks as packet_encoding_sanity_checks,
     InvalidPacketEncodingException,
     )
-from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER
+from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER, HEADER_SIZE
 from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
 from xpra.log import Logger
 
@@ -714,7 +714,7 @@ class Protocol(object):
         self.invalid_header(self, data, msg)
 
     def invalid_header(self, _proto, data, msg="invalid packet header"):
-        err = "%s: '%s'" % (msg, hexstr(data[:8]))
+        err = "%s: '%s'" % (msg, hexstr(data[:HEADER_SIZE]))
         if len(data)>1:
             err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
@@ -787,17 +787,17 @@ class Protocol(object):
                     if read_buffer[0] not in ("P", ord("P")):
                         self._invalid_header(read_buffer, "invalid packet header byte %s" % read_buffer[0])
                         return
-                    if bl<8:
+                    if bl<HEADER_SIZE:
                         break   #packet still too small
-                    #packet format: struct.pack(b'cBBBL', ...) - 8 bytes
-                    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(read_buffer[:8])
+                    #packet format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
+                    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(read_buffer[:HEADER_SIZE])
 
                     #sanity check size (will often fail if not an xpra client):
                     if data_size>self.abs_max_packet_size:
                         self._invalid_header(read_buffer, "invalid size in packet header: %s" % data_size)
                         return
 
-                    bl = len(read_buffer)-8
+                    bl = len(read_buffer)-HEADER_SIZE
                     if protocol_flags & FLAGS_CIPHER:
                         if self.cipher_in_block_size==0 or not self.cipher_in_name:
                             cryptolog.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
@@ -810,7 +810,7 @@ class Protocol(object):
                         padding_size = 0
                         payload_size = data_size
                     assert payload_size>0, "invalid payload size: %i" % payload_size
-                    read_buffer = read_buffer[8:]
+                    read_buffer = read_buffer[HEADER_SIZE:]
 
                     if payload_size>self.max_packet_size:
                         #this packet is seemingly too big, but check again from the main UI thread
@@ -837,7 +837,7 @@ class Protocol(object):
                 else:
                     raw_string = read_buffer[:payload_size]
                     read_buffer = read_buffer[payload_size:]
-                packet_size += 8+payload_size
+                packet_size += HEADER_SIZE + payload_size
                 #decrypt if needed:
                 data = raw_string
                 if self.cipher_in and protocol_flags & FLAGS_CIPHER:

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,6 +20,9 @@ FLAGS_NOHEADER  = 0x40
 
 
 _header_unpack_struct = struct.Struct(b'!cBBBL')
+HEADER_SIZE = _header_unpack_struct.size
+assert HEADER_SIZE==8
+
 def unpack_header(buf):
     return _header_unpack_struct.unpack_from(buf)
 
