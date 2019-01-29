@@ -526,7 +526,6 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.get_info%s", (proto, client_uuids))
         start = monotonic_time()
         info = ServerCore.get_info(self, proto)
-        server_info = info.setdefault("server", {})
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
