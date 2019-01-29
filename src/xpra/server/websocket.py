@@ -349,7 +349,7 @@ try:
             SocketConnection.__init__(self, socket, local, remote, target, socktype)
             self.protocol_type = "websocket"
             self.request = ws_handler.request
-        
+
         def close(self):
             SocketConnection.close(self)
             request = self.request
@@ -358,7 +358,7 @@ try:
                     request.close()
                 except Exception:
                     log("error closing %s", request, exc_info=True)
-        
+
         def read(self, n):
             #FIXME: we should try to honour n
             #from websockify.websocket import WebSocketWantReadError, WebSocketWantWriteError
@@ -380,7 +380,7 @@ try:
                         self.input_bytecount += len(buf)
                         return buf
             return None
-        
+
         def write(self, buf):
             #log("write(%i bytes)", len(buf))
             from websockify.websocket import WebSocketWantWriteError
@@ -403,11 +403,11 @@ except ImportError:
             self.protocol_type = "websocket"
             self.ws_handler = ws_handler
             self.pending_read = Queue()
-    
+
         def close(self):
             self.pending_read = Queue()
             SocketConnection.close(self)
-    
+
         def read(self, n):
             #FIXME: we should try to honour n
             while self.is_active():
@@ -428,7 +428,7 @@ except ImportError:
                             self.pending_read.put(v)
                     self.input_bytecount += len(buf)
                     return buf
-    
+
         def write(self, buf):
             self.ws_handler.send_frames((memoryview_to_bytes(buf),))
             self.output_bytecount += len(buf)
