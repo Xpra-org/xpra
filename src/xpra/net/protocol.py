@@ -778,7 +778,6 @@ class Protocol(object):
                 read_buffer = read_buffer + buf
             else:
                 read_buffer = buf
-            bl = len(read_buffer)
             while not self._closed:
                 packet = None
                 bl = len(read_buffer)
