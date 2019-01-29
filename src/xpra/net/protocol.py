@@ -625,7 +625,7 @@ class Protocol(object):
         conn = self._conn
         if not conn:
             return False
-        if more:
+        if more or len(buf_data)>1:
             conn.set_nodelay(False)
         if start_cb:
             try:
