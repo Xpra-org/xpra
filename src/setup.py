@@ -371,7 +371,9 @@ external_excludes = [
 if not html5_ENABLED and not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
 if not html5_ENABLED:
-    external_excludes += ["BaseHTTPServer", "mimetypes", "mimetools"]
+    external_excludes += ["BaseHTTPServer", "mimetypes"]
+if not html5_ENABLED and not client_ENABLED:
+    external_excludes += ["mimetools"]
 
 if not client_ENABLED and not server_ENABLED:
     excludes += ["PIL"]
