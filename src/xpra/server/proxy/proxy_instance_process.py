@@ -255,7 +255,7 @@ class ProxyInstanceProcess(Process):
         for x in (b"input-devices", b"draw", b"window-icon", b"keymap-changed", b"server-settings"):
             self.server_protocol.large_packets.append(x)
         if self.caps.boolget("file-transfer"):
-            for x in (b"send-file", b"send-file-chunk", b"send-file", b"send-file-chunk"):
+            for x in (b"send-file", b"send-file-chunk"):
                 self.server_protocol.large_packets.append(x)
                 self.client_protocol.large_packets.append(x)
         self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
@@ -608,6 +608,12 @@ class ProxyInstanceProcess(Process):
             self.client_packets.put(packet)
             self.client_protocol.source_has_more()
             return
+        elif packet_type==b"send-file":
+            if packet[6]:
+                packet[6] = Compressed("file-data", packet[6])
+        elif packet_type==b"send-file-chunk":
+            if packet[3]:
+                packet[3] = Compressed("file-chunk-data", packet[3])
         elif packet_type=="hello":
             log.warn("Warning: invalid hello packet received after initial authentication (dropped)")
             return
