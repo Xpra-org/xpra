@@ -365,11 +365,12 @@ $(document).ready(function() {
 	$('input#insecure').prop("checked", insecure);
 	var ssl_input = document.getElementById("ssl");
 	var insecure_input = document.getElementById("insecure");
-	if (!Utilities.hasSessionStorage()) {
+	var has_session_storage = Utilities.hasSessionStorage();
+	if (has_session_storage) {
 		//passwords would be sent on URL,
 		//so show insecure checkbox whenever ssl is off:
 		ssl_input.onchange = function() {
-			$('input#password').prop("disabled", !has_local_storage && !ssl_input.checked && !insecure_input.checked);
+			$('input#password').prop("disabled", !has_session_storage && !ssl_input.checked && !insecure_input.checked);
 			if (ssl_input.checked) {
 			   	$('span#insecure-span').hide();
 			}
@@ -382,9 +383,9 @@ $(document).ready(function() {
 		//local storage makes this secure
 	   	$('span#insecure-span').hide();
 	}
-	$('input#password').prop("disabled", !has_local_storage && !ssl_input.checked && !insecure_input.checked);
+	$('input#password').prop("disabled", !has_session_storage && !ssl_input.checked && !insecure_input.checked);
 	insecure_input.onchange = function() {
-		$('input#password').prop("disabled", !has_local_storage && !ssl_input.checked && !insecure_input.checked);
+		$('input#password').prop("disabled", !has_session_storage && !ssl_input.checked && !insecure_input.checked);
 	};
 
 	var action = getparam("action") || "";
