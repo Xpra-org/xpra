@@ -272,8 +272,9 @@
 function doConnect() {
 	// url to client
 	var url = "./index.html";
+	var has_session_storage = Utilities.hasSessionStorage();
 	function add_prop(prop, value) {
-		if (typeof(Storage) !== "undefined") {
+		if (has_session_storage) {
 			if (value===null || value==="undefined") {
 				sessionStorage.removeItem(prop);
 			}
@@ -364,8 +365,7 @@ $(document).ready(function() {
 	$('input#insecure').prop("checked", insecure);
 	var ssl_input = document.getElementById("ssl");
 	var insecure_input = document.getElementById("insecure");
-	var has_local_storage = typeof(Storage)!=="undefined";
-	if (!has_local_storage) {
+	if (!Utilities.hasSessionStorage()) {
 		//passwords would be sent on URL,
 		//so show insecure checkbox whenever ssl is off:
 		ssl_input.onchange = function() {

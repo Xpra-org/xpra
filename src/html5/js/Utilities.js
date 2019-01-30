@@ -451,6 +451,22 @@ var Utilities = {
 		return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())!==-1;
 	},
 
+	hasSessionStorage : function() {
+		if (typeof(Storage) === "undefined") {
+			return false;
+		}
+		try {
+			var key = "just for testing sessionStorage support";
+		    sessionStorage.setItem(key, "store-whatever");
+		    sessionStorage.removeItem(key);
+		    return true;
+		}
+		catch (e) {
+			return false;
+		}
+	},
+
+	
 	getConnectionInfo : function() {
 		var c = navigator.connection;
 		if (!c) {

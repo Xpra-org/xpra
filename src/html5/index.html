@@ -578,8 +578,9 @@
 				    			message = reason;
 				    		}
 				    		var url = "./connect.html";
+				    		var has_session_storage = Utilities.hasSessionStorage();
 				    		function add_prop(prop, value) {
-				    			if (typeof(Storage) !== "undefined") {
+				    			if (has_session_storage) {
 				    				if (value===null || value==="undefined") {
 				    					sessionStorage.removeItem(prop);
 				    				}
@@ -620,7 +621,7 @@
 								var category = client.debug_categories[i];
 								props["debug_"+category] = true;
 							}
-				    		if (insecure || sessionStorage) {
+				    		if (insecure || Utilities.hasSessionStorage()) {
 			    				props["password"] = password;
 				    		}
 				    		else {
