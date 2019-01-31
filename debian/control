@@ -179,8 +179,6 @@ Recommends: python-dbus
         ,python-cups
 #for ssh transport:
         ,python-paramiko
-#for html5 support:
-        ,websockify
 #the start-session GUI:
         ,python-xdg
 # for webcam support:
@@ -238,8 +236,6 @@ Recommends: python3-dbus
         ,python3-cups
 #for ssh transport:
         ,python3-paramiko
-#for html5 support:
-        ,python3-websockify
 #the start-session GUI:
         ,python3-xdg
 # for webcam support:

@@ -308,19 +308,6 @@
 	</distutils>
 
 
-	<distutils id="python3-websockify" python3="1">
-		<branch repo="pypi.python.org"
-			module="/packages/source/w/websockify/websockify-0.8.0.tar.gz"
-			hash="md5:8fa547ca4de84a96aa3472d55fbcdd59"
-			version="0.8.0"/>
-		<dependencies>
-			<dep package="python3"/>
-		</dependencies>
-		<after>
-			<dep package="python3"/>
-		</after>
-	</distutils>
-
 	<distutils id="python3-websocket-client" python3="1">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/35/d4/14e446a82bc9172d088ebd81c0b02c5ca8481bfeecb13c9ef07998f9249b/websocket_client-0.54.0.tar.gz"
@@ -762,7 +749,6 @@
 		  <dep package="python3-cython"/>
 		  <dep package="python3-numpy"/>
 		  <dep package="python3-pycups"/>
-		  <dep package="python3-websockify"/>
 		  <dep package="python3-websocket-client"/>
 		  <dep package="python3-bcrypt"/>
 		  <dep package="python3-paramiko"/>

@@ -311,23 +311,19 @@ Requires:			pygtk2
 %{Recommends}:		python2-pynvml
 %endif
 %if 0%{?fedora}
-Recommends:			python2-websockify
 Recommends:			python2-xpra-audio
 Recommends:			cups-pdf
 Recommends:			python2-cups
 Recommends:			python2-uinput
 Recommends:			python2-setproctitle
 %if 0%{?run_tests}
-BuildRequires:      python2-websockify
 BuildRequires:      python2-websocket-client
 %endif
 %endif
 %if 0%{?el7}
 Requires:			python-cups
-Requires:			python-websockify
 Requires:			python-setproctitle
 %if 0%{?run_tests}
-BuildRequires:      python-websockify
 BuildRequires:      python-websocket-client
 %endif
 %endif
@@ -437,14 +433,12 @@ Summary:			python3 build of xpra server
 Group:				Networking
 Requires:			xpra-common-server = %{?epoch_prefix}%{version}-%{release}
 Requires:			python3-xpra = %{?epoch_prefix}%{version}-%{release}
-Requires:			python3-websockify
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			python3-cups
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
 %if 0%{?run_tests}
-BuildRequires:      python3-websockify
 BuildRequires:      python3-websocket-client
 %endif
 %if %{with_cuda}
