@@ -13,9 +13,9 @@
 
 	<distutils id="python-setuptools">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/37/1b/b25507861991beeade31473868463dad0e58b1978c209de27384ae541b0b/setuptools-40.6.3.zip"
-			hash="sha256:3b474dad69c49f0d2d86696b68105f3a6f195f7ab655af12ef9a9c326d2b08f8"
-			version="40.6.3"/>
+			module="/packages/3b/17/81a4ab4c94e9c78f98dfaad0208994129213089361dc53a7cd8de177d1e3/setuptools-40.7.1.zip"
+			hash="sha256:5926bbea397d0fcec2f7946f1691f5820ef0234247b2d5fa83d30cc216d613ec"
+			version="40.7.1"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
