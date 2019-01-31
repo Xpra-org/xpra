@@ -165,6 +165,11 @@ XpraProtocol.prototype.protocol_error = function(msg) {
 }
 
 XpraProtocol.prototype.process_receive_queue = function() {
+	while (this.websocket && this.do_process_receive_queue()) {
+	}
+}
+
+XpraProtocol.prototype.do_process_receive_queue = function() {
 	var i = 0, j = 0;
 	if (this.header.length<8 && this.rQ.length>0) {
 		//add from receive queue data to header until we get the 8 bytes we need:
@@ -172,7 +177,6 @@ XpraProtocol.prototype.process_receive_queue = function() {
 			var slice = this.rQ[0];
 			var needed = 8-this.header.length;
 			var n = Math.min(needed, slice.length);
-			//console.log("header size", this.header.length, ", adding", n, "bytes from", slice.length);
 			//copy at most n characters:
 			for (i = 0; i < n; i++) {
 				this.header.push(slice[i]);
@@ -197,13 +201,13 @@ XpraProtocol.prototype.process_receive_queue = function() {
 				}
 			}
 			this.protocol_error(msg);
-			return;
+			return false;
 		}
 	}
 
 	if (this.header.length<8) {
 		//we need more data to continue
-		return;
+		return false;
 	}
 
 	var proto_flags = this.header[1];
@@ -212,19 +216,19 @@ XpraProtocol.prototype.process_receive_queue = function() {
 		// check for crypto protocol flag
 		if (!(proto_crypto)) {
 			this.protocol_error("we can't handle this protocol flag yet: "+proto_flags);
-			return;
+			return false;
 		}
 	}
 
 	var level = this.header[2];
 	if (level & 0x20) {
 		this.protocol_error("lzo compression is not supported");
-		return;
+		return false;
 	}
 	var index = this.header[3];
 	if (index>=20) {
 		this.protocol_error("invalid packet index: "+index);
-		return;
+		return false;
 	}
 	var packet_size = 0;
 	for (i=0; i<4; i++) {
@@ -245,11 +249,11 @@ XpraProtocol.prototype.process_receive_queue = function() {
 		rsize += this.rQ[i].length;
 	}
 	if (rsize<packet_size) {
-		return;
+		return false;
 	}
 
 	// done parsing the header, the next packet will need a new one:
-	this.header = []
+	this.header = [];
 
 	var packet_data = null;
 	if (this.rQ[0].length==packet_size) {
@@ -305,7 +309,7 @@ XpraProtocol.prototype.process_receive_queue = function() {
 			// if lz4 errors out at the end of the buffer, ignore it:
 			if (uncompressedSize<=0 && packet_size+uncompressedSize!=0) {
 				this.protocol_error("failed to decompress lz4 data, error code: "+uncompressedSize);
-				return;
+				return false;
 			}
 		} else {
 			// zlib
@@ -333,7 +337,7 @@ XpraProtocol.prototype.process_receive_queue = function() {
 			//FIXME: maybe we should error out and disconnect here?
 			console.error("error decoding packet " + e);
 			//console.error("packet_data="+packet_data);
-			return;
+			return this.rQ.length>0;
 		}
 		try {
 			// pass to our packet handler
@@ -363,6 +367,7 @@ XpraProtocol.prototype.process_receive_queue = function() {
 			//console.error("packet_data="+packet_data);
 		}
 	}
+	return this.rQ.length>0;
 }
 
 XpraProtocol.prototype.process_send_queue = function() {
