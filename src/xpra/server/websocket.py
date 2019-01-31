@@ -57,8 +57,13 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         self.new_websocket_client(self)
 
     def do_GET(self):
-        if self.only_upgrade or (self.headers.get('upgrade') and
-            self.headers.get('upgrade').lower() == 'websocket'):
+        upgrade_requested = (self.headers.get('upgrade') or "").lower() == 'websocket'
+        if self.only_upgrade or upgrade_requested:
+            if not upgrade_requested:
+                self.send_error(403, "only websocket connections are allowed")
+                self.wfile.flush()
+                self.wfile.close()
+                return
             try:
                 self.handle_websocket()
             except Exception as e:
