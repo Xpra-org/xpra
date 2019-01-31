@@ -437,7 +437,12 @@ var Utilities = {
 		}
 		var value = getParameter(prop);
 		if (value === undefined && typeof(sessionStorage) !== undefined) {
-			value = sessionStorage.getItem(prop);
+			try {
+				value = sessionStorage.getItem(prop);
+			}
+			catch (e) {
+				value = null;
+			}
 		}
 		return value;
 	},
