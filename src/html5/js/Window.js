@@ -206,11 +206,11 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		});
 		this.canvas.addEventListener("pointermove", function(ev) {
 			me.debug("mouse", "pointermove:", ev);
-			if (me.pointer_down==event.pointerId) {
-				var dx = event.offsetX-me.pointer_last_x;
-				var dy = event.offsetY-me.pointer_last_y;
-				me.pointer_last_x = event.offsetX;
-				me.pointer_last_y = event.offsetY;
+			if (me.pointer_down==ev.pointerId) {
+				var dx = ev.offsetX-me.pointer_last_x;
+				var dy = ev.offsetY-me.pointer_last_y;
+				me.pointer_last_x = ev.offsetX;
+				me.pointer_last_y = ev.offsetY;
 				var mult = 20.0*(window.devicePixelRatio || 1);
 				ev.wheelDeltaX = Math.round(dx*mult);
 				ev.wheelDeltaY = Math.round(dy*mult);
