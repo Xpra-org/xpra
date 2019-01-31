@@ -455,15 +455,15 @@ class ServerCore(object):
         httplog("init_html_proxy(..) html=%s", self._html)
         if self._html is not False:
             try:
-                from xpra.server.websocket import WebSocketConnection
-                assert WebSocketConnection
+                from xpra.server.websocket import WebSocketRequestHandler
+                assert WebSocketRequestHandler
                 self._html = True
             except ImportError as e:
-                httplog("importing WebSocketConnection", exc_info=True)
+                httplog("importing WebSocketRequestHandler", exc_info=True)
                 if self._html is None:  #auto mode
-                    httplog.info("html server unavailable, cannot find websockify module")
+                    httplog.info("html server unavailable, cannot find websocket module")
                 else:
-                    httplog.error("Error: cannot import websockify connection handler:")
+                    httplog.error("Error: cannot import websocket connection handler:")
                     httplog.error(" %s", e)
                     httplog.error(" the html server will not be available")
                 self._html = False
@@ -922,7 +922,7 @@ class ServerCore(object):
         elif (socktype=="tcp" and (self._tcp_proxy or self._ssl_wrap_socket or self.ssh_upgrade)) or \
             (socktype in ("tcp", "unix-domain", "named-pipe") and self._html):
             #see if the packet data is actually xpra or something else
-            #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
+            #that we need to handle via a tcp proxy, ssl wrapper or the websocket adapter:
             try:
                 cont, conn, peek_data = self.may_wrap_socket(conn, socktype, peek_data, line1)
                 netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, peek_data)
@@ -1009,16 +1009,19 @@ class ServerCore(object):
                 pass
 
 
-    def make_protocol(self, socktype, conn):
+    def make_protocol(self, socktype, conn, protocol_class=Protocol):
+        """ create a new xpra Protocol instance and start it """
         def xpra_protocol_class(conn):
-            protocol = Protocol(self, conn, self.process_packet)
+            """ adds xpra protocol tweaks after creating the instance """
+            protocol = protocol_class(self, conn, self.process_packet)
             protocol.large_packets.append(b"info-response")
             protocol.receive_aliases.update(self._aliases)
             return protocol
         return self.do_make_protocol(socktype, conn, xpra_protocol_class)
 
     def do_make_protocol(self, socktype, conn, protocol_class):
-        netlog("make_protocol(%s, %s)", socktype, conn)
+        """ create a new Protocol instance and start it """
+        netlog("make_protocol(%s, %s, %s)", socktype, conn, protocol_class)
         socktype = socktype.lower()
         protocol = protocol_class(conn)
         protocol.socket_type = socktype
@@ -1046,7 +1049,7 @@ class ServerCore(object):
         """
             Returns:
             * a flag indicating if we should continue processing this connection
-            *  (False for websockify and tcp proxies as they take over the socket)
+            *  (False for webosocket and tcp proxies as they take over the socket)
             * the connection object (which may now be wrapped, ie: for ssl)
             * new peek data (which may now be empty),
         """
@@ -1150,36 +1153,22 @@ class ServerCore(object):
             tname = "%s-proxy" % req_info
         #we start a new thread,
         #only so that the websocket handler thread is named correctly:
-        start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(socktype, conn, is_ssl, req_info, conn.remote))
+        start_thread(self.start_http, "%s-for-%s" % (tname, frominfo), daemon=True, args=(socktype, conn, is_ssl, req_info, conn.remote))
 
-    def start_websockify(self, socktype, conn, is_ssl, req_info, frominfo):
-        httplog("start_websockify(%s, %s, %s, %s, %s) www dir=%s, headers dir=%s", socktype, conn, is_ssl, req_info, frominfo, self._www_dir, self._http_headers_dir)
-        from xpra.server.websocket import WebSocketConnection, WSRequestHandler
+    def start_http(self, socktype, conn, is_ssl, req_info, frominfo):
+        httplog("start_http(%s, %s, %s, %s, %s) www dir=%s, headers dir=%s", socktype, conn, is_ssl, req_info, frominfo, self._www_dir, self._http_headers_dir)
         try:
+            from xpra.server.websocket import WebSocketRequestHandler
             sock = conn._socket
             sock.settimeout(self._ws_timeout)
             def new_websocket_client(wsh):
+                from xpra.net.websocket_protocol import WebSocketProtocol
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 newsocktype = "ws%s" % ["","s"][int(is_ssl)]
-                wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.endpoint, newsocktype, wsh)
-                wsc.socktype_wrapped = socktype
-                # we need this workaround for non-blocking sockets
-                # TODO: python3 will need a different solution
-                if not PYTHON3:
-                    from xpra.net.bytestreams import untilConcludes
-                    saved_recv = sock.recv
-                    saved_send = sock.send
-                    #now we can have a "is_active" that belongs to the real connection object:
-                    def recv(*args):
-                        return untilConcludes(wsc.is_active, wsc.can_retry, saved_recv, *args)
-                    def send(*args):
-                        return untilConcludes(wsc.is_active, wsc.can_retry, saved_send, *args)
-                    sock.recv = recv
-                    sock.send = send
-                self.make_protocol(newsocktype, wsc)
+                self.make_protocol(newsocktype, conn, WebSocketProtocol)
             scripts = self.get_http_scripts()
-            disable_nagle = conn.socktype not in ("unix-domain", "named-pipe")
-            WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, self._http_headers_dir, scripts, disable_nagle)
+            conn.socktype = ["ws", "wss"][is_ssl]
+            WebSocketRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, self._http_headers_dir, scripts)
             return
         except IOError as e:
             wslog("", exc_info=True)

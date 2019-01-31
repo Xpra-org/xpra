@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -72,7 +72,8 @@ def websocket_client_connection(host, port, conn, dtype="ws"):
     url = "%s://%s/" % (dtype, host)
     if port>0:
         host += ":%i" % port
-    subprotocols = ["binary", "base64"]
+    #subprotocols = ["binary", "base64"]
+    subprotocols = ["binary", ]
     sock = conn._socket
     try:
         ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=subprotocols, socket=sock)

@@ -365,20 +365,20 @@ class Protocol(object):
         if packet is None:
             return
         log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
+        packet_type = packet[0]
         chunks = self.encode(packet)
         with self._write_lock:
             if self._closed:
                 return
             try:
-                self._add_chunks_to_queue(chunks, start_send_cb, end_send_cb, fail_cb, synchronous, has_more or wait_for_more)
+                self._add_chunks_to_queue(packet_type, chunks, start_send_cb, end_send_cb, fail_cb, synchronous, has_more or wait_for_more)
             except:
                 log.error("Error: failed to queue '%s' packet", packet[0])
                 log("add_chunks_to_queue%s", (chunks, start_send_cb, end_send_cb, fail_cb), exc_info=True)
                 raise
 
-    def _add_chunks_to_queue(self, chunks, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, more=False):
+    def _add_chunks_to_queue(self, packet_type, chunks, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, more=False):
         """ the write_lock must be held when calling this function """
-        counter = 0
         items = []
         for proto_flags,index,level,data in chunks:
             payload_size = len(data)
@@ -411,8 +411,18 @@ class Protocol(object):
                 header = pack_header(proto_flags, level, index, payload_size)
                 items.append(header)
                 items.append(data)
-            counter += 1
+        frame_header = self.make_frame_header(packet_type, items)
+        if frame_header:
+            if len(items[0])<PACKET_JOIN_SIZE:
+                items[0] = frame_header + items[0]
+            else:
+                items.insert(0, frame_header)
         self.raw_write(items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
+
+    def make_frame_header(self, packet_type, items):
+        #overriden by websockets
+        return None
+
 
     def start_write_thread(self):
         self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
@@ -544,14 +554,16 @@ class Protocol(object):
                     min_comp_size += l
                     size_check += l
             elif ti in (str, bytes) and level>0 and l>LARGE_PACKET_SIZE:
-                log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
+                log.warn("Warning: found a large uncompressed item")
+                log.warn(" in packet '%s' at position %i: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
                 cl, cdata = self._compress(item, level)
                 packets.append((0, i, cl, cdata))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif ti not in (str, bytes):
-                log.warn("Warning: unexpected data type %s in '%s' packet: %s", ti, packet[0], repr_ellipsized(item))
+                log.warn("Warning: unexpected data type %s", ti)
+                log.warn(" in '%s' packet at position %i: %s", packet[0], i, repr_ellipsized(item))
         #now the main packet (or what is left of it):
         packet_type = packet[0]
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
@@ -563,20 +575,24 @@ class Protocol(object):
         except Exception:
             if self._closed:
                 return [], 0
-            log.error("failed to encode packet: %s", packet, exc_info=True)
+            log.error("Error: failed to encode packet: %s", packet, exc_info=True)
             #make the error a bit nicer to parse: undo aliases:
             packet[0] = packet_type
             verify_packet(packet)
             raise
         if len(main_packet)>size_check and strtobytes(packet_in[0]) not in self.large_packets:
-            log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
-                     len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
+            log.warn("Warning: found large packet")
+            log.warn(" '%s' packet is %s bytes: ", packet_type, len(main_packet))
+            log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
+            log.warn(" sizes: %s", csv(len(strtobytes(x)) for x in packet[1:]))
+            log.warn(" packet head=%s", repr_ellipsized(packet))
         #compress, but don't bother for small packets:
         if level>0 and len(main_packet)>min_comp_size:
             try:
                 cl, cdata = self._compress(main_packet, level)
-            except Exception:
+            except Exception as e:
                 log.error("Error compressing '%s' packet", packet_type)
+                log.error(" %s", e)
                 raise
             packets.append((proto_flags, 0, cl, cdata))
         else:
@@ -998,7 +1014,7 @@ class Protocol(object):
                     if wait_for_packet_sent():
                         #check again every 100ms
                         self.timeout_add(100, wait_for_packet_sent)
-                self._add_chunks_to_queue(chunks, start_send_cb=None, end_send_cb=packet_queued, synchronous=False, more=False)
+                self._add_chunks_to_queue(last_packet[0], chunks, start_send_cb=None, end_send_cb=packet_queued, synchronous=False, more=False)
                 #just in case wait_for_packet_sent never fires:
                 self.timeout_add(5*1000, close_and_release)
 

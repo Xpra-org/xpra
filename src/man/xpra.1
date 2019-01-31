@@ -938,11 +938,9 @@ server.
 .TP
 \fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
 Respond to HTTP requests on the TCP port(s) and local sockets.
-This requires \fBwebsockify\fP to be installed and at least one
-TCP or local socket to be configured using the matching \fBbind\fP
-option.
-The \fBauto\fP mode will enable support if all the components
-are available.
+This requires at least one TCP or local socket to be configured
+using the matching \fBbind\fP option.
+The \fBauto\fP mode will enable support if possible.
 By default the server will provide access to the HTML5 client.
 You can also specify your own web root path as argument.
 .TP

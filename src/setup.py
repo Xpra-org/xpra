@@ -1731,7 +1731,6 @@ add_data_files("%scontent-categories" % share_xpra, glob.glob("content-categorie
 
 if html5_ENABLED:
     if WIN32 or OSX:
-        external_includes.append("websockify")
         external_includes.append("numpy")
         external_includes.append("ssl")
         external_includes.append("_ssl")
