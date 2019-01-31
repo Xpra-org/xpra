@@ -4,19 +4,28 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
+import sys
 import os
+import time
 import errno
 import socket
 
-from xpra.log import Logger
-log = Logger("network", "protocol")
 from xpra.net.common import ConnectionClosedException
 from xpra.util import envint, envbool, csv
-from xpra.os_util import WIN32, PYTHON2, POSIX
+from xpra.os_util import WIN32, PYTHON2, POSIX, LINUX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
+from xpra.log import Logger
 
+log = Logger("network", "protocol")
 
+SOCKET_CORK = envbool("XPRA_SOCKET_CORK", LINUX)
+if SOCKET_CORK:
+    try:
+        assert socket.TCP_CORK>0
+    except (AttributeError, AssertionError) as e:
+        log.warn("Warning: unable to use TCP_CORK on %s", sys.platform)
+        log.warn(" %s", e)
+        SOCKET_CORK = False
 SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY", None)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
@@ -157,6 +166,9 @@ class Connection(object):
     def set_nodelay(self, nodelay):
         pass
 
+    def set_cork(self, cork):
+        pass
+
     def is_active(self):
         return self.active
 
@@ -279,6 +291,8 @@ class TwoFileConnection(Connection):
         return d
 
 
+TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss")
+
 class SocketConnection(Connection):
     def __init__(self, socket, local, remote, target, socktype, info={}):
         log("SocketConnection%s", (socket, local, remote, target, socktype, info))
@@ -288,20 +302,26 @@ class SocketConnection(Connection):
         self.remote = remote
         self.protocol_type = "socket"
         self.nodelay = None
+        self.cork = None
         if type(remote)==str:
             self.filename = remote
-        if SOCKET_NODELAY is not None:
+        if SOCKET_NODELAY is not None and self.socktype in TCP_SOCKTYPES:
             self.do_set_nodelay(SOCKET_NODELAY)
 
     def set_nodelay(self, nodelay):
-        if SOCKET_NODELAY is None and self.socktype in ("tcp", "ssl") and self.nodelay!=nodelay:
+        if SOCKET_NODELAY is None and self.socktype in TCP_SOCKTYPES and self.nodelay!=nodelay:
             self.do_set_nodelay(nodelay)
 
     def do_set_nodelay(self, nodelay):
-        if SOCKET_NODELAY is None and self.socktype in ("tcp", "ssl") and self.nodelay!=nodelay:
-            self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
-            self.nodelay = nodelay
-            log("changed %s socket to nodelay=%s", self.socktype, nodelay)
+        self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
+        self.nodelay = nodelay
+        log("changed %s socket to nodelay=%s", self.socktype, nodelay)
+
+    def set_cork(self, cork):
+        if SOCKET_CORK and self.socktype in TCP_SOCKTYPES and self.cork!=cork:
+            self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)
+            self.cork = cork
+            log("changed %s socket to cork=%s", self.socktype, cork)
 
     def peek(self, n):
         return self._socket.recv(n, socket.MSG_PEEK)
