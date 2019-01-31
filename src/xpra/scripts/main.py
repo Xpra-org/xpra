@@ -521,7 +521,7 @@ def add_ssh_proxy_args(username, password, host, ssh_port, pkey, ssh, is_putty=F
     if is_putty:
         proxyline += ["-nc", "%host:%port"]
         if pkey:
-            # tortoise plink works with either slash, backslash needs too much escaping 
+            # tortoise plink works with either slash, backslash needs too much escaping
             # because of the weird way it's passed through as a ProxyCommand
             proxyline += [ "-i", "\"" + pkey.replace("\\", "/") + "\""]
     elif not is_paramiko:
