@@ -253,7 +253,7 @@ class ApplicationWindow:
         align_hbox.add(hbox)
         vbox.pack_start(align_hbox)
 
-        # Username@Host:Port (ssh -> ssh, proxy) 
+        # Username@Host:Port (ssh -> ssh, proxy)
         vbox_proxy = gtk.VBox(False, 15)
         hbox = gtk.HBox(False, 5)
         self.proxy_vbox = vbox_proxy

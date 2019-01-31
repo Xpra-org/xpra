@@ -354,7 +354,7 @@ cdef class Encoder:
                 #this can crash on win32, don't even try it
                 #(the unit tests would otherwise crash)
                 raise Exception("invalid dimensions %ix%i - maximum is %ix%i" % (width, height, dmaxw, dmaxh))
-        
+
         self.src_format = bytestostr(src_format)
         #log("vpx_encoder.init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
 

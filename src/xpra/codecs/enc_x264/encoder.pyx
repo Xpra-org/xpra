@@ -801,7 +801,6 @@ cdef class Encoder:
             self.b_frames = b_frames
             self.reconfig_tune()
 
-        
         if BLANK_VIDEO:
             if image.get_planes()==3:
                 pixels = (self.blank_buffer, self.blank_buffer, self.blank_buffer)

@@ -14,7 +14,7 @@ from xpra.simple_stats import std_unit
 from xpra.log import Logger
 log = Logger("mmap")
 
-MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra") 
+MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 
 
 """

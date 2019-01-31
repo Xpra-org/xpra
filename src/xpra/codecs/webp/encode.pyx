@@ -438,7 +438,6 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
             while i<size:
                 pic_buf[i] = 0xff
                 i += 4
-            
 
     ret = WebPConfigInit(&config)
     if not ret:
