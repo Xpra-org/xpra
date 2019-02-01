@@ -436,13 +436,13 @@ var Utilities = {
 			};
 		}
 		var value = getParameter(prop);
-		if (value === undefined && typeof(sessionStorage) !== undefined) {
-			try {
+		try {
+			if (value === undefined && typeof(sessionStorage) !== undefined) {
 				value = sessionStorage.getItem(prop);
 			}
-			catch (e) {
-				value = null;
-			}
+		}
+		catch (e) {
+			value = null;
 		}
 		return value;
 	},
