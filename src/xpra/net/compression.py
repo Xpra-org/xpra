@@ -199,7 +199,7 @@ def sanity_checks():
             logger.warn(" performance will suffer")
         else:
             logger.warn("Warning: zlib is the only compressor enabled")
-            logger.warn(" install and enable lzo or lz4 support for better performance")
+            logger.warn(" install and enable lz4 support for better performance")
 
 
 class Compressed(object):
