@@ -996,6 +996,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"session-type"				: Utilities.getSimpleUserAgentString(),
 		"session-type.full"			: navigator.userAgent,
 		"namespace"			 		: true,
+		"clipboard.contents-slice-fix" : true,
 		"share"						: this.sharing,
 		"steal"						: this.steal,
 		"client_type"				: "HTML5",
