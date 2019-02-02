@@ -993,7 +993,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return False
         p.enable_compressor_from_caps(c)
         p.accept()
-        p.send_aliases = c.dictget("aliases", {})
+        p.parse_remote_caps(c)
         return True
 
     def parse_encryption_capabilities(self):

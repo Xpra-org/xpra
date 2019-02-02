@@ -250,6 +250,8 @@ class Protocol(object):
     def accept(self):
         pass
 
+    def parse_remote_caps(self, caps):
+        self.send_aliases = caps.dictget("aliases")
 
     def get_info(self, alias_info=True):
         info = {

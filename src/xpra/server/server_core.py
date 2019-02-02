@@ -1644,7 +1644,7 @@ class ServerCore(object):
         #TODO: when we add the code to upload files,
         #this will need to be increased up to file-size-limit
         proto.max_packet_size = 1024*1024  #1MB
-        proto.send_aliases = c.dictget("aliases")
+        proto.parse_remote_caps()
         self.accept_protocol(proto)
 
     def accept_protocol(self, proto):
