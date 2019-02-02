@@ -402,15 +402,15 @@ class Protocol(object):
                 #for plain/text packets (ie: gibberish response)
                 log("sending %s bytes without header", payload_size)
                 items.append(data)
-            elif actual_size<PACKET_JOIN_SIZE:
-                if not isinstance(data, JOIN_TYPES):
-                    data = memoryview_to_bytes(data)
-                header_and_data = pack_header(proto_flags, level, index, payload_size) + data
-                items.append(header_and_data)
             else:
                 header = pack_header(proto_flags, level, index, payload_size)
-                items.append(header)
-                items.append(data)
+                if actual_size<PACKET_JOIN_SIZE:
+                    if not isinstance(data, JOIN_TYPES):
+                        data = memoryview_to_bytes(data)
+                    items.append(header+data)
+                else:
+                    items.append(header)
+                    items.append(data)
         frame_header = self.make_frame_header(packet_type, items)
         if frame_header:
             if len(items[0])<PACKET_JOIN_SIZE:
@@ -419,7 +419,7 @@ class Protocol(object):
                 items.insert(0, frame_header)
         self.raw_write(items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
 
-    def make_frame_header(self, packet_type, items):
+    def make_frame_header(self, _packet_type, _items):
         #overriden by websockets
         return None
 
