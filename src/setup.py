@@ -106,8 +106,6 @@ if PKG_CONFIG:
     else:
         print("WARNING: pkg-config not found!")
 
-from Cython.Compiler.Version import version as cython_version
-
 for arg in list(sys.argv):
     if arg.startswith("--pkg-config-path="):
         pcp = arg[len("--pkg-config-path="):]
@@ -155,6 +153,7 @@ proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
+modules_ENABLED = DEFAULT
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
@@ -223,7 +222,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = [
-    "cython",
+    "cython", "modules",
     "enc_x264", "enc_x265", "enc_ffmpeg",
     "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
     "vpx", "webp", "pillow", "jpeg_encoder", "jpeg_decoder",
@@ -471,8 +470,9 @@ def toggle_modules(enabled, *module_names):
 
 
 #always included:
-add_modules("xpra", "xpra.platform", "xpra.net")
-add_modules("xpra.scripts.main")
+if modules_ENABLED:
+    add_modules("xpra", "xpra.platform", "xpra.net")
+    add_modules("xpra.scripts.main")
 
 
 def add_data_files(target_dir, files):
@@ -495,6 +495,8 @@ def print_option(prefix, k, v):
 # Utility methods for building with Cython
 def cython_version_check(min_version):
     from distutils.version import LooseVersion
+    assert cython_ENABLED
+    from Cython.Compiler.Version import version as cython_version
     if LooseVersion(cython_version) < LooseVersion(".".join([str(x) for x in min_version])):
         sys.exit("ERROR: Your version of Cython is too old to build this package\n"
                  "You have version %s\n"
@@ -1030,8 +1032,9 @@ from add_build_info import record_build_info, BUILD_INFO_FILE, record_src_info, 
 if "clean" not in sys.argv:
     # Add build info to build_info.py file:
     record_build_info()
-    # ensure it is included in the module list if it didn't exist before
-    add_modules(BUILD_INFO_FILE)
+    if modules_ENABLED:
+        # ensure it is included in the module list if it didn't exist before
+        add_modules(BUILD_INFO_FILE)
 
 if "sdist" in sys.argv:
     record_src_info()
@@ -1040,7 +1043,7 @@ if "install" in sys.argv or "build" in sys.argv:
     #if installing from source tree rather than
     #from a source snapshot, we may not have a "src_info" file
     #so create one:
-    if not has_src_info():
+    if not has_src_info() and modules_ENABLED:
         record_src_info()
         # ensure it is now included in the module list
         add_modules(SRC_INFO_FILE)
@@ -1072,7 +1075,8 @@ def install_html5(install_dir="www"):
 if WIN32:
     MINGW_PREFIX = os.environ.get("MINGW_PREFIX")
     assert MINGW_PREFIX, "you must run this build from a MINGW environment"
-    add_packages("xpra.platform.win32", "xpra.platform.win32.namedpipes")
+    if modules_ENABLED:
+        add_packages("xpra.platform.win32", "xpra.platform.win32.namedpipes")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
 
     #this is where the win32 gi installer will put things:
@@ -1759,11 +1763,12 @@ memalign_c = "xpra/buffers/memalign.c"
 xxhash_c = "xpra/buffers/xxhash.c"
 membuffers_c = [memalign_c, buffers_c, xxhash_c]
 
-add_packages("xpra.buffers")
-buffers_pkgconfig = pkgconfig(optimize=3)
-if cython_ENABLED:
-    cython_add(Extension("xpra.buffers.membuf",
-                ["xpra/buffers/membuf.pyx"]+membuffers_c, **buffers_pkgconfig))
+if modules_ENABLED:
+    add_packages("xpra.buffers")
+    buffers_pkgconfig = pkgconfig(optimize=3)
+    if cython_ENABLED:
+        cython_add(Extension("xpra.buffers.membuf",
+                    ["xpra/buffers/membuf.pyx"]+membuffers_c, **buffers_pkgconfig))
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
@@ -1959,7 +1964,8 @@ if client_ENABLED:
     add_modules("xpra.client", "xpra.client.mixins")
     add_modules("xpra.scripts.gtk_info")
     add_modules("xpra.scripts.show_webcam")
-add_modules("xpra.scripts.bug_report")
+if gtk2_ENABLED or gtk3_ENABLED:
+    add_modules("xpra.scripts.bug_report")
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
