@@ -58,7 +58,6 @@ setup_options = {
                  "description"      : description,
                  "long_description" : long_description,
                  "data_files"       : data_files,
-                 "py_modules"       : modules,
                  }
 
 WIN32 = sys.platform.startswith("win") or sys.platform.startswith("msys")
@@ -154,6 +153,7 @@ client_ENABLED = DEFAULT
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
 modules_ENABLED = DEFAULT
+data_ENABLED = DEFAULT
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
@@ -222,7 +222,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = [
-    "cython", "modules",
+    "cython", "modules", "data",
     "enc_x264", "enc_x265", "enc_ffmpeg",
     "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
     "vpx", "webp", "pillow", "jpeg_encoder", "jpeg_decoder",
@@ -345,7 +345,7 @@ if "clean" not in sys.argv:
             except ImportError as e:
                 print("Warning: yuicompressor module not found, cannot minify")
                 minify_ENABLED = False
-    if not enc_x264_ENABLED and not vpx_ENABLED:
+    if DEFAULT and (not enc_x264_ENABLED and not vpx_ENABLED):
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
 
@@ -1428,14 +1428,16 @@ if WIN32:
             add_gui_exe("xpra/client/gtk_base/example/transparent_window.py",   "transparent.ico",  "Transparent-Window")
             add_gui_exe("xpra/client/gtk_base/example/fontrendering.py",        "font.ico",         "Font-Rendering")
 
+    if ("install_exe" in sys.argv) or ("install" in sys.argv):
         #FIXME: how do we figure out what target directory to use?
         print("calling build_xpra_conf in-place")
         #building etc files in-place:
-        build_xpra_conf(".")
-        add_data_files('etc/xpra', glob.glob("etc/xpra/*conf"))
-        add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
-        add_data_files('etc/xpra', glob.glob("etc/xpra/nvfbc*.keys"))
-        add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
+        if data_ENABLED:
+            build_xpra_conf(".")
+            add_data_files('etc/xpra', glob.glob("etc/xpra/*conf"))
+            add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
+            add_data_files('etc/xpra', glob.glob("etc/xpra/nvfbc*.keys"))
+            add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
         #build minified html5 client in temporary build dir:
         if "clean" not in sys.argv and html5_ENABLED:
             install_html5(os.path.join(install, "www"), )
@@ -1444,7 +1446,7 @@ if WIN32:
                     k = os.sep+k
                 add_data_files('www'+k, v)
 
-    if client_ENABLED or server_ENABLED:
+    if data_ENABLED:
         add_data_files(share_xpra,              ["win32/website.url"])
         add_data_files('%sicons' % share_xpra,  glob.glob('icons\\*.ico'))
 
@@ -1529,14 +1531,15 @@ else:
             libexec_scripts.append("scripts/auth_dialog")
         if libexec_scripts:
             add_data_files("%s/xpra/" % libexec, libexec_scripts)
-    man_path = "share/man"
-    if OPENBSD:
-        man_path = "man"
-    add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1"])
-    add_data_files("share/applications",  ["xdg/xpra-shadow.desktop", "xdg/xpra-launcher.desktop", "xdg/xpra-browser.desktop", "xdg/xpra.desktop"])
-    add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
-    add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png", "xdg/xpra-shadow.png"])
-    add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
+    if data_ENABLED:
+        man_path = "share/man"
+        if OPENBSD:
+            man_path = "man"
+        add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1"])
+        add_data_files("share/applications",  ["xdg/xpra-shadow.desktop", "xdg/xpra-launcher.desktop", "xdg/xpra-browser.desktop", "xdg/xpra.desktop"])
+        add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
+        add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png", "xdg/xpra-shadow.png"])
+        add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
 
     #here, we override build and install so we can
     #generate our /etc/xpra/xpra.conf
@@ -1655,11 +1658,12 @@ else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
-        #not supported by all distros, but doesn't hurt to install them anyway:
-        for x in ("tmpfiles.d", "sysusers.d"):
-            add_data_files("lib/%s" % x, ["%s/xpra.conf" % x])
-        if uinput_ENABLED:
-            add_data_files("lib/udev/rules.d/", ["udev/rules.d/71-xpra-virtual-pointer.rules"])
+        if data_ENABLED:
+            #not supported by all distros, but doesn't hurt to install them anyway:
+            for x in ("tmpfiles.d", "sysusers.d"):
+                add_data_files("lib/%s" % x, ["%s/xpra.conf" % x])
+            if uinput_ENABLED:
+                add_data_files("lib/udev/rules.d/", ["udev/rules.d/71-xpra-virtual-pointer.rules"])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
@@ -1733,12 +1737,13 @@ else:
 if scripts_ENABLED:
     scripts += ["scripts/xpra", "scripts/xpra_launcher"]
 
-add_data_files(share_xpra,                      ["README", "COPYING"])
-add_data_files(share_xpra,                      ["bell.wav"])
-add_data_files("%shttp-headers" % share_xpra,   glob.glob("http-headers/*"))
-add_data_files("%sicons" % share_xpra,          glob.glob("icons/*png"))
-add_data_files("%scontent-type" % share_xpra,   glob.glob("content-type/*"))
-add_data_files("%scontent-categories" % share_xpra, glob.glob("content-categories/*"))
+if data_ENABLED:
+    add_data_files(share_xpra,                      ["README", "COPYING"])
+    add_data_files(share_xpra,                      ["bell.wav"])
+    add_data_files("%shttp-headers" % share_xpra,   glob.glob("http-headers/*"))
+    add_data_files("%sicons" % share_xpra,          glob.glob("icons/*png"))
+    add_data_files("%scontent-type" % share_xpra,   glob.glob("content-type/*"))
+    add_data_files("%scontent-categories" % share_xpra, glob.glob("content-categories/*"))
 
 
 if html5_ENABLED:
@@ -2349,6 +2354,8 @@ if pam_ENABLED:
                 **pam_pkgconfig))
 
 
+if modules:
+    setup_options["py_modules"] = modules
 if ext_modules:
     from Cython.Build import cythonize
     #this causes Cython to fall over itself:
