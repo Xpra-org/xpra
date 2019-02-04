@@ -154,6 +154,7 @@ sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd") and (not i
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 scripts_ENABLED = not WIN32
+cython_ENABLED = DEFAULT
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
@@ -221,26 +222,29 @@ tests_ENABLED           = False
 rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
-            "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
-            "vpx", "webp", "pillow", "jpeg_encoder", "jpeg_decoder",
-            "v4l2",
-            "dec_avcodec2", "csc_swscale",
-            "csc_libyuv",
-            "bencode", "cython_bencode", "vsock", "netdev", "mdns",
-            "clipboard",
-            "scripts",
-            "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
-            "gtk_x11", "service",
-            "gtk2", "gtk3", "example",
-            "html5", "minify", "html5_gzip", "html5_brotli",
-            "pam", "xdg_open",
-            "sound", "opengl", "printing", "webcam", "notifications", "keyboard",
-            "rebuild",
-            "annotate", "warn", "strict",
-            "shadow", "proxy", "rfb",
-            "debug", "PIC",
-            "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
+SWITCHES = [
+    "cython",
+    "enc_x264", "enc_x265", "enc_ffmpeg",
+    "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
+    "vpx", "webp", "pillow", "jpeg_encoder", "jpeg_decoder",
+    "v4l2",
+    "dec_avcodec2", "csc_swscale",
+    "csc_libyuv",
+    "bencode", "cython_bencode", "vsock", "netdev", "mdns",
+    "clipboard",
+    "scripts",
+    "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
+    "gtk_x11", "service",
+    "gtk2", "gtk3", "example",
+    "html5", "minify", "html5_gzip", "html5_brotli",
+    "pam", "xdg_open",
+    "sound", "opengl", "printing", "webcam", "notifications", "keyboard",
+    "rebuild",
+    "annotate", "warn", "strict",
+    "shadow", "proxy", "rfb",
+    "debug", "PIC",
+    "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
+    ]
 if WIN32:
     SWITCHES.append("zip")
     zip_ENABLED = True
@@ -311,6 +315,9 @@ if "clean" not in sys.argv:
         v = switches_info[k]
         print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
 
+    if (enc_ffmpeg_ENABLED or enc_x264_ENABLED or enc_x265_ENABLED or
+        nvenc_ENABLED or OSX or x11_ENABLED):
+        assert cython_ENABLED
     #sanity check the flags:
     if clipboard_ENABLED and not server_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
         print("Warning: clipboard can only be used with the server or one of the gtk clients!")
@@ -500,6 +507,7 @@ def cython_add(extension, min_version=(0, 19)):
     #python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
+    assert cython_ENABLED, "cython compilation is disabled"
     cython_version_check(min_version)
     from Cython.Distutils import build_ext
     ext_modules.append(extension)
@@ -1753,8 +1761,9 @@ membuffers_c = [memalign_c, buffers_c, xxhash_c]
 
 add_packages("xpra.buffers")
 buffers_pkgconfig = pkgconfig(optimize=3)
-cython_add(Extension("xpra.buffers.membuf",
-            ["xpra/buffers/membuf.pyx"]+membuffers_c, **buffers_pkgconfig))
+if cython_ENABLED:
+    cython_add(Extension("xpra.buffers.membuf",
+                ["xpra/buffers/membuf.pyx"]+membuffers_c, **buffers_pkgconfig))
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
@@ -1799,13 +1808,14 @@ if OSX:
                 **quartz_pkgconfig
                 ))
 
-monotonic_time_pkgconfig = pkgconfig()
-if not OSX and not WIN32 and not OPENBSD:
-    add_to_keywords(monotonic_time_pkgconfig, 'extra_link_args', "-lrt")
-cython_add(Extension("xpra.monotonic_time",
-            ["xpra/monotonic_time.pyx", "xpra/monotonic_ctime.c"],
-            **monotonic_time_pkgconfig
-            ))
+if cython_ENABLED:
+    monotonic_time_pkgconfig = pkgconfig()
+    if not OSX and not WIN32 and not OPENBSD:
+        add_to_keywords(monotonic_time_pkgconfig, 'extra_link_args', "-lrt")
+    cython_add(Extension("xpra.monotonic_time",
+                ["xpra/monotonic_time.pyx", "xpra/monotonic_ctime.c"],
+                **monotonic_time_pkgconfig
+                ))
 
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
