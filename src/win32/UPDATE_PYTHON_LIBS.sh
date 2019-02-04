@@ -7,7 +7,7 @@
 
 #using easy-install for python libraries which are not packaged by mingw:
 # currently disabled, build from patched source only: websockify
-for x in lz4 nvidia-ml-py; do
+for x in nvidia-ml-py; do
     easy_install-2.7 -U -Z $x
     easy_install-3.7 -U -Z $x
 done

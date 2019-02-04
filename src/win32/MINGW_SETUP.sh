@@ -39,7 +39,7 @@ $PACMAN --noconfirm -S ${XPKG}gst-python
 $PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi
 #python libraries and packaging tools:
 $PACMAN --noconfirm -S ${XPKG}python2-enum34
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode websocket-client setproctitle pyu2f ldap ldap3 bcrypt pynacl; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode websocket-client setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4; do
 	$PACMAN --noconfirm -S ${XPKG}python2-${x}
 	$PACMAN --noconfirm -S ${XPKG}python3-${x}
 done
@@ -49,7 +49,7 @@ $PACMAN --noconfirm -S ${XPKG}cython2 ${XPKG}python2-setuptools
 $PACMAN --noconfirm -S ${XPKG}cython
 #using easy-install for python libraries which are not yet packaged by mingw:
 easy_install-2.7 -U -Z enum-compat
-for x in lz4 websockify nvidia-ml-py; do
+for x in nvidia-ml-py; do
     easy_install-2.7 -U -Z $x
     easy_install-3.7 -U -Z $x
 done
