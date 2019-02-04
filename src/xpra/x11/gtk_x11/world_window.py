@@ -102,7 +102,10 @@ class WorldWindow(gtk.Window):
         self.set_title("Xpra-WorldWindow")
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
-    
+        self.set_decorated(False)
+        self.set_resizable(False)
+        self.set_opacity(0)
+
         # FIXME: This would better be a default handler, but there is a bug in
         # the superclass's default handler that means we can't call it
         # properly[0], so as a workaround we let the real default handler run,
