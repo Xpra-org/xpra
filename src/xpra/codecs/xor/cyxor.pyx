@@ -48,6 +48,7 @@ def xor_str(a, b):
                 ocbuf[j] = acbuf[j] ^ bcbuf[j]
     return memoryview(out_buf)
 
+
 def hybi_unmask(data, unsigned int offset, unsigned int datalen):
     cdef Py_ssize_t mlen = 0, dlen = 0
     cdef uintptr_t mp, dp, op
@@ -56,6 +57,18 @@ def hybi_unmask(data, unsigned int offset, unsigned int datalen):
     assert (<unsigned int> dlen)>=offset+4+datalen, "buffer too small %i vs %i: offset=%i, datalen=%i" % (dlen, offset+4+datalen, offset, datalen)
     mp = buf+offset
     dp = buf+offset+4
+    return do_hybi_mask(mp, dp, datalen)
+
+def hybi_mask(mask, data):
+    cdef Py_ssize_t mlen = 0, dlen = 0
+    cdef uintptr_t mp, dp
+    assert object_as_buffer(data, <const void **> &dp, &dlen)==0, "cannot get buffer pointer for data %s" % type(data)
+    assert object_as_buffer(mask, <const void **> &mp, &mlen)==0, "cannot get buffer pointer for mask %s" % type(mask)
+    assert (<unsigned int> mlen)>=4, "mask buffer too small"
+    return do_hybi_mask(mp, dp, dlen)
+
+cdef object do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
+    cdef uintptr_t op
     #we skip the first 'align' bytes in the output buffer,
     #to ensure that its alignment is the same as the input data buffer
     cdef unsigned int align = (<uintptr_t> dp) & 0x3

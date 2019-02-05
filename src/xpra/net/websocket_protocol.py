@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import struct
 
 from xpra.net.websocket import encode_hybi_header, decode_hybi_header
@@ -30,7 +31,8 @@ OPCODES = {
 
 #default to legacy mode until we parse the remote caps:
 #(this can be removed in the future once all html5 clients have been updated)
-LEGACY_FRAME_PER_CHUNK = envbool("XPRA_LEGACY_FRAME_PER_CHUNK", None)
+LEGACY_FRAME_PER_CHUNK = envbool("XPRA_WEBSOCKET_LEGACY", None)
+MASK = envbool("XPRA_WEBSOCKET_MASK", False)
 
 
 class WebSocketProtocol(Protocol):
@@ -42,6 +44,7 @@ class WebSocketProtocol(Protocol):
         self.ws_data = b""
         self.ws_payload = []
         self.ws_payload_opcode = 0
+        self.ws_mask = MASK
         self._process_read = self.parse_ws_frame
         self.legacy_frame_per_chunk = LEGACY_FRAME_PER_CHUNK in (None, True)
         self.make_chunk_header = self.make_wschunk_header
@@ -85,7 +88,15 @@ class WebSocketProtocol(Protocol):
     def make_wsframe_header(self, packet_type, items):
         payload_len = sum(len(item) for item in items)
         log("make_wsframe_header(%s, %i items) %i bytes", packet_type, len(items), payload_len)
-        return encode_hybi_header(OPCODE_BINARY, payload_len)
+        header = encode_hybi_header(OPCODE_BINARY, payload_len, self.ws_mask)
+        if self.ws_mask:
+            from xpra.codecs.xor.cyxor import hybi_mask
+            mask = os.urandom(4)
+            #now mask all the items:
+            for i, item in enumerate(items):
+                items[i] = hybi_mask(mask, item)
+            return header+mask
+        return header
 
     def parse_ws_frame(self, buf):
         if self.ws_data:

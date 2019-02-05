@@ -421,8 +421,11 @@ class Protocol(object):
         #WebSocket header may be added here:
         frame_header = self.make_frame_header(packet_type, items)
         if frame_header:
-            if len(items[0])<PACKET_JOIN_SIZE:
-                items[0] = frame_header + items[0]
+            item0 = items[0]
+            if len(item0)<PACKET_JOIN_SIZE:
+                if not isinstance(item0, JOIN_TYPES):
+                    item0 = memoryview_to_bytes(item0)
+                items[0] = frame_header + item0
             else:
                 items.insert(0, frame_header)
         self.raw_write(items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
