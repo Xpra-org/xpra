@@ -257,7 +257,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "udp-control"   : self._process_udp_control,
                 })
         elif conn.socktype in ("ws", "wss"):
-            from xpra.net.websocket_protocol import WebSocketProtocol
+            from xpra.net.websockets.protocol import WebSocketProtocol
             protocol_class = WebSocketProtocol
         else:
             protocol_class = Protocol

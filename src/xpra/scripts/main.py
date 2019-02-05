@@ -1074,8 +1074,12 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             host = display_desc["host"]
             port = display_desc.get("port", 0)
             #do the websocket upgrade and switch to binary
-            from xpra.net.websocket import client_upgrade
-            client_upgrade(conn)
+            try:
+                from xpra.net.websockets.common import client_upgrade
+            except ImportError as e:
+                raise InitExit("cannot handle websocket connection: %s" % e)
+            else:
+                client_upgrade(conn)
         return conn
     raise InitException("unsupported display type: %s" % dtype)
 

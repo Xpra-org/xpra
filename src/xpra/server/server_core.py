@@ -455,7 +455,7 @@ class ServerCore(object):
         httplog("init_html_proxy(..) html=%s", self._html)
         if self._html is not False:
             try:
-                from xpra.server.websocket import WebSocketRequestHandler
+                from xpra.net.websockets.handler import WebSocketRequestHandler
                 assert WebSocketRequestHandler
                 self._html = True
             except ImportError as e:
@@ -1158,11 +1158,11 @@ class ServerCore(object):
     def start_http(self, socktype, conn, is_ssl, req_info, frominfo):
         httplog("start_http(%s, %s, %s, %s, %s) www dir=%s, headers dir=%s", socktype, conn, is_ssl, req_info, frominfo, self._www_dir, self._http_headers_dir)
         try:
-            from xpra.server.websocket import WebSocketRequestHandler
+            from xpra.net.websockets.handler import WebSocketRequestHandler
             sock = conn._socket
             sock.settimeout(self._ws_timeout)
             def new_websocket_client(wsh):
-                from xpra.net.websocket_protocol import WebSocketProtocol
+                from xpra.net.websockets.protocol import WebSocketProtocol
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 newsocktype = "ws%s" % ["","s"][int(is_ssl)]
                 self.make_protocol(newsocktype, conn, WebSocketProtocol)

@@ -6,7 +6,7 @@
 import os
 import struct
 
-from xpra.net.websocket import encode_hybi_header, decode_hybi_header
+from xpra.net.websockets.common import encode_hybi_header, decode_hybi_header
 from xpra.net.protocol import Protocol
 from xpra.util import first_time, envbool
 from xpra.os_util import memoryview_to_bytes
@@ -90,7 +90,7 @@ class WebSocketProtocol(Protocol):
         log("make_wsframe_header(%s, %i items) %i bytes", packet_type, len(items), payload_len)
         header = encode_hybi_header(OPCODE_BINARY, payload_len, self.ws_mask)
         if self.ws_mask:
-            from xpra.codecs.xor.cyxor import hybi_mask
+            from xpra.codecs.xor.cyxor import hybi_mask     #@UnresolvedImport
             mask = os.urandom(4)
             #now mask all the items:
             for i, item in enumerate(items):

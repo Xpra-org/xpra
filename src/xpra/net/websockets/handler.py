@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import envbool
-from xpra.net.websocket import make_websocket_accept_hash
+from xpra.net.websockets.common import make_websocket_accept_hash
 from xpra.server.http_handler import HTTPRequestHandler
 from xpra.log import Logger
 
