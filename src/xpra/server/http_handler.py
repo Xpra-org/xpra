@@ -81,6 +81,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 if matches:
                     path = matches[0]
                     break
+            if not os.path.exists(path) or True:
+                #better send something than a 404,
+                #use a transparent 1x1 image:
+                path = os.path.join(self.web_root, "icons", "empty.png")
         log("translate_path(%s)=%s", s, path)
         return path
 
@@ -187,6 +191,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             content = script(self)
             return content
         path = self.translate_path(self.path)
+        if not path:
+            self.send_error(404, "Path not found")
+            self.wfile.flush()
+            self.wfile.close()
+            return None
         if os.path.isdir(path):
             if not path.endswith('/'):
                 # redirect browser - doing basically what apache does
