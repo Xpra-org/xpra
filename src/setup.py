@@ -58,6 +58,7 @@ setup_options = {
                  "description"      : description,
                  "long_description" : long_description,
                  "data_files"       : data_files,
+                 "py_modules"       : modules,
                  }
 
 WIN32 = sys.platform.startswith("win") or sys.platform.startswith("msys")
@@ -2354,8 +2355,6 @@ if pam_ENABLED:
                 **pam_pkgconfig))
 
 
-if modules:
-    setup_options["py_modules"] = modules
 if ext_modules:
     from Cython.Build import cythonize
     #this causes Cython to fall over itself:
