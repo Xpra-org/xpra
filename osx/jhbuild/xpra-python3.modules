@@ -308,19 +308,6 @@
 	</distutils>
 
 
-	<distutils id="python3-websocket-client" python3="1">
-		<branch repo="files.pythonhosted.org"
-			module="/packages/35/d4/14e446a82bc9172d088ebd81c0b02c5ca8481bfeecb13c9ef07998f9249b/websocket_client-0.54.0.tar.gz"
-			hash="sha256:e51562c91ddb8148e791f0155fdb01325d99bb52c4cdbb291aee7a3563fd0849"
-			version="0.54.0"/>
-		<dependencies>
-			<dep package="python3"/>
-		</dependencies>
-		<after>
-			<dep package="python3"/>
-		</after>
-	</distutils>
-
 	<distutils id="python3-nose" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/source/n/nose/nose-1.3.7.tar.gz"
@@ -749,7 +736,6 @@
 		  <dep package="python3-cython"/>
 		  <dep package="python3-numpy"/>
 		  <dep package="python3-pycups"/>
-		  <dep package="python3-websocket-client"/>
 		  <dep package="python3-bcrypt"/>
 		  <dep package="python3-paramiko"/>
 		  <dep package="python3-nose"/>

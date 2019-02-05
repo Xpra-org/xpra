@@ -316,16 +316,10 @@ Recommends:			cups-pdf
 Recommends:			python2-cups
 Recommends:			python2-uinput
 Recommends:			python2-setproctitle
-%if 0%{?run_tests}
-BuildRequires:      python2-websocket-client
-%endif
 %endif
 %if 0%{?el7}
 Requires:			python-cups
 Requires:			python-setproctitle
-%if 0%{?run_tests}
-BuildRequires:      python-websocket-client
-%endif
 %endif
 BuildRequires:		pam-devel
 BuildRequires:		gcc
@@ -438,9 +432,6 @@ Recommends:			cups-pdf
 Recommends:			python3-cups
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
-%if 0%{?run_tests}
-BuildRequires:      python3-websocket-client
-%endif
 %if %{with_cuda}
 Recommends:			python3-pynvml
 Recommends:			python3-pycuda

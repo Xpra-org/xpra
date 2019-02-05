@@ -294,19 +294,6 @@
 	</distutils>
 
 
-	<distutils id="python-websocket-client">
-		<branch repo="files.pythonhosted.org"
-			module="/packages/35/d4/14e446a82bc9172d088ebd81c0b02c5ca8481bfeecb13c9ef07998f9249b/websocket_client-0.54.0.tar.gz"
-			hash="sha256:e51562c91ddb8148e791f0155fdb01325d99bb52c4cdbb291aee7a3563fd0849"
-			version="0.54.0"/>
-		<dependencies>
-			<dep package="python"/>
-		</dependencies>
-		<after>
-			<dep package="python"/>
-		</after>
-	</distutils>
-
 	<distutils id="python-nose">
 		<branch repo="pypi.python.org"
 			module="/packages/source/n/nose/nose-1.3.7.tar.gz"
@@ -734,7 +721,6 @@
 		  <dep package="python-cython"/>
 		  <dep package="python-numpy"/>
 		  <dep package="python-pycups"/>
-		  <dep package="python-websocket-client"/>
 		  <dep package="python-bcrypt"/>
 		  <dep package="python-paramiko"/>
 		  <dep package="python-nose"/>
