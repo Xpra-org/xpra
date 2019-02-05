@@ -1001,6 +1001,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"steal"						: this.steal,
 		"client_type"				: "HTML5",
 		"encoding.generic" 			: true,
+		"websocket.multi-packet"    : true,
 		"username" 					: this.username,
 		"uuid"						: this.uuid,
 		"argv" 						: [window.location.href],

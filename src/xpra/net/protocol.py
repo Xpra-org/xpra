@@ -146,6 +146,8 @@ class Protocol(object):
             self._process_packet_cb =  fj.process_packet_cb
         else:
             self._process_packet_cb = process_packet_cb
+        self.make_chunk_header = self.make_xpra_header
+        self.make_frame_header = self.noframe_header
         self._write_queue = Queue(1)
         self._read_queue = Queue(20)
         self._process_read = self.read_queue_put
@@ -191,6 +193,7 @@ class Protocol(object):
                     "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
                     "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
                     "compression_level", "encoder", "compressor")
+
     def save_state(self):
         state = {}
         for x in Protocol.STATE_FIELDS:
@@ -405,7 +408,9 @@ class Protocol(object):
                 log("sending %s bytes without header", payload_size)
                 items.append(data)
             else:
-                header = pack_header(proto_flags, level, index, payload_size)
+                #the xpra packet header:
+                #(WebSocketProtocol may also add a websocket header too)
+                header = self.make_chunk_header(packet_type, proto_flags, level, index, actual_size)
                 if actual_size<PACKET_JOIN_SIZE:
                     if not isinstance(data, JOIN_TYPES):
                         data = memoryview_to_bytes(data)
@@ -413,6 +418,7 @@ class Protocol(object):
                 else:
                     items.append(header)
                     items.append(data)
+        #WebSocket header may be added here:
         frame_header = self.make_frame_header(packet_type, items)
         if frame_header:
             if len(items[0])<PACKET_JOIN_SIZE:
@@ -421,8 +427,10 @@ class Protocol(object):
                 items.insert(0, frame_header)
         self.raw_write(items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
 
-    def make_frame_header(self, _packet_type, _items):
-        #overriden by websockets
+    def make_xpra_header(self, _packet_type, proto_flags, level, index, payload_size):
+        return pack_header(proto_flags, level, index, payload_size)
+
+    def noframe_header(self, _packet_type, _items):
         return None
 
 

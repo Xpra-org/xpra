@@ -381,6 +381,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "version"               : XPRA_VERSION,
                 "encoding.generic"      : True,
                 "namespace"             : True,
+                "websocket.multi-packet": True,
                 "hostname"              : socket.gethostname(),
                 "uuid"                  : self.uuid,
                 "username"              : self.username,

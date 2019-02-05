@@ -9,6 +9,9 @@ from base64 import b64encode
 
 from xpra.os_util import strtobytes, bytestostr, monotonic_time
 from xpra.codecs.xor.cyxor import hybi_unmask
+from xpra.log import Logger
+
+log = Logger("websocket")
 
 
 def make_websocket_accept_hash(key):
@@ -34,6 +37,7 @@ def decode_hybi_header(buf):
     blen = len(buf)
     hlen = 2
     if blen < hlen:
+        #log("decode_hybi_header() buffer too small: %i", blen)
         return None
 
     b1, b2 = struct.unpack(">BB", buf[:2])
@@ -43,28 +47,34 @@ def decode_hybi_header(buf):
     if masked:
         hlen += 4
         if blen < hlen:
+            #log("decode_hybi_header() buffer too small for mask: %i", blen)
             return None
 
     payload_len = b2 & 0x7f
     if payload_len == 126:
         hlen += 2
         if blen < hlen:
+            #log("decode_hybi_header() buffer too small for 126 payload: %i", blen)
             return None
         payload_len = struct.unpack('>H', buf[2:4])[0]
     elif payload_len == 127:
         hlen += 8
         if blen < hlen:
+            #log("decode_hybi_header() buffer too small for 127 payload: %i", blen)
             return None
         payload_len = struct.unpack('>Q', buf[2:10])[0]
 
+    #log("decode_hybi_header() decoded header '%s': hlen=%i, payload_len=%i, buffer len=%i", binascii.hexlify(buf[:hlen]), hlen, payload_len, blen)
     length = hlen + payload_len
     if blen < length:
+        #log("decode_hybi_header() buffer too small for payload: %i (needed %i)", blen, length)
         return None
 
     if masked:
         payload = hybi_unmask(buf, hlen-4, payload_len)
     else:
         payload = buf[hlen:length]
+    #log("decode_hybi_header() payload_len=%i, hlen=%i, length=%i, fin=%s", payload_len, hlen, length, fin)
     return opcode, payload, length, fin
 
 
@@ -86,6 +96,7 @@ def client_upgrade(conn):
     lines.append(b"")
     lines.append(b"")
     http_request = b"\r\n".join(lines)
+    log("client_upgrade(%s) sending http headers: %s", conn, headers)
     now = monotonic_time()
     MAX_WRITE_TIME = 5
     while http_request and monotonic_time()-now<MAX_WRITE_TIME:
@@ -97,7 +108,7 @@ def client_upgrade(conn):
     response = b""
     while response.find("Sec-WebSocket-Protocol")<0 and monotonic_time()-now<MAX_READ_TIME:
         response += conn.read(4096)
-    #parse headers:
+    #parse response:
     head = response.split("\r\n\r\n", 1)[0]
     lines = head.split("\r\n")
     headers = {}
@@ -105,6 +116,7 @@ def client_upgrade(conn):
         parts = line.split(b": ", 1)
         if len(parts)==2:
             headers[parts[0]] = parts[1]
+    log("client_upgrade(%s) got response headers=%s", conn, headers)
     if not headers:
         raise Exception("no http headers found in response")
     upgrade = headers.get("Upgrade", b"")
@@ -119,3 +131,4 @@ def client_upgrade(conn):
     expected_key = make_websocket_accept_hash(key)
     if accept_key!=expected_key:
         raise Exception("websocket accept key is invalid")
+    log("client_upgrade(%s) done", conn)

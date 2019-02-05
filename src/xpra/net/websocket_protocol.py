@@ -7,7 +7,7 @@ import struct
 
 from xpra.net.websocket import encode_hybi_header, decode_hybi_header
 from xpra.net.protocol import Protocol
-from xpra.util import first_time
+from xpra.util import first_time, envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
 
@@ -28,43 +28,116 @@ OPCODES = {
     OPCODE_PONG     : "pong",
     }
 
+#default to legacy mode until we parse the remote caps:
+#(this can be removed in the future once all html5 clients have been updated)
+LEGACY_FRAME_PER_CHUNK = envbool("XPRA_LEGACY_FRAME_PER_CHUNK", None)
+
 
 class WebSocketProtocol(Protocol):
+
+    STATE_FIELDS = tuple(list(Protocol.STATE_FIELDS)+["legacy_frame_per_chunk"])
 
     def __init__(self, *args):
         Protocol.__init__(self, *args)
         self.ws_data = b""
+        self.ws_payload = []
+        self.ws_payload_opcode = 0
         self._process_read = self.parse_ws_frame
+        self.legacy_frame_per_chunk = LEGACY_FRAME_PER_CHUNK in (None, True)
+        self.make_chunk_header = self.make_wschunk_header
 
-    def make_frame_header(self, packet_type, items):
+    def close(self):
+        Protocol.close(self)
+        self.ws_data = b""
+        self.ws_payload = []
+
+
+    def get_info(self, alias_info=True):
+        info = Protocol.get_info(self, alias_info)
+        info["legacy-frames"] = self.legacy_frame_per_chunk
+        return info
+
+
+    def parse_remote_caps(self, caps):
+        Protocol.parse_remote_caps(self, caps)
+        if LEGACY_FRAME_PER_CHUNK is None:
+            may_have_bug = caps.strget("client_type", "")=="HTML5"
+            self.legacy_frame_per_chunk = not caps.boolget("websocket.multi-packet", not may_have_bug)
+            log("parse_remote_caps() may_have_bug=%s, legacy_frame_per_chunk=%s", may_have_bug, self.legacy_frame_per_chunk)
+        if self.legacy_frame_per_chunk:
+            log.warn("Warning: using slower legacy websocket frames")
+            log.warn(" the other end is probably out of date")
+            #websocker header for every chunk:
+            self.make_chunk_header = self.make_wschunk_header
+            #no frame header:
+            self.make_frame_header = self.noframe_header
+        else:
+            #just the regular xpra header for each chunk:
+            self.make_chunk_header = self.make_xpra_header
+            #and one websocket header for all the chunks:
+            self.make_frame_header = self.make_wsframe_header
+
+    def make_wschunk_header(self, packet_type, proto_flags, level, index, payload_size):
+        header = Protocol.make_xpra_header(self, packet_type, proto_flags, level, index, payload_size)
+        log("make_wschunk_header(%s)", (packet_type, proto_flags, level, index, payload_size))
+        return encode_hybi_header(OPCODE_BINARY, payload_size+len(header))+header
+
+    def make_wsframe_header(self, packet_type, items):
         payload_len = sum(len(item) for item in items)
-        log("make_frame_header(%s, %i items) %i bytes", packet_type, len(items), payload_len)
+        log("make_wsframe_header(%s, %i items) %i bytes", packet_type, len(items), payload_len)
         return encode_hybi_header(OPCODE_BINARY, payload_len)
 
     def parse_ws_frame(self, buf):
-        log("parse_ws_frame(%i bytes)", len(buf))
-        self.ws_data += buf
-        while self.ws_data:
-            parsed = decode_hybi_header(self.ws_data)
+        if self.ws_data:
+            ws_data = self.ws_data+buf
+            self.ws_data = b""
+        else:
+            ws_data = buf
+        log("parse_ws_frame(%i bytes) total buffer is %i bytes", len(buf), len(ws_data))
+        while ws_data and not self._closed:
+            parsed = decode_hybi_header(ws_data)
             if parsed is None:
-                log("parse_ws_header(%i bytes) not enough data", len(self.ws_data), parsed is not None)
-                #not enough data to get a full websocket frame
+                log("parse_ws_frame(%i bytes) not enough data", len(ws_data))
+                #not enough data to get a full websocket frame,
+                #save it for later:
+                self.ws_data = ws_data
                 return
             opcode, payload, processed, fin = parsed
-            log("parse_ws_header(%i bytes) payload=%i bytes, processed=%i, remaining=%i, opcode=%s, fin=%s", len(self.ws_data), len(payload), processed, len(self.ws_data), OPCODES.get(opcode, opcode), fin)
-            self.ws_data = self.ws_data[processed:]
+            ws_data = ws_data[processed:]
+            log("parse_ws_frame(%i bytes) payload=%i bytes, processed=%i, remaining=%i, opcode=%s, fin=%s",
+                len(buf), len(payload), processed, len(ws_data), OPCODES.get(opcode, opcode), fin)
+            if opcode==OPCODE_CONTINUE:
+                assert self.ws_payload_opcode and self.ws_payload, "continuation frame does not follow a partial frame"
+                self.ws_payload.append(payload)
+                if not fin:
+                    #wait for more
+                    continue
+                #join all the frames and process the payload:
+                full_payload = b"".join(memoryview_to_bytes(v) for v in self.ws_payload)
+                self.ws_payload = []
+                opcode = self.ws_payload_opcode
+                self.ws_payload_opcode = 0
+            else:
+                assert not self.ws_payload and not self.ws_payload_opcode, "expected a continuation frame not %s" % OPCODES.get(opcode, opcode)
+                full_payload = payload
+                if not fin:
+                    assert opcode in (OPCODE_BINARY, OPCODE_TEXT), "cannot handle fragmented '%s' frames" % OPCODES.get(opcode, opcode)
+                    #fragmented, keep this payload for later
+                    self.ws_payload_opcode = opcode
+                    self.ws_payload.append(payload)
+                    continue
             if opcode==OPCODE_BINARY:
-                self._read_queue_put(payload)
+                self._read_queue_put(full_payload)
             elif opcode==OPCODE_TEXT:
                 if first_time("ws-text-frame-from-%s" % self._conn):
                     log.warn("Warning: handling text websocket frame as binary")
-                self._read_queue_put(payload)
+                self._read_queue_put(full_payload)
             elif opcode==OPCODE_CLOSE:
-                self._process_ws_close(payload)
+                self._process_ws_close(full_payload)
             elif opcode==OPCODE_PING:
-                self._process_ws_ping(payload)
+                self._process_ws_ping(full_payload)
             elif opcode==OPCODE_PONG:
-                self._process_ws_pong(payload)
+                self._process_ws_pong(full_payload)
             else:
                 log.warn("Warning unhandled websocket opcode '%s'", OPCODES.get(opcode, "%#x" % opcode))
                 log("payload=%r", payload)

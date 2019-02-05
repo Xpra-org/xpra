@@ -8,6 +8,7 @@ import traceback
 import logging
 
 from xpra.scripts.config import parse_bool
+from xpra.util import csv
 from xpra.os_util import monotonic_time, strtobytes
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
@@ -44,11 +45,11 @@ class RemoteLogging(StubClientMixin):
         if self.client_supports_remote_logging and c.boolget("remote-logging"):
             #check for debug:
             from xpra.log import is_debug_enabled
-            for x in ("network", "crypto", "udp"):
-                if is_debug_enabled(x):
-                    log.warn("Warning: cannot enable remote logging")
-                    log.warn(" because '%s' debug logging is enabled", x)
-                    return True
+            conflict = tuple(v for v in ("network", "crypto", "udp", "websocket") if is_debug_enabled(v))
+            if conflict:
+                log.warn("Warning: cannot enable remote logging")
+                log.warn(" because debug logging is enabled for: %s", csv(conflict))
+                return True
             log.info("enabled remote logging")
             if not self.log_both:
                 log.info(" see server log file for further output")
