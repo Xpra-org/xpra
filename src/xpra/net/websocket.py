@@ -7,7 +7,7 @@ import struct
 from hashlib import sha1
 from base64 import b64encode
 
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr, monotonic_time
 from xpra.codecs.xor.cyxor import hybi_unmask
 
 
@@ -66,3 +66,56 @@ def decode_hybi_header(buf):
     else:
         payload = buf[hlen:length]
     return opcode, payload, length, fin
+
+
+def client_upgrade(conn):
+    lines = [b"GET / HTTP/1.1"]
+    import uuid
+    import base64
+    key = base64.b64encode(uuid.uuid4().bytes)
+    headers = {
+        b"Host"                     : "localhost:10000",
+        b"Connection"               : "Upgrade",
+        b"Upgrade"                  : "websocket",
+        b"Sec-WebSocket-Version"    : "13",
+        b"Sec-WebSocket-Protocol"   : "binary",
+        b"Sec-WebSocket-Key"        : key,
+        }
+    for k,v in headers.items():
+        lines.append(b"%s: %s" % (k, v))
+    lines.append(b"")
+    lines.append(b"")
+    http_request = b"\r\n".join(lines)
+    now = monotonic_time()
+    MAX_WRITE_TIME = 5
+    while http_request and monotonic_time()-now<MAX_WRITE_TIME:
+        w = conn.write(http_request)
+        http_request = http_request[w:]
+
+    now = monotonic_time()
+    MAX_READ_TIME = 5
+    response = b""
+    while response.find("Sec-WebSocket-Protocol")<0 and monotonic_time()-now<MAX_READ_TIME:
+        response += conn.read(4096)
+    #parse headers:
+    head = response.split("\r\n\r\n", 1)[0]
+    lines = head.split("\r\n")
+    headers = {}
+    for line in lines:
+        parts = line.split(b": ", 1)
+        if len(parts)==2:
+            headers[parts[0]] = parts[1]
+    if not headers:
+        raise Exception("no http headers found in response")
+    upgrade = headers.get("Upgrade", b"")
+    if upgrade!=b"websocket":
+        raise Exception("invalid http upgrade: '%s'" % upgrade)
+    protocol = headers.get("Sec-WebSocket-Protocol", b"")
+    if protocol!=b"binary":
+        raise Exception("invalid websocket protocol: '%s'" % protocol)
+    accept_key = headers.get("Sec-WebSocket-Accept", b"")
+    if not accept_key:
+        raise Exception("websocket accept key is missing")
+    expected_key = make_websocket_accept_hash(key)
+    if accept_key!=expected_key:
+        raise Exception("websocket accept key is invalid")

@@ -829,7 +829,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
         return desc
-    elif protocol in ("tcp", "ssl", "udp"):
+    elif protocol in ("tcp", "ssl", "udp", "ws", "wss"):
         desc.update({
                      "type"     : protocol,
                      })
@@ -853,27 +853,6 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                 "vsock"         : (cid, iport),
                 })
         opts.display = display_name
-        return desc
-    elif protocol in ("ws", "wss"):
-        try:
-            import websocket
-            assert websocket
-        except ImportError as e:
-            raise InitException("the websocket client module cannot be loaded: %s" % e)
-        host = afterproto
-        if host.find("?")>=0:
-            host, _ = host.split("?", 1)
-        if host.find("/")>=0:
-            host, extra = host.split("/", 1)
-        else:
-            extra = ""
-        username, password, host, port = parse_host_string(host)
-        parse_remote_display(extra)
-        desc.update({
-                "type"          : protocol,     #"ws" or "wss"
-                "host"          : host,
-                "port"          : port,
-                })
         return desc
     elif WIN32 or display_name.startswith("named-pipe:"):
         if afterproto.find("@")>=0:
@@ -1094,8 +1073,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         if dtype in ("ws", "wss"):
             host = display_desc["host"]
             port = display_desc.get("port", 0)
-            from xpra.net.websocket_connection import websocket_client_connection
-            return websocket_client_connection(host, port, conn, dtype)
+            #do the websocket upgrade and switch to binary
+            from xpra.net.websocket import client_upgrade
+            client_upgrade(conn)
         return conn
     raise InitException("unsupported display type: %s" % dtype)
 

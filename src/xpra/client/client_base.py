@@ -252,15 +252,17 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         netlog("setup_connection(%s) timeout=%s, socktype=%s", conn, conn.timeout, conn.socktype)
         if conn.socktype=="udp":
             from xpra.net.udp_protocol import UDPClientProtocol
-            self._protocol = UDPClientProtocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
-            #use a random uuid:
-            import random
-            self._protocol.uuid = random.randint(0, 2**64-1)
+            protocol_class = UDPClientProtocol
             self.set_packet_handlers(self._packet_handlers, {
                 "udp-control"   : self._process_udp_control,
                 })
+        elif conn.socktype in ("ws", "wss"):
+            from xpra.net.websocket_protocol import WebSocketProtocol
+            protocol_class = WebSocketProtocol
         else:
-            self._protocol = Protocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
+            protocol_class = Protocol
+
+        self._protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         for x in (b"keymap-changed", b"server-settings", b"logging", b"input-devices"):
             self._protocol.large_packets.append(x)
         self._protocol.set_compression_level(self.compression_level)

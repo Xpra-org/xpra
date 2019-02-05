@@ -119,13 +119,13 @@ class UDPProtocol(Protocol):
         "udp-control" packets are used to synchronize both ends.
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         Protocol.__init__(self, *args)
         self.mtu = 0
         self.last_sequence = -1     #the most recent packet sequence we processed in full
         self.highest_sequence = -1
         self.jitter = 20            #20ms
-        self.uuid = 0
+        self.uuid = kwargs.get("uuid", 0)
         self.fail_cb = {}
         self.resend_cache = {}
         self.pending_packets = {}
@@ -506,6 +506,9 @@ class UDPServerProtocol(UDPProtocol):
         pass
 
 class UDPClientProtocol(UDPProtocol):
+
+    def __init__(self, *args, **kwargs):
+        UDPProtocol.__init__(self, *args, uuid = random.randint(0, 2**64-1))
 
     def con_write(self, data, fail_cb):
         """ After successfully writing some data, update the mtu value """
