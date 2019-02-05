@@ -577,6 +577,19 @@ $(document).ready(function() {
 	catch (e) {
 		//ignore
 	}
+	function submit_if_enter(e) {
+	    if (!e) {
+	    	var e = window.event;
+	    }
+	    if (e.keyCode == 13) {
+		    e.preventDefault();
+		    doConnect();
+	    }
+	}
+	var submit_text_fields = ["server", "port", "username", "password"];
+	for (var i = 0; i < submit_text_fields.length; i++) {
+		document.getElementById(submit_text_fields[i]).addEventListener("keydown", submit_if_enter);
+	}
 });
 
 </script>
