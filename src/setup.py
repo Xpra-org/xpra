@@ -184,6 +184,7 @@ sound_ENABLED           = DEFAULT
 printing_ENABLED        = DEFAULT
 crypto_ENABLED          = DEFAULT
 mdns_ENABLED            = DEFAULT
+websockets_ENABLED      = DEFAULT
 
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
@@ -1779,6 +1780,7 @@ if modules_ENABLED:
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
+toggle_packages(websockets_ENABLED, "xpra.net.websockets")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")
 toggle_packages(rfb_ENABLED, "xpra.server.rfb")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
