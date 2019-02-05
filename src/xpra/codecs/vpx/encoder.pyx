@@ -210,6 +210,14 @@ if ENABLE_VP9_YUV444:
         log("encoder abi is too low to enable YUV444P: %s", VPX_ENCODER_ABI_VERSION)
 COLORSPACES["vp9"] = vp9_cs
 
+VP9_RANGE = 3
+#as of 1.8:
+#VPX_ENCODER_ABI_VERSION=14+VPX_CODEC_ABI_VERSION
+#VPX_CODEC_ABI_VERSION=4+VPX_IMAGE_ABI_VERSION
+#VPX_IMAGE_ABI_VERSION=5
+if VPX_ENCODER_ABI_VERSION>=14+4+5:
+    VP9_RANGE = 4
+
 
 def init_module():
     log("vpx.encoder.init_module() info=%s", get_info())
@@ -668,7 +676,7 @@ cdef class Encoder:
         cdef int range = 12
         if self.encoding=="vp9":
             minv = 5
-            range = 3
+            range = VP9_RANGE
         #note: we don't use the full range since the percentages are mapped to -20% to +120%
         cdef int value = (speed-20)*3*range//200
         value = minv + MIN(range, MAX(0, value))
