@@ -1372,7 +1372,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 opts.opengl = "probe-failed:%s" % e
             else:
                 r = pollwait(proc)
-                log("OpenGL probe command returned %s", r)
+                log("OpenGL probe command returned %s for command=%s", r, cmd)
                 if r==0:
                     opts.opengl = "probe-success"
                 elif r==1:
