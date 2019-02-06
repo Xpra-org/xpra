@@ -217,7 +217,7 @@ def run_sound(mode, error_cb, options, args):
 
 def _add_debug_args(command):
     from xpra.log import debug_enabled_categories
-    debug = SUBPROCESS_DEBUG[:]
+    debug = list(SUBPROCESS_DEBUG)
     for f in ("sound", "gstreamer"):
         if (DEBUG_SOUND or f in debug_enabled_categories) and (f not in debug):
             debug.append(f)
