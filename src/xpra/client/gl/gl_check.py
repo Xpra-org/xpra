@@ -255,6 +255,11 @@ def check_PyOpenGL_support(force_enable):
             glTexImage2D, \
             glMultiTexCoord2i, \
             glVertex2i, glEnd)
+        #check for framebuffer functions we need:
+        from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
+            GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
+        check_functions(GL_FRAMEBUFFER, \
+            GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D)
 
         glEnablei = None
         try:
@@ -266,12 +271,6 @@ def check_PyOpenGL_support(force_enable):
             global GL_ALPHA_SUPPORTED
             GL_ALPHA_SUPPORTED = False
         props["transparency"] = GL_ALPHA_SUPPORTED
-
-        #check for framebuffer functions we need:
-        from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
-            GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
-        check_functions(GL_FRAMEBUFFER, \
-            GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D)
 
         for ext in required_extensions:
             if ext not in extensions:
