@@ -272,9 +272,9 @@ ssl_cert = None
 ssl_key = None
 minifier = None
 if WIN32:
-    share_xpra = ""
+    share_xpra = os.path.join(os.environ.get("MINGW_PREFIX"), "share", "xpra")
 else:
-    share_xpra = "share/xpra/"
+    share_xpra = "share/xpra"
 filtered_args = []
 for arg in sys.argv:
     matched = False
@@ -1450,7 +1450,7 @@ if WIN32:
 
     if data_ENABLED:
         add_data_files(share_xpra,              ["win32/website.url"])
-        add_data_files('%sicons' % share_xpra,  glob.glob('icons\\*.ico'))
+        add_data_files('%s/icons' % share_xpra,  glob.glob('icons\\*.ico'))
 
     if webcam_ENABLED:
         add_data_files(share_xpra,              ["win32\\DirectShow.tlb"])
@@ -1562,7 +1562,7 @@ else:
         def run(self):
             print("install_data_override: install_dir=%s" % self.install_dir)
             if html5_ENABLED:
-                install_html5(os.path.join(self.install_dir, "%swww" % share_xpra))
+                install_html5(os.path.join(self.install_dir, "%s/www" % share_xpra))
             install_data.run(self)
 
             root_prefix = self.install_dir.rstrip("/")
@@ -1742,10 +1742,10 @@ if scripts_ENABLED:
 if data_ENABLED:
     add_data_files(share_xpra,                      ["README", "COPYING"])
     add_data_files(share_xpra,                      ["bell.wav"])
-    add_data_files("%shttp-headers" % share_xpra,   glob.glob("http-headers/*"))
-    add_data_files("%sicons" % share_xpra,          glob.glob("icons/*png"))
-    add_data_files("%scontent-type" % share_xpra,   glob.glob("content-type/*"))
-    add_data_files("%scontent-categories" % share_xpra, glob.glob("content-categories/*"))
+    add_data_files("%s/http-headers" % share_xpra,   glob.glob("http-headers/*"))
+    add_data_files("%s/icons" % share_xpra,          glob.glob("icons/*png"))
+    add_data_files("%s/content-type" % share_xpra,   glob.glob("content-type/*"))
+    add_data_files("%s/content-categories" % share_xpra, glob.glob("content-categories/*"))
 
 
 if html5_ENABLED:
@@ -2192,7 +2192,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
             print(stdout or "")
             print(stderr or "")
             sys.exit(1)
-    CUDA_BIN = "%scuda" % share_xpra
+    CUDA_BIN = "%s/cuda" % share_xpra
     if WIN32:
         CUDA_BIN = "CUDA"
     add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
