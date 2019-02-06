@@ -20,6 +20,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.net import compression
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper
+from xpra.net.protocol_classes import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol import Protocol
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -248,9 +249,11 @@ class ProxyInstanceProcess(Process):
         #setup protocol wrappers:
         self.server_packets = Queue(PROXY_QUEUE_SIZE)
         self.client_packets = Queue(PROXY_QUEUE_SIZE)
-        self.client_protocol = Protocol(self, self.client_conn, self.process_client_packet, self.get_client_packet)
+        client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
+        server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
+        self.client_protocol = client_protocol_class(self, self.client_conn, self.process_client_packet, self.get_client_packet)
         self.client_protocol.restore_state(self.client_state)
-        self.server_protocol = Protocol(self, self.server_conn, self.process_server_packet, self.get_server_packet)
+        self.server_protocol = server_protocol_class(self, self.server_conn, self.process_server_packet, self.get_server_packet)
         #server connection tweaks:
         for x in (b"input-devices", b"draw", b"window-icon", b"keymap-changed", b"server-settings"):
             self.server_protocol.large_packets.append(x)

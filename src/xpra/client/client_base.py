@@ -22,6 +22,7 @@ bandwidthlog = Logger("bandwidth")
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
+from xpra.net.protocol_classes import get_client_protocol_class
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_salt, gendigest
@@ -251,17 +252,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def setup_connection(self, conn):
         netlog("setup_connection(%s) timeout=%s, socktype=%s", conn, conn.timeout, conn.socktype)
         if conn.socktype=="udp":
-            from xpra.net.udp_protocol import UDPClientProtocol
-            protocol_class = UDPClientProtocol
             self.set_packet_handlers(self._packet_handlers, {
                 "udp-control"   : self._process_udp_control,
                 })
-        elif conn.socktype in ("ws", "wss"):
-            from xpra.net.websockets.protocol import WebSocketProtocol
-            protocol_class = WebSocketProtocol
-        else:
-            protocol_class = Protocol
-
+        protocol_class = get_client_protocol_class(conn.socktype)
         self._protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         for x in (b"keymap-changed", b"server-settings", b"logging", b"input-devices"):
             self._protocol.large_packets.append(x)
