@@ -10,11 +10,6 @@ import signal
 from threading import Timer, RLock
 from time import sleep
 
-from xpra.log import Logger
-log = Logger("proxy")
-enclog = Logger("encoding")
-
-
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
 from xpra.net import compression
@@ -25,9 +20,17 @@ from xpra.net.protocol import Protocol
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, POSIX, osexpand, bytestostr, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid, strtobytes
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, first_time, AtomicInteger, \
-    LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
+from xpra.os_util import (
+    SIGNAMES, POSIX,
+    Queue, osexpand, monotonic_time, bytestostr, strtobytes,
+    getuid, getgid, get_username_for_uid, setuidgid,
+    ) 
+from xpra.util import (
+    flatten_dict, typedict, updict,
+    repr_ellipsized, envint, envbool,
+    csv, first_time, AtomicInteger, \
+    LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN,
+    )
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_number, parse_bool
@@ -36,12 +39,10 @@ from xpra.server.socket_util import create_unix_domain_socket
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from multiprocessing import Process
+from xpra.log import Logger
 
-try:
-    from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-    xor = xor_str
-except:
-    pass
+log = Logger("proxy")
+enclog = Logger("encoding")
 
 
 PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 10)
