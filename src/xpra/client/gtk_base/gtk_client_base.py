@@ -1,20 +1,53 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import weakref
+
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_pango, is_gtk3
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
+from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
+from xpra.util import (
+    updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time,
+    DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
+    )
+from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX
+from xpra.simple_stats import std_unit
+from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
+from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.gtk_common.cursor_names import cursor_types
+from xpra.gtk_common.gtk_util import (
+    get_gtk_version_info, scaled_image, get_default_cursor, color_parse, gtk_main,
+    new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default,
+    pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data,
+    get_default_root_window, get_root_size, get_xwindow, image_new_from_stock,
+    get_screen_sizes, GDKWindow,
+    CLASS_INPUT_ONLY,
+    INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO,
+    BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING,
+    BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK,
+    ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK,
+    )
+from xpra.gtk_common.gobject_util import no_arg_signal
+from xpra.client.ui_client_base import UIXpraClient
+from xpra.client.gobject_client_base import GObjectXpraClient
+from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
+from xpra.client.mixins.window_manager import WindowClient
+from xpra.platform.paths import get_icon_filename
+from xpra.platform.gui import (
+    get_window_frame_sizes, get_window_frame_size,
+    system_bell, get_wm_name, get_fixed_cursor_size, get_menu_support_function,
+    )
+from xpra.log import Logger
+
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
 
-
-from xpra.log import Logger
 log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
@@ -23,31 +56,6 @@ filelog = Logger("gtk", "client", "file")
 clipboardlog = Logger("gtk", "client", "clipboard")
 notifylog = Logger("gtk", "notify")
 grablog = Logger("client", "grab")
-
-from xpra.gtk_common.quit import (gtk_main_quit_really,
-                           gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time, \
-    DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID
-from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX
-from xpra.simple_stats import std_unit
-from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
-from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.gtk_common.cursor_names import cursor_types
-from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, color_parse, gtk_main, \
-            new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
-            pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
-            get_default_root_window, get_root_size, get_xwindow, image_new_from_stock, \
-            get_screen_sizes, GDKWindow, \
-            CLASS_INPUT_ONLY, \
-            INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING, \
-            BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK
-from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.client.ui_client_base import UIXpraClient
-from xpra.client.gobject_client_base import GObjectXpraClient
-from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
-from xpra.client.mixins.window_manager import WindowClient
-from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import get_window_frame_sizes, get_window_frame_size, system_bell, get_fixed_cursor_size, get_menu_support_function, get_wm_name
 
 missing_cursor_names = set()
 
