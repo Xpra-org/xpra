@@ -271,10 +271,7 @@ rpath = None
 ssl_cert = None
 ssl_key = None
 minifier = None
-if WIN32:
-    share_xpra = os.path.join(os.environ.get("MINGW_PREFIX"), "share", "xpra")
-else:
-    share_xpra = "share/xpra"
+share_xpra = None
 filtered_args = []
 for arg in sys.argv:
     matched = False
@@ -351,6 +348,13 @@ if "clean" not in sys.argv:
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
 
+if share_xpra is None:
+    if install:
+        share_xpra = os.path.join(install, "share", "xpra")
+    elif WIN32:
+        share_xpra = os.path.join(os.environ.get("MINGW_PREFIX"), "share", "xpra")
+    else:
+        share_xpra = "share/xpra"
 
 #*******************************************************************************
 # default sets:
