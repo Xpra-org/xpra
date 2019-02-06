@@ -23,6 +23,7 @@ def get_x11_property(atom_name):
         from xpra.x11.bindings.posix_display_source import X11DisplayContext    #@UnresolvedImport
         from xpra.x11.bindings.window_bindings import X11WindowBindings
     except ImportError as e:
+        log("get_x11_property(%s)", atom_name, exc_info=True)
         log.error("Error: unable to query X11 property '%s':", atom_name)
         log.error(" %s", e)
         return b""
