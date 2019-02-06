@@ -1,7 +1,7 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,7 +39,7 @@ $PACMAN --noconfirm -S ${XPKG}gst-python
 $PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi
 #python libraries and packaging tools:
 $PACMAN --noconfirm -S ${XPKG}python2-enum34
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 PyOpenGL; do
 	$PACMAN --noconfirm -S ${XPKG}python2-${x}
 	$PACMAN --noconfirm -S ${XPKG}python3-${x}
 done
@@ -56,15 +56,6 @@ done
 #use the last version to support python2 (not the broken one in mingw):
 easy_install-2.7 -U -Z zeroconf==0.19.1
 $PACMAN --noconfirm -S ${XPKG}python3-zeroconf
-
-#pyopengl problems:
-#use 3.1.1a1 as there are bugs in later versions on win32:
-easy_install-2.7 -U -Z PyOpenGL==3.1.1a1
-easy_install-2.7 -U -Z PyOpenGL_accelerate==3.1.1a1
-#get the latest:
-easy_install-3.7 -U -Z PyOpenGL
-#doesn't build with python 3.7:
-#easy_install-3.7 -U -Z PyOpenGL_accelerate==3.1.1a1
 
 #cx_Freeze gets very confused about sqlite DLL location
 #don't fight it and just symlink it where it will be found:
