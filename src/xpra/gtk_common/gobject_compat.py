@@ -19,8 +19,11 @@ if sys.version>='3':
     _is_gtk3 = True
 
 def gi_gtk():
-    from xpra.gtk_common.gtk3 import gi_init
-    assert gi_init
+    try:
+        from xpra.gtk_common import gi_init
+        assert gi_init
+    except ImportError:
+        pass
 
 
 def is_gtk3():

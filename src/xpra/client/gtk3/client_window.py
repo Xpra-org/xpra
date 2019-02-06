@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gtk3 import gi_init
+from xpra.gtk_common import gi_init
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 from gi.repository import Gtk                   #@UnresolvedImport @UnusedImport
 from gi.repository import Gdk                   #@UnresolvedImport @UnusedImport
