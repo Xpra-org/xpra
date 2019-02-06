@@ -15,7 +15,7 @@ from xpra.util import (
     updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time,
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
-from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX
+from xpra.os_util import bytestostr, strtobytes, hexstr, monotonic_time, WIN32, OSX, POSIX
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
@@ -91,6 +91,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #clipboard bits:
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
+        self.clipboard_notification_timer = None
+        self.last_clipboard_notification = 0
         #only used with the translated clipboard class:
         self.local_clipboard = ""
         self.remote_clipboard = ""
@@ -1282,12 +1284,25 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def clipboard_notify(self, n):
         if not self.tray or not CLIPBOARD_NOTIFY:
             return
-        clipboardlog("clipboard_notify(%s)", n)
+        cnt = self.clipboard_notification_timer
+        clipboardlog("clipboard_notify(%s) notification timer=%s", n, cnt)
+        if cnt:
+            self.clipboard_notification_timer = None
+            self.source_remove(cnt)
         if n>0 and self.clipboard_enabled:
+            self.last_clipboard_notification = monotonic_time()
             self.tray.set_icon("clipboard")
             self.tray.set_tooltip("%s clipboard requests in progress" % n)
             self.tray.set_blinking(True)
         else:
-            self.tray.set_icon(None)    #None means back to default icon
-            self.tray.set_tooltip(self.get_tray_title())
-            self.tray.set_blinking(False)
+            #no more pending clipboard transfers,
+            #reset the tray icon,
+            #but wait at least N seconds after the last clipboard transfer:
+            N = 1
+            delay = int(max(0, 1000*(self.last_clipboard_notification+N-monotonic_time())))
+            def reset_tray_icon():
+                self.clipboard_notification_timer = None
+                self.tray.set_icon(None)    #None means back to default icon
+                self.tray.set_tooltip(self.get_tray_title())
+                self.tray.set_blinking(False)
+            self.clipboard_notification_timer = self.timeout_add(delay, reset_tray_icon)
