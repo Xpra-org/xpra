@@ -105,8 +105,8 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=0.1, max_scaling=
     #normalize absolute values into floats:
     if x>max_scaling or y>max_scaling:
         log(" normalizing dimensions to a ratio of %ix%i", root_w, root_h)
-        x = float(x / root_w)
-        y = float(y / root_h)
+        x = float(x) / root_w
+        y = float(y) / root_h
     if x<min_scaling or y<min_scaling or x>max_scaling or y>max_scaling:
         log.warn("Warning: scaling values %sx%s are out of range", x, y)
         return 1, 1
