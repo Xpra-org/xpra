@@ -4,21 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import signal
 import os
 import sys
+import signal
 import socket
 import string
 from collections import OrderedDict
 
 from xpra.log import Logger, is_debug_enabled
-log = Logger("client")
-netlog = Logger("network")
-authlog = Logger("auth")
-mouselog = Logger("mouse")
-cryptolog = Logger("crypto")
-bandwidthlog = Logger("bandwidth")
-
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
@@ -26,20 +19,38 @@ from xpra.net.protocol_classes import get_client_protocol_class
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_salt, gendigest
-from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, choose_padding, \
-    ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
+from xpra.net.crypto import (
+    crypto_backend_init, get_iterations, get_iv, choose_padding,
+    ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
+    DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
+    )
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, osexpand, use_tty, BITS, WIN32, OSX
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc, first_time
+from xpra.os_util import (
+    get_machine_id, get_user_uuid,
+    load_binary_file,
+    SIGNAMES, PYTHON3, BITS, WIN32, OSX,
+    strtobytes, bytestostr, hexstr, monotonic_time, osexpand, use_tty,
+    )
+from xpra.util import (
+    flatten_dict, typedict, updict,
+    repr_ellipsized,nonl, std,
+    envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc, first_time,
+    )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
-
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
         EXIT_PASSWORD_REQUIRED, EXIT_PASSWORD_FILE_ERROR, EXIT_INCOMPATIBLE_VERSION,
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR)
 
+
+log = Logger("client")
+netlog = Logger("network")
+authlog = Logger("auth")
+mouselog = Logger("mouse")
+cryptolog = Logger("crypto")
+bandwidthlog = Logger("bandwidth")
 
 EXTRA_TIMEOUT = 10
 KERBEROS_SERVICES = os.environ.get("XPRA_KERBEROS_SERVICES", "*").split(",")
