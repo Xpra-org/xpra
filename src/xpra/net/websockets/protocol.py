@@ -14,7 +14,7 @@ from xpra.log import Logger
 
 log = Logger("websocket")
 
-OPCODE_CONTINUE = 1
+OPCODE_CONTINUE = 0
 OPCODE_TEXT     = 1
 OPCODE_BINARY   = 2
 OPCODE_CLOSE    = 8
