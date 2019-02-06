@@ -18,6 +18,11 @@ if sys.version>='3':
     #no other choice!
     _is_gtk3 = True
 
+def gi_gtk():
+    from xpra.gtk_common.gtk3 import gi_init
+    assert gi_init
+
+
 def is_gtk3():
     global _is_gtk3
     return  _is_gtk3
@@ -102,8 +107,7 @@ def import_gtk2():
     import gtk
     return gtk
 def import_gtk3():
-    import gi
-    gi.require_version('Gtk', '3.0')
+    gi_gtk()
     from gi.repository import Gtk                   #@UnresolvedImport
     try_import_GdkX11()
     return Gtk
@@ -114,8 +118,7 @@ def import_gdk2():
     from gtk import gdk
     return gdk
 def import_gdk3():
-    import gi
-    gi.require_version('Gdk', '3.0')
+    gi_gtk()
     from gi.repository import Gdk                   #@UnresolvedImport
     try_import_GdkX11()
     return Gdk
@@ -126,8 +129,7 @@ def import_pixbuf2():
     from gtk.gdk import Pixbuf
     return Pixbuf
 def import_pixbuf3():
-    import gi
-    gi.require_version('GdkPixbuf', '2.0')
+    gi_gtk()
     from gi.repository import GdkPixbuf             #@UnresolvedImport
     return GdkPixbuf
 def import_pixbuf():

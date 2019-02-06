@@ -1,11 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
+from xpra.gtk_common.gtk3 import gi_init
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 from gi.repository import Gtk                   #@UnresolvedImport @UnusedImport
 from gi.repository import Gdk                   #@UnresolvedImport @UnusedImport
@@ -21,6 +21,7 @@ paintlog = Logger("paint")
 metalog = Logger("metadata")
 
 
+assert gi_init
 GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.MENU,
                       Gdk.WindowTypeHint.TOOLBAR,
