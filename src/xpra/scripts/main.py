@@ -32,7 +32,7 @@ from xpra.scripts.config import OPTION_TYPES, TRUE_OPTIONS, CLIENT_OPTIONS, NON_
     InitException, InitInfo, InitExit, \
     fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, has_sound_support, name_to_field
-from xpra.log import is_debug_enabled
+from xpra.log import is_debug_enabled, Logger
 assert info and warn and error, "used by modules importing those from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
@@ -1699,7 +1699,6 @@ def no_gtk():
 def run_glprobe(opts):
     #suspend all logging:
     saved_level = None
-    from xpra.log import Logger, is_debug_enabled
     log = Logger("opengl")
     if not is_debug_enabled("opengl") or not use_tty():
         saved_level = logging.root.getEffectiveLevel()
