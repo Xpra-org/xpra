@@ -1390,7 +1390,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                         msg = "timeout"
                     else:
                         msg = SIGNAMES.get(-r) or SIGNAMES.get(r-128) or r
-                    log.warn("OpenGL probe failed: %s", msg)
+                    log.warn("Warning: OpenGL probe failed: %s", msg)
                     opts.opengl = "probe-failed:%s" % msg
         try:
             from xpra.platform.gui import init as gui_init
