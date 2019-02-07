@@ -266,7 +266,7 @@ if HELP:
     print("  --rpath=PATH")
     sys.exit(0)
 
-install = "dist"
+install = None
 rpath = None
 ssl_cert = None
 ssl_key = None
@@ -348,13 +348,13 @@ if "clean" not in sys.argv:
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
 
+if install is None:
+    install = os.environ.get("MINGW_PREFIX") or sys.prefix or "dist"
 if share_xpra is None:
-    if install:
-        share_xpra = os.path.join(install, "share", "xpra")
-    elif WIN32:
-        share_xpra = os.path.join(os.environ.get("MINGW_PREFIX"), "share", "xpra")
+    if "install_exe" in sys.argv:
+        share_xpra = os.path.join("share", "xpra")
     else:
-        share_xpra = "share/xpra"
+        share_xpra = os.path.join(install, "share", "xpra")
 
 #*******************************************************************************
 # default sets:
