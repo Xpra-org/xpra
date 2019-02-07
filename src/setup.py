@@ -348,13 +348,13 @@ if "clean" not in sys.argv:
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
 
-if install is None:
-    install = os.environ.get("MINGW_PREFIX") or sys.prefix or "dist"
+if install is None and WIN32:
+    install = os.environ.get("MINGW_PREFIX", sys.prefix or "dist")
 if share_xpra is None:
     if "install_exe" in sys.argv:
-        share_xpra = os.path.join("share", "xpra")
-    else:
         share_xpra = os.path.join(install, "share", "xpra")
+    else:
+        share_xpra = os.path.join("share", "xpra")
 
 #*******************************************************************************
 # default sets:
