@@ -117,7 +117,7 @@ class DisplayClient(StubClientMixin):
                 sinfo = "%i%%" % iround(self.xscale*100)
             else:
                 sinfo = "%i%% x %i%%" % (iround(self.xscale*100), iround(self.yscale*100))
-            log.info(" %sscaled by %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
+            log.info(" %sscaled to %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
             log_screen_sizes(root_w, root_h, sss)
         else:
             root_w, root_h = u_root_w, u_root_h
