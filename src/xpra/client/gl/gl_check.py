@@ -84,7 +84,7 @@ def check_functions(*functions):
         else:
             available.append(name)
     if len(missing)>0:
-        raise_fatal_error("some required OpenGL functions are not available: %s" % csv(missing))
+        raise_fatal_error("some required OpenGL functions are missing:\n%s" % csv(missing))
     else:
         log("All the required OpenGL functions are available: %s " % csv(available))
 
