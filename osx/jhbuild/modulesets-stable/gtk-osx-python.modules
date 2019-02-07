@@ -12,7 +12,7 @@
   <repository type="tarball" name="oracle"
 	      href="http://download.oracle.com/"/>
   <repository type="tarball" name="pymodules"
-              href="http://pypi.python.org/packages/"/>
+              href="https://pypi.python.org/packages/"/>
   <repository type="tarball" name="github-tarball"
               href="https://github.com"/>
 
@@ -77,7 +77,7 @@
   </autotools>
 
   <autotools id="python" autogenargs="--enable-shared"
-	     autogen-sh="configure" supports-non-srcdir-builds="no">
+	     supports-non-srcdir-builds="no">
     <branch repo="python"
            module="2.7.15/Python-2.7.15.tar.xz" version="2.7.15"
            hash="sha256:22d9b1ac5b26135ad2b8c2901a9413537e08749a753356ee913c84dbd2df5574">
@@ -204,5 +204,14 @@
       <dep package="gtkspell"/>
     </dependencies>
   </autotools>
+
+  <distutils id="python-six">
+    <branch module="/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz" repo="pymodules" version="1.11.0"
+            checkoutdir="six"/>
+    <dependencies>
+      <dep package="libxml2"/>
+      <dep package="libxslt"/>
+    </dependencies>
+  </distutils>
 
 </moduleset>
