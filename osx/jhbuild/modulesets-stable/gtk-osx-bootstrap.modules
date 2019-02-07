@@ -27,14 +27,13 @@
               href="http://download.icu-project.org/files/"/>
   <repository type="tarball" name="ragel"
               href="http://www.colm.net/files/ragel/"/>
-  <repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
 
   <autotools id='readline' autogen-sh="configure">
     <branch repo="ftp.gnu.org" module="readline/readline-7.0.tar.gz"
       version="7.0">
     </branch>
   </autotools>
-  
+
   <autotools id="libpng" autogenargs="--enable-shared" autogen-sh="configure">
     <branch version="1.6.34" module="libpng/libpng-1.6.34.tar.xz"
             hash="sha256:2f1e960d92ce3b3abd03d06dfec9637dfbd22febf107a536b44f7a47c60659f6"
@@ -44,17 +43,6 @@
     </dependencies>
   </autotools>
 
-<!--
-  <cmake id="libjpeg"
-         cmakeargs='cmake -DCMAKE_ASM_NASM_COMPILER=$PREFIX/bin/nasm -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX -DCMAKE_INSTALL_LIBDIR:PATH=$PREFIX/lib'>
-    <branch module="/libjpeg-turbo/libjpeg-turbo/archive/2.0.0.tar.gz" version="2.0.0" checkoutdir="libjpeg-turbo-2.0.0"
-    		hash="sha256:f892fff427ab3adffc289363eac26d197ce3ccacefe5f5822377348a8166069b"
-            repo="github.com" />
-    <dependencies>
-      <dep package="nasm"/>
-    </dependencies>
-  </cmake>
--->
   <autotools id="libjpeg" autogen-sh="configure" autogenargs="--with-jpeg8">
     <branch module="project/libjpeg-turbo/1.5.3/libjpeg-turbo-1.5.3.tar.gz" version="1.5.3"
                 hash="sha256:b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523"
@@ -91,7 +79,8 @@
   </autotools>
 
   <autotools id="libxslt" autogen-sh="configure">
-    <branch version="1.1.29" module="libxslt-1.1.29.tar.gz"
+    <branch version="1.1.32" module="libxslt-1.1.32.tar.gz"
+      hash="sha256:526ecd0abaf4a7789041622c3950c0e7f2c4c8835471515fd77eec684a355460"
 	    repo="xmlsoft.org"/>
     <dependencies>
       <dep package="libxml2"/>
@@ -130,10 +119,9 @@
     </dependencies>
   </autotools>
 
-  <autotools id="gtk-doc" autogen-sh="configure"
-             autogenargs="--with-xml-catalog=$JHBUILD_PREFIX/share/xml/catalog">
-    <branch version="1.27" module="gtk-doc/1.27/gtk-doc-1.27.tar.xz"
-            hash="sha256:e26bd3f7080c749b1cb66c46c6bf8239e2f320a949964fb9c6d56e1b0c6d9a6f"/>
+  <autotools id="gtk-doc" autogen-sh="configure">
+    <branch version="1.28" module="gtk-doc/1.28/gtk-doc-1.28.tar.xz"
+            hash="sha256:911e29e302252c96128965ee1f4067d5431a88e00ad1023a8bc1d6b922af5715"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="itstool"/>
@@ -184,7 +172,7 @@
 
   <autotools id="freetype" autogen-sh="configure" skip-autogen="never"
 	     autogenargs="--without-bzip2">
-    <branch module="freetype/freetype-2.7.1.tar.gz" version="2.7.1"
+    <branch module="freetype/freetype-2.9.1.tar.gz" version="2.9.1"
             repo="sourceforge">
     </branch>
     <dependencies>
@@ -194,9 +182,10 @@
   </autotools>
 
   <autotools id="fontconfig" autogen-sh="autoreconf"
-             autogenargs="--disable-docs">
-    <branch repo="fontconfig" version="2.12.1"
-            module="fontconfig-2.12.1.tar.bz2"/>
+             autogenargs="--disable-docs '--with-add-fonts=/System/Library/Fonts,/Library/Fonts,~/Library/Fonts'">
+    <branch repo="fontconfig" version="2.13.0" module="fontconfig-2.13.0.tar.bz2">
+      <patch file="https://bugs.freedesktop.org/attachment.cgi?id=137886" strip="1" />
+    </branch>
     <dependencies>
       <dep package="freetype"/>
     </dependencies>
@@ -211,7 +200,10 @@
   <autotools id="gettext-runtime" autogen-sh="configure"
 	     autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp">
     <branch repo="ftp.gnu.org" source-subdir="gettext-runtime"
-            module="gettext/gettext-0.19.8.tar.xz" version="0.19.8"/>
+            module="gettext/gettext-0.19.8.tar.xz" version="0.19.8">
+      <!-- upstream bug: https://savannah.gnu.org/bugs/index.php?49560 -->
+      <patch file="https://savannah.gnu.org/bugs/download.php?file_id=38908" strip="1"/>
+    </branch>
   </autotools>
 
   <metamodule id="meta-gtk-osx-bootstrap">
