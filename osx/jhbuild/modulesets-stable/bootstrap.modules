@@ -39,6 +39,14 @@
     <branch repo="tukaani.org" module="xz/xz-5.2.3.tar.bz2" version="5.2.3"/>
   </autotools>
 
+  <!-- gnu make 4.xx, needed to unbreak parallel builds for the webkit -->
+  <autotools id="gnumake" autogen-sh="configure"
+             autogenargs="--disable-dependency-tracking">
+    <branch repo="ftp.gnu.org"
+            module="make/make-4.2.1.tar.bz2" version="4.2.1" hash="sha256:d6e262bf3601b42d2b1e4ef8310029e1dcf20083c5446b4b7aa67081fdffc589">
+    </branch>
+  </autotools>
+
   <autotools id="apr">
     <branch repo="apache.org" module="apr/apr-1.5.2.tar.bz2" version="1.5.2"/>
   </autotools>
@@ -54,13 +62,16 @@
   <autotools id="gettext-tools" autogen-sh="configure"
              autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp --with-included-glib">
     <branch repo="ftp.gnu.org" source-subdir="gettext-tools"
-            module="gettext/gettext-0.19.8.tar.xz" version="0.19.8"/>
+            module="gettext/gettext-0.19.8.tar.xz" version="0.19.8">
+      <!-- upstream bug: https://savannah.gnu.org/bugs/index.php?49560 -->
+      <patch file="https://savannah.gnu.org/bugs/download.php?file_id=38908" strip="1"/>
+    </branch>
   </autotools>
 
   <!-- cmakes ./configure is picky about invalid flags so we manually set it -->
   <autotools id="cmake" autogen-sh="bootstrap"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s">
-    <branch repo="cmake" module="v3.10/cmake-3.10.0.tar.gz" version="3.10.0">
+    <branch repo="cmake" module="v3.12/cmake-3.12.4.tar.gz" version="3.12.4">
     </branch>
   </autotools>
 
@@ -235,6 +246,7 @@
       <dep package="gtk-osx-docbook"/>
       <dep package="gnome-common"/>
       <dep package="intltool"/>
+      <dep package="gnumake"/>
     </dependencies>
   </metamodule>
 
