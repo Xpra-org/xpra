@@ -47,8 +47,6 @@ done
 $PACMAN --noconfirm -S ${XPKG}python2-ipaddress
 $PACMAN --noconfirm -S ${XPKG}cython2 ${XPKG}python2-setuptools
 $PACMAN --noconfirm -S ${XPKG}cython
-#using easy-install for python libraries which are not yet packaged by mingw:
-easy_install-2.7 -U -Z enum-compat
 for x in nvidia-ml-py; do
     easy_install-2.7 -U -Z $x
     easy_install-3.7 -U -Z $x
