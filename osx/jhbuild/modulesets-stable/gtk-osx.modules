@@ -7,9 +7,9 @@
   <repository type="tarball" name="sourceforge"
               href="http://downloads.sourceforge.net/sourceforge/"/>
   <repository type="tarball" name="cairographics"
-              href="http://cairographics.org/releases/"/>
+              href="https://www.cairographics.org/releases/"/>
   <repository type="tarball" name="ftp.gnu.org"
-              href="http://ftp.gnu.org/gnu/"/>
+              href="https://ftp.gnu.org/gnu/"/>
   <repository type="tarball" name="sourceware.org"
               href="ftp://sourceware.org/pub/"/>
   <repository type="tarball" name="freedesktop"
@@ -86,16 +86,11 @@
     </after>
   </metamodule>
 
-  <autotools id="glib" autogen-sh="autoreconf"
-             autogenargs="--with-pcre=internal">
-    <branch module="glib/2.52/glib-2.52.2.tar.xz"  version="2.52.2"
-            hash="sha256:f00e5d9e2a2948b1da25fcba734a6b7a40f556de8bc9f528a53f6569969ac5d0">
-      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/glib-gint64-long-long.patch" strip="1"/>
-      <!-- Fix should be in glib-2.54.2 -->
-      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/glib-2.52-Fallback-to-CFStringGetCSTring-if-CFStringGetC.patch" strip="1"/>
+  <autotools id="glib" autogenargs="--with-pcre=internal">
+    <branch module="glib/2.58/glib-2.58.1.tar.xz"  version="2.58.1"
+            hash="sha256:97d6a9d926b6aa3dfaadad3077cfb43eec74432ab455dff14250c769d526d7d6">
     </branch>
     <dependencies>
-    	<dep package="python-six"/>
         <dep package="libffi"/>
     </dependencies>
     <after>
@@ -111,9 +106,9 @@
 
 
   <autotools id="gobject-introspection" autogen-sh="configure">
-    <branch module="gobject-introspection/1.52/gobject-introspection-1.52.1.tar.xz"
-            version="1.52.1"
-            hash="sha256:2ed0c38d52fe1aa6fc4def0c868fe481cb87b532fc694756b26d6cfab29faff4">
+    <branch module="gobject-introspection/1.58/gobject-introspection-1.58.0.tar.xz"
+            version="1.58.0"
+            hash="sha256:27c1590a32749de0a5481ce897772547043e94bccba4bc0a7edb3d8513e401ec">
       <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/girscanner-objc.patch" strip="1"/>
             <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/gi_cairo_library_path.patch" strip="1"/>
     </branch>
@@ -127,13 +122,22 @@
       </after>
   </autotools>
 
- <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.40.12" module="pango/1.40/pango-1.40.12.tar.xz"
-            hash="sha256:75f1a9a8e4e2b28cbc078b50c1fa927ee4ded994d1ade97c5603e2d1f3161cfc">
+  <autotools id="fribidi" autogenargs="--disable-docs">
+    <branch module="fribidi/fribidi/releases/download/v1.0.5/fribidi-1.0.5.tar.bz2"
+            repo="github-tarball" version="1.0.5"/>
+    <dependencies>
+      <!--dep package="c2man"/ -->
+    </dependencies>
+  </autotools>
+
+  <autotools id="pango"  autogen-sh="autoreconf">
+    <branch version="1.42.4" module="pango/1.42/pango-1.42.4.tar.xz"
+            hash="sha256:1d2b74cd63e8bd41961f2f8d952355aa0f9be6002b52c8aa7699d9f5da597c9d">
     </branch>
     <dependencies>
       <dep package="glib"/>
       <dep package="cairo"/>
+      <dep package="fribidi"/>
      </dependencies>
     <after>
       <dep package="gobject-introspection"/>
@@ -141,10 +145,10 @@
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
   </autotools>
-
+<!-- atk-2-30 is meson-only, so it has to wait until pipenv is merged. -->
  <autotools id="atk" autogen-sh="configure">
-    <branch module="atk/2.24/atk-2.24.0.tar.xz" version="2.24.0"
-            hash="sha256:bb2daa9a808c73a7a79d2983f333e0ba74be42fc51e3ba1faf2551a636487a49"/>
+    <branch module="atk/2.28/atk-2.28.1.tar.xz" version="2.28.1"
+            hash="sha256:cd3a1ea6ecc268a2497f0cd018e970860de24a6d42086919d6bf6c8e8d53f4fc"/>
     <dependencies>
     </dependencies>
     <after>
@@ -154,9 +158,10 @@
     </after>
   </autotools>
 
+  <!-- 2.38.0 requires meson -->
   <autotools id="gdk-pixbuf" autogen-sh="configure">
-    <branch module="gdk-pixbuf/2.36/gdk-pixbuf-2.36.6.tar.xz" version="2.36.6"
-            hash="sha256:455eb90c09ed1b71f95f3ebfe1c904c206727e0eeb34fc94e5aaf944663a820c"/>
+    <branch module="gdk-pixbuf/2.36/gdk-pixbuf-2.36.12.tar.xz" version="2.36.12"
+            hash="sha256:fff85cf48223ab60e3c3c8318e2087131b590fd6f1737e42cb3759a3b427a334"/>
     <after>
       <dep package="pango"/>
       <dep package="gobject-introspection"/>
@@ -171,6 +176,12 @@
       <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/0008-Implement-GtkDragSourceOwner-pasteboardChangedOwner.patch" strip="1"/>
       <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/0006-Bug-658722-Drag-and-Drop-sometimes-stops-working.patch" strip="1"/>
       <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/gtk+-2-m4-creation.patch" strip="1"/>
+      <!-- upstream bug https://bugzilla.gnome.org/show_bug.cgi?id=767091 -->
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/gtk-gimp-dnd-bug767091.patch" strip="1"/>
+      <!-- upstream bug: https://gitlab.gnome.org/GNOME/gtk/issues/529 -->
+      <patch file="https://gitlab.gnome.org/GNOME/gtk/uploads/f0c19446b9cd1df467c4cc9050516d4b/0001-Bug-743717-Crashes-on-clipboard-operation-influence-.patch" strip="1"/>
+      <!-- upstream bug: https://gitlab.gnome.org/GNOME/gtk/issues/580 -->
+      <patch file="https://gitlab.gnome.org/GNOME/gtk/uploads/2a194d81de8e8346a81816870264b3bf/gdkimage.patch" strip="1"/>
    </branch>
     <dependencies>
       <dep package="glib"/>
@@ -188,7 +199,7 @@
     <branch repo="freedesktop" version="1.19.1"
             module="xorg/individual/util/util-macros-1.19.1.tar.bz2"/>
   </autotools>
-  
+
   <autotools id="libepoxy" autogen-sh="configure">
     <branch repo="github-tarball" version="1.4.1"
             module="anholt/libepoxy/releases/download/1.4.2/libepoxy-1.4.2.tar.xz"/>
@@ -223,8 +234,10 @@
 
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.22/gtk+-3.22.29.tar.xz" version="3.22.29"
-            hash="sha256:a07d64b939fcc034a066b7723fdf9b24e92c9cfb6a8497593f3471fe56fbbbf8">
+    <branch module="gtk+/3.24/gtk+-3.24.2.tar.xz" version="3.24.2"
+            hash="sha256:5b3b05e427cc928d103561ed2e91b2b2881fe88b1f167b0b1c9990da6aac8892">
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master//patches/gtk3-quartz-3-24-2-fixes.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/IMQuartz-GdkWindow.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -258,9 +271,9 @@
        dependency. -->
   <autotools id="cairo"  autogen-sh="configure"
              autogenargs="--enable-pdf --enable-quartz --disable-xlib --without-x">
-    <branch module="cairo-1.14.8.tar.xz"  version="1.14.8"
+    <branch module="cairo-1.16.0.tar.xz"  version="1.16.0"
             repo="cairographics"
-            hash="sha1:c6f7b99986f93c9df78653c3e6a3b5043f65145e">
+            hash="sha1:00e81842ae5e81bb0343108884eb5205be0eac14">
     </branch>
     <dependencies>
       <dep package="pixman"/>
