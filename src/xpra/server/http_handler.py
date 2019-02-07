@@ -14,7 +14,6 @@ except ImportError:
 try:
     from BaseHTTPServer import BaseHTTPRequestHandler   #python2 @UnusedImport
 except:
-    
     from http.server import BaseHTTPRequestHandler      #python3 @Reimport @UnresolvedImport
 
 from xpra.util import envbool, std, AdHocStruct
