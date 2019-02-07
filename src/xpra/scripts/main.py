@@ -21,7 +21,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, repr_ellipsized, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR
 from xpra.os_util import (
-    get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr,
+    get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
 from xpra.scripts.parsing import info, warn, error, \
@@ -32,6 +32,7 @@ from xpra.scripts.config import OPTION_TYPES, TRUE_OPTIONS, CLIENT_OPTIONS, NON_
     InitException, InitInfo, InitExit, \
     fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, has_sound_support, name_to_field
+from xpra.log import is_debug_enabled
 assert info and warn and error, "used by modules importing those from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
@@ -1364,8 +1365,13 @@ def get_client_app(error_cb, opts, extra_args, mode):
             from xpra.log import Logger
             log = Logger("opengl")
             cmd = get_xpra_command()+["opengl-probe"]
+            env = os.environ.copy()
+            if is_debug_enabled("opengl"):
+                cmd += ["-d", "opengl"]
+            else:
+                env["NOTTY"] = "1"
             try:
-                proc = Popen(cmd, shell=False, close_fds=True)
+                proc = Popen(cmd, shell=False, close_fds=True, env=env)
             except Exception as e:
                 log.warn("Warning: failed to execute OpenGL probe command")
                 log.warn(" %s", e)
@@ -1695,7 +1701,7 @@ def run_glprobe(opts):
     saved_level = None
     from xpra.log import Logger, is_debug_enabled
     log = Logger("opengl")
-    if not is_debug_enabled("opengl"):
+    if not is_debug_enabled("opengl") or not use_tty():
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
     try:
@@ -1719,7 +1725,10 @@ def run_glprobe(opts):
     except Exception as e:
         if is_debug_enabled("opengl"):
             log("run_glprobe(..)", exc_info=True)
-        sys.stderr.write("error=%s\n" % e)
+        if use_tty():
+            sys.stderr.write("error:\n")
+            sys.stderr.write("%s\n" % e)
+            sys.stderr.flush()
         return 2
     finally:
         if saved_level is not None:
