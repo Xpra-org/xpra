@@ -189,6 +189,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.close_file_size_warning()
         self.close_file_upload_dialog()
         self.close_ask_data_dialog()
+        self.cancel_clipboard_notification_timer()
         if self.start_new_command:
             self.start_new_command.destroy()
             self.start_new_command = None
@@ -1281,14 +1282,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.after_handshake(register_clipboard_toggled)
         return helperClass(clipboard_send, clipboard_progress, **kwargs)
 
-    def clipboard_notify(self, n):
-        if not self.tray or not CLIPBOARD_NOTIFY:
-            return
+    def cancel_clipboard_notification_timer(self):
         cnt = self.clipboard_notification_timer
-        clipboardlog("clipboard_notify(%s) notification timer=%s", n, cnt)
         if cnt:
             self.clipboard_notification_timer = None
             self.source_remove(cnt)
+
+    def clipboard_notify(self, n):
+        if not self.tray or not CLIPBOARD_NOTIFY:
+            return
+        clipboardlog("clipboard_notify(%s) notification timer=%s", n, self.clipboard_notification_timer)
+        self.cancel_clipboard_notification_timer()
         if n>0 and self.clipboard_enabled:
             self.last_clipboard_notification = monotonic_time()
             self.tray.set_icon("clipboard")
@@ -1302,7 +1306,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             delay = int(max(0, 1000*(self.last_clipboard_notification+N-monotonic_time())))
             def reset_tray_icon():
                 self.clipboard_notification_timer = None
-                self.tray.set_icon(None)    #None means back to default icon
-                self.tray.set_tooltip(self.get_tray_title())
-                self.tray.set_blinking(False)
+                tray = self.tray
+                if not tray:
+                    return
+                tray.set_icon(None)    #None means back to default icon
+                tray.set_tooltip(self.get_tray_title())
+                tray.set_blinking(False)
             self.clipboard_notification_timer = self.timeout_add(delay, reset_tray_icon)
