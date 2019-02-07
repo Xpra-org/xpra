@@ -11,7 +11,11 @@ try:
     from urllib import unquote          #python2 @UnusedImport
 except ImportError:
     from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
-from http.server import BaseHTTPRequestHandler
+try:
+    from BaseHTTPServer import BaseHTTPRequestHandler   #python2 @UnusedImport
+except:
+    
+    from http.server import BaseHTTPRequestHandler      #python3 @Reimport @UnresolvedImport
 
 from xpra.util import envbool, std, AdHocStruct
 from xpra.os_util import PYTHON2
