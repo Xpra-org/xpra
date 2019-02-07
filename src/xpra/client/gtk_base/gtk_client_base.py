@@ -1289,15 +1289,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.source_remove(cnt)
 
     def clipboard_notify(self, n):
-        if not self.tray or not CLIPBOARD_NOTIFY:
+        tray = self.tray
+        if not tray or not CLIPBOARD_NOTIFY:
             return
         clipboardlog("clipboard_notify(%s) notification timer=%s", n, self.clipboard_notification_timer)
         self.cancel_clipboard_notification_timer()
         if n>0 and self.clipboard_enabled:
             self.last_clipboard_notification = monotonic_time()
-            self.tray.set_icon("clipboard")
-            self.tray.set_tooltip("%s clipboard requests in progress" % n)
-            self.tray.set_blinking(True)
+            tray.set_icon("clipboard")
+            tray.set_tooltip("%s clipboard requests in progress" % n)
+            tray.set_blinking(True)
         else:
             #no more pending clipboard transfers,
             #reset the tray icon,
