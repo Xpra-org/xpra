@@ -139,6 +139,8 @@ class Protocol(object):
         self.timeout_add = scheduler.timeout_add
         self.idle_add = scheduler.idle_add
         self.source_remove = scheduler.source_remove
+        self.read_buffer_size = READ_BUFFER_SIZE
+        self.hangup_delay = 1000
         self._conn = conn
         if FAKE_JITTER>0:
             from xpra.net.fake_jitter import FakeJitter
@@ -263,7 +265,8 @@ class Protocol(object):
             "max_packet_size"       : self.max_packet_size,
             "aliases"               : USE_ALIASES,
             "input" : {
-                       "buffer-size"            : READ_BUFFER_SIZE,
+                       "buffer-size"            : self.read_buffer_size,
+                       "hangup-delay"           : self.hangup_delay,
                        "packetcount"            : self.input_packetcount,
                        "raw_packetcount"        : self.input_raw_packetcount,
                        "count"                  : self.input_stats,
@@ -697,7 +700,7 @@ class Protocol(object):
     def _read_thread_loop(self):
         self._io_thread_loop("read", self._read)
     def _read(self):
-        buf = self._conn.read(READ_BUFFER_SIZE)
+        buf = self._conn.read(self.read_buffer_size)
         #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         #add to the read queue (or whatever takes its place - see steal_connection)
         self._process_read(buf)
@@ -737,7 +740,7 @@ class Protocol(object):
     def gibberish(self, msg, data):
         self.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, msg, data])
         # Then hang up:
-        self.timeout_add(1000, self._connection_lost, msg)
+        self.timeout_add(self.hangup_delay, self._connection_lost, msg)
 
 
     #delegates to invalid_header()
