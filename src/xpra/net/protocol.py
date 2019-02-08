@@ -796,13 +796,12 @@ class Protocol(object):
             this will be called from this parsing thread so any calls that need to be made
             from the UI thread will need to use a callback (usually via 'idle_add')
         """
-        read_buffer = None
-        packet_size = 0
+        header = b""
+        read_buffers = []
         payload_size = -1
         padding_size = 0
         packet_index = 0
-        compression_level = False
-        packet = None
+        compression_level = 0
         raw_packets = {}
         while not self._closed:
             buf = self._read_queue.get()
@@ -810,34 +809,45 @@ class Protocol(object):
                 log("parse thread: empty marker, exiting")
                 self.idle_add(self.close)
                 return
-            if read_buffer:
-                read_buffer = read_buffer + buf
-            else:
-                read_buffer = buf
-            while not self._closed:
-                packet = None
-                bl = len(read_buffer)
-                if bl<=0:
-                    break
+
+            read_buffers.append(buf)
+            while read_buffers:
+                #have we read the header yet?
                 if payload_size<0:
-                    if read_buffer[0] not in ("P", ord("P")):
-                        self._invalid_header(read_buffer, "invalid packet header byte %s" % read_buffer[0])
+                    #try to handle the first buffer:
+                    buf = read_buffers[0]
+                    if not header and buf[0] not in ("P", ord("P")):
+                        self._invalid_header(buf, "invalid packet header byte %s" % buf)
                         return
-                    if bl<HEADER_SIZE:
-                        break   #packet still too small
-                    #packet format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
-                    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(read_buffer[:HEADER_SIZE])
+                    #how much to we need to slice off to complete the header:
+                    read = min(len(buf), HEADER_SIZE-len(header))
+                    header += buf[:read]
+                    if len(header)<HEADER_SIZE:
+                        #need to process more buffers to get a full header:
+                        read_buffers.pop(0)
+                        continue
+                    elif len(buf)>read:
+                        #got the full header and more, keep the rest of the packet:
+                        read_buffers[0] = buf[read:]
+                    else:
+                        #we only got the header:
+                        assert len(buf)==read
+                        read_buffers.pop(0)
+                        continue
+                    #parse the header:
+                    # format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
+                    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
+                    log("parsed header: %i data size, %i read_buffers: %s", data_size, len(read_buffers), csv(len(v) for v in read_buffers))
 
                     #sanity check size (will often fail if not an xpra client):
                     if data_size>self.abs_max_packet_size:
-                        self._invalid_header(read_buffer, "invalid size in packet header: %s" % data_size)
+                        self._invalid_header(header, "invalid size in packet header: %s" % data_size)
                         return
 
-                    bl = len(read_buffer)-HEADER_SIZE
                     if protocol_flags & FLAGS_CIPHER:
                         if self.cipher_in_block_size==0 or not self.cipher_in_name:
                             cryptolog.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
-                            self._invalid_header(read_buffer, "invalid encryption packet flag (no cipher configured)")
+                            self._invalid_header(header, "invalid encryption packet flag (no cipher configured)")
                             return
                         padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
                         payload_size = data_size + padding_size
@@ -846,7 +856,6 @@ class Protocol(object):
                         padding_size = 0
                         payload_size = data_size
                     assert payload_size>0, "invalid payload size: %i" % payload_size
-                    read_buffer = read_buffer[HEADER_SIZE:]
 
                     if payload_size>self.max_packet_size:
                         #this packet is seemingly too big, but check again from the main UI thread
@@ -860,25 +869,41 @@ class Protocol(object):
                                               (size_to_check, self.max_packet_size)
                                 self.invalid(msg, packet_header)
                             return False
-                        self.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
+                        self.timeout_add(1000, check_packet_size, payload_size, header)
 
+                #how much data do we have?
+                bl = sum(len(v) for v in read_buffers)
                 if bl<payload_size:
                     # incomplete packet, wait for the rest to arrive
                     break
 
-                #chop this packet from the buffer:
-                if len(read_buffer)==payload_size:
-                    raw_string = read_buffer
-                    read_buffer = ''
+                buf = read_buffers[0]
+                if len(buf)==payload_size:
+                    #exact match, consume it all:
+                    data = read_buffers.pop(0)
+                elif len(buf)>payload_size:
+                    #keep rest of packet for later:
+                    read_buffers[0] = buf[payload_size:]
+                    data = buf[:payload_size]
                 else:
-                    raw_string = read_buffer[:payload_size]
-                    read_buffer = read_buffer[payload_size:]
-                packet_size += HEADER_SIZE + payload_size
+                    #we need to aggregate chunks,
+                    #just concatenate them all:
+                    data = b"".join(read_buffers)
+                    if bl==payload_size:
+                        #nothing left:
+                        read_buffers = []
+                    else:
+                        #keep the left over:
+                        read_buffers = [data[payload_size:]]
+                        data = data[:payload_size]
+
                 #decrypt if needed:
-                data = raw_string
-                if self.cipher_in and protocol_flags & FLAGS_CIPHER:
+                if self.cipher_in:
+                    if not (protocol_flags & FLAGS_CIPHER):
+                        self.invalid("unencrypted packet dropped", data)
+                        return
                     cryptolog("received %i %s encrypted bytes with %s padding", payload_size, self.cipher_in_name, padding_size)
-                    data = self.cipher_in.decrypt(raw_string)
+                    data = self.cipher_in.decrypt(data)
                     if padding_size > 0:
                         def debug_str(s):
                             try:
@@ -918,17 +943,16 @@ class Protocol(object):
                         del e
                         return self.gibberish(msg, data)
 
-                if self.cipher_in and not (protocol_flags & FLAGS_CIPHER):
-                    self.invalid("unencrypted packet dropped", data)
-                    return
-
                 if self._closed:
                     return
+
+                #we're processing this packet,
+                #make sure we get a new header next time
+                header = b""
                 if packet_index>0:
                     #raw packet, store it and continue:
                     raw_packets[packet_index] = data
                     payload_size = -1
-                    packet_index = 0
                     if len(raw_packets)>=4:
                         self.invalid("too many raw packets: %s" % len(raw_packets), data)
                         return
@@ -955,7 +979,6 @@ class Protocol(object):
                 if self._closed:
                     return
                 payload_size = -1
-                padding_size = 0
                 #add any raw packets back into it:
                 if raw_packets:
                     for index,raw_data in raw_packets.items():
@@ -969,8 +992,7 @@ class Protocol(object):
                     packet[0] = packet_type
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
                 if LOG_RAW_PACKET_SIZE:
-                    log("%s: %i bytes", packet_type, packet_size)
-                packet_size = 0
+                    log("%s: %i bytes", packet_type, HEADER_SIZE + payload_size)
 
                 self.input_packetcount += 1
                 log("processing packet %s", bytestostr(packet_type))
