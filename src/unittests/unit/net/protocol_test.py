@@ -94,7 +94,7 @@ class ProtocolTest(unittest.TestCase):
 
     def test_read_speed(self):
         speeds = []
-        for i in range(15, 18):
+        for i in range(15, 19):
             speed = self.do_test_read_speed(2**i)
             speeds.append(speed)
         log.info("incoming packet processing speed: %iMB/s", sum(speeds)//len(speeds)//1024//1024)
