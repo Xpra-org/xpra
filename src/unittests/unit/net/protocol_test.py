@@ -55,7 +55,7 @@ class ProtocolTest(unittest.TestCase):
         p.start()
         return p
 
-    def Xtest_invalid_data(self):
+    def test_invalid_data(self):
         self.do_test_invalid_data(b"\0"*1)
         self.do_test_invalid_data(b"P"*8)
 
