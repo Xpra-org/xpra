@@ -100,6 +100,7 @@ def import_glib3():
     return GLib
 def import_glib2():
     import glib
+    glib.threads_init()
     return glib
 def import_glib():
     return _try_import(import_glib3, import_glib2)
