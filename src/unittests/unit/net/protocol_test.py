@@ -23,17 +23,16 @@ log = Logger("network")
 class FastMemoryConnection(Connection):
     def __init__(self, read_data, socktype="tcp"):
         self.read_data = read_data
+        self.pos = 0
         self.write_data = []
         Connection.__init__(self, "local", socktype, {})
 
     def read(self, n):
-        buf = self.read_data[:n]
-        self.read_data = self.read_data[n:]
-        #log("read(%i)=%r", n, buf)
-        return buf
+        oldpos = self.pos
+        self.pos += n
+        return self.read_data[oldpos:self.pos]
 
     def write(self, buf):
-        #log("write(%r)", buf)
         self.write_data.append(buf)
         return len(buf)
 
@@ -86,6 +85,13 @@ class ProtocolTest(unittest.TestCase):
                 assert items
 
     def test_read_speed(self):
+        speeds = []
+        for i in range(15, 18):
+            speed = self.do_test_read_speed(2**i)
+            speeds.append(speed)
+        log.info("incoming packet processing speed: %iMB/s", sum(speeds)//len(speeds)//1024//1024)
+
+    def do_test_read_speed(self, pixel_data_size=2**18):
         #prepare some packets to parse:
         p = self.run_memory_protocol()
         #use optimal setup:
@@ -96,14 +102,13 @@ class ProtocolTest(unittest.TestCase):
             for item in items:
                 data.append(item)
         p.raw_write = raw_write
-        pixel_data = os.urandom(2**17)
+        pixel_data = os.urandom(pixel_data_size)
         for packet in (
             ("test", 1, 2, 3),
             ("ping", 1),
             ("draw", Compressed("pixel-data", pixel_data)),
             ):
             p._add_packet_to_queue(packet)
-        #print("data=%r" % csv(data))
         N = 100
         buf = (b"".join(data))*N
         parsed_packets = []
@@ -120,8 +125,8 @@ class ProtocolTest(unittest.TestCase):
         loop.run()
         end = monotonic_time()
         assert len(parsed_packets)==N*3, "expected to parse %i packets but got %i" % (N*3, len(parsed_packets))
-        log("elapsed: %ims", (end-start)*1000)
-        log.info("incoming packet processing speed: %iMB/s", len(buf)/(end-start)//1024//1024)
+        log("do_test_read_speed(%i) elapsed: %ims", pixel_data_size, (end-start)*1000)
+        return int(len(buf)/(end-start))
         
 
 def main():
