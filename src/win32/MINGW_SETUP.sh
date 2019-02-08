@@ -39,7 +39,7 @@ $PACMAN --noconfirm -S ${XPKG}gst-python
 $PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi
 #python libraries and packaging tools:
 $PACMAN --noconfirm -S ${XPKG}python2-enum34
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 PyOpenGL; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 PyOpenGL nvidia-ml zeroconf; do
 	$PACMAN --noconfirm -S ${XPKG}python2-${x}
 	$PACMAN --noconfirm -S ${XPKG}python3-${x}
 done
@@ -47,13 +47,6 @@ done
 $PACMAN --noconfirm -S ${XPKG}python2-ipaddress
 $PACMAN --noconfirm -S ${XPKG}cython2 ${XPKG}python2-setuptools
 $PACMAN --noconfirm -S ${XPKG}cython
-for x in nvidia-ml-py; do
-    easy_install-2.7 -U -Z $x
-    easy_install-3.7 -U -Z $x
-done
-#use the last version to support python2 (not the broken one in mingw):
-easy_install-2.7 -U -Z zeroconf==0.19.1
-$PACMAN --noconfirm -S ${XPKG}python3-zeroconf
 
 #cx_Freeze gets very confused about sqlite DLL location
 #don't fight it and just symlink it where it will be found:
