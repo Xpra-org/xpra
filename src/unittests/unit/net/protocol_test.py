@@ -16,7 +16,6 @@ from xpra.gtk_common.gobject_compat import import_glib
 from xpra.log import Logger
 
 glib = import_glib()
-glib.threads_init()
 
 log = Logger("network")
 
