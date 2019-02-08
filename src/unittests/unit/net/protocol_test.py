@@ -21,6 +21,7 @@ log = Logger("network")
 
 class FastMemoryConnection(Connection):
     def __init__(self, read_buffers, socktype="tcp"):
+        log("FastMemoryConnection(%i buffers: %s)", len(read_buffers), csv(len(x) for x in read_buffers))
         self.read_buffers = read_buffers
         self.pos = 0
         self.write_data = []
@@ -28,9 +29,10 @@ class FastMemoryConnection(Connection):
 
     def read(self, n):
         if not self.read_buffers:
+            log("read(%i) EOF", n)
             return None
         b = self.read_buffers[0]
-        if len(b)<n:
+        if len(b)<=n:
             return self.read_buffers.pop(0)
         self.read_buffers[0] = b[n:]
         return b[:n]
@@ -38,6 +40,9 @@ class FastMemoryConnection(Connection):
     def write(self, buf):
         self.write_data.append(buf)
         return len(buf)
+
+    def __repr__(self):
+        return "FastMemoryConnection(%i buffers)" % len(self.read_buffers)
 
 
 def noop(*args):
@@ -49,12 +54,11 @@ def nodata(*args):
 
 class ProtocolTest(unittest.TestCase):
 
-    def run_memory_protocol(self, data=[b""], read_buffer_size=1, hangup_delay=0, process_packet_cb=noop, get_packet_cb=nodata):
+    def make_memory_protocol(self, data=[b""], read_buffer_size=1, hangup_delay=0, process_packet_cb=noop, get_packet_cb=nodata):
         conn = FastMemoryConnection(data)
         p = Protocol(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
         p.read_buffer_size = read_buffer_size
         p.hangup_delay = hangup_delay
-        p.start()
         return p
 
     def test_invalid_data(self):
@@ -63,7 +67,7 @@ class ProtocolTest(unittest.TestCase):
 
     def do_test_invalid_data(self, data):
         errs = []
-        protocol = self.run_memory_protocol(data)
+        protocol = self.make_memory_protocol(data)
         def check_failed():
             if not protocol._closed:
                 errs.append("protocol not closed")
@@ -74,13 +78,14 @@ class ProtocolTest(unittest.TestCase):
         loop = glib.MainLoop()
         glib.timeout_add(200, check_failed)
         glib.timeout_add(400, loop.quit)
+        protocol.start()
         loop.run()
         assert not errs, "%s" % csv(errs)
 
     def test_encoders_and_compressors(self):
         for encoder in ("rencode", "bencode"):
             for compressor in ("lz4", "zlib"):
-                p = self.run_memory_protocol()
+                p = self.make_memory_protocol()
                 p.enable_encoder(encoder)
                 p.enable_compressor(compressor)
                 packet = ("test", 1, 2, 3)
@@ -96,7 +101,7 @@ class ProtocolTest(unittest.TestCase):
 
     def do_test_read_speed(self, pixel_data_size=2**18):
         #prepare some packets to parse:
-        p = self.run_memory_protocol()
+        p = self.make_memory_protocol()
         #use optimal setup:
         p.enable_encoder("rencode")
         p.enable_compressor("lz4")
@@ -108,8 +113,8 @@ class ProtocolTest(unittest.TestCase):
         pixel_data = os.urandom(pixel_data_size)
         for packet in (
             ("test", 1, 2, 3),
-            ("ping", 1),
-            ("draw", Compressed("pixel-data", pixel_data)),
+            ("ping", 100, 200, 300, 0),
+            ("draw", 100, 100, 640, 480, Compressed("pixel-data", pixel_data), {}),
             ):
             p._add_packet_to_queue(packet)
         ldata = []
@@ -117,7 +122,9 @@ class ProtocolTest(unittest.TestCase):
         #repeat the same pattern N times:
         for _ in range(N):
             for item in data:
+                assert len(item)>0
                 ldata.append(item)
+        total_size = sum(len(item) for item in ldata)
         parsed_packets = []
         def process_packet_cb(proto, packet):
             #log.info("process_packet_cb%s", packet[0])
@@ -125,15 +132,17 @@ class ProtocolTest(unittest.TestCase):
                 loop.quit()
             else:
                 parsed_packets.append(packet[0])
-        start = monotonic_time()
-        p = self.run_memory_protocol(ldata, read_buffer_size=65536, process_packet_cb=process_packet_cb)
         loop = glib.MainLoop()
         glib.timeout_add(5000, loop.quit)
+        protocol = self.make_memory_protocol(ldata, read_buffer_size=65536, process_packet_cb=process_packet_cb)
+        start = monotonic_time()
+        protocol.start()
         loop.run()
         end = monotonic_time()
-        #assert len(parsed_packets)==N*3, "expected to parse %i packets but got %i" % (N*3, len(parsed_packets))
-        log("do_test_read_speed(%i) elapsed: %ims", pixel_data_size, (end-start)*1000)
-        return int((sum(len(data) for data in ldata))/(end-start))
+        assert len(parsed_packets)==N*3, "expected to parse %i packets but got %i" % (N*3, len(parsed_packets))
+        elapsed = (end-start)
+        log("do_test_read_speed(%i) %iMB in %ims", pixel_data_size, total_size, elapsed*1000)
+        return int(total_size/elapsed)
 
 
 def main():
