@@ -837,7 +837,6 @@ class Protocol(object):
                     #parse the header:
                     # format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
                     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
-                    log("parsed header: %i data size, %i read_buffers: %s", data_size, len(read_buffers), csv(len(v) for v in read_buffers))
 
                     #sanity check size (will often fail if not an xpra client):
                     if data_size>self.abs_max_packet_size:
