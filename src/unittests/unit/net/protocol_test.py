@@ -8,7 +8,7 @@ import os
 import unittest
 
 from xpra.util import csv
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, WIN32
 from xpra.net.protocol import Protocol
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
@@ -140,7 +140,9 @@ class ProtocolTest(unittest.TestCase):
         loop.run()
         end = monotonic_time()
         assert len(parsed_packets)==N*3, "expected to parse %i packets but got %i" % (N*3, len(parsed_packets))
-        elapsed = (end-start)
+        #on win32, the clock resolution is too low,
+        #avoid dividing by zero:
+        elapsed = max(0.001, (end-start))
         log("do_test_read_speed(%i) %iMB in %ims", pixel_data_size, total_size, elapsed*1000)
         return int(total_size/elapsed)
 
