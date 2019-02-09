@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("keyboard")
-
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
+from xpra.log import Logger
+
+log = Logger("keyboard")
 
 
 """

@@ -1,18 +1,15 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from gtk import gdk
-assert gdk
 from gtk import gtkgl         #@UnresolvedImport
-assert gtkgl is not None
-
-from xpra.log import Logger
-log = Logger("opengl", "paint")
 
 from xpra.client.gl.gtk_base.gtkgl_window_backing_base import GTKGLWindowBackingBase
+
+assert gdk and gtkgl
 
 
 """

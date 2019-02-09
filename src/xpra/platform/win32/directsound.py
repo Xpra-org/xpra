@@ -1,15 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from xpra.log import Logger
-log = Logger("win32", "sound")
 
 import ctypes
 from ctypes import WinDLL
 from ctypes import oledll
 from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID
+
 
 dsound = WinDLL("dsound", use_last_error=True)
 DirectSoundEnumerateW = dsound.DirectSoundEnumerateW
@@ -46,9 +44,10 @@ def get_capture_devices():
 
 def main():
     from xpra.platform import program_context
-    from xpra.log import enable_color
+    from xpra.log import Logger, enable_color
     with program_context("Sound Device Info", "Sound Device Info"):
         enable_color()
+        log = Logger("win32", "sound")
         import sys
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:

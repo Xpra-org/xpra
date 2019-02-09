@@ -6,8 +6,9 @@
 import cairo
 
 from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
-gtk = import_gtk()
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
+
+gtk = import_gtk()
 
 
 class ColorPlainWindow(gtk.Window):

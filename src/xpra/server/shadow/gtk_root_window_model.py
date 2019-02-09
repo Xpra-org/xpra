@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-
-from xpra.log import Logger
-log = Logger("shadow")
 
 from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.gtk_common.gtk_util import get_pixbuf_from_window, pixbuf_save_to_memory
+from xpra.log import Logger
+
+log = Logger("shadow")
 
 
 def get_rgb_rawdata(window, x, y, width, height):

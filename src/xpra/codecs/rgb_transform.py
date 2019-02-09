@@ -4,17 +4,18 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("encoding")
 
 from PIL import Image
 from xpra.codecs.loader import get_codec
 from xpra.os_util import bytestostr, monotonic_time
 from xpra.util import first_time
+from xpra.log import Logger
 try:
     from xpra.codecs.argb.argb import argb_swap #@UnresolvedImport
 except ImportError:
     argb_swap = None
+
+log = Logger("encoding")
 
 
 #source format  : [(PIL input format, output format), ..]

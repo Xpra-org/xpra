@@ -4,12 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("timeout")
-
 from xpra.util import envint, IDLE_TIMEOUT, XPRA_IDLE_NOTIFICATION_ID
 from xpra.os_util import monotonic_time
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.log import Logger
+
+log = Logger("timeout")
 
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 

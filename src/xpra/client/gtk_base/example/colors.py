@@ -6,9 +6,10 @@
 import cairo
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
+
 gtk = import_gtk()
 gLib = import_glib()
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
 
 class AnimatedColorWindow(gtk.Window):

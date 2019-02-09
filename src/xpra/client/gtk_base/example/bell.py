@@ -3,14 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 from xpra.gtk_common.gobject_compat import import_gtk
-gtk = import_gtk()
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
 from xpra.os_util import POSIX
 if POSIX:
     from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
+
+gtk = import_gtk()
 
 
 class BellWindow(gtk.Window):

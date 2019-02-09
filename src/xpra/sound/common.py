@@ -58,7 +58,7 @@ def sound_option_or_all(name, options, all_values):
                     invalid_options.append(o)
                 else:
                     v.append(o)
-        if len(invalid_options)>0:
+        if invalid_options:
             if all_values:
                 log.warn("Warning: invalid value%s for %s: %s", engs(invalid_options), name, csv(invalid_options))
                 log.warn(" valid option%s: %s", engs(all_values), csv(all_values))
