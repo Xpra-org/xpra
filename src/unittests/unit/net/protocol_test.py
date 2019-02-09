@@ -5,9 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os
+import time
 import unittest
 
-from xpra.util import csv
+from xpra.util import csv, envint, envbool
 from xpra.os_util import monotonic_time
 from xpra.net.protocol import Protocol
 from xpra.net.bytestreams import Connection
@@ -19,15 +20,22 @@ glib = import_glib()
 
 log = Logger("network")
 
+TIMEOUT = envint("XPRA_PROTOCOL_TEST_TIMEOUT", 20)
+PROFILING = envbool("XPRA_PROTOCOL_PROFILING", False)
+
+
 class FastMemoryConnection(Connection):
     def __init__(self, read_buffers, socktype="tcp"):
-        log("FastMemoryConnection(%i buffers: %s)", len(read_buffers), csv(len(x) for x in read_buffers))
         self.read_buffers = read_buffers
         self.pos = 0
         self.write_data = []
         Connection.__init__(self, "local", socktype, {})
 
     def read(self, n):
+        if self.read_buffers is None:
+            while self.active:
+                time.sleep(0.1)
+            return None
         if not self.read_buffers:
             log("read(%i) EOF", n)
             return None
@@ -42,7 +50,7 @@ class FastMemoryConnection(Connection):
         return len(buf)
 
     def __repr__(self):
-        return "FastMemoryConnection(%i buffers)" % len(self.read_buffers)
+        return "FastMemoryConnection"
 
 
 def noop(*args):
@@ -52,11 +60,42 @@ def nodata(*args):
     return None
 
 
+class ProfileProtocol(Protocol):
+
+    def _write_format_thread_loop(self):
+        from pycallgraph import PyCallGraph
+        from pycallgraph import Config
+        from pycallgraph.output import GraphvizOutput
+
+        config = Config()
+        graphviz = GraphvizOutput(output_file='format-thread-%i.png' % monotonic_time())
+
+        with PyCallGraph(output=graphviz, config=config):
+            Protocol._write_format_thread_loop(self)
+
+    def do_read_parse_thread_loop(self):
+        from pycallgraph import PyCallGraph
+        from pycallgraph import Config
+        from pycallgraph.output import GraphvizOutput
+
+        config = Config()
+        graphviz = GraphvizOutput(output_file='read-parse.png')
+
+        with PyCallGraph(output=graphviz, config=config):
+            Protocol.do_read_parse_thread_loop(self)
+        
+
+
 class ProtocolTest(unittest.TestCase):
 
     def make_memory_protocol(self, data=[b""], read_buffer_size=1, hangup_delay=0, process_packet_cb=noop, get_packet_cb=nodata):
         conn = FastMemoryConnection(data)
-        p = Protocol(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
+        if PROFILING:
+            protocol_class = ProfileProtocol
+        else:
+            protocol_class = Protocol
+        p = protocol_class(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
+        #p = Protocol(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
         p.read_buffer_size = read_buffer_size
         p.hangup_delay = hangup_delay
         return p
@@ -105,26 +144,18 @@ class ProtocolTest(unittest.TestCase):
         #use optimal setup:
         p.enable_encoder("rencode")
         p.enable_compressor("lz4")
+        #catch network packets before we write them:
         data = []
         def raw_write(items, *args):
             for item in items:
                 data.append(item)
         p.raw_write = raw_write
-        pixel_data = os.urandom(pixel_data_size)
-        for packet in (
-            ("test", 1, 2, 3),
-            ("ping", 100, 200, 300, 0),
-            ("draw", 100, 100, 640, 480, Compressed("pixel-data", pixel_data), {}),
-            ):
+        for packet in self.make_test_packets(pixel_data_size):
             p._add_packet_to_queue(packet)
-        ldata = []
         N = 100
-        #repeat the same pattern N times:
-        for _ in range(N):
-            for item in data:
-                assert len(item)>0
-                ldata.append(item)
+        ldata = self.repeat_list(data, N)
         total_size = sum(len(item) for item in ldata)
+        #catch parsed packets:
         parsed_packets = []
         def process_packet_cb(proto, packet):
             #log.info("process_packet_cb%s", packet[0])
@@ -132,20 +163,70 @@ class ProtocolTest(unittest.TestCase):
                 loop.quit()
             else:
                 parsed_packets.append(packet[0])
+        #run the protocol on this data:
         loop = glib.MainLoop()
-        glib.timeout_add(5000, loop.quit)
+        glib.timeout_add(TIMEOUT*1000, loop.quit)
         protocol = self.make_memory_protocol(ldata, read_buffer_size=65536, process_packet_cb=process_packet_cb)
         start = monotonic_time()
         protocol.start()
         loop.run()
         end = monotonic_time()
         assert len(parsed_packets)==N*3, "expected to parse %i packets but got %i" % (N*3, len(parsed_packets))
-        #on win32, the clock resolution is too low,
-        #avoid dividing by zero:
-        elapsed = max(0.001, (end-start))
+        elapsed = (end-start)
         log("do_test_read_speed(%i) %iMB in %ims", pixel_data_size, total_size, elapsed*1000)
         return int(total_size/elapsed)
 
+    def make_test_packets(self, pixel_data_size=2**18):
+        pixel_data = os.urandom(pixel_data_size)
+        return (
+            ("test", 1, 2, 3),
+            ("ping", 100, 200, 300, 0),
+            ("draw", 100, 100, 640, 480, Compressed("pixel-data", pixel_data), {}),
+            )
+
+    def repeat_list(self, items, N=100):
+        #repeat the same pattern N times:
+        l = []
+        for _ in range(N):
+            for item in items:
+                assert len(item)>0
+                l.append(item)
+        return l
+
+    def test_format_thread(self):
+        packets = self.make_test_packets()
+        N = 500
+        many = self.repeat_list(packets, N)
+        def get_packet_cb():
+            #log.info("get_packet_cb")
+            try:
+                packet = many.pop(0)
+                return (packet, None, None, None, False, True, False)
+            except IndexError:
+                protocol.close()
+                return (None, )
+        def process_packet_cb(proto, packet):
+            if packet[0]==Protocol.CONNECTION_LOST:
+                glib.timeout_add(1000, loop.quit)
+        protocol = self.make_memory_protocol(None, process_packet_cb=process_packet_cb, get_packet_cb=get_packet_cb)
+        conn = protocol._conn
+        loop = glib.MainLoop()
+        glib.timeout_add(TIMEOUT*1000, loop.quit)
+        start = monotonic_time()
+        protocol.enable_compressor("lz4")
+        protocol.enable_encoder("rencode")
+        protocol.start()
+        protocol.source_has_more()
+        loop.run()
+        assert protocol._closed
+        end = monotonic_time()
+        log("protocol: %s", protocol)
+        log("%s write-data=%s", conn, len(conn.write_data))
+        total_size = sum(len(packet) for packet in conn.write_data)
+        elapsed = end-start
+        log("bytes=%s, elapsed=%s", total_size, elapsed)
+        log.info("format thread: %iMB/s", int(total_size/elapsed//1024//1024))
+        assert conn.write_data
 
 def main():
     unittest.main()
