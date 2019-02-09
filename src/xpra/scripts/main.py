@@ -24,14 +24,19 @@ from xpra.os_util import (
     get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
-from xpra.scripts.parsing import info, warn, error, \
-    parse_vsock, parse_env, is_local, \
-    fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help, \
-    supports_shadow, supports_server, supports_proxy, supports_mdns
-from xpra.scripts.config import OPTION_TYPES, TRUE_OPTIONS, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, OPTIONS_COMPAT_NAMES, \
-    InitException, InitInfo, InitExit, \
-    fixup_options, dict_to_validated_config, \
-    make_defaults_struct, parse_bool, has_sound_support, name_to_field
+from xpra.scripts.parsing import (
+    info, warn, error,
+    parse_vsock, parse_env, is_local,
+    fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help,
+    supports_shadow, supports_server, supports_proxy, supports_mdns,
+    )
+from xpra.scripts.config import (
+    OPTION_TYPES, TRUE_OPTIONS, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
+    START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, OPTIONS_COMPAT_NAMES,
+    InitException, InitInfo, InitExit,
+    fixup_options, dict_to_validated_config,
+    make_defaults_struct, parse_bool, has_sound_support, name_to_field,
+    )
 from xpra.log import is_debug_enabled, Logger
 assert info and warn and error, "used by modules importing those from here"
 
