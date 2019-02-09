@@ -98,20 +98,21 @@ class GlobalPerformanceStatistics(object):
         def latency_averages(values):
             avg, recent = calculate_time_weighted_average(values)
             return max(0.001, avg), max(0.001, recent)
-        if len(self.client_latency)>0:
-            data = [(when, latency) for _, when, _, latency in tuple(self.client_latency)]
+        client_latency = tuple(self.client_latency)
+        if client_latency:
+            data = [(when, latency) for _, when, _, latency in client_latency]
             self.min_client_latency = min([x for _,x in data])
             self.avg_client_latency, self.recent_client_latency = latency_averages(data)
         #client ping latency: from ping packets
-        if len(self.client_ping_latency)>0:
-            data = tuple(self.client_ping_latency)
-            self.min_client_ping_latency = min([x for _,x in data])
-            self.avg_client_ping_latency, self.recent_client_ping_latency = latency_averages(data)
+        client_ping_latency = tuple(self.client_ping_latency)
+        if client_ping_latency:
+            self.min_client_ping_latency = min([x for _,x in client_ping_latency])
+            self.avg_client_ping_latency, self.recent_client_ping_latency = latency_averages(client_ping_latency)
         #server ping latency: from ping packets
-        if len(self.server_ping_latency)>0:
-            data = tuple(self.server_ping_latency)
-            self.min_server_ping_latency = min([x for _,x in data])
-            self.avg_server_ping_latency, self.recent_server_ping_latency = latency_averages(data)
+        server_ping_latency = tuple(self.server_ping_latency)
+        if server_ping_latency:
+            self.min_server_ping_latency = min([x for _,x in server_ping_latency])
+            self.avg_server_ping_latency, self.recent_server_ping_latency = latency_averages(server_ping_latency)
         #set to 0 if we have less than 2 events in the last 60 seconds:
         now = monotonic_time()
         min_time = now-60
