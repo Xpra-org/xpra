@@ -369,7 +369,9 @@ class Protocol(object):
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, has_more=False, wait_for_more=False):
         if not has_more:
-            self._source_has_more.clear()
+            shm = self._source_has_more
+            if shm:
+                shm.clear()
         if packet is None:
             return
         log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
