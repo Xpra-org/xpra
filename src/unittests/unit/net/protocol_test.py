@@ -62,26 +62,19 @@ def nodata(*args):
 
 class ProfileProtocol(Protocol):
 
-    def _write_format_thread_loop(self):
-        from pycallgraph import PyCallGraph
-        from pycallgraph import Config
+    def profiling_context(self, basename):
+        from pycallgraph import PyCallGraph, Config
         from pycallgraph.output import GraphvizOutput
-
         config = Config()
-        graphviz = GraphvizOutput(output_file='format-thread-%i.png' % monotonic_time())
+        graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, monotonic_time()))
+        return PyCallGraph(output=graphviz, config=config)
 
-        with PyCallGraph(output=graphviz, config=config):
+    def _write_format_thread_loop(self):
+        with self.profiling_context("format-thread"):
             Protocol._write_format_thread_loop(self)
 
     def do_read_parse_thread_loop(self):
-        from pycallgraph import PyCallGraph
-        from pycallgraph import Config
-        from pycallgraph.output import GraphvizOutput
-
-        config = Config()
-        graphviz = GraphvizOutput(output_file='read-parse.png')
-
-        with PyCallGraph(output=graphviz, config=config):
+        with self.profiling_context("read-parse-thread"):
             Protocol.do_read_parse_thread_loop(self)
         
 
