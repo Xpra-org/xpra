@@ -225,11 +225,11 @@
 	</distutils>
 
 	<distutils id="python-cython">
-		<branch repo="files.pythonhosted.org"
-			module="https://github.com/cython/cython/archive/0.29.3.tar.gz"
-			hash="sha256:4a33fd40c28e67413817f814adadfe2047a66ac3dcc81ff81651a54a03d6cbd0"
-			checkoutdir="cython-0.29.3"
-			version="0.29.3"/>
+		<branch repo="github.com"
+			module="/cython/cython/archive/0.29.5.tar.gz"
+			hash="sha256:2107bf85ed2cfeab635f65d583d1450599b77fa1e041db9de49caccc5c644f67"
+			checkoutdir="cython-0.29.5"
+			version="0.29.5"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
