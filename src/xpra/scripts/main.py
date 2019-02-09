@@ -576,7 +576,6 @@ def parse_proxy_attributes(display_name):
             if password:
                 desc_tmp["proxy_password"] = password
     except RuntimeError:
-        from xpra.log import Logger
         sshlog = Logger("ssh")
         sshlog.error("bad proxy argument: " + reout.group(0))
         return display_name, {}
@@ -1088,7 +1087,6 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 def ssl_wrap_socket_fn(opts, server_side=True):
     if server_side and not opts.ssl_cert:
         raise InitException("you must specify an 'ssl-cert' file to use 'bind-ssl' sockets")
-    from xpra.log import Logger
     ssllog = Logger("ssl")
     ssllog("ssl_wrap_socket_fn(.., %s)", server_side)
     import ssl
@@ -1362,7 +1360,6 @@ def get_client_app(error_cb, opts, extra_args, mode):
         if opts.opengl=="probe":
             from xpra.os_util import pollwait
             from xpra.platform.paths import get_xpra_command
-            from xpra.log import Logger
             log = Logger("opengl")
             cmd = get_xpra_command()+["opengl-probe"]
             env = os.environ.copy()
