@@ -374,7 +374,7 @@ class Protocol(object):
                 shm.clear()
         if packet is None:
             return
-        log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
+        #log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
         packet_type = packet[0]
         chunks = self.encode(packet)
         with self._write_lock:
