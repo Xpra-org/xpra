@@ -8,7 +8,7 @@ import os
 import unittest
 
 from xpra.util import csv
-from xpra.os_util import monotonic_time, WIN32
+from xpra.os_util import monotonic_time
 from xpra.net.protocol import Protocol
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
