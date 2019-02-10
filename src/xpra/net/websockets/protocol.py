@@ -39,8 +39,10 @@ class WebSocketProtocol(Protocol):
 
     STATE_FIELDS = tuple(list(Protocol.STATE_FIELDS)+["legacy_frame_per_chunk"])
 
-    def __init__(self, *args):
-        Protocol.__init__(self, *args)
+    TYPE = "websocket"
+
+    def __init__(self, *args, **kwargs):
+        Protocol.__init__(self, *args, **kwargs)
         self.ws_data = b""
         self.ws_payload = []
         self.ws_payload_opcode = 0
@@ -48,6 +50,9 @@ class WebSocketProtocol(Protocol):
         self._process_read = self.parse_ws_frame
         self.legacy_frame_per_chunk = LEGACY_FRAME_PER_CHUNK in (None, True)
         self.make_chunk_header = self.make_wschunk_header
+
+    def __repr__(self):
+        return "WebSocket(%s)" % self._conn
 
     def close(self):
         Protocol.close(self)
@@ -99,6 +104,9 @@ class WebSocketProtocol(Protocol):
         return header
 
     def parse_ws_frame(self, buf):
+        if not buf:
+            self._read_queue_put(buf)
+            return            
         if self.ws_data:
             ws_data = self.ws_data+buf
             self.ws_data = b""

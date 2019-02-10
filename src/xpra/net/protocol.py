@@ -130,6 +130,8 @@ class Protocol(object):
     GIBBERISH = "gibberish"
     INVALID = "invalid"
 
+    TYPE = "xpra"
+
     def __init__(self, scheduler, conn, process_packet_cb, get_packet_cb=None):
         """
             You must call this constructor and source_has_more() from the main thread.

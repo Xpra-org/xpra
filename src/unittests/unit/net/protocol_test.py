@@ -60,34 +60,37 @@ def nodata(*args):
     return None
 
 
-class ProfileProtocol(Protocol):
+def make_profiling_protocol_class(protocol_class):
 
-    def profiling_context(self, basename):
-        from pycallgraph import PyCallGraph, Config
-        from pycallgraph.output import GraphvizOutput
-        config = Config()
-        graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, monotonic_time()))
-        return PyCallGraph(output=graphviz, config=config)
+    class ProfileProtocol(protocol_class):
+        def profiling_context(self, basename):
+            from pycallgraph import PyCallGraph, Config
+            from pycallgraph.output import GraphvizOutput
+            config = Config()
+            graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, monotonic_time()))
+            return PyCallGraph(output=graphviz, config=config)
+    
+        def _write_format_thread_loop(self):
+            with self.profiling_context("format-thread"):
+                Protocol._write_format_thread_loop(self)
+    
+        def do_read_parse_thread_loop(self):
+            with self.profiling_context("read-parse-thread"):
+                Protocol.do_read_parse_thread_loop(self)
 
-    def _write_format_thread_loop(self):
-        with self.profiling_context("format-thread"):
-            Protocol._write_format_thread_loop(self)
-
-    def do_read_parse_thread_loop(self):
-        with self.profiling_context("read-parse-thread"):
-            Protocol.do_read_parse_thread_loop(self)
-        
+    return ProfileProtocol
 
 
 class ProtocolTest(unittest.TestCase):
+    protocol_class = Protocol
 
     def make_memory_protocol(self, data=[b""], read_buffer_size=1, hangup_delay=0, process_packet_cb=noop, get_packet_cb=nodata):
         conn = FastMemoryConnection(data)
         if PROFILING:
-            protocol_class = ProfileProtocol
+            pc = make_profiling_protocol_class(self.protocol_class)
         else:
-            protocol_class = Protocol
-        p = protocol_class(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
+            pc = self.protocol_class
+        p = pc(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
         #p = Protocol(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
         p.read_buffer_size = read_buffer_size
         p.hangup_delay = hangup_delay
@@ -107,9 +110,10 @@ class ProtocolTest(unittest.TestCase):
                 errs.append("processed %i packets" % protocol.input_packetcount)
             if protocol.input_raw_packetcount==0:
                 errs.append("not read any raw packets")
+            loop.quit()
         loop = glib.MainLoop()
-        glib.timeout_add(200, check_failed)
-        glib.timeout_add(400, loop.quit)
+        glib.timeout_add(500, check_failed)
+        glib.timeout_add(TIMEOUT*1000, loop.quit)
         protocol.start()
         loop.run()
         assert not errs, "%s" % csv(errs)
@@ -129,7 +133,7 @@ class ProtocolTest(unittest.TestCase):
         for i in range(15, 19):
             speed = self.do_test_read_speed(2**i)
             speeds.append(speed)
-        log.info("incoming packet processing speed: %iMB/s", sum(speeds)//len(speeds)//1024//1024)
+        log.info("%s incoming packet processing speed: %iMB/s", self.protocol_class.TYPE, sum(speeds)//len(speeds)//1024//1024)
 
     def do_test_read_speed(self, pixel_data_size=2**18):
         #prepare some packets to parse:
@@ -218,8 +222,18 @@ class ProtocolTest(unittest.TestCase):
         total_size = sum(len(packet) for packet in conn.write_data)
         elapsed = end-start
         log("bytes=%s, elapsed=%s", total_size, elapsed)
-        log.info("format thread: %iMB/s", int(total_size/elapsed//1024//1024))
+        log.info("%s format thread: %iMB/s", protocol.TYPE, int(total_size/elapsed//1024//1024))
         assert conn.write_data
+
+
+try:
+    from xpra.net.websockets.protocol import WebSocketProtocol
+    class WebsocketProtocolTest(ProtocolTest):
+        protocol_class = WebSocketProtocol
+except ImportError as e:
+    log.warn("Warning: skipped websocket test")
+    log.warn(" %s", e)
+
 
 def main():
     unittest.main()
