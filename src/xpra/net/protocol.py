@@ -565,7 +565,7 @@ class Protocol(object):
                         #so we must tell it how to do that and pass the level flag
                         il = item.level
                     packets.append((0, i, il, item.data))
-                    packet[i] = ''
+                    packet[i] = b''
                 else:
                     #data is small enough, inline it:
                     packet[i] = item.data
@@ -685,7 +685,7 @@ class Protocol(object):
     def write_buffers(self, buf_data, _fail_cb, _synchronous):
         con = self._conn
         if not con:
-            return 0
+            return
         for buf in buf_data:
             while buf and not self._closed:
                 written = con.write(buf)
