@@ -188,7 +188,7 @@ class ProtocolTest(unittest.TestCase):
 
     def test_format_thread(self):
         packets = self.make_test_packets()
-        N = 500
+        N = 1000
         many = self.repeat_list(packets, N)
         def get_packet_cb():
             #log.info("get_packet_cb")
@@ -205,14 +205,14 @@ class ProtocolTest(unittest.TestCase):
         conn = protocol._conn
         loop = glib.MainLoop()
         glib.timeout_add(TIMEOUT*1000, loop.quit)
-        start = monotonic_time()
         protocol.enable_compressor("lz4")
         protocol.enable_encoder("rencode")
         protocol.start()
         protocol.source_has_more()
+        start = monotonic_time()
         loop.run()
-        assert protocol._closed
         end = monotonic_time()
+        assert protocol._closed
         log("protocol: %s", protocol)
         log("%s write-data=%s", conn, len(conn.write_data))
         total_size = sum(len(packet) for packet in conn.write_data)
