@@ -97,6 +97,7 @@ HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISP
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
 
+WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", not (WIN32 and OSX))
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
 OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", False)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
@@ -1809,11 +1810,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         geomlog("window origin=%ix%i, root origin=%ix%i, actual position=%ix%i", ox, oy, rx, ry, ax, ay)
         #validate against edge of screen (ensure window is shown):
         if CLAMP_WINDOW_TO_SCREEN:
-            if (ax + w)<0:
+            if (ax + w)<=0:
                 ax = -w + 1
             elif ax >= mw:
                 ax = mw - 1
-            if (ay + h)<0:
+            if not WINDOW_OVERFLOW_TOP and ay<=0:
+                ay = 0
+            elif (ay + h)<=0:
                 ay = -y + 1
             elif ay >= mh:
                 ay = mh -1
