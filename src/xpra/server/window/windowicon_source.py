@@ -139,8 +139,9 @@ class WindowIconSource(object):
             if not self.send_window_icon_timer:
                 #call compress via the work queue
                 #and delay sending it by a bit to allow basic icon batching:
-                delay = max(50, int(self.batch_config.delay))
-                log("send_window_icon() window=%s, wid=%s, compression scheduled in %sms", self.window, self.wid, delay)
+                w, h = self.window_icon_data[3], self.window_icon_data[4]
+                delay = min(1000, max(50, w*h*self.batch_config.delay_per_megapixel//1000000))
+                log("send_window_icon() window=%s, wid=%s, compression scheduled in %sms for batch delay=%i", self.window, self.wid, delay, self.batch_config.delay_per_megapixel)
                 self.send_window_icon_timer = self.timeout_add(delay, self.call_in_encode_thread, True, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self):
