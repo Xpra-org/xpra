@@ -101,6 +101,9 @@ class WindowPerformanceStatistics(object):
 
     def get_factors(self, bandwidth_limit=0):
         factors = []
+        def mayaddfac(metric, info, factor, weight):
+            if weight>0.01:
+                factors.append((metric, info, factor, weight))
         #ratio of "in" and "out" latency indicates network bottleneck:
         #(the difference between the two is the time it takes to send)
         if len(self.damage_in_latency)>0 and len(self.damage_out_latency)>0:
@@ -109,7 +112,7 @@ class WindowPerformanceStatistics(object):
             rd = max(0.010, 0.040+self.recent_damage_out_latency-self.recent_damage_in_latency)
             metric = "damage-network-delay"
             #info: avg delay=%.3f recent delay=%.3f" % (ad, rd)
-            factors.append(calculate_for_average(metric, ad, rd))
+            mayaddfac(*calculate_for_average(metric, ad, rd))
         #client decode time:
         ads = self.avg_decode_speed
         rds = self.recent_decode_speed
@@ -121,7 +124,7 @@ class WindowPerformanceStatistics(object):
             avg1MB = 1.0*1024*1024/ads
             recent1MB = 1.0*1024*1024/rds
             weight_div = max(0.25, rds/(4*1000*1000))
-            factors.append(calculate_for_average(metric, avg1MB, recent1MB, weight_offset=0.0, weight_div=weight_div))
+            mayaddfac(*calculate_for_average(metric, avg1MB, recent1MB, weight_offset=0.0, weight_div=weight_div))
         ldet = self.last_damage_event_time
         if ldet:
             #If nothing happens for a while then we can reduce the batch delay,
@@ -135,7 +138,7 @@ class WindowPerformanceStatistics(object):
             metric = "damage-rate"
             info = {"elapsed"   : int(1000.0*elapsed),
                     "max_latency"   : int(1000.0*self.max_latency)}
-            factors.append((metric, info, target, weight))
+            mayaddfac(metric, info, target, weight)
         if bandwidth_limit>0:
             #calculate how much bandwith we have used in the last second (in bps):
             #encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
@@ -150,7 +153,7 @@ class WindowPerformanceStatistics(object):
             #if we are getting close to or above the limit,
             #the certainty of this factor goes up:
             weight = max(0, target-1)*(5+logp(target))
-            factors.append(("bandwidth-limit", info, target, weight))
+            mayaddfac("bandwidth-limit", info, target, weight)
         return factors
 
 
