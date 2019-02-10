@@ -823,7 +823,7 @@ class Protocol(object):
                         return
                     #how much to we need to slice off to complete the header:
                     read = min(len(buf), HEADER_SIZE-len(header))
-                    header += buf[:read]
+                    header += memoryview_to_bytes(buf[:read])
                     if len(header)<HEADER_SIZE:
                         #need to process more buffers to get a full header:
                         read_buffers.pop(0)
