@@ -596,7 +596,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         y = mh//2 - h//2
                     else:
                         y = oy
-                    log.info("adjusted_position(%i, %i)=%i, %i", ox, oy, x, y)
+                    geomlog("adjusted_position(%i, %i)=%i, %i", ox, oy, x, y)
                     return x, y
         return ox, oy
 
