@@ -71,11 +71,11 @@ def make_profiling_protocol_class(protocol_class):
             return PyCallGraph(output=graphviz, config=config)
     
         def _write_format_thread_loop(self):
-            with self.profiling_context("format-thread"):
+            with self.profiling_context("%s-format-thread" % protocol_class.TYPE):
                 Protocol._write_format_thread_loop(self)
     
         def do_read_parse_thread_loop(self):
-            with self.profiling_context("read-parse-thread"):
+            with self.profiling_context("%s-read-parse-thread" % protocol_class.TYPE):
                 Protocol.do_read_parse_thread_loop(self)
 
     return ProfileProtocol
@@ -129,13 +129,19 @@ class ProtocolTest(unittest.TestCase):
                 assert items
 
     def test_read_speed(self):
-        speeds = []
+        total_size = 0
+        total_elapsed = 0
+        n_packets = 0
         for i in range(15, 19):
-            speed = self.do_test_read_speed(2**i)
-            speeds.append(speed)
-        log.info("%s incoming packet processing speed: %iMB/s", self.protocol_class.TYPE, sum(speeds)//len(speeds)//1024//1024)
+            n, size, elapsed = self.do_test_read_speed(2**i)
+            total_size += size
+            total_elapsed += elapsed
+            n_packets += n
+        log.info("\n%-9s incoming packet processing speed:\t%iMB/s", self.protocol_class.TYPE, total_size/total_elapsed//1024//1024)
+        log.info("\n%-9s packet parsed per second:\t\t%i", self.protocol_class.TYPE, n_packets/elapsed)
+        
 
-    def do_test_read_speed(self, pixel_data_size=2**18):
+    def do_test_read_speed(self, pixel_data_size=2**18, N=100):
         #prepare some packets to parse:
         p = self.make_memory_protocol()
         #use optimal setup:
@@ -147,9 +153,9 @@ class ProtocolTest(unittest.TestCase):
             for item in items:
                 data.append(item)
         p.raw_write = raw_write
-        for packet in self.make_test_packets(pixel_data_size):
+        packets = self.make_test_packets(pixel_data_size)
+        for packet in packets:
             p._add_packet_to_queue(packet)
-        N = 100
         ldata = self.repeat_list(data, N)
         total_size = sum(len(item) for item in ldata)
         #catch parsed packets:
@@ -171,7 +177,7 @@ class ProtocolTest(unittest.TestCase):
         assert len(parsed_packets)==N*3, "expected to parse %i packets but got %i" % (N*3, len(parsed_packets))
         elapsed = (end-start)
         log("do_test_read_speed(%i) %iMB in %ims", pixel_data_size, total_size, elapsed*1000)
-        return int(total_size/elapsed)
+        return N*len(packets), total_size, elapsed
 
     def make_test_packets(self, pixel_data_size=2**18):
         pixel_data = os.urandom(pixel_data_size)
@@ -222,7 +228,9 @@ class ProtocolTest(unittest.TestCase):
         total_size = sum(len(packet) for packet in conn.write_data)
         elapsed = end-start
         log("bytes=%s, elapsed=%s", total_size, elapsed)
-        log.info("%s format thread: %iMB/s", protocol.TYPE, int(total_size/elapsed//1024//1024))
+        log.info("\n%-9s format thread:\t\t\t%iMB/s", protocol.TYPE, int(total_size/elapsed//1024//1024))
+        n_packets = len(packets)*N
+        log.info("\n%-9s packets formatted per second:\t\t%i", protocol.TYPE, int(n_packets/elapsed))
         assert conn.write_data
 
 
