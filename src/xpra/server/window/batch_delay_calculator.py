@@ -8,6 +8,7 @@ from math import log as mathlog, sqrt
 
 from xpra.log import Logger
 log = Logger("server", "stats")
+log.enable_debug()
 
 from xpra.os_util import monotonic_time
 from xpra.server.cystats import queue_inspect, logp, time_weighted_average, calculate_timesize_weighted_average_score   #@UnresolvedImport
@@ -42,7 +43,7 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen
     #damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
     def mayaddfac(metric, info, factor, weight):
-        if factor>=0.01 and weight>0.01:
+        if weight>0.01:
             factors.append((metric, info, factor, weight))
     mayaddfac(*queue_inspect("damage-packet-queue-pixels", time_values, div=low_limit, smoothing=sqrt))
     #boost window that has focus and OR windows:

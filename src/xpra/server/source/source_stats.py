@@ -143,7 +143,7 @@ class GlobalPerformanceStatistics(object):
     def get_factors(self, pixel_count):
         factors = []
         def mayaddfac(metric, info, factor, weight):
-            if factor>=0.01 and weight>0.01:
+            if weight>0.01:
                 factors.append((metric, info, factor, weight))
         if len(self.client_latency)>0:
             #client latency: (we want to keep client latency as low as can be)
