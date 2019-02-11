@@ -72,12 +72,11 @@ def get_icon_size():
         dpi = 96
     if dpi > 144:
         return 48
-    elif dpi > 120:
+    if dpi > 120:
         return 32
-    elif dpi > 96:
+    if dpi > 96:
         return 24
-    else:
-        return 16
+    return 16
 
 def get_antialias_info():
     return {}
