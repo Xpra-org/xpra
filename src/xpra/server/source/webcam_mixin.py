@@ -4,14 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-from xpra.log import Logger
-log = Logger("webcam")
-
 from xpra.os_util import BytesIOClass, POSIX, OSX
 from xpra.util import envint, csv
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.log import Logger
 
+log = Logger("webcam")
 
 MAX_WEBCAM_DEVICES = envint("XPRA_MAX_WEBCAM_DEVICES", 1)
 

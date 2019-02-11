@@ -5,12 +5,12 @@
 # later version. See the file COPYING for details.
 
 import numpy
+from pycuda import driver
 
 from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
-from pycuda import driver
-
 from xpra.log import Logger
+
 log = Logger("cuda", "nvfbc")
 
 

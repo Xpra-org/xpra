@@ -19,16 +19,20 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
+from xpra.os_util import OSX, bytestostr
+from xpra.gtk_common.gtk_util import (
+    add_close_accel, display_get_default, color_parse, get_preferred_size,
+    pixbuf_new_from_file, STATE_NORMAL, RELIEF_NORMAL,
+    )
+from xpra.notifications.notifier_base import NotifierBase, log
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_gdk, import_pixbufloader
+
 gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
 pixbuf_loader = import_pixbufloader()
 
-from xpra.gtk_common.gtk_util import add_close_accel, display_get_default, color_parse, get_preferred_size, pixbuf_new_from_file, STATE_NORMAL, RELIEF_NORMAL
-from xpra.notifications.notifier_base import NotifierBase, log
-
-from xpra.os_util import OSX, bytestostr
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
 if OSX:

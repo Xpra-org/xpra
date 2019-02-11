@@ -15,8 +15,8 @@ import signal
 from xpra.util import envint, envbool
 from xpra.os_util import POSIX
 from xpra.log import Logger
-log = Logger("server", "util", "exec")
 
+log = Logger("server", "util", "exec")
 
 USE_PROCESS_POLLING = not POSIX or envbool("XPRA_USE_PROCESS_POLLING")
 POLL_DELAY = envint("XPRA_POLL_DELAY", 2)

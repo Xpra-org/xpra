@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-
 import ctypes
 from ctypes.wintypes import DWORD
 

@@ -13,7 +13,6 @@ from xpra.net.net_util import get_interfaces_addresses
 from xpra.net.mdns import XPRA_MDNS_TYPE, SHOW_INTERFACE
 from xpra.net.net_util import get_iface
 
-
 log = Logger("network", "mdns")
 
 

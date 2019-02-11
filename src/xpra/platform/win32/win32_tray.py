@@ -9,9 +9,6 @@
 
 from ctypes import wintypes, byref
 
-from xpra.log import Logger
-log = Logger("tray", "win32")
-
 from xpra.os_util import monotonic_time
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import EnumDisplayMonitors, GetMonitorInfo
@@ -20,6 +17,9 @@ from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.common import GetSystemMetrics, GetCursorPos
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_filename
+from xpra.log import Logger
+
+log = Logger("tray", "win32")
 
 
 class Win32Tray(TrayBase):

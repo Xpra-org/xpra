@@ -7,6 +7,7 @@
 
 import os
 import sys
+
 from xpra.util import envbool
 
 #defaults which may be overriden by platform_import:

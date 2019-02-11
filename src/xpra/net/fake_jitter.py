@@ -6,6 +6,7 @@
 from threading import Lock
 
 from xpra.log import Logger
+
 log = Logger("network", "protocol")
 
 

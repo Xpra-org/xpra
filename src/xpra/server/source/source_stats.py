@@ -9,12 +9,15 @@
 from math import sqrt
 from collections import deque
 
-from xpra.log import Logger
-log = Logger("stats")
-
-from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_size_weighted_average, calculate_for_target, time_weighted_average, queue_inspect  #@UnresolvedImport
+from xpra.server.cystats import (
+    logp, calculate_time_weighted_average, calculate_size_weighted_average,
+    calculate_for_target, time_weighted_average, queue_inspect,
+    )
 from xpra.simple_stats import get_list_stats
 from xpra.os_util import monotonic_time
+from xpra.log import Logger
+
+log = Logger("network")
 
 NRECS = 500
 

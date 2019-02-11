@@ -14,6 +14,7 @@ from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.util import csv, envint, envbool
 from xpra.log import Logger
+
 log = Logger("keyboard")
 
 

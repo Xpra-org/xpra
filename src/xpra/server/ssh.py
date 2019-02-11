@@ -7,19 +7,16 @@ import os
 import shlex
 import socket
 import paramiko
-
 from subprocess import Popen, PIPE
 from threading import Event
 
-from xpra.log import Logger
-log = Logger("network", "ssh")
-
 from xpra.net.ssh import SSHSocketConnection
 from xpra.util import csv, envint
-from xpra.os_util import osexpand, getuid, bytestostr, WIN32, POSIX,\
-    monotonic_time
+from xpra.os_util import osexpand, getuid, bytestostr, WIN32, POSIX, monotonic_time
 from xpra.platform.paths import get_ssh_conf_dirs
+from xpra.log import Logger
 
+log = Logger("network", "ssh")
 
 SERVER_WAIT = envint("XPRA_SSH_SERVER_WAIT", 20)
 AUTHORIZED_KEYS = "~/.ssh/authorized_keys"

@@ -14,7 +14,23 @@ import datetime
 from collections import deque
 from time import sleep
 
+from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
+from xpra.platform.gui import (
+    get_vrefresh, get_window_min_size, get_window_max_size,
+    get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
+    )
+from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
+from xpra.platform.paths import get_icon_filename
+from xpra.scripts.config import FALSE_OPTIONS
+from xpra.make_thread import make_thread
+from xpra.os_util import (
+    BytesIOClass, Queue, bytestostr, monotonic_time, memoryview_to_bytes,
+    OSX, POSIX, PYTHON3, is_Ubuntu,
+    )
+from xpra.util import iround, envint, envbool, typedict, make_instance, updict
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
+
 log = Logger("window")
 geomlog = Logger("geometry")
 paintlog = Logger("paint")
@@ -26,21 +42,6 @@ mouselog = Logger("mouse")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 traylog = Logger("client", "tray")
-
-
-from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
-from xpra.platform.gui import (
-    get_vrefresh, get_window_min_size, get_window_max_size,
-    get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
-    )
-from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
-from xpra.platform.paths import get_icon_filename
-from xpra.scripts.config import FALSE_OPTIONS
-from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, bytestostr, monotonic_time, memoryview_to_bytes, OSX, POSIX, PYTHON3, is_Ubuntu
-from xpra.util import iround, envint, envbool, typedict, make_instance, updict
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
-
 
 glib = import_glib()
 

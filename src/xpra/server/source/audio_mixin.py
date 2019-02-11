@@ -6,13 +6,13 @@
 
 import os
 
-from xpra.log import Logger
-log = Logger("sound")
-
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, POSIX
 from xpra.util import csv, envbool, flatten_dict, XPRA_AUDIO_NOTIFICATION_ID
+from xpra.log import Logger
+
+log = Logger("sound")
 
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 

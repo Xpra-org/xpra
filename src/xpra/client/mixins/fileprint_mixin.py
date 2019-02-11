@@ -3,14 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-printlog = Logger("printing")
-filelog = Logger("file")
-
 from xpra.util import envbool, csv
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.log import Logger
 
+printlog = Logger("printing")
+filelog = Logger("file")
 
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)

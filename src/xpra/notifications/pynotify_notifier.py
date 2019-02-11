@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import pynotify                 #@UnresolvedImport
+
 from xpra.notifications.notifier_base import NotifierBase
 
 

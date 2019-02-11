@@ -12,6 +12,7 @@ from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.os_util import bytestostr, PYTHON2, PYTHON3, OSX, WIN32
 from xpra.util import typedict, envbool, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
+
 log = Logger("window")
 plog = Logger("paint")
 focuslog = Logger("focus")

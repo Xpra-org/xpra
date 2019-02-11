@@ -4,14 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import dbus.service
+
 from xpra.dbus.helper import dbus_to_native
 from xpra.dbus.common import init_session_bus
 from xpra.util import csv
-import dbus.service
-
 from xpra.log import Logger
-log = Logger("dbus", "menu")
 
+log = Logger("dbus", "menu")
 
 ACTIONS = "org.gtk.Actions"
 MENUS = "org.gtk.Menus"

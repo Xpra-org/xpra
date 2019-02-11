@@ -6,13 +6,12 @@
 
 import os
 
-from xpra.log import Logger
-log = Logger("network")
-
 from xpra.util import envbool, envint, CLIENT_PING_TIMEOUT
 from xpra.os_util import monotonic_time
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.log import Logger
 
+log = Logger("network")
 
 PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)

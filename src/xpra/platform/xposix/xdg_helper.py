@@ -14,6 +14,7 @@ import sys
 from xpra.util import envbool
 from xpra.os_util import load_binary_file, BytesIOClass
 from xpra.log import Logger
+
 log = Logger("exec", "util")
 
 LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", True)

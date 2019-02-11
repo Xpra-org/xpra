@@ -7,11 +7,7 @@ import sys
 import time
 import os
 import socket
-
 from subprocess import PIPE, Popen
-
-from xpra.log import Logger
-log = Logger("network", "ssh")
 
 from xpra.scripts.main import InitException, InitExit, shellquote
 from xpra.platform.paths import get_xpra_command, get_ssh_known_hosts_files
@@ -21,6 +17,9 @@ from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClo
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
 from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, umask_context, is_WSL, WIN32, OSX, POSIX
 from xpra.util import envint, envbool, nonl, engs
+from xpra.log import Logger
+
+log = Logger("network", "ssh")
 
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 SSH_DEBUG = envbool("XPRA_SSH_DEBUG", False)

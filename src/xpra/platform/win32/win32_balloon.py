@@ -6,16 +6,16 @@
 
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
+import struct
+from ctypes import windll
 
 from xpra.os_util import BytesIOClass, strtobytes
 from xpra.util import XPRA_GUID_BYTES
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
 from xpra.platform.win32.common import GetSystemMetrics
 from xpra.log import Logger
-log = Logger("notify", "win32")
 
-import struct
-from ctypes import windll
+log = Logger("notify", "win32")
 
 NIIF_USER = 4
 NIF_INFO = 16

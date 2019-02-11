@@ -5,12 +5,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-from xpra.log import Logger
-log = Logger("window")
-
 #pretend to draw the windows, but don't actually do anything
 from xpra.util import envbool
+from xpra.log import Logger
+
+log = Logger("window")
 USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 

@@ -9,16 +9,16 @@ import subprocess
 import hashlib
 import uuid
 
-from xpra.log import Logger
-printlog = Logger("printing")
-filelog = Logger("file")
-
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import monotonic_time, bytestostr, strtobytes, POSIX, WIN32
 from xpra.util import typedict, csv, nonl, envint, envbool, engs
 from xpra.scripts.config import parse_bool
 from xpra.simple_stats import std_unit
 from xpra.make_thread import start_thread
+from xpra.log import Logger
+
+printlog = Logger("printing")
+filelog = Logger("file")
 
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 FILE_CHUNKS_SIZE = max(0, envint("XPRA_FILE_CHUNKS_SIZE", 65536))

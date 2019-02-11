@@ -4,20 +4,21 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("window", "encoding")
-
 from xpra.net import compression
 from xpra.codecs.loader import get_codec
 from xpra.util import envbool, first_time
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
+from xpra.log import Logger
+
 #"pixels_to_bytes" gets patched up by the OSX shadow server
 pixels_to_bytes = memoryview_to_bytes
 try:
     from xpra.net.mmap_pipe import mmap_write
 except:
     mmap_write = None               #no mmap
+
+log = Logger("window", "encoding")
 
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 

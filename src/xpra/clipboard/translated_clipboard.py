@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
 

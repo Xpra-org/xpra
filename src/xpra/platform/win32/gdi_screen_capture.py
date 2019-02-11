@@ -10,8 +10,6 @@ from PIL import Image
 
 from xpra.log import Logger
 from xpra.util import envbool, roundup
-log = Logger("shadow", "win32")
-
 from xpra.os_util import BytesIOClass
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_virtualscreenmetrics
@@ -23,7 +21,10 @@ from xpra.platform.win32.common import (
     CreateCompatibleDC, CreateCompatibleBitmap,
     GetBitmapBits, SelectObject, DeleteObject,
     BitBlt, GetDeviceCaps,
-    GetSystemPaletteEntries)
+    GetSystemPaletteEntries,
+    )
+
+log = Logger("shadow", "win32")
 
 NULLREGION = 1      #The region is empty.
 SIMPLEREGION = 2    #The region is a single rectangle.

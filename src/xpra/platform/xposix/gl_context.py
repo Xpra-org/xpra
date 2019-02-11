@@ -3,9 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("opengl")
-
 from xpra.util import envbool
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
@@ -13,6 +10,9 @@ from xpra.gtk_common.gtk_util import display_get_default, get_xwindow, make_temp
 from ctypes import c_int, byref, cast, POINTER
 from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
+from xpra.log import Logger
+
+log = Logger("opengl")
 
 
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)

@@ -10,36 +10,41 @@ import os
 import sys
 import types
 import ctypes
-
-from xpra.log import Logger
-log = Logger("win32")
-grablog = Logger("win32", "grab")
-screenlog = Logger("win32", "screen")
-keylog = Logger("win32", "keyboard")
-mouselog = Logger("win32", "mouse")
+from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT
 
 from xpra.client import mixin_features
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.win32_events import KNOWN_EVENTS, POWER_EVENTS
-from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWindowLongW,
-                                        ClipCursor, GetCursorPos,
-                                        GetDC, ReleaseDC,
-                                        SendMessageA, GetMessageA, TranslateMessage, DispatchMessageA,
-                                        FindWindowA,
-                                        GetModuleHandleA,
-                                        GetKeyState, GetWindowRect,
-                                        GetDoubleClickTime,
-                                        MonitorFromWindow, EnumDisplayMonitors,
-                                        UnhookWindowsHookEx, CallNextHookEx, SetWindowsHookExA,
-                                        SetConsoleCtrlHandler,
-                                        GetDeviceCaps,
-                                        GetIntSystemParametersInfo,
-                                        GetUserObjectInformationA, OpenInputDesktop, CloseDesktop,
-                                        GetMonitorInfo,
-                                        user32)
+from xpra.platform.win32.common import (
+    GetSystemMetrics, SetWindowLongW, GetWindowLongW,
+    ClipCursor, GetCursorPos,
+    GetDC, ReleaseDC,
+    SendMessageA, GetMessageA, TranslateMessage, DispatchMessageA,
+    FindWindowA,
+    GetModuleHandleA,
+    GetKeyState, GetWindowRect,
+    GetDoubleClickTime,
+    MonitorFromWindow, EnumDisplayMonitors,
+    UnhookWindowsHookEx, CallNextHookEx, SetWindowsHookExA,
+    SetConsoleCtrlHandler,
+    GetDeviceCaps,
+    GetIntSystemParametersInfo,
+    GetUserObjectInformationA, OpenInputDesktop, CloseDesktop,
+    GetMonitorInfo,
+    user32,
+    )
 from xpra.util import AdHocStruct, csv, envint, envbool
 from xpra.os_util import PYTHON2, PYTHON3, get_util_logger
+
+from xpra.log import Logger
+
+log = Logger("win32")
+grablog = Logger("win32", "grab")
+screenlog = Logger("win32", "screen")
+keylog = Logger("win32", "keyboard")
+mouselog = Logger("win32", "mouse")
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
@@ -47,9 +52,6 @@ REINIT_VISIBLE_WINDOWS = envbool("XPRA_WIN32_REINIT_VISIBLE_WINDOWS", True)
 SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY", 10)
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 
-
-from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT
 
 if PYTHON3:
     from ctypes import CDLL, pythonapi, c_void_p, py_object

@@ -10,6 +10,7 @@ from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.log import Logger
 from xpra.os_util import is_X11
+
 log = Logger("keyboard", "posix")
 
 

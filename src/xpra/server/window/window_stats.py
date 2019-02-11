@@ -6,16 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-#how many historical records to keep
-#for the various statistics we collect:
-#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
-NRECS = 100
-
 from math import sqrt
-
-from xpra.log import Logger
-log = Logger("stats")
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
@@ -25,8 +16,16 @@ from xpra.server.cystats import (logp,      #@UnresolvedImport
     calculate_time_weighted_average,        #@UnresolvedImport
     calculate_size_weighted_average,        #@UnresolvedImport
     calculate_timesize_weighted_average,    #@UnresolvedImport
-    calculate_for_average)                  #@UnresolvedImport
+    calculate_for_average,                  #@UnresolvedImport
+    )
 
+from xpra.log import Logger
+log = Logger("stats")
+
+#how many historical records to keep
+#for the various statistics we collect:
+#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
+NRECS = 100
 
 TARGET_LATENCY_TOLERANCE = envint("XPRA_TARGET_LATENCY_TOLERANCE", 20)/1000.0
 

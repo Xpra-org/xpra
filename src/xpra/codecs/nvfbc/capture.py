@@ -11,6 +11,7 @@ import os.path
 from xpra.util import envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger, add_debug_category
+
 log = Logger("encoder", "nvfbc")
 
 USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)

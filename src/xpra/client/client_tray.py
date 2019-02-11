@@ -8,6 +8,7 @@ from xpra.client.window_backing_base import WindowBackingBase
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.os_util import memoryview_to_bytes, _buffer
 from xpra.log import Logger
+
 log = Logger("tray")
 
 

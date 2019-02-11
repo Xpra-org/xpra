@@ -4,13 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("keyboard", "win32")
-
 from xpra.platform.win32 import constants as win32con
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.platform.win32.common import MapVirtualKeyW, GetAsyncKeyState, VkKeyScanW, keybd_event
+from xpra.log import Logger
 
+log = Logger("keyboard", "win32")
 
 MAPVK_VK_TO_VSC = 0
 def fake_key(keycode, press):

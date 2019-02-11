@@ -10,6 +10,7 @@ import socket
 import sys
 
 from xpra.log import Logger
+
 log = Logger("network", "util")
 
 

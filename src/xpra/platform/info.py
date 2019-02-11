@@ -5,9 +5,6 @@
 
 import os
 
-#default:
-Keyboard = None
-
 def get_posix_sys_info():
     info = {}
     try:

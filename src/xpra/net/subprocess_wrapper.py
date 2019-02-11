@@ -10,13 +10,13 @@ import subprocess
 
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.util import repr_ellipsized, envint, envbool
-
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException
 from xpra.net.protocol import Protocol
 from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr, hexstr, WIN32, POSIX
 from xpra.child_reaper import getChildReaper
 from xpra.log import Logger
+
 log = Logger("util")
 
 

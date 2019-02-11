@@ -5,16 +5,15 @@
 
 import os
 import time
-
-from xpra.log import Logger
-log = Logger("encoder", "pillow")
+from PIL import Image, ImagePalette     #@UnresolvedImport
 
 from xpra.util import envbool
 from xpra.os_util import BytesIOClass, bytestostr
 from xpra.net.compression import Compressed
-
-from PIL import Image, ImagePalette     #@UnresolvedImport
+from xpra.log import Logger
 from xpra.codecs.pillow import PIL_VERSION
+
+log = Logger("encoder", "pillow")
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg,webp,jpeg2000").split(",")

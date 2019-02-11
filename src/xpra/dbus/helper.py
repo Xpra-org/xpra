@@ -6,7 +6,9 @@
 
 import sys
 import dbus
+
 from xpra.log import Logger
+
 log = Logger("dbus")
 
 PY3 = sys.version_info[0]==3

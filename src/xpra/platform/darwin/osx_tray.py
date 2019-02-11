@@ -3,19 +3,18 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-from xpra.gtk_common.gobject_compat import import_gtk
-gtk = import_gtk()
-
-from xpra.log import Logger
-log = Logger("tray", "osx")
-
 from xpra.os_util import monotonic_time
 from xpra.client.tray_base import TrayBase
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, pixbuf_new_from_file, COLORSPACE_RGB
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 from xpra.platform.darwin.gui import set_exit_cb
 from xpra.platform.gui import ready as gui_ready
+from xpra.gtk_common.gobject_compat import import_gtk
+from xpra.log import Logger
+
+log = Logger("tray", "osx")
+
+gtk = import_gtk()
 
 #constants for attention_request:
 CRITICAL_REQUEST = 0

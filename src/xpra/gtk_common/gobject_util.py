@@ -6,8 +6,8 @@
 
 
 from xpra.gtk_common.gobject_compat import import_gobject
+
 gobject = import_gobject()
-gobject.threads_init()
 try:
     SIGNAL_RUN_LAST = gobject.SignalFlags.RUN_LAST
 except:

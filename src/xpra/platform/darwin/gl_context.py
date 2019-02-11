@@ -3,23 +3,25 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("opengl")
-
 import objc #@UnresolvedImport
 from Cocoa import (
     NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLPFAWindow, NSOpenGLPFAAlphaSize, #@UnresolvedImport
     NSOpenGLPFABackingStore, NSOpenGLPFAColorSize, NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, #@UnresolvedImport
-    NSOpenGLPFAAccumSize, NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers) #@UnresolvedImport
+    NSOpenGLPFAAccumSize, NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, #@UnresolvedImport
+    )
 
 from xpra.gtk_common.gtk_util import make_temp_window
 from xpra.gtk_common.gobject_compat import is_gtk3
+from xpra.client.gl.gl_check import check_PyOpenGL_support
+from xpra.log import Logger
+
+log = Logger("opengl")
+
 if is_gtk3():
     from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr   #@UnresolvedImport
 else:
     def get_nsview_ptr(window):
         return window.nsview
-from xpra.client.gl.gl_check import check_PyOpenGL_support
 
 
 class AGLWindowContext(object):

@@ -7,12 +7,13 @@ import threading
 from threading import Event
 
 from xpra.make_thread import start_thread
-from xpra.log import Logger
 from xpra.os_util import monotonic_time
 from xpra.util import envint
+from xpra.platform.features import UI_THREAD_POLLING
+from xpra.log import Logger
+
 log = Logger("util")
 
-from xpra.platform.features import UI_THREAD_POLLING
 FAKE_UI_LOCKUPS = envint("XPRA_FAKE_UI_LOCKUPS")
 if FAKE_UI_LOCKUPS>0 and UI_THREAD_POLLING<=0:
     #even if the platform normally disables UI thread polling,

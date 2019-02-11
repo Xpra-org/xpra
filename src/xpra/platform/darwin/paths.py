@@ -5,7 +5,9 @@
 
 import sys
 import os.path
+
 from xpra.util import envbool, get_util_logger
+
 
 def debug(*msg):
     """ delay import of logger to prevent cycles """

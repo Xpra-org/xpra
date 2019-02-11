@@ -7,12 +7,12 @@
 
 import sys
 from threading import Lock
-from xpra.log import Logger
-log = Logger("codec", "video")
 
 from xpra.codecs.loader import get_codec, get_codec_error
 from xpra.util import csv, engs
+from xpra.log import Logger
 
+log = Logger("codec", "video")
 
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:

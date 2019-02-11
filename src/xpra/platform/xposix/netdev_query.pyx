@@ -14,6 +14,7 @@ from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
 from xpra.util import first_time
 from xpra.os_util import strtobytes, bytestostr
 from xpra.log import Logger
+
 log = Logger("util", "network")
 
 ctypedef uint32_t __u32

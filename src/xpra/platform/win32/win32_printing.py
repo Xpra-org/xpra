@@ -4,13 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("printing", "win32")
-
-from xpra.platform.win32.common import CreateDCA, DeleteDC, gdi32
-
 from ctypes import cdll, WinDLL, c_void_p, Structure, cast, c_char, c_int, pointer, POINTER
 from ctypes.wintypes import HDC, HANDLE, BOOL, BYTE, LPCSTR, DWORD, WORD
+
+from xpra.platform.win32.common import CreateDCA, DeleteDC, gdi32
+from xpra.log import Logger
+
+log = Logger("printing", "win32")
 
 CHAR = BYTE
 LPHANDLE = PHANDLE = POINTER(HANDLE)

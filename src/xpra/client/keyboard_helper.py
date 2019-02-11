@@ -6,11 +6,12 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.log import Logger
-log = Logger("keyboard")
 
 from xpra.util import nonl, csv, std, envbool, print_nested_dict, repr_ellipsized
 from xpra.os_util import POSIX, bytestostr
+from xpra.log import Logger
+
+log = Logger("keyboard")
 
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 

@@ -11,7 +11,6 @@ from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id,
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 
-
 #what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 GROUP = os.environ.get("XPRA_GROUP", "xpra")

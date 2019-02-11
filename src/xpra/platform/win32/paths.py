@@ -7,6 +7,7 @@
 import os.path
 import sys
 import ctypes
+
 from xpra.os_util import get_util_logger
 
 shell32 = ctypes.WinDLL("shell32", use_last_error=True)

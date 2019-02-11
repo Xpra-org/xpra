@@ -7,15 +7,14 @@
 import os.path
 
 from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
-gtk = import_gtk()
-import webbrowser
-
 from xpra.version_util import XPRA_VERSION
 from xpra.scripts.config import get_build_info
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.log import Logger
+
 log = Logger("info")
 
+gtk = import_gtk()
 
 APPLICATION_NAME = "Xpra"
 SITE_DOMAIN = "xpra.org"
@@ -46,6 +45,7 @@ def about(on_close=None):
     xpra_icon = get_icon("xpra.png")
     dialog = gtk.AboutDialog()
     if not is_gtk3():
+        import webbrowser
         def on_website_hook(*_args):
             ''' called when the website item is selected '''
             webbrowser.open(SITE_URL)

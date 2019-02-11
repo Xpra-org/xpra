@@ -8,7 +8,12 @@ import os
 import sys
 import struct
 
+from xpra.os_util import bytestostr, hexstr
+from xpra.util import iround, envbool, envint, csv
+from xpra.gtk_common.gtk_util import get_xwindow
+from xpra.os_util import is_X11, is_Wayland
 from xpra.log import Logger
+
 log = Logger("posix")
 eventlog = Logger("posix", "events")
 screenlog = Logger("posix", "screen")
@@ -17,11 +22,6 @@ traylog = Logger("posix", "tray")
 menulog = Logger("posix", "menu")
 mouselog = Logger("posix", "mouse")
 xinputlog = Logger("posix", "xinput")
-
-from xpra.os_util import bytestostr, hexstr
-from xpra.util import iround, envbool, envint, csv
-from xpra.gtk_common.gtk_util import get_xwindow
-from xpra.os_util import is_X11, is_Wayland
 
 X11WindowBindings = None
 X11XI2Bindings = None

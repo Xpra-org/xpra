@@ -4,10 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("keyboard", "osx")
-
 from xpra.server.keyboard_config_base import KeyboardConfigBase
+from xpra.log import Logger
+
+log = Logger("keyboard", "osx")
 
 
 class KeyboardConfig(KeyboardConfigBase):

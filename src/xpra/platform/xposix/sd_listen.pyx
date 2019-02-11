@@ -12,9 +12,10 @@ import os
 import socket
 
 from xpra.log import Logger
-log = Logger("util")
 
 from libc.stdint cimport uint64_t, uint16_t
+
+log = Logger("util")
 
 
 DEF SD_LISTEN_FDS_START=3

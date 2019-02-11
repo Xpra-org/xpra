@@ -3,16 +3,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-from xpra.platform.paths import get_app_dir
-log = Logger("printing")
-
 import os
 import subprocess
+
 from xpra.platform.win32 import constants as win32con
 from xpra.util import csv, envint
 from xpra.os_util import bytestostr
+from xpra.platform.paths import get_app_dir
+from xpra.log import Logger
 
+log = Logger("printing")
 
 #allows us to skip some printers we don't want to export
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer,Fax").split(",")

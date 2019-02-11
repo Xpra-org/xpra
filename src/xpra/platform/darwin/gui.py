@@ -9,26 +9,32 @@ import math
 import ctypes
 import struct
 import weakref
-
 import objc                         #@UnresolvedImport
 import Quartz                       #@UnresolvedImport
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
-from Quartz import CGWindowListCopyWindowInfo, kCGDisplaySetModeFlag, kCGWindowListOptionOnScreenOnly, kCGNullWindowID, kCGWindowListOptionAll #@UnresolvedImport
+from Quartz import (
+    CGWindowListCopyWindowInfo, kCGDisplaySetModeFlag, kCGWindowListOptionOnScreenOnly, #@UnresolvedImport
+    kCGNullWindowID, kCGWindowListOptionAll,    #@UnresolvedImport
+    )
 from Quartz.CoreGraphics import CGDisplayRegisterReconfigurationCallback, CGDisplayRemoveReconfigurationCallback #@UnresolvedImport
 from AppKit import NSAppleEventManager, NSScreen, NSObject, NSBeep   #@UnresolvedImport
-from AppKit import NSApp, NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
+from AppKit import (
+    NSApp, NSApplication, NSWorkspace,              #@UnresolvedImport
+    NSWorkspaceActiveSpaceDidChangeNotification,    #@UnresolvedImport
+    NSWorkspaceWillSleepNotification,               #@UnresolvedImport
+    NSWorkspaceDidWakeNotification,                 #@UnresolvedImport
+    )
 from Foundation import NSUserNotification, NSUserNotificationCenter, NSUserNotificationDefaultSoundName #@UnresolvedImport
 
 from xpra.os_util import PYTHON2
 from xpra.util import envbool, envint, roundup
 from xpra.notifications.notifier_base import NotifierBase
-
 from xpra.log import Logger
+
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
 mouselog = Logger("osx", "events", "mouse")
 notifylog = Logger("osx", "notify")
-
 
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)

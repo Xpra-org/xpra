@@ -4,15 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pygtk3 vs pygtk2 (sigh)
-from xpra.gtk_common.gobject_compat import import_glib
-glib = import_glib()
-
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.util import envint
+from xpra.gtk_common.gobject_compat import import_glib
 from xpra.log import Logger
 log = Logger("window", "fake")
 
+glib = import_glib()
 
 FAKE_BACKING_DELAY = envint("XPRA_FAKE_BACKING_DELAY", 5)
 

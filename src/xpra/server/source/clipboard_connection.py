@@ -7,14 +7,14 @@
 
 from collections import deque
 
-from xpra.log import Logger
-log = Logger("clipboard")
-
 from xpra.net.compression import Compressible
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
 from xpra.util import envint, XPRA_CLIPBOARD_NOTIFICATION_ID
 from xpra.os_util import monotonic_time
+from xpra.log import Logger
+
+log = Logger("clipboard")
 
 MAX_CLIPBOARD_LIMIT = envint("XPRA_CLIPBOARD_LIMIT", 30)
 MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)

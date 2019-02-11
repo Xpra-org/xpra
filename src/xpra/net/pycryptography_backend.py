@@ -6,6 +6,7 @@
 
 from xpra.os_util import strtobytes
 from xpra.log import Logger
+
 log = Logger("network", "crypto")
 
 __all__ = ("get_info", "get_key", "get_encryptor", "get_decryptor", "ENCRYPTION_CIPHERS")

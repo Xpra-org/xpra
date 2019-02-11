@@ -6,6 +6,7 @@
 
 
 from PIL import Image
+
 from xpra.codecs.loader import get_codec
 from xpra.os_util import bytestostr, monotonic_time
 from xpra.util import first_time

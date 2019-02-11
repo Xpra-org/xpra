@@ -6,14 +6,13 @@
 
 import os
 
-from xpra.log import Logger
-log = Logger("printing")
-
 from xpra.util import envbool
 from xpra.os_util import get_machine_id
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.log import Logger
 
+log = Logger("printing")
 
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")

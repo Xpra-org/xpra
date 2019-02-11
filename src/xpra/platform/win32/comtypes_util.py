@@ -5,10 +5,11 @@
 
 
 import logging
-logging.getLogger("comtypes").setLevel(logging.INFO)
-
 from xpra.util import envbool
+
 SILENCE_COMTYPES = envbool("XPRA_SILENCE_COMTYPES", True)
+if SILENCE_COMTYPES:
+    logging.getLogger("comtypes").setLevel(logging.INFO)
 
 
 class QuietenLogging(object):

@@ -6,10 +6,6 @@
 
 import os
 
-from xpra.log import Logger
-log = Logger("client")
-
-
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
@@ -17,6 +13,9 @@ from xpra.scripts.config import parse_bool_or_int
 from xpra.net import compression
 from xpra.util import envint, envbool, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.log import Logger
+
+log = Logger("client")
 
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)

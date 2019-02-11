@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
+
 log = Logger("keyboard")
 
 #this allows platforms to inject keyname workarounds

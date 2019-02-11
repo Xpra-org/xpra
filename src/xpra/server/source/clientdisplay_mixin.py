@@ -4,11 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("av-sync")
-
 from xpra.util import get_screen_info
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.log import Logger
+
+log = Logger("av-sync")
 
 
 """

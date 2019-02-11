@@ -10,6 +10,7 @@ import sys, os
 from xpra.util import envbool, print_nested_dict
 from xpra.os_util import WIN32, PYTHON3
 from xpra.log import Logger
+
 log = Logger("printing")
 
 RAW_MODE = envbool("XPRA_PRINTER_RAW", False)

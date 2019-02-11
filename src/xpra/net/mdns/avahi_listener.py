@@ -11,8 +11,8 @@ import dbus
 from xpra.net.mdns import XPRA_MDNS_TYPE
 from xpra.dbus.common import init_system_bus
 from xpra.dbus.helper import dbus_to_native
-
 from xpra.log import Logger
+
 log = Logger("network", "mdns")
 
 

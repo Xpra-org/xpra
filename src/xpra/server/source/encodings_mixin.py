@@ -9,12 +9,6 @@ import os
 from math import sqrt
 from time import sleep
 
-from xpra.log import Logger
-log = Logger("encoding")
-proxylog = Logger("proxy")
-statslog = Logger("stats")
-
-
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.codecs.video_helper import getVideoHelper
@@ -23,6 +17,11 @@ from xpra.net.compression import compressed_wrapper, Compressed, use_lz4, use_lz
 from xpra.os_util import monotonic_time, strtobytes
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, typedict, envint
+from xpra.log import Logger
+
+log = Logger("encoding")
+proxylog = Logger("proxy")
+statslog = Logger("stats")
 
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 

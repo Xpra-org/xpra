@@ -6,10 +6,12 @@
 
 import sys
 import os
-from xpra.log import Logger
-log = Logger("encoder", "util")
+
 from xpra.util import pver, print_nested_dict, engs, envbool, csv
 from xpra.os_util import bytestostr, strtobytes
+from xpra.log import Logger
+
+log = Logger("encoder", "util")
 
 MIN_VERSION = 375
 

@@ -4,9 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("keyboard")
-
 
 class KeyboardConfigBase(object):
     """ Base class representing the keyboard configuration for a server.
@@ -59,7 +56,9 @@ class KeyboardConfigBase(object):
         return keycode
 
     def do_get_keycode(self, _client_keycode, _keyname, _pressed, _modifiers):
-        log("%s does not implement get_keycode!", type(self))
+        from xpra.log import Logger
+        log = Logger("keyboard")
+        log.warn("Warning: %s does not implement get_keycode!", type(self))
         return -1
 
     def is_modifier(self, _keycode):

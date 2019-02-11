@@ -8,6 +8,7 @@ import tempfile
 
 from xpra.os_util import osexpand
 from xpra.log import Logger
+
 log = Logger("notify")
 
 

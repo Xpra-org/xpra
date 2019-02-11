@@ -13,13 +13,13 @@ try:
 except:
     #not available in all versions of the bindings?
     DBusException = Exception
+
 from xpra.net.mdns import XPRA_MDNS_TYPE, SHOW_INTERFACE
-
-from xpra.log import Logger
-log = Logger("network", "mdns")
-
 from xpra.dbus.common import init_system_bus
 from xpra.net.net_util import get_iface, if_nametoindex, if_indextoname
+from xpra.log import Logger
+
+log = Logger("network", "mdns")
 
 
 def get_interface_index(host):

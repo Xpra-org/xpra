@@ -3,17 +3,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-avsynclog = Logger("av-sync")
-log = Logger("client", "sound")
-
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
 from xpra.util import envint, typedict, csv, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.log import Logger
 
+avsynclog = Logger("av-sync")
+log = Logger("client", "sound")
 
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
 

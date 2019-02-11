@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+
 from xpra.os_util import monotonic_time
 from xpra.util import envint
 

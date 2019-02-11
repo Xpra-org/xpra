@@ -4,12 +4,13 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.log import Logger
-log = Logger("encoder", "pillow")
-
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
+
 from xpra.codecs.pillow import PIL_VERSION
+from xpra.log import Logger
+
+log = Logger("encoder", "pillow")
 
 DECODE_FORMATS = os.environ.get("XPRA_PILLOW_DECODE_FORMATS", "png,png/L,png/P,jpeg,webp,jpeg2000").split(",")
 

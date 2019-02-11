@@ -9,6 +9,7 @@ import sys
 import site
 
 from xpra.util import envbool
+
 SOUND_PYTHON3 = envbool("XPRA_SOUND_PYTHON3", False)
 
 #removed in 2.3:

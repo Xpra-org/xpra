@@ -5,21 +5,24 @@
 
 import os
 
+from xpra.exit_codes import EXIT_INTERNAL_ERROR
+from xpra.platform.features import REINIT_WINDOWS
+from xpra.platform.gui import (
+    get_antialias_info, get_icc_info, get_display_icc_info, show_desktop, get_cursor_size,
+    get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
+    )
+from xpra.scripts.config import FALSE_OPTIONS
+from xpra.os_util import monotonic_time
+from xpra.util import (
+    iround, envint, envfloat, log_screen_sizes, engs, flatten_dict,
+    XPRA_SCALING_NOTIFICATION_ID,
+    )
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
+
 log = Logger("screen")
 workspacelog = Logger("client", "workspace")
 scalinglog = Logger("scaling")
-
-
-from xpra.exit_codes import EXIT_INTERNAL_ERROR
-from xpra.platform.features import REINIT_WINDOWS
-from xpra.platform.gui import (get_antialias_info, get_icc_info, get_display_icc_info, show_desktop, get_cursor_size,
-                               get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name)
-from xpra.scripts.config import FALSE_OPTIONS
-from xpra.os_util import monotonic_time
-from xpra.util import iround, envint, envfloat, log_screen_sizes, engs, flatten_dict, XPRA_SCALING_NOTIFICATION_ID
-from xpra.client.mixins.stub_client_mixin import StubClientMixin
-
 
 MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
 

@@ -8,13 +8,13 @@
 
 import os
 
-from xpra.log import Logger
-log = Logger("tray", "posix")
-
 from xpra.util import envbool
 from xpra.os_util import is_unity, monotonic_time, getUbuntuVersion, PYTHON2
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename
+from xpra.log import Logger
+
+log = Logger("tray", "posix")
 
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 

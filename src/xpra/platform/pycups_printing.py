@@ -16,8 +16,8 @@ from threading import Lock
 from xpra.os_util import OSX, PYTHON3
 from xpra.util import engs, envint, envbool
 from xpra.log import Logger
-log = Logger("printing")
 
+log = Logger("printing")
 
 SIMULATE_PRINT_FAILURE = envint("XPRA_SIMULATE_PRINT_FAILURE")
 

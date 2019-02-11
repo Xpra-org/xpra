@@ -4,15 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("clipboard")
-
-
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util import flatten_dict
 from xpra.os_util import bytestostr
+from xpra.log import Logger
+
+log = Logger("clipboard")
 
 
 """

@@ -7,17 +7,19 @@
 import ctypes
 
 from xpra.util import envbool
-from xpra.log import Logger
-log = Logger("events", "win32")
-
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import (WNDCLASSEX, WNDPROC,
-                                        RegisterClassExW,
-                                        CreateWindowExA, DestroyWindow,
-                                        UnregisterClassW, DefWindowProcW,
-                                        GetModuleHandleA,
-                                        GetStockObject)
+from xpra.platform.win32.common import (
+    WNDCLASSEX, WNDPROC,
+    RegisterClassExW,
+    CreateWindowExA, DestroyWindow,
+    UnregisterClassW, DefWindowProcW,
+    GetModuleHandleA,
+    GetStockObject,
+    )
+from xpra.log import Logger
+
+log = Logger("events", "win32")
 
 try:
     wtsapi32 = ctypes.WinDLL("WtsApi32")

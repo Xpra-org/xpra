@@ -12,8 +12,10 @@ import os
 import platform as python_platform
 assert python_platform
 from xpra.util import csv
-from xpra.os_util import (WIN32, OSX, PYTHON2, osexpand, getuid, getgid, get_username_for_uid,
-    is_CentOS, is_RedHat, is_Fedora, is_Debian, is_Ubuntu, getUbuntuVersion)
+from xpra.os_util import (
+    WIN32, OSX, PYTHON2, osexpand, getuid, getgid, get_username_for_uid,
+    is_CentOS, is_RedHat, is_Fedora, is_Debian, is_Ubuntu, getUbuntuVersion,
+    )
 
 def warn(msg):
     sys.stderr.write(msg+"\n")

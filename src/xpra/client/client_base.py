@@ -44,7 +44,6 @@ from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_U
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR)
 
-
 log = Logger("client")
 netlog = Logger("network")
 authlog = Logger("auth")

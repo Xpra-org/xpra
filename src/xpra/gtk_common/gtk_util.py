@@ -6,9 +6,19 @@
 
 import os.path
 import array
+
 from xpra.util import iround, first_time
 from xpra.os_util import strtobytes, bytestostr, WIN32, OSX, PYTHON2
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_pixbufloader, import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_gdk, import_glib, import_pixbufloader,
+    import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3,
+    )
+from xpra.log import Logger
+
+log = Logger("gtk", "util")
+traylog = Logger("gtk", "tray")
+screenlog = Logger("gtk", "screen")
+
 gtk     = import_gtk()
 gdk     = import_gdk()
 pango   = import_pango()
@@ -17,12 +27,6 @@ gobject = import_gobject()
 glib    = import_glib()
 PixbufLoader = import_pixbufloader()
 Pixbuf = import_pixbuf()
-
-from xpra.log import Logger
-log = Logger("gtk", "util")
-traylog = Logger("gtk", "tray")
-screenlog = Logger("gtk", "screen")
-
 
 SHOW_ALL_VISUALS = False
 

@@ -3,12 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("clipboard", "osx")
-
 from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
 from xpra.clipboard.clipboard_base import ClipboardProxy
 from xpra.gtk_common.gobject_compat import import_glib, import_gobject
+from xpra.log import Logger
+
+log = Logger("clipboard", "osx")
+
 glib = import_glib()
 gobject = import_gobject()
 

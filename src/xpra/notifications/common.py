@@ -4,8 +4,10 @@
 # later version. See the file COPYING for details.
 
 import os.path
+
 from xpra.os_util import BytesIOClass
 from xpra.log import Logger
+
 log = Logger("dbus", "notify")
 
 
