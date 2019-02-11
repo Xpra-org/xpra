@@ -12,20 +12,21 @@ import signal
 from xpra.platform.gui import init as gui_init
 gui_init()
 
+from xpra.gtk_common.gtk_util import (
+    gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
+    window_defaults, WIN_POS_CENTER,
+    )
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango
+from xpra.platform.paths import get_icon_dir
+from xpra.log import Logger, enable_debug_for
+
+log = Logger("exec")
 
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
 gobject.threads_init()
 pango = import_pango()
-
-
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, window_defaults, \
-                                    WIN_POS_CENTER
-from xpra.platform.paths import get_icon_dir
-from xpra.log import Logger, enable_debug_for
-log = Logger("exec")
 
 
 _instance = None

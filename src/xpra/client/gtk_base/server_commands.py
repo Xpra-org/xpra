@@ -13,20 +13,21 @@ from xpra.platform.gui import init as gui_init
 gui_init()
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_pango
+from xpra.os_util import monotonic_time
+from xpra.util import AdHocStruct, typedict
+from xpra.gtk_common.gtk_util import (
+    gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
+    get_pixbuf_from_data, window_defaults, TableBuilder, WIN_POS_CENTER,
+    )
+from xpra.platform.paths import get_icon_dir
+from xpra.log import Logger, enable_debug_for
+
+log = Logger("util")
 
 gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
 pango = import_pango()
-
-
-from xpra.os_util import monotonic_time
-from xpra.util import AdHocStruct, typedict
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, \
-                                    get_pixbuf_from_data, window_defaults, TableBuilder, WIN_POS_CENTER
-from xpra.platform.paths import get_icon_dir
-from xpra.log import Logger, enable_debug_for
-log = Logger("util")
 
 
 _instance = None

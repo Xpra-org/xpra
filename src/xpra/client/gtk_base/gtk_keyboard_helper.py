@@ -10,6 +10,7 @@ from xpra.gtk_common.gobject_compat import import_gdk, import_glib
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import display_get_default, keymap_get_for_display
 from xpra.os_util import is_X11
+
 gdk = import_gdk()
 glib = import_glib()
 

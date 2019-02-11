@@ -8,9 +8,59 @@ import os
 import struct
 import time, math
 
+from OpenGL import version as OpenGL_version
+from OpenGL.error import GLError
+from OpenGL.GL import (
+    GL_PROJECTION, GL_MODELVIEW,
+    GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
+    GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
+    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR,
+    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
+    GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
+    GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
+    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4,
+    GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5,
+    GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
+    GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
+    GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST,
+    glLineStipple, GL_LINE_STIPPLE, GL_POINTS,
+    glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE,
+    glHint,
+    glBlendFunc,
+    glActiveTexture, glTexSubImage2D,
+    glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho,
+    glGenTextures, glDisable,
+    glBindTexture, glPixelStorei, glEnable, glEnablei, glBegin, glFlush,
+    glTexParameteri,
+    glTexImage2D,
+    glMultiTexCoord2i,
+    glTexCoord2i, glVertex2i, glEnd,
+    glClear, glClearColor, glLineWidth, glColor4f,
+    glDrawBuffer, glReadBuffer,
+    )
+from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
+from OpenGL.GL.ARB.vertex_program import (
+    glGenProgramsARB, glBindProgramARB, glProgramStringARB,
+    GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+    )
+from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
+from OpenGL.GL.ARB.framebuffer_object import (
+    GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
+    GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, \
+    glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
+    )
+
 from xpra.os_util import monotonic_time, strtobytes, hexstr, POSIX, DummyContextManager
 from xpra.util import envint, envbool, repr_ellipsized
+from xpra.client.paint_colors import get_paint_box_color
+from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.client.window_backing_base import fire_paint_callbacks, WEBP_PILLOW
+from xpra.client.spinner import cv
+from xpra.client.window_backing_base import WindowBackingBase
+from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe
+from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, YUV2RGB_FULL_shader, RGBP2RGB_shader
 from xpra.log import Logger
+
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
@@ -32,49 +82,6 @@ if SAVE_BUFFERS:
     from OpenGL.GL import glGetTexImage
     import numpy
     from PIL import Image, ImageOps
-
-from xpra.client.paint_colors import get_paint_box_color
-from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.client.window_backing_base import fire_paint_callbacks, WEBP_PILLOW
-from xpra.client.spinner import cv
-from xpra.client.window_backing_base import WindowBackingBase
-from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe
-from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, YUV2RGB_FULL_shader, RGBP2RGB_shader
-from OpenGL import version as OpenGL_version
-from OpenGL.error import GLError
-from OpenGL.GL import \
-    GL_PROJECTION, GL_MODELVIEW, \
-    GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
-    GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
-    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
-    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT, \
-    GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
-    GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
-    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, \
-    GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5, \
-    GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
-    GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
-    GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
-    glLineStipple, GL_LINE_STIPPLE, GL_POINTS, \
-    glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE, \
-    glHint, \
-    glBlendFunc, \
-    glActiveTexture, glTexSubImage2D, \
-    glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
-    glGenTextures, glDisable, \
-    glBindTexture, glPixelStorei, glEnable, glEnablei, glBegin, glFlush, \
-    glTexParameteri, \
-    glTexImage2D, \
-    glMultiTexCoord2i, \
-    glTexCoord2i, glVertex2i, glEnd, \
-    glClear, glClearColor, glLineWidth, glColor4f, \
-    glDrawBuffer, glReadBuffer
-from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
-from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
-    glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
-from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
-from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, \
-    glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer
 
 
 PIXEL_FORMAT_TO_CONSTANT = {

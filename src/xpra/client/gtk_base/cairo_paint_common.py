@@ -6,12 +6,12 @@
 
 import cairo
 
-from xpra.log import Logger
-log = Logger("paint", "mouse")
-
 from xpra.os_util import monotonic_time, memoryview_to_bytes
 from xpra.codecs.argb.argb import unpremultiply_argb
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB, cairo_set_source_pixbuf
+from xpra.log import Logger
+
+log = Logger("paint", "mouse")
 
 
 def setup_cairo_context(context, ww, wh, w, h, offset_x=0, offset_y=0):

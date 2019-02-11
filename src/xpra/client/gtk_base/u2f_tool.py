@@ -11,8 +11,8 @@ import os.path
 from xpra.util import engs
 from xpra.os_util import hexstr, osexpand, load_binary_file, use_tty
 from xpra.platform.paths import get_user_conf_dirs
-
 from xpra.log import Logger
+
 log = Logger("auth", "util")
 
 APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")

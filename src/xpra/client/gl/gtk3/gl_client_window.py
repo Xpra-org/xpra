@@ -4,11 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("opengl", "window")
-
 from xpra.client.gtk3.client_window import ClientWindow
 from xpra.client.gl.gtk_base.gl_client_window_common import GLClientWindowCommon
+from xpra.log import Logger
+
+log = Logger("opengl", "window")
 
 
 class GLClientWindowBase(GLClientWindowCommon, ClientWindow):

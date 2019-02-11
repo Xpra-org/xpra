@@ -6,8 +6,8 @@
 
 
 from xpra.gtk_common.gobject_compat import is_gtk3
-
 from xpra.log import Logger
+
 log = Logger("gtk", "util", "opengl")
 
 

@@ -5,10 +5,11 @@
 # later version. See the file COPYING for details.
 
 import sys
+
 from xpra.util import typedict, AdHocStruct
 from xpra.os_util import PYTHON3
-
 from xpra.log import Logger
+
 log = Logger("opengl", "paint")
 
 

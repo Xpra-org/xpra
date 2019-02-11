@@ -5,10 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, is_gtk3
-gtk = import_gtk()
-gdk = import_gdk()
-glib = import_glib()
 import sys
 import datetime
 from collections import deque
@@ -26,8 +22,14 @@ from xpra.gtk_common.gtk_util import (
     RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER,
     )
 from xpra.net.net_util import get_network_caps
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, is_gtk3
 from xpra.log import Logger
+
 log = Logger("info")
+
+gtk = import_gtk()
+gdk = import_gdk()
+glib = import_glib()
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True

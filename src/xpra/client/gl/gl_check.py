@@ -7,10 +7,12 @@
 
 import sys
 import logging
+
 from xpra.util import envbool, envint, csv
 from xpra.os_util import POSIX, OSX, WIN32, PYTHON3, bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST, OpenGLFatalError
+
 log = Logger("opengl")
 
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]

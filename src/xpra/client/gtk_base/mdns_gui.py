@@ -7,17 +7,17 @@
 import sys
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib
-gtk = import_gtk()
-glib = import_glib()
-glib.threads_init()
-
 from xpra.client.gtk_base.sessions_gui import SessionsGUI
 from xpra.gtk_common.gtk_util import gtk_main
 from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
 from xpra.util import envbool
 from xpra.log import Logger
+
 log = Logger("mdns", "util")
 
+gtk = import_gtk()
+glib = import_glib()
+glib.threads_init()
 
 HIDE_IPV6 = envbool("XPRA_HIDE_IPV6", False)
 

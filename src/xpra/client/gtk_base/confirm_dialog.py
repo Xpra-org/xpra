@@ -9,19 +9,20 @@ import os.path
 import sys
 import signal
 
-
 from xpra.gtk_common.gobject_compat import import_gtk, import_pango, import_glib
+from xpra.gtk_common.gtk_util import (
+    gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
+    window_defaults, color_parse, is_gtk3,
+    WIN_POS_CENTER, WINDOW_POPUP, STATE_NORMAL,
+    )
+from xpra.platform.paths import get_icon_dir
+from xpra.os_util import get_util_logger
+
+log = get_util_logger()
 
 gtk = import_gtk()
 glib = import_glib()
 pango = import_pango()
-
-
-from xpra.os_util import get_util_logger
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, window_defaults, color_parse, \
-                                    WIN_POS_CENTER, WINDOW_POPUP, STATE_NORMAL, is_gtk3
-from xpra.platform.paths import get_icon_dir
-log = get_util_logger()
 
 
 class ConfirmDialogWindow(object):

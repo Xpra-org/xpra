@@ -4,12 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("opengl", "window")
-
 from collections import namedtuple
 from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
 from xpra.client.gl.gtk_base.gl_client_window_common import GLClientWindowCommon
+from xpra.log import Logger
+
+log = Logger("opengl", "window")
 
 Rectangle = namedtuple("Rectangle", "x,y,width,height")
 DrawEvent = namedtuple("DrawEvent", "area")

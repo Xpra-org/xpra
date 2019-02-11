@@ -4,16 +4,17 @@
 # later version. See the file COPYING for details.
 
 import sys
-from xpra.log import Logger
-log = Logger("opengl", "paint")
 
 from xpra.platform.gl_context import GLContext
 if not GLContext:
     raise ImportError("no OpenGL context implementation for %s" % sys.platform)
-
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
 from xpra.gtk_common.gobject_compat import import_glib, import_gtk, gtk_version
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
+from xpra.log import Logger
+
+log = Logger("opengl", "paint")
+
 glib = import_glib()
 gtk = import_gtk()
 

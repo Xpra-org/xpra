@@ -7,12 +7,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import math
+
 from xpra.client.spinner import cv
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_cairo
+
 gtk     = import_gtk()
 glib    = import_glib()
 cairo   = import_cairo()
-import math
 
 
 class Example(gtk.Window):

@@ -10,11 +10,10 @@ import sys
 from xpra.gtk_common.gtk_util import VISUAL_NAMES, BYTE_ORDER_NAMES
 from xpra.client.gl.gtk_base.gtk_compat import get_DISPLAY_MODE, get_MODE_names
 from xpra.client.gl.gl_check import check_PyOpenGL_support, gl_check_error, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, OpenGLFatalError
-
 from xpra.util import envbool
 from xpra.log import Logger
-log = Logger("opengl")
 
+log = Logger("opengl")
 
 TEST_GTKGL_RENDERING = envbool("XPRA_TEST_GTKGL_RENDERING", True)
 

@@ -7,15 +7,18 @@
 # A tray implemented using gtk.StatusIcon
 
 import os
+
 from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, monotonic_time
 from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
+from xpra.client.tray_base import TrayBase, log
+from xpra.gtk_common.gtk_util import (
+    get_icon_from_file, get_pixbuf_from_data, get_default_root_window,
+    INTERP_HYPER, SHIFT_MASK, ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL,
+    )
+
 gtk = import_gtk()
 gdk = import_gdk()
-
-from xpra.client.tray_base import TrayBase, log
-from xpra.gtk_common.gtk_util import get_icon_from_file, get_pixbuf_from_data, get_default_root_window, \
-    INTERP_HYPER, SHIFT_MASK, ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL
 
 ORIENTATION = {
     ORIENTATION_HORIZONTAL  : "HORIZONTAL",

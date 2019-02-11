@@ -10,23 +10,27 @@ import socket
 import subprocess
 from collections import OrderedDict
 
+from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command
+from xpra.platform.dotxpra import DotXpra
+from xpra.child_reaper import getChildReaper
+from xpra.exit_codes import EXIT_STR
+from xpra.gtk_common.gtk_util import (
+    gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse,
+    imagebutton, STATE_NORMAL, WIN_POS_CENTER,
+    )
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, import_glib
+from xpra.net.net_util import if_indextoname
+from xpra.util import typedict
+from xpra.os_util import bytestostr, WIN32
+from xpra.log import Logger
+
+log = Logger("client", "util")
+
 gtk = import_gtk()
 gdk = import_gdk()
 pango = import_pango()
 glib = import_glib()
 glib.threads_init()
-
-from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command
-from xpra.platform.dotxpra import DotXpra
-from xpra.child_reaper import getChildReaper
-from xpra.exit_codes import EXIT_STR
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL, WIN_POS_CENTER
-from xpra.net.net_util import if_indextoname
-from xpra.util import typedict
-from xpra.os_util import bytestostr, WIN32
-from xpra.log import Logger
-log = Logger("client", "util")
 
 
 class SessionsGUI(gtk.Window):

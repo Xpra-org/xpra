@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 import os.path
 import sys
 import time
@@ -13,17 +12,21 @@ from xpra.platform.gui import init as gui_init
 gui_init()
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, is_gtk3
-gtk = import_gtk()
-gdk = import_gdk()
-pango = import_pango()
-
-from xpra.gtk_common.gtk_util import window_defaults, gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, get_default_root_window, \
-                                    JUSTIFY_LEFT, WIN_POS_CENTER, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
+from xpra.gtk_common.gtk_util import (
+    window_defaults, gtk_main, add_close_accel, scaled_image,
+    pixbuf_new_from_file, get_display_info, get_default_root_window,
+    choose_file, get_gtk_version_info,
+    JUSTIFY_LEFT, WIN_POS_CENTER, FILE_CHOOSER_ACTION_SAVE,
+    )
 from xpra.util import nonl, envint, repr_ellipsized
 from xpra.os_util import strtobytes
 from xpra.log import Logger
+
 log = Logger("util")
 
+gtk = import_gtk()
+gdk = import_gdk()
+pango = import_pango()
 
 STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 

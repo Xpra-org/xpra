@@ -4,27 +4,25 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 from xpra.os_util import OSX, POSIX
 from xpra.util import envbool
-from xpra.log import Logger
-log = Logger("opengl")
-
-HIGH_BIT_DEPTH = envbool("XPRA_HIGH_BIT_DEPTH", True)
-FORCE_HIGH_BIT_DEPTH = envbool("XPRA_FORCE_HIGH_BIT_DEPTH", False)
-
-
 from xpra.gtk_common.gtk_util import is_realized
 from xpra.gtk_common.gobject_compat import import_glib
-glib = import_glib()
-
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
 from xpra.client.gl.gtk_base.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GtkGLExtContext, GLDrawingArea
 from xpra.client.gl.gtk_base.gtkgl_check import get_DISPLAY_MODE
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
 from xpra.client.gl.gtk_base.gtkgl_check import check_support
+from xpra.log import Logger
 assert check_support
+
+log = Logger("opengl")
+
+glib = import_glib()
+
+HIGH_BIT_DEPTH = envbool("XPRA_HIGH_BIT_DEPTH", True)
+FORCE_HIGH_BIT_DEPTH = envbool("XPRA_FORCE_HIGH_BIT_DEPTH", False)
 
 
 class GTKGLWindowBackingBase(GLWindowBackingBase):
