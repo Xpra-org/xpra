@@ -104,7 +104,11 @@ def update_batch_delay(batch, factors, min_delay=0):
         tw += w
         tv += target_delay*w
     batch.delay = int(max(min_delay, min(max_delay, tv // tw)))
-    log("update_batch_delay: delay=%i", batch.delay)
+    try:
+        last_actual_delay = batch.last_actual_delays[-1][-1]
+    except IndexError:
+        last_actual_delay = -1
+    log("update_batch_delay: delay=%i (last actual delay: %s)", batch.delay, last_actual_delay)
     batch.last_updated = now
     batch.factors = valid_factors
 
