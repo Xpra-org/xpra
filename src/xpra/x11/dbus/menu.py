@@ -4,11 +4,12 @@
 # later version. See the file COPYING for details.
 
 import weakref
-from xpra.log import Logger
-log = Logger("menu")
 
 from xpra.util import typedict
 from xpra.os_util import bytestostr, strtobytes
+from xpra.log import Logger
+
+log = Logger("menu")
 
 
 def has_gtk_menu_support(root_window):

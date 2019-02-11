@@ -61,11 +61,12 @@
 # then everything should have a chance to return to equilibrium...
 
 from xpra.gtk_common.gobject_compat import import_glib, import_gtk
+from xpra.log import Logger
+
+log = Logger("gtk")
+
 glib = import_glib()
 gtk = import_gtk()
-
-from xpra.log import Logger
-log = Logger("gtk")
 
 # For debugging:
 def _dump_recursion_info():

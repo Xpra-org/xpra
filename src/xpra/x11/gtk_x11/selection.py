@@ -19,20 +19,21 @@ from xpra.gtk_common.gtk_util import (
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
-
 from xpra.x11.gtk_x11.gdk_bindings import (
-                get_xatom,                  #@UnresolvedImport
-                get_pywindow,               #@UnresolvedImport
-                add_event_receiver,         #@UnresolvedImport
-                remove_event_receiver       #@UnresolvedImport
-                )
-
-from xpra.log import Logger
-log = Logger("x11", "util")
+    get_xatom,                  #@UnresolvedImport
+    get_pywindow,               #@UnresolvedImport
+    add_event_receiver,         #@UnresolvedImport
+    remove_event_receiver,      #@UnresolvedImport
+    )
 from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+from xpra.log import Logger
+
+log = Logger("x11", "util")
+
 gtk = import_gtk()
 gobject = import_gobject()
+
+X11Window = X11WindowBindings()
 
 StructureNotifyMask = constants["StructureNotifyMask"]
 XNone = constants["XNone"]

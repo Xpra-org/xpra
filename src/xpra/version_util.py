@@ -4,12 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#tricky: use xpra.scripts.config to get to the python "platform" module
-from xpra.scripts.config import python_platform
 import sys
 import os
 
+#tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
+from xpra.scripts.config import python_platform
 from xpra.util import updict, envbool, get_util_logger
 from xpra.os_util import get_linux_distribution, PYTHON3, BITS
 
@@ -49,10 +49,10 @@ def version_compat_check(remote_version):
         #this is the oldest version we support
         msg = "remote version %s is too old, sorry" % str(rv[:2])
         log(msg)
-        return  msg
+        return msg
     if rv[0]>0:
         log("newer remote version %s may work, we'll see..", remote_version)
-        return  None
+        return None
     log("local version %s should be compatible with remote version: %s", XPRA_VERSION, remote_version)
     return None
 
@@ -220,9 +220,8 @@ def version_update_check():
     if latest_version_no is None:
         log("version_update_check() failed to contact version server")
         return None
-    elif latest_version_no>our_version_no or FAKE_NEW_VERSION:
+    if latest_version_no>our_version_no or FAKE_NEW_VERSION:
         log("version_update_check() newer version found! local version is %s and the latest version available is %s", our_version_no, latest_version_no)
         #latest_version = ".".join([str(x) for x in latest_version_no])
         return latest_version_no
-    else:
-        return False
+    return False

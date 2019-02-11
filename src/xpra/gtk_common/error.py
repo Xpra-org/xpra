@@ -29,19 +29,20 @@
 
 import traceback
 
+from xpra.util import envbool
+from xpra.gtk_common.gobject_compat import import_gdk
+from xpra.log import Logger
+
 __all__ = ["XError", "trap", "xsync", "xswallow"]
 
-
-from xpra.util import envbool
 #run xpra in synchronized mode to debug X11 errors:
 XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", False)
 
-from xpra.log import Logger
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
 
-from xpra.gtk_common.gobject_compat import import_gdk
 gdk = import_gdk()
+
 
 class XError(Exception):
     def __init__(self, message):

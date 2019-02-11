@@ -14,10 +14,10 @@ from xpra.make_thread import start_thread
 from xpra.os_util import Queue, monotonic_time
 from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, typedict, AtomicInteger
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
-
 from xpra.server.source.clientinfo_mixin import ClientInfoMixin
-CC_BASES = [ClientInfoMixin]
 from xpra.server import server_features
+
+CC_BASES = [ClientInfoMixin]
 #TODO: notifications mixin
 if server_features.clipboard:
     from xpra.server.source.clipboard_connection import ClipboardConnection

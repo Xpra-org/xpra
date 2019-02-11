@@ -11,12 +11,11 @@ from math import sqrt, pow
 def to_std_unit(v, unit=1000):
     if v>=unit**3:
         return "G", v//(unit**3)
-    elif v>=unit**2:
+    if v>=unit**2:
         return "M", v//(unit**2)
-    elif v>=unit:
+    if v>=unit:
         return "K", v//unit
-    else:
-        return "", v
+    return "", v
 
 def std_unit(v, unit=1000):
     unit, value = to_std_unit(v, unit)
@@ -26,7 +25,7 @@ def std_unit_dec(v):
     unit, value = to_std_unit(v*10.0)
     if value>=100:
         return "%s%s" % (int(value//10), unit)
-    elif int(value)%10==0:
+    if int(value)%10==0:
         return "%s%s" % (int(value/10), unit)
     return "%s%s" % (int(value)/10.0, unit)
 

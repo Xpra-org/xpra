@@ -6,9 +6,9 @@
 import os
 import shlex
 import socket
-import paramiko
 from subprocess import Popen, PIPE
 from threading import Event
+import paramiko
 
 from xpra.net.ssh import SSHSocketConnection
 from xpra.util import csv, envint

@@ -5,6 +5,7 @@
 
 import os
 import logging
+
 from xpra.util import envbool
 from xpra.log import Logger
 

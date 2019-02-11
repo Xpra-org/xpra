@@ -16,16 +16,17 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.gtk_common.error import trap
 from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
-XImage = XImageBindings()
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
-X11Window.ensure_XComposite_support()
 from xpra.gtk_common.gobject_compat import import_gobject
-gobject = import_gobject()
-
 from xpra.log import Logger
+
 log = Logger("x11", "window")
 
+gobject = import_gobject()
+
+XImage = XImageBindings()
+X11Window = X11WindowBindings()
+X11Window.ensure_XComposite_support()
 
 StructureNotifyMask = constants["StructureNotifyMask"]
 

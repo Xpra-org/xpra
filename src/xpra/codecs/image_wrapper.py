@@ -23,7 +23,8 @@ class ImageWrapper(object):
                    _3_PLANES    : "3_PLANES",
                    _4_PLANES    : "4_PLANES"}
 
-    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, bytesperpixel=4, planes=PACKED, thread_safe=True, palette=None):
+    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride,
+                 bytesperpixel=4, planes=PACKED, thread_safe=True, palette=None):
         self.x = x
         self.y = y
         self.target_x = x
@@ -48,7 +49,8 @@ class ImageWrapper(object):
             return type(self)
 
     def __repr__(self):
-        return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(), ImageWrapper.PLANE_NAMES.get(self.planes))
+        return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(),
+                                 ImageWrapper.PLANE_NAMES.get(self.planes))
 
     def get_geometry(self):
         return self.x, self.y, self.width, self.height, self.depth
@@ -219,7 +221,8 @@ class ImageWrapper(object):
         for _ in range(h):
             lines.append(memoryview_to_bytes(pixels[pos:pos+newstride]))
             pos += oldstride
-        return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride, planes=self.planes, thread_safe=True, palette=self.palette)
+        return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
+                            planes=self.planes, thread_safe=True, palette=self.palette)
 
     def __del__(self):
         #print("ImageWrapper.__del__() calling %s" % self.free)

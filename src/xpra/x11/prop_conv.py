@@ -13,19 +13,18 @@ Functions for converting to and from X11 properties.
 import struct
 import cairo
 
-from xpra.log import Logger
-log = Logger("x11", "window")
-
 from xpra.os_util import hexstr, BytesIOClass, PYTHON3
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
+from xpra.log import Logger
 
+log = Logger("x11", "window")
+
+X11Window = X11WindowBindings()
 
 if PYTHON3:
     long = int              #@ReservedAssignment
     unicode = str           #@ReservedAssignment
-
 
 USPosition      = constants["USPosition"]
 PPosition       = constants["PPosition"]
@@ -171,7 +170,7 @@ class MotifWMHints(object):
     def bits_to_strs(self, int_val, flag_bit, dict_str):
         if flag_bit and not (self.flags & (2**flag_bit)):
             #the bit is not set, ignore this attribute
-            return[]
+            return []
         return [v for k,v in dict_str.items() if (int_val & (2**k))]
     def flags_strs(self):
         return self.bits_to_strs(self.flags,

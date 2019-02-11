@@ -29,19 +29,12 @@ from xpra.x11.gtk_x11.gdk_bindings import (
    init_x11_filter, cleanup_x11_filter,
    )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-X11Keyboard = X11KeyboardBindings()
+from xpra.x11.x11_server_base import X11ServerBase
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_gobject, is_gtk3
-
-gtk = import_gtk()
-gdk = import_gdk()
-glib = import_glib()
-gobject = import_gobject()
-
-
 from xpra.log import Logger
+
 log = Logger("server")
 focuslog = Logger("server", "focus")
 grablog = Logger("server", "grab")
@@ -55,7 +48,13 @@ menulog  = Logger("x11", "menu")
 eventlog = Logger("x11", "events")
 mouselog = Logger("x11", "mouse")
 
-from xpra.x11.x11_server_base import X11ServerBase
+X11Window = X11WindowBindings()
+X11Keyboard = X11KeyboardBindings()
+
+gtk = import_gtk()
+gdk = import_gdk()
+glib = import_glib()
+gobject = import_gobject()
 
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)

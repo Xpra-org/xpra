@@ -7,13 +7,12 @@
 
 import os
 
-from xpra.log import Logger
-log = Logger("x11", "server", "util")
-
 from xpra.util import prettify_plug_name
 from xpra.os_util import find_lib, find_lib_ldconfig, strtobytes, LINUX
 from xpra.version_util import XPRA_VERSION
+from xpra.log import Logger
 
+log = Logger("x11", "server", "util")
 
 fakeXinerama_config_files = [
             #the new fakexinerama file:
@@ -49,11 +48,11 @@ def save_fakeXinerama_config(supported=True, source="", ss=[]):
         return oldconf is not None
     if not supported:
         return delfile(None)
-    if len(ss)==0:
+    if not ss:
         return delfile("cannot save fake xinerama settings: no display found")
     if len(ss)>1:
         return delfile("cannot save fake xinerama settings: more than one display found")
-    if len(ss)==2 and type(ss[0])==int and type(ss[1])==int:
+    if len(ss)==2 and isinstance(ss[0], int) and isinstance(ss[1], int):
         #just WxH, not enough display information
         return delfile("cannot save fake xinerama settings: missing display data from client %s" % source)
     display_info = ss[0]

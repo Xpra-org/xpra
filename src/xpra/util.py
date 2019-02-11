@@ -285,14 +285,14 @@ class typedict(dict):
     def rawget(self, key, default=None):
         v = self.get(key)
         #py3k and bytes as keys...
-        if v is None and type(key)==str:
+        if v is None and isinstance(key, str):
             from xpra.os_util import strtobytes
             v = self.get(strtobytes(key), default)
         return v
 
     def capsget(self, key, default=None):
         v = self.rawget(key, default)
-        if sys.version >= '3' and type(v)==bytes:
+        if sys.version >= '3' and isinstance(v, bytes):
             from xpra.os_util import bytestostr
             v = bytestostr(v)
         return v
@@ -323,7 +323,7 @@ class typedict(dict):
         v = self.capsget(k, default_value)
         if v is None:
             return default_value
-        if type(v)!=dict:
+        if not isinstance(v, dict):
             self._warn("dictget(%s, %s)", k, default_value)
             self._warn("Warning: expected a dict value for %s but got %s", k, type(v))
             return default_value
@@ -359,7 +359,7 @@ class typedict(dict):
         if item_type:
             for i in range(len(aslist)):
                 x = aslist[i]
-                if sys.version_info[0]>=3 and type(x)==bytes and item_type==str:
+                if sys.version_info[0]>=3 and isinstance(x, bytes) and item_type==str:
                     from xpra.os_util import bytestostr
                     x = bytestostr(x)
                     aslist[i] = x
@@ -430,9 +430,9 @@ def prettify_plug_name(s, default=""):
 def do_log_screen_sizes(root_w, root_h, sizes):
     log = get_util_logger()
     #old format, used by some clients (android):
-    if type(sizes) not in (tuple, list):
+    if not isinstance(sizes, (tuple, list)):
         return
-    if any(True for x in sizes if type(x) not in (tuple, list)):
+    if any(True for x in sizes if not isinstance(x, (tuple, list))):
         return
     def dpi(size_pixels, size_mm):
         if size_mm==0:

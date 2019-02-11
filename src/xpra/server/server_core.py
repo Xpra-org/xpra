@@ -605,7 +605,8 @@ class ServerCore(object):
             uid = os.getuid()
             gid = os.getgid()
             try:
-                import pwd, grp #@UnresolvedImport
+                import pwd
+                import grp #@UnresolvedImport
                 user = pwd.getpwuid(uid)[0]
                 group = grp.getgrgid(gid)[0]
                 log.info(" uid=%i (%s), gid=%i (%s)", uid, user, gid, group)

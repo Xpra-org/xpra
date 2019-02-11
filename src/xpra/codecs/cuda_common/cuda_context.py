@@ -6,17 +6,15 @@
 
 #@PydevCodeAnalysisIgnore
 
-#Not sure why force builtins fails on PyCUDA but not on PyOpenCL...
-
-from xpra.log import Logger
-log = Logger("csc", "cuda")
-
 import os
 import pycuda
 from pycuda import driver
 
 from xpra.util import engs, print_nested_dict, envbool, envint
 from xpra.os_util import monotonic_time, bytestostr, PYTHON2
+from xpra.log import Logger
+
+log = Logger("csc", "cuda")
 
 IGNORE_BLACKLIST = envbool("XPRA_CUDA_IGNORE_BLACKLIST", False)
 MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)

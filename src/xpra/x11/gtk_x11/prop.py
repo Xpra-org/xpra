@@ -22,17 +22,20 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_pywindow,               #@UnresolvedImport
     get_xvisual,                #@UnresolvedImport
     )
-gtk = import_gtk()
-gdk = import_gdk()
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.x11.bindings.window_bindings import (
-                X11WindowBindings,          #@UnresolvedImport
-                PropertyError)              #@UnresolvedImport
-X11Window = X11WindowBindings()
+    X11WindowBindings,          #@UnresolvedImport
+    PropertyError,              #@UnresolvedImport
+    )
 from xpra.gtk_common.error import xsync, XError, XSyncContext
-
 from xpra.log import Logger
+
 log = Logger("x11", "window")
+
+gtk = import_gtk()
+gdk = import_gdk()
+
+X11Window = X11WindowBindings()
 
 
 def _get_atom(_disp, d):

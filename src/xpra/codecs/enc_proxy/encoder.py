@@ -3,12 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("encoder", "proxy")
+from collections import deque
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.os_util import memoryview_to_bytes, monotonic_time
-from collections import deque
+from xpra.log import Logger
+
+log = Logger("encoder", "proxy")
 
 
 def get_version():

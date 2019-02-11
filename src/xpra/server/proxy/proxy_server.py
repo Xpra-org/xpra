@@ -6,20 +6,10 @@
 
 import os
 import sys
-
-from xpra.gtk_common.gobject_compat import import_glib, import_gobject
-glib = import_glib()
-glib.threads_init()
-gobject = import_gobject()
-gobject.threads_init()
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 freeze_support()
 
-from xpra.log import Logger
-log = Logger("proxy")
-authlog = Logger("proxy", "auth")
-
-
+from xpra.gtk_common.gobject_compat import import_glib, import_gobject
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, envfloat, envbool, typedict
 from xpra.os_util import get_username_for_uid, get_groups, get_home_for_uid, bytestostr, getuid, getgid, WIN32, POSIX
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
@@ -30,6 +20,15 @@ from xpra.scripts.parsing import parse_bool
 from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
 from xpra.scripts.main import parse_display_name, connect_to, start_server_subprocess
 from xpra.make_thread import start_thread
+from xpra.log import Logger
+
+log = Logger("proxy")
+authlog = Logger("proxy", "auth")
+
+glib = import_glib()
+glib.threads_init()
+gobject = import_gobject()
+gobject.threads_init()
 
 
 PROXY_SOCKET_TIMEOUT = envfloat("XPRA_PROXY_SOCKET_TIMEOUT", "0.1")

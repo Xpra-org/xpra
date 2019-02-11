@@ -6,21 +6,19 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 from xpra.os_util import bytestostr, strtobytes
 from xpra.util import nonl, typedict, envbool, iround
-
-from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-X11Keyboard = X11KeyboardBindings()
 from xpra.gtk_common.error import xswallow, xsync
-
+from xpra.os_util import hexstr
+from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.log import Logger
+
 log = Logger("x11", "server")
 mouselog = Logger("x11", "server", "mouse")
 screenlog = Logger("server", "screen")
 
-from xpra.os_util import hexstr
-from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
+X11Keyboard = X11KeyboardBindings()
 
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 

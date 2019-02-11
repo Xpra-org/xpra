@@ -3,128 +3,128 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-"""
-Base class for server mixins.
-Defines the default interface methods that each mixin may override.
-"""
 class StubServerMixin(object):
+    """
+    Base class for server mixins.
+    Defines the default interface methods that each mixin may override.
+    """
 
-    """
-    Initialize this instance with the options given.
-    Options are usually obtained by parsing the command line,
-    or using a default configuration object.
-    """
     def init(self, _opts):
+        """
+        Initialize this instance with the options given.
+        Options are usually obtained by parsing the command line,
+        or using a default configuration object.
+        """
         pass
 
-    """
-    Initialize state attributes.
-    """
     def init_state(self):
+        """
+        Initialize state attributes.
+        """
         pass
 
 
-    """
-    Called when we reset the focus.
-    """
     def reset_focus(self):
+        """
+        Called when we reset the focus.
+        """
         pass
 
-    """
-    Called when the last client has exited,
-    so we can reset things to their original state.
-    """
     def last_client_exited(self):
+        """
+        Called when the last client has exited,
+        so we can reset things to their original state.
+        """
         pass
 
-    """
-    Free up any resources.
-    """
     def cleanup(self):
+        """
+        Free up any resources.
+        """
         pass
 
-    """
-    After initialization, prepare to run.
-    """
     def setup(self):
+        """
+        After initialization, prepare to run.
+        """
         pass
 
-    """
-    Prepare to run, this method runs in parallel to save startup time.
-    """
     def threaded_setup(self):
+        """
+        Prepare to run, this method runs in parallel to save startup time.
+        """
         pass
 
-    """
-    Prepare to handle connections from the given sockets.
-    """
     def init_sockets(self, _sockets):
+        """
+        Prepare to handle connections from the given sockets.
+        """
         pass
 
-    """
-    Capabilities provided by this mixin.
-    """
     def get_caps(self, _source):
+        """
+        Capabilities provided by this mixin.
+        """
         return {}
 
-    """
-    Features provided by this mixin.
-    (the difference with capabilities is that those will only
-    be returned if the client requests 'features')
-    """
     def get_server_features(self, _source):
+        """
+        Features provided by this mixin.
+        (the difference with capabilities is that those will only
+        be returned if the client requests 'features')
+        """
         return {}
 
-    """
-    When the user in control of the session changes,
-    this method will be called.
-    """
     def set_session_driver(self, _source):
+        """
+        When the user in control of the session changes,
+        this method will be called.
+        """
         pass
 
-    """
-    Runtime information on this mixin, includes state and settings.
-    Somewhat overlaps with the capabilities and features,
-    but the data is returned in a structured format. (ie: nested dictionaries)
-    """
     def get_info(self, _proto):
+        """
+        Runtime information on this mixin, includes state and settings.
+        Somewhat overlaps with the capabilities and features,
+        but the data is returned in a structured format. (ie: nested dictionaries)
+        """
         return {}
 
-    """
-    Runtime information on this mixin,
-    unlike get_info() this method will be called
-    from the UI thread.
-    """
     def get_ui_info(self, proto, client_uuids=None, *args):
+        """
+        Runtime information on this mixin,
+        unlike get_info() this method will be called
+        from the UI thread.
+        """
         return {}
 
-    """
-    Register the packet types that this mixin can handle.
-    """
     def init_packet_handlers(self):
+        """
+        Register the packet types that this mixin can handle.
+        """
         pass
 
-    """
-    Parse capabilities from a new connection.
-    """
     def parse_hello(self, ss, caps, send_ui):
+        """
+        Parse capabilities from a new connection.
+        """
         pass
 
-    """
-    A new client is being handled, take any action needed.
-    """
     def add_new_client(self, ss, c, send_ui, share_count):
+        """
+        A new client is being handled, take any action needed.
+        """
         pass
 
-    """
-    A new connection has been accepted, send initial data.
-    """
     def send_initial_data(self, ss, caps, send_ui, share_count):
+        """
+        A new connection has been accepted, send initial data.
+        """
         pass
 
-    """
-    Cleanup method for a specific connection.
-    (to cleanup / free up resources associated with a specific client or connection)
-    """
     def cleanup_protocol(self, protocol):
+        """
+        Cleanup method for a specific connection.
+        (to cleanup / free up resources associated with a specific client or connection)
+        """
         pass

@@ -200,7 +200,7 @@ def platform_name(sys_platform, release=None):
                  }
     def rel(v):
         values = [v]
-        if type(release) in (tuple, list):
+        if isinstance(release, (tuple, list)):
             values += list(release)
         else:
             values.append(release)
@@ -243,9 +243,9 @@ def get_user_uuid():
         Try to generate a uuid string which is unique to this user.
         (relies on get_machine_id to uniquely identify a machine)
     """
-    uuid = os.environ.get("XPRA_USER_UUID")
-    if uuid:
-        return uuid
+    user_uuid = os.environ.get("XPRA_USER_UUID")
+    if user_uuid:
+        return user_uuid
     import hashlib
     u = hashlib.sha1()
     def uupdate(ustr):
@@ -528,7 +528,8 @@ def path_permission_info(filename, ftype=None):
             if os.path.isdir(filename):
                 ftype = "directory"
         info.append("permissions on %s %s: %s" % (ftype, filename, oct(stat.S_IMODE(stat_info.st_mode))))
-        import pwd,grp      #@UnresolvedImport
+        import pwd
+        import grp      #@UnresolvedImport
         user = pwd.getpwuid(stat_info.st_uid)[0]
         group = grp.getgrgid(stat_info.st_gid)[0]
         info.append("ownership %s:%s" % (user, group))

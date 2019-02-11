@@ -7,14 +7,16 @@
 import sys
 import os
 
-from xpra.sound.common import FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
-                                AAC_MPEG4, WAV_LZ4, WAV_LZO, \
-                                VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, \
-                                MPEG4, MKA, OGG
-
+from xpra.sound.common import (
+    FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
+    AAC_MPEG4, WAV_LZ4, WAV_LZO, \
+    VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, \
+    MPEG4, MKA, OGG,
+    )
 from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, bytestostr
 from xpra.util import csv, engs, parse_simple_dict, envint, envbool
 from xpra.log import Logger
+
 log = Logger("sound", "gstreamer")
 
 if PYTHON3:

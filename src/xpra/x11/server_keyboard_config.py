@@ -6,25 +6,26 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-from xpra.log import Logger
-log = Logger("keyboard")
-
-
 from xpra.util import csv, nonl, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
-from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, get_default_root_window
-from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
-from xpra.server.keyboard_config_base import KeyboardConfigBase
-from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, set_keycode_translation, \
-                           get_modifiers_from_meanings, get_modifiers_from_keycodes, \
-                           clear_modifiers, set_modifiers, map_missing_modifiers, \
-                           clean_keyboard_state
 from xpra.gtk_common.error import xsync
 from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
+from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
+from xpra.server.keyboard_config_base import KeyboardConfigBase
+from xpra.x11.gtk_x11.keys import grok_modifier_map
+from xpra.x11.xkbhelper import (
+    do_set_keymap, set_all_keycodes, set_keycode_translation,
+    get_modifiers_from_meanings, get_modifiers_from_keycodes,
+    clear_modifiers, set_modifiers, map_missing_modifiers,
+    clean_keyboard_state,
+    )
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.log import Logger
+
+log = Logger("keyboard")
+
 X11Keyboard = X11KeyboardBindings()
 
 MAP_MISSING_MODIFIERS = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
@@ -80,7 +81,7 @@ class KeyboardConfig(KeyboardConfigBase):
             kssinf = info.setdefault("keysyms", {})
             kcinfo = info.setdefault("keycode", {})
             for kc, keycode in self.keycode_translation.items():
-                if type(kc)==tuple:
+                if isinstance(kc, tuple):
                     a, b = kc
                     if isinstance(a, int):
                         client_keycode, keysym = a, b
@@ -189,7 +190,7 @@ class KeyboardConfig(KeyboardConfigBase):
             for mod, mod_defs in mod_mappings.items():
                 for mod_def in mod_defs:
                     for v in mod_def:
-                        if type(v)==int:
+                        if isinstance(v, int):
                             l = self.keycodes_for_modifier_keynames.setdefault(mod, [])
                         else:
                             self.xkbmap_mod_meanings[v] = mod
@@ -264,7 +265,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     #ie: client_def = (99, Super_L)
                     #ie: client_def = Super_L
                     #ie: client_def = (0, Super_L)
-                    if type(client_def) in (list, tuple):
+                    if isinstance(client_def, (list, tuple)):
                         #ie:
                         # keycode, keysym:
                         #  client_def = (99, Super_L)

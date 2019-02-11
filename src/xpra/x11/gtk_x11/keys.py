@@ -6,10 +6,13 @@
 
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
-X11Keyboard = X11KeyboardBindings()
 from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
 from xpra.gtk_common.gtk_util import keymap_get_for_display
+
 gdk = import_gdk()
+
+X11Keyboard = X11KeyboardBindings()
+
 
 def grok_modifier_map(display, meanings):
     """Return an dict mapping modifier names to corresponding X modifier

@@ -8,12 +8,12 @@ from xpra.util import envbool
 from xpra.gtk_common.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get
 from xpra.gtk_common.gtk_util import get_xwindow
-
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
-
 from xpra.log import Logger
+
 log = Logger("x11", "window")
+
+X11Window = X11WindowBindings()
 
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)

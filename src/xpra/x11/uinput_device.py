@@ -12,11 +12,12 @@ from uinput import (
 
 from xpra.util import envint
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-X11Keyboard = X11KeyboardBindings()
 from xpra.gtk_common.error import xsync
-
 from xpra.log import Logger
+
 log = Logger("x11", "server", "mouse")
+
+X11Keyboard = X11KeyboardBindings()
 
 
 MOUSE_WHEEL_CLICK_MULTIPLIER = envint("XPRA_MOUSE_WHEEL_CLICK_MULTIPLIER", 30)

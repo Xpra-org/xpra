@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 import weakref
+from collections import OrderedDict
 # This module is used by non-GUI programs and thus must not import gtk.
 
 from xpra.os_util import bytestostr
@@ -164,7 +165,6 @@ def enable_format(format_string):
         pass
 
 
-from collections import OrderedDict
 STRUCT_KNOWN_FILTERS = OrderedDict([
     ("Client", OrderedDict([
                 ("client"       , "All client code"),

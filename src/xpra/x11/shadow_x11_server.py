@@ -6,9 +6,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-init_gdk_display_source()
 from xpra.x11.x11_server_core import X11ServerCore
-
 from xpra.os_util import monotonic_time
 from xpra.util import envbool, envint
 from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
@@ -16,10 +14,13 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync
-XImage = XImageBindings()
-
 from xpra.log import Logger
+
 log = Logger("x11", "shadow")
+
+init_gdk_display_source()
+
+XImage = XImageBindings()
 
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)

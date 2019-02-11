@@ -30,26 +30,28 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.xroot_props import XRootPropWatcher
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
-X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-X11Keyboard = X11KeyboardBindings()
 from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
-RandR = RandRBindings()
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.gtk_common.error import xsync
 from xpra.gtk_common.gobject_compat import import_gobject
-gobject = import_gobject()
-
 from xpra.log import Logger
+
 log = Logger("server")
+
+gobject = import_gobject()
+glib = import_glib()
+
+X11Window = X11WindowBindings()
+X11Keyboard = X11KeyboardBindings()
+RandR = RandRBindings()
+
 windowlog = Logger("server", "window")
 geomlog = Logger("server", "window", "geometry")
 settingslog = Logger("x11", "xsettings")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 iconlog = Logger("icon")
-
-glib = import_glib()
 
 
 class DesktopModel(WindowModelStub, WindowDamageHandler):

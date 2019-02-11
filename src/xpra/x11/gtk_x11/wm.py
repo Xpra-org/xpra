@@ -26,18 +26,20 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_children,                                    #@UnresolvedImport
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-X11Keyboard = X11KeyboardBindings()
 from xpra.gtk_common.gobject_compat import import_gobject, is_gtk3
+from xpra.log import Logger
+
+log = Logger("x11", "window")
+
 gobject = import_gobject()
 
-from xpra.log import Logger
-log = Logger("x11", "window")
+X11Window = X11WindowBindings()
+X11Keyboard = X11KeyboardBindings()
+
 focuslog = Logger("x11", "window", "focus")
 screenlog = Logger("x11", "window", "screen")
 framelog = Logger("x11", "window", "frame")
-
 
 CWX             = constants["CWX"]
 CWY             = constants["CWY"]
@@ -317,10 +319,9 @@ class Wm(gobject.GObject):
     def do_get_property(self, pspec):
         if pspec.name == "windows":
             return frozenset(self._windows.values())
-        elif pspec.name == "toplevel":
+        if pspec.name == "toplevel":
             return self._world_window
-        else:
-            assert False
+        assert False
 
     # This is in some sense the key entry point to the entire WM program.  We
     # have detected a new client window, and start managing it:
