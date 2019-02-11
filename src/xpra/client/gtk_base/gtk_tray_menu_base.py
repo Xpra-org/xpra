@@ -318,7 +318,6 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(menu)
         menu.connect("deactivate", self.menu_deactivated)
         menu.show_all()
-        self.menu_icon_size = 0
         return menu
 
     def cleanup(self):
@@ -1594,12 +1593,12 @@ class GTKTrayMenuBase(object):
                 width, height = img.size
                 rowstride = width * (3+int(has_alpha))
                 pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
-                return scaled_image(pixbuf, icon_size=32)
+                return scaled_image(pixbuf, icon_size=self.menu_icon_size)
             except Exception:
                 log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
                 log.error(" data=%s", repr_ellipsized(icondata))
         if pixbuf:
-            return scaled_image(pixbuf, icon_size=32)
+            return scaled_image(pixbuf, icon_size=self.menu_icon_size)
         return None
 
     def make_applaunch_menu_item(self, app_name, command_props):
