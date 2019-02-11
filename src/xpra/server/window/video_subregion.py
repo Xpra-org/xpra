@@ -8,7 +8,7 @@ import math
 
 from xpra.os_util import monotonic_time
 from xpra.util import envint, envbool
-from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
+from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
 from xpra.log import Logger
 
 sslog = Logger("regiondetect")

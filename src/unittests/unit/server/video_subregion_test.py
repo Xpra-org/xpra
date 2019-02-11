@@ -109,7 +109,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
     def test_cases(self):
         from xpra.server.window.video_subregion import scoreinout   #, sslog
-        from xpra.server.window.region import rectangle         #@UnresolvedImport
+        from xpra.rectangle import rectangle         #@UnresolvedImport
         #sslog.enable_debug()
         r = rectangle(35, 435, 194, 132)
         score = scoreinout(1200, 1024, r, 1466834, 21874694)

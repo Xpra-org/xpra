@@ -19,7 +19,7 @@ from xpra.log import Logger
 log = Logger("encoding", "scroll")
 
 from xpra.buffers.membuf cimport memalign, object_as_buffer, xxh64
-from xpra.server.window.region import rectangle
+from xpra.rectangle import rectangle
 
 
 cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)

@@ -999,7 +999,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/gtk_common/gdk_atoms.c",
                    "xpra/client/gtk3/cairo_workaround.c",
                    "xpra/server/cystats.c",
-                   "xpra/server/window/region.c",
+                   "xpra/rectangle.c",
                    "xpra/server/window/motion.c",
                    "xpra/server/pam.c",
                    "etc/xpra/xpra.conf",
@@ -2030,19 +2030,20 @@ if clipboard_ENABLED:
                              **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
                              ))
 
+O3_pkgconfig = pkgconfig(optimize=3)
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
 if client_ENABLED or server_ENABLED:
     cython_add(Extension("xpra.codecs.xor.cyxor",
                 ["xpra/codecs/xor/cyxor.pyx"],
-                **pkgconfig(optimize=3)))
+                **O3_pkgconfig))
+if client_ENABLED or server_ENABLED or shadow_ENABLED:
+    cython_add(Extension("xpra.rectangle",
+                ["xpra/rectangle.pyx"],
+                **O3_pkgconfig))
 
 if server_ENABLED or shadow_ENABLED:
-    O3_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.server.cystats",
                 ["xpra/server/cystats.pyx"],
-                **O3_pkgconfig))
-    cython_add(Extension("xpra.server.window.region",
-                ["xpra/server/window/region.pyx"],
                 **O3_pkgconfig))
     cython_add(Extension("xpra.server.window.motion",
                 ["xpra/server/window/motion.pyx"],

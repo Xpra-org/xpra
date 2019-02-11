@@ -620,26 +620,36 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not monitors:
             geomlog("screen %s lacks monitors information: %s", screen0)
             return None
-        distances = {}
-        geometries = []
+        def remove_visible(rects):
+            """ removes any area found on a monitor """
+            return rects
+        from xpra.rectangle import rectangle #@UnresolvedImport
+        wrect = rectangle(wx, wy, ww, wh)
+        rects = [wrect]
+        pixels_in_monitor = {}
         for i, monitor in enumerate(monitors):
             plug_name, x, y, w, h = monitor[:5]
-            if wx>=x and wx+ww<=x+w and wy+wh<=y+h:
-                geomlog("window fits in monitor %i: %s", i, plug_name)
+            new_rects = []
+            for rect in rects:
+                new_rects += rect.substract(x, y, w, h)
+            geomlog("after removing areas visible on %s from %s: %s", plug_name, rects, new_rects)
+            rects = new_rects
+            if not rects:
+                #the whole window is visible
                 return None
-            xdists = (wx-x, wx+ww-x, wx-(x+w), wx+ww-(x+w))
-            ydists = (wy-y, wy+wh-y, wy-(y+h), wy+wh-(y+h))
-            if wx>=x and wx+ww<x+w:
-                xdists = [0]
-            if wy>=y and wy+wh<y+h:
-                ydists = [0]
-            distance = min((abs(v) for v in xdists))+min((abs(v) for v in ydists))
-            geometries.append((x,y,w,h))
-            distances[distance] = i
-        #so it doesn't fit... choose the closest monitor and make it fit
-        geomlog("OR window distances (%s) to (%s): %s", (wx, wy, ww, wh), geometries, distances)
-        closest = min(distances.keys())
-        i = distances[closest]
+            #keep track of how many pixels would be on this monitor:
+            inter = wrect.intersection(x, y, w, h)
+            if inter:
+                pixels_in_monitor[inter.width*inter.height] = i
+        #if we're here, then some of the window would land on an area
+        #not show on any monitors
+        #choose the monitor that had most of the pixels and make it fit:
+        geomlog("pixels in monitor=%s", pixels_in_monitor)
+        if not pixels_in_monitor:
+            i = 0
+        else:
+            best = max(pixels_in_monitor.keys())
+            i = pixels_in_monitor[best]
         monitor = monitors[i]
         plug_name, x, y, w, h = monitor[:5]
         geomlog("calculating OR offset for monitor %i: %s", i, plug_name)

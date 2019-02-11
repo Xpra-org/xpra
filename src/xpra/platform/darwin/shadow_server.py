@@ -115,7 +115,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_screen_refresh(self, rlist):
         #TODO: improve damage method to handle lists directly:
-        from xpra.server.window.region import rectangle     #@UnresolvedImport
+        from xpra.rectangle import rectangle     #@UnresolvedImport
         model_rects = {}
         for model in self._id_to_window.values():
             model_rects[model] = rectangle(*model.geometry)
