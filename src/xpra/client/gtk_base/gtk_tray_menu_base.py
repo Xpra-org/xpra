@@ -8,9 +8,6 @@ import os
 import re
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
-gtk = import_gtk()
-glib = import_glib()
-
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized
 from xpra.os_util import bytestostr, OSX
 from xpra.gtk_common.gtk_util import (
@@ -26,14 +23,16 @@ from xpra.simple_stats import std_unit_dec
 from xpra.platform.gui import get_icon_size
 from xpra.platform.paths import get_icon_dir
 from xpra.client import mixin_features
-
-
 from xpra.log import Logger
+
 log = Logger("menu")
 clipboardlog = Logger("menu", "clipboard")
 webcamlog = Logger("menu", "webcam")
 avsynclog = Logger("menu", "av-sync")
 bandwidthlog = Logger("bandwidth", "network")
+
+gtk = import_gtk()
+glib = import_glib()
 
 HIDE_DISABLED_MENU_ENTRIES = OSX
 
