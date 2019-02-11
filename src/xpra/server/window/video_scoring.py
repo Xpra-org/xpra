@@ -6,8 +6,8 @@
 
 from xpra.util import envint
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
-
 from xpra.log import Logger
+
 scorelog = Logger("score")
 
 GPU_BIAS = envint("XPRA_GPU_BIAS", 100)

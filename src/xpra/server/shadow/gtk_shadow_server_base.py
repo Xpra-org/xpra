@@ -1,17 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-
-from xpra.log import Logger
-traylog = Logger("tray")
-mouselog = Logger("mouse")
-notifylog = Logger("notify")
-screenlog = Logger("screen")
-log = Logger("shadow")
 
 from xpra.util import envbool, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
@@ -22,7 +15,13 @@ from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
+from xpra.log import Logger
 
+traylog = Logger("tray")
+mouselog = Logger("mouse")
+notifylog = Logger("notify")
+screenlog = Logger("screen")
+log = Logger("shadow")
 
 MULTI_WINDOW = envbool("XPRA_SHADOW_MULTI_WINDOW", True)
 

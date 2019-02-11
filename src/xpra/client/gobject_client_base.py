@@ -1,21 +1,25 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gobject, import_glib
-gobject = import_gobject()
-glib = import_glib()
-
-from xpra.log import Logger
-log = Logger("gobject", "client")
-
 import sys
+
 from xpra.util import nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, disconnect_is_an_error, DONE
 from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
-from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
+from xpra.exit_codes import (
+    EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
+    EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG,
+    )
+from xpra.gtk_common.gobject_compat import import_gobject, import_glib
+from xpra.log import Logger
+
+log = Logger("gobject", "client")
+
+gobject = import_gobject()
+glib = import_glib()
 
 FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", 1)
 

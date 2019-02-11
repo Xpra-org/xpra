@@ -12,9 +12,25 @@ import threading
 from math import sqrt
 from collections import deque
 
-from xpra.os_util import monotonic_time
+from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
 from xpra.util import envint, envbool, csv, typedict, first_time
+from xpra.server.window.windowicon_source import WindowIconSource
+from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
+from xpra.server.window.window_stats import WindowPerformanceStatistics
+from xpra.server.window.batch_config import DamageBatchConfig
+from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
+from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
+from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
+from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send
+from xpra.simple_stats import get_list_stats
+from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
+from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
+from xpra.codecs.rgb_transform import rgb_reformat
+from xpra.codecs.loader import get_codec
+from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
+from xpra.net import compression
 from xpra.log import Logger
+
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
 compresslog = Logger("window", "compress")
@@ -62,24 +78,6 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
-
-from xpra.server.window.windowicon_source import WindowIconSource
-from xpra.os_util import memoryview_to_bytes, strtobytes
-from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
-from xpra.server.window.window_stats import WindowPerformanceStatistics
-from xpra.server.window.batch_config import DamageBatchConfig
-from xpra.simple_stats import get_list_stats
-from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
-from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
-from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
-from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
-from xpra.codecs.rgb_transform import rgb_reformat
-from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send
-from xpra.codecs.loader import get_codec
-from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
-from xpra.net import compression
-
 
 INFINITY = float("inf")
 TRANSPARENCY_ENCODINGS = ("webp", "png", "rgb32")

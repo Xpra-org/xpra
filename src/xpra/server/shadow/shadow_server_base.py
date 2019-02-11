@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-
-from xpra.log import Logger
-log = Logger("shadow")
-notifylog = Logger("notify")
-mouselog = Logger("mouse")
-cursorlog = Logger("cursor")
 
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -18,7 +12,12 @@ from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.util import envint, envbool, DONE
+from xpra.log import Logger
 
+log = Logger("shadow")
+notifylog = Logger("notify")
+mouselog = Logger("mouse")
+cursorlog = Logger("cursor")
 
 REFRESH_DELAY = envint("XPRA_SHADOW_REFRESH_DELAY", 50)
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)

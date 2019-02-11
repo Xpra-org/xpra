@@ -1,26 +1,24 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import gtk
 from gtk import gdk
-
-from xpra.log import Logger
-log = Logger("window")
-statelog = Logger("state")
-eventslog = Logger("events")
-drawlog = Logger("draw")
-
-
 from collections import namedtuple
+
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.util import envbool
+from xpra.log import Logger
 
+log = Logger("window")
+statelog = Logger("state")
+eventslog = Logger("events")
+drawlog = Logger("draw")
 
 FORCE_IMMEDIATE_PAINT = envbool("XPRA_FORCE_IMMEDIATE_PAINT", False)
 

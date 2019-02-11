@@ -7,11 +7,6 @@
 
 import sys
 
-from xpra.log import Logger
-log = Logger("client")
-keylog = Logger("client", "keyboard")
-
-
 from xpra.client.client_base import XpraClientBase
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
@@ -27,6 +22,7 @@ from xpra.util import (
     )
 from xpra.exit_codes import EXIT_FAILURE, EXIT_OK
 from xpra.version_util import get_version_info_full, get_platform_info
+from xpra.log import Logger
 
 
 CLIENT_BASES = [XpraClientBase]
@@ -70,8 +66,10 @@ if mixin_features.tray:
 
 CLIENT_BASES = tuple(CLIENT_BASES)
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
-log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
+log = Logger("client")
+keylog = Logger("client", "keyboard")
+log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)

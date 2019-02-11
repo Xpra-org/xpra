@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,13 +8,41 @@
 import time
 import math
 import os.path
-
 try:
     from urllib import unquote          #python2 @UnusedImport
 except:
     from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
 
+from xpra.os_util import bytestostr, is_X11, WIN32, OSX, POSIX, PYTHON3
+from xpra.util import (
+    AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
+    WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
+    MOVERESIZE_CANCEL,
+    MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
+    MOVERESIZE_SIZE_RIGHT,
+    MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
+    MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE,
+    )
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, is_gtk3
+from xpra.gtk_common.gobject_util import no_arg_signal
+from xpra.gtk_common.gtk_util import (
+    get_xwindow, get_pixbuf_from_data, get_default_root_window,
+    is_realized, display_get_default, drag_status,
+    newTargetEntry, drag_context_targets, drag_context_actions,
+    drag_dest_window, drag_widget_get_data,
+    gio_File, query_info_async, load_contents_async, load_contents_finish,
+    WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS,
+    SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
+    DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY,
+    BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
+    POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK,
+    )
+from xpra.gtk_common.keymap import KEY_TRANSLATIONS
+from xpra.client.client_window_base import ClientWindowBase
+from xpra.platform.gui import set_fullscreen_monitors, set_shaded
+from xpra.platform.gui import add_window_hooks, remove_window_hooks
 from xpra.log import Logger
+
 focuslog = Logger("focus", "grab")
 workspacelog = Logger("workspace")
 log = Logger("window")
@@ -29,28 +57,6 @@ geomlog = Logger("geometry")
 menulog = Logger("menu")
 grablog = Logger("grab")
 draglog = Logger("dragndrop")
-
-
-from xpra.os_util import bytestostr, is_X11, WIN32, OSX, POSIX, PYTHON3
-from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
-                       WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
-                       MOVERESIZE_CANCEL,
-                       MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
-                       MOVERESIZE_SIZE_RIGHT,
-                       MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
-                       MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE)
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, is_gtk3
-from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.gtk_common.gtk_util import (get_xwindow, get_pixbuf_from_data, get_default_root_window, is_realized, display_get_default, drag_status,
-    newTargetEntry, drag_context_targets, drag_context_actions, drag_dest_window, drag_widget_get_data,
-    gio_File, query_info_async, load_contents_async, load_contents_finish,
-    WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS, SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
-    DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY,
-    BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK , POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK)
-from xpra.gtk_common.keymap import KEY_TRANSLATIONS
-from xpra.client.client_window_base import ClientWindowBase
-from xpra.platform.gui import set_fullscreen_monitors, set_shaded
-from xpra.platform.gui import add_window_hooks, remove_window_hooks
 
 gtk     = import_gtk()
 gdk     = import_gdk()

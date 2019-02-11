@@ -11,8 +11,8 @@ from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, PYTHON2, OSX, POSIX, LINUX
 from collections import OrderedDict
 from xpra.platform.paths import get_app_dir, get_user_conf_dirs
-
 from xpra.log import Logger
+
 log = Logger("window", "util")
 
 DEFAULT_CONTENT_TYPE = os.environ.get("XPRA_DEFAULT_CONTENT_TYPE", "")

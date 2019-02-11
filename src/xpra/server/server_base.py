@@ -8,25 +8,14 @@
 
 from time import sleep
 
-from xpra.log import Logger
-log = Logger("server")
-netlog = Logger("network")
-httplog = Logger("http")
-timeoutlog = Logger("timeout")
-screenlog = Logger("screen")
-
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
-
 from xpra.os_util import thread, monotonic_time, bytestostr, strtobytes, WIN32, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import EXITING_CODE
-
-
-CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
-
+from xpra.log import Logger
 
 SERVER_BASES = [ServerCore, ServerBaseControlCommands]
 from xpra.server import server_features
@@ -74,7 +63,16 @@ if server_features.windows:
     SERVER_BASES.append(WindowServer)
 SERVER_BASES = tuple(SERVER_BASES)
 ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
+
+log = Logger("server")
+netlog = Logger("network")
+httplog = Logger("http")
+timeoutlog = Logger("timeout")
+screenlog = Logger("screen")
+
 log("ServerBaseClass%s", SERVER_BASES)
+
+CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 
 
 """

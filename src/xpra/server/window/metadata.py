@@ -7,11 +7,11 @@
 
 import os
 
+from xpra.util import WORKSPACE_UNSET
 from xpra.log import Logger
+
 log = Logger("server")
 metalog = Logger("metadata")
-
-from xpra.util import WORKSPACE_UNSET
 
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 

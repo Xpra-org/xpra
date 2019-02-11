@@ -6,16 +6,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#how many historical records to keep
-#for the various statistics we collect:
-#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
-NRECS = 100
+import os
 
 from collections import deque
 from xpra.simple_stats import get_list_stats
 from xpra.os_util import monotonic_time
 
-import os
+#how many historical records to keep
+#for the various statistics we collect:
+#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
+NRECS = 100
 
 
 def ival(key, default, minv=0, maxv=None):

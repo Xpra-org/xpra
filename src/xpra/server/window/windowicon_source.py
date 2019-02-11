@@ -17,7 +17,6 @@ from xpra.log import Logger
 
 log = Logger("icon")
 
-
 ARGB_ICONS = envbool("XPRA_ARGB_ICONS", True)
 PNG_ICONS = envbool("XPRA_PNG_ICONS", True)
 

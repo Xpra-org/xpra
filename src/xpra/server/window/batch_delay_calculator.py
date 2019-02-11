@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from math import log as mathlog, sqrt
 
-from xpra.log import Logger
-log = Logger("server", "stats")
-log.enable_debug()
-
 from xpra.os_util import monotonic_time
 from xpra.server.cystats import queue_inspect, logp, time_weighted_average, calculate_timesize_weighted_average_score   #@UnresolvedImport
+from xpra.log import Logger
+
+log = Logger("server", "stats")
 
 
 def get_low_limit(mmap_enabled, window_dimensions):

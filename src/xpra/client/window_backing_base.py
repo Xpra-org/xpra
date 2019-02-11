@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 import hashlib
-
 from threading import Lock
+
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
 from xpra.util import typedict, csv, envint, envbool, repr_ellipsized
