@@ -1,37 +1,34 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 import os.path
 
+from xpra.util import flatten_dict
+from xpra.os_util import monotonic_time, BytesIOClass
+from xpra.gtk_common.gobject_compat import import_gdk, import_glib, is_gtk3
+from xpra.gtk_common.quit import (
+    gtk_main_quit_really,
+    gtk_main_quit_on_fatal_exceptions_enable,
+    gtk_main_quit_on_fatal_exceptions_disable,
+    )
+from xpra.server.server_base import ServerBase
+from xpra.gtk_common.gtk_util import (
+    get_gtk_version_info, gtk_main, display_get_default, get_root_size,
+    keymap_get_for_display, icon_theme_get_default, ICON_SIZE_BUTTON,
+    )
 from xpra.log import Logger
+
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 cursorlog = Logger("server", "cursor")
 notifylog = Logger("notify")
 
-from xpra.util import flatten_dict
-from xpra.os_util import monotonic_time, BytesIOClass
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_gobject, is_gtk3
-from xpra.gtk_common.quit import (gtk_main_quit_really,
-                           gtk_main_quit_on_fatal_exceptions_enable,
-                           gtk_main_quit_on_fatal_exceptions_disable)
-from xpra.server.server_base import ServerBase
-from xpra.gtk_common.gtk_util import (
-    get_gtk_version_info, gtk_main, display_get_default, get_root_size,
-    keymap_get_for_display, icon_theme_get_default,
-    )
-
 glib = import_glib()
-glib.threads_init()
-gobject = import_gobject()
-gobject.threads_init()
-gtk = import_gtk()
 gdk = import_gdk()
 
 
@@ -250,7 +247,7 @@ class GTKServerBase(ServerBase):
             theme = icon_theme_get_default()
             if theme:
                 try:
-                    icon = theme.load_icon(icon_string, gtk.ICON_SIZE_BUTTON, 0)
+                    icon = theme.load_icon(icon_string, ICON_SIZE_BUTTON, 0)
                 except Exception as e:
                     notifylog("failed to load icon '%s' from default theme: %s", icon_string, e)
                 else:

@@ -82,6 +82,7 @@ def try_import_GdkX11():
 
 def import_gobject2():
     import gobject
+    gobject.threads_init()
     return gobject
 def import_gobject3():
     from gi.repository import GObject               #@UnresolvedImport
