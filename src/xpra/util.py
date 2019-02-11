@@ -855,7 +855,10 @@ def envint(name, d=0):
 
 def envbool(name, d=False):
     try:
-        return bool(int(os.environ.get(name, d)))
+        v = os.environ.get(name)
+        if v is None:
+            return d
+        return bool(int(v))
     except ValueError:
         return d
 
