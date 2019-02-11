@@ -613,7 +613,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not ss:
             return None
         if len(ss)!=1:
-            geomlog("cannot handle one more than one screen for OR offset: %s", )
+            geomlog("cannot handle more than one screen for OR offset")
             return None
         screen0 = ss[0]
         monitors = screen0[5]
