@@ -6,6 +6,7 @@
 
 import hashlib
 from threading import Lock
+from PIL import Image
 
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
@@ -232,10 +233,8 @@ class WindowBackingBase(object):
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        PIL = get_codec("PIL")
-        assert PIL.Image, "PIL.Image not found"
         buf = BytesIOClass(img_data)
-        img = PIL.Image.open(buf)
+        img = Image.open(buf)
         assert img.mode in ("L", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
         transparency = options.intget("transparency", -1)
         if img.mode=="P":
@@ -251,13 +250,13 @@ class WindowBackingBase(object):
                     if a!=transparency:
                         return 255
                     return 0
-                mask = PIL.Image.eval(img, mask_value)
+                mask = Image.eval(img, mask_value)
                 mask = mask.convert("L")
                 def nomask_value(a):
                     if a!=transparency:
                         return a
                     return 0
-                img = PIL.Image.eval(img, nomask_value)
+                img = Image.eval(img, nomask_value)
                 img = img.convert("RGBA")
                 img.putalpha(mask)
             else:

@@ -8,9 +8,9 @@
 
 import os
 import threading
+from PIL import Image
 
 from xpra.os_util import monotonic_time, BytesIOClass
-from xpra.codecs.loader import get_codec
 from xpra.net import compression
 from xpra.util import envbool
 from xpra.log import Logger
@@ -150,7 +150,6 @@ class WindowIconSource(object):
         if not idata:
             return
         pixel_data, pixel_format, stride, w, h = idata
-        PIL = get_codec("PIL")
         max_w, max_h = self.window_icon_max_size
         if stride!=w*4:
             #re-stride it (I don't think this ever fires?)
@@ -159,12 +158,12 @@ class WindowIconSource(object):
         #use png if supported and if "premult_argb32" is not supported by the client (ie: html5)
         #or if we must downscale it (bigger than what the client is willing to deal with),
         #or if we want to save window icons
-        has_png = PIL and PNG_ICONS and ("png" in self.window_icon_encodings)
+        has_png = PNG_ICONS and ("png" in self.window_icon_encodings)
         has_premult = ARGB_ICONS and "premult_argb32" in self.window_icon_encodings
         use_png = has_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or w*h>=1024 or (not has_premult) or (pixel_format!="BGRA"))
         log("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), sending as png=%s, has_png=%s, has_premult=%s, pixel_format=%s", w, h, self.window_icon_max_size, self.window_icon_size, use_png, has_png, has_premult, pixel_format)
         if use_png:
-            img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", pixel_format, 0, 1)
+            img = Image.frombuffer("RGBA", (w,h), pixel_data, "raw", pixel_format, 0, 1)
             if w>max_w or h>max_h:
                 #scale the icon down to the size the client wants
                 icon_w, icon_h = self.window_icon_size
@@ -175,7 +174,7 @@ class WindowIconSource(object):
                     w = min(max_w, w*icon_h//h)
                     h = icon_h
                 log("scaling window icon down to %sx%s", w, h)
-                img = img.resize((w,h), PIL.Image.ANTIALIAS)
+                img = img.resize((w,h), Image.ANTIALIAS)
             output = BytesIOClass()
             img.save(output, 'PNG')
             compressed_data = output.getvalue()

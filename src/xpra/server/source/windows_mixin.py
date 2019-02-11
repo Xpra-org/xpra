@@ -254,11 +254,9 @@ class WindowsMixin(StubSourceMixin):
             #convert bytearray to string:
             cpixels = strtobytes(pixels)
             if "png" in self.cursor_encodings:
-                from xpra.codecs.loader import get_codec
-                PIL = get_codec("PIL")
-                assert PIL
+                from PIL import Image
                 cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'", len(cpixels), w, h, name)
-                img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
+                img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
                 buf = BytesIOClass()
                 img.save(buf, "PNG")
                 pngdata = buf.getvalue()

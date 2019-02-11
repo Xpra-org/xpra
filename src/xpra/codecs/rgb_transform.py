@@ -7,7 +7,6 @@
 
 from PIL import Image
 
-from xpra.codecs.loader import get_codec
 from xpra.os_util import bytestostr, monotonic_time
 from xpra.util import first_time
 from xpra.log import Logger
@@ -40,11 +39,10 @@ PIL_conv_noalpha = {
 def rgb_reformat(image, rgb_formats, supports_transparency):
     """ convert the RGB pixel data into a format supported by the client """
     #need to convert to a supported format!
-    PIL = get_codec("PIL")
     pixel_format = bytestostr(image.get_pixel_format())
     pixels = image.get_pixels()
     assert pixels, "failed to get pixels from %s" % image
-    if not PIL or pixel_format in ("r210", "BGR565"):
+    if pixel_format in ("r210", "BGR565"):
         #try to fallback to argb module
         #(required for r210 which is not handled by PIL directly)
         assert argb_swap, "no argb codec"

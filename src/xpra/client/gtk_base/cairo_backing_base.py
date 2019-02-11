@@ -158,7 +158,7 @@ class CairoBackingBase(WindowBackingBase):
     def nasty_rgb_via_png_paint(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format):
         log.warn("nasty_rgb_via_png_paint%s", (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
         #PIL fallback
-        PIL = get_codec("PIL")
+        from PIL import Image
         if has_alpha:
             oformat = "RGBA"
         else:
@@ -168,7 +168,7 @@ class CairoBackingBase(WindowBackingBase):
         bdata = strtobytes(memoryview_to_bytes(img_data))
         src_format = rgb_format.replace("X", "A")
         try:
-            img = PIL.Image.frombytes(oformat, (width,height), bdata, "raw", src_format, rowstride, 1)
+            img = Image.frombytes(oformat, (width,height), bdata, "raw", src_format, rowstride, 1)
         except ValueError as e:
             log("PIL Image frombytes:", exc_info=True)
             raise Exception("failed to parse raw %s data as %s to %s: %s" % (rgb_format, src_format, oformat, e))

@@ -7,9 +7,7 @@
 import os
 from gtk import gdk
 import cairo
-
-from xpra.log import Logger
-log = Logger("paint")
+from PIL import Image
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
@@ -17,7 +15,9 @@ from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
 from xpra.os_util import memoryview_to_bytes, _buffer
 from xpra.util import csv, envbool
+from xpra.log import Logger
 
+log = Logger("paint")
 
 PIXMAP_RGB_MODES = ["RGB", "RGBX", "RGBA"]
 INDIRECT_BGR = envbool("XPRA_PIXMAP_INDIRECT_BGR", False)
@@ -118,11 +118,9 @@ class PixmapBacking(GTK2WindowBacking):
     def bgr_to_rgb(self, img_data, width, height, rowstride, rgb_format, target_format):
         if not rgb_format.startswith("BGR"):
             return img_data, rowstride
-        from xpra.codecs.loader import get_codec
         #use an rgb format name that PIL will recognize:
         in_format = rgb_format.replace("X", "A")
-        PIL = get_codec("PIL")
-        img = PIL.Image.frombuffer(target_format, (width, height), img_data, "raw", in_format, rowstride)
+        img = Image.frombuffer(target_format, (width, height), img_data, "raw", in_format, rowstride)
         img_data = img.tobytes("raw", target_format)
         log.warn("%s converted to %s", rgb_format, target_format)
         return img_data, width*len(target_format)
