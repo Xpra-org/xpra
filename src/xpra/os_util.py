@@ -11,48 +11,53 @@ import sys
 import signal
 import uuid
 import time
+import struct
 import binascii
 
 #hide some ugly python3 compat:
 try:
     import _thread as thread            #@UnresolvedImport @UnusedImport (python3)
-except:
+except ImportError:
     import thread                       #@Reimport @UnusedImport
+assert thread
 
 try:
     from queue import Queue             #@UnresolvedImport @UnusedImport (python3)
 except ImportError:
     from Queue import Queue             #@Reimport @UnusedImport
+assert Queue
 
 try:
     import builtins                     #@UnresolvedImport @UnusedImport (python3)
-except:
+except ImportError:
     import __builtin__ as builtins      #@Reimport @UnusedImport
+assert builtins
 _buffer = builtins.__dict__.get("buffer")
 
 
 SIGNAMES = {}
-for x in [x for x in dir(signal) if x.startswith("SIG") and not x.startswith("SIG_")]:
-    SIGNAMES[getattr(signal, x)] = x
+for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
+    SIGNAMES[getattr(signal, signame)] = signame
 
 
 #use cStringIO, fallback to StringIO,
 #and python3 is making life more difficult yet again:
 try:
     from io import BytesIO as BytesIOClass              #@UnusedImport
-except:
+except ImportError:
     try:
         from cStringIO import StringIO as BytesIOClass  #@Reimport @UnusedImport
-    except:
+    except ImportError:
         from StringIO import StringIO as BytesIOClass   #@Reimport @UnusedImport
+assert BytesIOClass
 try:
     from StringIO import StringIO as StringIOClass      #@UnusedImport
-except:
+except ImportError:
     try:
         from cStringIO import StringIO as StringIOClass #@Reimport @UnusedImport
-    except:
+    except ImportError:
         from io import StringIO as StringIOClass        #@Reimport @UnusedImport
-
+assert StringIOClass
 
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
@@ -63,7 +68,6 @@ POSIX = os.name=="posix"
 PYTHON2 = sys.version_info[0]==2
 PYTHON3 = sys.version_info[0]==3
 
-import struct
 BITS = struct.calcsize(b"P")*8
 
 
@@ -76,11 +80,11 @@ if PYTHON2:
         return binascii.hexlify(str(v))
 else:
     def strtobytes(x):
-        if type(x)==bytes:
+        if isinstance(x, bytes):
             return x
         return str(x).encode("latin1")
     def bytestostr(x):
-        if type(x)==bytes:
+        if isinstance(x, bytes):
             return x.decode("latin1")
         return str(x)
     def hexstr(v):
@@ -96,7 +100,7 @@ def get_util_logger():
     return util_logger
 
 def memoryview_to_bytes(v):
-    if type(v)==bytes:
+    if isinstance(v, bytes):
         return v
     if isinstance(v, memoryview):
         return v.tobytes()
@@ -161,7 +165,7 @@ def get_group_id(group):
         import grp      #@UnresolvedImport
         gr = grp.getgrnam(group)
         return gr.gr_gid
-    except:
+    except (ImportError, KeyError):
         return -1
 
 
@@ -371,11 +375,11 @@ def is_WSL():
 
 def get_generic_os_name():
     for k,v in {
-        "linux"     : "linux",
-        "darwin"    : "osx",
-        "win"       : "win32",
-        "freebsd"   : "freebsd",
-        }.items():
+            "linux"     : "linux",
+            "darwin"    : "osx",
+            "win"       : "win32",
+            "freebsd"   : "freebsd",
+            }.items():
         if sys.platform.startswith(k):
             return v
     return sys.platform
@@ -762,7 +766,7 @@ def setuidgid(uid, gid):
             os.initgroups(username, gid)
         else:
             import grp      #@UnresolvedImport
-            groups = [gr.gr_gid for gr in grp.getgrall() if (username in gr.gr_mem)]
+            groups = [gr.gr_gid for gr in grp.getgrall() if username in gr.gr_mem]
             os.setgroups(groups)
     #change uid and gid:
     try:

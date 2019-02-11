@@ -159,7 +159,8 @@ def remove_dupes(seq):
 
 def merge_dicts(a, b, path=None):
     """ merges b into a """
-    if path is None: path = []
+    if path is None:
+        path = []
     for key in b:
         if key in a:
             if isinstance(a[key], dict) and isinstance(b[key], dict):
@@ -350,7 +351,7 @@ class typedict(dict):
         v = self.capsget(k)
         if v is None:
             return default_value
-        if type(v) not in (list, tuple):
+        if not isinstance(v, (list, tuple)):
             self._warn("listget%s", (k, default_value, item_type, max_items))
             self._warn("expected a list or tuple value for %s but got %s", k, type(v))
             return default_value
@@ -362,7 +363,7 @@ class typedict(dict):
                     from xpra.os_util import bytestostr
                     x = bytestostr(x)
                     aslist[i] = x
-                elif type(x)==unicode and item_type==str:
+                elif isinstance(x, unicode) and item_type==str:
                     x = str(x)
                     aslist[i] = x
                 if type(x)!=item_type:
@@ -470,7 +471,9 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 if plug_x!=0 or plug_y!=0:
                     info.append("at %ix%i" % (plug_x, plug_y))
             if (plug_width_mm!=width_mm or plug_height_mm!=height_mm) and (plug_width_mm>0 or plug_height_mm>0):
-                info.append("(%ix%i mm - DPI: %ix%i)" % (plug_width_mm, plug_height_mm, dpi(plug_width, plug_width_mm), dpi(plug_height, plug_height_mm)))
+                info.append("(%ix%i mm - DPI: %ix%i)" % (
+                    plug_width_mm, plug_height_mm, dpi(plug_width, plug_width_mm), dpi(plug_height, plug_height_mm))
+                )
             if len(m)>=11:
                 dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
                 #only show it again if different from the screen workarea
@@ -571,7 +574,7 @@ def dump_references(log, instances, exclude=[]):
                 log.info("  [%s] in %s", i, type(r))
                 if inspect.isframe(r):
                     log.info("    frame info: %s", str(inspect.getframeinfo(r))[:1024])
-                elif type(r) in (list, tuple):
+                elif isinstance(r, (list, tuple)):
                     listref = gc.get_referrers(r)
                     lr = len(r)
                     if lr<=128:
@@ -587,7 +590,7 @@ def dump_references(log, instances, exclude=[]):
                         log.info("    %i referrers: %s", ll, repr_ellipsized(csv(listref)))
                     else:
                         log.info("    %i referrers", ll)
-                elif type(r)==dict:
+                elif isinstance(r, dict):
                     if len(r)>64:
                         log.info("    %s items: %s", len(r), repr_ellipsized(str(r)))
                         continue
@@ -647,8 +650,7 @@ def repr_ellipsized(obj, limit=100):
         if len(s)<=limit or limit<=6:
             return s
         return s[:limit//2-2]+" .. "+s[2-limit//2:]
-    else:
-        return repr(obj)
+    return repr(obj)
 
 
 def rindex(alist, avalue):
@@ -738,7 +740,7 @@ def sorted_nicely(l):
         else:
             return text
     from xpra.os_util import bytestostr
-    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', bytestostr(key)) ]
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', bytestostr(key))]
     return sorted(l, key = alphanum_key)
 
 def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=None, version_keys=("version", "revision"), hex_keys=("data", )):
@@ -848,19 +850,19 @@ def csv(v):
 def envint(name, d=0):
     try:
         return int(os.environ.get(name, d))
-    except:
+    except ValueError:
         return d
 
 def envbool(name, d=False):
     try:
         return bool(int(os.environ.get(name, d)))
-    except:
+    except ValueError:
         return d
 
 def envfloat(name, d=0):
     try:
         return float(os.environ.get(name, d))
-    except:
+    except ValueError:
         return d
 
 
