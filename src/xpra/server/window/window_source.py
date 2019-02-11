@@ -1026,7 +1026,7 @@ class WindowSource(WindowIconSource):
         calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit)
         #update the normalized value:
         ww, wh = self.window_dimensions
-        self.batch_config.delay_per_megapixel = self.batch_config.delay*1000000//(ww*wh)
+        self.batch_config.delay_per_megapixel = int(self.batch_config.delay*1000000//(ww*wh))
         self.statistics.last_recalculate = now
         self.update_av_sync_frame_delay()
 

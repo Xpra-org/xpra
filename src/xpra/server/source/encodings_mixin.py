@@ -185,8 +185,10 @@ class EncodingsMixin(StubSourceMixin):
             #store the delay as a normalized value per megapixel
             #so we can adapt it to different window sizes:
             avg_size = tsize // tcount
-            normalized_delay = wdelay * 1000000 // avg_size
+            ratio = sqrt(1000000.0 / avg_size)
+            normalized_delay = int(delay * ratio)
             self.global_batch_config.delay_per_megapixel = normalized_delay
+            log("delay_per_megapixel=%i, delay=%i, for wdelay=%i, avg_size=%i, ratio=%.2f", normalized_delay, delay, wdelay, avg_size, ratio)
 
     def may_recalculate(self, wid, pixel_count):
         if wid in self.calculate_window_ids:
@@ -488,8 +490,10 @@ class EncodingsMixin(StubSourceMixin):
         #(ie: a 4MPixel window, will start at 2 times the global delay)
         #(ie: a 0.5MPixel window will start at 0.7 times the global delay)
         dpm = self.global_batch_config.delay_per_megapixel
+        w, h = window.get_dimensions()
         if dpm>=0:
-            w, h = window.get_dimensions()
-            ratio = float(w*h) / 1000000
-            batch_config.delay = dpm * sqrt(ratio)
+            ratio = sqrt(1000000.0 / (w*h))
+            batch_config.delay = max(batch_config.min_delay, min(batch_config.max_delay, int(dpm * sqrt(ratio))))
+        log("make_batch_config(%i, %s) global delay per megapixel=%i, new window delay for %ix%i=%s",
+                 wid, window, dpm, w, h, batch_config.delay)
         return batch_config
