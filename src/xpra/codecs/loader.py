@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -134,60 +134,37 @@ def load_codecs(encoders=True, decoders=True, csc=True):
     loaded = True
     show = []
     log("loading codecs")
-    if encoders or decoders:
-        codec_import_check("PIL", "Python Imaging Library", "PIL", "PIL", "Image")
-        add_codec_version("PIL", "PIL.Image", "PILLOW_VERSION", "VERSION")
+
+    def xpra_codec_import(name, description, top_module, class_module, *classnames):
+        xpra_top_module = "xpra.codecs.%s" % top_module
+        xpra_class_module = "xpra.codecs.%s.%s" % (top_module, class_module)
+        codec_import_check(name, description, xpra_top_module, xpra_class_module, *classnames)
+        version_name = name
+        if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
+            version_name = name[4:]
+        add_codec_version(version_name, xpra_class_module)
 
     if encoders:
         show += list(ENCODER_CODECS)
-        codec_import_check("enc_pillow", "Pillow encoder", "xpra.codecs.pillow", "xpra.codecs.pillow.encode", "encode")
-        add_codec_version("enc_pillow", "xpra.codecs.pillow.encode")
-
-        codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
-        add_codec_version("enc_webp", "xpra.codecs.webp.encode")
-
-        codec_import_check("enc_jpeg", "JPEG decoder", "xpra.codecs.jpeg", "xpra.codecs.jpeg.encoder", "encoder")
-        add_codec_version("enc_jpeg", "xpra.codecs.jpeg.encoder")
-
-        codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
-        add_codec_version("vpx", "xpra.codecs.vpx.decoder")
-
-        codec_import_check("enc_x264", "x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
-        add_codec_version("x264", "xpra.codecs.enc_x264.encoder")
-
-        codec_import_check("enc_x265", "x265 encoder", "xpra.codecs.enc_x265", "xpra.codecs.enc_x265.encoder", "Encoder")
-        add_codec_version("x265", "xpra.codecs.enc_x265.encoder")
-
-        codec_import_check("nvenc", "nvenc encoder", "xpra.codecs.nvenc", "xpra.codecs.nvenc.encoder", "Encoder")
-        add_codec_version("nvenc", "xpra.codecs.nvenc.encoder")
-
-        codec_import_check("enc_ffmpeg", "ffmpeg encoder", "xpra.codecs.enc_ffmpeg", "xpra.codecs.enc_ffmpeg.encoder", "Encoder")
-        add_codec_version("ffmpeg", "xpra.codecs.enc_ffmpeg.encoder")
-
+        xpra_codec_import("enc_pillow", "Pillow encoder", "pillow", "encode", "encode")
+        xpra_codec_import("enc_webp", "webp encoder", "webp", "encode", "compress")
+        xpra_codec_import("enc_jpeg", "JPEG decoder", "jpeg", "encoder", "encoder")
+        xpra_codec_import("enc_vpx", "vpx encoder", "vpx", "encoder", "Encoder")
+        xpra_codec_import("enc_x264", "x264 encoder", "enc_x264", "encoder", "Encoder")
+        xpra_codec_import("enc_x265", "x265 encoder", "enc_x265", "encoder", "Encoder")
+        xpra_codec_import("nvenc", "nvenc encoder", "nvenc", "encoder", "Encoder")
+        xpra_codec_import("enc_ffmpeg", "ffmpeg encoder", "enc_ffmpeg", "encoder", "Encoder")
     if csc:
         show += list(CSC_CODECS)
-        codec_import_check("csc_swscale", "swscale colorspace conversion", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
-        add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter")
-
-        codec_import_check("csc_libyuv", "libyuv colorspace conversion", "xpra.codecs.csc_libyuv", "xpra.codecs.csc_libyuv.colorspace_converter", "ColorspaceConverter")
-        add_codec_version("libyuv", "xpra.codecs.csc_libyuv.colorspace_converter")
-
+        xpra_codec_import("csc_swscale", "swscale colorspace conversion", "csc_swscale", "colorspace_converter", "ColorspaceConverter")
+        xpra_codec_import("csc_libyuv", "libyuv colorspace conversion", "csc_libyuv", "colorspace_converter", "ColorspaceConverter")
     if decoders:
         show += list(DECODER_CODECS)
-        codec_import_check("dec_pillow", "Pillow decoder", "xpra.codecs.pillow", "xpra.codecs.pillow.decode", "decode")
-        add_codec_version("dec_pillow", "xpra.codecs.pillow.decode")
-
-        codec_import_check("dec_webp", "webp decoder", "xpra.codecs.webp", "xpra.codecs.webp.decode", "decompress")
-        add_codec_version("dec_webp", "xpra.codecs.webp.decode")
-
-        codec_import_check("dec_jpeg", "JPEG decoder", "xpra.codecs.jpeg", "xpra.codecs.jpeg.decoder", "decoder")
-        add_codec_version("dec_jpeg", "xpra.codecs.jpeg.decoder")
-
-        codec_import_check("dec_vpx", "vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
-        add_codec_version("vpx", "xpra.codecs.vpx.encoder")
-
-        codec_import_check("dec_avcodec2", "avcodec2 decoder", "xpra.codecs.dec_avcodec2", "xpra.codecs.dec_avcodec2.decoder", "Decoder")
-        add_codec_version("avcodec2", "xpra.codecs.dec_avcodec2.decoder")
+        xpra_codec_import("dec_pillow", "Pillow decoder", "pillow", "decode", "decode")
+        xpra_codec_import("dec_webp", "webp decoder", "webp", "decode", "decompress")
+        xpra_codec_import("dec_jpeg", "JPEG decoder", "jpeg", "decoder", "decoder")
+        xpra_codec_import("dec_vpx", "vpx decoder", "vpx", "decoder", "Decoder")
+        xpra_codec_import("dec_avcodec2", "avcodec2 decoder", "dec_avcodec2", "decoder", "Decoder")
 
     log("done loading codecs")
     log("found:")
