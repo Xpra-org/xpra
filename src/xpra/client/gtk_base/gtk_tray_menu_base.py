@@ -46,6 +46,7 @@ RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
 SHOW_SERVER_COMMANDS = envbool("XPRA_SHOW_SERVER_COMMANDS", True)
 SHOW_TRANSFERS = envbool("XPRA_SHOW_TRANSFERS", True)
 SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", True)
+SHOW_CLOSE = envbool("XPRA_SHOW_CLOSE", True)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
@@ -257,9 +258,8 @@ class GTKTrayMenuBase(object):
 
     def build(self):
         if self.menu is None:
-            show_close = True #or WIN32
             try:
-                self.menu = self.setup_menu(show_close)
+                self.menu = self.setup_menu(SHOW_CLOSE)
             except Exception as e:
                 log("build()", exc_info=True)
                 log.error("Error: failed to setup menu")
