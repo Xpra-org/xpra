@@ -182,8 +182,14 @@ def main(filename):
     from PIL import Image
     fmt = image.get_pixel_format().replace("X", "A")
     pixels = memoryview_to_bytes(image.get_pixels())
-    pil_image = Image.frombuffer("RGBA", (w, h), pixels, "raw", fmt, image.get_rowstride())
-    pil_image = pil_image.convert("RGB")
+    log("converting %i bytes in format %s to RGBA", len(pixels), fmt)
+    if len(fmt)==3:
+        target = "RGB"
+    else:
+        target = "RGBA"
+    pil_image = Image.frombuffer(target, (w, h), pixels, "raw", fmt, image.get_rowstride())
+    if target!="RGB":
+        pil_image = pil_image.convert("RGB")
     buf = StringIOClass()
     pil_image.save(buf, "png")
     data = buf.getvalue()
