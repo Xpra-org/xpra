@@ -66,3 +66,20 @@ class GTKImageCapture(object):
 
     def take_screenshot(self):
         return take_png_screenshot(self.window)
+
+def main(filename):
+    from xpra.gtk_common.gtk_util import get_default_root_window
+    root = get_default_root_window()
+    data = take_png_screenshot(root)[-1]
+    with open(filename, "wb") as f:
+        f.write(data)
+    return 0
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv)!=2:
+        print("usage: %s filename.png" % sys.argv[0])
+        v = 1
+    else:
+        v = main(sys.argv[1])
+    sys.exit(v)
