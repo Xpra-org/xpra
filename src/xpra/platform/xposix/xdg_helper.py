@@ -221,6 +221,8 @@ def load_xdg_menu_data():
                 log("load_xdg_menu_data()", exc_info=True)
                 log.error("Error parsing xdg menu data:")
                 log.error(" %s", e)
+                log.error(" this is either a bug in python-xdg,")
+                log.error(" or an invalid system menu configuration")
             else:
                 for submenu in menu.getEntries():
                     if isinstance(submenu, Menu) and submenu.Visible:
