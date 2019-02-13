@@ -531,7 +531,7 @@ class VideoSubregion(object):
         highscore = max(scores.values())
         #a score of 100 is neutral
         if highscore>=120:
-            region = [r for r,s in scores.items() if s==highscore][0]
+            region = next(iter(r for r,s in scores.items() if s==highscore))
             return setnewregion(region, "very high score: %s", highscore)
 
         #retry existing region, tolerate lower score:
@@ -540,7 +540,7 @@ class VideoSubregion(object):
             return setnewregion(self.rectangle, "existing region with score: %i" % cur_score)
 
         if highscore>=100:
-            region = [r for r,s in scores.items() if s==highscore][0]
+            region = next(iter(r for r,s in scores.items() if s==highscore))
             return setnewregion(region, "high score: %s", highscore)
 
         #TODO:
