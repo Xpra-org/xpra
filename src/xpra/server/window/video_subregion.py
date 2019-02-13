@@ -484,7 +484,7 @@ class VideoSubregion(object):
             #ignore small regions:
             if count>min_count and r.width>=MIN_W and r.height>=MIN_H:
                 damage_count[r] = count
-        c = sum([int(x) for x in damage_count.values()])
+        c = sum(int(x) for x in damage_count.values())
         most_damaged = -1
         most_pct = 0
         if c>0:
@@ -493,7 +493,7 @@ class VideoSubregion(object):
             sslog("identify video: most=%s%% damage count=%s", most_pct, damage_count)
             #is there a region that stands out?
             #try to use the region which is responsible for most of the large damage requests:
-            most_damaged_regions = [r for r,v in damage_count.items() if v==most_damaged]
+            most_damaged_regions = tuple(r for r,v in damage_count.items() if v==most_damaged)
             if len(most_damaged_regions)==1:
                 r = most_damaged_regions[0]
                 score = score_region("most-damaged", r, d_ratio=1.0)
@@ -511,7 +511,7 @@ class VideoSubregion(object):
                 if len(regions)>=2:
                     #merge regions of width w at x
                     min_count = max(2, len(regions)//25)
-                    keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
+                    keep = tuple(r for r in regions if int(dec.get(r, 0))>=min_count)
                     sslog("vertical regions of width %i at %i with at least %i hits: %s", w, x, min_count, keep)
                     if keep:
                         merged = merge_all(keep)
@@ -521,7 +521,7 @@ class VideoSubregion(object):
                 if len(regions)>=2:
                     #merge regions of height h at y
                     min_count = max(2, len(regions)//25)
-                    keep = [r for r in regions if int(dec.get(r, 0))>=min_count]
+                    keep = tuple(r for r in regions if int(dec.get(r, 0))>=min_count)
                     sslog("horizontal regions of height %i at %i with at least %i hits: %s", h, y, min_count, keep)
                     if keep:
                         merged = merge_all(keep)
