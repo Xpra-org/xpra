@@ -1025,7 +1025,9 @@ class WindowVideoSource(WindowSource):
             else:
                 old = vs.rectangle
                 ww, wh = self.window_dimensions
-                vs.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
+                vs.identify_video_subregion(ww, wh,
+                                            self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized,
+                                            self.children)
                 newrect = vs.rectangle
                 if ((newrect is None) ^ (old is None)) or newrect!=old:
                     if old is None and newrect and newrect.get_geometry()==(0, 0, ww, wh):

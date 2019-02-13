@@ -160,7 +160,7 @@ cdef extern from "X11/Xlib.h":
         int x, y, width, height, border_width
         int depth
         Visual *visual
-        #int class
+        int _class "class"
         int bit_gravity, win_gravity, backing_store
         unsigned long backing_planes, backing_pixel
         Bool save_under
@@ -492,6 +492,16 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         if status==0:
             return False
         return or_attrs.override_redirect
+
+    # Mapped status
+    def is_inputonly(self, Window xwindow):
+        self.context_check()
+        cdef XWindowAttributes attrs
+        cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
+        if status==0:
+            return False
+        return attrs._class==InputOnly
+
 
     def geometry_with_border(self, Window xwindow):
         self.context_check()

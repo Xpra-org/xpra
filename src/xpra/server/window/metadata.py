@@ -30,7 +30,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
                 return {}
             return {propname: ""}
         return {propname: v.encode("utf-8")}
-    elif propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity", "quality", "speed"):
+    elif propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity", "quality", "speed", "children"):
         v = raw()
         assert v is not None, "%s is None!" % propname
         default_value = {
@@ -39,6 +39,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             "bypass-compositor" : 0,
             "depth"             : 24,
             "opacity"           : 100,
+            "children"          : [],
             }.get(propname, -1)
         if (v<0 or v==default_value) and skip_defaults:
             #unset or default value,

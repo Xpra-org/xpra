@@ -18,7 +18,7 @@ from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr, gobject, xswallow, xsync
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
-    get_display_for,
+    get_display_for, get_children,
     calc_constrained_size,
     x11_get_server_time,
     )
@@ -136,6 +136,9 @@ class WindowModel(BaseWindowModel):
                        "Should the window decorations be shown", "",
                        -1, 65535, -1,
                        PARAM_READABLE),
+        "children" : (gobject.TYPE_PYOBJECT,
+                        "Sub-windows", None,
+                        PARAM_READABLE),
         })
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__.update({
@@ -153,6 +156,7 @@ class WindowModel(BaseWindowModel):
                               "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
                               "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
                               "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]
+    _internal_property_names = BaseWindowModel._internal_property_names+["children"]
     _MODELTYPE = "Window"
 
     def __init__(self, parking_window, client_window, desktop_geometry, size_constraints=(0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)):
@@ -307,6 +311,7 @@ class WindowModel(BaseWindowModel):
         except:
             v = False
         self._internal_set_property("set-initial-position", v or ("position" in size_hints))
+        self.update_children()
 
     def do_unmanaged(self, wm_exiting):
         log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
@@ -500,10 +505,31 @@ class WindowModel(BaseWindowModel):
             with xsync:
                 #event.border_width unused
                 self.resize_corral_window(event.x, event.y, event.width, event.height)
+                self.update_children()
         except XError as e:
             geomlog("do_xpra_configure_event(%s)", event, exc_info=True)
             geomlog.warn("Warning: failed to resize corral window %#x", cxid)
             geomlog.warn(" %s", e)
+
+    def update_children(self):
+        ww, wh = self.client_window.get_geometry()[2:4]
+        children = []
+        for w in get_children(self.client_window):
+            xid = get_xwindow(w)
+            if X11Window.is_inputonly(xid):
+                continue
+            geom = X11Window.getGeometry(xid)
+            if not geom:
+                continue
+            if geom[2]==geom[3]==1:
+                #skip 1x1 windows, as those are usually just event windows
+                continue
+            if geom[0]==geom[1]==0 and geom[2]==ww and geom[3]==wh:
+                #exact same geometry as the window itself
+                continue
+            #record xid and geometry:
+            children.append([xid]+list(geom))
+        self._internal_set_property("children", children)
 
     def resize_corral_window(self, x, y, w, h):
         #the client window may have been resized or moved (generally programmatically)

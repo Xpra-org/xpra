@@ -217,6 +217,16 @@ class WindowSource(WindowIconSource):
         if "fullscreen" in window.get_dynamic_property_names():
             sid = window.connect("notify::fullscreen", self._fullscreen_changed)
             self.window_signal_handlers.append(sid)
+        if "children" in window.get_internal_property_names():
+            #we just copy the value to an attribute of window-source,
+            #so that we can access it from any thread
+            def children_updated(*args):
+                self.children = window.get_property("children")
+            sid = window.connect("notify::children", children_updated)
+            self.window_signal_handlers.append(sid)
+            children_updated()
+        else:
+            self.children = None
 
         #for deciding between small regions and full screen updates:
         self.max_small_regions = 40

@@ -283,7 +283,7 @@ class VideoSubregion(object):
                 rects = new_rects
         return rects
 
-    def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events, starting_at=0):
+    def identify_video_subregion(self, ww, wh, damage_events_count, last_damage_events, starting_at=0, children=None):
         if not self.enabled or not self.supported:
             self.novideoregion("disabled")
             return
@@ -308,6 +308,10 @@ class VideoSubregion(object):
             return
         sslog("%s.identify_video_subregion(..)", self)
         sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events)
+
+        children_rects = ()
+        if children:
+            children_rects = tuple(rectangle(x, y, w, h) for _xid, x, y, w, h, _border, _depth in children if w>=MIN_W and h>=MIN_H)
 
         if damage_events_count < self.set_at:
             #stats got reset
@@ -416,8 +420,9 @@ class VideoSubregion(object):
             if d_ratio==0:
                 d_ratio = damaged_ratio(region)
             score = int(score * math.sqrt(d_ratio))
-            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, score=%2i",
-                  info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, score)
+            children_boost = int(region in children_rects)*20
+            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, children_boost=%i, score=%2i",
+                  info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, children_boost, score)
             scores[region] = score
             return score
 
@@ -504,6 +509,10 @@ class VideoSubregion(object):
                 elif score>=100:
                     scores[r] = score
 
+        #try children windows:
+        for region in children_rects:
+            scores[region] = score_region("child-window", region, 48*48)
+
         #try harder: try combining regions with the same width or height:
         #(some video players update the video region in bands)
         for w, d in wc.items():
@@ -527,7 +536,7 @@ class VideoSubregion(object):
                         merged = merge_all(keep)
                         scores[merged] = score_region("horizontal", merged, 48*48)
 
-        sslog("merged regions scores: %s", scores)
+        sslog.info("merged regions scores: %s", scores)
         highscore = max(scores.values())
         #a score of 100 is neutral
         if highscore>=120:
