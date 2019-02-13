@@ -1228,7 +1228,8 @@ if WIN32:
                               {"themes" : ["Default"]}
                              ])
         if gtk3_ENABLED or sound_ENABLED:
-            add_dir('lib', ["gio"])
+            #causes warnings:
+            #add_dir('lib', ["gio"])
             packages.append("gi")
             add_gi("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0",
                    "GObject-2.0")
