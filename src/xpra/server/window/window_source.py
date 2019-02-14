@@ -508,7 +508,7 @@ class WindowSource(WindowIconSource):
         ma = self.mapped_at
         if ma:
             info["mapped-at"] = ma
-        info["damage.fps"] = self.get_damage_fps()
+        info["damage.fps"] = int(self.get_damage_fps())
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
         return info
