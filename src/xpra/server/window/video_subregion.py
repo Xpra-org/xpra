@@ -307,7 +307,7 @@ class VideoSubregion(object):
                 self.fps = int(incount/(self.rectangle.width*self.rectangle.height) / elapsed)
             return
         sslog("%s.identify_video_subregion(..)", self)
-        sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events)
+        sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events, starting_at, children)
 
         children_rects = ()
         if children:
