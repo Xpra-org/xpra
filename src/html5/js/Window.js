@@ -731,7 +731,7 @@ XpraWindow.prototype.handle_moved = function(e) {
  * if it is fullscreen or maximized.
  */
 XpraWindow.prototype.screen_resized = function() {
-	console.log("screen resized");
+	this.log("screen resized");
 	if (this.client.server_is_desktop) {
 		this.match_screen_size();
 		this.handle_resized();
@@ -750,7 +750,7 @@ XpraWindow.prototype.match_screen_size = function() {
 	if (this.client.server_resize_exact) {
 		neww = maxw;
 		newh = maxh;
-		console.log("resizing to exact size:", neww, newh);
+		this.log("resizing to exact size:", neww, newh);
 	}
 	else {
 		if (this.client.server_screen_sizes.length==0) {
@@ -786,7 +786,7 @@ XpraWindow.prototype.match_screen_size = function() {
 				}
 			}
 		}
-		console.log("best screen size:", neww, newh);
+		this.log("best screen size:", neww, newh);
 	}
 	this.resize(neww, newh);
 };
