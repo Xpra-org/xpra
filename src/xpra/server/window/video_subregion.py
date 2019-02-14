@@ -458,6 +458,7 @@ class VideoSubregion(object):
                     return
             if not self.rectangle or self.rectangle!=rect:
                 sslog("setting new region %s: "+msg, rect, *args)
+                sslog(" is child window: %s", rect in children_rects)
                 self.set_at = damage_events_count
                 self.counter = damage_events_count
             if not self.enabled:
