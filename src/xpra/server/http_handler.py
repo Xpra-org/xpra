@@ -26,6 +26,10 @@ log = Logger("http")
 HTTP_ACCEPT_ENCODING = os.environ.get("XPRA_HTTP_ACCEPT_ENCODING", "br,gzip").split(",")
 DIRECTORY_LISTING = envbool("XPRA_HTTP_DIRECTORY_LISTING", False)
 
+EXTENSION_TO_MIMETYPE = {
+    ".wasm" : "application/wasm",
+    }
+
 """
 Xpra's builtin HTTP server.
 * locates the desktop background file at "/background.png" dynamically if missing,
@@ -226,10 +230,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             fs = os.fstat(f.fileno())
             content_length = fs[6]
             headers = {}
-            ctype = mimetypes.guess_type(path, False)
-            log("guess_type(%s)=%s", path, ctype)
-            if ctype and ctype[0]:
-                headers["Content-type"] = ctype[0]
+            content_type = EXTENSION_TO_MIMETYPE.get(ext)
+            if not content_type:
+                ctype = mimetypes.guess_type(path, False)
+                if ctype and ctype[0]:
+                    content_type = ctype[0]
+            log("guess_type(%s)=%s", path, content_type)
+            if content_type:
+                headers["Content-type"] = content_type
             accept = self.headers.get('accept-encoding', '').split(",")
             accept = [x.split(";")[0].strip() for x in accept]
             content = None
