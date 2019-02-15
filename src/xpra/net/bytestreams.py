@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -303,7 +303,7 @@ class SocketConnection(Connection):
         self.protocol_type = "socket"
         self.nodelay = None
         self.cork = None
-        if type(remote)==str:
+        if isinstance(remote, str):
             self.filename = remote
         if SOCKET_NODELAY is not None and self.socktype in TCP_SOCKTYPES:
             self.do_set_nodelay(SOCKET_NODELAY)
@@ -336,7 +336,7 @@ class SocketConnection(Connection):
         s = self._socket
         try:
             i = self.get_socket_info()
-        except:
+        except Exception:
             i = s
         log("%s.close() for socket=%s", self, i)
         Connection.close(self)
@@ -425,7 +425,7 @@ class SocketConnection(Connection):
                     "SOCKET" : get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),
                     }
             if self.socktype in ("tcp", "udp", "ws", "wss", "ssl"):
-                    opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
+                opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
             if self.socktype in ("tcp", "ws", "wss", "ssl"):
                 opts["TCP"] = get_socket_options(s, socket.IPPROTO_TCP, TCP_OPTIONS)
             #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
@@ -448,6 +448,7 @@ def get_socket_options(sock, level, options):
             try:
                 v = sock.getsockopt(level, opt)
             except Exception as e:
+                log("sock.getsockopt(%i, %s)", level, k, exc_info=True)
                 errs.append(k)
             else:
                 if v is not None:
