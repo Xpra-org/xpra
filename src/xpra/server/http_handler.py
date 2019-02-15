@@ -28,6 +28,8 @@ DIRECTORY_LISTING = envbool("XPRA_HTTP_DIRECTORY_LISTING", False)
 
 EXTENSION_TO_MIMETYPE = {
     ".wasm" : "application/wasm",
+    ".js"   : "text/javascript",
+    ".css"  : "text/css",
     }
 
 """
