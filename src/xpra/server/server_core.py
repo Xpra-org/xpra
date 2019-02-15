@@ -1171,12 +1171,12 @@ class ServerCore(object):
             conn.socktype = ["ws", "wss"][is_ssl]
             WebSocketRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, self._http_headers_dir, scripts)
             return
-        except IOError as e:
+        except (IOError, ValueError) as e:
             wslog("", exc_info=True)
-            wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo))
+            wslog.error("Error: %s request failure", req_info)
+            wslog.error(" for client %s:", pretty_socket(frominfo))
             wslog.error(" %s", e)
         except Exception as e:
-            wslog("", exc_info=True)
             wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)
         try:
             conn.close()
