@@ -1964,8 +1964,10 @@ XpraClient.prototype._new_window_common = function(packet, override_redirect) {
 		var l = Object.keys(this.id_to_window).length;
 		if (l==0) {
 			//first window: center it
-			x = Math.round((this.desktop_width-w)/2);
-			if (w<this.desktop_height) {
+			if (w<=this.desktop_width) {
+				x = Math.round((this.desktop_width-w)/2);
+			}
+			if (h<=this.desktop_height) {
 				y = Math.round((this.desktop_height-h)/2);
 			}
 		}
