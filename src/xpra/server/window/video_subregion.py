@@ -15,6 +15,7 @@ sslog = Logger("regiondetect")
 refreshlog = Logger("regionrefresh")
 
 VIDEO_SUBREGION = envbool("XPRA_VIDEO_SUBREGION", True)
+SUBWINDOW_REGION_BOOST = envint("XPRA_SUBWINDOW_REGION_BOOST", 20)
 
 MAX_TIME = envint("XPRA_VIDEO_DETECT_MAX_TIME", 5)
 MIN_EVENTS = envint("XPRA_VIDEO_DETECT_MIN_EVENTS", 20)
@@ -420,7 +421,7 @@ class VideoSubregion(object):
             if d_ratio==0:
                 d_ratio = damaged_ratio(region)
             score = int(score * math.sqrt(d_ratio))
-            children_boost = int(region in children_rects)*20
+            children_boost = int(region in children_rects)*SUBWINDOW_REGION_BOOST
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, children_boost=%i, score=%2i",
                   info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, children_boost, score)
             scores[region] = score
