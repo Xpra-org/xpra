@@ -731,10 +731,22 @@ XpraWindow.prototype.handle_moved = function(e) {
  * if it is fullscreen or maximized.
  */
 XpraWindow.prototype.screen_resized = function() {
-	this.log("screen resized");
+	this.log("window: screen resized");
 	if (this.client.server_is_desktop) {
 		this.match_screen_size();
 		this.handle_resized();
+	}
+	if (this.client.server_is_shadow) {
+		if (Object.keys(this.client.id_to_window).length==1) {
+			//recenter it:
+			if (this.x<=this.client.desktop_width) {
+				this.x = Math.round((this.client.desktop_width-this.w)/2);
+			}
+			if (this.w<=this.client.desktop_height) {
+				this.y = Math.round((this.client.desktop_height-this.h)/2);
+			}
+			this.handle_resized();
+		}
 	}
 	if (this.fullscreen || this.maximized) {
 		this.fill_screen();
