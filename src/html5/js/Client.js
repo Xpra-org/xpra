@@ -1199,14 +1199,6 @@ XpraClient.prototype.getMouse = function(e, window) {
 		mbutton = Math.max(0, e.which);
 	else if ("button" in e)  // IE, Opera (zero based)
 		mbutton = Math.max(0, e.button)+1;
-	//show("getmouse: button="+mbutton+", which="+e.which+", button="+e.button);
-
-	if (window && this.server_is_desktop) {
-		//substract window offset since the desktop's top-left corner should be at 0,0:
-		var pos = jQuery(window.div).position()
-		mx -= pos.left;
-		my -= pos.top;
-	}
 
 	// We return a simple javascript object (a hash) with x and y defined
 	return {x: mx, y: my, button: mbutton};
