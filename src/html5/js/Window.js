@@ -112,7 +112,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		jQuery(this.div).addClass("window-" + this.windowtype);
 	}
 
-	if (this.client.server_is_desktop) {
+	if (this.client.server_is_desktop || this.client.server_is_shadow) {
 		jQuery(this.div).addClass("desktop");
 		this.resizable = false;
 	}
@@ -309,7 +309,7 @@ XpraWindow.prototype.updateCanvasGeometry = function() {
 XpraWindow.prototype.updateCSSGeometry = function() {
 	// set size of canvas
 	this.updateCanvasGeometry();
-	if (this.client.server_is_desktop) {
+	if (this.client.server_is_desktop || this.client.server_is_shadow) {
 		jQuery(this.div).position({of : jQuery("#screen")});
 		return;
 	}
@@ -377,7 +377,7 @@ XpraWindow.prototype.update_zindex = function() {
 	if (this.tray) {
 		z = 0;
 	}
-	else if (this.override_redirect || this.client.server_is_desktop) {
+	else if (this.override_redirect || this.client.server_is_desktop || this.client.server_is_shadow) {
 		z = 15000;
 	}
 	else if (this.windowtype=="DROPDOWN" || this.windowtype=="TOOLTIP" ||

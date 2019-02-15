@@ -152,6 +152,7 @@ XpraClient.prototype.init_state = function(container) {
     this.server_resize_exact = false;
     this.server_screen_sizes = [];
     this.server_is_desktop = false;
+    this.server_is_shadow = false;
 
     this.server_connection_data = false;
 
@@ -1641,8 +1642,9 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 			}
 		}
 	}
-    ctx.server_is_desktop = Boolean(hello["desktop"]) || Boolean(hello["shadow"]);
-    if (ctx.server_is_desktop) {
+    ctx.server_is_desktop = Boolean(hello["desktop"]);
+    ctx.server_is_shadow = Boolean(hello["shadow"]);
+    if (ctx.server_is_desktop || ctx.server_is_shadow) {
     	jQuery("body").addClass("desktop");
     }
     ctx.server_resize_exact = hello["resize_exact"] || false;
@@ -2209,7 +2211,7 @@ XpraClient.prototype._process_window_icon = function(packet, ctx) {
 	if (win) {
 		var src = win.update_icon(w, h, encoding, img_data);
 		//update favicon too:
-		if (wid==ctx.focus || ctx.server_is_desktop) {
+		if (wid==ctx.focus || ctx.server_is_desktop || ctx.server_is_shadow) {
 			jQuery("#favicon").attr("href", src);
 		}
 	}
