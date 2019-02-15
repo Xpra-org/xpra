@@ -11,6 +11,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
+from xpra.server import server_features
 from xpra.util import envint, envbool, DONE
 from xpra.log import Logger
 
@@ -27,7 +28,6 @@ SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
 SHADOWSERVER_BASE_CLASS = object
-from xpra.server import server_features
 if server_features.rfb:
     from xpra.server.rfb.rfb_server import RFBServer
     SHADOWSERVER_BASE_CLASS = RFBServer
