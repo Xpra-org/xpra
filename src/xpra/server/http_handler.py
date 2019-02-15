@@ -13,10 +13,10 @@ except ImportError:
     from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
 try:
     from BaseHTTPServer import BaseHTTPRequestHandler   #python2 @UnusedImport
-except:
+except ImportError:
     from http.server import BaseHTTPRequestHandler      #python3 @Reimport @UnresolvedImport
 
-from xpra.util import envbool, std, AdHocStruct
+from xpra.util import envbool, std, csv, AdHocStruct
 from xpra.os_util import PYTHON2
 from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
@@ -70,7 +70,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         words = path.split('/')
         words = filter(None, words)
         path = self.web_root
-        for p in [self.web_root]+[os.path.join(x, "xpra", "www") for x in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")]:
+        xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share")
+        www_dir_options = [self.web_root]+[os.path.join(x, "xpra", "www") for x in xdg_data_dirs.split(":")]
+        for p in www_dir_options:
             if os.path.exists(p) and os.path.isdir(p):
                 path = p
                 break
@@ -222,7 +224,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                     self.send_error(403, "Directory listing forbidden")
                     return None
                 return self.list_directory(path).read()
-        _, ext = os.path.splitext(path)
+        ext = os.path.splitext(path)[1]
         f = None
         try:
             # Always read in binary mode. Opening files in text mode may cause
@@ -241,9 +243,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             if content_type:
                 headers["Content-type"] = content_type
             accept = self.headers.get('accept-encoding', '').split(",")
-            accept = [x.split(";")[0].strip() for x in accept]
+            accept = tuple(x.split(";")[0].strip() for x in accept)
             content = None
-            log("accept-encoding=%s", accept)
+            log("accept-encoding=%s", csv(accept))
             for enc in HTTP_ACCEPT_ENCODING:
                 #find a matching pre-compressed file:
                 if enc not in accept:
