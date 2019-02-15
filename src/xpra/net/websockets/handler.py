@@ -44,14 +44,14 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         if key is None:
             raise Exception("Missing Sec-WebSocket-Key header");
         for upgrade_string in (
-            "HTTP/1.1 101 Switching Protocols",
-            "Upgrade: websocket",
-            "Connection: Upgrade",
-            "Sec-WebSocket-Accept: %s" % make_websocket_accept_hash(key),
-            "Sec-WebSocket-Protocol: %s" % "binary",
-            "",
+            b"HTTP/1.1 101 Switching Protocols",
+            b"Upgrade: websocket",
+            b"Connection: Upgrade",
+            b"Sec-WebSocket-Accept: %s" % make_websocket_accept_hash(key),
+            b"Sec-WebSocket-Protocol: %s" % b"binary",
+            b"",
             ):
-            self.wfile.write("%s\r\n" % upgrade_string)
+            self.wfile.write(b"%s\r\n" % upgrade_string)
         self.wfile.flush()
         self.wfile.close()
         self.new_websocket_client(self)

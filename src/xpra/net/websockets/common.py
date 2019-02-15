@@ -17,7 +17,7 @@ log = Logger("websocket")
 def make_websocket_accept_hash(key):
     GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     accept = sha1(strtobytes(key + GUID)).digest()
-    return bytestostr(b64encode(accept))
+    return b64encode(accept)
 
 
 def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True):
@@ -129,6 +129,6 @@ def client_upgrade(conn):
     if not accept_key:
         raise Exception("websocket accept key is missing")
     expected_key = make_websocket_accept_hash(key)
-    if accept_key!=expected_key:
+    if bytestostr(accept_key)!=bytestostr(expected_key):
         raise Exception("websocket accept key is invalid")
     log("client_upgrade(%s) done", conn)
