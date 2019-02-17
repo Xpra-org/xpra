@@ -7,16 +7,25 @@
 
 import os
 
-from xpra.util import WORKSPACE_UNSET
-from xpra.log import Logger
-
-log = Logger("server")
-metalog = Logger("metadata")
+from xpra.util import WORKSPACE_UNSET, get_util_logger
 
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None, skip_defaults=False):
+    try:
+        return do_make_window_metadata(window, propname, get_transient_for, get_window_id, skip_defaults)
+    except (ValueError, TypeError) as e:
+        log = get_util_logger()
+        log("make_window_metadata%s", (window, propname, get_transient_for, get_window_id, skip_defaults), exc_info=True)
+        log.error("Error: failed to make window metadata")
+        log.error(" for attribute '%s' of window %s", propname, window)
+        log.error(" with value '%s':", getattr(window, propname, None))
+        log.error(" %s", e)
+        return {}
+
+
+def do_make_window_metadata(window, propname, get_transient_for=None, get_window_id=None, skip_defaults=False):
     if propname in SKIP_METADATA:
         return {}
     #note: some of the properties handled here aren't exported to the clients,
@@ -30,7 +39,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
                 return {}
             return {propname: ""}
         return {propname: v.encode("utf-8")}
-    elif propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity", "quality", "speed", "children"):
+    elif propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity", "quality", "speed"):
         v = raw()
         assert v is not None, "%s is None!" % propname
         default_value = {
@@ -39,7 +48,6 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
             "bypass-compositor" : 0,
             "depth"             : 24,
             "opacity"           : 100,
-            "children"          : [],
             }.get(propname, -1)
         if (v<0 or v==default_value) and skip_defaults:
             #unset or default value,
@@ -80,7 +88,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         if wid:
             return {"transient-for" : wid}
         return {}
-    elif propname in ("window-type", "shape", "menu"):
+    elif propname in ("window-type", "shape", "menu", "children"):
         v = raw()
         if not v and skip_defaults:
             return {}
