@@ -538,7 +538,7 @@ class VideoSubregion(object):
                         merged = merge_all(keep)
                         scores[merged] = score_region("horizontal", merged, 48*48)
 
-        sslog.info("merged regions scores: %s", scores)
+        sslog("merged regions scores: %s", scores)
         highscore = max(scores.values())
         #a score of 100 is neutral
         if highscore>=120:
