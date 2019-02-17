@@ -18,7 +18,7 @@ import shlex
 import traceback
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import csv, envbool, envint, repr_ellipsized, DEFAULT_PORT
+from xpra.util import csv, envbool, envint, repr_ellipsized, nonl, pver, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR
 from xpra.os_util import (
     get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, use_tty,
@@ -1699,6 +1699,14 @@ def no_gtk():
 
 
 def run_glprobe(opts):
+    props = do_run_glcheck(opts)
+    if not props.get("safe", False):
+        return 1
+    if not props.get("success", False):
+        return 2
+    return 0
+
+def do_run_glcheck(opts):
     #suspend all logging:
     saved_level = None
     log = Logger("opengl")
@@ -1720,9 +1728,8 @@ def run_glprobe(opts):
             if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
                 pixel_depth = 0
             draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth)
-            if draw_result.get("success", False):
-                return 0
-        return 1
+            opengl_props.update(draw_result)
+        return opengl_props
     except Exception as e:
         if is_debug_enabled("opengl"):
             log("run_glprobe(..)", exc_info=True)
@@ -1730,24 +1737,32 @@ def run_glprobe(opts):
             sys.stderr.write("error:\n")
             sys.stderr.write("%s\n" % e)
             sys.stderr.flush()
-        return 2
+        return {
+            "success"   : False,
+            "message"   : str(e),
+            }
     finally:
         if saved_level is not None:
             logging.root.setLevel(saved_level)
 
 def run_glcheck(opts):
-    from xpra.util import pver
-    from xpra.client.gl.gtk_base.gtkgl_check import check_support
     try:
-        props = check_support(force_enable=opts.opengl)
+        props = do_run_glcheck(opts)
     except Exception as e:
-        sys.stdout.write("error=%s\n" % e)
+        sys.stdout.write("error=%s\n" % nonl(e))
         return 1
     for k in sorted(props.keys()):
         v = props[k]
         #skip not human readable:
-        if k not in ("extensions", "glconfig"):
-            sys.stdout.write("%s=%s\n" % (str(k), pver(v)))
+        if k not in ("extensions", "glconfig", "GLU.extensions", ):
+            try:
+                if k.endswith("dims"):
+                    vstr = csv(v)
+                else:
+                    vstr = pver(v)
+            except ValueError:
+                vstr = str(v)
+            sys.stdout.write("%s=%s\n" % (str(k), vstr))
     return 0
 
 
