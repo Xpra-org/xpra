@@ -111,7 +111,7 @@ class VideoSubregion(object):
         if self.detection:
             sslog("video region detection is on - the given region may or may not stick")
         if x==0 and y==0 and w==0 and h==0:
-            self.novideoregion()
+            self.novideoregion("empty")
         else:
             self.rectangle = rectangle(x, y, w, h)
 
@@ -256,7 +256,7 @@ class VideoSubregion(object):
             self.refresh_timer = self.timeout_add(1000, self.refresh)
 
 
-    def novideoregion(self, msg="", *args):
+    def novideoregion(self, msg, *args):
         sslog("novideoregion: "+msg, *args)
         self.rectangle = None
         self.time = 0
@@ -441,9 +441,9 @@ class VideoSubregion(object):
             self.last_scores = scores
             sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)
 
-        def setnewregion(rect, msg="", *args):
+        def setnewregion(rect, msg, *args):
             rects = self.excluded_rectangles(rect, ww, wh)
-            if len(rects)==0:
+            if not rects:
                 self.novideoregion("no match after removing excluded regions")
                 return
             if len(rects)==1:

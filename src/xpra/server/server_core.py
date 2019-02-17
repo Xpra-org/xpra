@@ -106,7 +106,7 @@ def get_server_info():
     info.update(get_host_info())
     return info
 
-def get_thread_info(proto=None, protocols=[]):
+def get_thread_info(proto=None, protocols=()):
     #threads:
     if proto:
         info_threads = proto.get_threads()

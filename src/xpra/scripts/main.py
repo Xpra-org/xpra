@@ -1250,10 +1250,16 @@ def get_sockpath(display_desc, error_cb):
     sockpath = display_desc.get("socket_path")
     if not sockpath:
         #find the socket using the display:
-        dotxpra = DotXpra(display_desc.get("socket_dir"), display_desc.get("socket_dirs"), display_desc.get("username", ""), display_desc.get("uid", 0), display_desc.get("gid", 0))
+        dotxpra = DotXpra(
+            display_desc.get("socket_dir"),
+            display_desc.get("socket_dirs"),
+            display_desc.get("username", ""),
+            display_desc.get("uid", 0),
+            display_desc.get("gid", 0),
+            )
         display = display_desc["display"]
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE, matching_display=display)
-        _, _, sockpath = single_display_match(dir_servers, error_cb, nomatch="cannot find live server for display %s" % display)
+        sockpath = single_display_match(dir_servers, error_cb, nomatch="cannot find live server for display %s" % display)[-1]
     return sockpath
 
 def run_client(error_cb, opts, extra_args, mode):
@@ -1666,7 +1672,7 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
         if len(displays)!=1:
             #try without gid match:
             displays = [":%s" % x for x in find_X11_displays(max_display_no=10)]
-    if len(displays)==0:
+    if not displays:
         raise InitExit(1, "could not detect any live X11 displays")
     if len(displays)>1:
         #since we are here to shadow,
@@ -1675,7 +1681,7 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
         results = dotxpra.sockets()
         xpra_displays = [display for _, display in results]
         displays = list(set(displays)-set(xpra_displays))
-        if len(displays)==0:
+        if not displays:
             raise InitExit(1, "could not detect any live plain X11 displays, only multiple xpra displays: %s" % csv(xpra_displays))
     if current_display:
         return current_display
@@ -2122,7 +2128,7 @@ def run_stopexit(mode, error_cb, opts, extra_args):
     return e
 
 
-def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
+def may_cleanup_socket(state, display, sockpath, clean_states=(DotXpra.DEAD,)):
     sys.stdout.write("\t%s session at %s" % (state, display))
     if state in clean_states:
         try:
@@ -2295,7 +2301,6 @@ def run_list(error_cb, opts, extra_args):
 
 def run_showconfig(options, args):
     log = get_util_logger()
-    from xpra.util import nonl
     d = dict_to_validated_config({})
     fixup_options(d)
     #this one is normally only probed at build time:
