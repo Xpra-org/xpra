@@ -508,7 +508,7 @@ class VideoSubregion(object):
                 if score>120:
                     setnewregion(r, "%s%% of large damage requests, score=%s", most_pct, score)
                     return
-                elif score>=100:
+                if score>=100:
                     scores[r] = score
 
         #try children windows:
