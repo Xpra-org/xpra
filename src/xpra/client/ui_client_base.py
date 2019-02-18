@@ -653,7 +653,7 @@ class UIXpraClient(ClientBaseClass):
             #force it fullscreen:
             try:
                 del metadata["size-constraints"]
-            except:
+            except KeyError:
                 pass
             metadata["fullscreen"] = True
             #FIXME: try to figure out the monitors we go fullscreen on for X11:
