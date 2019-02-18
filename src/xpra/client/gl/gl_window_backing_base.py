@@ -1079,7 +1079,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 set_texture_level()
-                glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
+                #glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
                 #glBindTexture(target, 0)        #redundant: we rebind below:
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
