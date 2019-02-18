@@ -10,21 +10,29 @@
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
 # does the make_constants hack.)
 
+import ssl
+import sys
 import glob
+import shutil
+import os.path
+
 from distutils.core import setup
 from distutils.extension import Extension
-import sys
-import os.path
 from distutils.command.build import build
 from distutils.command.install_data import install_data
-import shutil
+
+import xpra
+from xpra.os_util import (
+    get_status_output, getUbuntuVersion,
+    PYTHON3, BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
+    is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS,
+    )
 
 if sys.version<'2.7':
     raise Exception("xpra no longer supports Python 2 versions older than 2.7")
 if sys.version[0]=='3' and sys.version<'3.4':
     raise Exception("xpra no longer supports Python 3 versions older than 3.4")
 #we don't support versions of Python without the new ssl code:
-import ssl
 assert ssl.SSLContext, "xpra requires a Python version with ssl.SSLContext support"
 
 print(" ".join(sys.argv))
@@ -32,7 +40,6 @@ print(" ".join(sys.argv))
 #*******************************************************************************
 # build options, these may get modified further down..
 #
-import xpra
 data_files = []
 modules = []
 packages = []       #used by py2app
@@ -61,16 +68,6 @@ setup_options = {
                  "py_modules"       : modules,
                  }
 
-WIN32 = sys.platform.startswith("win") or sys.platform.startswith("msys")
-OSX = sys.platform.startswith("darwin")
-LINUX = sys.platform.startswith("linux")
-NETBSD = sys.platform.startswith("netbsd")
-FREEBSD = sys.platform.startswith("freebsd")
-OPENBSD = sys.platform.startswith("openbsd")
-
-PYTHON3 = sys.version_info[0] == 3
-POSIX = os.name=="posix"
-
 
 if "pkg-info" in sys.argv:
     with open("PKG-INFO", "wb") as f:
@@ -93,8 +90,6 @@ print("Xpra version %s" % XPRA_VERSION)
 # using --with-OPTION or --without-OPTION
 # only the default values are specified here:
 #*******************************************************************************
-from xpra.os_util import get_status_output, getUbuntuVersion, PYTHON3, BITS, \
-    is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
@@ -118,8 +113,7 @@ def no_pkgconfig(*_pkgs_options, **_ekw):
     return {}
 
 def pkg_config_ok(*args):
-    cmd = [PKG_CONFIG]  + [str(x) for x in args]
-    return get_status_output(cmd)[0]==0
+    return get_status_output([PKG_CONFIG] + [str(x) for x in args])[0]==0
 
 def pkg_config_version(req_version, pkgname):
     cmd = [PKG_CONFIG, "--modversion", pkgname]
@@ -485,14 +479,14 @@ if modules_ENABLED:
 
 def add_data_files(target_dir, files):
     #this is overriden below because cx_freeze uses the opposite structure (files first...). sigh.
-    assert type(target_dir)==str
-    assert type(files) in (list, tuple)
+    assert isinstance(target_dir, str)
+    assert isinstance(files, (list, tuple))
     data_files.append((target_dir, files))
 
 
 #for pretty printing of options:
 def print_option(prefix, k, v):
-    if type(v)==dict:
+    if isinstance(v, dict):
         print("%s* %s:" % (prefix, k))
         for kk,vv in v.items():
             print_option(" "+prefix, kk, vv)
@@ -556,8 +550,8 @@ GCC_VERSION = []
 def get_gcc_version():
     global GCC_VERSION
     if not GCC_VERSION:
-        cmd = [os.environ.get("CC", "gcc"), "-v"]
-        r, _, err = get_status_output(cmd)
+        cc = os.environ.get("CC", "gcc")
+        r, _, err = get_status_output([cc]+["-v"])
         if r==0:
             V_LINE = "gcc version "
             for line in err.splitlines():
@@ -913,7 +907,7 @@ def build_xpra_conf(install_dir):
             'dbus_control'          : bstr(dbus_ENABLED),
             'mmap'                  : bstr(True),
             }
-    def convert_templates(subdirs=[]):
+    def convert_templates(subdirs):
         dirname = os.path.join(*(["etc", "xpra"] + subdirs))
         #get conf dir for install, without stripping the build root
         target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
@@ -939,11 +933,11 @@ def build_xpra_conf(install_dir):
             with open(target_file, "w") as f_out:
                 config_data = template % SUBS
                 f_out.write(config_data)
-    convert_templates()
+    convert_templates([])
 
 
 #*******************************************************************************
-if 'clean' in sys.argv or 'sdist' in sys.argv:
+def clean():
     #clean and sdist don't actually use cython,
     #so skip this (and avoid errors)
     pkgconfig = no_pkgconfig
@@ -1038,6 +1032,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                 print("removing Cython/build generated file: %s" % x)
             os.unlink(filename)
 
+if 'clean' in sys.argv or 'sdist' in sys.argv:
+    clean()
+
 from add_build_info import record_build_info, BUILD_INFO_FILE, record_src_info, SRC_INFO_FILE, has_src_info
 
 if "clean" not in sys.argv:
@@ -1072,8 +1069,7 @@ def glob_recurse(srcdir):
     for root, _, files in os.walk(srcdir):
         for f in files:
             dirname = root[len(srcdir)+1:]
-            filename = os.path.join(root, f)
-            m.setdefault(dirname, []).append(filename)
+            m.setdefault(dirname, []).append(os.path.join(root, f))
     return m
 
 
@@ -2113,20 +2109,24 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     except:
         pass
     nvcc_versions = {}
+    def get_nvcc_version(command):
+        if not os.path.exists(command):
+            return None
+        code, out, err = get_status_output([command, "--version"])
+        if code!=0:
+            return None
+        vpos = out.rfind(", V")
+        if vpos>0:
+            version = out[vpos+3:].strip("\n")
+            version_str = " version %s" % version
+        else:
+            version = "0"
+            version_str = " unknown version!"
+        print("found CUDA compiler: %s%s" % (filename, version_str))
+        return tuple(int(x) for x in version.split("."))
     for filename in options:
-        if not os.path.exists(filename):
-            continue
-        code, out, err = get_status_output([filename, "--version"])
-        if code==0:
-            vpos = out.rfind(", V")
-            if vpos>0:
-                version = out[vpos+3:].strip("\n")
-                version_str = " version %s" % version
-            else:
-                version = "0"
-                version_str = " unknown version!"
-            print("found CUDA compiler: %s%s" % (filename, version_str))
-            vnum = tuple(int(x) for x in version.split("."))
+        vnum = get_nvcc_version(filename)
+        if vnum:
             nvcc_versions[vnum] = filename
     assert nvcc_versions, "cannot find nvcc compiler!"
     #choose the most recent one:
@@ -2216,12 +2216,6 @@ if nvenc_ENABLED:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
         libraries.remove("nvidia-encode")
-    if PYTHON3 and get_gcc_version()>=[6, 2]:
-        #with gcc 6.2 on Fedora:
-        #xpra/codecs/nvenc/encoder.c: In function '__Pyx_PyInt_LshiftObjC':
-        #xpra/codecs/nvenc/encoder.c:45878:34: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
-        #    if (unlikely(!(b < sizeof(long)*8 && a == x >> b)) && a) {
-        add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-sign-compare")
     cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
                          ["xpra/codecs/%s/encoder.pyx" % nvencmodule],
                          **nvenc_pkgconfig))
@@ -2388,7 +2382,7 @@ def main():
             print("setup_options=%s" % (setup_options,))
         try:
             from xpra.util import repr_ellipsized as pv
-        except:
+        except ImportError:
             def pv(v):
                 return str(v)
         for k,v in setup_options.items():
