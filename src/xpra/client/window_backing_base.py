@@ -556,7 +556,7 @@ class WindowBackingBase(object):
         #Note: BGR(A) is only handled by gl_window_backing
         self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, options, callbacks)
 
-    def paint_scroll(self, *args):
+    def paint_scroll(self, _img_data, _options, callbacks):
         raise NotImplementedError("no paint scroll on %s" % type(self))
 
 

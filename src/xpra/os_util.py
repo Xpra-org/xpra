@@ -62,6 +62,8 @@ assert StringIOClass
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 LINUX = sys.platform.startswith("linux")
+NETBSD = sys.platform.startswith("netbsd")
+OPENBSD = sys.platform.startswith("openbsd")
 FREEBSD  = sys.platform.startswith("freebsd")
 
 POSIX = os.name=="posix"

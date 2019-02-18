@@ -730,7 +730,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             eifd = ["-Werror"]
             if is_Debian() or is_Ubuntu() or is_Raspbian():
                 #needed on Debian and Ubuntu to avoid this error:
-                #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
+                #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1:
+                # error: function declaration isn't a prototype [-Werror=strict-prototypes]
                 eifd.append("-Wno-error=strict-prototypes")
                 #the cython version shipped with Xenial emits warnings:
                 if getUbuntuVersion()<=(16,4):
@@ -1512,7 +1513,11 @@ if WIN32:
             try:
                 shutil.copytree(
                     module_dir, os.path.join(install, "lib", module_name),
-                    ignore = shutil.ignore_patterns("Tk", "AGL", "EGL", "GLX", "GLX.*", "_GLX.*", "GLE", "GLES1", "GLES2", "GLES3")
+                    ignore = shutil.ignore_patterns(
+                        "Tk", "AGL", "EGL",
+                        "GLX", "GLX.*", "_GLX.*",
+                        "GLE", "GLES1", "GLES2", "GLES3",
+                        )
                 )
                 print("copied %s to %s/%s" % (module_dir, install, module_name))
             except Exception as e:
@@ -1544,7 +1549,7 @@ else:
         if OPENBSD:
             man_path = "man"
         add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1"])
-        add_data_files("share/applications",  ["xdg/xpra-shadow.desktop", "xdg/xpra-launcher.desktop", "xdg/xpra-browser.desktop", "xdg/xpra.desktop"])
+        add_data_files("share/applications",  glob.glob("xdg/*.desktop"))
         add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
         add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png", "xdg/xpra-shadow.png"])
         add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
@@ -1675,7 +1680,8 @@ else:
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
-    #> python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
+    #> python2.7 setup.py build -b build-2.7 install --no-compile \
+    # --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
     #otherwise we use the flags to skip pkgconfig
     if ("--no-compile" in sys.argv or "--skip-build" in sys.argv) and not ("build" in sys.argv and "install" in sys.argv):
         pkgconfig = no_pkgconfig
@@ -1695,7 +1701,7 @@ else:
 
         try:
             from xpra.src_info import REVISION
-        except:
+        except ImportError:
             REVISION = "unknown"
         Plist = {
             "CFBundleDocumentTypes" : {
@@ -1950,7 +1956,7 @@ toggle_packages(tests_ENABLED, "unit")
 if bundle_tests_ENABLED:
     #bundle the tests directly (not in library.zip):
     for k,v in glob_recurse("unit").items():
-        if (k!=""):
+        if k!="":
             k = os.sep+k
         add_data_files("unit"+k, v)
 
@@ -2002,7 +2008,13 @@ if client_ENABLED or server_ENABLED:
     add_modules("xpra.codecs")
 toggle_packages(keyboard_ENABLED, "xpra.keyboard")
 if client_ENABLED or server_ENABLED:
-    add_modules("xpra.scripts.config", "xpra.scripts.parsing", "xpra.scripts.exec_util", "xpra.scripts.fdproxy", "xpra.scripts.version")
+    add_modules(
+        "xpra.scripts.config",
+        "xpra.scripts.parsing",
+        "xpra.scripts.exec_util",
+        "xpra.scripts.fdproxy",
+        "xpra.scripts.version",
+        )
 if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
 if WIN32 and client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
@@ -2081,7 +2093,13 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     if WIN32:
         nvcc_exe = "nvcc.exe"
         CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-        path_options = [os.path.join(CUDA_DIR, x, "bin") for x in ("v9.2", "v9.1", "v9.0", "v8.0", "v7.5")] + path_options
+        path_options = [os.path.join(CUDA_DIR, x, "bin") for x in (
+            "v9.2",
+            "v9.1",
+            "v9.0",
+            "v8.0",
+            "v7.5",
+            )] + path_options
         #pycuda may link against curand, find it and ship it:
         for p in path_options:
             if os.path.exists(p):
