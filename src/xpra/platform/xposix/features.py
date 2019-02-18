@@ -26,6 +26,8 @@ DEFAULT_ENV = [
              "QT_QPA_PLATFORM=xcb",
              "#overlay scrollbars complicate things:"
              "GTK_OVERLAY_SCROLLING=0",
+             "#some versions of GTK3 honour this option, sadly not all:",
+             "GTK_CSD=0",
              ]
 
 DEFAULT_SSH_CMD = "ssh"
