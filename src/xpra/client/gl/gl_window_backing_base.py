@@ -436,11 +436,15 @@ class GLWindowBackingBase(WindowBackingBase):
             if self.textures is None:
                 self.gl_init_textures()
 
+            #upload pixel buffer full of zeroes:
+            empty_buf = b"\0"*(w*h*4)
+            pixel_data = self.pixels_for_upload(empty_buf)[1]
+
             # Define empty tmp FBO
             target = GL_TEXTURE_RECTANGLE_ARB
             glBindTexture(target, self.textures[TEX_TMP_FBO])
             set_texture_level(target)
-            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, pixel_data)
             glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -449,7 +453,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
             set_texture_level(target)
-            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, pixel_data)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
