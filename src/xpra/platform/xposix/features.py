@@ -24,6 +24,8 @@ DEFAULT_ENV = [
              "GDK_BACKEND=x11",
              "#force Qt applications to use X11 so we can intercept them:",
              "QT_QPA_PLATFORM=xcb",
+             "#overlay scrollbars complicate things:"
+             "GTK_OVERLAY_SCROLLING=0",
              ]
 
 DEFAULT_SSH_CMD = "ssh"
