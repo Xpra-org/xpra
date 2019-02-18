@@ -6,9 +6,6 @@
 import struct
 from socket import error as socket_error
 
-from xpra.log import Logger
-log = Logger("network", "protocol", "rfb")
-
 from xpra.os_util import Queue, hexstr, strtobytes
 from xpra.util import repr_ellipsized, envint, nonl
 from xpra.make_thread import make_thread, start_thread
@@ -16,6 +13,9 @@ from xpra.net.protocol import force_flush_queue, exit_queue
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.server.rfb.rfb_const import RFBClientMessage, RFBAuth, PIXEL_FORMAT
+from xpra.log import Logger
+
+log = Logger("network", "protocol", "rfb")
 
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 
@@ -153,7 +153,7 @@ class RFBProtocol(object):
     def _parse_rfb(self, packet):
         try:
             ptype = ord(packet[0])
-        except:
+        except TypeError:
             ptype = packet[0]
         packet_type = RFBClientMessage.PACKET_TYPE_STR.get(ptype)
         if not packet_type:
@@ -360,8 +360,8 @@ class RFBProtocol(object):
             try:
                 log("RFBProtocol.close() calling %s", c.close)
                 c.close()
-            except:
-                log.error("error closing %s", self._conn, exc_info=True)
+            except IOError:
+                log.error("Error closing %s", self._conn, exc_info=True)
             self._conn = None
         self.terminate_queue_threads()
         self._process_packet_cb(self, [RFBProtocol.CONNECTION_LOST])
