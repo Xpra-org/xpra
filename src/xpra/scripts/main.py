@@ -19,7 +19,7 @@ import traceback
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, repr_ellipsized, nonl, pver, DEFAULT_PORT
-from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR
+from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
     get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
@@ -166,7 +166,7 @@ def configure_logging(options, mode):
     if options.debug:
         categories = options.debug.split(",")
         for cat in categories:
-            if len(cat)==0:
+            if not cat:
                 continue
             if cat[0]=="-":
                 add_disabled_category(cat[1:])
@@ -250,6 +250,7 @@ def systemd_run_wrap(mode, args, systemd_run_args):
     try:
         p = Popen(cmd)
         p.wait()
+        return p.returncode
     except KeyboardInterrupt:
         return 128+signal.SIGINT
 
@@ -301,7 +302,11 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
-    if mode in ("start", "start-desktop", "shadow", "attach", "request-start", "request-start-desktop", "request-shadow"):
+    if mode in (
+        "start", "start-desktop",
+        "shadow", "attach",
+        "request-start", "request-start-desktop", "request-shadow",
+        ):
         options.encodings = validated_encodings(options.encodings)
 
     try:
@@ -878,7 +883,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         error_cb("unknown format for display name: %s" % display_name)
 
 def pick_display(error_cb, opts, extra_args):
-    if len(extra_args) == 0:
+    if not extra_args:
         # Pick a default server
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
@@ -908,10 +913,10 @@ def pick_display(error_cb, opts, extra_args):
                 "socket_path"   : sockpath,
                 })
         return desc
-    elif len(extra_args) == 1:
+    if len(extra_args) == 1:
         return parse_display_name(error_cb, opts, extra_args[0], session_name_lookup=True)
-    else:
-        error_cb("too many arguments (%i): %s" % (len(extra_args), extra_args))
+    error_cb("too many arguments (%i): %s" % (len(extra_args), extra_args))
+    return None
 
 def single_display_match(dir_servers, error_cb, nomatch="cannot find any live servers to connect to"):
     #ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
@@ -924,17 +929,17 @@ def single_display_match(dir_servers, error_cb, nomatch="cannot find any live se
                 allservers.append((sockdir, display, path))
                 if not display.startswith(":proxy-"):
                     noproxy.append((sockdir, display, path))
-    if len(allservers)==0:
+    if not allservers:
         error_cb(nomatch)
     if len(allservers)>1:
         #maybe the same server is available under multiple paths
-        displays = set([v[1] for v in allservers])
+        displays = set(v[1] for v in allservers)
         if len(displays)==1:
             #they all point to the same display, use the first one:
             allservers = allservers[:1]
-    if len(allservers)>1 and len(noproxy)>0:
+    if len(allservers)>1 and noproxy:
         #try to ignore proxy instances:
-        displays = set([v[1] for v in noproxy])
+        displays = set(v[1] for v in noproxy)
         if len(displays)==1:
             #they all point to the same display, use the first one:
             allservers = noproxy[:1]
@@ -998,10 +1003,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         from xpra.net.ssh import ssh_paramiko_connect_to, ssh_exec_connect_to
         if display_desc.get("is_paramiko", False):
             return ssh_paramiko_connect_to(display_desc)
-        else:
-            return ssh_exec_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
+        return ssh_exec_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
 
-    elif dtype == "unix-domain":
+    if dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
             raise InitException("unix domain sockets are not available on this operating system")
         sock = socket.socket(socket.AF_UNIX)
@@ -1020,7 +1024,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         conn.timeout = SOCKET_TIMEOUT
         return conn
 
-    elif dtype == "named-pipe":
+    if dtype == "named-pipe":
         pipe_name = display_desc["named-pipe"]
         if not WIN32:
             raise InitException("named pipes are only supported on MS Windows")
@@ -1038,14 +1042,14 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             try:
                 if e.args[0]==errno.ENOENT:
                     raise InitException("the named pipe '%s' does not exist" % pipe_name)
-            except:
+            except AttributeError:
                 pass
             raise InitException("failed to connect to the named pipe '%s':\n %s" % (pipe_name, e))
         conn = NamedPipeConnection(pipe_name, pipe_handle)
         conn.timeout = SOCKET_TIMEOUT
         return conn
 
-    elif dtype == "vsock":
+    if dtype == "vsock":
         cid, iport = display_desc["vsock"]
         from xpra.net.vsock import connect_vsocket, CID_TYPES       #@UnresolvedImport
         sock = connect_vsocket(cid=cid, port=iport)
@@ -1053,7 +1057,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         sock.settimeout(None)
         return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
 
-    elif dtype in ("tcp", "ssl", "ws", "wss", "udp"):
+    if dtype in ("tcp", "ssl", "ws", "wss", "udp"):
         host = display_desc["host"]
         port = display_desc["port"]
         sock = socket_connect(dtype, host, port)
@@ -1082,7 +1086,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             try:
                 from xpra.net.websockets.common import client_upgrade
             except ImportError as e:
-                raise InitExit("cannot handle websocket connection: %s" % e)
+                raise InitExit(EXIT_UNSUPPORTED, "cannot handle websocket connection: %s" % e)
             else:
                 client_upgrade(conn)
         return conn
@@ -1120,10 +1124,10 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     #cadata may be hex encoded:
     cadata = opts.ssl_ca_data
     if cadata:
+        import binascii
         try:
-            import binascii
             cadata = binascii.unhexlify(cadata)
-        except:
+        except (TypeError, binascii.Error):
             import base64
             cadata = base64.b64decode(cadata)
     ssllog("ssl_wrap_socket_fn: cadata=%s", repr_ellipsized(cadata))
@@ -1290,14 +1294,14 @@ def run_client(error_cb, opts, extra_args, mode):
         for display in displays:
             dcmd = cmd + [display]
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32, shell=False)
-        return
+        return 0
     app = get_client_app(error_cb, opts, extra_args, mode)
     return do_run_client(app)
 
 def get_client_app(error_cb, opts, extra_args, mode):
     validate_encryption(opts)
     if mode=="screenshot":
-        if len(extra_args)==0:
+        if not extra_args:
             error_cb("invalid number of arguments for screenshot mode")
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
@@ -1406,7 +1410,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
             app = make_client(error_cb, opts)
         except RuntimeError as e:
             #exceptions at this point are still initialization exceptions
-            raise InitException(e.message)
+            raise InitException(e.args[0])
         ehelp = "help" in opts.encodings
         if ehelp:
             from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
@@ -1416,21 +1420,22 @@ def get_client_app(error_cb, opts, extra_args, mode):
             opts.encoding = ""
         if opts.encoding or ehelp:
             err = opts.encoding and (opts.encoding not in app.get_encodings())
-            info = ""
+            einfo = ""
             if err and opts.encoding!="help":
-                info = "invalid encoding: %s\n" % opts.encoding
+                einfo = "invalid encoding: %s\n" % opts.encoding
             if opts.encoding=="help" or ehelp or err:
                 from xpra.codecs.loader import encodings_help
                 encodings = ["auto"] + app.get_encodings()
-                raise InitInfo(info+"%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
+                raise InitInfo(einfo+"%s xpra client supports the following encodings:\n * %s" %
+                               (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
         def handshake_complete(*_args):
             log = get_util_logger()
             target = conn.target
-            info = conn.get_info()
-            host = info.get("host")
+            cinfo = conn.get_info()
+            host = cinfo.get("host")
             if host:
                 target = "%s" % host
-                port = info.get("port")
+                port = cinfo.get("port")
                 if port:
                     target += ":%s" % port
                 target += " via %s" % conn.socktype
@@ -1831,7 +1836,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         except Exception as e:
             #ignore access denied error, launchctl runs as root
             import errno
-            if e[0]!=errno.EACCES:
+            if e.args[0]!=errno.EACCES:
                 warn("Error: shadow may not start,\n the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
         argfile = os.path.expanduser("~/.xpra/shadow-args")
         with open(argfile, "w") as f:
@@ -1878,11 +1883,11 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
             buf = read_displayfd(r_pipe, proc=None) #proc deamonizes!
             try:
                 os.close(r_pipe)
-            except:
+            except OSError:
                 pass
             try:
                 os.close(w_pipe)
-            except:
+            except OSError:
                 pass
             def displayfd_err(msg):
                 log.error("Error: displayfd failed")
@@ -2256,7 +2261,7 @@ def run_list(error_cb, opts, extra_args):
         except OSError:
             pass
     if reprobe:
-        sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set([x[0] for x in unknown]))))
+        sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set(x[0] for x in unknown))))
         counter = 0
         timeout = LIST_REPROBE_TIMEOUT
         while reprobe and counter<timeout:
@@ -2337,9 +2342,9 @@ def run_showconfig(options, args):
             HIDDEN += ["dock-icon", "swap-keys"]
     def vstr(v):
         #just used to quote all string values
-        if type(v)==str:
+        if isinstance(v, str):
             return "'%s'" % nonl(v)
-        if type(v) in (tuple, list) and len(v)>0:
+        if isinstance(v, (tuple, list)) and v:
             return csv(vstr(x) for x in v)
         return str(v)
     for opt in sorted(OPTION_TYPES.keys()):

@@ -162,10 +162,9 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
 
     if Xdummy_ENABLED is False:
         return get_Xvfb_command()
-    elif Xdummy_ENABLED is True:
+    if Xdummy_ENABLED is True:
         return Xorg_suid_check()
-    else:
-        debug("Xdummy support unspecified, will try to detect")
+    debug("Xdummy support unspecified, will try to detect")
 
     if is_Ubuntu():
         rnum = getUbuntuVersion()
@@ -215,7 +214,7 @@ def get_build_info():
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS             #@UnresolvedImport
         try:
             mods = int(LOCAL_MODIFICATIONS)
-        except:
+        except ValueError:
             mods = 0
         if mods==0:
             info.append("revision %s" % REVISION)
@@ -224,7 +223,10 @@ def get_build_info():
     except Exception as e:
         warn("Error: could not find the source information: %s" % e)
     try:
-        from xpra.build_info import BUILD_DATE, BUILD_TIME, BUILD_BIT, CYTHON_VERSION, COMPILER_VERSION    #@UnresolvedImport
+        from xpra.build_info import (
+            BUILD_DATE, BUILD_TIME, BUILD_BIT,
+            CYTHON_VERSION, COMPILER_VERSION,
+            )
         if BUILD_BIT:
             info.insert(0, "")
             info.insert(0, BUILD_BIT)
@@ -283,7 +285,7 @@ def read_config(conf_file):
         for line in f:
             sline = line.strip().rstrip('\r\n').strip()
             no += 1
-            if len(sline) == 0:
+            if not sline:
                 debug("%4s empty line", no)
                 continue
             if sline[0] in ( '!', '#' ):
@@ -302,7 +304,7 @@ def read_config(conf_file):
             l += line
             agg_lines.append(l)
             l = ""
-    if len(l)>0:
+    if l:
         #last line had a trailing backslash... meh
         agg_lines.append(l)
     debug("loaded %s aggregated lines", len(agg_lines))
@@ -317,7 +319,7 @@ def read_config(conf_file):
         value = props[1].strip()
         current_value = d.get(name)
         if current_value:
-            if type(current_value)==list:
+            if isinstance(current_value, list):
                 d[name] = current_value + [value]
             else:
                 d[name] = [current_value, value]
@@ -653,10 +655,12 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 
 #keep track of the options added since v1,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "open-url", "pixel-depth", "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit",
-                    "forward-xdg-open", "modal-windows", "bandwidth-detection",
-                    "bind-ssh", "ssh-auth", "ssh-upgrade",
-                          ]
+OPTIONS_ADDED_SINCE_V1 = [
+    "attach", "open-files", "open-url", "pixel-depth",
+    "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit",
+    "forward-xdg-open", "modal-windows", "bandwidth-detection",
+    "bind-ssh", "ssh-auth", "ssh-upgrade",
+    ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
     }
@@ -669,7 +673,8 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "systemd-run", "systemd-run-args",
                   "socket-dir", "socket-dirs",
                   "border", "window-close", "min-size", "max-size", "desktop-scaling",
-                  "file-transfer", "file-size-limit", "download-path", "open-command", "open-files", "printing", "open-url",
+                  "file-transfer", "file-size-limit", "download-path",
+                  "open-command", "open-files", "printing", "open-url",
                   "challenge-handlers",
                   "dbus-proxy",
                   "remote-logging",
@@ -783,14 +788,16 @@ def get_default_systemd_run():
 def get_default_pulseaudio_command():
     if WIN32 or OSX:
         return []
-    cmd = ["pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
-                                    "--exit-idle-time=-1", "--load=module-suspend-on-idle",
-                                    "'--load=module-null-sink sink_name=\"Xpra-Speaker\" sink_properties=device.description=\"Xpra\\ Speaker\"'",
-                                    "'--load=module-null-sink sink_name=\"Xpra-Microphone\" sink_properties=device.description=\"Xpra\\ Microphone\"'",
-                                    "'--load=module-native-protocol-unix socket=$XPRA_PULSE_SERVER'",
-                                    "--load=module-dbus-protocol",
-                                    "--load=module-x11-publish",
-                                    "--log-level=2", "--log-target=stderr"]
+    cmd = [
+        "pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
+        "--exit-idle-time=-1", "--load=module-suspend-on-idle",
+        "'--load=module-null-sink sink_name=\"Xpra-Speaker\" sink_properties=device.description=\"Xpra\\ Speaker\"'",
+        "'--load=module-null-sink sink_name=\"Xpra-Microphone\" sink_properties=device.description=\"Xpra\\ Microphone\"'",
+        "'--load=module-native-protocol-unix socket=$XPRA_PULSE_SERVER'",
+        "--load=module-dbus-protocol",
+        "--load=module-x11-publish",
+        "--log-level=2", "--log-target=stderr",
+        ]
     if not is_Ubuntu() or getUbuntuVersion()>(16, 4):
         cmd.append("--enable-memfd=no")
     return cmd
@@ -817,7 +824,7 @@ def get_defaults():
         conf_dirs.append(os.path.join(build_root, "etc", "xpra"))
     xpra_cmd = sys.argv[0]
     bin_dir = None
-    if len(sys.argv)>0:
+    if sys.argv:
         for strip in ("/usr/bin", "/bin"):
             pos = xpra_cmd.find(strip)
             if pos>=0:
@@ -833,10 +840,6 @@ def get_defaults():
         if os.path.exists(conf_dir):
             break
     xvfb = detect_xvfb_command(conf_dir, bin_dir)
-    def addtrailingslash(v):
-        if v.endswith("/"):
-            return v
-        return v+"/"
     if WIN32:
         bind_dirs = ["Main"]
     else:
@@ -974,7 +977,6 @@ def get_defaults():
                     "terminate-children": False,
                     "exit-with-children": False,
                     "exit-with-client"  : False,
-                    "start-after-connect": False,
                     "start-new-commands": False,
                     "proxy-start-sessions": True,
                     "av-sync"           : True,
@@ -1044,52 +1046,51 @@ TRUE_OPTIONS = ("yes", "true", "1", "on", True)
 FALSE_OPTIONS = ("no", "false", "0", "off", False)
 OFF_OPTIONS = ("off", )
 def parse_bool(k, v, auto=None):
-    if type(v)==str:
+    if isinstance(v, str):
         v = v.lower().strip()
     if v in TRUE_OPTIONS:
         return True
-    elif v in FALSE_OPTIONS:
+    if v in FALSE_OPTIONS:
         return False
-    elif v in ["auto", None]:
+    if v in ["auto", None]:
         #keep default - which may be None!
         return auto
-    else:
-        try:
-            return bool(int(v))
-        except:
-            warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
-            return None
+    try:
+        return bool(int(v))
+    except ValueError:
+        warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
+        return None
 
 def print_bool(k, v, true_str='yes', false_str='no'):
-    if type(v)==type(None):
-        return 'auto'
-    if type(v)==bool:
+    if v is None:
+        return "auto"
+    if isinstance(v, bool):
         if v:
             return true_str
         return false_str
     warn("Warning: cannot print value '%s' for '%s' as a boolean" % (v, k))
+    return ""
 
 def parse_bool_or_int(k, v):
     return parse_bool_or_number(int, k, v)
 
 def parse_bool_or_number(numtype, k, v, auto=0):
-    if type(v)==str:
+    if isinstance(v, str):
         v = v.lower()
     if v in TRUE_OPTIONS:
         return 1
-    elif v in FALSE_OPTIONS:
+    if v in FALSE_OPTIONS:
         return 0
-    else:
-        return parse_number(numtype, k, v, auto)
+    return parse_number(numtype, k, v, auto)
 
 def parse_number(numtype, k, v, auto=0):
-    if type(v)==str:
+    if isinstance(v, str):
         v = v.lower()
     if v=="auto":
         return auto
     try:
         return numtype(v)
-    except Exception as e:
+    except ValueError as e:
         warn("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
         return None
 
@@ -1105,26 +1106,25 @@ def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
         import re
         if not v or v in FALSE_OPTIONS:
             return 0
-        elif v=="auto":
+        if v=="auto":
             return None
-        else:
-            r = re.match('([0-9\.]*)(.*)', v)
-            assert r
-            f = float(r.group(1))
-            unit = r.group(2).lower()
-            if unit.endswith(subunit):
-                unit = unit[:-len(subunit)]     #ie: 10mbps -> 10m
-            if unit=="b":
-                pass
-            elif unit=="k":
-                f *= 1000
-            elif unit=="m":
-                f *= 1000000
-            elif unit=="g":
-                f *= 1000000000
-            if min_value is not None:
-                assert f>=min_value, "value is too low"
-            return int(f)
+        r = re.match(r'([0-9\.]*)(.*)', v)
+        assert r
+        f = float(r.group(1))
+        unit = r.group(2).lower()
+        if unit.endswith(subunit):
+            unit = unit[:-len(subunit)]     #ie: 10mbps -> 10m
+        if unit=="b":
+            pass
+        elif unit=="k":
+            f *= 1000
+        elif unit=="m":
+            f *= 1000000
+        elif unit=="g":
+            f *= 1000000000
+        if min_value is not None:
+            assert f>=min_value, "value is too low"
+        return int(f)
     except Exception as e:
         raise InitException("invalid value for %s '%s': %s" % (numtype, v, e))
 
@@ -1150,26 +1150,26 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_valid
             warn("Warning: invalid option: '%s'" % k)
             continue
         if vt==str:
-            if type(v)!=str:
+            if not isinstance(v, str):
                 warn("invalid value for '%s': %s (string required)" % (k, type(v)))
                 continue
         elif vt==int:
             v = parse_bool_or_number(int, k, v)
-            if v==None:
+            if v is None:
                 continue
         elif vt==float:
             v = parse_number(float, k, v)
-            if v==None:
+            if v is None:
                 continue
         elif vt==bool:
             v = parse_bool(k, v)
             if v is None:
                 continue
         elif vt==list:
-            if type(v)==str:
+            if isinstance(v, str):
                 #could just be that we specified it only once..
                 v = [v]
-            elif type(v)==list or v==None:
+            elif isinstance(v, list) or v is None:
                 #ok so far..
                 pass
             else:
@@ -1250,7 +1250,8 @@ def fixup_video_all_or_none(options):
     def getlist(strarg, help_txt, all_list_name):
         if strarg=="help":
             from xpra.codecs import video_helper
-            raise InitInfo("the following %s may be available: %s" % (help_txt, csv(getattr(video_helper, all_list_name))))
+            raise InitInfo("the following %s may be available: %s" %
+                           (help_txt, csv(getattr(video_helper, all_list_name))))
         elif strarg=="none":
             return []
         elif strarg=="all":
@@ -1421,8 +1422,9 @@ def main():
         args = list(sys.argv[1:])
         if "-v" in args or "--verbose" in sys.argv:
             global debug
-            def debug(*args):
+            def print_debug(*args):
                 print(args[0] % args[1:])
+            debug = print_debug
             args.remove("-v")
 
         if args:

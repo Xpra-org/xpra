@@ -951,7 +951,8 @@ class Protocol(object):
                             #as this may leak crypto information:
                             msg += " %s" % e
                         del e
-                        return self.gibberish(msg, data)
+                        self.gibberish(msg, data)
+                        return
 
                 if self._closed:
                     return

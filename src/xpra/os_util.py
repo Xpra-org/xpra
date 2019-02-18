@@ -353,8 +353,7 @@ def getUbuntuVersion():
     if distro and len(distro)==3 and distro[0]=="Ubuntu":
         ur = distro[1]  #ie: "12.04"
         try:
-            rnum = tuple(int(x) for x in ur.split("."))  #ie: (12, 4)
-            return rnum
+            return tuple(int(x) for x in ur.split("."))  #ie: (12, 4)
         except:
             pass
     return ()
@@ -400,6 +399,13 @@ def get_cpu_count():
     return cpus
 
 
+def filedata_nocrlf(filename):
+    v = load_binary_file(filename)
+    if v is None:
+        get_util_logger().error("failed to load '%s'", filename)
+        return None
+    return v.strip("\n\r")
+
 def load_binary_file(filename):
     if not os.path.exists(filename):
         return None
@@ -420,27 +426,27 @@ def livefds():
     live = set()
     try:
         MAXFD = os.sysconf("SC_OPEN_MAX")
-    except:
+    except ValueError:
         MAXFD = 256
     for fd in range(0, MAXFD):
         try:
             s = os.fstat(fd)
             if s:
                 live.add(fd)
-        except:
+        except Exception:
             continue
     return live
 
-def close_fds(excluding=[0, 1, 2]):
+def close_fds(excluding=(0, 1, 2)):
     try:
         MAXFD = os.sysconf("SC_OPEN_MAX")
-    except:
+    except ValueError:
         MAXFD = 256
     for i in range(0, MAXFD):
         if i not in excluding:
             try:
                 os.close(i)
-            except:
+            except IOError:
                 pass
 
 def get_all_fds():
@@ -460,7 +466,7 @@ def get_all_fds():
     sys.stderr.write("Uh-oh, can't close fds, please port me to your system...\n")
     return fds
 
-def close_all_fds(exceptions=[]):
+def close_all_fds(exceptions=()):
     for fd in get_all_fds():
         try:
             if fd not in exceptions:
@@ -477,11 +483,12 @@ def use_tty():
     return not os.environ.get("MSYSCON") and not NOTTY and stdin and stdin.isatty()
 
 
-def shellsub(s, subs={}):
+def shellsub(s, subs=None):
     """ shell style string substitution using the dictionary given """
-    for var,value in subs.items():
-        s = s.replace("$%s" % var, str(value))
-        s = s.replace("${%s}" % var, str(value))
+    if subs:
+        for var,value in subs.items():
+            s = s.replace("$%s" % var, str(value))
+            s = s.replace("${%s}" % var, str(value))
     return s
 
 
@@ -625,7 +632,7 @@ class nomodule_context(object):
         self.saved_module = sys.modules.get(self.module_name)
         sys.modules[self.module_name] = None
     def __exit__(self, *_args):
-        if sys.modules.get(self.module_name) == None:
+        if sys.modules.get(self.module_name) is None:
             if self.saved_module is None:
                 try:
                     del sys.modules[self.module_name]
@@ -802,7 +809,7 @@ def get_peercred(sock):
             pid, uid, gid = struct.unpack(b'3i',creds)
             log("peer: %s", (pid, uid, gid))
             return pid, uid, gid
-        except Exception as  e:
+        except IOError as  e:
             log("getsockopt", exc_info=True)
             log.error("Error getting peer credentials: %s", e)
             return None

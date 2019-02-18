@@ -555,7 +555,7 @@ gtk2_ignored_tokens=[("-l%s" % x) for x in
 GCC_VERSION = []
 def get_gcc_version():
     global GCC_VERSION
-    if len(GCC_VERSION)==0:
+    if not GCC_VERSION:
         cmd = [os.environ.get("CC", "gcc"), "-v"]
         r, _, err = get_status_output(cmd)
         if r==0:
@@ -566,7 +566,7 @@ def get_gcc_version():
                     for p in v_str.split("."):
                         try:
                             GCC_VERSION.append(int(p))
-                        except:
+                        except ValueError:
                             break
                     print("found gcc version: %s" % ".".join([str(x) for x in GCC_VERSION]))
                     break
@@ -623,10 +623,10 @@ def make_constants_pxi(constants_path, pxi_path, **kwargs):
 def should_rebuild(src_file, bin_file):
     if not os.path.exists(bin_file):
         return "no file"
-    elif rebuild_ENABLED:
+    if rebuild_ENABLED:
         if os.path.getctime(bin_file)<os.path.getctime(src_file):
             return "binary file out of date"
-        elif os.path.getctime(bin_file)<os.path.getctime(__file__):
+        if os.path.getctime(bin_file)<os.path.getctime(__file__):
             return "newer build file"
     return None
 
@@ -683,17 +683,17 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 extra_name = extra_map.get(token, extra)
                 add_to_keywords(kw, extra_name, token)
 
-    if len(pkgs_options)>0:
+    if pkgs_options:
         package_names = []
         #find out which package name to use from potentially many options
         #and bail out early with a meaningful error if we can't find any valid options
         for package_options in pkgs_options:
             #for this package options, find the ones that work
             valid_option = None
-            if type(package_options)==str:
+            if isinstance(package_options, str):
                 options = [package_options]     #got given just one string
             else:
-                assert type(package_options)==list
+                assert isinstance(package_options, list)
                 options = package_options       #got given a list of options
             for option in options:
                 cmd = ["pkg-config", "--exists", option]
@@ -821,7 +821,7 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
     if dirs and dirs[-1]=="usr":
         dirs = dirs[:-1]
     #is this an absolute path?
-    if len(dirs)==0 or dirs[0]=="usr" or (install_dir or sys.prefix).startswith(os.path.sep):
+    if not dirs or dirs[0]=="usr" or (install_dir or sys.prefix).startswith(os.path.sep):
         #ie: ["/", "usr"] or ["/", "usr", "local"]
         dirs.insert(0, os.path.sep)
     return dirs
@@ -845,12 +845,15 @@ def build_xpra_conf(install_dir):
     def bstr(b):
         if b is None:
             return "auto"
-        return ["no", "yes"][int(b)]
+        return "yes" if int(b) else "no"
     start_env = "\n".join("start-env = %s" % x for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
-    from xpra.scripts.config import get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command, DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO
+    from xpra.scripts.config import (
+        get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
+        DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
+        )
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if WIN32:
@@ -1188,7 +1191,7 @@ if WIN32:
                         print("%s %s %s" % (dll_name.ljust(22), dll_version.ljust(10), x))
                         dll_files.append(dll_path)
                         dll_names.remove(dll_name)
-            if len(dll_names)>0:
+            if dll_names:
                 print("some DLLs could not be found:")
                 for x in dll_names:
                     print(" - lib%s*.dll" % x)
@@ -1517,7 +1520,7 @@ if WIN32:
                 )
                 print("copied %s to %s/%s" % (module_dir, install, module_name))
             except Exception as e:
-                if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
+                if not isinstance(e, WindowsError) or ("already exists" not in str(e)): #@UndefinedVariable
                     raise
 
         add_data_files('', glob.glob("win32\\bundle-extra\\*"))
@@ -2101,6 +2104,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
                 return out
         except:
             pass
+        return None
     #prefer the one we find on the $PATH, if any:
     try:
         v = which(nvcc_exe)

@@ -148,7 +148,7 @@ class Connection(object):
         log("Connection%s", (endpoint, socktype, info))
         self.endpoint = endpoint
         try:
-            assert type(endpoint) in (tuple, list)
+            assert isinstance(endpoint, (tuple, list))
             self.target = ":".join(str(x) for x in endpoint)
         except:
             self.target = str(endpoint)
@@ -267,11 +267,11 @@ class TwoFileConnection(Connection):
             cc()
         try:
             self._readable.close()
-        except Exception as e:
+        except IOError as e:
             log("%s.close() %s", self._readable, e)
         try:
             self._writeable.close()
-        except:
+        except IOError as e:
             log("%s.close() %s", self._writeable, e)
         log("%s.close() done", self)
 
@@ -280,14 +280,13 @@ class TwoFileConnection(Connection):
 
     def get_info(self):
         d = Connection.get_info(self)
-        try:
-            d["type"] = "pipe"
-            d["pipe"] = {
-                         "read"     : {"fd" : self._read_fd},
-                         "write"    : {"fd" : self._write_fd},
-                         }
-        except:
-            pass
+        d.update({
+            "type"  : "pipe",
+            "pipe"  : {
+                "read"     : {"fd" : self._read_fd},
+                "write"    : {"fd" : self._write_fd},
+                }
+            })
         return d
 
 
@@ -336,25 +335,25 @@ class SocketConnection(Connection):
         s = self._socket
         try:
             i = self.get_socket_info()
-        except Exception:
+        except IOError:
             i = s
         log("%s.close() for socket=%s", self, i)
         Connection.close(self)
         #meaningless for udp:
         try:
             s.settimeout(0)
-        except:
+        except IOError:
             pass
         if SOCKET_SHUTDOWN:
             try:
                 s.shutdown(socket.SHUT_RDWR)
-            except:
+            except IOError:
                 log("%s.shutdown(SHUT_RDWR)", s, exc_info=True)
         try:
             s.close()
         except EOFError:
             log("%s.close()", s, exc_info=True)
-        except Exception as e:
+        except IOError as e:
             if isinstance(e, CLOSED_EXCEPTIONS):
                 log("%s.close() already closed!", s)
             else:
@@ -374,7 +373,7 @@ class SocketConnection(Connection):
             si = self.get_socket_info()
             if si:
                 d["socket"] = si
-        except:
+        except socket.error:
             log.error("Error accessing socket information", exc_info=True)
         return d
 
@@ -391,13 +390,13 @@ class SocketConnection(Connection):
                 "family"        : FAMILY_STR.get(s.family, int(s.family)),
                 "type"          : PROTOCOL_STR.get(s.type, int(s.type)),
                 })
-        except Exception:
+        except AttributeError:
             log("do_get_socket_info()", exc_info=True)
         if self.nodelay is not None:
             info["nodelay"] = self.nodelay
         try:
             info["timeout"] = int(1000*(s.gettimeout() or 0))
-        except:
+        except socket.error:
             pass
         try:
             if POSIX:
@@ -439,25 +438,21 @@ class SocketConnection(Connection):
 
 def get_socket_options(sock, level, options):
     opts = {}
-    try:
-        errs = []
-        for k in options:
-            opt = getattr(socket, k, None)
-            if opt is None:
-                continue
-            try:
-                v = sock.getsockopt(level, opt)
-            except Exception as e:
-                log("sock.getsockopt(%i, %s)", level, k, exc_info=True)
-                errs.append(k)
-            else:
-                if v is not None:
-                    opts[k] = v
-        if errs:
-            log.warn("Warning: failed to query %s", csv(errs))
-    except:
-        log.error("Error querying socket options:")
-        log.error(" %s", e)
+    errs = []
+    for k in options:
+        opt = getattr(socket, k, None)
+        if opt is None:
+            continue
+        try:
+            v = sock.getsockopt(level, opt)
+        except socket.error:
+            log("sock.getsockopt(%i, %s)", level, k, exc_info=True)
+            errs.append(k)
+        else:
+            if v is not None:
+                opts[k] = v
+    if errs:
+        log.warn("Warning: failed to query %s", csv(errs))
     return opts
 
 
@@ -575,14 +570,15 @@ def log_new_connection(conn, socket_info=""):
     socktype = conn.socktype
     try:
         peername = sock.getpeername()
-    except:
+    except socket.error:
         peername = str(address)
     try:
         sockname = sock.getsockname()
     except AttributeError:
         #ie: ssh channel
         sockname = ""
-    log("log_new_connection(%s, %s) type=%s, sock=%s, sockname=%s, address=%s, peername=%s", conn, socket_info, type(conn), sock, sockname, address, peername)
+    log("log_new_connection(%s, %s) type=%s, sock=%s, sockname=%s, address=%s, peername=%s",
+        conn, socket_info, type(conn), sock, sockname, address, peername)
     if peername:
         frominfo = pretty_socket(peername)
         info_msg = "New %s connection received from %s" % (socktype, frominfo)

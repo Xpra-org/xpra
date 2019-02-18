@@ -349,7 +349,8 @@ class VideoSubregion(object):
         lde = tuple(x for x in tuple(last_damage_events) if x[0]>=from_time)
         dc = len(lde)
         if dc<=MIN_EVENTS:
-            return self.novideoregion("not enough damage events yet (%s)", dc)
+            self.novideoregion("not enough damage events yet (%s)", dc)
+            return
         #structures for counting areas and sizes:
         wc = {}
         hc = {}
@@ -474,7 +475,8 @@ class VideoSubregion(object):
 
         if len(dec)==1:
             rect, count = tuple(dec.items())[0]
-            return setnewregion(rect, "only region damaged")
+            setnewregion(rect, "only region damaged")
+            return
 
         #see if we can keep the region we already have (if any):
         cur_score = 0
@@ -543,16 +545,19 @@ class VideoSubregion(object):
         #a score of 100 is neutral
         if highscore>=120:
             region = next(iter(r for r,s in scores.items() if s==highscore))
-            return setnewregion(region, "very high score: %s", highscore)
+            setnewregion(region, "very high score: %s", highscore)
+            return
 
         #retry existing region, tolerate lower score:
         if cur_score>=90 and (highscore<100 or cur_score>=highscore):
             sslog("keeping existing video region %s with score %s", rect, cur_score)
-            return setnewregion(self.rectangle, "existing region with score: %i" % cur_score)
+            setnewregion(self.rectangle, "existing region with score: %i" % cur_score)
+            return
 
         if highscore>=100:
             region = next(iter(r for r,s in scores.items() if s==highscore))
-            return setnewregion(region, "high score: %s", highscore)
+            setnewregion(region, "high score: %s", highscore)
+            return
 
         #TODO:
         # * re-add some scrolling detection: the region may have moved
@@ -564,7 +569,8 @@ class VideoSubregion(object):
             merged = merge_all(tuple(damage_count.keys()))
             score = score_region("merged", merged)
             if score>=110:
-                return setnewregion(merged, "merged all regions, score=%s", score)
+                setnewregion(merged, "merged all regions, score=%s", score)
+                return
 
         self.novideoregion("failed to identify a video region")
         self.last_scores = scores

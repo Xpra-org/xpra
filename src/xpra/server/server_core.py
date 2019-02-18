@@ -8,26 +8,31 @@
 
 import os
 import sys
-import time
 import socket
 import signal
 import binascii
 import threading
 import traceback
 from weakref import WeakKeyDictionary
-from time import sleep
+from time import sleep, time
 
-from xpra.version_util import XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full, get_platform_info, get_host_info
+from xpra.version_util import (
+    XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full,
+    get_platform_info, get_host_info,
+    )
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
+from xpra.net.bytestreams import (
+    SocketConnection, SSLSocketConnection,
+    log_new_connection, pretty_socket, SOCKET_TIMEOUT,
+    )
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name
 from xpra.platform.paths import get_app_dir
 from xpra.os_util import (
-    load_binary_file, get_machine_id, get_user_uuid, platform_name,
+    filedata_nocrlf, get_machine_id, get_user_uuid, platform_name,
     strtobytes, bytestostr, get_hex_uuid,
     getuid, monotonic_time, get_peercred, hexstr,
     SIGNAMES, WIN32, POSIX, PYTHON3, BITS,
@@ -178,7 +183,7 @@ class ServerCore(object):
 
     def __init__(self):
         log("ServerCore.__init__()")
-        self.start_time = time.time()
+        self.start_time = time()
         self.auth_classes = {}
         self._when_ready = []
         self.child_reaper = None
@@ -258,7 +263,7 @@ class ServerCore(object):
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
         self.unix_socket_paths = []
         self._socket_dir = opts.socket_dir or ""
-        if not self._socket_dir and len(opts.socket_dirs)>0:
+        if not self._socket_dir and opts.socket_dirs:
             self._socket_dir = opts.socket_dirs[0]
         self.encryption = opts.encryption
         self.encryption_keyfile = opts.encryption_keyfile
@@ -562,14 +567,14 @@ class ServerCore(object):
 
     def handle_command_request(self, proto, *args):
         """ client sent a command request as part of the hello packet """
-        assert len(args)>0
+        assert args
         code, response = self.process_control_command(*args)
         hello = {"command_response"  : (code, response)}
         proto.send_now(("hello", hello))
 
     def process_control_command(self, *args):
         from xpra.server.control_command import ControlError
-        assert len(args)>0
+        assert args
         name = args[0]
         try:
             command = self.control_commands.get(name)
@@ -987,9 +992,9 @@ class ServerCore(object):
         return make_ssh_server_connection(conn, ssh_password_authenticate)
 
     def try_upgrade_to_rfb(self, proto):
-        if proto._closed:
-            return
         self.cancel_upgrade_to_rfb_timer(proto)
+        if proto._closed:
+            return False
         conn = proto._conn
         netlog("may_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
         if conn.input_bytecount==0:
@@ -1006,7 +1011,7 @@ class ServerCore(object):
             self.source_remove(t)
             try:
                 del self.socket_rfb_upgrade_timer[protocol]
-            except:
+            except KeyError:
                 pass
 
 
@@ -1168,7 +1173,7 @@ class ServerCore(object):
                 newsocktype = "ws%s" % ["","s"][int(is_ssl)]
                 self.make_protocol(newsocktype, conn, WebSocketProtocol)
             scripts = self.get_http_scripts()
-            conn.socktype = ["ws", "wss"][is_ssl]
+            conn.socktype = "wss" if is_ssl else "ws"
             WebSocketRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, self._http_headers_dir, scripts)
             return
         except (IOError, ValueError) as e:
@@ -1277,7 +1282,7 @@ class ServerCore(object):
         if t:
             try:
                 del self.socket_verify_timer[protocol]
-            except:
+            except KeyError:
                 pass
             self.source_remove(t)
 
@@ -1352,13 +1357,13 @@ class ServerCore(object):
         self.cleanup_protocol(proto)
 
     def _process_gibberish(self, proto, packet):
-        (_, message, data) = packet
+        message, data = packet[1:3]
         netlog("Received uninterpretable nonsense from %s: %s", proto, message)
         netlog(" data: %s", repr_ellipsized(data))
         self.disconnect_client(proto, message)
 
     def _process_invalid(self, protocol, packet):
-        (_, message, data) = packet
+        message, data = packet[1:3]
         netlog("Received invalid packet: %s", message)
         netlog(" data: %s", repr_ellipsized(data))
         self.disconnect_client(protocol, message)
@@ -1567,7 +1572,7 @@ class ServerCore(object):
         capabilities = packet[1]
         c = typedict(capabilities)
         command_req = c.strlistget("command_request")
-        if len(command_req)>0:
+        if command_req:
             #call from UI thread:
             authlog("auth_verified(..) command request=%s", command_req)
             self.idle_add(self.handle_command_request, proto, *command_req)
@@ -1576,20 +1581,13 @@ class ServerCore(object):
         self.idle_add(self.call_hello_oked, proto, packet, c, auth_caps)
 
 
-    def filedata_nocrlf(self, filename):
-        v = load_binary_file(filename)
-        if v is None:
-            log.error("failed to load '%s'", filename)
-            return None
-        return v.strip("\n\r")
-
     def get_encryption_key(self, authenticators=None, keyfile=None):
         #if we have a keyfile specified, use that:
         authlog("get_encryption_key(%s, %s)", authenticators, keyfile)
         v = None
         if keyfile:
             authlog("loading encryption key from keyfile: %s", keyfile)
-            v = self.filedata_nocrlf(keyfile)
+            v = filedata_nocrlf(keyfile)
         if not v:
             v = os.environ.get('XPRA_ENCRYPTION_KEY')
             if v:
@@ -1671,7 +1669,7 @@ class ServerCore(object):
 
 
     def make_hello(self, source=None):
-        now = time.time()
+        now = time()
         capabilities = flatten_dict(get_network_caps())
         if source is None or source.wants_versions:
             capabilities.update(flatten_dict(get_server_info()))
