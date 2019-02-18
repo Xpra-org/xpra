@@ -111,7 +111,7 @@ def get_thread_info(proto=None, protocols=()):
     if proto:
         info_threads = proto.get_threads()
     else:
-        info_threads = []
+        info_threads = ()
     info = {
             "count"        : threading.active_count() - len(info_threads),
             "info.count"   : len(info_threads)

@@ -196,7 +196,10 @@ class RFBProtocol(object):
         return "RFBProtocol(%s)" % self._conn
 
     def get_threads(self):
-        return  [x for x in [self._write_thread, self._read_thread] if x is not None]
+        return tuple(x for x in (
+            self._write_thread,
+            self._read_thread,
+            ) if x is not None)
 
 
     def get_info(self, *_args):

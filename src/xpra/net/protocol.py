@@ -84,9 +84,9 @@ def force_flush_queue(q):
 
 def verify_packet(packet):
     """ look for None values which may have caused the packet to fail encoding """
-    if type(packet)!=list:
+    if isinstance(packet, list):
         return False
-    assert len(packet)>0, "invalid packet: %s" % packet
+    assert packet, "invalid packet: %s" % packet
     tree = ["'%s' packet" % packet[0]]
     return do_verify_packet(tree, packet)
 
@@ -101,17 +101,17 @@ def do_verify_packet(tree, packet):
         err("None value")
         return False
     r = True
-    if type(packet) in (list, tuple):
+    if isinstance(packet, (list, tuple)):
         for i, x in enumerate(packet):
             if not do_verify_packet(new_tree("[%s]" % i), x):
                 r = False
-    elif type(packet)==dict:
+    elif isinstance(packet, dict):
         for k,v in packet.items():
             if not do_verify_packet(new_tree("key for value='%s'" % str(v)), k):
                 r = False
             if not do_verify_packet(new_tree("value for key='%s'" % str(k)), v):
                 r = False
-    elif type(packet) in (int, bool, str, bytes, unicode):
+    elif isinstance(packet, (int, bool, str, bytes, unicode)):
         pass
     else:
         err("unsupported type: %s" % type(packet))
@@ -252,7 +252,12 @@ class Protocol(object):
         return "Protocol(%s)" % self._conn
 
     def get_threads(self):
-        return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread] if x is not None]
+        return tuple(x for x in (
+            self._write_thread,
+            self._read_thread,
+            self._read_parser_thread,
+            self._write_format_thread,
+            ) if x is not None)
 
     def accept(self):
         pass
@@ -332,7 +337,7 @@ class Protocol(object):
             log("send_now(%s ...) connection is closed already, not sending", packet[0])
             return
         log("send_now(%s ...)", packet[0])
-        assert self._get_packet_cb==None, "cannot use send_now when a packet source exists! (set to %s)" % self._get_packet_cb
+        assert self._get_packet_cb is None, "cannot use send_now when a packet source exists! (set to %s)" % self._get_packet_cb
         tmp_queue = [packet]
         def packet_cb():
             self._get_packet_cb = None
@@ -456,7 +461,7 @@ class Protocol(object):
 
     def enable_default_encoder(self):
         opts = packet_encoding.get_enabled_encoders()
-        assert len(opts)>0, "no packet encoders available!"
+        assert opts, "no packet encoders available!"
         self.enable_encoder(opts[0])
 
     def enable_encoder_from_caps(self, caps):
@@ -477,7 +482,7 @@ class Protocol(object):
 
     def enable_default_compressor(self):
         opts = compression.get_enabled_compressors()
-        if len(opts)>0:
+        if opts:
             self.enable_compressor(opts[0])
         else:
             self.enable_compressor("none")
@@ -506,7 +511,7 @@ class Protocol(object):
         if PYTHON3:
             import codecs
             def b(x):
-                if type(x)==bytes:
+                if isinstance(x, bytes):
                     return x
                 return codecs.latin_1_encode(x)[0]
         else:
@@ -621,7 +626,7 @@ class Protocol(object):
 
     def set_compression_level(self, level):
         #this may be used next time encode() is called
-        assert level>=0 and level<=10, "invalid compression level: %s (must be between 0 and 10" % level
+        assert 0<=level<=10, "invalid compression level: %s (must be between 0 and 10" % level
         self.compression_level = level
 
 
@@ -849,7 +854,9 @@ class Protocol(object):
 
                     if protocol_flags & FLAGS_CIPHER:
                         if self.cipher_in_block_size==0 or not self.cipher_in_name:
-                            cryptolog.warn("received cipher block but we don't have a cipher to decrypt it with, not an xpra client?")
+                            cryptolog.warn("Warning: received cipher block,")
+                            cryptolog.warn(" but we don't have a cipher to decrypt it with,")
+                            cryptolog.warn(" not an xpra client?")
                             self._invalid_header(header, "invalid encryption packet flag (no cipher configured)")
                             return
                         padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
@@ -866,7 +873,7 @@ class Protocol(object):
                         def check_packet_size(size_to_check, packet_header):
                             if self._closed:
                                 return False
-                            log("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
+                            log("check_packet_size(%#x, %s) max=%#x", size_to_check, hexstr(packet_header), self.max_packet_size)
                             if size_to_check>self.max_packet_size:
                                 msg = "packet size requested is %s but maximum allowed is %s" % \
                                               (size_to_check, self.max_packet_size)
@@ -905,7 +912,7 @@ class Protocol(object):
                     if not (protocol_flags & FLAGS_CIPHER):
                         self.invalid("unencrypted packet dropped", data)
                         return
-                    cryptolog("received %i %s encrypted bytes with %s padding", payload_size, self.cipher_in_name, padding_size)
+                    cryptolog("received %i %s encrypted bytes with %i padding", payload_size, self.cipher_in_name, padding_size)
                     data = self.cipher_in.decrypt(data)
                     if padding_size > 0:
                         def debug_str(s):
@@ -990,7 +997,7 @@ class Protocol(object):
                     raw_packets = {}
 
                 packet_type = packet[0]
-                if self.receive_aliases and type(packet_type)==int and packet_type in self.receive_aliases:
+                if self.receive_aliases and isinstance(packet_type, int) and packet_type in self.receive_aliases:
                     packet_type = self.receive_aliases.get(packet_type)
                     packet[0] = packet_type
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
@@ -1019,7 +1026,8 @@ class Protocol(object):
                 done_callback()
         if self._closed:
             log("flush_then_close: already closed")
-            return done()
+            done()
+            return
         def wait_for_queue(timeout=10):
             #IMPORTANT: if we are here, we have the write lock held!
             if not self._write_queue.empty():
