@@ -1064,6 +1064,8 @@ class GLWindowBackingBase(WindowBackingBase):
             self.texture_size = (width, height)
             self.gl_marker("Creating new planar textures, pixel format %s", pixel_format)
             # Create textures of the same size as the window's
+            empty_buf = b"\0"*(width*height)
+            pixel_data = self.pixels_for_upload(empty_buf)[1]
 
             for texture, index in ((GL_TEXTURE0, TEX_Y), (GL_TEXTURE1, TEX_U), (GL_TEXTURE2, TEX_V)):
                 (div_w, div_h) = divs[index]
@@ -1076,7 +1078,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 set_texture_level()
-                #glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
+                glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
                 #glBindTexture(target, 0)        #redundant: we rebind below:
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
