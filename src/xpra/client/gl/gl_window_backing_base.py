@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 import os
+import time
 import struct
-import time, math
+from ctypes import c_char_p
 
 from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
@@ -15,7 +16,7 @@ from OpenGL.GL import (
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR,
-    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
+    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4,
@@ -55,10 +56,10 @@ from xpra.util import envint, envbool, repr_ellipsized
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks, WEBP_PILLOW
-from xpra.client.spinner import cv
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, YUV2RGB_FULL_shader, RGBP2RGB_shader
+from xpra.client.gl.gl_spinner import draw_spinner
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")
@@ -139,7 +140,10 @@ glInitFrameTerminatorGREMEDY = None
 glFrameTerminatorGREMEDY = None
 if OPENGL_DEBUG:
     try:
-        from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
+        from OpenGL.GL.KHR.debug import (
+            GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS,
+            glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR,
+            )
     except ImportError:
         log("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
     try:
@@ -147,28 +151,32 @@ if OPENGL_DEBUG:
         from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
         from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
         def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
-            log.error("src %x type %x id %x severity %x length %d message %s, param=%s", source, error_type, error_id, severity, length, message, param)
+            log.error("src %x type %x id %x severity %x length %d message %s, param=%s",
+                      source, error_type, error_id, severity, length, message, param)
         gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
     except ImportError:
         # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
         log("Unable to import GREMEDY OpenGL extension. Debug output will be more limited.")
-    log("OpenGL debugging settings: "+
-          "GL_DEBUG_OUTPUT=%s, GL_DEBUG_OUTPUT_SYNCHRONOUS=%s"+
-          "gl_debug_callback=%s, "+
-          "glInitStringMarkerGREMEDY=%s, glStringMarkerGREMEDY=%s, glInitFrameTerminatorGREMEDY=%s, glFrameTerminatorGREMEDY=%s",
-            GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS,
-            gl_debug_callback, glInitStringMarkerGREMEDY, glStringMarkerGREMEDY,
-            glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY)
-from ctypes import c_char_p
+    log("OpenGL debugging settings:")
+    log(" GL_DEBUG_OUTPUT=%s, GL_DEBUG_OUTPUT_SYNCHRONOUS=%s", GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS)
+    log(" gl_debug_callback=%s", gl_debug_callback)
+    log(" glInitStringMarkerGREMEDY=%s, glStringMarkerGREMEDY=%s",
+        glInitStringMarkerGREMEDY, glStringMarkerGREMEDY)
+    log(" glInitFrameTerminatorGREMEDY=%s, glFrameTerminatorGREMEDY=%s",
+        glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY)
 
-try:
-    import OpenGL_accelerate            #@UnresolvedImport
-except:
-    OpenGL_accelerate = None
-zerocopy_upload = bool(OpenGL_accelerate) and envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True) and is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
+zerocopy_upload = False
+if envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True):
+    try:
+        import OpenGL_accelerate            #@UnresolvedImport
+        assert OpenGL_accelerate
+    except ImportError:
+        pass
+    else:
+        zerocopy_upload = is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
 try:
     buffer_type = buffer
-except:
+except NameError:
     #not defined in py3k..
     buffer_type = None
 
@@ -215,8 +223,9 @@ The logic is as follows:
 We create an OpenGL framebuffer object, which will be always up-to-date with the latest windows contents.
 This framebuffer object is updated with YUV painting and RGB painting. It is presented on screen by drawing a
 textured quad when requested, that is: after each YUV or RGB painting operation, and upon receiving an expose event.
-The use of a intermediate framebuffer object is the only way to guarantee that the client keeps an always fully up-to-date
-window image, which is critical because of backbuffer content losses upon buffer swaps or offscreen window movement.
+The use of a intermediate framebuffer object is the only way to guarantee that the client keeps
+an always fully up-to-date window image, which is critical because of backbuffer content losses upon buffer swaps
+or offscreen window movement.
 """
 class GLWindowBackingBase(WindowBackingBase):
 
@@ -298,7 +307,8 @@ class GLWindowBackingBase(WindowBackingBase):
             self.texture_pixel_format = GL_RGBA
         else:
             self.texture_pixel_format = GL_RGB
-        log("init_formats() texture pixel format=%s, internal format=%s, rgb modes=%s", ["GL_RGB", "GL_RGBA"][self._alpha_enabled], INTERNAL_FORMAT_TO_STR.get(self.internal_format), self.RGB_MODES)
+        log("init_formats() texture pixel format=%s, internal format=%s, rgb modes=%s",
+            CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format), INTERNAL_FORMAT_TO_STR.get(self.internal_format), self.RGB_MODES)
 
     def get_encoding_properties(self):
         props = WindowBackingBase.get_encoding_properties(self)
@@ -343,13 +353,13 @@ class GLWindowBackingBase(WindowBackingBase):
         global glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
         global glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
         # Ask GL to send us all debug messages
-        if GL_DEBUG_OUTPUT and gl_debug_callback and glInitDebugKHR() == True:
+        if GL_DEBUG_OUTPUT and gl_debug_callback and glInitDebugKHR() is True:
             glEnable(GL_DEBUG_OUTPUT)
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
             glDebugMessageCallback(gl_debug_callback, None)
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, None, GL_TRUE)
         # Initialize string_marker GL debugging extension if available
-        if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() == True:
+        if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() is True:
             log.info("Extension GL_GREMEDY_string_marker available. Will output detailed information about each frame.")
         else:
             # General case - running without debugger, extension not available
@@ -357,7 +367,7 @@ class GLWindowBackingBase(WindowBackingBase):
             #don't bother trying again for another window:
             glInitStringMarkerGREMEDY = None
         # Initialize frame_terminator GL debugging extension if available
-        if glInitFrameTerminatorGREMEDY and glInitFrameTerminatorGREMEDY() == True:
+        if glInitFrameTerminatorGREMEDY and glInitFrameTerminatorGREMEDY() is True:
             log.info("Enabling GL frame terminator debugging.")
         else:
             glFrameTerminatorGREMEDY = None
@@ -371,7 +381,8 @@ class GLWindowBackingBase(WindowBackingBase):
         self.textures = glGenTextures(N_TEXTURES)
         self.offscreen_fbo = glGenFramebuffers(1)
         self.tmp_fbo = glGenFramebuffers(1)
-        log("%s.gl_init_textures() textures: %s, offscreen fbo: %s, tmp fbo: %s", self, self.textures, self.offscreen_fbo, self.tmp_fbo)
+        log("%s.gl_init_textures() textures: %s, offscreen fbo: %s, tmp fbo: %s",
+            self, self.textures, self.offscreen_fbo, self.tmp_fbo)
 
     def gl_init_shaders(self):
         assert self.shaders is None
@@ -555,6 +566,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
                                   x+xdelta, bh-(y+ydelta), x+w+xdelta, bh-(y+h+ydelta),
                                   GL_COLOR_BUFFER_BIT, GL_NEAREST)
+                self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
                 glFlush()
 
             #now swap references to tmp and offscreen so tmp becomes the new offscreen:
@@ -573,7 +585,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
             glBindTexture(target, 0)
             glDisable(target)
-            self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
             fire_paint_callbacks(callbacks, True)
             self.present_fbo(0, 0, bw, bh, flush)
 
@@ -712,7 +723,8 @@ class GLWindowBackingBase(WindowBackingBase):
     def draw_pointer(self):
         px, py, _, _, size, start_time = self.pointer_overlay
         elapsed = monotonic_time()-start_time
-        log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s", self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
+        log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s",
+            self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
         if elapsed>=CURSOR_IDLE_TIMEOUT:
             #timeout - stop showing it:
             self.pointer_overlay = None
@@ -751,10 +763,14 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 
             glBegin(GL_QUADS)
-            glTexCoord2i(0, 0);     glVertex2i(x, y)
-            glTexCoord2i(0, ch);    glVertex2i(x, y+ch)
-            glTexCoord2i(cw, ch);   glVertex2i(x+cw, y+ch)
-            glTexCoord2i(cw, 0);    glVertex2i(x+cw, y)
+            glTexCoord2i(0, 0)
+            glVertex2i(x, y)
+            glTexCoord2i(0, ch)
+            glVertex2i(x, y+ch)
+            glTexCoord2i(cw, ch)
+            glVertex2i(x+cw, y+ch)
+            glTexCoord2i(cw, 0)
+            glVertex2i(x+cw, y)
             glEnd()
 
             glBindTexture(target, 0)
@@ -779,26 +795,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def draw_spinner(self):
         bw, bh = self.size
-        dim = min(bw/3.0, bh/3.0)
-        t = monotonic_time()
-        count = int(t*4.0)
-        bx = bw//2
-        by = bh//2
-        for i in range(8):      #8 lines
-            c = cv.trs[count%8][i]
-            mi1 = math.pi*i/4-math.pi/16
-            mi2 = math.pi*i/4+math.pi/16
-            si1 = math.sin(mi1)
-            si2 = math.sin(mi2)
-            ci1 = math.cos(mi1)
-            ci2 = math.cos(mi2)
-            glBegin(GL_POLYGON)
-            glColor4f(c, c, c, 1)
-            glVertex2i(int(bx+si1*10), int(by+ci1*10))
-            glVertex2i(int(bx+si1*dim), int(by+ci1*dim))
-            glVertex2i(int(bx+si2*dim), int(by+ci2*dim))
-            glVertex2i(int(bx+si2*10), int(by+ci2*10))
-            glEnd()
+        draw_spinner(bw, bh)
 
     def draw_border(self):
         bw, bh = self.size
@@ -1086,8 +1083,12 @@ class GLWindowBackingBase(WindowBackingBase):
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
         assert len(rowstrides)==3 and len(img_data)==3
-        for texture, index, tex_name in ((GL_TEXTURE0, TEX_Y, "Y"), (GL_TEXTURE1, TEX_U, "U"), (GL_TEXTURE2, TEX_V, "V")):
-            (div_w, div_h) = divs[index]
+        for texture, index, tex_name in (
+            (GL_TEXTURE0, TEX_Y, "Y"),
+            (GL_TEXTURE1, TEX_U, "U"),
+            (GL_TEXTURE2, TEX_V, "V"),
+            ):
+            div_w, div_h = divs[index]
             w = width//div_w
             h = height//div_h
             if w==0 or h==0:
@@ -1100,7 +1101,8 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, self.textures[index])
             self.set_alignment(w, rowstrides[index], tex_name)
             upload, pixel_data = self.pixels_for_upload(img_data[index])
-            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s", index, divs[index], rowstrides[index], w, h, len(pixel_data), upload)
+            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s",
+                index, divs[index], rowstrides[index], w, h, len(pixel_data), upload)
             glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0)
             try:
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
@@ -1111,7 +1113,8 @@ class GLWindowBackingBase(WindowBackingBase):
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1, shader=YUV2RGB_SHADER):
-        log("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
+        log("%s.render_planar_update%s pixel_format=%s",
+            self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP"):
             #not ready to render yet
             return
