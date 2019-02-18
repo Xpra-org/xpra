@@ -210,7 +210,11 @@ class X11ServerCore(GTKServerBase):
                         k = bytestostr(parts[0].strip())
                         v = bytestostr(parts[1].strip())
                         self.opengl_props[k] = v
-                    log.info(" OpenGL is supported on this display")
+                    gllog("opengl props=%s", self.opengl_props)
+                    gllog.info(" OpenGL is supported on this display")
+                    renderer = self.opengl_props.get("renderer")
+                    if renderer:
+                        gllog.info(" using '%s' renderer")
                 else:
                     self.opengl_props["error-details"] = str(err).strip("\n\r")
                     error = "unknown error"
