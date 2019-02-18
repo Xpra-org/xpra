@@ -885,21 +885,20 @@ class GLWindowBackingBase(WindowBackingBase):
     def pixels_for_upload(self, img_data):
         #prepare the pixel buffer for upload:
         t = type(img_data)
-        if t==memoryview:
+        if isinstance(t, memoryview):
             if not zerocopy_upload:
                 #not safe, make a copy :(
                 return "copy:memoryview.tobytes", img_data.tobytes()
             return "zerocopy:memoryview", img_data
-        elif t in (bytes, buffer_type) and zerocopy_upload:
+        if isinstance(t, (bytes, buffer_type)) and zerocopy_upload:
             #we can zerocopy if we wrap it:
             return "zerocopy:buffer-as-memoryview", memoryview(img_data)
-        elif t==bytes:
+        if isinstance(t, bytes):
             return "copy:bytes", img_data
-        else:
-            if hasattr(img_data, "raw"):
-                return "zerocopy:mmap", img_data.raw
-            #everything else.. copy to bytes (aka str):
-            return "copy:bytes(%s)" % t, strtobytes(img_data)
+        if hasattr(img_data, "raw"):
+            return "zerocopy:mmap", img_data.raw
+        #everything else.. copy to bytes (aka str):
+        return "copy:bytes(%s)" % t, strtobytes(img_data)
 
     def set_alignment(self, width, rowstride, pixel_format):
         bytes_per_pixel = len(pixel_format)       #ie: BGRX -> 4
@@ -917,7 +916,8 @@ class GLWindowBackingBase(WindowBackingBase):
             row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
         glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
         glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
-        self.gl_marker("set_alignment%s GL_UNPACK_ROW_LENGTH=%i, GL_UNPACK_ALIGNMENT=%i", (width, rowstride, pixel_format), row_length, alignment)
+        self.gl_marker("set_alignment%s GL_UNPACK_ROW_LENGTH=%i, GL_UNPACK_ALIGNMENT=%i",
+                       (width, rowstride, pixel_format), row_length, alignment)
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
@@ -940,7 +940,8 @@ class GLWindowBackingBase(WindowBackingBase):
         WindowBackingBase.paint_webp(self, img_data, x, y, width, height, options, callbacks)
 
     def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
-        log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)", self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
+        log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
+            self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         context = self.gl_context()
         if not context:
             log("%s._do_paint_rgb(..) no context!", self)
@@ -982,10 +983,14 @@ class GLWindowBackingBase(WindowBackingBase):
 
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
-                glTexCoord2i(0, 0);             glVertex2i(x, y)
-                glTexCoord2i(0, height);        glVertex2i(x, y+height)
-                glTexCoord2i(width, height);    glVertex2i(x+width, y+height)
-                glTexCoord2i(width, 0);         glVertex2i(x+width, y)
+                glTexCoord2i(0, 0)
+                glVertex2i(x, y)
+                glTexCoord2i(0, height)
+                glVertex2i(x, y+height)
+                glTexCoord2i(width, height)
+                glVertex2i(x+width, y+height)
+                glTexCoord2i(width, 0)
+                glVertex2i(x+width, y)
                 glEnd()
 
                 glBindTexture(target, 0)
@@ -1020,7 +1025,8 @@ class GLWindowBackingBase(WindowBackingBase):
         log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks))
         try:
             pixel_format = img.get_pixel_format()
-            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
+            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), \
+                "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
 
             context = self.gl_context()
             if not context:
