@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,7 +20,7 @@ from __future__ import absolute_import
 
 from cpython.buffer cimport PyBuffer_FillInfo
 from libc.stdlib cimport free
-from libc.string cimport memcpy
+from libc.string cimport memset, memcpy
 from libc.stdint cimport uintptr_t
 
 cdef extern from "memalign.h":
@@ -40,17 +40,17 @@ cdef extern from "xxhash.h":
 cdef void free_buf(const void *p, size_t l, void *arg):
     free(<void *>p)
 
-cdef getbuf(size_t l):
+cdef MemBuf getbuf(size_t l):
     cdef const void *p = xmemalign(l)
     assert p!=NULL, "failed to allocate %i bytes of memory" % l
     return MemBuf_init(p, l, &free_buf, NULL)
 
-cdef padbuf(size_t l, size_t padding):
+cdef MemBuf padbuf(size_t l, size_t padding):
     cdef const void *p = xmemalign(l+padding)
     assert p!=NULL, "failed to allocate %i bytes of memory" % l
     return MemBuf_init(p, l, &free_buf, NULL)
 
-cdef makebuf(void *p, size_t l):
+cdef MemBuf makebuf(void *p, size_t l):
     assert p!=NULL, "invalid NULL buffer pointer"
     return MemBuf_init(p, l, &free_buf, NULL)
 

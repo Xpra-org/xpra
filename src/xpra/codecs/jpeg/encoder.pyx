@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("encoder", "jpeg")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport makebuf, object_as_buffer
+from xpra.buffers.membuf cimport makebuf, MemBuf, object_as_buffer
 from xpra.net.compression import Compressed
 from xpra.os_util import bytestostr
 
@@ -145,7 +145,7 @@ def encode(image, int quality=50, int speed=50, options={}):
         if r:
             log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
             log.error(" %s", get_error_str())
-    cdata = makebuf(out, out_size)
+    cdef MemBuf cdata = makebuf(out, out_size)
     #100 would mean lossless, so cap it at 99:
     client_options = {
         "quality"   : min(99, quality),
