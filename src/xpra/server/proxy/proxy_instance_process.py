@@ -24,7 +24,7 @@ from xpra.os_util import (
     SIGNAMES, POSIX,
     Queue, osexpand, monotonic_time, bytestostr, strtobytes,
     getuid, getgid, get_username_for_uid, setuidgid,
-    ) 
+    )
 from xpra.util import (
     flatten_dict, typedict, updict,
     repr_ellipsized, envint, envbool,

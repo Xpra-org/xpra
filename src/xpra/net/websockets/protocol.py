@@ -106,7 +106,7 @@ class WebSocketProtocol(Protocol):
     def parse_ws_frame(self, buf):
         if not buf:
             self._read_queue_put(buf)
-            return            
+            return
         if self.ws_data:
             ws_data = self.ws_data+buf
             self.ws_data = b""

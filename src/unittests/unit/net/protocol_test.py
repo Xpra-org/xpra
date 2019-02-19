@@ -69,11 +69,11 @@ def make_profiling_protocol_class(protocol_class):
             config = Config()
             graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, monotonic_time()))
             return PyCallGraph(output=graphviz, config=config)
-    
+
         def _write_format_thread_loop(self):
             with self.profiling_context("%s-format-thread" % protocol_class.TYPE):
                 Protocol._write_format_thread_loop(self)
-    
+
         def do_read_parse_thread_loop(self):
             with self.profiling_context("%s-read-parse-thread" % protocol_class.TYPE):
                 Protocol.do_read_parse_thread_loop(self)
@@ -139,7 +139,7 @@ class ProtocolTest(unittest.TestCase):
             n_packets += n
         log.info("\n%-9s incoming packet processing speed:\t%iMB/s", self.protocol_class.TYPE, total_size/total_elapsed//1024//1024)
         log.info("\n%-9s packet parsed per second:\t\t%i", self.protocol_class.TYPE, n_packets/elapsed)
-        
+
 
     def do_test_read_speed(self, pixel_data_size=2**18, N=100):
         #prepare some packets to parse:
