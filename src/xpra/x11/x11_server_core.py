@@ -93,6 +93,12 @@ class X11ServerCore(GTKServerBase):
     def init(self, opts):
         self.do_init(opts)
         GTKServerBase.init(self, opts)
+        with xsync:
+            self.x11_init()
+        from xpra.server import server_features
+        if server_features.windows:
+            from xpra.x11.x11_window_filters import init_x11_window_filters
+            init_x11_window_filters()
 
     def do_init(self, opts):
         self.randr = opts.resize_display
@@ -101,12 +107,6 @@ class X11ServerCore(GTKServerBase):
         self.current_xinerama_config = None
         #x11 keyboard bits:
         self.current_keyboard_group = None
-        with xsync:
-            self.x11_init()
-        from xpra.server import server_features
-        if server_features.windows:
-            from xpra.x11.x11_window_filters import init_x11_window_filters
-            init_x11_window_filters()
 
 
     def x11_init(self):

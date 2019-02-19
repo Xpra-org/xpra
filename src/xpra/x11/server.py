@@ -202,6 +202,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.repaint_root_overlay_timer = None
         self.configure_damage_timers = {}
         self._tray = None
+        self._wm = None
         self.last_raised = None
         self.system_tray = False
         self.global_menus = False
