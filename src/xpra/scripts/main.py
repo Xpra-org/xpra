@@ -190,9 +190,9 @@ def configure_logging(options, mode):
             log("SIGUSR1")
             idle_add(dump_all_frames, log)
         def sigusr2(*_args):
-            log = get_util_logger().log
+            log = get_util_logger().info
             log("SIGUSR2")
-            idle_add(dump_gc_frames, info)
+            idle_add(dump_gc_frames, log)
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
 
@@ -245,7 +245,7 @@ def systemd_run_wrap(mode, args, systemd_run_args):
         try:
             stderr.write("using systemd-run to wrap '%s' server command\n" % mode)
             stderr.write("%s\n" % " ".join(["'%s'" % x for x in cmd]))
-        except:
+        except IOError:
             pass
     try:
         p = Popen(cmd)
@@ -293,7 +293,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         try:
             from xpra.sound.gstreamer_util import prevent_import
             prevent_import()
-        except:
+        except ImportError:
             pass
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
