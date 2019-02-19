@@ -84,7 +84,7 @@ def force_flush_queue(q):
 
 def verify_packet(packet):
     """ look for None values which may have caused the packet to fail encoding """
-    if isinstance(packet, list):
+    if not isinstance(packet, list):
         return False
     assert packet, "invalid packet: %s" % packet
     tree = ["'%s' packet" % packet[0]]
