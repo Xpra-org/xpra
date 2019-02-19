@@ -1052,7 +1052,7 @@ def parse_bool(k, v, auto=None):
         return True
     if v in FALSE_OPTIONS:
         return False
-    if v in ["auto", None]:
+    if v in ("auto", None):
         #keep default - which may be None!
         return auto
     try:
