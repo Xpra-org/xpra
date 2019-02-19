@@ -8,13 +8,12 @@
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
 # (also do not import anything that imports gtk)
-import subprocess
 import sys
 import os.path
 import atexit
 import signal
-import socket
 import traceback
+from subprocess import Popen, PIPE
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
@@ -171,12 +170,14 @@ def display_name_check(display_name):
     n = display_name[1:].split(".")[0]    #ie: ":0.0" -> "0"
     try:
         dno = int(n)
-        if dno>=0 and dno<10:
+        if 0<=dno<10:
             warn("WARNING: low display number: %s" % dno)
-            warn(" You are attempting to run the xpra server against a low X11 display number: '%s'." % display_name)
+            warn(" You are attempting to run the xpra server")
+            warn(" against a low X11 display number: '%s'." % (display_name,))
             warn(" This is generally not what you want.")
-            warn(" You should probably use a higher display number just to avoid any confusion (and also this warning message).")
-    except:
+            warn(" You should probably use a higher display number")
+            warn(" just to avoid any confusion and this warning message.")
+    except IOError:
         pass
 
 def close_gtk_display():
@@ -310,7 +311,7 @@ def guess_xpra_display(socket_dir, socket_dirs):
     dotxpra = DotXpra(socket_dir, socket_dirs)
     results = dotxpra.sockets()
     live = [display for state, display in results if state==DotXpra.LIVE]
-    if len(live)==0:
+    if not live:
         raise InitException("no existing xpra servers found")
     if len(live)>1:
         raise InitException("too many existing xpra servers found, cannot guess which one to use")
@@ -325,8 +326,8 @@ def start_dbus(dbus_launch):
             assert POSIX
             os.setsid()
             close_fds()
-        proc = subprocess.Popen(dbus_launch, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, preexec_fn=preexec)
-        out,_ = proc.communicate()
+        proc = Popen(dbus_launch, stdin=PIPE, stdout=PIPE, shell=True, preexec_fn=preexec)
+        out = proc.communicate()[0]
         assert proc.poll()==0, "exit code is %s" % proc.poll()
         #parse and add to global env:
         dbus_env = {}
@@ -560,7 +561,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     try:
         cwd = os.getcwd()
-    except:
+    except OSError:
         cwd = os.path.expanduser("~")
         warn("current working directory does not exist, using '%s'\n" % cwd)
     validate_encryption(opts)
@@ -591,7 +592,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         opts.pulseaudio = False
 
     #get the display name:
-    if shadowing and len(extra_args)==0:
+    if shadowing and not extra_args:
         if WIN32 or OSX:
             #just a virtual name for the only display available:
             display_name = ":0"
@@ -599,7 +600,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             from xpra.scripts.main import guess_X11_display
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
             display_name = guess_X11_display(dotxpra, desktop_display)
-    elif upgrading and len(extra_args)==0:
+    elif upgrading and not extra_args:
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
         if len(extra_args) > 1:
@@ -638,7 +639,13 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, write_pidfile, find_log_dir, create_input_devices
+    from xpra.server.server_util import (
+        xpra_runner_shell_script,
+        write_runner_shell_scripts,
+        write_pidfile,
+        find_log_dir,
+        create_input_devices,
+        )
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
     uid = int(opts.uid)
@@ -769,7 +776,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 stderr.write("Entering daemon mode; "
                          + "any further errors will be reported to:\n"
                          + ("  %s\n" % log_filename0))
-            except:
+            except IOError:
                 #we tried our best, logging another error won't help
                 pass
 
@@ -794,7 +801,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     else:
         try:
             del os.environ["DISPLAY"]
-        except:
+        except KeyError:
             pass
     os.environ.update(protected_env)
     log("env=%s", os.environ)
@@ -853,7 +860,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             del e
         try:
             os.close(displayfd)
-        except:
+        except IOError:
             pass
 
     kill_display = None
@@ -987,7 +994,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         for mod in modules:
             try:
                 __import__("xpra.%s" % mod, {}, {}, [])
-            except ImportError as e:
+            except ImportError:
                 if mod not in impwarned:
                     impwarned.append(mod)
                     log = get_util_logger()
