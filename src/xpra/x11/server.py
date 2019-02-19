@@ -158,8 +158,7 @@ class DesktopManager(gtk.Widget):
     def _elect_me(self, model):
         if self.visible(model):
             return (1, self)
-        else:
-            return (-1, self)
+        return (-1, self)
 
     def take_window(self, model, window):
         #log.info("take_window(%s, %s)", model, window)
@@ -350,7 +349,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 "configure.delta"        : True,
                 "signals"                : WINDOW_SIGNALS,
                 "dragndrop"              : True,
-                "states"                 : ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"],
+                "states"                 : [
+                    "iconified", "fullscreen",
+                    "above", "below",
+                    "sticky", "iconified", "maximized",
+                    ],
                 })
         return capabilities
 
@@ -396,7 +399,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #only run the default code if there are no clients,
         #when we have clients, this should have been done already
         #in the code that synchonizes the screen resolution
-        if len(self._server_sources)==0:
+        if not self._server_sources:
             super(XpraServer, self).set_screen_geometry_attributes(w, h)
 
     def set_desktops(self, names):
@@ -572,7 +575,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _window_resized_signaled(self, window, *args):
         x, y, nw, nh = window.get_property("geometry")[:4]
         geom = self._desktop_manager.window_geometry(window)
-        geomlog("XpraServer._window_resized_signaled(%s,%s) geometry=%s, desktop manager geometry=%s", window, args, (x, y, nw, nh), geom)
+        geomlog("XpraServer._window_resized_signaled(%s,%s) geometry=%s, desktop manager geometry=%s",
+                window, args, (x, y, nw, nh), geom)
         if geom==[x, y, nw, nh]:
             geomlog("XpraServer._window_resized_signaled: unchanged")
             #unchanged
@@ -591,7 +595,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.snc_timer = glib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def size_notify_clients(self, window, lcce=-1):
-        geomlog("size_notify_clients(%s, %s) last_client_configure_event=%s", window, lcce, self.last_client_configure_event)
+        geomlog("size_notify_clients(%s, %s) last_client_configure_event=%s",
+                window, lcce, self.last_client_configure_event)
         self.snc_timer = 0
         wid = self._window_to_id.get(window)
         if not wid:
@@ -782,7 +787,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _window_grab(self, window, event):
         grab_id = self._window_to_id.get(window, -1)
-        grablog("window_grab(%s, %s) has_grab=%s, has focus=%s, grab window=%s", window, event, self._has_grab, self._has_focus, grab_id)
+        grablog("window_grab(%s, %s) has_grab=%s, has focus=%s, grab window=%s",
+                window, event, self._has_grab, self._has_focus, grab_id)
         if grab_id<0 or self._has_grab==grab_id:
             return
         self._has_grab = grab_id
@@ -791,7 +797,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _window_ungrab(self, window, event):
         grab_id = self._window_to_id.get(window, -1)
-        grablog("window_ungrab(%s, %s) has_grab=%s, has focus=%s, grab window=%s", window, event, self._has_grab, self._has_focus, grab_id)
+        grablog("window_ungrab(%s, %s) has_grab=%s, has focus=%s, grab window=%s",
+                window, event, self._has_grab, self._has_focus, grab_id)
         if not self._has_grab:
             return
         self._has_grab = 0
@@ -839,7 +846,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     window.set_property("iconic", iconified)
                     changes.append("iconified")
         #handle wm_state virtual booleans:
-        for k in ("maximized", "above", "below", "fullscreen", "sticky", "shaded", "skip-pager", "skip-taskbar", "focused"):
+        for k in (
+            "maximized", "above",
+            "below", "fullscreen",
+            "sticky", "shaded",
+            "skip-pager", "skip-taskbar", "focused",
+            ):
             if k in new_window_state:
                 #metadatalog.info("window.get_property=%s", window.get_property)
                 new_state = bool(new_window_state.get(k, False))
@@ -1010,7 +1022,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         def damage():
             try:
                 del self.configure_damage_timers[wid]
-            except:
+            except KeyError:
                 pass
             window = self._lookup_window(wid)
             if window and window.is_managed():
@@ -1022,7 +1034,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if timer:
             try:
                 del self.configure_damage_timers[wid]
-            except:
+            except KeyError:
                 pass
             self.source_remove(timer)
 
@@ -1151,7 +1163,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         image.free()
 
     def repaint_root_overlay(self):
-        log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims", self.root_overlay, self.repaint_root_overlay_timer, self.sync_xvfb)
+        log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims",
+            self.root_overlay, self.repaint_root_overlay_timer, self.sync_xvfb)
         if not self.root_overlay or self.repaint_root_overlay_timer:
             return
         self.repaint_root_overlay_timer = self.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
@@ -1219,7 +1232,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 except:
                     pass        #not in focus history!
             order[(prio, wid)] = window
-        log("do_repaint_root_overlay() has_focus=%s, has_grab=%s, windows in order=%s", self._has_focus, self._has_grab, order)
+        log("do_repaint_root_overlay() has_focus=%s, has_grab=%s, windows in order=%s",
+            self._has_focus, self._has_grab, order)
         for k in sorted(order):
             window = order[k]
             x, y, w, h = window.get_property("geometry")[:4]
