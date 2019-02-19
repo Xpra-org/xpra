@@ -285,8 +285,12 @@ class WindowModel(BaseWindowModel):
         def set_if_unset(propname, value):
             #the property may not be initialized yet,
             #if that's the case then calling get_property throws an exception:
-            if self.get_property(propname) in (None, ""):
-                self._internal_set_property(propname, value)
+            try:
+                if self.get_property(propname) not in (None, ""):
+                    return
+            except TypeError:
+                pass
+            self._internal_set_property(propname, value)
         #"decorations" needs to be set before reading the X11 properties
         #because handle_wm_normal_hints_change reads it:
         set_if_unset("decorations", -1)
