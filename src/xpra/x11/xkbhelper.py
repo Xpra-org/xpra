@@ -122,7 +122,8 @@ def safe_setxkbmap(rules, model, layout, variant, options):
     try:
         X11Keyboard.setxkbmap(rules, model, layout, variant, options)
         return
-    except:
+    except Exception as e:
+        log("safe_setxkbmap%s", (rules, model, layout, variant, options), exc_info=True)
         log.warn("Warning: failed to set exact keymap,")
         log.warn(" rules=%s, model=%s, layout=%s, variant=%s, options=%s", rules, model, layout, variant, options)
     if options:
