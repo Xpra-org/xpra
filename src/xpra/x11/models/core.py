@@ -56,10 +56,12 @@ GRAB_CONSTANTS = {
                   NotifyWhileGrabbed    : "NotifyWhileGrabbed",
                  }
 DETAIL_CONSTANTS    = {}
-for x in ("NotifyAncestor", "NotifyVirtual", "NotifyInferior",
-          "NotifyNonlinear", "NotifyNonlinearVirtual", "NotifyPointer",
-          "NotifyPointerRoot", "NotifyDetailNone"):
-    DETAIL_CONSTANTS[constants[x]] = x
+for dconst in (
+    "NotifyAncestor", "NotifyVirtual", "NotifyInferior",
+    "NotifyNonlinear", "NotifyNonlinearVirtual", "NotifyPointer",
+    "NotifyPointerRoot", "NotifyDetailNone",
+    ):
+    DETAIL_CONSTANTS[constants[dconst]] = dconst
 grablog("pointer grab constants: %s", GRAB_CONSTANTS)
 grablog("detail constants: %s", DETAIL_CONSTANTS)
 
@@ -69,7 +71,8 @@ PROPERTIES_IGNORED = os.environ.get("XPRA_X11_PROPERTIES_IGNORED", "_NET_WM_OPAQ
 #make it easier to debug property changes, just add them here:
 #ie: {"WM_PROTOCOLS" : ["atom"]}
 X11_PROPERTIES_DEBUG = {}
-PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
+PROPERTIES_DEBUG = [prop_debug.strip()
+                    for prop_debug in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
 def sanestr(s):
@@ -179,13 +182,20 @@ class CoreX11WindowModel(WindowModelStub):
         }
 
     #things that we expose:
-    _property_names         = ["xid", "depth", "has-alpha", "client-machine", "pid", "title", "role", "command", "shape", "class-instance", "protocols"]
+    _property_names         = [
+        "xid", "depth", "has-alpha",
+        "client-machine", "pid",
+        "title", "role",
+        "command", "shape",
+        "class-instance", "protocols",
+        ]
     #exposed and changing (should be watched for notify signals):
     _dynamic_property_names = ["title", "command", "shape", "class-instance", "protocols"]
     #should not be exported to the clients:
     _internal_property_names = ["frame", "allowed-actions"]
     _initial_x11_properties = ["_NET_WM_PID", "WM_CLIENT_MACHINE",
-                               "WM_NAME", "_NET_WM_NAME",        #_NET_WM_NAME is redundant, as it calls the same handler as "WM_NAME"
+                               #_NET_WM_NAME is redundant, as it calls the same handler as "WM_NAME"
+                               "WM_NAME", "_NET_WM_NAME",
                                "WM_PROTOCOLS", "WM_CLASS", "WM_WINDOW_ROLE"]
     _DEFAULT_NET_WM_ALLOWED_ACTIONS = []
     _MODELTYPE = "Core"
@@ -205,6 +215,13 @@ class CoreX11WindowModel(WindowModelStub):
         self._setup_done = False
         self._kill_count = 0
         self._internal_set_property("client-window", client_window)
+
+
+    def __repr__(self):
+        try:
+            return "%s(%#x)" % (type(self).__name__, self.xid)
+        except AttributeError:
+            return repr(self)
 
 
     #########################################
@@ -284,7 +301,8 @@ class CoreX11WindowModel(WindowModelStub):
         if not self._managed:
             return
         self._managed = False
-        log("%s.do_unmanaged(%s) damage_forward_handle=%s, composite=%s", self._MODELTYPE, wm_exiting, self._damage_forward_handle, self._composite)
+        log("%s.do_unmanaged(%s) damage_forward_handle=%s, composite=%s",
+            self._MODELTYPE, wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.client_window, self)
         glib.idle_add(self.managed_disconnect)
         if self._composite:
@@ -401,8 +419,7 @@ class CoreX11WindowModel(WindowModelStub):
              "Bounding.extents" : bextents,
              "Clip.extents"     : cextents,
              }
-        for kind in SHAPE_KIND.keys():
-            kind_name = SHAPE_KIND[kind]
+        for kind, kind_name in SHAPE_KIND.items():
             rectangles = X11Window.XShapeGetRectangles(self.xid, kind)
             v[kind_name+".rectangles"] = rectangles
         shapelog("_read_shape()=%s", v)
@@ -585,11 +602,11 @@ class CoreX11WindowModel(WindowModelStub):
             log.info("_NET_CLOSE_WINDOW received by %s", self)
             self.request_close()
             return True
-        elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS":
+        if event.message_type=="_NET_REQUEST_FRAME_EXTENTS":
             framelog("_NET_REQUEST_FRAME_EXTENTS")
             self._handle_frame_changed()
             return True
-        elif event.message_type=="_NET_MOVERESIZE_WINDOW":
+        if event.message_type=="_NET_MOVERESIZE_WINDOW":
             #this is overriden in WindowModel, skipped everywhere else:
             geomlog("_NET_MOVERESIZE_WINDOW skipped on %s (data=%s)", self, event.data)
             return True
@@ -601,7 +618,8 @@ class CoreX11WindowModel(WindowModelStub):
             return
         #shouldn't the border width always be 0?
         geom = (event.x, event.y, event.width, event.height)
-        geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) client_window=%#x, new geometry=%s", event, self.xid, geom)
+        geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) client_window=%#x, new geometry=%s",
+                event, self.xid, geom)
         self._updateprop("geometry", geom)
 
 
@@ -614,7 +632,7 @@ class CoreX11WindowModel(WindowModelStub):
         #remove serial before comparing dicts:
         try:
             cur_shape["serial"]
-        except:
+        except KeyError:
             pass
         #read new xshape:
         with xswallow:

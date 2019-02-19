@@ -38,13 +38,6 @@ class WindowModelStub(AutoPropGObjectMixin, gobject.GObject):
         self._managed_handlers = []
 
 
-    def __repr__(self):
-        try:
-            return "%s(%#x)" % (type(self).__name__, self.xid)
-        except:
-            return repr(self)
-
-
     #########################################
     # Setup and teardown
     #########################################
