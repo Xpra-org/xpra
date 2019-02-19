@@ -9,8 +9,9 @@ from collections import OrderedDict
 
 from xpra.util import envbool
 from xpra.os_util import pollwait, which, WIN32, OSX, POSIX
-from unit.server_test_util import ServerTestUtil, log
+from xpra.exit_codes import EXIT_STR
 from xpra.net.net_util import get_free_tcp_port
+from unit.server_test_util import ServerTestUtil, log
 
 
 TEST_RFB = envbool("XPRA_TEST_RFB", not WIN32 and not OSX)
@@ -118,7 +119,8 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             cmd = ["info"]+connect_args
             client = self.run_xpra(cmd)
             r = pollwait(client, 20)
-            assert r==0, "info client failed and returned %s for server with args=%s" % (r, args)
+            assert r==0, "info client failed and returned %i: '%s' for server with args=%s" % \
+                (r, EXIT_STR.get(r, r), args)
 
             client_kwargs = {}
             if not (WIN32 or OSX):
