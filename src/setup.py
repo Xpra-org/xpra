@@ -508,7 +508,8 @@ def cython_version_check(min_version):
 def cython_add(extension, min_version=(0, 19)):
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
-    #python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
+    #python2.7 setup.py build -b build-2.7 install --no-compile \
+    #    --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
     assert cython_ENABLED, "cython compilation is disabled"
@@ -643,7 +644,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
     optimize = kw.pop("optimize", None)
     if optimize and not debug_ENABLED:
-        if type(optimize)==bool:
+        if isinstance(optimize, bool):
             optimize = int(optimize)*3
         add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
     ignored_flags = kw.pop("ignored_flags", [])
@@ -654,8 +655,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if not (is_Fedora() or is_Debian() or is_CentOS()):
         import shlex
         import sysconfig
-        for x in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
-            add_to_keywords(kw, 'extra_compile_args', x)
+        for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
+            add_to_keywords(kw, 'extra_compile_args', cflag)
 
     def add_tokens(s, extra="extra_link_args", extra_map={"-W" : "extra_compile_args"}):
         if not s:
@@ -1109,8 +1110,8 @@ if WIN32:
         def add_data_files(target_dir, files):
             if verbose_ENABLED:
                 print("add_data_files(%s, %s)" % (target_dir, files))
-            assert type(target_dir)==str
-            assert type(files) in (list, tuple)
+            assert isinstance(target_dir, str)
+            assert isinstance(files, (list, tuple))
             for f in files:
                 target_file = os.path.join(target_dir, os.path.basename(f))
                 data_files.append((f, target_file))
@@ -1121,21 +1122,21 @@ if WIN32:
         def add_dir(base, defs):
             if verbose_ENABLED:
                 print("add_dir(%s, %s)" % (base, defs))
-            if type(defs) in (list, tuple):
+            if isinstance(defs, (list, tuple)):
                 for sub in defs:
-                    if type(sub)==dict:
+                    if isinstance(sub, dict):
                         add_dir(base, sub)
                     else:
-                        assert type(sub)==str
+                        assert isinstance(sub, str)
                         filename = os.path.join(gnome_include_path, base, sub)
                         if os.path.exists(filename):
                             add_data_files(base, [filename])
                         else:
                             print("Warning: missing '%s'" % filename)
             else:
-                assert type(defs)==dict
+                assert isinstance(defs, dict)
                 for d, sub in defs.items():
-                    assert type(sub) in (dict, list, tuple)
+                    assert isinstance(sub, (dict, list, tuple))
                     #recurse down:
                     add_dir(os.path.join(base, d), sub)
 
@@ -1158,7 +1159,7 @@ if WIN32:
             dll_names = list(dll_names)
             dll_files = []
             import re
-            version_re = re.compile("-[0-9\.-]+$")
+            version_re = re.compile(r"-[0-9\.-]+$")
             dirs = os.environ.get("PATH").split(os.path.pathsep)
             if os.path.exists(gnome_include_path):
                 dirs.insert(0, gnome_include_path)
@@ -1172,7 +1173,8 @@ if WIN32:
                     x = x.lower()
                     if os.path.isdir(dll_path) or not x.startswith("lib") or not x.endswith(".dll"):
                         continue
-                    nameversion = x[3:-4]                       #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
+                    #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
+                    nameversion = x[3:-4]
                     if verbose_ENABLED:
                         print("checking %s: %s" % (x, nameversion))
                     m = version_re.search(nameversion)          #look for version part of filename
@@ -1451,7 +1453,7 @@ if WIN32:
         if "clean" not in sys.argv and html5_ENABLED:
             install_html5(os.path.join(install, "www"), )
             for k,v in glob_recurse("build/www").items():
-                if (k!=""):
+                if k!="":
                     k = os.sep+k
                 add_data_files('www'+k, v)
 
