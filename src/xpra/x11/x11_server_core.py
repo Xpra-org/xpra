@@ -93,6 +93,9 @@ class X11ServerCore(GTKServerBase):
     def init(self, opts):
         self.do_init(opts)
         GTKServerBase.init(self, opts)
+        self.features_init()
+
+    def features_init(self):
         with xsync:
             self.x11_init()
         from xpra.server import server_features
