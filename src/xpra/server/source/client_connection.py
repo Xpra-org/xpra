@@ -484,7 +484,7 @@ class ClientConnection(ClientConnectionClass):
     ######################################################################
     # notifications:
     """ Utility functions for mixins (makes notifications optional) """
-    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None, user_callback=None):
+    def may_notify(self, nid, summary, body, actions=(), hints={}, expire_timeout=10*1000, icon_name=None, user_callback=None):
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notifications.common import parse_image_path

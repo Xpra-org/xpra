@@ -92,7 +92,8 @@ class AudioMixin(StubSourceMixin):
             return True
         machine_id = get_machine_id()
         uuid = get_user_uuid()
-        log("audio_loop_check(%s) machine_id=%s client machine_id=%s, uuid=%s, client uuid=%s", mode, machine_id, self.machine_id, uuid, self.uuid)
+        log("audio_loop_check(%s) machine_id=%s client machine_id=%s, uuid=%s, client uuid=%s",
+            mode, machine_id, self.machine_id, uuid, self.uuid)
         if self.machine_id:
             if self.machine_id!=machine_id:
                 #not the same machine, so OK
@@ -223,7 +224,12 @@ class AudioMixin(StubSourceMixin):
                         sink = "alsasink"
                     else:
                         sink = "autoaudiosink"
-                    cmd = ["gst-launch-1.0", "-q", "filesrc", "location=%s" % sample, "!", "decodebin", "!", "audioconvert", "!", sink]
+                    cmd = [
+                        "gst-launch-1.0", "-q",
+                        "filesrc", "location=%s" % sample,
+                        "!", "decodebin",
+                        "!", "audioconvert",
+                        "!", sink]
                     import subprocess
                     proc = subprocess.Popen(cmd, close_fds=True)
                     log("Popen(%s)=%s", cmd, proc)
@@ -246,14 +252,15 @@ class AudioMixin(StubSourceMixin):
                    })
         #self.update_av_sync_delay_total()
 
-    def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=[]):
+    def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=None):
         log("new_sound_buffer(%s, %s, %s, %s) info=%s",
                  sound_source, len(data or []), metadata, [len(x) for x in packet_metadata], sound_source.info)
         if self.sound_source!=sound_source or self.is_closed():
             log("sound buffer dropped: from old source or closed")
             return
         if sound_source.sequence<self.sound_source_sequence:
-            log("sound buffer dropped: old sequence number: %s (current is %s)", sound_source.sequence, self.sound_source_sequence)
+            log("sound buffer dropped: old sequence number: %s (current is %s)",
+                sound_source.sequence, self.sound_source_sequence)
             return
         if packet_metadata:
             if not self.sound_bundle_metadata:
@@ -268,7 +275,7 @@ class AudioMixin(StubSourceMixin):
         can_drop_packet = (sound_source.info or {}).get("buffer_count", 0)>10
         self.send_sound_data(sound_source, data, metadata, packet_metadata, can_drop_packet)
 
-    def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=(), can_drop_packet=False):
+    def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=None, can_drop_packet=False):
         packet_data = [sound_source.codec, Compressed(sound_source.codec, data), metadata]
         if packet_metadata:
             assert self.sound_bundle_metadata
@@ -386,7 +393,8 @@ class AudioMixin(StubSourceMixin):
             self.source_remove(sft)
 
     def sound_data(self, codec, data, metadata, packet_metadata=()):
-        log("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, packet_metadata, self.sound_sink)
+        log("sound_data(%s, %s, %s, %s) sound sink=%s",
+            codec, len(data or []), metadata, packet_metadata, self.sound_sink)
         if self.is_closed():
             return
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
@@ -403,7 +411,7 @@ class AudioMixin(StubSourceMixin):
                 from xpra.util import AdHocStruct
                 self.sound_sink = AdHocStruct()
                 self.sound_sink.codec = codec
-                def noop(*args):
+                def noop(*_args):
                     pass
                 self.sound_sink.add_data = noop
                 self.sound_sink.cleanup = noop

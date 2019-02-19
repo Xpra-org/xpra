@@ -9,8 +9,8 @@ import cairo
 from xpra.client.gtk_base.cairo_backing_base import CairoBackingBase
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB
 from xpra.os_util import memoryview_to_bytes
-
 from xpra.log import Logger
+
 log = Logger("paint", "cairo")
 
 
@@ -32,7 +32,8 @@ class CairoBacking(CairoBackingBase):
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
-        log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)", cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, options)
+        log("cairo._do_paint_rgb(%s, %s, %s bytes,%s,%s,%s,%s,%s,%s)",
+            cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, options)
         rgb_format = options.strget("rgb_format", "RGB")
 
         if rgb_format in ("ARGB", ):

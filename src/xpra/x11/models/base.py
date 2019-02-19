@@ -112,7 +112,8 @@ class BaseWindowModel(CoreX11WindowModel):
                        PARAM_READABLE),
         #from _NET_WM_FULLSCREEN_MONITORS
         "fullscreen-monitors": (gobject.TYPE_PYOBJECT,
-                         "List of 4 monitor indices indicating the top, bottom, left, and right edges of the window when the fullscreen state is enabled", "",
+                         "List of 4 monitor indices indicating the top, bottom, left, and right edges"+
+                         " of the window when the fullscreen state is enabled", "",
                          PARAM_READABLE),
         #from _NET_WM_STRUT_PARTIAL or _NET_WM_STRUT
         "strut": (gobject.TYPE_PYOBJECT,
@@ -457,11 +458,16 @@ class BaseWindowModel(CoreX11WindowModel):
             if v is None:
                 try:
                     del menu[k]
-                except:
+                except KeyError:
                     pass
             else:
                 menu[k] = v
-            enabled = all(menu.get(x) for x in ("application-id", "application-actions", "window-actions", "window-menu"))
+            enabled = all(menu.get(x) for x in (
+                "application-id",
+                "application-actions",
+                "window-actions",
+                "window-menu",
+                ))
             menu["enabled"] = enabled
             menulog("menu(%s)=%s", self, menu)
             self._internal_set_property("menu", menu)
@@ -691,9 +697,10 @@ class BaseWindowModel(CoreX11WindowModel):
                 elif mode==_NET_WM_STATE_TOGGLE:
                     v = not bool(current)
                 else:
-                    log.warn("invalid mode for _NET_WM_STATE: %s", mode)
+                    log.warn("Warning: invalid mode for _NET_WM_STATE: %s", mode)
                     return
-                log("process_client_message_event(%s) window %s=%s after %s (current state=%s)", event, prop, v, STATE_STRING.get(mode, mode), current)
+                log("process_client_message_event(%s) window %s=%s after %s (current state=%s)",
+                    event, prop, v, STATE_STRING.get(mode, mode), current)
                 if v!=current:
                     self.update_wm_state(prop, v)
             atom1 = get_pyatom(event.window, event.data[1])
@@ -732,7 +739,8 @@ class BaseWindowModel(CoreX11WindowModel):
             return True
         elif event.message_type=="WM_CHANGE_STATE":
             iconic = event.data[0]
-            log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%#x", ICONIC_STATE_STRING.get(iconic, iconic), event.serial, self.last_unmap_serial)
+            log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%#x",
+                ICONIC_STATE_STRING.get(iconic, iconic), event.serial, self.last_unmap_serial)
             if iconic in (IconicState, NormalState) and self.serial_after_last_unmap(event.serial) and not self.is_OR() and not self.is_tray():
                 self._updateprop("iconic", iconic==IconicState)
             return True
@@ -751,11 +759,13 @@ class BaseWindowModel(CoreX11WindowModel):
             #since we cannot access Wm from here..
             root = self.client_window.get_screen().get_root_window()
             ndesktops = prop_get(root, "_NET_NUMBER_OF_DESKTOPS", "u32", ignore_errors=True)
-            workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
+            workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s",
+                         workspacestr(workspace), ndesktops)
             if ndesktops>0 and (workspace in (WORKSPACE_UNSET, WORKSPACE_ALL) or (workspace>=0 and workspace<ndesktops)):
                 self.move_to_workspace(workspace)
             else:
-                workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s", workspacestr(workspace), ndesktops)
+                workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s",
+                                  workspacestr(workspace), ndesktops)
             return True
         elif event.message_type=="_NET_WM_FULLSCREEN_MONITORS":
             log("_NET_WM_FULLSCREEN_MONITORS: %s", event)
@@ -765,7 +775,7 @@ class BaseWindowModel(CoreX11WindowModel):
             N = 16      #FIXME: arbitrary limit
             if m1<0 or m1>=N or m2<0 or m2>=N or m3<0 or m3>=N or m4<0 or m4>=N:
                 log.warn("invalid list of _NET_WM_FULLSCREEN_MONITORS - ignored")
-                return
+                return False
             monitors = [m1, m2, m3, m4]
             log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
             prop_set(self.client_window, "_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)

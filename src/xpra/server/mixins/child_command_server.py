@@ -129,7 +129,7 @@ class ChildCommandServer(StubServerMixin):
 
     def get_full_child_command(self, cmd, use_wrapper=True):
         #make sure we have it as a list:
-        if type(cmd) not in (list, tuple):
+        if not isinstance(cmd, (list, tuple)):
             import shlex
             cmd = shlex.split(str(cmd))
         if not use_wrapper or not self.exec_wrapper:
@@ -142,7 +142,8 @@ class ChildCommandServer(StubServerMixin):
         self._exec_commands(self.start_commands, self.start_child_commands)
 
     def exec_after_connect_commands(self):
-        log("exec_after_connect_commands() start=%s, start_child=%s", self.start_after_connect, self.start_child_after_connect)
+        log("exec_after_connect_commands() start=%s, start_child=%s",
+            self.start_after_connect, self.start_child_after_connect)
         self._exec_commands(self.start_after_connect, self.start_child_after_connect)
 
     def exec_on_connect_commands(self):
@@ -168,13 +169,14 @@ class ChildCommandServer(StubServerMixin):
             self.idle_add(self.guess_session_name, procs)
 
     def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
-        log("start_command%s exec_wrapper=%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper)
-        import subprocess
+        log("start_command%s exec_wrapper=%s",
+            (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper)
+        from subprocess import Popen, PIPE
         env = self.get_child_env()
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
-            proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
+            proc = Popen(real_cmd, stdin=PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             log("pid(%s)=%s", real_cmd, proc.pid)
             if not ignore:

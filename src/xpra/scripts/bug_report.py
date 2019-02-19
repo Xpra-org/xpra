@@ -4,9 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import signal, sys
+import sys
+import signal
 
-def main(argv=[]):
+
+def main(argv=()):
     from xpra.platform import program_context
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
         from xpra.log import enable_color

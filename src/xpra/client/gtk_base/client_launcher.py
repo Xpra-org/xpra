@@ -30,15 +30,19 @@ gui_init()
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.quit import gtk_main_quit_really
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
-                                    OptionMenu, choose_file, set_use_tray_workaround, window_defaults, imagebutton, \
-                                    WIN_POS_CENTER, STATE_NORMAL, \
-                                    DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
-                                    FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
+from xpra.gtk_common.gtk_util import (
+    gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse,
+    OptionMenu, choose_file, set_use_tray_workaround, window_defaults, imagebutton,
+    WIN_POS_CENTER, STATE_NORMAL,
+    DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE,
+    FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN,
+    )
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
 from xpra.os_util import thread, WIN32, OSX, PYTHON3
-from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
-                                    MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
+from xpra.client.gtk_base.gtk_tray_menu_base import (
+    make_min_auto_menu, make_encodingsmenu,
+    MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS,
+    )
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (
     connect_to, make_client, configure_network, is_local,
@@ -47,6 +51,7 @@ from xpra.scripts.main import (
 from xpra.platform.paths import get_icon_dir
 from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
+
 log = Logger("launcher")
 
 #what we save in the config file:
@@ -122,7 +127,6 @@ def has_mdns():
 
 def noop(*args):
     log("noop%s", args)
-    pass
 
 
 class ApplicationWindow:
@@ -869,7 +873,7 @@ class ApplicationWindow:
             log.error("failed to start client", exc_info=True)
             self.handle_exception(e)
 
-    def do_start_XpraClient(self, conn, display_desc={}):
+    def do_start_XpraClient(self, conn, display_desc):
         log("do_start_XpraClient(%s, %s) client=%s", conn, display_desc, self.client)
         self.client.encoding = self.config.encoding
         self.client.display_desc = display_desc
@@ -959,9 +963,9 @@ class ApplicationWindow:
 
 
     def update_options_from_gui(self):
-        def pint(v):
+        def pint(vstr):
             try:
-                return int(v)
+                return int(vstr)
             except ValueError:
                 return 0
         self.config.host = self.host_entry.get_text()
@@ -986,7 +990,8 @@ class ApplicationWindow:
         elif mode_enc in ("ssl", "ssh", "ws", "wss", "ssh -> ssh"):
             self.config.mode = mode_enc
             self.config.encryption = ""
-        log("update_options_from_gui() %s", (self.config.username, self.config.password, self.config.mode, self.config.encryption, self.config.host, self.config.port, self.config.ssh_port, self.config.encoding))
+        log("update_options_from_gui() %s",
+            (self.config.username, self.config.password, self.config.mode, self.config.encryption, self.config.host, self.config.port, self.config.ssh_port, self.config.encoding))
 
     def update_gui_from_config(self):
         #mode:
@@ -1009,16 +1014,16 @@ class ApplicationWindow:
         self.username_entry.set_text(self.config.username)
         self.password_entry.set_text(self.config.password)
         self.host_entry.set_text(self.config.host)
-        def get_port(v, default_port=""):
+        def get_port(vstr, default_port=""):
             try:
-                iport = int(v)
-                if iport>0 and iport<2**16:
+                iport = int(vstr)
+                if 0<iport<2**16:
                     return str(iport)
-            except:
+            except ValueError:
                 pass
             return str(default_port)
         dport = DEFAULT_PORT
-        if mode=="ssh" or mode=="ssh -> ssh":
+        if mode in ("ssh", "ssh -> ssh"):
             #not required, so don't specify one
             dport = ""
         self.port_entry.set_text(get_port(self.config.port, dport))
@@ -1221,5 +1226,4 @@ def do_main(argv):
 
 
 if __name__ == "__main__":
-    v = main(sys.argv)
-    sys.exit(v)
+    sys.exit(main(sys.argv))

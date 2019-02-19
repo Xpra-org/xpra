@@ -589,7 +589,8 @@ class GLWindowBackingBase(WindowBackingBase):
             self.present_fbo(0, 0, bw, bh, flush)
 
     def present_fbo(self, x, y, w, h, flush=0):
-        log("present_fbo: adding %s to pending paint list (size=%i), flush=%s, paint_screen=%s", (x, y, w, h), len(self.pending_fbo_paint), flush, self.paint_screen)
+        log("present_fbo: adding %s to pending paint list (size=%i), flush=%s, paint_screen=%s",
+            (x, y, w, h), len(self.pending_fbo_paint), flush, self.paint_screen)
         self.pending_fbo_paint.append((x, y, w, h))
         if not self.paint_screen:
             return
@@ -856,7 +857,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
         glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
         glTexImage2D(target, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel_data)
-        log("GL cursor %ix%i uploaded %i bytes of %s pixel data using %s", width, height, len(pixels), rgb_format, upload)
+        log("GL cursor %ix%i uploaded %i bytes of %s pixel data using %s",
+            width, height, len(pixels), rgb_format, upload)
         glBindTexture(target, 0)
         glDisable(target)
 
@@ -1051,7 +1053,8 @@ class GLWindowBackingBase(WindowBackingBase):
         except Exception as e:
             message = "OpenGL %s paint failed: %s" % (encoding, e)
             log.error("Error painting planar update", exc_info=True)
-        log.error(" flush=%i, image=%s, coords=%s, size=%ix%i", flush, img, (x, y, enc_width, enc_height), width, height)
+        log.error(" flush=%i, image=%s, coords=%s, size=%ix%i",
+                  flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)
 
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):

@@ -43,7 +43,8 @@ class ClientWidgetBase(object):
             if USE_FAKE_BACKING:
                 from xpra.client.fake_window_backing import FakeBacking
                 bc = FakeBacking
-            log("make_new_backing%s effective backing class=%s, server alpha=%s, window alpha=%s", (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)
+            log("make_new_backing%s effective backing class=%s, server alpha=%s, window alpha=%s",
+                (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)
             backing = bc(self._id, self._window_alpha, self.pixel_depth)
             if self._client.mmap_enabled:
                 backing.enable_mmap(self._client.mmap)
@@ -56,8 +57,8 @@ class ClientWidgetBase(object):
     def set_cursor_data(self, cursor_data):
         pass
 
-    def new_backing(self, w, h):
-        raise Exception("override me!")
+    def new_backing(self, _w, _h):
+        raise NotImplementedError("override me!")
 
     def is_OR(self):
         return False

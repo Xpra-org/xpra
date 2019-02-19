@@ -97,13 +97,14 @@ class AppindicatorTray(TrayBase):
         if not self._has_icon:
             self.tray_widget.set_label(text or "Xpra")
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options={}):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
         #use a temporary file (yuk)
         from xpra.gtk_common.gtk_util import COLORSPACE_RGB, pixbuf_new_from_data
         import tempfile
         try:
-            _, filename = tempfile.mkstemp(suffix=".png")
-            log("set_icon_from_data%s using temporary file %s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
+            filename = tempfile.mkstemp(suffix=".png")[1]
+            log("set_icon_from_data%s using temporary file %s",
+                ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
             tray_icon = pixbuf_new_from_data(pixels, COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
             tray_icon.save(filename, "png")
             self.do_set_icon_from_file(filename)

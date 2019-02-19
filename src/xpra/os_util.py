@@ -262,13 +262,12 @@ def get_user_uuid():
     return u.hexdigest()
 
 
-monotonic_time = time.time
 try:
     from xpra.monotonic_time import _monotonic_time     #@UnresolvedImport
     assert _monotonic_time()>0
     monotonic_time = _monotonic_time
-except Exception as e:
-    pass
+except (ImportError, AssertionError):
+    monotonic_time = time.time
 
 
 def is_X11():
@@ -330,7 +329,7 @@ def get_linux_distribution():
         cmd = ["lsb_release", "-a"]
         try:
             p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, _ = p.communicate()
+            out = p.communicate()[0]
             assert p.returncode==0 and out
         except:
             try:
@@ -356,7 +355,7 @@ def getUbuntuVersion():
         ur = distro[1]  #ie: "12.04"
         try:
             return tuple(int(x) for x in ur.split("."))  #ie: (12, 4)
-        except:
+        except ValueError:
             pass
     return ()
 
@@ -433,10 +432,11 @@ def livefds():
     for fd in range(0, MAXFD):
         try:
             s = os.fstat(fd)
-            if s:
-                live.add(fd)
         except Exception:
             continue
+        else:
+            if s:
+                live.add(fd)
     return live
 
 def close_fds(excluding=(0, 1, 2)):

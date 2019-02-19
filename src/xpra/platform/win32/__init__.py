@@ -10,14 +10,16 @@ import errno
 import os.path
 import sys
 import ctypes
-
-from xpra.util import envbool
-from xpra.os_util import PYTHON2
 from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
+from xpra.util import envbool
+from xpra.os_util import PYTHON2
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import SetConsoleTitleA, GetConsoleScreenBufferInfo, MessageBoxA, GetLastError, kernel32
+from xpra.platform.win32.common import (
+    SetConsoleTitleA, GetConsoleScreenBufferInfo,
+    MessageBoxA, GetLastError, kernel32,
+    )
 
 
 GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", kernel32))

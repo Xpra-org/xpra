@@ -150,7 +150,8 @@ class AudioServer(StubServerMixin):
             soundlog.warn(" To avoid this warning, either fix the pulseaudio command line")
             soundlog.warn(" or use the 'pulseaudio=no' option.")
         def pulseaudio_ended(proc):
-            soundlog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s", proc, self.pulseaudio_proc, proc.returncode, self._closing)
+            soundlog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
+                     proc, self.pulseaudio_proc, proc.returncode, self._closing)
             if self.pulseaudio_proc is None or self._closing:
                 #cleared by cleanup already, ignore
                 return
@@ -264,7 +265,8 @@ class AudioServer(StubServerMixin):
                     assert val, "%s not found in sound properties" % bytestostr(k)
                     return ".".join(bytestostr(x) for x in val[:3])
                 bits = self.sound_properties.intget("python.bits", 32)
-                soundlog.info("GStreamer version %s for Python %s %i-bit", vinfo("gst.version"), vinfo("python.version"), bits)
+                soundlog.info("GStreamer version %s for Python %s %i-bit",
+                              vinfo("gst.version"), vinfo("python.version"), bits)
             except Exception as e:
                 soundlog("failed to query sound", exc_info=True)
                 soundlog.error("Error: failed to query sound subsystem:")
@@ -290,8 +292,10 @@ class AudioServer(StubServerMixin):
                 if POSIX and not OSX:
                     log.warn("Warning: failed to set pulseaudio tagging icon:")
                     log.warn(" %s", e)
-        soundlog("init_sound_options speaker: supported=%s, encoders=%s", self.supports_speaker, csv(self.speaker_codecs))
-        soundlog("init_sound_options microphone: supported=%s, decoders=%s", self.supports_microphone, csv(self.microphone_codecs))
+        soundlog("init_sound_options speaker: supported=%s, encoders=%s",
+                 self.supports_speaker, csv(self.speaker_codecs))
+        soundlog("init_sound_options microphone: supported=%s, decoders=%s",
+                 self.supports_microphone, csv(self.microphone_codecs))
         soundlog("init_sound_options sound properties=%s", self.sound_properties)
 
     def get_pulseaudio_info(self):

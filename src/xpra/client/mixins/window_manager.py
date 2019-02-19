@@ -8,11 +8,10 @@
 #pylint: disable-msg=E1101
 
 import os
-import time
 import signal
 import datetime
 from collections import deque
-from time import sleep
+from time import sleep, time
 
 from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
 from xpra.platform.gui import (
@@ -594,7 +593,7 @@ class WindowClient(StubClientMixin):
             #and we somehow also lose the settings that can keep us in the visible systray list
             #so don't bother
             return
-        windows = tuple(w for w in self._window_to_id.keys() if not w.is_tray())
+        windows = tuple(w for w in self._window_to_id if not w.is_tray())
         #get all the icons:
         icons = tuple(getattr(w, "_current_icon", None) for w in windows)
         missing = sum(1 for icon in icons if icon is None)
@@ -660,7 +659,7 @@ class WindowClient(StubClientMixin):
             composite = Image.alpha_composite(icon, xpra_corner)
             icon = composite
         if SAVE_WINDOW_ICONS:
-            filename = "client-window-%i-icon-%i.png" % (wid, int(time.time()))
+            filename = "client-window-%i-icon-%i.png" % (wid, int(time()))
             icon.save(filename, "png")
             iconlog("client window icon saved to %s", filename)
         return icon
@@ -736,7 +735,7 @@ class WindowClient(StubClientMixin):
 
     def should_force_grab(self, metadata):
         if not OR_FORCE_GRAB:
-            return
+            return False
         window_types = metadata.get("window-type", [])
         wm_class = metadata.strlistget("class-instance", [None, None], 2, 2)
         c = None
@@ -1067,7 +1066,7 @@ class WindowClient(StubClientMixin):
             del self._id_to_window[wid]
             del self._window_to_id[window]
             self.destroy_window(wid, window)
-        if len(self._id_to_window)==0:
+        if not self._id_to_window:
             log("last window gone, clearing key repeat")
         self.set_tray_icon()
 
@@ -1088,9 +1087,11 @@ class WindowClient(StubClientMixin):
                     log("last window, removing watcher %s", signalwatcher)
                     try:
                         del self._signalwatcher_to_wids[signalwatcher]
+                    except KeyError:
+                        log("destroy_window(%i, %s) error killing signal watcher %s",
+                            wid, window, signalwatcher, exc_info=True)
+                    else:
                         self.kill_signalwatcher(signalwatcher)
-                    except:
-                        log("destroy_window(%i, %s) error killing signal watcher %s", wid, window, signalwatcher, exc_info=True)
                     #now remove any pids that use this watcher:
                     for pid, w in tuple(self._pid_to_signalwatcher.items()):
                         if w==signalwatcher:
@@ -1106,7 +1107,7 @@ class WindowClient(StubClientMixin):
             try:
                 proc.stdin.write(b"exit\n")
                 proc.stdin.flush()
-            except:
+            except IOError:
                 log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
             def force_kill():
                 if proc.poll() is None:
@@ -1219,14 +1220,14 @@ class WindowClient(StubClientMixin):
     # window refresh:
     def suspend(self):
         log.info("system is suspending")
-        self._suspended_at = time.time()
+        self._suspended_at = time()
         #tell the server to slow down refresh for all the windows:
         self.control_refresh(-1, True, False)
 
     def resume(self):
         elapsed = 0
         if self._suspended_at>0:
-            elapsed = max(0, time.time()-self._suspended_at)
+            elapsed = max(0, time()-self._suspended_at)
             self._suspended_at = 0
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", delta)
@@ -1279,6 +1280,7 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # painting windows:
     def _process_draw(self, packet):
+        #self.timeout_add(1000*5, self._draw_queue.put, packet)
         self._draw_queue.put(packet)
 
     def _process_eos(self, packet):

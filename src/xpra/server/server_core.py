@@ -906,7 +906,7 @@ class ServerCore(object):
                 if (self.ssl_mode not in FALSE_OPTIONS) and peek_data[0] in ("\x16", 0x16):
                     if not self._ssl_wrap_socket:
                         netlog.warn("Warning: cannot upgrade to SSL socket")
-                        return None
+                        return
                     ssllog("ws socket receiving ssl, upgrading")
                     conn = ssl_wrap()
                 elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
@@ -1070,7 +1070,7 @@ class ServerCore(object):
         netlog("may_wrap_socket(..) peek_data=%s from %s", binascii.hexlify(peek_data), frominfo)
         if self.ssh_upgrade and peek_data[:4]==b"SSH-":
             conn = self.handle_ssh_connection(conn)
-            return conn!=None, conn, None
+            return conn is not None, conn, None
         elif self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
             sock = self._ssl_wrap_socket(sock)

@@ -115,11 +115,11 @@ def find_invpow(x, n):
             return mid
     return mid + 1
 
-def get_list_stats(in_values, show_percentile=[5, 8, 9], show_dev=False):
+def get_list_stats(in_values, show_percentile=(5, 8, 9), show_dev=False):
     #this may be backed by a deque/list whichi is used by other threads
     #so make a copy before use:
     values = tuple(in_values)
-    if len(values)==0:
+    if not values:
         return  {}
     #arithmetic mean
     avg = sum(values)/len(values)

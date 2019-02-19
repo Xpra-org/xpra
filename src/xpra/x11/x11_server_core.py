@@ -472,7 +472,7 @@ class X11ServerCore(GTKServerBase):
         if self.keys_pressed:
             keylog("clearing keys pressed: %s", self.keys_pressed)
             with xsync:
-                for keycode in self.keys_pressed.keys():
+                for keycode in self.keys_pressed:
                     X11Keyboard.xtest_fake_key(keycode, False)
             self.keys_pressed = {}
         #this will take care of any remaining ones we are not aware of:
@@ -781,7 +781,6 @@ class X11ServerCore(GTKServerBase):
         self.last_cursor_serial = event.cursor_serial
         for ss in self._server_sources.values():
             ss.send_cursor()
-        return False
 
 
     def _motion_signaled(self, model, event):

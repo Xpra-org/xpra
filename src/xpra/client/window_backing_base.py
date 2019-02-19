@@ -52,7 +52,7 @@ def load_video_decoders():
             specs = vh.get_decoder_specs(encoding)
             for colorspace, decoders in specs.items():
                 log("%-5s decoders for %7s: %s", encoding, colorspace, csv([d.get_type() for _,d in decoders]))
-                assert len(decoders)>0
+                assert decoders
                 #use the first one:
                 _, decoder_module = decoders[0]
                 VIDEO_DECODERS[encoding] = decoder_module
@@ -378,7 +378,7 @@ class WindowBackingBase(object):
                        dst_width, dst_height, dst_format_options, speed):
         global CSC_OPTIONS
         in_options = CSC_OPTIONS.get(src_format, {})
-        assert len(in_options)>0, "no csc options for '%s' input in %s" % (src_format, CSC_OPTIONS)
+        assert in_options, "no csc options for '%s' input in %s" % (src_format, CSC_OPTIONS)
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
             log("make_csc%s specs=%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), specs)

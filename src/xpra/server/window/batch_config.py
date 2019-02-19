@@ -42,7 +42,7 @@ class DamageBatchConfig(object):
     MAX_EVENTS = ival("MAX_EVENTS", min(50, NRECS), 10)         #maximum number of damage events
     MAX_PIXELS = ival("MAX_PIXELS", 1024*1024*MAX_EVENTS)       #small screen at MAX_EVENTS frames
     TIME_UNIT = ival("TIME_UNIT", 1, 1, 1000)                   #per second
-    MIN_DELAY = ival("MIN_DELAY", 5, 0, 1000)                   #lower than 5 milliseconds does not make sense, just don't batch
+    MIN_DELAY = ival("MIN_DELAY", 5, 0, 1000)                   #if lower than 5 milliseconds: just don't batch
     START_DELAY = ival("START_DELAY", 50, 1, 1000)
     MAX_DELAY = ival("MAX_DELAY", 500, 1, 15000)
     EXPIRE_DELAY = ival("EXPIRE_DELAY", 50, 10, 1000)
@@ -88,12 +88,12 @@ class DamageBatchConfig(object):
         if self.locked:
             info["delay"] = self.delay
         else:
-            if len(self.last_delays)>0:
-                batch_delays = [x for _,x in tuple(self.last_delays)]
-                info["delay"] = get_list_stats(batch_delays)
-            if len(self.last_actual_delays)>0:
-                batch_delays = [x for _,x in tuple(self.last_actual_delays)]
-                info["actual_delays"] = get_list_stats(batch_delays, show_percentile=[9])
+            ld = tuple(x for _,x in self.last_delays)
+            if ld:
+                info["delay"] = get_list_stats(ld)
+            lad = tuple(x for _,x in self.last_actual_delays)
+            if lad:
+                info["actual_delays"] = get_list_stats(lad, show_percentile=(9,))
             for name, details, factor, weight in self.factors:
                 fdetails = details.copy()
                 fdetails[""] = int(100.0*factor), int(100.0*weight)

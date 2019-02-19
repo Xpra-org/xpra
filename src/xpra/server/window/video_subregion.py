@@ -48,7 +48,8 @@ def scoreinout(ww, wh, region, incount, outcount):
     #if the region has at least 35% of updates, boost it with window ratio
     #(capped at 6, and smoothed with sqrt):
     score += max(0, inregion-0.35) * (math.sqrt(min(6, ratio))-1.0) * RATIO_WEIGHT
-    sslog("scoreinout(%i, %i, %s, %i, %i) inregion=%i%%, inwindow=%i%%, ratio=%.1f, score=%i", ww, wh, region, incount, outcount, 100*inregion, 100*inwindow, ratio, score)
+    sslog("scoreinout(%i, %i, %s, %i, %i) inregion=%i%%, inwindow=%i%%, ratio=%.1f, score=%i",
+          ww, wh, region, incount, outcount, 100*inregion, 100*inwindow, ratio, score)
     return max(0, int(score))
 
 
@@ -182,7 +183,8 @@ class VideoSubregion(object):
     def remove_refresh_region(self, region):
         remove_rectangle(self.refresh_regions, region)
         remove_rectangle(self.nonvideo_regions, region)
-        refreshlog("remove_refresh_region(%s) updated refresh regions=%s, nonvideo regions=%s", region, self.refresh_regions, self.nonvideo_regions)
+        refreshlog("remove_refresh_region(%s) updated refresh regions=%s, nonvideo regions=%s",
+                   region, self.refresh_regions, self.nonvideo_regions)
 
 
     def add_video_refresh(self, region):
@@ -308,11 +310,14 @@ class VideoSubregion(object):
                 self.fps = int(incount/(self.rectangle.width*self.rectangle.height) / elapsed)
             return
         sslog("%s.identify_video_subregion(..)", self)
-        sslog("identify_video_subregion(%s, %s, %s, %s)", ww, wh, damage_events_count, last_damage_events, starting_at, children)
+        sslog("identify_video_subregion(%s, %s, %s, %s)",
+              ww, wh, damage_events_count, last_damage_events, starting_at, children)
 
         children_rects = ()
         if children:
-            children_rects = tuple(rectangle(x, y, w, h) for _xid, x, y, w, h, _border, _depth in children if w>=MIN_W and h>=MIN_H)
+            children_rects = tuple(rectangle(x, y, w, h)
+                                   for _xid, x, y, w, h, _border, _depth in children
+                                   if w>=MIN_W and h>=MIN_H)
 
         if damage_events_count < self.set_at:
             #stats got reset
@@ -321,11 +326,13 @@ class VideoSubregion(object):
         rect = self.rectangle
         if rect and (rect.width>ww or rect.height>wh):
             #region is now bigger than the window!
-            return self.novideoregion("window is now smaller than current region")
+            self.novideoregion("window is now smaller than current region")
+            return
         #arbitrary minimum size for regions we will look at:
         #(we don't want video regions smaller than this - too much effort for little gain)
         if ww<MIN_W or wh<MIN_H:
-            return self.novideoregion("window is too small: %sx%s", MIN_W, MIN_H)
+            self.novideoregion("window is too small: %sx%s", MIN_W, MIN_H)
+            return
 
         def update_markers():
             self.counter = damage_events_count
@@ -340,8 +347,10 @@ class VideoSubregion(object):
             slow_region_timeout = 2 + math.log(2+event_count, 1.5)
             if rect and elapsed>=slow_region_timeout:
                 update_markers()
-                return self.novideoregion("too much time has passed (%is for %i total events)", elapsed, event_count)
-            sslog("identify video: waiting for more damage events (%i) counters: %i / %i", event_count, self.counter, damage_events_count)
+                self.novideoregion("too much time has passed (%is for %i total events)", elapsed, event_count)
+                return
+            sslog("identify video: waiting for more damage events (%i) counters: %i / %i",
+                  event_count, self.counter, damage_events_count)
             return
 
         from_time = max(starting_at, monotonic_time()-MAX_TIME, self.min_time)
@@ -398,7 +407,8 @@ class VideoSubregion(object):
                 rects = new_rects
             not_damaged_pixels = sum((r.width*r.height) for r in rects)
             rect_pixels = rect.width*rect.height
-            #sslog("damaged_ratio: not damaged pixels(%s)=%i, rect pixels(%s)=%i", rects, not_damaged_pixels, rect, rect_pixels)
+            #sslog("damaged_ratio: not damaged pixels(%s)=%i, rect pixels(%s)=%i",
+            #     rects, not_damaged_pixels, rect, rect_pixels)
             return max(0, min(1, 1.0-float(not_damaged_pixels)/float(rect_pixels)))
 
         scores = {None : 0}

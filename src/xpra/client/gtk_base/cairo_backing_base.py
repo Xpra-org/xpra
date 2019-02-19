@@ -22,8 +22,9 @@ glib            = import_glib()
 
 
 FORMATS = {-1   : "INVALID"}
-for x in (f for f in dir(cairo) if f.startswith("FORMAT_")):
-    FORMATS[getattr(cairo, x)] = x.replace("FORMAT_", "")
+for attr in dir(cairo):
+    if attr.startswith("FORMAT_"):
+        FORMATS[getattr(cairo, attr)] = attr.replace("FORMAT_", "")
 
 
 """
@@ -91,14 +92,16 @@ class CairoBackingBase(WindowBackingBase):
 
     def cairo_paint_surface(self, img_surface, x, y, options={}):
         w, h = img_surface.get_width(), img_surface.get_height()
-        log("source image surface: %s", (img_surface.get_format(), w, h, img_surface.get_stride(), img_surface.get_content(), ))
+        log("source image surface: %s",
+            (img_surface.get_format(), w, h, img_surface.get_stride(), img_surface.get_content(), ))
         def set_source_surface(gc, surface, sx, sy):
             gc.set_source_surface(surface, sx, sy)
         self.cairo_paint_from_source(set_source_surface, img_surface, x, y, w, h, options)
 
     def cairo_paint_from_source(self, set_source_fn, source, x, y, w, h, options):
         """ must be called from UI thread """
-        log("cairo_paint_surface(%s, %s, %s, %s, %s, %s, %s) backing=%s, paint box line width=%i", set_source_fn, source, x, y, w, h, options, self._backing, self.paint_box_line_width)
+        log("cairo_paint_surface(%s, %s, %s, %s, %s, %s, %s) backing=%s, paint box line width=%i",
+            set_source_fn, source, x, y, w, h, options, self._backing, self.paint_box_line_width)
         gc = gdk_cairo_context(cairo.Context(self._backing))
         if self.paint_box_line_width:
             gc.save()
@@ -155,7 +158,8 @@ class CairoBackingBase(WindowBackingBase):
 
 
     def nasty_rgb_via_png_paint(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format):
-        log.warn("nasty_rgb_via_png_paint%s", (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
+        log.warn("nasty_rgb_via_png_paint%s",
+                 (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
         #PIL fallback
         from PIL import Image
         if has_alpha:
@@ -186,9 +190,10 @@ class CairoBackingBase(WindowBackingBase):
 
 
     def cairo_draw(self, context):
-        log("cairo_draw: size=%s, render-size=%s, offsets=%s, pointer_overlay=%s", self.size, self.render_size, self.offsets, self.pointer_overlay)
+        log("cairo_draw: size=%s, render-size=%s, offsets=%s, pointer_overlay=%s",
+            self.size, self.render_size, self.offsets, self.pointer_overlay)
         if self._backing is None:
-            return False
+            return
         #try:
         #    log("clip rectangles=%s", context.copy_clip_rectangle_list())
         #except:

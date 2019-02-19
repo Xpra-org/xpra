@@ -7,8 +7,11 @@
 import cairo
 
 from xpra.os_util import monotonic_time, memoryview_to_bytes
-from xpra.codecs.argb.argb import unpremultiply_argb
-from xpra.gtk_common.gtk_util import pixbuf_new_from_data, COLORSPACE_RGB, cairo_set_source_pixbuf
+from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
+from xpra.gtk_common.gtk_util import (
+    pixbuf_new_from_data, cairo_set_source_pixbuf,
+    COLORSPACE_RGB,
+    )
 from xpra.log import Logger
 
 log = Logger("paint", "mouse")
@@ -35,7 +38,8 @@ def cairo_paint_pointer_overlay(context, cursor_data, px, py, start_time):
     x = px-xhot
     y = py-yhot
     alpha = max(0, (5.0-elapsed)/5.0)
-    log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s", (context, x, y, start_time), alpha)
+    log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s",
+        (context, x, y, start_time), alpha)
     context.translate(x, y)
     context.rectangle(0, 0, cw, ch)
     argb = unpremultiply_argb(pixels)

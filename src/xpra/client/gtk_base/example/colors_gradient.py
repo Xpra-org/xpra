@@ -57,7 +57,7 @@ class ColorGradientWindow(gtk.Window):
         bh = h//blocks
         M = 2**16-1
         mask = 0
-        for i in range(16-self.bpc):
+        for _ in range(16-self.bpc):
             mask = mask*2+1
         mask = 0xffff ^ mask
         def normv(v):

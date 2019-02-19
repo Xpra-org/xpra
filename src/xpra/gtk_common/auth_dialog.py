@@ -7,7 +7,10 @@
 import os.path
 import sys
 
-from xpra.gtk_common.gtk_util import add_close_accel, pixbuf_new_from_file, gtk_main, image_new_from_stock, ICON_SIZE_BUTTON
+from xpra.gtk_common.gtk_util import (
+    add_close_accel, pixbuf_new_from_file, gtk_main, image_new_from_stock,
+    ICON_SIZE_BUTTON,
+    )
 from xpra.platform.paths import get_icon_dir
 from xpra.gtk_common.gobject_compat import import_gtk, import_pango, import_glib
 from xpra.log import Logger

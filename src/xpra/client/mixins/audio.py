@@ -54,7 +54,7 @@ class AudioClient(StubClientMixin):
         self.server_ogg_latency_fix = False
         self.queue_used_sent = None
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts, _extra_args=()):
         self.av_sync = opts.av_sync
         self.sound_properties = typedict()
         self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
@@ -88,7 +88,8 @@ class AudioClient(StubClientMixin):
                         assert val, "%s not found in sound properties" % k
                         return ".".join(val[:3])
                     bits = self.sound_properties.intget("python.bits", 32)
-                    log.info("GStreamer version %s for Python %s %s-bit", vinfo("gst.version"), vinfo("python.version"), bits)
+                    log.info("GStreamer version %s for Python %s %s-bit",
+                             vinfo("gst.version"), vinfo("python.version"), bits)
                 except Exception as e:
                     log("failed to query sound", exc_info=True)
                     log.error("Error: failed to query sound subsystem:")
@@ -107,7 +108,8 @@ class AudioClient(StubClientMixin):
         self.microphone_enabled = self.microphone_allowed and opts.microphone.lower()=="on"
         self.av_sync = opts.av_sync
         log("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
-        log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
+        log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s",
+            decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
         log("av-sync=%s", self.av_sync)
         if POSIX and not OSX:
             try:
@@ -241,7 +243,7 @@ class AudioClient(StubClientMixin):
             log.warn(" %s", x)
         return False
 
-    def no_matching_codec_error(self, forwarding="speaker", server_codecs=[], client_codecs=[]):
+    def no_matching_codec_error(self, forwarding="speaker", server_codecs=(), client_codecs=()):
         summary = "Failed to start %s forwarding" % forwarding
         body = "No matching codecs between client and server"
         self.may_notify_audio(summary, body)
@@ -281,7 +283,7 @@ class AudioClient(StubClientMixin):
         #find the matching codecs:
         matching_codecs = self.get_matching_codecs(self.microphone_codecs, self.server_sound_decoders)
         log("start_sound_source(%s) matching codecs: %s", device, csv(matching_codecs))
-        if len(matching_codecs)==0:
+        if not matching_codecs:
             self.no_matching_codec_error("microphone", self.server_sound_decoders, self.microphone_codecs)
             return False
         try:
@@ -341,7 +343,7 @@ class AudioClient(StubClientMixin):
                 log("start_receiving_sound: we already have a sound sink")
                 enabled = True
                 return
-            elif not self.server_sound_send:
+            if not self.server_sound_send:
                 log.error("Error receiving sound: support not enabled on the server")
                 return
             if not self.audio_loop_check("speaker"):
@@ -349,7 +351,7 @@ class AudioClient(StubClientMixin):
             #choose a codec:
             matching_codecs = self.get_matching_codecs(self.speaker_codecs, self.server_sound_encoders)
             log("start_receiving_sound() matching codecs: %s", csv(matching_codecs))
-            if len(matching_codecs)==0:
+            if not matching_codecs:
                 self.no_matching_codec_error("speaker", self.server_sound_encoders, self.speaker_codecs)
                 return
             codec = matching_codecs[0]
@@ -463,8 +465,8 @@ class AudioClient(StubClientMixin):
             self.sound_sink_error(self.sound_sink, e)
             return False
 
-    def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=[]):
-        log("new_sound_buffer(%s, %s, %s, %s)", sound_source, len(data or []), metadata, packet_metadata)
+    def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=()):
+        log("new_sound_buffer(%s, %s, %s, %s)", sound_source, len(data or ()), metadata, packet_metadata)
         if not self.sound_source:
             return
         self.sound_out_bytecount += len(data)
@@ -503,7 +505,7 @@ class AudioClient(StubClientMixin):
             self.sound_in_bytecount += len(data)
         #verify sequence number if present:
         seq = metadata.intget("sequence", -1)
-        if self.min_sound_sequence>0 and seq>=0 and seq<self.min_sound_sequence:
+        if self.min_sound_sequence>0 and 0<=seq<self.min_sound_sequence:
             log("ignoring sound data with old sequence number %s (now on %s)", seq, self.min_sound_sequence)
             return
 
@@ -538,7 +540,7 @@ class AudioClient(StubClientMixin):
             log.error(" stream tried to switch from %s to %s", ss.codec, codec)
             self.stop_receiving_sound()
             return
-        elif ss.get_state()=="stopped":
+        if ss.get_state()=="stopped":
             log("sound data received, sound sink is stopped - telling server to stop")
             self.stop_receiving_sound()
             return
@@ -552,7 +554,7 @@ class AudioClient(StubClientMixin):
                     ss.add_data(x)
                 packet_metadata = ()
         #(some packets (ie: sos, eos) only contain metadata)
-        if len(data)>0 or packet_metadata:
+        if data or packet_metadata:
             ss.add_data(data, metadata, packet_metadata)
         if self.av_sync and self.server_av_sync:
             info = ss.get_info()
@@ -560,9 +562,11 @@ class AudioClient(StubClientMixin):
             if queue_used is None:
                 return
             delta = (self.queue_used_sent or 0)-queue_used
-            #avsynclog("server sound sync: queue info=%s, last sent=%s, delta=%s", dict((k,v) for (k,v) in info.items() if k.startswith("queue")), self.queue_used_sent, delta)
+            #avsynclog("server sound sync: queue info=%s, last sent=%s, delta=%s",
+            #    dict((k,v) for (k,v) in info.items() if k.startswith("queue")), self.queue_used_sent, delta)
             if self.queue_used_sent is None or abs(delta)>=80:
-                avsynclog("server sound sync: sending updated queue.used=%i (was %s)", queue_used, (self.queue_used_sent or "unset"))
+                avsynclog("server sound sync: sending updated queue.used=%i (was %s)",
+                          queue_used, (self.queue_used_sent or "unset"))
                 self.queue_used_sent = queue_used
                 v = queue_used + self.av_sync_delta
                 if self.av_sync_delta:

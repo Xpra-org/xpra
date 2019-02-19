@@ -211,7 +211,7 @@ class ClientWindowBase(ClientWidgetBase):
                         if PYTHON2:
                             value = value.decode("utf-8")
                         return value
-                    title = re.sub("@[\w\-]*@", metadata_replace, title)
+                    title = re.sub(r"@[\w\-]*@", metadata_replace, title)
                 if PYTHON2:
                     utf8_title = title.encode("utf-8")
                 else:
@@ -450,7 +450,8 @@ class ClientWindowBase(ClientWidgetBase):
             #not honouring "base" + "inc", but honouring just "min" instead:
             maxw = max(minw, maxw)
             maxh = max(minh, maxh)
-            geomlog("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s", max_window_size, hints, rw, rh, maxw, maxh)
+            geomlog("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s",
+                    max_window_size, hints, rw, rh, maxw, maxh)
             #ensure we don't have duplicates with bytes / strings,
             #and that keys are always "bytes":
             #(in practice this code should never fire, just here as a reminder)

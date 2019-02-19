@@ -8,9 +8,6 @@ import os.path
 import sys
 import time
 
-from xpra.platform.gui import init as gui_init
-gui_init()
-
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, is_gtk3
 from xpra.gtk_common.gtk_util import (
     window_defaults, gtk_main, add_close_accel, scaled_image,
@@ -175,14 +172,22 @@ class BugReport(object):
                 #take_screenshot() returns: w, h, "png", rowstride, data
                 return take_screenshot_fn()[4]
         self.toggles = (
-                   ("system",       "txt",  "System",           get_sys_info,   "Xpra version, platform and host information"),
-                   ("network",      "txt",  "Network",          get_net_info,   "Compression, packet encoding and encryption"),
-                   ("encoding",     "txt",  "Encodings",        codec_versions, "Picture encodings supported"),
-                   ("opengl",       "txt",  "OpenGL",           get_gl_info,    "OpenGL driver and features"),
-                   ("sound",        "txt",  "Sound",            get_sound_info, "Sound codecs and GStreamer version information"),
-                   ("keyboard",     "txt",  "Keyboard Mapping", get_gtk_keymap, "Keyboard layout and key mapping"),
-                   ("xpra-info",    "txt",  "Server Info",      self.get_server_info, "Full server information from 'xpra info'"),
-                   ("screenshot",   "png",  "Screenshot",       get_screenshot, ""),
+                   ("system",       "txt",  "System",           get_sys_info,
+                    "Xpra version, platform and host information"),
+                   ("network",      "txt",  "Network",          get_net_info,
+                    "Compression, packet encoding and encryption"),
+                   ("encoding",     "txt",  "Encodings",        codec_versions,
+                    "Picture encodings supported"),
+                   ("opengl",       "txt",  "OpenGL",           get_gl_info,
+                    "OpenGL driver and features"),
+                   ("sound",        "txt",  "Sound",            get_sound_info,
+                    "Sound codecs and GStreamer version information"),
+                   ("keyboard",     "txt",  "Keyboard Mapping", get_gtk_keymap,
+                    "Keyboard layout and key mapping"),
+                   ("xpra-info",    "txt",  "Server Info",      self.get_server_info,
+                    "Full server information from 'xpra info'"),
+                   ("screenshot",   "png",  "Screenshot",       get_screenshot,
+                    ""),
                    )
         for name, _, title, value_cb, tooltip in self.toggles:
             cb = gtk.CheckButton(title+[" (not available)", ""][bool(value_cb)])
@@ -267,7 +272,7 @@ class BugReport(object):
         data = []
         tb = self.description.get_buffer()
         buf = tb.get_text(*tb.get_bounds(), include_hidden_chars=False)
-        if len(buf):
+        if buf:
             data.append(("Description", "", "txt", buf))
         for name, dtype, title, value_cb, tooltip in self.toggles:
             if not bool(value_cb):
@@ -279,7 +284,7 @@ class BugReport(object):
             log("%s is enabled (%s)", name, tooltip)
             #OK, the checkbox is selected, get the data
             value = value_cb
-            if type(value_cb)!=dict:
+            if not isinstance(value_cb, dict):
                 try:
                     value = value_cb()
                 except TypeError:
@@ -292,9 +297,9 @@ class BugReport(object):
                     dtype = "txt"
             if value is None:
                 value = "not available"
-            elif type(value)==dict:
+            elif isinstance(value, dict):
                 s = os.linesep.join("%s : %s" % (k.ljust(32), nonl(str(v))) for k,v in sorted(value.items()))
-            elif type(value) in (list, tuple):
+            elif isinstance(value, (list, tuple)):
                 s = os.linesep.join(str(x) for x in value)
             else:
                 s = str(value)
@@ -305,7 +310,8 @@ class BugReport(object):
 
     def copy_clicked(self, *_args):
         data = self.get_text_data()
-        text = os.linesep.join("%s: %s%s%s%s" % (title, tooltip, os.linesep, v, os.linesep) for (title,tooltip,dtype,v) in data if dtype=="txt")
+        text = os.linesep.join("%s: %s%s%s%s" % (title, tooltip, os.linesep, v, os.linesep)
+                               for (title,tooltip,dtype,v) in data if dtype=="txt")
         clipboard = gtk.clipboard_get(gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text)
         log.info("%s characters copied to clipboard", len(text))
@@ -320,7 +326,7 @@ class BugReport(object):
         log("do_save(%s)", filename)
         if not filename.lower().endswith(".zip"):
             filename = filename+".zip"
-        basenoext, _ = os.path.splitext(os.path.basename(filename))
+        basenoext = os.path.splitext(os.path.basename(filename))[0]
         data = self.get_text_data()
         import zipfile
         zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)

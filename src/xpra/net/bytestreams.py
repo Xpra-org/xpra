@@ -123,7 +123,8 @@ def untilConcludes(is_active_cb, can_retry, f, *a, **kw):
             return f(*a, **kw)
         except Exception as e:
             retry = can_retry(e)
-            log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s", is_active_cb, can_retry, f, a, kw, e, retry, exc_info=True)
+            log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s",
+                is_active_cb, can_retry, f, a, kw, e, retry, exc_info=True)
             e = None
             if not retry:
                 raise
@@ -258,7 +259,8 @@ class TwoFileConnection(Connection):
         return self._write(self._oswrite, self._write_fd, buf)
 
     def close(self):
-        log("%s.close() close callback=%s, readable=%s, writeable=%s", self, self._close_cb, self._readable, self._writeable)
+        log("%s.close() close callback=%s, readable=%s, writeable=%s",
+            self, self._close_cb, self._readable, self._writeable)
         Connection.close(self)
         cc = self._close_cb
         if cc:
@@ -362,7 +364,10 @@ class SocketConnection(Connection):
 
     def __repr__(self):
         if self.remote:
-            return "%s %s: %s <- %s" % (self.socktype, self.protocol_type, pretty_socket(self.local), pretty_socket(self.remote))
+            return "%s %s: %s <- %s" % (
+                self.socktype, self.protocol_type,
+                pretty_socket(self.local), pretty_socket(self.remote),
+                )
         return "%s %s:%s" % (self.socktype, self.protocol_type, pretty_socket(self.local))
 
     def get_info(self):

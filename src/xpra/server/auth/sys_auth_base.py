@@ -104,8 +104,8 @@ class SysAuthenticatorBase(object):
     def get_password(self):
         return None
 
-    def check(self, password):
-        raise NotImplementedError()
+    def check(self, _password):
+        return False
 
     def authenticate(self, challenge_response=None, client_salt=None):
         #this will call check(password)
@@ -135,9 +135,11 @@ class SysAuthenticatorBase(object):
             return False
         salt = self.get_response_salt(client_salt)
         password = gendigest("xor", challenge_response, salt)
-        log("authenticate_check(%s, %s) xor(%s)=%s", repr(challenge_response), repr(client_salt), repr(salt), repr(password))
+        log("authenticate_check(%s, %s) xor(%s)=%s",
+            repr(challenge_response), repr(client_salt), repr(salt), repr(password))
         #warning: enabling logging here would log the actual system password!
-        #log.info("authenticate(%s, %s) password=%s (%s)", hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
+        #log.info("authenticate(%s, %s) password=%s (%s)",
+        #    hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
         #verify login:
         try :
             ret = self.check(password)

@@ -7,7 +7,10 @@
 from math import log as mathlog, sqrt
 
 from xpra.os_util import monotonic_time
-from xpra.server.cystats import queue_inspect, logp, time_weighted_average, calculate_timesize_weighted_average_score   #@UnresolvedImport
+from xpra.server.cystats import (   #@UnresolvedImport
+    queue_inspect, logp, time_weighted_average,
+    calculate_timesize_weighted_average_score,
+    )
 from xpra.log import Logger
 
 log = Logger("server", "stats")
@@ -143,7 +146,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
         #calculate a target latency and try to get close to it
         avg_delay = batch.delay
         delays = tuple(batch.last_actual_delays)
-        if len(delays)>0:
+        if delays:
             #average recent actual delay:
             avg_delay = time_weighted_average(delays)
         #and average that with the current delay (which is lower or equal):
@@ -152,7 +155,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
         #(one frame encoding whilst one frame is batching is our ideal result)
         target_damage_latency = max(ref_damage_latency, frame_delay/1000.0)
         dam_target_speed = min_speed
-        if len(speed_data)>0:
+        if speed_data:
             dam_target_speed = max(min_speed, time_weighted_average(speed_data))
         #rel: do we need to increase speed to reach the target:
         dam_lat_rel = dam_target_speed/100.0 * adil / target_damage_latency
@@ -274,7 +277,7 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
 
     #latency limit factor:
     latency_q = 1
-    if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
+    if global_statistics.client_latency and global_statistics.recent_client_latency>0:
         #if the recent latency is too high, keep quality lower:
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
 
@@ -285,7 +288,8 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
     #boost based on recent compression ratio
     comp_boost = 0
     #from here on, the compression ratio integer value is in per-1000:
-    es = [(t, pixels, 1000*compressed_size*bpp//pixels//32) for (t, _, pixels, bpp, compressed_size, _) in tuple(statistics.encoding_stats) if pixels>=4096]
+    es = tuple((t, pixels, 1000*compressed_size*bpp//pixels//32)
+               for (t, _, pixels, bpp, compressed_size, _) in tuple(statistics.encoding_stats) if pixels>=4096)
     if len(es)>=2:
         #use the recent vs average compression ratio
         #(add value to smooth things out a bit, so very low compression ratios don't skew things)
@@ -321,11 +325,13 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
         lde = tuple(statistics.last_damage_events)
         if lde:
             now = monotonic_time()
-            damage_pixel_count = tuple((lim, sum(w*h for t,_,_,w,h in lde if t>=now-lim and t<now-lim+1)) for lim in range(1,11))
+            damage_pixel_count = tuple((lim, sum(w*h for t,_,_,w,h in lde if now-lim<=t<now-lim+1))
+                                       for lim in range(1,11))
             pixl5 = sum(v for lim,v in damage_pixel_count if lim<=5)
             pixn5 = sum(v for lim,v in damage_pixel_count if lim>5)
             pctpixdamaged = float(pixl5)/(ww*wh)
-            log("get_target_quality: target=%3i%% (window %4ix%-4i) pctpixdamaged=%3i%%, dpc=%s", 100*target, ww, wh, pctpixdamaged*100, damage_pixel_count)
+            log("get_target_quality: target=%3i%% (window %4ix%-4i) pctpixdamaged=%3i%%, dpc=%s",
+                100*target, ww, wh, pctpixdamaged*100, damage_pixel_count)
             if pctpixdamaged<0.5:
                 target *= (1.5-pctpixdamaged)
             if pixl5<pixn5:

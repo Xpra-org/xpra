@@ -17,7 +17,8 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         return do_make_window_metadata(window, propname, get_transient_for, get_window_id, skip_defaults)
     except (ValueError, TypeError) as e:
         log = get_util_logger()
-        log("make_window_metadata%s", (window, propname, get_transient_for, get_window_id, skip_defaults), exc_info=True)
+        log("make_window_metadata%s",
+            (window, propname, get_transient_for, get_window_id, skip_defaults), exc_info=True)
         log.error("Error: failed to make window metadata")
         log.error(" for attribute '%s' of window %s", propname, window)
         log.error(" with value '%s':", getattr(window, propname, None))
