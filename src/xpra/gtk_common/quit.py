@@ -33,11 +33,10 @@ def gtk_main_quit_really():
         if gtk.main_level() > 0:
             gtk.main_quit()
             return True
-        else:
-            # But when we've just quit the outermost main loop, then
-            # unregister ourselves so that it's possible to start the
-            # main-loop again if desired:
-            return False
+        # But when we've just quit the outermost main loop, then
+        # unregister ourselves so that it's possible to start the
+        # main-loop again if desired:
+        return False
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
     glib.timeout_add(0, gtk_main_quit_forever)
@@ -57,7 +56,7 @@ def gtk_main_quit_on_fatal_exceptions_enable():
         if issubclass(etype, (KeyboardInterrupt, SystemExit)):
             print("Shutting down main-loop")
             gtk_main_quit_really()
-            return
+            return None
         if issubclass(etype, RuntimeError) and val.args and "recursion" in val.args[0]:
             # We weren't getting tracebacks from this -- maybe calling oldhook
             # was hitting the limit again or something? -- so try this
@@ -65,8 +64,8 @@ def gtk_main_quit_on_fatal_exceptions_enable():
             # same problem as calling oldhook, though.)
             print(traceback.print_exception(etype, val, tb))
             print("Maximum recursion depth exceeded")
-        else:
-            return _oldhook(etype, val, tb)
+            return None
+        return _oldhook(etype, val, tb)
     sys.excepthook = gtk_main_quit_on_fatal_exception
 
 def gtk_main_quit_on_fatal_exceptions_disable():

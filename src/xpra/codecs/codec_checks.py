@@ -65,7 +65,8 @@ def make_test_image(pixel_format, w, h):
         #l = len(rgb_data)
     else:
         raise Exception("don't know how to create a %s image" % pixel_format)
-    #log("make_test_image%30s took %3ims for %6iMBytes", (pixel_format, w, h), 1000*(monotonic_time()-start), l//1024//1024)
+    #log("make_test_image%30s took %3ims for %6iMBytes",
+    #    (pixel_format, w, h), 1000*(monotonic_time()-start), l//1024//1024)
     return image
 
 
@@ -80,7 +81,8 @@ def testdecoder(decoder_module, full):
             del e
             codecs.remove(encoding)
     if not codecs:
-        log.error("%s: all the codecs have failed! (%s)", decoder_module.get_type(), csv(decoder_module.get_encodings()))
+        log.error("%s: all the codecs have failed! (%s)",
+                  decoder_module.get_type(), csv(decoder_module.get_encodings()))
     return codecs
 
 def testdecoding(decoder_module, encoding, full):
@@ -96,7 +98,8 @@ def testdecoding(decoder_module, encoding, full):
             e.init_context(encoding, W, H, cs)
             test_data = test_data_set.get(cs)
             if test_data:
-                log("%s: testing %s / %s with %s bytes of data", decoder_module.get_type(), encoding, cs, len(test_data))
+                log("%s: testing %s / %s with %s bytes of data",
+                    decoder_module.get_type(), encoding, cs, len(test_data))
                 image = e.decompress_image(test_data, {})
                 assert image is not None, "failed to decode test data for encoding '%s' with colorspace '%s'" % (encoding, cs)
                 assert image.get_width()==W, "expected image of width %s but got %s" % (W, image.get_width())
@@ -125,7 +128,8 @@ def testencoder(encoder_module, full):
             del e
             codecs.remove(encoding)
     if not codecs:
-        log.error("%s: all the codecs have failed! (%s)", encoder_module.get_type(), csv(encoder_module.get_encodings()))
+        log.error("%s: all the codecs have failed! (%s)",
+                  encoder_module.get_type(), csv(encoder_module.get_encodings()))
     return codecs
 
 def testencoding(encoder_module, encoding, full):
@@ -269,7 +273,8 @@ def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, li
                 log("%s can handle %ix%i", colorspace_converter, tw, th)
                 MAX_WIDTH, MAX_HEIGHT = tw, th
             except:
-                log("%s is limited to %ix%i for %s", colorspace_converter, MAX_WIDTH, MAX_HEIGHT, (test_cs_in, test_cs_out), exc_info=True)
+                log("%s is limited to %ix%i for %s",
+                    colorspace_converter, MAX_WIDTH, MAX_HEIGHT, (test_cs_in, test_cs_out), exc_info=True)
                 break
         v *= 2
     log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)

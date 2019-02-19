@@ -3,10 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("sound")
-gstlog = Logger("gstreamer")
-
 #must be done before importing gobject!
 from xpra.sound.gstreamer_util import import_gst
 gst = import_gst()
@@ -14,6 +10,10 @@ from xpra.util import envint
 from xpra.os_util import monotonic_time
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
+from xpra.log import Logger
+
+log = Logger("sound")
+gstlog = Logger("gstreamer")
 
 
 FAULT_RATE = envint("XPRA_SOUND_FAULT_INJECTION_RATE")
@@ -401,9 +401,14 @@ class SoundPipeline(gobject.GObject):
             if x in tags:
                 desc = taglist.get_string(x)
                 gstlog("%s: %s", x, desc[1])
-        if len([x for x in tags if x in ("bitrate", "codec", "audio-codec", "mode",
-                                         "container-format", "encoder", "description", "language-code")])==0:
+        #TODO: use sets
+        if not any(True for x in tags if x in (
+            "bitrate", "codec", "audio-codec", "mode",
+            "container-format", "encoder", "description", "language-code",
+            )):
             #no match yet
-            if len([x for x in tags if x in ("minimum-bitrate", "maximum-bitrate", "channel-mode")])==0:
+            if not any(True for x in tags if x in (
+                "minimum-bitrate", "maximum-bitrate", "channel-mode",
+                )):
                 structure = message.get_structure()
                 self.gstloginfo("unknown sound pipeline tag message: %s, tags=%s", structure.to_string(), tags)

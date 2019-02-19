@@ -392,10 +392,10 @@ def validate_encoding(elements):
     if force_enabled(encoding):
         log.info("sound codec %s force enabled", encoding)
         return True
-    elif encoding in (VORBIS_OGG, VORBIS) and get_gst_version()<(1, 12):
+    if encoding in (VORBIS_OGG, VORBIS) and get_gst_version()<(1, 12):
         log("skipping %s - not sure which GStreamer versions support it", encoding)
         return False
-    elif encoding.startswith(OPUS):
+    if encoding.startswith(OPUS):
         if encoding==OPUS_MKA and get_gst_version()<(1, 8):
             #this causes "could not link opusenc0 to webmmux0"
             #(not sure which versions are affected, but 1.8.x is not)
@@ -403,7 +403,7 @@ def validate_encoding(elements):
             return False
     try:
         stream_compressor = elements[5]
-    except:
+    except IndexError:
         stream_compressor = None
     if stream_compressor and not has_stream_compressor(stream_compressor):
         log("skipping %s: missing %s", encoding, stream_compressor)
@@ -593,7 +593,8 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_o
     try:
         device = get_pulse_device(device_name_match, want_monitor_device, input_or_output, remote, env_device_name)
     except Exception as e:
-        log("get_pulse_defaults%s", (device_name_match, want_monitor_device, input_or_output, remote, env_device_name), exc_info=True)
+        log("get_pulse_defaults%s",
+            (device_name_match, want_monitor_device, input_or_output, remote, env_device_name), exc_info=True)
         log.warn("Warning: failed to identify the pulseaudio default device to use")
         log.warn(" %s", e)
         return {}
@@ -617,7 +618,11 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
     """
     log("get_pulse_device%s", (device_name_match, want_monitor_device, input_or_output, remote, env_device_name))
     try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink, get_pactl_server, get_pulse_id
+        from xpra.sound.pulseaudio.pulseaudio_util import (
+            has_pa, get_pa_device_options,
+            get_default_sink, get_pactl_server,
+            get_pulse_id,
+            )
         if not has_pa():
             log.warn("Warning: pulseaudio is not available!")
             return None
@@ -645,7 +650,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
 
     device_type_str = ""
     if input_or_output is not None:
-        device_type_str = ["output", "input"][input_or_output]
+        device_type_str = "input" if input_or_output else "output"
     if want_monitor_device:
         device_type_str += " monitor"
     #def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"])
@@ -668,7 +673,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
                 filtered[k] = v
         devices = filtered
 
-    if len(devices)==0:
+    if not devices:
         log.error("Error: sound forwarding is disabled")
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
         return None
@@ -687,7 +692,9 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
                 filters.append(match)
             match = match.lower()
             log("trying to match '%s' in devices=%s", match, devices)
-            matches = dict((k,v) for k,v in devices.items() if (bytestostr(k).strip().lower().find(match)>=0 or bytestostr(v).strip().lower().find(match)>=0))
+            matches = dict((k,v) for k,v in devices.items()
+                           if (bytestostr(k).strip().lower().find(match)>=0 or
+                               bytestostr(v).strip().lower().find(match)>=0))
             #log("matches(%s, %s)=%s", devices, match, matches)
             if len(matches)==1:
                 log("found name match for '%s': %s", match, tuple(matches.items())[0])
@@ -695,8 +702,8 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
             elif len(matches)>1:
                 log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, match)
                 log.warn(" matched %i devices", len(matches))
-        if filters or len(matches)>0:
-            if len(matches)==0:
+        if filters or matches:
+            if not matches:
                 log.warn("Warning: Pulseaudio %s device name filter%s:", device_type_str, engs(filters))
                 log.warn(" %s", csv("'%s'" % x for x in filters))
                 log.warn(" did not match any of the devices found:")

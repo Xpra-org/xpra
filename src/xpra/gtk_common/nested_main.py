@@ -103,7 +103,7 @@ class NestedMainLoop(object):
 
     @classmethod
     def _quit_while_top_done(cls):
-        if len(cls._stack)==0:
+        if not cls._stack:
             log("NestedMainLoop: no more nested loops")
             #no more nested loops
             return False
@@ -112,7 +112,7 @@ class NestedMainLoop(object):
         #if another loop is done,
         #we need to pop the ones above it that have timedout,
         #starting with "top", so we can get to it:
-        done_pending = bool([o for o in cls._stack if o!=top and o._done])
+        done_pending = any(True for o in cls._stack if o!=top and o._done)
         log("NestedMainLoop: top loop=%#x, done=%s, soft timeout=%s, hard timeout=%s, done_pending=%s",
             id(top), top._done, top._hard_timed_out, top._soft_timed_out, done_pending)
         if top._done or top._hard_timed_out or \

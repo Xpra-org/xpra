@@ -753,7 +753,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
         try:
             if any(k.find(x)>=0 for x in version_keys):
                 return nonl(pver(v)).lstrip("v")
-            elif any(k.find(x)>=0 for x in hex_keys):
+            if any(k.find(x)>=0 for x in hex_keys):
                 return binascii.hexlify(v)
         except:
             pass
@@ -816,19 +816,19 @@ def xor(s1,s2):
     def _ord(v):
         try:
             return ord(v)
-        except:
+        except TypeError:
             return int(v)
     return ''.join(chr(_ord(a) ^ _ord(b)) for a,b in zip(s1,s2))
 
 def engs(v):
-    try:
-        if type(v)==int:
-            l = v
-        else:
+    if isinstance(v, int):
+        l = v
+    else:
+        try:
             l = len(v)
-        return ["","s"][l!=1]
-    except:
-        return ""
+        except TypeError:
+            return ""
+    return "s" if l!=1 else ""
 
 
 def obsc(v):

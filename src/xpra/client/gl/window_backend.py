@@ -21,10 +21,9 @@ def get_opengl_backends(option_str):
         backend_str = option_str
     if backend_str in ("native", "gtk") or backend_str.find(",")>0:
         return backend_str.split(",")
-    elif PYTHON3:
-        return "native",
-    else:
-        return "native", "gtk"
+    if PYTHON3:
+        return ("native", )
+    return ("native", "gtk")
 
 def get_gl_client_window_module(backends, force_enable=False):
     gl_client_window_module = None

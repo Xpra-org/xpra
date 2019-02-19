@@ -15,7 +15,7 @@ log = Logger("keyboard")
 KEY_TRANSLATIONS = {}
 
 
-def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
+def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
         by adding the keyval_name.
@@ -25,7 +25,8 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
     gdk = import_gdk()
     display = display_get_default()
     keymap = keymap_get_for_display(display)
-    log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s", display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
+    log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
+        display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
     keycodes=[]
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
@@ -36,9 +37,8 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
             found, keys, keyvals = entries
             if not found:
                 continue
-            for i in range(len(keys)):
-                key = keys[i]
-                keyval = keyvals[i]
+            for j, key in enumerate(keys):
+                keyval = keyvals[j]
                 keycode = key.keycode
                 name = gdk.keyval_name(keyval)
                 name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)

@@ -193,4 +193,3 @@ def import_gtkosx_application3():
     return GtkosxApplication
 def import_gtkosx_application():
     return _try_import(import_gtkosx_application3, import_gtkosx_application2)
-

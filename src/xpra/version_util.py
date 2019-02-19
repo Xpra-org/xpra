@@ -127,19 +127,19 @@ def do_get_platform_info():
     def get_processor_name():
         if pp.system() == "Windows":
             return pp.processor()
-        elif pp.system() == "Darwin":
+        if pp.system() == "Darwin":
             os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
             command ="sysctl -n machdep.cpu.brand_string"
             import subprocess
             return subprocess.check_output(command).strip()
-        elif pp.system() == "Linux":
+        if pp.system() == "Linux":
             with open("/proc/cpuinfo") as f:
                 data = f.read()
             import re
             for line in data.split("\n"):
                 if "model name" in line:
                     return re.sub(".*model name.*:", "", line,1).strip()
-        assert False
+        return pp.processor()
     info = {}
     ld = get_linux_distribution()
     if ld:
@@ -152,13 +152,9 @@ def do_get_platform_info():
             "sysrelease": release,
             "platform"  : pp.platform(),
             "machine"   : pp.machine(),
-            "processor" : pp.processor(),
             "architecture" : pp.architecture(),
+            "processor" : get_processor_name(),
             })
-    try:
-        info["processor"] = get_processor_name()
-    except:
-        info["processor"] = pp.processor()
     return info
 #cache the output:
 platform_info_cache = None
@@ -187,7 +183,7 @@ def get_version_from_url(url):
         return latest_version_no
     except Exception as e:
         log("get_version_from_url(%s)", url, exc_info=True)
-        if hasattr(e, "code") and e.code==404:
+        if getattr(e, "code", 0)==404:
             log("no version at url=%s", url)
         else:
             log("Error retrieving URL '%s': %s", url, e)
@@ -211,17 +207,20 @@ def version_update_check():
     platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
     arch = get_platform_info().get("machine")
     latest_version_no = None
-    if arch:
-        latest_version_no = get_version_from_url("%s_%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, arch, XPRA_VERSION))
-    if not latest_version_no:
-        latest_version_no = get_version_from_url("%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, XPRA_VERSION))
-    if not latest_version_no:
-        latest_version_no = get_version_from_url("%s?%s" % (CURRENT_VERSION_URL, XPRA_VERSION))
+    for url in (
+        "%s_%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, arch, XPRA_VERSION),
+        "%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, XPRA_VERSION),
+        "%s?%s" % (CURRENT_VERSION_URL, XPRA_VERSION),
+        ):
+        latest_version_no = get_version_from_url(url)
+        if latest_version_no:
+            break
     if latest_version_no is None:
         log("version_update_check() failed to contact version server")
         return None
     if latest_version_no>our_version_no or FAKE_NEW_VERSION:
-        log("version_update_check() newer version found! local version is %s and the latest version available is %s", our_version_no, latest_version_no)
+        log("version_update_check() newer version found! local version is %s and the latest version available is %s",
+            our_version_no, latest_version_no)
         #latest_version = ".".join([str(x) for x in latest_version_no])
         return latest_version_no
     return False

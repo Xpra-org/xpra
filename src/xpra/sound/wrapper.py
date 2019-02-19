@@ -29,7 +29,11 @@ SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 5000)
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 
 DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS",
-                                            "--windows=no --video-encoders=none --csc-modules=none --video-decoders=none --proxy-video-encoders=none").split(" ")
+    "--windows=no "+
+    "--video-encoders=none "+
+    "--csc-modules=none "+
+    "--video-decoders=none "+
+    "--proxy-video-encoders=none").split(" ")
 
 
 def get_full_sound_command():
@@ -173,7 +177,7 @@ def run_sound(mode, error_cb, options, args):
             if BUNDLE_METADATA:
                 d["bundle-metadata"] = True
             for k,v in d.items():
-                if type(v) in (list, tuple):
+                if isinstance(v, (list, tuple)):
                     v = ",".join(str(x) for x in v)
                 print("%s=%s" % (k, v))
             return 0
@@ -315,14 +319,22 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
     def __init__(self, plugin, options, codecs, volume, element_options):
         sound_subprocess_wrapper.__init__(self, "sound source")
         self.large_packets = [b"new-buffer"]
-        self.command = get_full_sound_command()+["_sound_record", "-", "-", plugin or "", format_element_options(element_options), ",".join(codecs), "", str(volume)]
+        self.command = get_full_sound_command()+[
+            "_sound_record", "-", "-",
+            plugin or "", format_element_options(element_options),
+            ",".join(codecs), "",
+            str(volume),
+            ]
         _add_debug_args(self.command)
 
     def __repr__(self):
-        try:
-            return "source_subprocess_wrapper(%s)" % self.process.pid
-        except:
-            return "source_subprocess_wrapper(%s)" % self.process
+        proc = self.process
+        if proc:
+            try:
+                return "source_subprocess_wrapper(%s)" % proc.pid
+            except AttributeError:
+                pass
+        return "source_subprocess_wrapper(%s)" % proc
 
 
 class sink_subprocess_wrapper(sound_subprocess_wrapper):
@@ -331,7 +343,12 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
         sound_subprocess_wrapper.__init__(self, "sound output")
         self.large_packets = [b"add_data"]
         self.codec = codec
-        self.command = get_full_sound_command()+["_sound_play", "-", "-", plugin or "", format_element_options(element_options), codec, "", str(volume)]
+        self.command = get_full_sound_command()+[
+            "_sound_play", "-", "-",
+            plugin or "", format_element_options(element_options),
+            codec, "",
+            str(volume),
+            ]
         _add_debug_args(self.command)
 
     def add_data(self, data, metadata={}, packet_metadata=()):
@@ -340,14 +357,18 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
         self.send("add_data", data, dict(metadata), packet_metadata)
 
     def __repr__(self):
-        try:
-            return "sink_subprocess_wrapper(%s)" % self.process.pid
-        except:
-            return "sink_subprocess_wrapper(%s)" % self.process
+        proc = self.process
+        if proc:
+            try:
+                return "sink_subprocess_wrapper(%s)" % proc.pid
+            except AttributeError:
+                pass
+        return "sink_subprocess_wrapper(%s)" % proc
 
 
 def start_sending_sound(plugins, sound_source_plugin, device, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
-    log("start_sending_sound%s", (plugins, sound_source_plugin, device, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
+    log("start_sending_sound%s",
+        (plugins, sound_source_plugin, device, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
     try:
         #info about the remote end:
         PAInfo = namedtuple("PAInfo", "pulseaudio_server,pulseaudio_id,remote_decoders")

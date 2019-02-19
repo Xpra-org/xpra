@@ -49,13 +49,15 @@ class TranslatedClipboardProtocolHelper(GDKClipboardProtocolHelper):
 
 
     def local_to_remote(self, selection):
-        log("local_to_remote(%s) local_clipboard=%s, remote_clipboard=%s", selection, self.local_clipboard, self.remote_clipboard)
+        log("local_to_remote(%s) local_clipboard=%s, remote_clipboard=%s",
+            selection, self.local_clipboard, self.remote_clipboard)
         if selection==self.local_clipboard:
             return  self.remote_clipboard
         return  selection
 
     def remote_to_local(self, selection):
-        log("remote_to_local(%s) local_clipboard=%s, remote_clipboard=%s", selection, self.local_clipboard, self.remote_clipboard)
+        log("remote_to_local(%s) local_clipboard=%s, remote_clipboard=%s",
+            selection, self.local_clipboard, self.remote_clipboard)
         if selection==self.remote_clipboard:
             return  self.local_clipboard
         return  selection

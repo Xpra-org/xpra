@@ -56,7 +56,7 @@ class XError(Exception):
 xerror_to_name = None
 def get_X_error(xerror):
     global xerror_to_name
-    if type(xerror)!=int:
+    if not isinstance(xerror, int):
         return xerror
     try:
         from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport

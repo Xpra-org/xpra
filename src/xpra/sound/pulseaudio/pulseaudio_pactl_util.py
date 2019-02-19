@@ -120,7 +120,7 @@ def get_pulse_id():
     return get_pulse_id_x11_property()
 
 
-def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"]):
+def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=("bell-window-system",)):
     """
     Finds the list of devices, monitors=False allows us to filter out monitors
     (which could create sound loops if we use them)
@@ -137,7 +137,7 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
         return  {}
     return do_get_pa_device_options(out, monitors, input_or_output, ignored_devices)
 
-def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None, ignored_devices=["bell-window-system"]):
+def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None, ignored_devices=("bell-window-system",)):
     device_class = None
     device_description = None
     name = None
@@ -163,7 +163,8 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
                 if not device_description:
                     device_description = name
                 devices[name] = device_description
-            name = None; device_class = None
+            name = None
+            device_class = None
         line = line.strip()
         if line.startswith(b"Name: "):
             name = line[len(b"Name: "):]

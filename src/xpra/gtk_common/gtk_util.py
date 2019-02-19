@@ -695,10 +695,11 @@ else:
             mouse_in_tray_menu = False
             def check_menu_left(expected_counter):
                 if mouse_in_tray_menu:
-                    return    False
+                    return False
                 if expected_counter!=mouse_in_tray_menu_counter:
-                    return    False            #counter has changed
+                    return False            #counter has changed
                 close_cb()
+                return False
             gobject.timeout_add(OUTSIDE_TRAY_TIMEOUT, check_menu_left, mouse_in_tray_menu_counter)
         mouse_in_tray_menu_counter = 0
         mouse_in_tray_menu = False
@@ -788,7 +789,8 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
         traylog("TrayCheckMenuItem.on_button_release_event(%s) label=%s", args, self.label)
         self.active_state = self.get_active()
         def recheck():
-            traylog("TrayCheckMenuItem: recheck() active_state=%s, get_active()=%s", self.active_state, self.get_active())
+            traylog("TrayCheckMenuItem: recheck() active_state=%s, get_active()=%s",
+                    self.active_state, self.get_active())
             state = self.active_state
             self.active_state = None
             if state is not None and state==self.get_active():
@@ -1320,7 +1322,7 @@ def window_defaults(window):
 #selected in a submenu:
 def ensure_item_selected(submenu, item, recurse=True):
     if not isinstance(item, gtk.CheckMenuItem):
-        return
+        return None
     if item.get_active():
         #deactivate all except this one
         def deactivate(items, skip=None):
@@ -1351,7 +1353,7 @@ def ensure_item_selected(submenu, item, recurse=True):
         return None
     active = get_active_item(submenu.get_children())
     if active:
-        return  active
+        return active
     #if not then keep this one active:
     item.set_active(True)
     return item
@@ -1409,7 +1411,7 @@ def choose_file(parent_window, title, action, action_button, callback=None, file
     chooser.hide()
     chooser.destroy()
     if response!=RESPONSE_OK or len(filenames)!=1:
-        return
+        return None
     filename = filenames[0]
     if callback:
         callback(filename)

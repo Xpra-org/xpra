@@ -45,8 +45,8 @@ def absolute_to_diff_values(in_data):
 
 def values_to_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values=20):
     #print("values_to_scaled_values(%s, %s, %s)" % (data, scale_unit, num_values))
-    if data is None or len(data)==0:
-        return  0, data
+    if not data:
+        return 0, data
     max_v = max(data)
     #pad with None values so we have at least num_values:
     if len(data)<num_values:
@@ -72,8 +72,8 @@ def values_to_diff_scaled_values(data, scale_unit=10, min_scaled_value=10, num_v
     return values_to_scaled_values(absolute_to_diff_values(data), scale_unit=scale_unit, min_scaled_value=min_scaled_value, num_values=num_values)
 
 def get_weighted_list_stats(weighted_values, show_percentile=False):
-    values = [x for x, _ in weighted_values]
-    if len(values)==0:
+    values = tuple(x[0] for x in weighted_values)
+    if not values:
         return {}
     #weighted mean:
     tw = 0

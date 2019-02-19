@@ -83,7 +83,11 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         }
 
 
-    _property_names         = ["xid", "client-machine", "window-type", "shadow", "size-hints", "class-instance", "focused", "title", "depth", "icon"]
+    _property_names         = [
+        "xid", "client-machine", "window-type",
+        "shadow", "size-hints", "class-instance",
+        "focused", "title", "depth", "icon",
+        ]
     _dynamic_property_names = ["size-hints", "title", "icon"]
 
     def __init__(self, root, resize_exact=False):
@@ -159,20 +163,19 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def get_property(self, prop):
         if prop=="xid":
             return int(get_xwindow(self.client_window))
-        elif prop=="depth":
+        if prop=="depth":
             return self._depth
-        elif prop=="title":
+        if prop=="title":
             return get_wm_name() or "xpra desktop"
-        elif prop=="client-machine":
+        if prop=="client-machine":
             return socket.gethostname()
-        elif prop=="window-type":
+        if prop=="window-type":
             return ["NORMAL"]
-        elif prop=="shadow":
+        if prop=="shadow":
             return True
-        elif prop=="class-instance":
+        if prop=="class-instance":
             return ("xpra-desktop", "Xpra-Desktop")
-        else:
-            return gobject.GObject.get_property(self, prop)
+        return gobject.GObject.get_property(self, prop)
 
     def _screen_size_changed(self, screen):
         w, h = screen.get_width(), screen.get_height()
@@ -205,7 +208,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 except:
                     screenlog("failed to query screen sizes", exc_info=True)
                 else:
-                    if len(screen_sizes)==0:
+                    if not screen_sizes:
                         use_fixed_size()
                     else:
                         #find the maximum size supported:
@@ -343,7 +346,8 @@ class XpraDesktopServer(DesktopServerBaseClass):
             screenlog("configure_best_screen_size() client did not request a specific desktop mode size")
             return root_w, root_h
         w, h = requested_size
-        screenlog("client requested desktop mode resolution is %sx%s (current server resolution is %sx%s)", w, h, root_w, root_h)
+        screenlog("client requested desktop mode resolution is %sx%s (current server resolution is %sx%s)",
+                  w, h, root_w, root_h)
         if w<=0 or h<=0 or w>=32768 or h>=32768:
             screenlog("configure_best_screen_size() client requested an invalid desktop mode size: %s", requested_size)
             return root_w, root_h
@@ -533,8 +537,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
             return
         damage = False
         if len(packet)>=9:
-            changes = self._set_window_state(proto, wid, window, packet[8])
-            damage = len(changes)>0
+            damage = bool(self._set_window_state(proto, wid, window, packet[8]))
         if not skip_geometry:
             owx, owy, oww, owh = window.get_geometry()
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))

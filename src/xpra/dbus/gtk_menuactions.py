@@ -84,7 +84,8 @@ class Actions(dbus.service.Object):
                 if oldaction[0]!=newaction[0]:
                     v = dbus.Dictionary({ds(action) : dbus.Boolean(newaction[0])}, signature="sb")
                     enabled_changed.append(v)
-                    self.log(".set_actions(..) enabled changed for %s from %s to %s", action, oldaction[0], newaction[0])
+                    self.log(".set_actions(..) enabled changed for %s from %s to %s",
+                             action, oldaction[0], newaction[0])
                 if oldaction[2]!=newaction[2]:
                     v = dbus.Dictionary({ds(action) : newaction[2]}, signature="sv")
                     state_changed.append(v)
@@ -207,7 +208,8 @@ class Menus(dbus.service.Object):
                 menu = group.get(menu_id, [])
                 if menu==oldmenu:
                     continue
-                self.log(".set_menus(..) found change at group=%i, menu_id=%i : from %s to %s", group_id, menu_id, oldmenu, menu)
+                self.log(".set_menus(..) found change at group=%i, menu_id=%i : from %s to %s",
+                         group_id, menu_id, oldmenu, menu)
                 delcount = len(oldmenu)     #remove all
                 insert = [self._make_menu_item(menu[i]) for i in range(len(menu))]
                 changed.append(dbus.Struct(di(group_id), di(menu_id), di(0), di(delcount), dbus.Array(dbus.Array(insert))))
@@ -311,10 +313,6 @@ def get_actions_interface(bus_name, object_path):
 
 def query_actions(bus_name, object_path, actions_cb=None, error_cb=None):
     actions_iface = get_actions_interface(bus_name, object_path)
-    def actions_changed(*args):
-        log("actions_changed%s", args)
-        if actions_cb:
-            actions_iface.DescribeAll(reply_handler=describe_all_actions, error_handler=describe_all_error)
     def actions_list(*args):
         log("actions_list%s", args)
     def actions_error(*args):

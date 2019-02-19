@@ -213,7 +213,7 @@ class ApplicationWindow:
         self.bug_tool = None
         if icon_pixbuf:
             def bug(*_args):
-                if self.bug_tool==None:
+                if self.bug_tool is None:
                     from xpra.client.gtk_base.bug_report import BugReport
                     self.bug_tool = BugReport()
                     self.bug_tool.init(show_about=False)
@@ -225,7 +225,7 @@ class ApplicationWindow:
         self.mdns_gui = None
         if icon_pixbuf and has_mdns():
             def mdns(*_args):
-                if self.mdns_gui==None:
+                if self.mdns_gui is None:
                     from xpra.client.gtk_base.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions(self.config)
                     def close_mdns():
@@ -902,7 +902,7 @@ class ApplicationWindow:
 
         def warn_and_quit_override(exit_code, warning):
             log("warn_and_quit_override(%s, %s)", exit_code, warning)
-            if self.exit_code == None:
+            if self.exit_code is None:
                 self.exit_code = exit_code
             password_warning = warning.find("invalid password")>=0
             if password_warning:
@@ -916,7 +916,7 @@ class ApplicationWindow:
 
         def quit_override(exit_code):
             log("quit_override(%s)", exit_code)
-            if self.exit_code == None:
+            if self.exit_code is None:
                 self.exit_code = exit_code
             handle_client_quit(self.exit_code==0)
 

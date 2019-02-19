@@ -42,12 +42,17 @@ class _AnsiColorStreamHandler(logging.StreamHandler):
 
     @classmethod
     def _get_color(cls, level):
-        if level >= logging.CRITICAL:  return cls.CRITICAL
-        elif level >= logging.ERROR:   return cls.ERROR
-        elif level >= logging.WARNING: return cls.WARNING
-        elif level >= logging.INFO:    return cls.INFO
-        elif level >= logging.DEBUG:   return cls.DEBUG
-        else:                          return cls.DEFAULT
+        if level >= logging.CRITICAL:
+            return cls.CRITICAL
+        if level >= logging.ERROR:
+            return cls.ERROR
+        if level >= logging.WARNING:
+            return cls.WARNING
+        if level >= logging.INFO:
+            return cls.INFO
+        if level >= logging.DEBUG:
+            return cls.DEBUG
+        return cls.DEFAULT
 
     def __init__(self, stream=None):
         logging.StreamHandler.__init__(self, stream)
@@ -89,12 +94,17 @@ class _WinColorStreamHandler(logging.StreamHandler):
 
     @classmethod
     def _get_color(cls, level):
-        if level >= logging.CRITICAL:  return cls.CRITICAL
-        elif level >= logging.ERROR:   return cls.ERROR
-        elif level >= logging.WARNING: return cls.WARNING
-        elif level >= logging.INFO:    return cls.INFO
-        elif level >= logging.DEBUG:   return cls.DEBUG
-        else:                          return cls.DEFAULT
+        if level >= logging.CRITICAL:
+            return cls.CRITICAL
+        if level >= logging.ERROR:
+            return cls.ERROR
+        if level >= logging.WARNING:
+            return cls.WARNING
+        if level >= logging.INFO:
+            return cls.INFO
+        if level >= logging.DEBUG:
+            return cls.DEBUG
+        return cls.DEFAULT
 
     def _set_color(self, code):
         import ctypes

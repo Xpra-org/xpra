@@ -145,7 +145,7 @@ class ClipboardInstance(object):
     def string_value_callback(self, _cb, value, *_args):
         if value is None:
             value = ""
-        assert type(value)==str, "value is not a string!"
+        assert isinstance(value, str), "value is not a string!"
         self.log("Got string selection data: '%s'" % value)
         self.value_label.set_text(self.ellipsis(value))
 
@@ -226,7 +226,7 @@ class ClipboardStateInfoWindow(object):
 
     def add_event(self, selection, message):
         msg = message
-        if len(self.clipboards)>0:
+        if self.clipboards:
             msg = "%s : %s" % (selection, message)
         self.log.append(msg)
         self.events.set_text("\n".join(self.log))

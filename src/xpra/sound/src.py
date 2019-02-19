@@ -4,18 +4,25 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import sys
+import os.path
 
 from xpra.os_util import SIGNAMES, Queue, monotonic_time
 from xpra.util import csv, envint, envbool, envfloat, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
-from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_queue_time, has_plugins, \
-                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, ENCODER_CANNOT_USE_CUTTER, CUTTER_NEEDS_CONVERT, CUTTER_NEEDS_RESAMPLE, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
+from xpra.sound.gstreamer_util import (
+    get_source_plugins, plugin_str, get_encoder_elements,
+    get_encoder_default_options, normv,
+    get_encoders, get_queue_time, has_plugins,
+    MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT,
+    SOURCE_NEEDS_AUDIOCONVERT, ENCODER_CANNOT_USE_CUTTER, CUTTER_NEEDS_CONVERT,
+    CUTTER_NEEDS_RESAMPLE, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM,
+    )
 from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
+
 log = Logger("sound")
 gstlog = Logger("gstreamer")
 
@@ -52,7 +59,7 @@ class SoundSource(SoundPipeline):
                 log.warn("Warning: pulseaudio is not available!")
                 log.warn(" %s", e)
                 monitor_devices = []
-            if len(monitor_devices)==0:
+            if not monitor_devices:
                 log.warn("could not detect any pulseaudio monitor devices")
                 log.warn(" a test source will be used instead")
                 src_type = "audiotestsrc"
@@ -152,7 +159,8 @@ class SoundSource(SoundPipeline):
             if BUFFER_TIME<LATENCY_TIME:
                 log.warn("Warning: latency (%ims) must be lower than the buffer time (%ims)", LATENCY_TIME, BUFFER_TIME)
             else:
-                log("latency tuning for %s, will try to set buffer-time=%i, latency-time=%i", src_type, BUFFER_TIME, LATENCY_TIME)
+                log("latency tuning for %s, will try to set buffer-time=%i, latency-time=%i",
+                    src_type, BUFFER_TIME, LATENCY_TIME)
                 def settime(attr, v):
                     try:
                         cval = self.src.get_property(attr)
@@ -217,7 +225,8 @@ class SoundSource(SoundPipeline):
                 l = gstlog.info
             else:
                 l = gstlog
-            l("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s", above, self.min_timestamp, self.max_timestamp)
+            l("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s",
+              above, self.min_timestamp, self.max_timestamp)
 
 
     def on_new_preroll(self, _appsink):
@@ -235,7 +244,7 @@ class SoundSource(SoundPipeline):
         if self.min_timestamp>0 and pts<self.min_timestamp:
             gstlog("cutter: skipping buffer with pts=%s (min-timestamp=%s)", pts, self.min_timestamp)
             return 0
-        elif self.max_timestamp>0 and pts>self.max_timestamp:
+        if self.max_timestamp>0 and pts>self.max_timestamp:
             gstlog("cutter: skipping buffer with pts=%s (max-timestamp=%s)", pts, self.max_timestamp)
             return 0
         size = buf.get_size()
@@ -250,7 +259,8 @@ class SoundSource(SoundPipeline):
             ts = (pts+delta)//1000000           #ns to ms
             now = monotonic_time()
             latency = int(1000*now)-ts
-            #log.info("emit_buffer: delta=%i, pts=%i, ts=%s, time=%s, latency=%ims", delta, pts, ts, now, (latency//1000000))
+            #log.info("emit_buffer: delta=%i, pts=%i, ts=%s, time=%s, latency=%ims",
+            #    delta, pts, ts, now, (latency//1000000))
             ts_info = {
                 "ts"        : ts,
                 "latency"   : latency,
@@ -270,7 +280,8 @@ class SoundSource(SoundPipeline):
                 metadata["compress"] = self.stream_compressor
                 data = cdata
             else:
-                log("skipped inefficient %s stream compression: %i bytes down to %i bytes", self.stream_compressor, len(data), len(cdata))
+                log("skipped inefficient %s stream compression: %i bytes down to %i bytes",
+                    self.stream_compressor, len(data), len(cdata))
         f = self.file
         if f:
             for x in self.pending_metadata:
@@ -308,7 +319,7 @@ class SoundSource(SoundPipeline):
                 capd = {}
                 for k in cap.keys():
                     v = cap[k]
-                    if type(v) in (str, int):
+                    if isinstance(v, (str, int)):
                         capd[k] = cap[k]
                     elif k not in self.skipped_caps:
                         log("skipping %s cap key %s=%s of type %s", name, k, v, type(v))
@@ -343,7 +354,6 @@ gobject.type_register(SoundSource)
 def main():
     from xpra.platform import program_context
     with program_context("Xpra-Sound-Source"):
-        import os.path
         if "-v" in sys.argv:
             log.enable_debug()
             sys.argv.remove("-v")

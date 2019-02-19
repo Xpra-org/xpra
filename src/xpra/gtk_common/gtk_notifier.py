@@ -125,7 +125,7 @@ class GTK_Notifier(NotifierBase):
                 x.hide_notification()
 
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, timeout, icon):
-        self.new_popup(nid, summary, body, actions, icon, timeout, timeout>0 and timeout<=600)
+        self.new_popup(nid, summary, body, actions, icon, timeout, 0<timeout<=600)
 
     def new_popup(self, nid, summary, body, actions, icon, timeout=10*1000, show_timeout=False):
         """Create a new Popup instance."""

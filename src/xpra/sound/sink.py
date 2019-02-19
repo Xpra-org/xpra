@@ -10,15 +10,20 @@ from threading import Lock
 
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
-from xpra.sound.gstreamer_util import plugin_str, get_decoder_elements, get_queue_time, normv, get_decoders, get_default_sink, get_sink_plugins, \
-                                        MP3, CODEC_ORDER, gst, QUEUE_LEAK, GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS
+from xpra.sound.gstreamer_util import (
+    plugin_str, get_decoder_elements,
+    get_queue_time, normv, get_decoders,
+    get_default_sink, get_sink_plugins,
+    MP3, CODEC_ORDER, gst, QUEUE_LEAK,
+    GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS,
+    )
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.net.compression import decompress_by_name
-
 from xpra.scripts.config import InitExit
 from xpra.util import csv, envint, envbool
 from xpra.os_util import thread, monotonic_time
 from xpra.log import Logger
+
 log = Logger("sound")
 gstlog = Logger("gstreamer")
 
@@ -309,7 +314,8 @@ class SoundSink(SoundPipeline):
             mst += UNDERRUN_MIN_LEVEL
         #cap it at 1 second:
         mst = min(mst, 1000)
-        log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i, target=%3i, mst=%3i", olm, MARGIN, pct, cmst, target_mst, mst)
+        log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i, target=%3i, mst=%3i",
+            olm, MARGIN, pct, cmst, target_mst, mst)
         if abs(cmst-mst)<=max(50, lrange//2):
             #not enough difference
             return

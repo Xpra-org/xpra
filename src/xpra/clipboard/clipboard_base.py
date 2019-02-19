@@ -9,12 +9,19 @@ import struct
 import re
 
 from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
-from xpra.gtk_common.gtk_util import GetClipboard, selection_owner_set, selection_add_target, selectiondata_get_selection, selectiondata_get_target, selectiondata_get_data, selectiondata_get_data_type, selectiondata_get_format, selectiondata_set, clipboard_request_contents, set_clipboard_data, PROPERTY_CHANGE_MASK
+from xpra.gtk_common.gtk_util import (
+    GetClipboard, PROPERTY_CHANGE_MASK,
+    selection_owner_set, selection_add_target, selectiondata_get_selection,
+    selectiondata_get_target, selectiondata_get_data,
+    selectiondata_get_data_type, selectiondata_get_format,
+    selectiondata_set, clipboard_request_contents,
+    set_clipboard_data,
+    )
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
 from xpra.os_util import WIN32, POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid, is_X11, is_Wayland
 from xpra.util import csv, envint, envbool, repr_ellipsized, typedict, first_time
-from xpra.platform.features import CLIPBOARD_GREEDY
+from xpra.platform.features import CLIPBOARD_GREEDY, CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_glib, is_gtk3
 from xpra.log import Logger
 
@@ -30,7 +37,6 @@ MAX_CLIPBOARD_PACKET_SIZE = 4*1024*1024
 MAX_CLIPBOARD_RECEIVE_SIZE = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
-from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 ALL_CLIPBOARDS = [strtobytes(x) for x in PLATFORM_CLIPBOARDS]
 CLIPBOARDS = PLATFORM_CLIPBOARDS
 CLIPBOARDS_ENV = os.environ.get("XPRA_CLIPBOARDS")
@@ -385,7 +391,7 @@ class ClipboardProtocolHelperBase(object):
                 send_now = [x for x in targets if x in TEXT_TARGETS]
                 def send_targets_only():
                     send_token(rsel, targets)
-                if len(send_now)==0:
+                if not send_now:
                     send_targets_only()
                     return
                 target = send_now[0]
@@ -546,7 +552,7 @@ class ClipboardProtocolHelperBase(object):
             log.warn("Warning: clipboard contents are too big and have not been sent")
             log.warn(" %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
             return  None
-        if type(wire_data)==str and len(wire_data)>=MIN_CLIPBOARD_COMPRESSION_SIZE:
+        if isinstance(wire_data, str) and len(wire_data)>=MIN_CLIPBOARD_COMPRESSION_SIZE:
             return Compressible("clipboard: %s / %s" % (dtype, dformat), wire_data)
         return wire_data
 
@@ -853,7 +859,7 @@ class ClipboardProxy(gtk.Invisible):
         if self._enabled and not self._block_owner_change:
             #if greedy_client is set, do_owner_changed will fire the token
             #so don't bother sending it now (same if we don't have it)
-            send = (self._greedy_client and not self._block_owner_change) or self._have_token
+            send = self._have_token or (self._greedy_client and not self._block_owner_change)
             self._have_token = False
 
             # Emit a signal -> send a note to the other side saying "hey its

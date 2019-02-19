@@ -78,7 +78,8 @@ class FileTransferAttributes(object):
         self.init_attributes(opts.file_transfer, opts.file_size_limit, opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
     def init_attributes(self, file_transfer="yes", file_size_limit=10, printing="yes", open_files="no", open_url="yes", open_command=None, can_ask=True):
-        filelog("file transfer: init_attributes%s", (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
+        filelog("file transfer: init_attributes%s",
+                (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
         def pbool(name, v):
             return parse_bool(name, v, True)
         def pask(v):
@@ -198,10 +199,14 @@ class FileTransferHandler(FileTransferAttributes):
         self.dump_remote_caps()
 
     def dump_remote_caps(self):
-        filelog("file transfer remote caps: file-transfer=%s   (ask=%s)", self.remote_file_transfer, self.remote_file_transfer_ask)
-        filelog("file transfer remote caps: printing=%s        (ask=%s)", self.remote_printing, self.remote_printing_ask)
-        filelog("file transfer remote caps: open-files=%s      (ask=%s)", self.remote_open_files, self.remote_open_files_ask)
-        filelog("file transfer remote caps: open-url=%s        (ask=%s)", self.remote_open_url, self.remote_open_url_ask)
+        filelog("file transfer remote caps: file-transfer=%s   (ask=%s)",
+                self.remote_file_transfer, self.remote_file_transfer_ask)
+        filelog("file transfer remote caps: printing=%s        (ask=%s)",
+                self.remote_printing, self.remote_printing_ask)
+        filelog("file transfer remote caps: open-files=%s      (ask=%s)",
+                self.remote_open_files, self.remote_open_files_ask)
+        filelog("file transfer remote caps: open-url=%s        (ask=%s)",
+                self.remote_open_url, self.remote_open_url_ask)
 
     def get_info(self):
         info = FileTransferAttributes.get_info(self)
@@ -300,8 +305,13 @@ class FileTransferHandler(FileTransferAttributes):
     def accept_data(self, send_id, dtype, basefilename, printit, openit):
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
-        filelog("accept_data%s printing=%s, printing-ask=%s, file-transfer=%s, file-transfer-ask=%s, open-files=%s, open-files-ask=%s",
-                (send_id, dtype, basefilename, printit, openit), self.printing, self.printing_ask, self.file_transfer, self.file_transfer_ask, self.open_files, self.open_files_ask)
+        filelog("accept_data%s", (send_id, dtype, basefilename, printit, openit))
+        filelog("accept_data: printing=%s, printing-ask=%s",
+                self.printing, self.printing_ask)
+        filelog("accept_data: file-transfer=%s, file-transfer-ask=%s",
+                self.file_transfer, self.file_transfer_ask)
+        filelog("accept_data: open-files=%s, open-files-ask=%s",
+                self.open_files, self.open_files_ask)
         if printit:
             return self.printing and not self.printing_ask
         if not self.file_transfer or self.file_transfer_ask:
@@ -326,7 +336,8 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             l = filelog
             assert self.file_transfer
-        l("receiving file: %s", [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
+        l("receiving file: %s",
+          [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         assert filesize>0, "invalid file size: %s" % filesize
         if filesize>self.file_size_limit*1024*1024:
             l.error("Error: file '%s' is too large:", basefilename)
@@ -349,7 +360,12 @@ class FileTransferHandler(FileTransferAttributes):
             digest = hashlib.sha1()
             chunk = 0
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
-            chunk_state = [monotonic_time(), fd, filename, mimetype, printit, openit, filesize, options, digest, 0, timer, chunk]
+            chunk_state = [
+                monotonic_time(),
+                fd, filename, mimetype,
+                printit, openit, filesize,
+                options, digest, 0, timer, chunk,
+                ]
             self.receive_chunks_in_progress[chunk_id] = chunk_state
             self.send("ack-file-chunk", chunk_id, True, "", chunk)
             return
@@ -377,12 +393,13 @@ class FileTransferHandler(FileTransferAttributes):
 
     def do_process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options):
         filelog("do_process_downloaded_file%s", (filename, mimetype, printit, openit, filesize, options))
-        filelog.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
+        filelog.info("downloaded %s bytes to %s file%s:",
+                     filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
         filelog.info(" '%s'", filename)
         if printit:
             self._print_file(filename, mimetype, options)
             return
-        elif openit:
+        if openit:
             if not self.open_files:
                 filelog.warn("Warning: opening files automatically is disabled,")
                 filelog.warn(" ignoring uploaded file:")
@@ -402,13 +419,11 @@ class FileTransferHandler(FileTransferAttributes):
         from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
         def delfile():
-            if not DELETE_PRINTER_FILE:
-                return
-            try:
-                os.unlink(filename)
-            except:
-                printlog("failed to delete print job file '%s'", filename)
-            return False
+            if DELETE_PRINTER_FILE:
+                try:
+                    os.unlink(filename)
+                except:
+                    printlog("failed to delete print job file '%s'", filename)
         if not printer:
             printlog.error("Error: the printer name is missing")
             printlog.error(" printers available: %s", csv(printers.keys()) or "none")
@@ -570,7 +585,8 @@ class FileTransferHandler(FileTransferAttributes):
                     action = "open"
         assert len(data)>=filesize, "data is smaller then the given file size!"
         data = data[:filesize]          #gio may null terminate it
-        l("send_file%s action=%s, ask=%s", (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options), action, ask)
+        l("send_file%s action=%s, ask=%s",
+          (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options), action, ask)
         self.dump_remote_caps()
         if not self.check_file_size(action, filename, filesize):
             return False
@@ -583,11 +599,13 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = uuid.uuid4().hex
         if len(self.pending_send_data)>=MAX_CONCURRENT_FILES:
             filelog.warn("Warning: %s dropped", action)
-            filelog.warn(" %i transfer%s already waiting for a response", len(self.pending_send_data), engs(self.pending_send_data))
+            filelog.warn(" %i transfer%s already waiting for a response",
+                         len(self.pending_send_data), engs(self.pending_send_data))
             return None
         self.pending_send_data[send_id] = (dtype, url, mimetype, data, filesize, printit, openit, options)
         self.pending_send_data_timers[send_id] = self.timeout_add(self.remote_file_ask_timeout*1000, self.send_data_ask_timeout, send_id)
-        filelog("sending data request for %s '%s' with send-id=%s", bytestostr(dtype), url, send_id)
+        filelog("sending data request for %s '%s' with send-id=%s",
+                bytestostr(dtype), url, send_id)
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit)
         return send_id
 
@@ -656,8 +674,7 @@ class FileTransferHandler(FileTransferAttributes):
         if accept==DENY:
             filelog.info("the request to send %s '%s' has been denied", bytestostr(dtype), url)
             return
-        else:
-            assert accept in (ACCEPT, OPEN), "unknown value for send-data response: %s" % (accept,)
+        assert accept in (ACCEPT, OPEN), "unknown value for send-data response: %s" % (accept,)
         if dtype==b"file":
             mimetype, data, filesize, printit, openit, options = v[2:]
             if accept==ACCEPT:
@@ -763,7 +780,8 @@ class FileTransferHandler(FileTransferAttributes):
         if not data:
             #all sent!
             elapsed = monotonic_time()-start_time
-            filelog("%i chunks of %i bytes sent in %ims (%sB/s)", chunk, chunk_size, elapsed*1000, std_unit(chunk*chunk_size/elapsed))
+            filelog("%i chunks of %i bytes sent in %ims (%sB/s)",
+                    chunk, chunk_size, elapsed*1000, std_unit(chunk*chunk_size/elapsed))
             del self.send_chunks_in_progress[chunk_id]
             return
         assert chunk_size>0

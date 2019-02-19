@@ -22,42 +22,42 @@ def dbus_to_native(value):
     #log("dbus_to_native(%s) type=%s", value, type(value))
     if value is None:
         return None
-    elif isinstance(value, int):
+    if isinstance(value, int):
         return int(value)
-    elif isinstance(value, long):
+    if isinstance(value, long):
         return long(value)
-    elif isinstance(value, dict):
+    if isinstance(value, dict):
         d = {}
         for k,v in value.items():
             d[dbus_to_native(k)] = dbus_to_native(v)
         return d
-    elif isinstance(value, basestring):
+    if isinstance(value, basestring):
         return str(value)
-    elif isinstance(value, float):
+    if isinstance(value, float):
         return float(value)
-    elif isinstance(value, list):
+    if isinstance(value, list):
         return [dbus_to_native(x) for x in value]
-    elif isinstance(value, dbus.Struct):
+    if isinstance(value, dbus.Struct):
         return [dbus_to_native(value[i]) for i in range(len(value))]
     return value
 
 def native_to_dbus(value):
     if value is None:
         return None
-    elif isinstance(value, int):
+    if isinstance(value, int):
         return dbus.types.Int64(value)
-    elif isinstance(value, long):
+    if isinstance(value, long):
         return dbus.types.Int64(value)
-    elif isinstance(value, unicode):
+    if isinstance(value, unicode):
         return dbus.types.String(value)
-    elif isinstance(value, basestring):
+    if isinstance(value, basestring):
         return dbus.types.String(value)
-    elif isinstance(value, float):
+    if isinstance(value, float):
         return dbus.types.Double(value)
-    elif isinstance(value, (tuple, list, bytearray)):
+    if isinstance(value, (tuple, list, bytearray)):
         if not value:
             return dbus.Array(signature="s")
-        keytypes = set([type(x) for x in value])
+        keytypes = set(type(x) for x in value)
         sig = None
         if len(keytypes)==1:
             #just one type of key:
@@ -77,10 +77,10 @@ def native_to_dbus(value):
             #use strings as keys
             value = [native_to_dbus(str(v)) for v in value]
         return dbus.types.Array(value)
-    elif isinstance(value, dict):
+    if isinstance(value, dict):
         if not value:
             return dbus.types.Dictionary({}, signature="sv")
-        keytypes = set([type(x) for x in value.keys()])
+        keytypes = set(type(x) for x in value.keys())
         sig = None
         if len(keytypes)==1:
             #just one type of key:

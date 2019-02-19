@@ -62,13 +62,19 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             nid = self.next_id()
         else:
             nid = int(replaces_nid)
-        log("Notify%s counter=%i, callback=%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), self.counter, self.notify_callback)
+        log("Notify%s counter=%i, callback=%s",
+            (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), self.counter, self.notify_callback)
         self.active_notifications.add(nid)
         if self.notify_callback:
             try:
                 actions = tuple(str(x) for x in actions)
                 hints = self.parse_hints(hints)
-                args = self.dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), actions, hints, int(expire_timeout)
+                args = (
+                    self.dbus_id, int(nid), str(app_name),
+                    int(replaces_nid), str(app_icon),
+                    str(summary), str(body),
+                    actions, hints, int(expire_timeout),
+                    )
             except Exception as e:
                 log.error("Error: failed to parse Notify arguments:")
                 log.error(" %s", e)
