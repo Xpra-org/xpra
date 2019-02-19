@@ -413,7 +413,8 @@ class Protocol(object):
                 assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size, "expected encrypted size to be %i, but got %i" % (len(data), actual_size)
-                cryptolog("sending %s bytes %s encrypted with %s padding", payload_size, self.cipher_out_name, padding_size)
+                cryptolog("sending %s bytes %s encrypted with %s padding",
+                          payload_size, self.cipher_out_name, padding_size)
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
                 #for plain/text packets (ie: gibberish response)
@@ -873,7 +874,8 @@ class Protocol(object):
                         def check_packet_size(size_to_check, packet_header):
                             if self._closed:
                                 return False
-                            log("check_packet_size(%#x, %s) max=%#x", size_to_check, hexstr(packet_header), self.max_packet_size)
+                            log("check_packet_size(%#x, %s) max=%#x",
+                                size_to_check, hexstr(packet_header), self.max_packet_size)
                             if size_to_check>self.max_packet_size:
                                 msg = "packet size requested is %s but maximum allowed is %s" % \
                                               (size_to_check, self.max_packet_size)
@@ -912,7 +914,8 @@ class Protocol(object):
                     if not (protocol_flags & FLAGS_CIPHER):
                         self.invalid("unencrypted packet dropped", data)
                         return
-                    cryptolog("received %i %s encrypted bytes with %i padding", payload_size, self.cipher_in_name, padding_size)
+                    cryptolog("received %i %s encrypted bytes with %i padding",
+                              payload_size, self.cipher_in_name, padding_size)
                     data = self.cipher_in.decrypt(data)
                     if padding_size > 0:
                         def debug_str(s):
@@ -1056,7 +1059,8 @@ class Protocol(object):
                         pass
                     done()
                 def wait_for_packet_sent():
-                    log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s", self._write_queue.empty(), self._closed)
+                    log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s",
+                        self._write_queue.empty(), self._closed)
                     if self._write_queue.empty() or self._closed:
                         #it got sent, we're done!
                         close_and_release()
