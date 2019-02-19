@@ -161,7 +161,7 @@ class WindowModel(BaseWindowModel):
     _internal_property_names = BaseWindowModel._internal_property_names+["children"]
     _MODELTYPE = "Window"
 
-    def __init__(self, parking_window, client_window, desktop_geometry, size_constraints=(0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)):
+    def __init__(self, parking_window, client_window, desktop_geometry, size_constraints=None):
         """Register a new client window with the WM.
 
         Raises an Unmanageable exception if this window should not be
@@ -172,7 +172,7 @@ class WindowModel(BaseWindowModel):
         self.parking_window = parking_window
         self.corral_window = None
         self.desktop_geometry = desktop_geometry
-        self.size_constraints = size_constraints
+        self.size_constraints = size_constraints or (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
         #extra state attributes so we can unmanage() the window cleanly:
         self.in_save_set = False
         self.client_reparented = False
@@ -285,9 +285,7 @@ class WindowModel(BaseWindowModel):
         def set_if_unset(propname, value):
             #the property may not be initialized yet,
             #if that's the case then calling get_property throws an exception:
-            try:
-                assert self.get_property(propname) is not None
-            except:
+            if self.get_property(propname) in (None, ""):
                 self._internal_set_property(propname, value)
         #"decorations" needs to be set before reading the X11 properties
         #because handle_wm_normal_hints_change reads it:
@@ -308,10 +306,7 @@ class WindowModel(BaseWindowModel):
         set_if_unset("requested-position", (ax, ay))
         set_if_unset("requested-size", (aw, ah))
         #it may have been set already:
-        try:
-            v = self.get_property("set-initial-position")
-        except:
-            v = False
+        v = self.get_property("set-initial-position")
         self._internal_set_property("set-initial-position", v or ("position" in size_hints))
         self.update_children()
 
@@ -544,7 +539,7 @@ class WindowModel(BaseWindowModel):
         w, h = self.calc_constrained_size(w, h, hints)
         cx, cy, cw, ch = self.get_property("geometry")
         resized = cow!=w or coh!=h
-        moved = (x, y) != (0, 0)
+        moved = x!=0 or y!=0
         if resized:
             if moved:
                 self._internal_set_property("set-initial-position", True)
