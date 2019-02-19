@@ -31,7 +31,7 @@ if MENU_FORWARDING:
         from xpra import dbus
         assert dbus
     except ImportError as e:
-        log("this build does not include the dbus module, no menu forwarding")
+        menulog("this build does not include the dbus module, no menu forwarding")
         del e
     else:
         try:
@@ -39,8 +39,9 @@ if MENU_FORWARDING:
             dbus_helper = DBusHelper()
             from xpra.dbus.gtk_menuactions import query_actions, query_menu, ACTIONS, MENUS
         except Exception as e:
-            log.warn("Warning: menu forwarding is disabled:")
-            log.warn(" cannot load dbus helper: %s", e)
+            menulog("menu actions", exc_info=True)
+            menulog.warn("Warning: menu forwarding is disabled:")
+            menulog.warn(" cannot load dbus helper: %s", e)
             del e
             MENU_FORWARDING = False
 
