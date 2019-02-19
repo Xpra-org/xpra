@@ -329,7 +329,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
         # Let the rules file do the magic:
         cdef Bool r = XkbRF_GetComponents(rules, &rdefs, &rnames)
-        log.info("XkbRF_GetComponents(%#x, %#x, %#x)=%s", <uintptr_t> rules, <uintptr_t> &rdefs, <uintptr_t> &rnames, bool(r))
+        log("XkbRF_GetComponents(%#x, %#x, %#x)=%s", <uintptr_t> rules, <uintptr_t> &rdefs, <uintptr_t> &rnames, bool(r))
         assert r, "failed to get components"
         props = self.getXkbProperties()
         if rnames.keycodes:
