@@ -78,22 +78,22 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
         log("do_set_keymap using xkbmap_query struct=%s", xkbmap_query_struct)
         """ The xkbmap_query_struct data will look something like this:
             {
-            "rules"       : "evdev",
-            "model"       : "pc105",
-            "layout"      : "gb",
-            "options"     : "grp:shift_caps_toggle",
+            b"rules"       : b"evdev",
+            b"model"       : b"pc105",
+            b"layout"      : b"gb",
+            b"options"     : b"grp:shift_caps_toggle",
             }
         """
         #parse the data into a dict:
-        rules = xkbmap_query_struct.get("rules")
-        model = xkbmap_query_struct.get("model")
-        layout = xkbmap_query_struct.get("layout")
-        variant = xkbmap_query_struct.get("variant")
-        options = xkbmap_query_struct.get("options")
+        rules = xkbmap_query_struct.get(b"rules")
+        model = xkbmap_query_struct.get(b"model")
+        layout = xkbmap_query_struct.get(b"layout")
+        variant = xkbmap_query_struct.get(b"variant")
+        options = xkbmap_query_struct.get(b"options")
         if layout:
             log.info("setting keymap: %s",
                      csv("%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items()
-                         if k in ["rules", "model", "layout"] and v))
+                         if k in ("rules", "model", "layout") and v))
             safe_setxkbmap(rules, model, layout, variant, options)
         else:
             safe_setxkbmap(rules, model, "", "", "")
@@ -122,16 +122,17 @@ def safe_setxkbmap(rules, model, layout, variant, options):
     try:
         X11Keyboard.setxkbmap(rules, model, layout, variant, options)
         return
-    except Exception as e:
+    except Exception:
         log("safe_setxkbmap%s", (rules, model, layout, variant, options), exc_info=True)
         log.warn("Warning: failed to set exact keymap,")
-        log.warn(" rules=%s, model=%s, layout=%s, variant=%s, options=%s", rules, model, layout, variant, options)
+        log.warn(" rules=%s, model=%s, layout=%s, variant=%s, options=%s",
+                 bytestostr(rules), bytestostr(model), bytestostr(layout), bytestostr(variant), bytestostr(options))
     if options:
         #try again with no options:
         try:
             X11Keyboard.setxkbmap(rules, model, layout, variant, "")
-            return
-        except:
+        except Exception:
+            log("setxkbmap", exc_info=True)
             log.error("Error: failed to set exact keymap")
             log.error(" even without applying any options..")
 
@@ -475,9 +476,9 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             for name, _ in entries:
                 if keycode>=0 and server_keycode!=keycode:
                     keycode_trans[(keycode, name)] = server_keycode
-                    l("keycode_trans[(%s, %s)]=%s", keycode, name, server_keycode)
+                    l("keycode_trans[(%s, %s)]=%s", keycode, bytestostr(name), server_keycode)
                 keycode_trans[name] = server_keycode
-                l("keycode_trans[%s]=%s", name, server_keycode)
+                l("keycode_trans[%s]=%s", bytestostr(name), server_keycode)
             server_keycodes[server_keycode] = entries
         return server_keycode
 

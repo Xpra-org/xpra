@@ -20,8 +20,8 @@ from libc.stdlib cimport free, malloc
 
 
 DEF PATH_MAX = 1024
-DEF DFLT_XKB_RULES_FILE = "base"
-DEF DFLT_XKB_CONFIG_ROOT = "/usr/share/X11/xkb"
+DEF DFLT_XKB_RULES_FILE = b"base"
+DEF DFLT_XKB_CONFIG_ROOT = b"/usr/share/X11/xkb"
 
 ###################################
 # Headers, python magic
@@ -225,7 +225,7 @@ cdef extern from "X11/extensions/xfixeswire.h":
 cdef NS(char *v):
     if v==NULL:
         return "NULL"
-    return str(v)
+    return bytestostr(v)
 
 cdef s(const char *v):
     pytmp = v[:]
@@ -283,61 +283,71 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         cdef XkbRF_VarDefsRec rdefs
         cdef XkbComponentNamesRec rnames
         cdef char *locale = setlocale(LC_ALL, NULL)
-        log("setxkbmap: using locale=%s", locale)
+        log("setxkbmap: using locale=%s", bytestostr(locale))
 
         #we have to use a temporary value for older versions of Cython:
-        v = model or b""
+        v = strtobytes(model or "")
         rdefs.model = v
+        layout = strtobytes(layout)
         rdefs.layout = layout
         if variant:
+            variant = strtobytes(variant)
             rdefs.variant = variant
         else:
             rdefs.variant = NULL
         if options:
+            options = strtobytes(options)
             rdefs.options = options
         else:
             rdefs.options = NULL
         if not rules_name:
             rules_name = DFLT_XKB_RULES_FILE
 
-        log("setxkbmap: using %s", {"rules" : rules_name, "model" : NS(rdefs.model),
-                                     "layout" : NS(rdefs.layout), "variant" : NS(rdefs.variant),
-                                     "options" : NS(rdefs.options)})
+        log("setxkbmap: using %s", {
+            "rules" : bytestostr(rules_name),
+            "model" : NS(rdefs.model),
+            "layout" : NS(rdefs.layout),
+            "variant" : NS(rdefs.variant),
+            "options" : NS(rdefs.options),
+            })
         #try to load rules files from all include paths until the first
         #we succeed with
-        for include_path in (".", DFLT_XKB_CONFIG_ROOT):
-            rules_path = os.path.join(include_path, "rules", rules_name)
+        for include_path in (b".", DFLT_XKB_CONFIG_ROOT):
+            rules_path = os.path.join(include_path, b"rules", strtobytes(rules_name))
             if len(rules_path)>=PATH_MAX:
-                log.warn("rules path too long: %. Ignored.", rules_path)
+                log.warn("Warning: rules path too long: %. Ignored.", rules_path)
                 continue
             log("setxkbmap: trying to load rules file %s...", rules_path)
+            rules_path = strtobytes(rules_path)
             rules = XkbRF_Load(rules_path, locale, True, True)
             if rules:
-                log("setxkbmap: loaded rules from %s", rules_path)
+                log("setxkbmap: loaded rules from %s", bytestostr(rules_path))
                 break
         if rules==NULL:
-            log.warn("Couldn't find rules file '%s'", rules_name)
+            log.error("Error: cannot find rules file '%s'", bytestostr(rules_name))
             return False
 
         # Let the rules file do the magic:
-        assert XkbRF_GetComponents(rules, &rdefs, &rnames), "failed to get components"
+        cdef Bool r = XkbRF_GetComponents(rules, &rdefs, &rnames)
+        log.info("XkbRF_GetComponents(%#x, %#x, %#x)=%s", <uintptr_t> rules, <uintptr_t> &rdefs, <uintptr_t> &rnames, bool(r))
+        assert r, "failed to get components"
         props = self.getXkbProperties()
         if rnames.keycodes:
-            props["keycodes"] = str(rnames.keycodes)
+            props["keycodes"] = bytestostr(rnames.keycodes)
         if rnames.symbols:
-            props["symbols"] = str(rnames.symbols)
+            props["symbols"] = bytestostr(rnames.symbols)
         if rnames.types:
-            props["types"] = str(rnames.types)
+            props["types"] = bytestostr(rnames.types)
         if rnames.compat:
-            props["compat"] = str(rnames.compat)
+            props["compat"] = bytestostr(rnames.compat)
         if rnames.geometry:
-            props["geometry"] = str(rnames.geometry).encode()
+            props["geometry"] = bytestostr(rnames.geometry)
         if rnames.keymap:
-            props["keymap"] = str(rnames.keymap).encode()
+            props["keymap"] = bytestostr(rnames.keymap)
         #note: this value is from XkbRF_VarDefsRec as XkbComponentNamesRec has no layout attribute
         #(and we want to make sure we don't use the default value from getXkbProperties above)
         if rdefs.layout:
-            props["layout"] = str(rdefs.layout).encode()
+            props["layout"] = bytestostr(rdefs.layout)
         log("setxkbmap: properties=%s", props)
         #strip out strings inside parenthesis if any:
         filtered_props = {}
@@ -356,6 +366,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             return False
         # update the XKB root property:
         if rules_name and (model or layout):
+            rules_name = strtobytes(rules_name)
             if not XkbRF_SetNamesProp(self.display, rules_name, &rdefs):
                 log.error("Error updating the XKB names property")
                 return False
