@@ -173,8 +173,8 @@ def get_thread_info(proto=None, protocols=()):
         log.error("failed to get frame info: %s", e)
     return info
 
-def noop(*_args):
-    pass
+def notimplemented(*_args):
+    raise NotImplementedError()
 
 
 class ServerCore(object):
@@ -203,7 +203,7 @@ class ServerCore(object):
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
         self._rfb_upgrade = 0
-        self._ssl_wrap_socket = noop
+        self._ssl_wrap_socket = notimplemented
         self._accept_timeout = SOCKET_TIMEOUT + 1
         self.ssl_mode = None
         self._html = False
