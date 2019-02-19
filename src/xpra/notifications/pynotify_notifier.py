@@ -33,7 +33,7 @@ class PyNotify_Notifier(NotifierBase):
 
     def add_action(self, n, action_id, action_label):
         #n.add_action("foo", "Foo!", foo_action)
-        def callback(*args):
+        def callback(*_args):
             pass
         n.add_action(action_id, action_label, callback)
 
@@ -42,8 +42,9 @@ class PyNotify_Notifier(NotifierBase):
 
 
 def main():
-    import glib
-    import gtk
+    from xpra.gtk_common.gobject_compat import import_glib, import_gtk
+    glib = import_glib()
+    gtk = import_gtk()
     def show():
         n = PyNotify_Notifier()
         n.show_notify("", None, 0, "Test", 0, "", "Summary", "Body...", ["0", "Hello", "1", "Bye"], {}, 0, "")

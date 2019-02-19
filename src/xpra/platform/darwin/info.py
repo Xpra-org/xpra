@@ -8,7 +8,7 @@ def get_pyobjc_version():
     try:
         import objc     #@UnresolvedImport
         return objc.__version__
-    except:
+    except ImportError:
         return None
 
 def get_version_info():

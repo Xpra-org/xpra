@@ -82,7 +82,8 @@ class ClientDisplayMixin(StubSourceMixin):
             self.desktop_names = []
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
-        log("updated_desktop_size%s randr_notify=%s, desktop_size=%s", (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
+        log("updated_desktop_size%s randr_notify=%s, desktop_size=%s",
+            (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
         if not self.hello_sent:
             return False
         if self.randr_notify and (not self.desktop_size_server or tuple(self.desktop_size_server)!=(root_w, root_h)):

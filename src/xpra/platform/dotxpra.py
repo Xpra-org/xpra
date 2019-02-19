@@ -12,6 +12,7 @@ import stat
 
 from xpra.os_util import get_util_logger, osexpand, umask_context
 from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE
+from xpra.platform import platform_import
 
 
 def norm_makepath(dirpath, name):
@@ -57,7 +58,7 @@ class DotXpra(object):
                 os.lchown(d, uid, gid)
 
     def socket_expand(self, path):
-        return self.osexpand(path, uid=self.uid, gid=self.gid)
+        return osexpand(path, self.username, uid=self.uid, gid=self.gid)
 
     def norm_socket_paths(self, local_display_name):
         return [norm_makepath(x, local_display_name) for x in self._sockdirs]
@@ -92,7 +93,7 @@ class DotXpra(object):
         finally:
             try:
                 sock.close()
-            except:
+            except IOError:
                 debug("%s.close()", sock, exc_info=True)
 
 
@@ -120,7 +121,8 @@ class DotXpra(object):
         if self._sockdir!="undefined":
             dirs.append(self._sockdir)
         dirs += [x for x in self._sockdirs if x not in dirs]
-        debug("socket_details%s sockdir=%s, sockdirs=%s, testing=%s", (check_uid, matching_state, matching_display), self._sockdir, self._sockdirs, dirs)
+        debug("socket_details%s sockdir=%s, sockdirs=%s, testing=%s",
+              (check_uid, matching_state, matching_display), self._sockdir, self._sockdirs, dirs)
         seen = set()
         for d in dirs:
             if not d or not os.path.exists(d):
@@ -149,7 +151,8 @@ class DotXpra(object):
                             continue
                     local_display = ":"+sockpath[len(base):]
                     if matching_display and local_display!=matching_display:
-                        debug("socket_details: '%s' display does not match (%s vs %s)", sockpath, local_display, matching_display)
+                        debug("socket_details: '%s' display does not match (%s vs %s)",
+                              sockpath, local_display, matching_display)
                         continue
                     state = self.get_server_state(sockpath)
                     if matching_state and state!=matching_state:
@@ -162,7 +165,6 @@ class DotXpra(object):
 
 
 #win32 re-defines DotXpra for namedpipes:
-from xpra.platform import platform_import
 platform_import(globals(), "dotxpra", False,
                 "DotXpra",
                 "norm_makepath")

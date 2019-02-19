@@ -142,8 +142,6 @@ class ApplicationWindow:
         fixup_options(self.config)
         #what we save by default:
         self.config_keys = set(SAVED_FIELDS)
-        def raise_exception(*args):
-            raise Exception(*args)
         self.client = None
         self.exit_launcher = False
         self.exit_code = None
@@ -523,7 +521,7 @@ class ApplicationWindow:
             ssh_port = self.ssh_port_entry.get_text()
             try:
                 ssh_port = int(ssh_port)
-            except:
+            except ValueError:
                 ssh_port = -1
             errs.append((self.ssh_port_entry, ssh_port<0 or ssh_port>=2**16, "invalid SSH port number"))
         if sshtossh:
@@ -531,7 +529,7 @@ class ApplicationWindow:
             proxy_port = self.proxy_port_entry.get_text()
             try:
                 proxy_port = int(proxy_port)
-            except:
+            except ValueError:
                 proxy_port = -1
             errs.append((self.proxy_port_entry, proxy_port<0 or proxy_port>=2**16, "invalid SSH port number"))
         port = self.port_entry.get_text()
@@ -1166,9 +1164,7 @@ def do_main(argv):
                 glib.timeout_add(1000, app.set_info_color, True)
             #call from UI thread:
             glib.idle_add(show_signal)
-        if sys.version_info[0]<3:
-            #breaks GTK3..
-            signal.signal(signal.SIGINT, app_signal)
+        signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
         has_file = len(args) == 1
         if has_file:

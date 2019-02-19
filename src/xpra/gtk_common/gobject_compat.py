@@ -11,7 +11,15 @@ Once we have imported something, stick to that version from then on for all othe
 
 import sys
 
-__all__ = ["is_gtk3", "get_xid", "import_gobject", "import_gtk", "import_gdk", "import_pango", "import_glib", "import_pixbufloader"]
+__all__ = [
+    "is_gtk3",
+    "import_gobject",
+    "import_gtk",
+    "import_gdk",
+    "import_pango",
+    "import_glib",
+    "import_pixbufloader",
+    ]
 
 _is_gtk3 = None
 if sys.version>='3':
@@ -59,7 +67,7 @@ def _try_import(import_method_gtk3, import_method_gtk2):
     try:
         imported = import_method_gtk2()
         _is_gtk3 = False
-    except:
+    except ImportError:
         imported = trygtk3()
         _is_gtk3 = True
     return imported
@@ -75,13 +83,13 @@ def try_import_GdkX11():
             gi.require_version('GdkX11', '3.0')
             from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
             return GdkX11
-        except:
+        except ImportError:
             pass
     return None
 
 
 def import_gobject2():
-    import gobject
+    import gobject                                  #@UnresolvedImport
     gobject.threads_init()
     return gobject
 def import_gobject3():
@@ -89,7 +97,7 @@ def import_gobject3():
     #silence a GTK3 warning about threads_init not beeing needed:
     v = getattr(GObject, "pygobject_version", (0))
     if v>=(3,10):
-        def noop(*args):
+        def noop(*_args):
             pass
         GObject.threads_init = noop
     return GObject
@@ -100,16 +108,16 @@ def import_glib3():
     from gi.repository import GLib                  #@UnresolvedImport
     return GLib
 def import_glib2():
-    import glib
+    import glib                                     #@UnresolvedImport
     glib.threads_init()
     return glib
 def import_glib():
     return _try_import(import_glib3, import_glib2)
 
 def import_gtk2():
-    import pygtk
+    import pygtk                                    #@UnresolvedImport
     pygtk.require("2.0")
-    import gtk
+    import gtk                                      #@UnresolvedImport
     return gtk
 def import_gtk3():
     gi_gtk()
@@ -120,7 +128,7 @@ def import_gtk():
     return  _try_import(import_gtk3, import_gtk2)
 
 def import_gdk2():
-    from gtk import gdk
+    from gtk import gdk                             #@UnresolvedImport
     return gdk
 def import_gdk3():
     gi_gtk()
@@ -131,7 +139,7 @@ def import_gdk():
     return  _try_import(import_gdk3, import_gdk2)
 
 def import_pixbuf2():
-    from gtk.gdk import Pixbuf
+    from gtk.gdk import Pixbuf                      #@UnresolvedImport
     return Pixbuf
 def import_pixbuf3():
     gi_gtk()
@@ -141,7 +149,7 @@ def import_pixbuf():
     return  _try_import(import_pixbuf3, import_pixbuf2)
 
 def import_pixbufloader2():
-    from gtk.gdk import PixbufLoader
+    from gtk.gdk import PixbufLoader                #@UnresolvedImport
     return PixbufLoader
 def import_pixbufloader3():
     from gi.repository import GdkPixbuf             #@UnresolvedImport
@@ -150,7 +158,7 @@ def import_pixbufloader():
     return  _try_import(import_pixbufloader3, import_pixbufloader2)
 
 def import_pango2():
-    import pango
+    import pango                                    #@UnresolvedImport
     return pango
 def import_pango3():
     from gi.repository import Pango                 #@UnresolvedImport
@@ -159,7 +167,7 @@ def import_pango():
     return  _try_import(import_pango3, import_pango2)
 
 def import_pangocairo2():
-    import pangocairo
+    import pangocairo                               #@UnresolvedImport
     return pangocairo
 def import_pangocairo3():
     from gi.repository import PangoCairo            #@UnresolvedImport

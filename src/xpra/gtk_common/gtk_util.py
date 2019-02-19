@@ -1003,17 +1003,26 @@ def get_screen_info(display, screen):
                          "red_pixel_details"    : {},
                          "green_pixel_details"  : {},
                          "blue_pixel_details"   : {},
-                         "visual_type"  : {STATIC_GRAY : "STATIC_GRAY", GRAYSCALE : "GRAYSCALE",  STATIC_COLOR : "STATIC_COLOR", PSEUDO_COLOR : "PSEUDO_COLOR", TRUE_COLOR : "TRUE_COLOR", DIRECT_COLOR : "DIRECT_COLOR"},
+                         "visual_type"  : {
+                             STATIC_GRAY    : "STATIC_GRAY",
+                             GRAYSCALE      : "GRAYSCALE",
+                             STATIC_COLOR   : "STATIC_COLOR",
+                             PSEUDO_COLOR   : "PSEUDO_COLOR",
+                             TRUE_COLOR     : "TRUE_COLOR",
+                             DIRECT_COLOR   : "DIRECT_COLOR",
+                             },
                          }.items():
             val = None
             try:
-                val = getattr(v, x.replace("visual_"))  #ugly workaround for "visual_type" -> "type" for GTK2...
-            except:
+                #ugly workaround for "visual_type" -> "type" for GTK2...
+                val = getattr(v, x.replace("visual_"))
+            except AttributeError:
                 try:
                     fn = getattr(v, "get_"+x)
-                    val = fn()
-                except:
+                except AttributeError:
                     pass
+                else:
+                    val = fn()
             if val is not None:
                 vinfo.setdefault(name, {})[x] = vdict.get(val, val)
     try:

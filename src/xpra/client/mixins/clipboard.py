@@ -35,10 +35,10 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboards = []
         self.clipboard_helper = None
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts, _extra_args=()):
         self.client_clipboard_type = opts.clipboard
         self.client_clipboard_direction = opts.clipboard_direction
-        self.client_supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
+        self.client_supports_clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
 
 
     def cleanup(self):
@@ -91,11 +91,12 @@ class ClipboardClient(StubClientMixin):
                 self.client_clipboard_direction = self.server_clipboard_direction
             else:
                 log.warn("Warning: incompatible clipboard direction settings")
-                log.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
+                log.warn(" server setting: %s, client setting: %s",
+                         self.server_clipboard_direction, self.client_clipboard_direction)
         self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
         try:
             from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
-        except:
+        except ImportError:
             ALL_CLIPBOARDS = []
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
         log("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
@@ -177,7 +178,8 @@ class ClipboardClient(StubClientMixin):
             self.emit("clipboard-toggled")
 
     def clipboard_toggled(self, *args):
-        log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s", args, self.clipboard_enabled, self.server_clipboard)
+        log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s",
+            args, self.clipboard_enabled, self.server_clipboard)
         if self.server_clipboard:
             self.send("set-clipboard-enabled", self.clipboard_enabled)
             if self.clipboard_enabled:
@@ -189,7 +191,8 @@ class ClipboardClient(StubClientMixin):
                 pass    #FIXME: todo!
 
     def send_clipboard_selections(self, selections):
-        log("send_clipboard_selections(%s) server_clipboard_enable_selections=%s", selections, self.server_clipboard_enable_selections)
+        log("send_clipboard_selections(%s) server_clipboard_enable_selections=%s",
+            selections, self.server_clipboard_enable_selections)
         if self.server_clipboard_enable_selections:
             self.send("clipboard-enable-selections", selections)
 

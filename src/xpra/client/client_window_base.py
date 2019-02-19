@@ -590,7 +590,7 @@ class ClientWindowBase(ClientWidgetBase):
         #the "ClientWindow"
         self._client.send_refresh_all()
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, _packet_sequence, options, callbacks):
         """ Note: this runs from the draw thread (not UI thread) """
         backing = self._backing
         if not backing:
@@ -599,7 +599,8 @@ class ClientWindowBase(ClientWidgetBase):
             fire_paint_callbacks(callbacks, -1, "no backing")
             return
         def after_draw_refresh(success, message=""):
-            plog("after_draw_refresh(%s, %s) %sx%s at %sx%s encoding=%s, options=%s", success, message, width, height, x, y, coding, options)
+            plog("after_draw_refresh(%s, %s) %sx%s at %sx%s encoding=%s, options=%s",
+                 success, message, width, height, x, y, coding, options)
             if success<=0:
                 return
             backing = self._backing
@@ -718,7 +719,8 @@ class ClientWindowBase(ClientWidgetBase):
             return
         pointer, relative_pointer, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer)
-        mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer, modifiers, buttons)
+        mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
+                 button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer, modifiers, buttons)
         #map wheel buttons via translation table to support inverted axes:
         server_button = button
         if button>3:

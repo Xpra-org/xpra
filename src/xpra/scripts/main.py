@@ -130,7 +130,7 @@ def configure_logging(options, mode):
     else:
         s = sys.stderr
     to = s
-    if sys.version_info[0]==3:
+    if PYTHON3:
         try:
             import codecs
             #print("locale.getpreferredencoding()=%s" % (locale.getpreferredencoding(),))

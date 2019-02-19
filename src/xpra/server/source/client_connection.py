@@ -80,7 +80,7 @@ BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
-NOYIELD = not envbool("XPRA_YIELD", False)
+YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
 
@@ -375,19 +375,21 @@ class ClientConnection(ClientConnectionClass):
                 else:
                     log.error("Error during encoding:", exc_info=True)
                 del e
-            NOYIELD or sleep(0)
+            if YIELD:
+                sleep(0)
 
     ######################################################################
     # network:
     def next_packet(self):
         """ Called by protocol.py when it is ready to send the next packet """
-        packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more = None, None, None, None, True, False, False
+        packet, start_send_cb, end_send_cb, fail_cb = None, None, None, None
+        synchronous, have_more, will_have_more = True, False, False
         if not self.is_closed():
-            if len(self.ordinary_packets)>0:
+            if self.ordinary_packets:
                 packet, synchronous, fail_cb, will_have_more = self.ordinary_packets.pop(0)
-            elif len(self.packet_queue)>0:
+            elif self.packet_queue:
                 packet, _, _, start_send_cb, end_send_cb, fail_cb, will_have_more = self.packet_queue.popleft()
-            have_more = packet is not None and (len(self.ordinary_packets)>0 or len(self.packet_queue)>0)
+            have_more = packet is not None and (self.ordinary_packets or self.packet_queue)
         return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more
 
     def send(self, *parts, **kwargs):
@@ -483,7 +485,7 @@ class ClientConnection(ClientConnectionClass):
 
     ######################################################################
     # notifications:
-    """ Utility functions for mixins (makes notifications optional) """
+    # Utility functions for mixins (makes notifications optional)
     def may_notify(self, nid, summary, body, actions=(), hints={}, expire_timeout=10*1000, icon_name=None, user_callback=None):
         try:
             from xpra.platform.paths import get_icon_filename

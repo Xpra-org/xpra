@@ -14,7 +14,7 @@ from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
 from xpra.util import envbool
-from xpra.os_util import PYTHON2
+from xpra.os_util import PYTHON2, PYTHON3
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
     SetConsoleTitleA, GetConsoleScreenBufferInfo,
@@ -89,6 +89,8 @@ def set_prgname(name):
 
 
 def fix_unicode_out():
+    if PYTHON3:
+        unicode = str
     #code found here:
     #http://stackoverflow.com/a/3259271/428751
     import codecs
@@ -334,10 +336,10 @@ def do_clean():
         print("\nPress Enter to close")
         try:
             sys.stdout.flush()
-        except:
+        except IOError:
             pass
         try:
             sys.stderr.flush()
-        except:
+        except IOError:
             pass
         sys.stdin.readline()

@@ -4,10 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.platform import platform_import
+
 #default:
 Keyboard = None
 
-from xpra.platform import platform_import
 platform_import(globals(), "keyboard", True,
                 "Keyboard")
 

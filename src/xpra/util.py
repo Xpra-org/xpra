@@ -226,13 +226,13 @@ class AtomicInteger(object):
     def __eq__(self, other):
         try:
             return self.counter==int(other)
-        except:
+        except ValueError:
             return -1
 
     def __cmp__(self, other):
         try:
             return self.counter-int(other)
-        except:
+        except ValueError:
             return -1
 
 
@@ -338,7 +338,7 @@ class typedict(dict):
             return default_value
         try:
             return int(v[0]), int(v[1])
-        except:
+        except ValueError:
             return default_value
 
     def strlistget(self, k, default_value=[], min_items=None, max_items=None):
@@ -357,8 +357,7 @@ class typedict(dict):
             return default_value
         aslist = list(v)
         if item_type:
-            for i in range(len(aslist)):
-                x = aslist[i]
+            for i, x in enumerate(aslist):
                 if sys.version_info[0]>=3 and isinstance(x, bytes) and item_type==str:
                     from xpra.os_util import bytestostr
                     x = bytestostr(x)
@@ -366,7 +365,7 @@ class typedict(dict):
                 elif isinstance(x, unicode) and item_type==str:
                     x = str(x)
                     aslist[i] = x
-                if type(x)!=item_type:
+                if not isinstance(x, item_type):
                     self._warn("invalid item type for %s %s: expected %s but got %s", type(v), k, item_type, type(x))
                     return default_value
         if min_items is not None:
@@ -489,7 +488,7 @@ def get_screen_info(screen_sizes):
             "screens" : len(screen_sizes)
             }
     for i, x in enumerate(screen_sizes):
-        if type(x) not in (tuple, list):
+        if not isinstance(x, (tuple, list)):
             continue
         sinfo = info.setdefault("screen", {}).setdefault(i, {})
         sinfo["display"] = x[0]
@@ -515,7 +514,7 @@ def get_screen_info(screen_sizes):
 def dump_all_frames(logger=None):
     try:
         frames = sys._current_frames()
-    except:
+    except AttributeError:
         return
     else:
         dump_frames(frames.items(), logger)
@@ -564,13 +563,12 @@ def dump_references(log, instances, exclude=[]):
     gc.collect()
     try:
         log.info("dump references for %i instances:", len(instances))
-        for j in range(len(instances)):
-            instance = instances[j]
+        for j, instance in enumerate(instances):
             referrers = tuple(x for x in gc.get_referrers(instance) if not any(y for y in rexclude if x in y))
-            log.info("* %i : %s, type=%s, with %i referers", j, repr_ellipsized(str(instance)), type(instance), len(referrers))
+            log.info("* %i : %s, type=%s, with %i referers",
+                     j, repr_ellipsized(str(instance)), type(instance), len(referrers))
             j += 1
-            for i in range(len(referrers)):
-                r = referrers[i]
+            for i, r in enumerate(referrers):
                 log.info("  [%s] in %s", i, type(r))
                 if inspect.isframe(r):
                     log.info("    frame info: %s", str(inspect.getframeinfo(r))[:1024])
@@ -642,7 +640,7 @@ def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
 
 
 def repr_ellipsized(obj, limit=100):
-    if (isinstance(obj, str) or isinstance(obj, unicode)) and len(obj) > limit:
+    if isinstance(obj, (str, unicode)) and len(obj) > limit:
         try:
             s = repr(obj)
         except:
@@ -723,8 +721,8 @@ def updict(todict, prefix, d, suffix="", flatten_dicts=False):
 
 def pver(v, numsep=".", strsep=", "):
     #print for lists with version numbers, or CSV strings
-    if type(v) in (list, tuple):
-        types = list(set([type(x) for x in v]))
+    if isinstance(v, (list, tuple)):
+        types = list(set(type(x) for x in v))
         if len(types)==1 and types[0]==int:
             return numsep.join(str(x) for x in v)
         if len(types)==1 and types[0] in (str, unicode):
@@ -737,8 +735,7 @@ def sorted_nicely(l):
     def convert(text):
         if text.isdigit():
             return int(text)
-        else:
-            return text
+        return text
     from xpra.os_util import bytestostr
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', bytestostr(key))]
     return sorted(l, key = alphanum_key)
@@ -772,7 +769,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
                 for x in ("", None):
                     try:
                         del v[x]
-                    except:
+                    except KeyError:
                         pass
             else:
                 sprint("%s%s %s" % (prefix, lchar, bytestostr(k)))

@@ -9,10 +9,9 @@ using python-xdg
 """
 
 import os
-import sys
 
 from xpra.util import envbool
-from xpra.os_util import load_binary_file, BytesIOClass
+from xpra.os_util import load_binary_file, BytesIOClass, PYTHON3
 from xpra.log import Logger
 
 log = Logger("exec", "util")
@@ -20,7 +19,7 @@ log = Logger("exec", "util")
 LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", True)
 EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
 DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
-if sys.version_info[0] >= 3:
+if PYTHON3:
     unicode = str           #@ReservedAssignment
     from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
 else:

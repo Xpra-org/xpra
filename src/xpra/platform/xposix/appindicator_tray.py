@@ -9,7 +9,7 @@
 import os
 
 from xpra.util import envbool
-from xpra.os_util import is_unity, monotonic_time, getUbuntuVersion, PYTHON2
+from xpra.os_util import is_unity, monotonic_time, getUbuntuVersion, PYTHON2, PYTHON3
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename
 from xpra.log import Logger
@@ -25,7 +25,7 @@ def get_appindicator():
     if _appindicator is False:
         try:
             import sys
-            if "gi" in sys.modules or sys.version_info[0]==3:
+            if "gi" in sys.modules or PYTHON3:
                 if getUbuntuVersion()>=(18,4) and is_unity():
                     #causes segfaults just by importing it
                     #shambolic

@@ -5,13 +5,13 @@
 
 import sys
 
+from xpra.platform import platform_import
+
 GLContext = None
 
 def check_support():
     return GLContext().check_support()
 
-
-from xpra.platform import platform_import
 platform_import(globals(), "gl_context", False, "GLContext", "check_support")
 
 

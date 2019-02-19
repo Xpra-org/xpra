@@ -8,7 +8,7 @@ import os.path
 import sys
 import ctypes
 
-from xpra.os_util import get_util_logger
+from xpra.os_util import get_util_logger, PYTHON3
 
 shell32 = ctypes.WinDLL("shell32", use_last_error=True)
 SHGetFolderPath = shell32.SHGetFolderPathW
@@ -156,7 +156,7 @@ def do_get_socket_dirs():
 APP_DIR = None
 if getattr(sys, 'frozen', False) is True:
     #cx_freeze = sys.frozen == True
-    if sys.version_info >= (3,0):
+    if PYTHON3:
         APP_DIR = os.path.dirname(sys.executable)
     else:
         APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
@@ -166,7 +166,7 @@ if getattr(sys, 'frozen', False) is True:
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
     #so we can easily load DLLs with ctypes:
-    if sys.version_info >= (3,0):
+    if PYTHON3:
         os.environ['PATH'] = APP_DIR + os.pathsep + os.environ['PATH']
     else:
         os.environ['PATH'] = APP_DIR.encode('utf8') + os.pathsep + os.environ['PATH']

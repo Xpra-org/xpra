@@ -157,7 +157,7 @@ class DBUS_Notifier(NotifierBase):
 
     def NotifyError(self, dbus_error, *_args):
         try:
-            if type(dbus_error)==dbus.exceptions.DBusException:
+            if isinstance(dbus_error, dbus.exceptions.DBusException):
                 message = dbus_error.get_dbus_message()
                 dbus_error_name = dbus_error.get_dbus_name()
                 if dbus_error_name!="org.freedesktop.DBus.Error.ServiceUnknown":
@@ -176,7 +176,7 @@ class DBUS_Notifier(NotifierBase):
                 #and retry:
                 self.show_notify(*self.last_notification)
         except:
-            pass
+            log("cannot filter error", exc_info=True)
         log.error("Error processing notification:")
         log.error(" %s", dbus_error)
         return False
@@ -205,11 +205,13 @@ class DBUS_Notifier(NotifierBase):
 
 
 def main():
-    import glib
-    import gtk
+    from xpra.gtk_common.gobject_compat import import_glib, import_gtk
+    glib = import_glib()
+    gtk = import_gtk()
     def show():
         n = DBUS_Notifier_factory()
-        n.show_notify("", None, 0, "Test", 0, "", "Summary", "Body line1\nline2...", ["0", "Hello", "1", "Bye"], {}, 0, "")
+        n.show_notify("", None, 0, "Test", 0, "", "Summary", "Body line1\nline2...",
+                      ["0", "Hello", "1", "Bye"], {}, 0, "")
         return False
     glib.idle_add(show)
     glib.timeout_add(20000, gtk.main_quit)
