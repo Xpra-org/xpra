@@ -8,6 +8,7 @@ import socket
 import os
 import signal
 from threading import Timer, RLock
+from multiprocessing import Process
 from time import sleep
 
 from xpra.server.server_core import get_server_info, get_thread_info
@@ -38,7 +39,6 @@ from xpra.version_util import full_version_str
 from xpra.server.socket_util import create_unix_domain_socket
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
-from multiprocessing import Process
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -58,9 +58,10 @@ def set_blocking(conn):
     #fails in mysterious ways, so we duplicate the code here instead
     log("set_blocking(%s)", conn)
     try:
-        log("calling %s.setblocking(1)", conn._socket)
-        conn._socket.setblocking(1)
-    except:
+        sock = conn._socket
+        log("calling %s.setblocking(1)", sock)
+        sock.setblocking(1)
+    except IOError:
         log("cannot set %s to blocking mode", conn)
 
 

@@ -341,7 +341,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                         if app.completed_startup:
                             #if we had connected to the session,
                             #we can ignore more error codes:
-                            from xpra.exit_codes import EXIT_CONNECTION_LOST, EXIT_REMOTE_ERROR, EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG
+                            from xpra.exit_codes import (
+                                EXIT_CONNECTION_LOST, EXIT_REMOTE_ERROR,
+                                EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG,
+                                )
                             NO_RETRY += [
                                     EXIT_CONNECTION_LOST,
                                     EXIT_REMOTE_ERROR,
@@ -406,7 +409,12 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)
             return run_server(error_cb, options, mode, script_file, args, current_display)
-        elif mode in ("attach", "detach", "screenshot", "version", "info", "id", "control", "_monitor", "print", "connect-test", "request-start", "request-start-desktop", "request-shadow"):
+        elif mode in (
+            "attach", "detach",
+            "screenshot", "version", "info", "id",
+            "control", "_monitor", "print",
+            "connect-test", "request-start", "request-start-desktop", "request-shadow",
+            ):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit"):
             nox()
@@ -420,15 +428,20 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode == "sessions":
             return run_sessions_gui(error_cb, options)
         elif mode == "launcher":
-            from xpra.client.gtk_base.client_launcher import main
-            return main(["xpra"]+args)
+            from xpra.client.gtk_base.client_launcher import main as launcher_main
+            return launcher_main(["xpra"]+args)
         elif mode == "gui":
-            from xpra.gtk_common.gui import main        #@Reimport
-            return main()
+            from xpra.gtk_common.gui import main as gui_main        #@Reimport
+            return gui_main()
         elif mode == "bug-report":
-            from xpra.scripts.bug_report import main    #@Reimport
-            main(["xpra"]+args)
-        elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
+            from xpra.scripts.bug_report import main as bug_main    #@Reimport
+            bug_main(["xpra"]+args)
+        elif mode in (
+            "_proxy",
+            "_proxy_start",
+            "_proxy_start_desktop",
+            "_shadow_start",
+            ) and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
         elif mode in ("_sound_record", "_sound_play", "_sound_query"):
@@ -1724,7 +1737,11 @@ def do_run_glcheck(opts):
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
     try:
-        from xpra.client.gl.window_backend import get_opengl_backends, get_gl_client_window_module, test_gl_client_window
+        from xpra.client.gl.window_backend import (
+            get_opengl_backends,
+            get_gl_client_window_module,
+            test_gl_client_window,
+            )
         opengl_str = (opts.opengl or "").lower()
         force_enable = opengl_str.split(":")[0] in TRUE_OPTIONS
         backends = get_opengl_backends(opengl_str)
@@ -1947,7 +1964,8 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
 
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
     log = get_util_logger()
-    log("identify_new_socket%s", (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
+    log("identify_new_socket%s",
+        (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
     #wait until the new socket appears:
     start = monotonic_time()
     UUID_PREFIX = "uuid="
