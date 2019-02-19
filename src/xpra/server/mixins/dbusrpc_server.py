@@ -52,7 +52,8 @@ class DBUS_RPC_Server(StubServerMixin):
         except Exception as e:
             log("init_dbus_helper()", exc_info=True)
             log.warn("Warning: cannot load dbus helper:")
-            log.warn(" %s", e)
+            for msg in str(e).split(": "):
+                log.warn(" %s", msg)
             self.dbus_helper = None
             self.supports_dbus_proxy = False
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,9 +13,11 @@ def dbus_exception_wrap(fn, info="setting up server dbus instance"):
         log("dbus_exception_wrap() %s()=%s", fn, v)
         return v
     except ImportError as e:
+        log("%s", exc_info=True)
         log.error("Error %s:", info)
         log.error(" %s", e)
     except Exception as e:
+        log("%s", exc_info=True)
         if str(e).find("org.freedesktop.DBus.Error.NoServer")<0:
             log.error("dbus server error", exc_info=True)
         log.error("Error %s:", info)
