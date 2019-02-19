@@ -117,7 +117,7 @@ def get_dbus_env():
         try:
             v = load(k)
             if v:
-                env[k] = str(v)
+                env[k] = bytestostr(v)
         except Exception as e:
             error("failed to load dbus environment variable '%s':\n" % k)
             error(" %s\n" % e)
