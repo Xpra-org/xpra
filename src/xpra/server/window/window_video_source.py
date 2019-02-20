@@ -1212,7 +1212,9 @@ class WindowVideoSource(WindowSource):
 
         vh = self.video_helper
         if vh is None:
-            return []       #closing down
+            return ()       #closing down
+        if not self.pixel_format:
+            return ()
 
         target_q = int(self._current_quality)
         min_q = self._fixed_min_quality
@@ -1233,6 +1235,8 @@ class WindowVideoSource(WindowSource):
                 scorelog("raising quality for video encoding of non-video region")
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)",
                  (encodings, width, height, src_format), target_s, min_s, target_q, min_q)
+        vmw, vmh = self.video_max_size
+        ffps = self.get_video_fps(width, height)
         scores = []
         for encoding in encodings:
             #these are the CSC modes the client can handle for this encoding:
@@ -1245,6 +1249,7 @@ class WindowVideoSource(WindowSource):
             if not encoder_specs:
                 scorelog(" no encoder specs for %s", encoding)
                 continue
+            encoding_score_delta = self.encoding_options.get("%s.score-delta" % encoding, 0)
             def add_scores(info, csc_spec, enc_in_format):
                 #find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
@@ -1254,20 +1259,18 @@ class WindowVideoSource(WindowSource):
                 #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
                 for encoder_spec in colorspace_specs:
                     #ensure that the output of the encoder can be processed by the client:
-                    matches = [x for x in encoder_spec.output_colorspaces if strtobytes(x) in supported_csc_modes]
+                    matches = tuple(x for x in encoder_spec.output_colorspaces if x in supported_csc_modes)
                     if not matches or self.is_cancelled():
                         scorelog(" no matches for %s (%s and %s) - %s",
                                  encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes, info)
                         continue
-                    vmw, vmh = self.video_max_size
                     max_w = min(encoder_spec.max_w, vmw)
                     max_h = min(encoder_spec.max_h, vmh)
                     scaling = self.calculate_scaling(width, height, max_w, max_h)
-                    score_delta = self.encoding_options.get("%s.score-delta" % encoding, 0)
+                    score_delta = encoding_score_delta
                     if self.is_shadow and enc_in_format in ("YUV420P", "YUV422P") and scaling==(1, 1):
                         #avoid subsampling with shadow servers:
                         score_delta -= 40
-                    ffps = self.get_video_fps(width, height)
                     vs = self.video_subregion
                     detection = bool(vs) and vs.detection
                     score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
