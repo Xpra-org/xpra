@@ -56,7 +56,6 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             ):
             self.wfile.write(b"%s\r\n" % upgrade_string)
         self.wfile.flush()
-        self.wfile.close()
         self.new_websocket_client(self)
 
     def do_GET(self):
@@ -64,8 +63,6 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         if self.only_upgrade or upgrade_requested:
             if not upgrade_requested:
                 self.send_error(403, "only websocket connections are allowed")
-                self.wfile.flush()
-                self.wfile.close()
                 return
             try:
                 self.handle_websocket()
@@ -74,17 +71,17 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                 log.error("Error: cannot handle websocket upgrade:")
                 log.error(" %s", e)
                 self.send_error(403, "failed to handle websocket: %s" % e)
-                self.wfile.flush()
-                self.wfile.close()
             return
-        self.handle_request()
+        HTTPRequestHandler.do_GET(self)
+
+    def do_HEAD(self):
+        if self.only_upgrade:
+            self.send_error(405, "Method Not Allowed")
+            return
+        HTTPRequestHandler.do_HEAD(self)
 
     def handle_request(self):
         if self.only_upgrade:
             self.send_error(405, "Method Not Allowed")
-        else:
-            content = self.send_head()
-            if content:
-                self.wfile.write(content)
-        self.wfile.flush()
-        self.wfile.close()
+            return
+        HTTPRequestHandler.handle_request(self)

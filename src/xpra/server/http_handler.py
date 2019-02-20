@@ -183,16 +183,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         content = self.send_head()
         if content:
             self.wfile.write(content)
-        self.wfile.flush()
-        self.wfile.close()
 
     def do_HEAD(self):
-        if self.only_upgrade:
-            self.send_error(405, "Method Not Allowed")
-        else:
-            self.send_head()
-        self.wfile.flush()
-        self.wfile.close()
+        self.send_head()
 
     #code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):
@@ -206,8 +199,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         path = self.translate_path(self.path)
         if not path:
             self.send_error(404, "Path not found")
-            self.wfile.flush()
-            self.wfile.close()
             return None
         if os.path.isdir(path):
             if not path.endswith('/'):
