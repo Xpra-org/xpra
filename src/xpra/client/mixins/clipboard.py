@@ -185,7 +185,7 @@ class ClipboardClient(StubClientMixin):
         log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s",
             args, self.clipboard_enabled, self.server_clipboard)
         if self.server_clipboard:
-            self.send("set-clipboard-enabled", self.clipboard_enabled)
+            self.send_now("set-clipboard-enabled", self.clipboard_enabled)
             if self.clipboard_enabled:
                 ch = self.clipboard_helper
                 assert ch is not None
@@ -198,10 +198,10 @@ class ClipboardClient(StubClientMixin):
         log("send_clipboard_selections(%s) server_clipboard_enable_selections=%s",
             selections, self.server_clipboard_enable_selections)
         if self.server_clipboard_enable_selections:
-            self.send("clipboard-enable-selections", selections)
+            self.send_now("clipboard-enable-selections", selections)
 
     def send_clipboard_loop_uuids(self):
         uuids = self.clipboard_helper.get_loop_uuids()
         log("send_clipboard_loop_uuid() uuids=%s", uuids)
         if self.server_clipboard_loop_uuids:
-            self.send("clipboard-loop-uuids", uuids)
+            self.send_now("clipboard-loop-uuids", uuids)
