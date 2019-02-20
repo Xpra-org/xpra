@@ -906,16 +906,12 @@ class GTKClientWindowBase(gtk.Window, ClientWindowBase):
         self.when_realized("shape", do_set_shape)
 
     def scale_shape_rectangles(self, kind_name, rectangles):
-        if not LAZY_SHAPE:
-            try:
-                from PIL import Image, ImageDraw        #@UnresolvedImport
-            except:
-                pass
-        if not Image or not ImageDraw or len(rectangles)<2:
+        if LAZY_SHAPE or len(rectangles)<2:
             #scale the rectangles without a bitmap...
             #results aren't so good! (but better than nothing?)
             srect = self._client.srect
             return [srect(*x) for x in rectangles]
+        from PIL import Image, ImageDraw        #@UnresolvedImport
         ww, wh = self._size
         sw, sh = self._client.cp(ww, wh)
         img = Image.new('1', (sw, sh), color=0)
