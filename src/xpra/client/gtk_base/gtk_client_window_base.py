@@ -82,15 +82,19 @@ if POSIX and USE_X11_BINDINGS:
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
         SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
-        try:
-            #TODO: in theory this is not a proper check, meh - that will do
-            root = get_default_root_window()
-            supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
-            CAN_SET_WORKSPACE = SET_WORKSPACE and bool(supported) and "_NET_WM_DESKTOP" in supported
-        except Exception as e:
-            workspacelog("x11 workspace bindings error", exc_info=True)
-            workspacelog.error("Error: failed to setup workspace hooks:")
-            workspacelog.error(" %s", e)
+        def can_set_workspace():
+            if not SET_WORKSPACE:
+                return False
+            try:
+                #TODO: in theory this is not a proper check, meh - that will do
+                root = get_default_root_window()
+                supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
+                return bool(supported) and "_NET_WM_DESKTOP" in supported
+            except Exception as e:
+                workspacelog("x11 workspace bindings error", exc_info=True)
+                workspacelog.error("Error: failed to setup workspace hooks:")
+                workspacelog.error(" %s", e)
+        CAN_SET_WORKSPACE = can_set_workspace()
     except ImportError:
         prop_get, prop_set = None, None
 
@@ -177,7 +181,7 @@ class GTKKeyEvent(AdHocStruct):
     pass
 
 
-class GTKClientWindowBase(ClientWindowBase, gtk.Window):
+class GTKClientWindowBase(gtk.Window, ClientWindowBase):
 
     __common_gsignals__ = {
         "state-updated"         : no_arg_signal,
@@ -187,6 +191,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     MAX_VIEWPORT_DIMS = 16*1024, 16*1024
     #maximum size of the backing pixel buffer:
     MAX_BACKING_DIMS = 16*1024, 16*1024
+
+    def __init__(self, *args, **kwargs):
+        ClientWindowBase.__init__(self, *args, **kwargs)
+        #gtk.Window.__init__() is called from do_init_window()
 
     def init_window(self, metadata):
         self.init_max_window_size(metadata)
@@ -623,9 +631,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not monitors:
             geomlog("screen %s lacks monitors information: %s", screen0)
             return None
-        def remove_visible(rects):
-            """ removes any area found on a monitor """
-            return rects
         from xpra.rectangle import rectangle #@UnresolvedImport
         wrect = rectangle(wx, wy, ww, wh)
         rects = [wrect]
@@ -708,7 +713,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #try to enable alpha on this window if needed,
         #and if the backing class can support it:
         bc = self.get_backing_class()
-        metalog("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s", self._has_alpha, bc, bc.HAS_ALPHA, self.is_realized())
+        metalog("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s",
+                self._has_alpha, bc, bc.HAS_ALPHA, self.is_realized())
         #by default, only RGB (no transparency):
         #rgb_formats = tuple(BACKING_CLASS.RGB_MODES)
         self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
@@ -1048,7 +1054,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if prop_get:
             v = prop_get(target, name, "u32", ignore_errors=True)
             log("%s.xget_u32_property(%s, %s)=%s", self, target, name, v)
-            if isintance(v, int):
+            if isinstance(v, int):
                 return v
         return None
 
@@ -1211,6 +1217,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         gdkwin = self.get_window()
         workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s",
                      get_xwindow(gdkwin), self.is_mapped(), gdkwin.is_visible())
+        root = get_default_root_window()
         with xsync:
             send_wm_workspace(root, gdkwin, workspace)
 
@@ -1256,7 +1263,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         grablog("keyboard_grab%s", args)
         r = gdk.keyboard_grab(self.get_window(), True, 0)
         self._client.keyboard_grabbed = r==GRAB_SUCCESS
-        grablog("keyboard_grab%s gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s", args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
+        grablog("keyboard_grab%s gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s",
+                args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
 
     def toggle_keyboard_grab(self):
         grabbed = self._client.keyboard_grabbed
@@ -1268,7 +1276,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def pointer_grab(self, *args):
         gdkwin = self.get_window()
-        event_mask = BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK | POINTER_MOTION_MASK  | POINTER_MOTION_HINT_MASK | ENTER_NOTIFY_MASK | LEAVE_NOTIFY_MASK
+        event_mask = (BUTTON_PRESS_MASK |
+                      BUTTON_RELEASE_MASK |
+                      POINTER_MOTION_MASK  |
+                      POINTER_MOTION_HINT_MASK |
+                      ENTER_NOTIFY_MASK |
+                      LEAVE_NOTIFY_MASK)
         r = gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, 0)
         self._client.pointer_grabbed = r==GRAB_SUCCESS
         grablog("pointer_grab%s gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
@@ -1315,10 +1328,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def call_action(self, action_type, action, state, pdata):
         menulog("call_action%s", (action_type, action, state, pdata))
         rpc_args = [action_type, self._id, action, state, pdata]
-        try:
-            self._client.rpc_call("menu", rpc_args)
-        except Exception as e:
-            log.error("Error: failed to send %s menu rpc request for %s", action_type, action, exc_info=True)
+        self._client.rpc_call("menu", rpc_args)
 
 
     ######################################################################
@@ -1464,7 +1474,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             else:
                 #not handled yet!
                 data = None
-            geomlog("%s for window %ix%i: started at %s, now at %s, delta=%s, button=%s, buttons=%s, data=%s", dirstr, ww, wh, (x_root, y_root), (x, y), (dx, dy), button, buttons, data)
+            geomlog("%s for window %ix%i: started at %s, now at %s, delta=%s, button=%s, buttons=%s, data=%s",
+                    dirstr, ww, wh, (x_root, y_root), (x, y), (dx, dy), button, buttons, data)
             if data:
                 #modifying the window is slower than moving the pointer,
                 #do it via a timer to batch things together
@@ -1605,7 +1616,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             context.rotate(math.pi/4)
             context.stroke()
 
-    def spinner(self, ok):
+    def spinner(self, _ok):
         c = self._client
         if not self.can_have_spinner() or not c:
             return
@@ -1735,7 +1746,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #if the window has been mapped already, the workspace should be set:
             workspace = self.get_window_workspace()
             if self._window_workspace!=workspace and workspace is not None:
-                workspacelog("configure event: changed workspace from %s to %s", wn(self._window_workspace), wn(workspace))
+                workspacelog("configure event: changed workspace from %s to %s",
+                             wn(self._window_workspace), wn(workspace))
                 self._window_workspace = workspace
                 props["workspace"] = workspace
         cx = self._client.cx
@@ -1952,9 +1964,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         try:
             key_event.string = event.string or ""
         except UnicodeDecodeError as e:
+            keylog("parse_key_event(%s, %s)", event, pressed, exc_info=True)
             if first_time("key-%s-%s" % (keycode, keyname)):
                 keylog.warn("Warning: failed to parse string for key")
                 keylog.warn(" keyname=%s, keycode=%s", keyname, keycode)
+                keylog.warn(" %s", e)
             key_event.string = ""
         key_event.pressed = pressed
         keylog("parse_key_event(%s, %s)=%s", event, pressed, key_event)

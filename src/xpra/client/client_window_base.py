@@ -444,7 +444,7 @@ class ClientWindowBase(ClientWidgetBase):
     def set_bypass_compositor(self, v):
         pass        #see gtk client window base
 
-    def set_strut(self, d):
+    def set_strut(self, strut):
         pass        #see gtk client window base
 
     def set_fullscreen_monitors(self, fsm):
