@@ -32,6 +32,9 @@ AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 
 class ClientWindowBase(ClientWidgetBase):
 
+    #(overriden in subclasses)
+    NAME_TO_HINT = {}
+
     def __init__(self, client, group_leader, watcher_pid, wid,
                  wx, wy, ww, wh, bw, bh,
                  metadata, override_redirect, client_properties,
@@ -238,9 +241,10 @@ class ClientWindowBase(ClientWidgetBase):
             self.reset_icon()
 
         if b"size-constraints" in metadata:
-            self.size_constraints = typedict(metadata.dictget("size-constraints"))
-            self._set_initial_position = self.size_constraints.boolget("set-initial-position", self._set_initial_position)
-            self.set_size_constraints(self.size_constraints, self.max_window_size)
+            sc = typedict(metadata.dictget("size-constraints"))
+            self.size_constraints = sc
+            self._set_initial_position = sc.boolget("set-initial-position", self._set_initial_position)
+            self.set_size_constraints(sc, self.max_window_size)
 
         if b"set-initial-position" in metadata:
             #this should be redundant - but we keep it here for consistency
@@ -420,6 +424,9 @@ class ClientWindowBase(ClientWidgetBase):
     def set_skip_taskbar_hint(self, skip_taskbar_hint):
         raise NotImplementedError()
     def set_skip_pager_hint(self, skip_pager_hint):
+        raise NotImplementedError()
+
+    def set_type_hint(self, type_hint):
         raise NotImplementedError()
 
     def set_menu(self, menu):
