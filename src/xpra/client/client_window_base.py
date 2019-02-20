@@ -32,8 +32,15 @@ AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, watcher_pid, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, max_window_size, default_cursor_data, pixel_depth):
-        log("%s%s", type(self), (client, group_leader, watcher_pid, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties, max_window_size, default_cursor_data, pixel_depth))
+    def __init__(self, client, group_leader, watcher_pid, wid,
+                 wx, wy, ww, wh, bw, bh,
+                 metadata, override_redirect, client_properties,
+                 border, max_window_size, default_cursor_data, pixel_depth):
+        log("%s%s", type(self),
+            (client, group_leader, watcher_pid, wid,
+             wx, wy, ww, wh, bw, bh,
+             metadata, override_redirect, client_properties,
+             border, max_window_size, default_cursor_data, pixel_depth))
         ClientWidgetBase.__init__(self, client, watcher_pid, wid, metadata.boolget("has-alpha"))
         self._override_redirect = override_redirect
         self.group_leader = group_leader
@@ -85,7 +92,8 @@ class ClientWindowBase(ClientWidgetBase):
         self._desktop_workspace = self.get_desktop_workspace()
         def wn(w):
             return WORKSPACE_NAMES.get(w, w)
-        workspacelog("init_window(..) workspace=%s, current workspace=%s", wn(self._window_workspace), wn(self._desktop_workspace))
+        workspacelog("init_window(..) workspace=%s, current workspace=%s",
+                     wn(self._window_workspace), wn(self._desktop_workspace))
         if self.max_window_size and b"size-constraints" not in metadata:
             #this ensures that we will set size-constraints and honour max_window_size:
             metadata[b"size-constraints"] = {}
@@ -370,6 +378,50 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_menu(metadata.dictget("menu"))
 
 
+    def queue_draw(self, x, y, w, h):
+        raise NotImplementedError()
+
+    def get_size(self):
+        raise NotImplementedError()
+
+    def is_mapped(self):
+        raise NotImplementedError()
+
+    def set_title(self, title):
+        raise NotImplementedError()
+    def set_icon_name(self, icon_name):
+        raise NotImplementedError()
+    def set_modal(self, modal):
+        raise NotImplementedError()
+    def set_role(self, role):
+        raise NotImplementedError()
+    def set_opacity(self, opacity):
+        raise NotImplementedError()
+    def apply_geometry_hints(self, hints):
+        raise NotImplementedError()
+    def maximize(self):
+        raise NotImplementedError()
+    def unmaximize(self):
+        raise NotImplementedError()
+    def iconify(self):
+        raise NotImplementedError()
+    def deiconify(self):
+        raise NotImplementedError()
+    def set_decorated(self, decorated):
+        raise NotImplementedError()
+    def set_keep_above(self, keep_above):
+        raise NotImplementedError()
+    def set_keep_below(self, keep_below):
+        raise NotImplementedError()
+    def stick(self):
+        raise NotImplementedError()
+    def unstick(self):
+        raise NotImplementedError()
+    def set_skip_taskbar_hint(self, skip_taskbar_hint):
+        raise NotImplementedError()
+    def set_skip_pager_hint(self, skip_pager_hint):
+        raise NotImplementedError()
+
     def set_menu(self, menu):
         pass
 
@@ -458,7 +510,7 @@ class ClientWindowBase(ClientWidgetBase):
             for x in ("max_width", "max_height"):
                 try:
                     del hints[x]
-                except:
+                except KeyError:
                     pass
             hints[b"max_width"] = maxw
             hints[b"max_height"] = maxh
@@ -689,7 +741,7 @@ class ClientWindowBase(ClientWidgetBase):
             log.error(" this server does not support dbus-proxying")
             return
         rpc_args = [self._id]+args
-        return self._client.rpc_call("dbus", rpc_args, **kwargs)
+        self._client.rpc_call("dbus", rpc_args, **kwargs)
 
 
     def get_mouse_event_wid(self, _x, _y):
@@ -711,7 +763,7 @@ class ClientWindowBase(ClientWidgetBase):
     def _device_info(self, event):
         try:
             return event.device.get_name()
-        except:
+        except AttributeError:
             return ""
 
     def _button_action(self, button, event, depressed, *args):
