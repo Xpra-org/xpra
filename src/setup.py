@@ -2243,7 +2243,7 @@ if nvenc_ENABLED:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
         libraries.remove("nvidia-encode")
-    if not cython_version_compare("0.50"):
+    if not cython_version_compare("0.29"):
         #older versions emit spurious warnings:
         print("Warning: using workaround for outdated version of cython")
         add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=sign-compare")
