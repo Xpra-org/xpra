@@ -448,7 +448,7 @@ def close_fds(excluding=(0, 1, 2)):
         if i not in excluding:
             try:
                 os.close(i)
-            except IOError:
+            except (IOError, OSError):
                 pass
 
 def get_all_fds():
