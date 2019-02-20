@@ -696,12 +696,13 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 options = package_options       #got given a list of options
             for option in options:
                 cmd = ["pkg-config", "--exists", option]
-                r, _, _ = get_status_output(cmd)
+                r = get_status_output(cmd)[0]
                 if r==0:
                     valid_option = option
                     break
             if not valid_option:
-                raise Exception("ERROR: cannot find a valid pkg-config entry for %s using PKG_CONFIG_PATH=%s" % (" or ".join(options), os.environ.get("PKG_CONFIG_PATH", "(empty)")))
+                raise Exception("ERROR: cannot find a valid pkg-config entry for %s using PKG_CONFIG_PATH=%s" %
+                                (" or ".join(options), os.environ.get("PKG_CONFIG_PATH", "(empty)")))
             package_names.append(valid_option)
         if verbose_ENABLED and list(pkgs_options)!=list(package_names):
             print("exec_pkgconfig(%s,%s) using package names=%s" % (pkgs_options, ekw, package_names))
@@ -946,6 +947,7 @@ def build_xpra_conf(install_dir):
 def clean():
     #clean and sdist don't actually use cython,
     #so skip this (and avoid errors)
+    global pkgconfig
     pkgconfig = no_pkgconfig
     #always include everything in this case:
     add_packages("xpra")
@@ -1699,7 +1701,7 @@ else:
         #don't use py_modules or scripts with py2app, and no cython:
         del setup_options["py_modules"]
         scripts = []
-        def cython_add(*args, **kwargs):
+        def cython_add(*_args, **_kwargs):
             pass
 
         remove_packages("ctypes.wintypes", "colorsys")
@@ -2139,7 +2141,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     def get_nvcc_version(command):
         if not os.path.exists(command):
             return None
-        code, out, err = get_status_output([command, "--version"])
+        code, out, _ = get_status_output([command, "--version"])
         if code!=0:
             return None
         vpos = out.rfind(", V")
