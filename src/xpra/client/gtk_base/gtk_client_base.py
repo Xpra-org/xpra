@@ -1275,6 +1275,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                  })
         clipboardlog("setup_clipboard_helper() kwargs=%s", kwargs)
         def clipboard_send(*parts):
+            clipboardlog("clipboard_send: %s", parts[0])
             if not self.clipboard_enabled:
                 clipboardlog("clipboard is disabled, not sending clipboard packet")
                 return

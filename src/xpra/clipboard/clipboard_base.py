@@ -587,7 +587,7 @@ class ClipboardProtocolHelperBase(object):
         handler = self._packet_handlers.get(packet_type)
         log("process clipboard handler(%s)=%s", packet_type, handler)
         if handler:
-            self._packet_handlers[packet_type](packet)
+            handler(packet)
         else:
             log.warn("Warning: no clipboard packet handler for '%s'", packet_type)
 
@@ -644,7 +644,9 @@ class ClipboardProxy(gtk.Invisible):
             try:
                 from xpra.x11.gtk_x11.prop import prop_get
                 self.prop_get = prop_get
-            except ImportError:
+            except ImportError as e:
+                log.warn("Warning: limited support for clipboard properties")
+                log.warn(" %s", e)
                 self.prop_get = None
 
         self._loop_uuid = ""
@@ -703,8 +705,10 @@ class ClipboardProxy(gtk.Invisible):
     def do_owner_changed(self, *_args):
         #an application on our side owns the clipboard selection
         #(they are ready to provide something via the clipboard)
-        log("clipboard: %s owner_changed, enabled=%s, can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s",
-            bytestostr(self._selection), self._enabled, self._can_send, self._can_receive, self._have_token, self._greedy_client, self._block_owner_change)
+        log("clipboard: %s owner_changed, enabled=%s, "+
+            "can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s",
+            bytestostr(self._selection), self._enabled, self._can_send, self._can_receive,
+            self._have_token, self._greedy_client, self._block_owner_change)
         if not self._enabled or self._block_owner_change:
             return
         if self._have_token or (self._greedy_client and self._can_send):

@@ -143,7 +143,7 @@ class ClipboardClient(StubClientMixin):
             })
 
     def get_clipboard_helper_classes(self):
-        return []
+        return ()
 
     def make_clipboard_helper(self):
         """
@@ -160,8 +160,12 @@ class ClipboardClient(StubClientMixin):
                 log.error(" %s", e)
                 del e
             except:
-                log.error("cannot instantiate %s", helperclass, exc_info=True)
+                log.error("Error: cannot instantiate %s", helperclass, exc_info=True)
         return None
+
+    def setup_clipboard_helper(self, helperClass):
+        raise NotImplementedError()
+
 
     def _process_clipboard_packet(self, packet):
         ch = self.clipboard_helper
