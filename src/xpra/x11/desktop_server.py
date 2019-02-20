@@ -7,7 +7,7 @@
 import os
 import socket
 
-from xpra.os_util import get_generic_os_name
+from xpra.os_util import get_generic_os_name, PYTHON3
 from xpra.util import updict, log_screen_sizes
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
@@ -396,7 +396,9 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
 
     def get_server_mode(self):
-        return "X11 desktop"
+        if PYTHON3:
+            return "GTK3 X11 desktop"
+        return "GTK2 X11 desktop"
 
     def make_hello(self, source):
         capabilities = X11ServerBase.make_hello(self, source)
