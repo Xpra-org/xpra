@@ -49,7 +49,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     http_headers_cache = {}
     http_headers_time = {}
 
-    def __init__(self, sock, addr, web_root="/usr/share/xpra/www/", http_headers_dir="/usr/share/xpra/http-headers", script_paths={}):
+    def __init__(self, sock, addr,
+                 web_root="/usr/share/xpra/www/",
+                 http_headers_dir="/usr/share/xpra/http-headers", script_paths={}):
         self.web_root = web_root
         self.http_headers_dir = http_headers_dir
         self.script_paths = script_paths
@@ -309,12 +311,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 log.error(" %s", e)
             try:
                 self.send_error(404, "File not found")
-            except:
-                log("failed to send 404 error - maybe some of the headers were already sent?")
+            except (IOError, OSError):
+                log("failed to send 404 error - maybe some of the headers were already sent?", exc_info=True)
+            return None
+        finally:
             if f:
                 try:
                     f.close()
-                except:
-                    pass
-            return None
+                except (IOError, OSError):
+                    log("failed to close", exc_info=True)
         return content
