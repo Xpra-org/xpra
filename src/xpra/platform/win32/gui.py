@@ -212,7 +212,7 @@ def get_monitor_workarea_for_window(handle):
         return None
 
 
-def noop(*args):
+def noop(*_args):
     pass
 
 
