@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -308,13 +308,13 @@ class ClipboardProtocolHelperBase(object):
             l = log
             if name in ALL_CLIPBOARDS:
                 l = log.warn
-            l("ignoring token for clipboard proxy name '%s' (no proxy)", name)
+            l("ignoring token for clipboard '%s' (no proxy)", name)
             return
         if not proxy.is_enabled():
             l = log
             if name not in self.disabled_by_loop:
                 l = log.warn
-            l("ignoring token for clipboard proxy name '%s' (disabled)", name)
+            l("ignoring token for disabled clipboard '%s'", name)
             return
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         targets = None
