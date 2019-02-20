@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -133,10 +133,11 @@ class ChildReaper(object):
         #see if we are meant to exit-with-children
         #see if we still have procinfos alive (and not meant to be ignored)
         self.poll()
-        alive = [procinfo for procinfo in tuple(self._proc_info) if (not procinfo.ignore and not procinfo.dead)]
+        alive = tuple(procinfo for procinfo in tuple(self._proc_info)
+                      if (not procinfo.ignore and not procinfo.dead))
         cb = self._quit
         log("check() alive=%s, quit callback=%s", alive, cb)
-        if len(alive)==0:
+        if not alive:
             if cb:
                 self._quit = None
                 cb()
@@ -144,7 +145,12 @@ class ChildReaper(object):
         return True
 
     def sigchld(self, signum, frame):
-        log("sigchld(%s, %s)", signum, frame)
+        #we risk race conditions if doing anything in the signal handler,
+        #better run in the main thread asap:
+        self.glib.idle_add(self._sigchld, signum, str(frame))
+
+    def _sigchld(self, signum, frame_str):
+        log("sigchld(%s, %s)", signum, frame_str)
         self.reap()
 
     def get_proc_info(self, pid):
@@ -190,7 +196,7 @@ class ChildReaper(object):
             #forget it:
             try:
                 self._proc_info.remove(procinfo)
-            except:
+            except ValueError:
                 log("failed to remove %s from proc info list", procinfo, exc_info=True)
         log("updated procinfo=%s", procinfo)
         self.check()
@@ -200,7 +206,7 @@ class ChildReaper(object):
         while POSIX:
             log("reap() calling os.waitpid%s", (-1, "WNOHANG"))
             try:
-                pid, _ = os.waitpid(-1, os.WNOHANG)
+                pid = os.waitpid(-1, os.WNOHANG)[0]
             except OSError:
                 break
             log("reap() waitpid=%s", pid)
@@ -213,8 +219,8 @@ class ChildReaper(object):
         info = {
                 "children"  : {
                                "total"      : len(iv),
-                               "dead"       : len([x for x in iv if x.dead]),
-                               "ignored"    : len([x for x in iv if x.ignore]),
+                               "dead"       : len(tuple(True for x in iv if x.dead)),
+                               "ignored"    : len(tuple(True for x in iv if x.ignore)),
                                }
                 }
         pi = sorted(self._proc_info, key=lambda x: x.pid, reverse=True)
