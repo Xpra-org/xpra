@@ -91,13 +91,18 @@ class ServerTestUtil(unittest.TestCase):
             for x in self.temp_files:
                 try:
                     os.unlink(x)
-                except:
+                except (OSError, IOError):
                     pass
 
 
     def get_run_env(self):
         env = dict((k,v) for k,v in self.default_env.items() if
-                k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "XAUTHORITY", "PWD", "PYTHONPATH", "SYSTEMROOT"))
+                k.startswith("XPRA") or k in (
+                    "HOME", "HOSTNAME", "SHELL", "TERM",
+                    "USER", "USERNAME", "PATH",
+                    "XAUTHORITY", "PWD",
+                    "PYTHONPATH", "SYSTEMROOT",
+                    ))
         return env
 
     @classmethod
@@ -210,7 +215,7 @@ class ServerTestUtil(unittest.TestCase):
                 if x.startswith("X"):
                     try:
                         X11_displays.add(int(x[1:]))
-                    except:
+                    except ValueError:
                         pass
         return X11_displays
 

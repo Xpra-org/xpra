@@ -77,7 +77,8 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             if not self.client_display:
                 self.client_display = self.find_free_display()
                 self.client_xvfb = self.start_Xvfb(self.client_display)
-                log("ServerMixinsOptionTest.setUpClass() client display=%s, xvfb=%s", self.client_display, self.client_xvfb)
+                log("ServerMixinsOptionTest.setUpClass() client display=%s, xvfb=%s",
+                    self.client_display, self.client_xvfb)
                 if VFB_INITIAL_RESOLUTION:
                     xrandr = ["xrandr", "-s", VFB_INITIAL_RESOLUTION, "--display", self.client_display]
                     self.run_command(xrandr)

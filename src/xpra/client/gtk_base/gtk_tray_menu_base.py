@@ -1241,12 +1241,12 @@ class GTKTrayMenuBase(object):
             else:
                 on = None
                 virt_devices = get_virtual_video_devices()
-                non_virtual = dict([(k,v) for k,v in all_video_devices.items() if k not in virt_devices])
+                non_virtual = dict((k,v) for k,v in all_video_devices.items() if k not in virt_devices)
                 for device_no,info in non_virtual.items():
                     label = bytestostr(info.get("card", info.get("device", str(device_no))))
                     item = deviceitem(label, start_webcam, device_no)
                     menu.append(item)
-                if len(non_virtual)==0:
+                if not non_virtual:
                     off_label = "No devices found"
             off = deviceitem(off_label, stop_webcam, -1)
             set_sensitive(off, off_label=="Off")

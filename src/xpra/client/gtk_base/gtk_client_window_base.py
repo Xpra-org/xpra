@@ -1191,7 +1191,7 @@ class GTKClientWindowBase(gtk.Window, ClientWindowBase):
         workspacelog("set_workspace(%s) realized=%s, current workspace=%s, detected=%s, desktop workspace=%s, ndesktops=%s",
                      wn(workspace), self.is_realized(), wn(self._window_workspace), wn(current), wn(desktop), ndesktops)
         if not self._can_set_workspace or ndesktops is None:
-            return None
+            return
         if workspace==desktop or workspace==WORKSPACE_ALL or desktop is None:
             #window is back in view
             self._client.control_refresh(self._id, False, False)
