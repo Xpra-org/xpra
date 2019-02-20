@@ -5,9 +5,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections import namedtuple
 import gtk
 from gtk import gdk
-from collections import namedtuple
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
@@ -102,7 +102,7 @@ class GTK2WindowBase(GTKClientWindowBase):
     def get_window_geometry(self):
         gdkwindow = self.get_window()
         x, y = gdkwindow.get_origin()
-        _, _, w, h, _ = gdkwindow.get_geometry()
+        w, h = gdkwindow.get_geometry()[2:4]
         return x, y, w, h
 
     def apply_geometry_hints(self, hints):

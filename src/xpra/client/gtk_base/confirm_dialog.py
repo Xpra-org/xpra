@@ -27,7 +27,7 @@ pango = import_pango()
 
 class ConfirmDialogWindow(object):
 
-    def __init__(self, title="Title", prompt="", info=[], icon="", buttons=[]):
+    def __init__(self, title="Title", prompt="", info=(), icon="", buttons=()):
         if is_gtk3():
             self.window = gtk.Window(type=WINDOW_POPUP)
         else:

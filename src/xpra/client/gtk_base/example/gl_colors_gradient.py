@@ -11,8 +11,10 @@ from gtk import gtkgl
 from gtk import gdkgl
 
 from xpra.gtk_common.gtk_util import add_close_accel
-from OpenGL.GL import glClear, glClearColor, glViewport, \
-    glColor3f, glFlush, glRectf, GL_COLOR_BUFFER_BIT
+from OpenGL.GL import (
+    glClear, glClearColor, glViewport,
+    glColor3f, glFlush, glRectf, GL_COLOR_BUFFER_BIT,
+    )
 
 
 SIZE = 1600, 1200

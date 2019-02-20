@@ -167,7 +167,7 @@ class SessionsGUI(gtk.Window):
                     text[name] = v
             return text
         #first remove any records that are no longer found:
-        for key in self.local_info_cache.keys():
+        for key in self.local_info_cache:
             if key not in info_cache:
                 display, sockpath = key
                 self.records = [(interface, protocol, name, stype, domain, host, address, port, text) for
@@ -191,7 +191,7 @@ class SessionsGUI(gtk.Window):
             socktype = "socket"
         cmd = get_nodock_command()+["id", "%s:%s" % (socktype, sockpath)]
         p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, _ = p.communicate()
+        stdout = p.communicate()[0]
         log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
         if p.returncode!=0:
             return None
@@ -218,7 +218,10 @@ class SessionsGUI(gtk.Window):
             return
         self.set_size_request(-1, -1)
         tb = TableBuilder(1, 6, False)
-        tb.add_row(gtk.Label("Host"), gtk.Label("Display"), gtk.Label("Name"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("URI"), gtk.Label("Connect"), gtk.Label("Open in Browser"))
+        labels = [gtk.Label(x) for x in (
+            "Host", "Display", "Name", "Platform", "Type", "URI", "Connect", "Open in Browser",
+            )]
+        tb.add_row(*labels)
         self.table = tb.get_table()
         self.vbox.add(self.table)
         self.table.resize(1+len(self.records), 5)
@@ -240,7 +243,7 @@ class SessionsGUI(gtk.Window):
             log("populate_table: key[%i]=%s", i, key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
         for key, recs in d.items():
-            if type(key)==tuple:
+            if isinstance(key, tuple):
                 uuid, _, host, display, name, platform, dtype = key
             else:
                 display = key
@@ -307,7 +310,7 @@ class SessionsGUI(gtk.Window):
                 self.warning.set_text(EXIT_STR.get(c, "exit code %s" % c).replace("_", " "))
             try:
                 del self.clients[key]
-            except:
+            except KeyError:
                 pass
             else:
                 def update():

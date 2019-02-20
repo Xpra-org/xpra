@@ -6,15 +6,15 @@
 #test application for tray and menu
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
-gtk = import_gtk()
-glib = import_glib()
-
 from xpra.gtk_common.gtk_util import scaled_image, pixbuf_new_from_file
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
 from xpra.platform.paths import get_icon_filename
-
 from xpra.log import Logger
+
 log = Logger("client")
+
+gtk = import_gtk()
+glib = import_glib()
 
 
 class FakeApplication:
@@ -92,7 +92,8 @@ class FakeApplication:
                     XPRA_APP_ID = 0
                     tray_icon_filename = "xpra"
                     self.tray = x(self, XPRA_APP_ID, menu, "Test System Tray", tray_icon_filename,
-                                  self.xpra_tray_geometry, self.xpra_tray_click, self.xpra_tray_mouseover, self.xpra_tray_exit)
+                                  self.xpra_tray_geometry, self.xpra_tray_click,
+                                  self.xpra_tray_mouseover, self.xpra_tray_exit)
                 except Exception as e:
                     log.warn("failed to create tray %s: %s", x, e)
         self.tray.set_tooltip("Test System Tray")

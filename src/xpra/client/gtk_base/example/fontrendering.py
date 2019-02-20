@@ -3,19 +3,23 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections import OrderedDict
 import cairo
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pango, import_pangocairo, is_gtk3
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_glib, import_pango, import_pangocairo,
+    is_gtk3,
+    )
+
 gtk = import_gtk()
 gLib = import_glib()
 pango = import_pango()
 pangocairo = import_pangocairo()
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
 
 FONT = "Serif 27"
 PATTERN = "%f"
 
-from collections import OrderedDict
 ANTIALIAS = OrderedDict()
 ANTIALIAS[cairo.ANTIALIAS_NONE]     = "NONE"
 ANTIALIAS[cairo.ANTIALIAS_DEFAULT]  = "DEFAULT"
