@@ -94,7 +94,7 @@ if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
     log.warn(" only 'png' or 'jpeg' are allowed")
     SAVE_VIDEO_FRAMES = None
 
-FAST_ORDER = ["jpeg", "rgb32", "rgb24", "png"] + PREFERED_ENCODING_ORDER
+FAST_ORDER = tuple(["jpeg", "rgb32", "rgb24", "png"] + list(PREFERED_ENCODING_ORDER))
 
 
 class WindowVideoSource(WindowSource):
@@ -1478,7 +1478,8 @@ class WindowVideoSource(WindowSource):
         elif float(v)/float(u)<0.1:
             #don't downscale more than 10 times! (for each dimension - that's 100 times!)
             scaling = 1, 10
-        scalinglog("calculate_scaling%s=%s (q=%s, s=%s, scaling_control=%s)", (width, height, max_w, max_h), scaling, q, s, self.scaling_control)
+        scalinglog("calculate_scaling%s=%s (q=%s, s=%s, scaling_control=%s)",
+                   (width, height, max_w, max_h), scaling, q, s, self.scaling_control)
         return scaling
 
 
@@ -1496,7 +1497,8 @@ class WindowVideoSource(WindowSource):
         if self.do_check_pipeline(encodings, width, height, src_format):
             return True  #OK!
 
-        videolog("check_pipeline%s setting up a new pipeline as check failed - encodings=%s", (encoding, width, height, src_format), encodings)
+        videolog("check_pipeline%s setting up a new pipeline as check failed - encodings=%s",
+                 (encoding, width, height, src_format), encodings)
         #cleanup existing one if needed:
         self.csc_clean(self._csc_encoder)
         self.ve_clean(self._video_encoder)
@@ -1527,11 +1529,11 @@ class WindowVideoSource(WindowSource):
                 csclog("do_check_pipeline csc: switching source format from %s to %s",
                                     csce.get_src_format(), src_format)
                 return False
-            elif csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
+            if csce.get_src_width()!=csc_width or csce.get_src_height()!=csc_height:
                 csclog("do_check_pipeline csc: window dimensions have changed from %sx%s to %sx%s, csc info=%s",
                                     csce.get_src_width(), csce.get_src_height(), csc_width, csc_height, csce.get_info())
                 return False
-            elif csce.get_dst_format()!=ve.get_src_format():
+            if csce.get_dst_format()!=ve.get_src_format():
                 csclog.error("Error: CSC intermediate format mismatch,")
                 csclog.error(" %s outputs %s but %s expects %sw",
                              csce.get_type(), csce.get_dst_format(), ve.get_type(), ve.get_src_format())
@@ -1558,7 +1560,7 @@ class WindowVideoSource(WindowSource):
             videolog("do_check_pipeline video: invalid encoding %s, expected one of: %s",
                                             ve.get_encoding(), csv(encodings))
             return False
-        elif ve.get_width()!=encoder_src_width or ve.get_height()!=encoder_src_height:
+        if ve.get_width()!=encoder_src_width or ve.get_height()!=encoder_src_height:
             videolog("do_check_pipeline video: window dimensions have changed from %sx%s to %sx%s",
                                             ve.get_width(), ve.get_height(), encoder_src_width, encoder_src_height)
             return False
@@ -1579,7 +1581,8 @@ class WindowVideoSource(WindowSource):
         start = monotonic_time()
         if not scores:
             if not self.is_cancelled():
-                videolog.error("Error: no video pipeline options found for %s at %ix%i", src_format, width, height)
+                videolog.error("Error: no video pipeline options found for %s at %ix%i",
+                               src_format, width, height)
             return False
         videolog("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
@@ -1588,9 +1591,8 @@ class WindowVideoSource(WindowSource):
                 if self.setup_pipeline_option(width, height, src_format, *option):
                     #success!
                     return True
-                else:
-                    #skip cleanup below
-                    continue
+                #skip cleanup below
+                continue
             except TransientCodecException as e:
                 if self.is_cancelled():
                     return False
@@ -1659,7 +1661,9 @@ class WindowVideoSource(WindowSource):
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
-        ve.init_context(enc_width, enc_height, enc_in_format, dst_formats, encoder_spec.encoding, quality, speed, encoder_scaling, options)
+        ve.init_context(enc_width, enc_height, enc_in_format,
+                        dst_formats, encoder_spec.encoding,
+                        quality, speed, encoder_scaling, options)
         #record new actual limits:
         self.actual_scaling = scaling
         self.width_mask = width_mask
@@ -1712,7 +1716,8 @@ class WindowVideoSource(WindowSource):
         if sd and not options.get("scroll"):
             if client_options.get("scaled_size") or client_options.get("quality", 100)<20:
                 #don't scroll very low quality content, better to refresh it
-                scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)", coding, client_options.get("scaled_size"), client_options.get("quality", 100))
+                scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)",
+                          coding, client_options.get("scaled_size"), client_options.get("quality", 100))
                 sd.free()
             else:
                 sd.invalidate(x, y, w, h)
@@ -1757,7 +1762,7 @@ class WindowVideoSource(WindowSource):
                 scrolls.append((x, y+line, w, count, 0, scroll))
         #send the scrolls if we have any
         #(zero change scrolls have been removed - so maybe there are none)
-        if len(scrolls)>0:
+        if scrolls:
             client_options = options.copy()
             try:
                 del client_options["scroll"]
@@ -1805,7 +1810,8 @@ class WindowVideoSource(WindowSource):
                 csize = len(data)
                 compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                      (monotonic_time()-substart)*1000.0, w, sh, x+0, y+sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
-                scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (monotonic_time()-nsstart)*1000, len(non_scroll))
+                scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles",
+                          encoding, self._current_quality, self._current_speed, (monotonic_time()-nsstart)*1000, len(non_scroll))
             else:
                 #we can't send the non-scroll areas, ouch!
                 flush = 0
@@ -1823,7 +1829,8 @@ class WindowVideoSource(WindowSource):
         #jpeg2000 errors out on images smaller than 32x32,
         #and we don't know the size in this method, so discard it
         #also, don't choose mmap!
-        fallback_encodings = tuple(x for x in order if (x in encodings and x in self._encoders and x!="mmap" and x!="jpeg2000"))
+        fallback_encodings = tuple(x for x in order if
+                                   (x in encodings and x in self._encoders and x not in ("mmap", "jpeg2000")))
         depth = self.image_depth
         if depth==8 and "png/P" in fallback_encodings:
             return "png/P"
@@ -1887,7 +1894,8 @@ class WindowVideoSource(WindowSource):
             from PIL import Image
             img_data = image.get_pixels()
             rgb_format = image.get_pixel_format() #ie: BGRA
-            img = Image.frombuffer("RGBA", (w, h), memoryview_to_bytes(img_data), "raw", rgb_format.replace("BGRX", "BGRA"), stride)
+            rgba_format = rgb_format.replace("BGRX", "BGRA")
+            img = Image.frombuffer("RGBA", (w, h), memoryview_to_bytes(img_data), "raw", rgba_format, stride)
             kwargs = {}
             if SAVE_VIDEO_FRAMES=="jpeg":
                 kwargs = {
@@ -2077,7 +2085,8 @@ class WindowVideoSource(WindowSource):
             self.schedule_video_encoder_timer()
         actual_encoding = ve.get_encoding()
         videolog("video_encode %s encoder: %4s %4ix%-4i result is %7i bytes, %6.1f MPixels/s, client options=%s",
-                            ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
+                            ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""),
+                            (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
         return actual_encoding, Compressed(actual_encoding, data), client_options, width, height, 0, 24
 
     def cancel_video_encoder_flush(self):

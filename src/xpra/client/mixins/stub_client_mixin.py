@@ -49,6 +49,13 @@ class StubClientMixin(object):
         pass
 
     """
+    Send a packet to the server,
+    this takes precedence over packets sent via send().
+    """
+    def send_now(self, *parts):
+        pass
+
+    """
     Emit a signal, dummy implementation overriden by gobject.
     """
     def emit(self, *_args, **_kwargs):
