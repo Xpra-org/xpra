@@ -793,7 +793,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             info = self._protocol.get_info(False)
             key_handle_filenames = []
             for hostinfo in ("-%s" % info.get("host", ""), ""):
-                key_handle_filenames += [os.path.join(d, "u2f-keyhandle%s.hex" % hostinfo) for d in get_user_conf_dirs()]
+                for d in get_user_conf_dirs():
+                    key_handle_filenames.append(os.path.join(d, "u2f-keyhandle%s.hex" % hostinfo))
             for filename in key_handle_filenames:
                 p = osexpand(filename)
                 key_handle_str = load_binary_file(p)
@@ -832,7 +833,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
             if local and ALLOW_LOCALHOST_PASSWORDS:
                 return True
-            elif not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
+            if not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
                 self.auth_error(EXIT_ENCRYPTION, "server requested '%s' digest, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return False
         salt_digest = "xor"
@@ -1030,7 +1031,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def _process_gibberish(self, packet):
         log("process_gibberish(%s)", repr_ellipsized(packet))
-        (_, message, data) = packet
+        message, data = packet[1:3]
         p = self._protocol
         show_as_text = p and p.input_packetcount==0 and all(c in string.printable for c in bytestostr(data))
         if show_as_text:
@@ -1048,7 +1049,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.quit(EXIT_PACKET_FAILURE)
 
     def _process_invalid(self, packet):
-        (_, message, data) = packet
+        message, data = packet[1:3]
         netlog.info("Received invalid packet: %s", message)
         netlog(" data: %s", repr_ellipsized(data))
         self.quit(EXIT_PACKET_FAILURE)
