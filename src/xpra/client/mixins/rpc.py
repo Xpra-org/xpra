@@ -28,9 +28,6 @@ class RPCClient(StubClientMixin):
         self.server_rpc_types = []
         self.rpc_filter_timers = {}
 
-    def init(self, opts, _extra_args=[]):
-        pass
-
     def cleanup(self):
         timers = tuple(self.rpc_filter_timers.values())
         self.rpc_filter_timers = {}
@@ -60,7 +57,7 @@ class RPCClient(StubClientMixin):
     def rpc_call(self, rpc_type, rpc_args, reply_handler=None, error_handler=None):
         assert rpc_type in self.server_rpc_types, "server does not support %s rpc" % rpc_type
         rpcid = self.rpc_counter.increase()
-        self.rpc_filter_pending()
+        self.rpc_filter_pending(rpcid)
         #keep track of this request (for timeout / error and reply callbacks):
         req = monotonic_time(), rpc_type, rpc_args, reply_handler, error_handler
         self.rpc_pending_requests[rpcid] = req
