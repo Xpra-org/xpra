@@ -342,7 +342,9 @@ def start_dbus(dbus_launch):
         dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
         return dbus_pid, dbus_env
     except Exception as e:
-        get_util_logger().debug("start_dbus(%s)", dbus_launch, exc_info=True)
+        from xpra.log import Logger
+        log = Logger("dbus")
+        log.debug("start_dbus(%s)", dbus_launch, exc_info=True)
         error("dbus-launch failed to start using command '%s':\n" % dbus_launch)
         error(" %s\n" % e)
         return 0, {}
