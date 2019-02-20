@@ -495,17 +495,21 @@ def print_option(prefix, k, v):
 
 #*******************************************************************************
 # Utility methods for building with Cython
-def cython_version_check(min_version):
+def cython_version_compare(min_version):
     from distutils.version import LooseVersion
     assert cython_ENABLED
     from Cython.Compiler.Version import version as cython_version
-    if LooseVersion(cython_version) < LooseVersion(".".join([str(x) for x in min_version])):
+    return LooseVersion(cython_version) >= LooseVersion(min_version)
+
+def cython_version_check(min_version):
+    if not cython_version_compare(min_version):
+        from Cython.Compiler.Version import version as cython_version
         sys.exit("ERROR: Your version of Cython is too old to build this package\n"
                  "You have version %s\n"
                  "Please upgrade to Cython %s or better"
-                 % (cython_version, ".".join([str(part) for part in min_version])))
+                 % (cython_version, min_version))
 
-def cython_add(extension, min_version=(0, 19)):
+def cython_add(extension, min_version="0.25"):
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
     #python2.7 setup.py build -b build-2.7 install --no-compile \
@@ -2239,6 +2243,10 @@ if nvenc_ENABLED:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
         libraries.remove("nvidia-encode")
+    if not cython_version_compare("0.50"):
+        #older versions emit spurious warnings:
+        print("Warning: using workaround for outdated version of cython")
+        add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=sign-compare")
     cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
                          ["xpra/codecs/%s/encoder.pyx" % nvencmodule],
                          **nvenc_pkgconfig))
