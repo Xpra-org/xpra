@@ -276,7 +276,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 content = f.read()
                 assert len(content)==content_length, \
                     "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
-                if content_length>128 and ("gzip" in accept) and ("gzip" in HTTP_ACCEPT_ENCODING) and (ext not in (".png", )):
+                if content_length>128 and \
+                ("gzip" in accept) and \
+                ("gzip" in HTTP_ACCEPT_ENCODING) \
+                and (ext not in (".png", )):
                     #gzip it on the fly:
                     import zlib
                     assert len(content)==content_length, \

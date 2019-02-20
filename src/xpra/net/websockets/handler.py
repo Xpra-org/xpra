@@ -22,16 +22,19 @@ class WebSocketRequestHandler(HTTPRequestHandler):
 
     server_version = "Xpra-WebSocket-Server"
 
-    def __init__(self, sock, addr, new_websocket_client, web_root="/usr/share/xpra/www/", http_headers_dir="/usr/share/xpra/http-headers", script_paths={}):
+    def __init__(self, sock, addr, new_websocket_client,
+                 web_root="/usr/share/xpra/www/",
+                 http_headers_dir="/usr/share/xpra/http-headers", script_paths={}):
         self.new_websocket_client = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
         HTTPRequestHandler.__init__(self, sock, addr, web_root, http_headers_dir, script_paths)
 
     def handle_websocket(self):
-        log("handle_websocket() calling %s, request=%s (%s)", self.new_websocket_client, self.request, type(self.request))
+        log("handle_websocket() calling %s, request=%s (%s)",
+            self.new_websocket_client, self.request, type(self.request))
         ver = self.headers.get('Sec-WebSocket-Version')
         if ver is None:
-            raise Exception("Missing Sec-WebSocket-Version header");
+            raise Exception("Missing Sec-WebSocket-Version header")
 
         if ver not in SUPPORT_HyBi_PROTOCOLS:
             raise Exception("Unsupported protocol version %s" % ver)
@@ -42,7 +45,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
 
         key = self.headers.get("Sec-WebSocket-Key")
         if key is None:
-            raise Exception("Missing Sec-WebSocket-Key header");
+            raise Exception("Missing Sec-WebSocket-Key header")
         for upgrade_string in (
             b"HTTP/1.1 101 Switching Protocols",
             b"Upgrade: websocket",
