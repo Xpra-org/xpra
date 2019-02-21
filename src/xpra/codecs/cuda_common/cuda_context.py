@@ -208,7 +208,7 @@ def check_devices():
 def reset_state():
     log("cuda_context.reset_state()")
     global DEVICE_STATE
-    DEVICES = None
+    DEVICE_STATE = {}
 
 
 def select_device(preferred_device_id=-1, preferred_device_name=None, min_compute=0):
