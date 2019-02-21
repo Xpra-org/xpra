@@ -869,11 +869,13 @@ class ProxyInstanceProcess(Process):
             #we must verify that the encoder is still valid
             #and scrap it if not (ie: when window is resized)
             if ve.get_width()!=width or ve.get_height()!=height:
-                enclog("closing existing video encoder %s because dimensions have changed from %sx%s to %sx%s", ve, ve.get_width(), ve.get_height(), width, height)
+                enclog("closing existing video encoder %s because dimensions have changed from %sx%s to %sx%s",
+                       ve, ve.get_width(), ve.get_height(), width, height)
                 ve.clean()
                 ve = None
             elif ve.get_encoding()!=encoding:
-                enclog("closing existing video encoder %s because encoding has changed from %s to %s", ve.get_encoding(), encoding)
+                enclog("closing existing video encoder %s because encoding has changed from %s to %s",
+                       ve.get_encoding(), encoding)
                 ve.clean()
                 ve = None
         #scaling and depth are proxy-encoder attributes:
@@ -950,7 +952,7 @@ class ProxyInstanceProcess(Process):
         for encoding in try_encodings:
             colorspace_specs = self.video_helper.get_encoder_specs(encoding)
             especs = colorspace_specs.get(rgb_format)
-            if len(especs)==0:
+            if not especs:
                 continue
             for etype in self.video_encoder_types:
                 for spec in especs:

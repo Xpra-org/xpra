@@ -196,7 +196,8 @@ class WindowBackingBase(object):
                 assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
                 img_data = compression.decompress_by_name(raw_data, algo=comp[0])
         if len(img_data)!=rowstride * height:
-            deltalog.error("invalid img data length: expected %s but got %s (%s: %s)", rowstride * height, len(img_data), type(img_data), repr_ellipsized(img_data))
+            deltalog.error("Error: invalid img data length: expected %s but got %s (%s: %s)",
+                           rowstride * height, len(img_data), type(img_data), repr_ellipsized(img_data))
             raise Exception("expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" %
                                 (rowstride * height, width, height, rowstride, len(img_data), len(raw_data)))
         delta = options.intget(b"delta", -1)
@@ -314,8 +315,8 @@ class WindowBackingBase(object):
         if rgb_format not in self.RGB_MODES:
             from xpra.codecs.rgb_transform import rgb_reformat
             from xpra.codecs.image_wrapper import ImageWrapper
-            img = ImageWrapper(x, y, width, height, data, rgb_format, len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
-            #log("rgb_reformat(%s, %s, %s) %i bytes", img, self.RGB_MODES, has_alpha and self._alpha_enabled, len(img_data))
+            img = ImageWrapper(x, y, width, height, data, rgb_format,
+                               len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
             rgb_reformat(img, self.RGB_MODES, has_alpha and self._alpha_enabled)
             rgb_format = img.get_pixel_format()
             data = img.get_pixels()
@@ -350,8 +351,6 @@ class WindowBackingBase(object):
             options[b"rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
-        except KeyboardInterrupt:
-            raise
         except Exception as e:
             if not self._backing:
                 fire_paint_callbacks(callbacks, -1, "paint error on closed backing ignored")
@@ -381,7 +380,8 @@ class WindowBackingBase(object):
         assert in_options, "no csc options for '%s' input in %s" % (src_format, CSC_OPTIONS)
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
-            log("make_csc%s specs=%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), specs)
+            log("make_csc%s specs=%s",
+                (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), specs)
             if not specs:
                 continue
             for spec in specs:
@@ -394,7 +394,8 @@ class WindowBackingBase(object):
                                dst_width, dst_height, dst_format, speed)
                     return csc
                 except Exception as e:
-                    log("make_csc%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), exc_info=True)
+                    log("make_csc%s",
+                        (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), exc_info=True)
                     log.error("Error: failed to create csc instance %s", spec.codec_class)
                     log.error(" for %s to %s: %s", src_format, dst_format, e)
         log.error("Error: no matching CSC module found")
@@ -412,31 +413,32 @@ class WindowBackingBase(object):
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     log.error("       "+v[0], *v[1:])
-        raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" % (src_format, src_width, src_height, " or ".join(dst_format_options), dst_width, dst_height, CSC_OPTIONS))
+        raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" %
+                        (src_format, src_width, src_height, " or ".join(dst_format_options),
+                         dst_width, dst_height, CSC_OPTIONS))
 
     def validate_csc_size(self, spec, src_width, src_height, dst_width, dst_height):
         if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):
             return "scaling not suported"
-        elif src_width<spec.min_w:
+        if src_width<spec.min_w:
             return "source width %i is out of range: minimum is %i", src_width, spec.min_w
-        elif src_height<spec.min_h:
+        if src_height<spec.min_h:
             return "source height %i is out of range: minimum is %i", src_height, spec.min_h
-        elif dst_width<spec.min_w:
+        if dst_width<spec.min_w:
             return "target width %i is out of range: minimum is %i", dst_width, spec.min_w
-        elif dst_height<spec.min_h:
+        if dst_height<spec.min_h:
             return "target height %i is out of range: minimum is %i", dst_height, spec.min_h
-        elif src_width>spec.max_w:
+        if src_width>spec.max_w:
             return "source width %i is out of range: maximum is %i", src_width, spec.max_w
-        elif src_height>spec.max_h:
+        if src_height>spec.max_h:
             return "source height %i is out of range: maximum is %i", src_height, spec.max_h
-        elif dst_width>spec.max_w:
+        if dst_width>spec.max_w:
             return "target width %i is out of range: maximum is %i", dst_width, spec.max_w
-        elif dst_height>spec.max_h:
+        if dst_height>spec.max_h:
             return "target height %i is out of range: maximum is %i", dst_height, spec.max_h
         return None
 
     def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
-        #log("paint_with_video_decoder%s", (decoder_module, coding, "%s bytes" % len(img_data), x, y, width, height, options, callbacks))
         assert decoder_module, "decoder module not found for %s" % coding
         dl = self._decoder_lock
         if dl is None:
@@ -468,14 +470,17 @@ class WindowBackingBase(object):
                     log("paint_with_video_decoder: encoding changed from %s to %s", vd.get_encoding(), coding)
                     self.do_clean_video_decoder()
                 elif vd.get_width()!=enc_width or vd.get_height()!=enc_height:
-                    log("paint_with_video_decoder: video dimensions have changed from %s to %s", (vd.get_width(), vd.get_height()), (enc_width, enc_height))
+                    log("paint_with_video_decoder: video dimensions have changed from %s to %s",
+                        (vd.get_width(), vd.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
                 elif vd.get_colorspace()!=input_colorspace:
                     #this should only happen on encoder restart, which means this should be the first frame:
-                    log.warn("Warning: colorspace unexpectedly changed from %s to %s", vd.get_colorspace(), input_colorspace)
+                    log.warn("Warning: colorspace unexpectedly changed from %s to %s",
+                             vd.get_colorspace(), input_colorspace)
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
-                log("paint_with_video_decoder: new %s(%s,%s,%s)", decoder_module.Decoder, width, height, input_colorspace)
+                log("paint_with_video_decoder: new %s(%s,%s,%s)",
+                    decoder_module.Decoder, width, height, input_colorspace)
                 vd = decoder_module.Decoder()
                 vd.init_context(coding, enc_width, enc_height, input_colorspace)
                 self._video_decoder = vd
@@ -564,7 +569,8 @@ class WindowBackingBase(object):
         """ dispatches the paint to one of the paint_XXXX methods """
         try:
             assert self._backing is not None
-            log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
+            log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)",
+                x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
             coding = bytestostr(coding)
             options["encoding"] = coding            #used for choosing the color of the paint box
             if INTEGRITY_HASH:

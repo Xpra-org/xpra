@@ -59,10 +59,10 @@ class GTKImageCapture(object):
         return True
 
     def get_image(self, x, y, width, height):
-        v = get_rgb_rawdata(self.window, x, y, width, height)
-        if v is None:
+        attrs = get_rgb_rawdata(self.window, x, y, width, height)
+        if not attrs:
             return None
-        return ImageWrapper(*v)
+        return ImageWrapper(*attrs)
 
     def take_screenshot(self):
         return take_png_screenshot(self.window)
