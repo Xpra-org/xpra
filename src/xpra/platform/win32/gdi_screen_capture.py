@@ -66,6 +66,28 @@ def get_desktop_bit_depth():
     ReleaseDC(desktop_wnd, dc)
     return bit_depth
 
+def get_palette(dc):
+    count = GetSystemPaletteEntries(dc, 0, 0, None)
+    log("palette size: %s", count)
+    palette = []
+    if count>0:
+        buf = (PALETTEENTRY*count)()
+        r = GetSystemPaletteEntries(dc, 0, count, ctypes.byref(buf))
+        for i in range(min(count, r)):
+            p = buf[i]
+            #we expect 16-bit values, so bit-shift them:
+            palette.append((p.peRed<<8, p.peGreen<<8, p.peBlue<<8))
+    return palette
+
+
+RGB_FORMATS = {
+    32  : "BGRX",
+    30  : "r210",
+    24  : "BGR",
+    16  : "BGR565",
+    8   : "RLE8",
+    }
+
 
 class GDICapture(object):
 
@@ -102,8 +124,7 @@ class GDICapture(object):
             self.memdc = None
             DeleteDC(memdc)
 
-    def get_image(self, x=0, y=0, width=0, height=0):
-        start = time.time()
+    def get_capture_coords(self, x, y, width, height):
         metrics = get_virtualscreenmetrics()
         if self.metrics is None or self.metrics!=metrics:
             #new metrics, start from scratch:
@@ -126,6 +147,11 @@ class GDICapture(object):
             width = dw
         if height>dh:
             height = dh
+        return x, y, width, height
+
+    def get_image(self, x=0, y=0, width=0, height=0):
+        start = time.time()
+        x, y, width, height = self.get_capture_coords(x, y, width, height)
         if not self.dc:
             self.wnd = GetDesktopWindow()
             self.dc = GetWindowDC(self.wnd)
@@ -136,7 +162,7 @@ class GDICapture(object):
         bitmap = CreateCompatibleBitmap(self.dc, width, height)
         assert bitmap, "failed to get a compatible bitmap from %s" % self.dc
         r = SelectObject(self.memdc, bitmap)
-        if r==0:
+        if not r:
             log.error("Error: cannot select bitmap object")
             return None
         select_time = time.time()
@@ -162,7 +188,7 @@ class GDICapture(object):
         pixels = ctypes.create_string_buffer(b"", buf_size)
         log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, ctypes.addressof(pixels))
         r = GetBitmapBits(bitmap, buf_size, ctypes.byref(pixels))
-        if r==0:
+        if not r:
             log.error("Error: failed to copy screen bitmap data")
             return None
         if r!=buf_size:
@@ -171,31 +197,14 @@ class GDICapture(object):
         log("get_image GetBitmapBits took %ims", (time.time()-bitblt_time)*1000)
         DeleteObject(bitmap)
         assert pixels, "no pixels returned from GetBitmapBits"
-        if self.bit_depth==32:
-            rgb_format = "BGRX"
-        elif self.bit_depth==30:
-            rgb_format = "r210"
-        elif self.bit_depth==24:
-            rgb_format = "BGR"
-        elif self.bit_depth==16:
-            rgb_format = "BGR565"
-        elif self.bit_depth==8:
-            rgb_format = "RLE8"
-        else:
+        rgb_format = RGB_FORMATS.get(self.bit_depth)
+        if not rgb_format:
             raise Exception("unsupported bit depth: %s" % self.bit_depth)
         bpp = self.bit_depth//8
         v = ImageWrapper(0, 0, width, height, pixels, rgb_format,
                          self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
         if self.bit_depth==8:
-            count = GetSystemPaletteEntries(self.dc, 0, 0, None)
-            log("palette size: %s", count)
-            palette = []
-            if count>0:
-                buf = (PALETTEENTRY*count)()
-                r = GetSystemPaletteEntries(self.dc, 0, count, ctypes.byref(buf))
-                #we expect 16-bit values, so bit-shift them:
-                for p in buf:
-                    palette.append((p.peRed<<8, p.peGreen<<8, p.peBlue<<8))
+            palette = get_palette(self.dc)
             v.set_palette(palette)
         log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
         return v
