@@ -49,11 +49,11 @@ def get_pycuda_version():
 def get_pycuda_info():
     init_all_devices()
     i = {
-         "version" : {
-                      ""        : pycuda.VERSION,
-                      "text"    : pycuda.VERSION_TEXT,
-                      }
-         }
+        "version" : {
+            ""        : pycuda.VERSION,
+            "text"    : pycuda.VERSION_TEXT,
+            }
+        }
     if pycuda.VERSION_STATUS:
         i["version.status"] = pycuda.VERSION_STATUS
     return i
@@ -61,11 +61,11 @@ def get_pycuda_info():
 def get_cuda_info():
     init_all_devices()
     return {
-            "driver"    : {
-                           "version"        : driver.get_version(),
-                           "driver_version" : driver.get_driver_version(),
-                           }
+        "driver"    : {
+            "version"        : driver.get_version(),
+            "driver_version" : driver.get_driver_version(),
             }
+        }
 
 
 DEVICE_INFO = {}
@@ -139,7 +139,8 @@ def init_all_devices():
     log("CUDA driver version=%s", driver.get_driver_version())
     ngpus = driver.Device.count()
     if ngpus==0:
-        log.info("CUDA %s / PyCUDA %s, no devices found", ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT)
+        log.info("CUDA %s / PyCUDA %s, no devices found",
+                 ".".join(str(x) for x in driver.get_version()), pycuda.VERSION_TEXT)
         return DEVICES
     cuda_device_blacklist = get_pref("blacklist")
     da = driver.device_attribute
@@ -170,9 +171,18 @@ def init_all_devices():
                 log("   api version=%s", context.get_api_version())
                 free, total = driver.mem_get_info()
                 log("   memory: free=%sMB, total=%sMB",  int(free//1024//1024), int(total//1024//1024))
-                log("   multi-processors: %s, clock rate: %s", device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
-                log("   max block sizes: (%s, %s, %s)", device.get_attribute(da.MAX_BLOCK_DIM_X), device.get_attribute(da.MAX_BLOCK_DIM_Y), device.get_attribute(da.MAX_BLOCK_DIM_Z))
-                log("   max grid sizes: (%s, %s, %s)", device.get_attribute(da.MAX_GRID_DIM_X), device.get_attribute(da.MAX_GRID_DIM_Y), device.get_attribute(da.MAX_GRID_DIM_Z))
+                log("   multi-processors: %s, clock rate: %s",
+                    device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
+                log("   max block sizes: (%s, %s, %s)",
+                    device.get_attribute(da.MAX_BLOCK_DIM_X),
+                    device.get_attribute(da.MAX_BLOCK_DIM_Y),
+                    device.get_attribute(da.MAX_BLOCK_DIM_Z),
+                    )
+                log("   max grid sizes: (%s, %s, %s)",
+                    device.get_attribute(da.MAX_GRID_DIM_X),
+                    device.get_attribute(da.MAX_GRID_DIM_Y),
+                    device.get_attribute(da.MAX_GRID_DIM_Z),
+                    )
                 max_width = device.get_attribute(da.MAXIMUM_TEXTURE2D_WIDTH)
                 max_height = device.get_attribute(da.MAXIMUM_TEXTURE2D_HEIGHT)
                 log("   maximum texture size: %sx%s", max_width, max_height)
@@ -189,7 +199,8 @@ def init_all_devices():
                     DEVICES.append(i)
                 else:
                     log.info("  this device is too old!")
-                log.info("  + %s (memory: %s%% free, compute: %s.%s)", device_info(device), 100*free//total, SMmajor, SMminor)
+                log.info("  + %s (memory: %s%% free, compute: %s.%s)",
+                         device_info(device), 100*free//total, SMmajor, SMminor)
             finally:
                 context.pop()
         except Exception as e:
@@ -202,7 +213,7 @@ def get_devices():
 
 def check_devices():
     devices = init_all_devices()
-    assert len(devices)>0, "no valid CUDA devices found!"
+    assert devices, "no valid CUDA devices found!"
 
 
 def reset_state():
@@ -243,7 +254,8 @@ def select_device(preferred_device_id=-1, preferred_device_name=None, min_comput
                 SMmajor, SMminor = device.compute_capability()
                 compute = (SMmajor<<4) + SMminor
                 if compute<min_compute:
-                    log("ignoring device %s: compute capability %#x (minimum %#x required)", device_info(device), compute, min_compute)
+                    log("ignoring device %s: compute capability %#x (minimum %#x required)",
+                        device_info(device), compute, min_compute)
                 elif device_id==preferred_device_id:
                     l = log
                     if len(device_list)>1:
@@ -254,7 +266,8 @@ def select_device(preferred_device_id=-1, preferred_device_name=None, min_comput
                     log("device matches preferred device name: %s", preferred_device_name)
                     return device_id, device
                 elif tpct>=MIN_FREE_MEMORY and tpct>free_pct:
-                    log("device has enough free memory: %i (min=%i, current best device=%i)", tpct, MIN_FREE_MEMORY, free_pct)
+                    log("device has enough free memory: %i (min=%i, current best device=%i)",
+                        tpct, MIN_FREE_MEMORY, free_pct)
                     selected_device = device
                     selected_device_id = device_id
                     free_pct = tpct
