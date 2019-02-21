@@ -764,7 +764,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def reset_windows_cursors(self, *_args):
-        cursorlog("reset_windows_cursors() resetting cursors for: %s", self._cursors.keys())
+        cursorlog("reset_windows_cursors() resetting cursors for: %s", tuple(self._cursors.keys()))
         for w,cursor_data in tuple(self._cursors.items()):
             self.set_windows_cursor([w], cursor_data)
 
