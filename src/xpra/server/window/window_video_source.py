@@ -1386,7 +1386,7 @@ class WindowVideoSource(WindowSource):
         else:
             #use heuristics to choose the best scaling ratio:
             mvsub = self.matches_video_subregion(width, height)
-            video = self.content_type=="video" or (mvsub and self.subregion_is_video())
+            video = self.content_type=="video" or (bool(mvsub) and self.subregion_is_video())
             ffps = self.get_video_fps(width, height)
 
             if self.scaling_control is None:
