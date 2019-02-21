@@ -51,7 +51,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
     glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
     )
 
-from xpra.os_util import monotonic_time, strtobytes, hexstr, POSIX, DummyContextManager
+from xpra.os_util import monotonic_time, strtobytes, hexstr, POSIX, PYTHON2, DummyContextManager
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
@@ -174,11 +174,6 @@ if envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True):
         pass
     else:
         zerocopy_upload = is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
-try:
-    buffer_type = buffer
-except NameError:
-    #not defined in py3k..
-    buffer_type = None
 
 
 if POSIX:
@@ -888,7 +883,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 #not safe, make a copy :(
                 return "copy:memoryview.tobytes", img_data.tobytes()
             return "zerocopy:memoryview", img_data
-        if isinstance(img_data, (bytes, buffer_type)) and zerocopy_upload:
+        if isinstance(img_data, bytes) and zerocopy_upload:
+            #we can zerocopy if we wrap it:
+            return "zerocopy:bytes-as-memoryview", memoryview(img_data)
+        if PYTHON2 and isinstance(img_data, buffer) and zerocopy_upload:
             #we can zerocopy if we wrap it:
             return "zerocopy:buffer-as-memoryview", memoryview(img_data)
         if isinstance(img_data, bytes):
