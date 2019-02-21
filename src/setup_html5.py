@@ -3,7 +3,7 @@
 # This file is part of Xpra.
 # Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
-# later version. See the file COPYING for details.
+# later version. See the file LICENSE for details.
 
 import sys
 import os.path
@@ -74,8 +74,6 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
         for f in files:
             src = os.path.join(os.getcwd(), f)
             parts = f.split(os.path.sep)
-            if parts[-1] in ("AUTHORS", "LICENSE"):
-                continue
             if parts[0]=="html5":
                 f = os.path.join(*parts[1:])
             if install_dir==".":
