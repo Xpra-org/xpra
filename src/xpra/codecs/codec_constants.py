@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,11 +9,25 @@ import weakref
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ("h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265", "jpeg2000", "mpeg1", "mpeg2")
+PREFERED_ENCODING_ORDER = (
+    "h264", "vp9", "vp8", "mpeg4",
+    "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
+    "png", "png/P", "png/L", "webp",
+    "rgb", "rgb24", "rgb32", "jpeg",
+    "h265", "jpeg2000", "mpeg1", "mpeg2",
+    )
 #encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER = ("rgb24", "rgb32", "png", "webp", "png/P", "png/L", "rgb", "jpeg", )
+EDGE_ENCODING_ORDER = (
+    "rgb24", "rgb32",
+    "png", "webp",
+    "png/P", "png/L", "rgb", "jpeg",
+    )
 
-HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg", "jpeg2000")
+HELP_ORDER = (
+    "auto", "h264", "h265", "vp8", "vp9", "mpeg4",
+    "png", "png/P", "png/L", "webp",
+    "rgb", "jpeg", "jpeg2000",
+    )
 
 #those are currently so useless that we don't want the user to select them by mistake
 PROBLEMATIC_ENCODINGS = ("h265", )

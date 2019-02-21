@@ -64,15 +64,13 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 #on top of that, there are compatibility problems with gtk at times: OpenCL AMD and TLS don't mix well
 
 
-def get_encoder_module_names(x):
-    if x=="nvenc":
-        return ["nvenc"]
-    elif x.find("enc")>=0:
-        return [x]              #ie: "nvenc" or "enc_vpx"
-    return ["enc_"+x]           #ie: "enc_x264"
+def get_encoder_module_name(x):
+    if x.find("enc")>=0:
+        return (x,)             #ie: "nvenc" or "enc_vpx"
+    return "enc_"+x             #ie: "enc_x264"
 
 def get_decoder_module_name(x):
-        return "dec_"+x         #ie: "dec_vpx"
+    return "dec_"+x         #ie: "dec_vpx"
 
 def get_csc_module_name(x):
     return "csc_"+x             #ie: "csc_swscale"
@@ -83,12 +81,11 @@ def get_DEFAULT_VIDEO_ENCODERS():
     """ returns all the video encoders installed """
     encoders = []
     for x in tuple(ALL_VIDEO_ENCODER_OPTIONS):
-        mods = get_encoder_module_names(x)
-        for mod in mods:
-            c = get_codec(mod)
-            if c:
-                encoders.append(x)
-                break
+        mod = get_encoder_module_name(x)
+        c = get_codec(mod)
+        if c:
+            encoders.append(x)
+            break
     return encoders
 
 def get_DEFAULT_CSC_MODULES():
@@ -135,18 +132,19 @@ class VideoHelper(object):
         self._initialized = init
         self._lock = Lock()
 
-    def set_modules(self, video_encoders=[], csc_modules=[], video_decoders=[]):
+    def set_modules(self, video_encoders=(), csc_modules=(), video_decoders=()):
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
         def filt(name, inlist, all_list):
-            notfound = [x for x in inlist if x and x not in all_list]
+            notfound = tuple(x for x in inlist if x and x not in all_list)
             if notfound:
-                log.warn("ignoring unknown %s: %s", name, csv(notfound))
-            return [x for x in inlist if x in all_list]
+                log.warn("Warning: ignoring unknown %s: %s", name, csv(notfound))
+            return tuple(x for x in inlist if x in all_list)
         self.video_encoders = filt("video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
         self.csc_modules    = filt("csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
         self.video_decoders = filt("video decoders" , video_decoders,   ALL_VIDEO_DECODER_OPTIONS)
         log("VideoHelper.set_modules(%s, %s, %s) video encoders=%s, csc=%s, video decoders=%s",
-            csv(video_encoders), csv(csc_modules), csv(video_decoders), csv(self.video_encoders), csv(self.csc_modules), csv(self.video_decoders))
+            csv(video_encoders), csv(csc_modules), csv(video_decoders),
+            csv(self.video_encoders), csv(self.csc_modules), csv(self.video_decoders))
 
     def cleanup(self):
         with self._lock:
@@ -195,22 +193,21 @@ class VideoHelper(object):
             for in_csc, specs in encoder_specs.items():
                 for spec in specs:
                     einfo.setdefault("%s_to_%s" % (in_csc, encoding), []).append(spec.codec_type)
-        for in_csc, specs in self._csc_encoder_specs.items():
-            for out_csc, specs in specs.items():
+        for in_csc, out_specs in self._csc_encoder_specs.items():
+            for out_csc, specs in out_specs.items():
                 cinfo["%s_to_%s" % (in_csc, out_csc)] = [spec.codec_type for spec in specs]
         for encoding, decoder_specs in self._video_decoder_specs.items():
             for out_csc, decoders in decoder_specs.items():
                 for decoder in decoders:
-                    decoder_name, _ = decoder
+                    decoder_name = decoder[0]
                     dinfo.setdefault("%s_to_%s" % (encoding, out_csc), []).append(decoder_name)
         def modstatus(x, def_list, active_list):
             #the module is present
             if x in active_list:
                 return "active"
-            elif x in def_list:
+            if x in def_list:
                 return "disabled"
-            else:
-                return "not found"
+            return "not found"
         venc = einfo.setdefault("video-encoder", {})
         for x in ALL_VIDEO_ENCODER_OPTIONS:
             venc["%s" % x] = modstatus(x, get_DEFAULT_VIDEO_ENCODERS(), self.video_encoders)
@@ -257,21 +254,21 @@ class VideoHelper(object):
         log(" will try video encoders: %s", csv(self.video_encoders))
         for x in self.video_encoders:
             try:
-                mods = get_encoder_module_names(x)
-                log(" modules for %s: %s", x, csv(mods))
-                for mod in mods:
-                    try:
-                        self.init_video_encoder_option(mod)
-                        break
-                    except Exception as e:
-                        log(" init_video_encoder_option(%s) error", mod, exc_info=True)
-                        log.warn("Warning: cannot load %s video encoder:", mod)
-                        log.warn(" %s", e)
-                        del e
+                mod = get_encoder_module_name(x)
+                log(" encoder for %s: %s", x, mod)
+                try:
+                    self.init_video_encoder_option(mod)
+                    break
+                except Exception as e:
+                    log(" init_video_encoder_option(%s) error", mod, exc_info=True)
+                    log.warn("Warning: cannot load %s video encoder:", mod)
+                    log.warn(" %s", e)
+                    del e
             except Exception as e:
                 log.warn("Warning: cannot add %s encoder: %s", x, e)
                 del e
-        log("found %i video encoder%s: %s", len(self._video_encoder_specs), engs(self._video_encoder_specs), csv(self._video_encoder_specs))
+        log("found %i video encoder%s: %s",
+            len(self._video_encoder_specs), engs(self._video_encoder_specs), csv(self._video_encoder_specs))
 
     def init_video_encoder_option(self, encoder_name):
         encoder_module = get_codec(encoder_name)
@@ -286,7 +283,8 @@ class VideoHelper(object):
             encoder_module.init_module()
             self._cleanup_modules.append(encoder_module)
         except Exception as e:
-            log(" exception in %s module %s initialization %s: %s", encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
+            log(" exception in %s module %s initialization %s: %s",
+                encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
             raise
         encodings = encoder_module.get_encodings()
         log(" %s encodings=%s", encoder_type, csv(encodings))
@@ -355,7 +353,8 @@ class VideoHelper(object):
                 self.init_video_decoder_option(mod)
             except:
                 log.warn("Warning: cannot add %s decoder", x, exc_info=True)
-        log("found %s video decoder%s: %s", len(self._video_decoder_specs), engs(self._video_decoder_specs), csv(self._video_decoder_specs))
+        log("found %s video decoder%s: %s",
+            len(self._video_decoder_specs), engs(self._video_decoder_specs), csv(self._video_decoder_specs))
         log("video decoder options: %s", self._video_decoder_specs)
 
     def init_video_decoder_option(self, decoder_name):
@@ -371,7 +370,8 @@ class VideoHelper(object):
             decoder_module.init_module()
             self._cleanup_modules.append(decoder_module)
         except Exception as e:
-            log("exception in %s module initialization %s: %s", decoder_type, decoder_module.init_module, e, exc_info=True)
+            log("exception in %s module initialization %s: %s",
+                decoder_type, decoder_module.init_module, e, exc_info=True)
             log.warn("Warning: cannot use %s module %s: %s", decoder_type, decoder_module, e, exc_info=True)
             return
         encodings = decoder_module.get_encodings()
@@ -390,7 +390,11 @@ class VideoHelper(object):
                     del e
 
     def add_decoder(self, encoding, colorspace, decoder_name, decoder_module):
-        self._video_decoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append((decoder_name, decoder_module))
+        self._video_decoder_specs.setdefault(
+            encoding, {}).setdefault(
+                colorspace, []).append(
+                    (decoder_name, decoder_module)
+                    )
 
 
     def get_server_full_csc_modes(self, *client_supported_csc_modes):
@@ -398,7 +402,8 @@ class VideoHelper(object):
             returns the CSC modes per encoding that the server can encode with.
             (taking into account the decoder's actual output colorspace for each encoding)
         """
-        log("get_client_full_csc_modes(%s) decoder encodings=%s", client_supported_csc_modes, self._video_decoder_specs.keys())
+        log("get_client_full_csc_modes(%s) decoder encodings=%s",
+            client_supported_csc_modes, self._video_decoder_specs.keys())
         full_csc_modes = {}
         for encoding, encoding_specs in self._video_decoder_specs.items():
             assert encoding_specs is not None
@@ -424,7 +429,7 @@ class VideoHelper(object):
         supported_csc_modes = list(target_rgb_modes)
         for src_format, specs in self._csc_encoder_specs.items():
             for dst_format, csc_specs in specs.items():
-                if dst_format in target_rgb_modes and len(csc_specs)>0:
+                if dst_format in target_rgb_modes and csc_specs:
                     supported_csc_modes.append(src_format)
                     break
         supported_csc_modes = sorted(supported_csc_modes)

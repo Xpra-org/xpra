@@ -23,7 +23,7 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time
-from xpra.os_util import monotonic_time, strtobytes, bytestostr, PYTHON3
+from xpra.os_util import monotonic_time, bytestostr, PYTHON3
 from xpra.log import Logger
 if PYTHON3:
     from functools import reduce
@@ -1039,7 +1039,9 @@ class WindowVideoSource(WindowSource):
                 old = vs.rectangle
                 ww, wh = self.window_dimensions
                 vs.identify_video_subregion(ww, wh,
-                                            self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized,
+                                            self.statistics.damage_events_count,
+                                            self.statistics.last_damage_events,
+                                            self.statistics.last_resized,
                                             self.children)
                 newrect = vs.rectangle
                 if ((newrect is None) ^ (old is None)) or newrect!=old:
@@ -1131,7 +1133,8 @@ class WindowVideoSource(WindowSource):
                 w = r.width & self.width_mask
                 h = r.height & self.width_mask
         if w<self.min_w or w>self.max_w or h<self.min_h or h>self.max_h:
-            return checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)", w, h, self.min_w, self.min_h, self.max_w, self.max_h)
+            return checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)",
+                                w, h, self.min_w, self.min_h, self.max_w, self.max_h)
         #if monotonic_time()-self.statistics.last_resized<0.500:
         #    return checknovideo("resized just %.1f seconds ago", monotonic_time()-self.statistics.last_resized)
 
@@ -1146,7 +1149,7 @@ class WindowVideoSource(WindowSource):
             return
 
         scores = self.get_video_pipeline_options(eval_encodings, w, h, self.pixel_format, force_reload)
-        if len(scores)==0:
+        if not scores:
             scorelog("check_pipeline_score(%s) no pipeline options found!", force_reload)
             return
 
@@ -1180,7 +1183,7 @@ class WindowVideoSource(WindowSource):
             scorelog("check_pipeline_score(%s) change of video input dimensions from %ix%i to %ix%i",
                      force_reload, ve.get_width(), ve.get_height(), enc_width, enc_height)
             clean = True
-        elif type(ve)!=encoder_spec.codec_class:
+        elif not isinstance(ve, encoder_spec.codec_class):
             scorelog("check_pipeline_score(%s) found a better video encoder class than %s: %s",
                      force_reload, type(ve), scores[0])
             clean = True
@@ -1206,15 +1209,15 @@ class WindowVideoSource(WindowSource):
         """
         if not force_refresh and (monotonic_time()-self.last_pipeline_time<1) and self.last_pipeline_params and self.last_pipeline_params==(encodings, width, height, src_format):
             #keep existing scores
-            scorelog("get_video_pipeline_options%s using cached values from %ims ago", (encodings, width, height, src_format, force_refresh), 1000.0*(monotonic_time()-self.last_pipeline_time))
+            scorelog("get_video_pipeline_options%s using cached values from %ims ago",
+                     (encodings, width, height, src_format, force_refresh), 1000.0*(monotonic_time()-self.last_pipeline_time))
             return self.last_pipeline_scores
-        scorelog("get_video_pipeline_options%s last params=%s, full_csc_modes=%s", (encodings, width, height, src_format, force_refresh), self.last_pipeline_params, self.full_csc_modes)
+        scorelog("get_video_pipeline_options%s last params=%s, full_csc_modes=%s",
+                 (encodings, width, height, src_format, force_refresh), self.last_pipeline_params, self.full_csc_modes)
 
         vh = self.video_helper
         if vh is None:
             return ()       #closing down
-        if not self.pixel_format:
-            return ()
 
         target_q = int(self._current_quality)
         min_q = self._fixed_min_quality

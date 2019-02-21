@@ -80,5 +80,6 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     image.set_pixel_format(target_format)
     end = monotonic_time()
     log("rgb_reformat(%s, %s, %s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s",
-        image, rgb_formats, supports_transparency, pixel_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
+        image, rgb_formats, supports_transparency, pixel_format, len(pixels),
+        target_format, len(data), (end-start)*1000.0, rowstride)
     return True

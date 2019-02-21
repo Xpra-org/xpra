@@ -76,7 +76,7 @@ def identify_nvidia_module_version():
             try:
                 numver.append(int(x))
             except ValueError:
-                if len(numver)==0:
+                if not numver:
                     raise
         if numver:
             log.info("NVidia driver version %s", pver(numver))
@@ -125,11 +125,11 @@ def identify_cards():
                         }.items():
                         try:
                             i[pubname] = int(getattr(pci, nvname))
-                        except:
+                        except (ValueError, AttributeError):
                             pass
                     try:
                         i["bus-id"] = bytestostr(pci.busId)
-                    except:
+                    except AttributeError:
                         pass
                     return i
                 for prefix, prop, fn_name, args, conv in (
@@ -164,7 +164,8 @@ def identify_cards():
                             d = props
                         d[prop] = v
                     except Exception as e:
-                        log("identify_cards() cannot query %s using %s on device %i with handle %s: %s", prop, fn, i, handle, e)
+                        log("identify_cards() cannot query %s using %s on device %i with handle %s: %s",
+                            prop, fn, i, handle, e)
                         continue
                 log("identify_cards() [%i]=%s", i, props)
                 devices[i] = props
@@ -183,12 +184,12 @@ def identify_cards():
     return devices
 
 
-cards = None
+_cards = None
 def get_cards(probe=True):
-    global cards
-    if cards is None and probe:
-        cards = identify_cards()
-    return cards
+    global _cards
+    if _cards is None and probe:
+        _cards = identify_cards()
+    return _cards
 
 
 def is_blacklisted():
@@ -272,7 +273,7 @@ def get_license_keys(version=0, basefilename="nvenc"):
                     fkeys = []
                     for line in f:
                         sline = bytestostr(line.strip().rstrip(b'\r\n').strip())
-                        if len(sline) == 0:
+                        if not sline:
                             log("skipping empty line")
                             continue
                         if sline[0] in ('!', '#'):
