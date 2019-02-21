@@ -798,7 +798,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #iconification is handled a bit differently...
         try:
             iconified = server_updates.pop("iconified")
-        except IndexError:
+        except KeyError:
             iconified = None
         else:
             statelog("iconified=%s", iconified)
