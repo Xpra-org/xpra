@@ -95,11 +95,12 @@ IN_COLORSPACES = ["BGRX"]
 OUT_COLORSPACES = ["YUV420P"]
 def get_info():
     global IN_COLORSPACES, OUT_COLORSPACES, MAX_WIDTH, MAX_HEIGHT
-    return {"version"           : get_version(),
-            "input-formats"     : IN_COLORSPACES,
-            "output-formats"    : OUT_COLORSPACES,
-            "max-size"          : (MAX_WIDTH, MAX_HEIGHT),
-            }
+    return {
+        "version"           : get_version(),
+        "input-formats"     : IN_COLORSPACES,
+        "output-formats"    : OUT_COLORSPACES,
+        "max-size"          : (MAX_WIDTH, MAX_HEIGHT),
+        }
 
 def get_input_colorspaces():
     return IN_COLORSPACES

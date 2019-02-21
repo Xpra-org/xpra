@@ -185,10 +185,11 @@ def get_info():
     f = {}
     for e in get_encodings():
         f["formats.%s" % e] = get_input_colorspaces(e)
-    return  {"version"      : get_version(),
-             "encodings"    : get_encodings(),
-             "formats"      : f,
-             }
+    return  {
+        "version"      : get_version(),
+        "encodings"    : get_encodings(),
+        "formats"      : f,
+        }
 
 def get_encodings():
     global CODECS
@@ -439,14 +440,15 @@ cdef class Decoder:
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
     def get_info(self):                      #@DuplicatedSignature
-        info = {"version"   : get_version(),
-                "encoding"  : self.encoding,
-                "formats"   : get_input_colorspaces(self.encoding),
-                "type"      : self.get_type(),
-                "frames"    : int(self.frames),
-                "width"     : self.width,
-                "height"    : self.height,
-                }
+        info = {
+            "version"   : get_version(),
+            "encoding"  : self.encoding,
+            "formats"   : get_input_colorspaces(self.encoding),
+            "type"      : self.get_type(),
+            "frames"    : int(self.frames),
+            "width"     : self.width,
+            "height"    : self.height,
+            }
         if self.colorspace:
             info["colorspace"] = self.colorspace
             info["actual_colorspace"] = self.get_actual_colorspace()

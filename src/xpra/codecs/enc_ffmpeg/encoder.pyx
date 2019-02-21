@@ -448,139 +448,139 @@ H264_PROFILE_NAMES = {
 H264_PROFILES = dict((v,k) for k,v in H264_PROFILE_NAMES.items())
 
 AV_OPT_TYPES = {
-                AV_OPT_TYPE_FLAGS       : "FLAGS",
-                AV_OPT_TYPE_INT         : "INT",
-                AV_OPT_TYPE_INT64       : "INT64",
-                AV_OPT_TYPE_DOUBLE      : "DOUBLE",
-                AV_OPT_TYPE_FLOAT       : "FLOAT",
-                AV_OPT_TYPE_STRING      : "STRING",
-                AV_OPT_TYPE_RATIONAL    : "RATIONAL",
-                AV_OPT_TYPE_BINARY      : "BINARY",
-                AV_OPT_TYPE_DICT        : "DICT",
-                AV_OPT_TYPE_CONST       : "CONST",
-                AV_OPT_TYPE_IMAGE_SIZE  : "IMAGE_SIZE",
-                AV_OPT_TYPE_PIXEL_FMT   : "PIXEL_FMT",
-                AV_OPT_TYPE_SAMPLE_FMT  : "SAMPLE_FMT",
-                AV_OPT_TYPE_VIDEO_RATE  : "VIDEO_RATE",
-                AV_OPT_TYPE_DURATION    : "DURATION",
-                AV_OPT_TYPE_COLOR       : "COLOR",
-                AV_OPT_TYPE_CHANNEL_LAYOUT : "CHANNEL_LAYOUT",
-                AV_OPT_TYPE_BOOL        : "BOOL",
-                }
+    AV_OPT_TYPE_FLAGS       : "FLAGS",
+    AV_OPT_TYPE_INT         : "INT",
+    AV_OPT_TYPE_INT64       : "INT64",
+    AV_OPT_TYPE_DOUBLE      : "DOUBLE",
+    AV_OPT_TYPE_FLOAT       : "FLOAT",
+    AV_OPT_TYPE_STRING      : "STRING",
+    AV_OPT_TYPE_RATIONAL    : "RATIONAL",
+    AV_OPT_TYPE_BINARY      : "BINARY",
+    AV_OPT_TYPE_DICT        : "DICT",
+    AV_OPT_TYPE_CONST       : "CONST",
+    AV_OPT_TYPE_IMAGE_SIZE  : "IMAGE_SIZE",
+    AV_OPT_TYPE_PIXEL_FMT   : "PIXEL_FMT",
+    AV_OPT_TYPE_SAMPLE_FMT  : "SAMPLE_FMT",
+    AV_OPT_TYPE_VIDEO_RATE  : "VIDEO_RATE",
+    AV_OPT_TYPE_DURATION    : "DURATION",
+    AV_OPT_TYPE_COLOR       : "COLOR",
+    AV_OPT_TYPE_CHANNEL_LAYOUT : "CHANNEL_LAYOUT",
+    AV_OPT_TYPE_BOOL        : "BOOL",
+    }
 
 
 PKT_FLAGS = {
-             AV_PKT_FLAG_KEY        : "KEY",
-             AV_PKT_FLAG_CORRUPT    : "CORRUPT",
-             }
+    AV_PKT_FLAG_KEY        : "KEY",
+    AV_PKT_FLAG_CORRUPT    : "CORRUPT",
+    }
 
 AVFMTCTX = {
-            AVFMTCTX_NOHEADER       : "NOHEADER",
-            }
+    AVFMTCTX_NOHEADER       : "NOHEADER",
+    }
 
 CODEC_FLAGS = {
-               AV_CODEC_FLAG_UNALIGNED          : "UNALIGNED",
-               AV_CODEC_FLAG_QSCALE             : "QSCALE",
-               AV_CODEC_FLAG_4MV                : "4MV",
-               AV_CODEC_FLAG_OUTPUT_CORRUPT     : "OUTPUT_CORRUPT",
-               AV_CODEC_FLAG_QPEL               : "QPEL",
-               AV_CODEC_FLAG_PASS1              : "PASS1",
-               AV_CODEC_FLAG_PASS2              : "PASS2",
-               AV_CODEC_FLAG_GRAY               : "GRAY",
-               AV_CODEC_FLAG_PSNR               : "PSNR",
-               AV_CODEC_FLAG_TRUNCATED          : "TRUNCATED",
-               AV_CODEC_FLAG_INTERLACED_DCT     : "INTERLACED_DCT",
-               AV_CODEC_FLAG_GLOBAL_HEADER      : "GLOBAL_HEADER",
-               }
+    AV_CODEC_FLAG_UNALIGNED          : "UNALIGNED",
+    AV_CODEC_FLAG_QSCALE             : "QSCALE",
+    AV_CODEC_FLAG_4MV                : "4MV",
+    AV_CODEC_FLAG_OUTPUT_CORRUPT     : "OUTPUT_CORRUPT",
+    AV_CODEC_FLAG_QPEL               : "QPEL",
+    AV_CODEC_FLAG_PASS1              : "PASS1",
+    AV_CODEC_FLAG_PASS2              : "PASS2",
+    AV_CODEC_FLAG_GRAY               : "GRAY",
+    AV_CODEC_FLAG_PSNR               : "PSNR",
+    AV_CODEC_FLAG_TRUNCATED          : "TRUNCATED",
+    AV_CODEC_FLAG_INTERLACED_DCT     : "INTERLACED_DCT",
+    AV_CODEC_FLAG_GLOBAL_HEADER      : "GLOBAL_HEADER",
+    }
 
 CODEC_FLAGS2 = {
-                AV_CODEC_FLAG2_FAST : "FAST",
-                }
+    AV_CODEC_FLAG2_FAST : "FAST",
+    }
 
 FMT_FLAGS = {
-             AVFMT_FLAG_GENPTS          : "GENPTS",
-             AVFMT_FLAG_IGNIDX          : "IGNIDX",
-             AVFMT_FLAG_NONBLOCK        : "NONBLOCK",
-             AVFMT_FLAG_IGNDTS          : "IGNDTS",
-             AVFMT_FLAG_NOFILLIN        : "NOFILLIN",
-             AVFMT_FLAG_NOPARSE         : "NOPARSE",
-             AVFMT_FLAG_NOBUFFER        : "NOBUFFER",
-             AVFMT_FLAG_CUSTOM_IO       : "CUSTOM_IO",
-             AVFMT_FLAG_DISCARD_CORRUPT : "DISCARD_CORRUPT",
-             AVFMT_FLAG_FLUSH_PACKETS   : "FLUSH_PACKETS",
-             AVFMT_FLAG_BITEXACT        : "BITEXACT",
-             AVFMT_FLAG_MP4A_LATM       : "MP4A_LATM",
-             AVFMT_FLAG_SORT_DTS        : "SORT_DTS",
-             AVFMT_FLAG_PRIV_OPT        : "PRIV_OPT",
-             AVFMT_FLAG_KEEP_SIDE_DATA  : "KEEP_SIDE_DATA",
-             AVFMT_FLAG_FAST_SEEK       : "FAST_SEEK",
-             }
+    AVFMT_FLAG_GENPTS          : "GENPTS",
+    AVFMT_FLAG_IGNIDX          : "IGNIDX",
+    AVFMT_FLAG_NONBLOCK        : "NONBLOCK",
+    AVFMT_FLAG_IGNDTS          : "IGNDTS",
+    AVFMT_FLAG_NOFILLIN        : "NOFILLIN",
+    AVFMT_FLAG_NOPARSE         : "NOPARSE",
+    AVFMT_FLAG_NOBUFFER        : "NOBUFFER",
+    AVFMT_FLAG_CUSTOM_IO       : "CUSTOM_IO",
+    AVFMT_FLAG_DISCARD_CORRUPT : "DISCARD_CORRUPT",
+    AVFMT_FLAG_FLUSH_PACKETS   : "FLUSH_PACKETS",
+    AVFMT_FLAG_BITEXACT        : "BITEXACT",
+    AVFMT_FLAG_MP4A_LATM       : "MP4A_LATM",
+    AVFMT_FLAG_SORT_DTS        : "SORT_DTS",
+    AVFMT_FLAG_PRIV_OPT        : "PRIV_OPT",
+    AVFMT_FLAG_KEEP_SIDE_DATA  : "KEEP_SIDE_DATA",
+    AVFMT_FLAG_FAST_SEEK       : "FAST_SEEK",
+    }
 
 AVFMT = {
-         AVFMT_NOFILE           : "NOFILE",
-         AVFMT_NEEDNUMBER       : "NEEDNUMBER",
-         AVFMT_SHOW_IDS         : "SHOW_IDS",
-         AVFMT_GLOBALHEADER     : "GLOBALHEADER",
-         AVFMT_NOTIMESTAMPS     : "NOTIMESTAMPS",
-         AVFMT_GENERIC_INDEX    : "GENERIC_INDEX",
-         AVFMT_TS_DISCONT       : "TS_DISCONT",
-         AVFMT_VARIABLE_FPS     : "VARIABLE_FPS",
-         AVFMT_NODIMENSIONS     : "NODIMENSIONS",
-         AVFMT_NOSTREAMS        : "NOSTREAMS",
-         AVFMT_NOBINSEARCH      : "NOBINSEARCH",
-         AVFMT_NOGENSEARCH      : "NOGENSEARCH",
-         AVFMT_NO_BYTE_SEEK     : "NO_BYTE_SEEK",
-         AVFMT_ALLOW_FLUSH      : "ALLOW_FLUSH",
-         AVFMT_TS_NONSTRICT     : "TS_NONSTRICT",
-         AVFMT_TS_NEGATIVE      : "TS_NEGATIVE",
-         AVFMT_SEEK_TO_PTS      : "SEEK_TO_PTS",
-         }
+    AVFMT_NOFILE           : "NOFILE",
+    AVFMT_NEEDNUMBER       : "NEEDNUMBER",
+    AVFMT_SHOW_IDS         : "SHOW_IDS",
+    AVFMT_GLOBALHEADER     : "GLOBALHEADER",
+    AVFMT_NOTIMESTAMPS     : "NOTIMESTAMPS",
+    AVFMT_GENERIC_INDEX    : "GENERIC_INDEX",
+    AVFMT_TS_DISCONT       : "TS_DISCONT",
+    AVFMT_VARIABLE_FPS     : "VARIABLE_FPS",
+    AVFMT_NODIMENSIONS     : "NODIMENSIONS",
+    AVFMT_NOSTREAMS        : "NOSTREAMS",
+    AVFMT_NOBINSEARCH      : "NOBINSEARCH",
+    AVFMT_NOGENSEARCH      : "NOGENSEARCH",
+    AVFMT_NO_BYTE_SEEK     : "NO_BYTE_SEEK",
+    AVFMT_ALLOW_FLUSH      : "ALLOW_FLUSH",
+    AVFMT_TS_NONSTRICT     : "TS_NONSTRICT",
+    AVFMT_TS_NEGATIVE      : "TS_NEGATIVE",
+    AVFMT_SEEK_TO_PTS      : "SEEK_TO_PTS",
+    }
 
 
 CAPS = {
-        AV_CODEC_CAP_DRAW_HORIZ_BAND        : "DRAW_HORIZ_BAND",
-        AV_CODEC_CAP_DR1                    : "DR1",
-        AV_CODEC_CAP_TRUNCATED              : "TRUNCATED",
-        AV_CODEC_CAP_DELAY                  : "DELAY",
-        AV_CODEC_CAP_SMALL_LAST_FRAME       : "SMALL_LAST_FRAME",
-        AV_CODEC_CAP_SUBFRAMES              : "SUBFRAMES",
-        AV_CODEC_CAP_EXPERIMENTAL           : "EXPERIMENTAL",
-        AV_CODEC_CAP_CHANNEL_CONF           : "CHANNEL_CONF",
-        AV_CODEC_CAP_FRAME_THREADS          : "FRAME_THREADS",
-        AV_CODEC_CAP_SLICE_THREADS          : "SLICE_THREADS",
-        AV_CODEC_CAP_PARAM_CHANGE           : "PARAM_CHANGE",
-        AV_CODEC_CAP_AUTO_THREADS           : "AUTO_THREADS",
-        AV_CODEC_CAP_VARIABLE_FRAME_SIZE    : "VARIABLE_FRAME_SIZE",
-        AV_CODEC_CAP_INTRA_ONLY             : "INTRA_ONLY",
-        AV_CODEC_CAP_LOSSLESS               : "LOSSLESS",
-        }
+    AV_CODEC_CAP_DRAW_HORIZ_BAND        : "DRAW_HORIZ_BAND",
+    AV_CODEC_CAP_DR1                    : "DR1",
+    AV_CODEC_CAP_TRUNCATED              : "TRUNCATED",
+    AV_CODEC_CAP_DELAY                  : "DELAY",
+    AV_CODEC_CAP_SMALL_LAST_FRAME       : "SMALL_LAST_FRAME",
+    AV_CODEC_CAP_SUBFRAMES              : "SUBFRAMES",
+    AV_CODEC_CAP_EXPERIMENTAL           : "EXPERIMENTAL",
+    AV_CODEC_CAP_CHANNEL_CONF           : "CHANNEL_CONF",
+    AV_CODEC_CAP_FRAME_THREADS          : "FRAME_THREADS",
+    AV_CODEC_CAP_SLICE_THREADS          : "SLICE_THREADS",
+    AV_CODEC_CAP_PARAM_CHANGE           : "PARAM_CHANGE",
+    AV_CODEC_CAP_AUTO_THREADS           : "AUTO_THREADS",
+    AV_CODEC_CAP_VARIABLE_FRAME_SIZE    : "VARIABLE_FRAME_SIZE",
+    AV_CODEC_CAP_INTRA_ONLY             : "INTRA_ONLY",
+    AV_CODEC_CAP_LOSSLESS               : "LOSSLESS",
+    }
 log("CODEC_CAP:")
 print_nested_dict(dict((hex(abs(k)),v) for k,v in CAPS.items()), print_fn=log.debug)
 
 PICTURE_TYPE = {
-                AV_PICTURE_TYPE_NONE    : "NONE",
-                AV_PICTURE_TYPE_I       : "I",
-                AV_PICTURE_TYPE_P       : "P",
-                AV_PICTURE_TYPE_B       : "B",
-                AV_PICTURE_TYPE_S       : "S",
-                AV_PICTURE_TYPE_SI      : "SI",
-                AV_PICTURE_TYPE_SP      : "SP",
-                AV_PICTURE_TYPE_BI      : "BI",
-                }
+    AV_PICTURE_TYPE_NONE    : "NONE",
+    AV_PICTURE_TYPE_I       : "I",
+    AV_PICTURE_TYPE_P       : "P",
+    AV_PICTURE_TYPE_B       : "B",
+    AV_PICTURE_TYPE_S       : "S",
+    AV_PICTURE_TYPE_SI      : "SI",
+    AV_PICTURE_TYPE_SP      : "SP",
+    AV_PICTURE_TYPE_BI      : "BI",
+    }
 log("AV_PICTURE:")
 print_nested_dict(PICTURE_TYPE, print_fn=log.debug)
 
 FORMAT_TO_ENUM = {
-            "YUV420P"   : AV_PIX_FMT_YUV420P,
-            "YUV422P"   : AV_PIX_FMT_YUV422P,
-            "YUV444P"   : AV_PIX_FMT_YUV444P,
-            "RGB"       : AV_PIX_FMT_RGB24,
-            "XRGB"      : AV_PIX_FMT_0RGB,
-            "BGRX"      : AV_PIX_FMT_BGR0,
-            "ARGB"      : AV_PIX_FMT_ARGB,
-            "BGRA"      : AV_PIX_FMT_BGRA,
-            "GBRP"      : AV_PIX_FMT_GBRP,
-            }
+    "YUV420P"   : AV_PIX_FMT_YUV420P,
+    "YUV422P"   : AV_PIX_FMT_YUV422P,
+    "YUV444P"   : AV_PIX_FMT_YUV444P,
+    "RGB"       : AV_PIX_FMT_RGB24,
+    "XRGB"      : AV_PIX_FMT_0RGB,
+    "BGRX"      : AV_PIX_FMT_BGR0,
+    "ARGB"      : AV_PIX_FMT_ARGB,
+    "BGRA"      : AV_PIX_FMT_BGRA,
+    "GBRP"      : AV_PIX_FMT_GBRP,
+    }
 
 CODEC_ID = {
     "h264"      : AV_CODEC_ID_H264,
