@@ -148,6 +148,13 @@ cdef class SWSFlags:
             return str(self.flags_strs)
 
 
+FLAG_NAMES = {
+    SWS_BICUBIC         : "BICUBIC",
+    SWS_BICUBLIN        : "BICUBLIN",
+    SWS_FAST_BILINEAR   : "FAST_BILINEAR",
+    SWS_ACCURATE_RND    : "ACCURATE_RND",
+    }
+
 #keeping this array in scope ensures the strings don't go away!
 FLAGS_OPTIONS = (
             (30, (SWS_BICUBIC, ),       ("BICUBIC", )),
@@ -189,15 +196,8 @@ cdef int get_swscale_flags(int speed, int scaling, int subsampling, dst_format):
 
 
 def get_swscale_flags_strs(int flags):
-    strs = []
-    for flag_value, flag_name in {
-                SWS_BICUBIC         : "BICUBIC",
-                SWS_BICUBLIN        : "BICUBLIN",
-                SWS_FAST_BILINEAR   : "FAST_BILINEAR",
-                SWS_ACCURATE_RND    : "ACCURATE_RND"}.items():
-        if (flag_value & flags)>0:
-            strs.append(flag_name)
-    return strs
+    return tuple(flag_name for flag_value, flag_name in FLAG_NAMES.items()
+            if (flag_value & flags)>0)
 
 
 def init_module():
