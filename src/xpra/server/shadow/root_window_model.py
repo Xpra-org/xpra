@@ -6,11 +6,11 @@
 
 import socket
 
-from xpra.log import Logger
-log = Logger("shadow")
-
 from xpra.util import prettify_plug_name
 from xpra.os_util import get_generic_os_name
+from xpra.log import Logger
+
+log = Logger("shadow")
 
 
 class RootWindowModel(object):
@@ -19,7 +19,11 @@ class RootWindowModel(object):
         self.window = root_window
         self.geometry = root_window.get_geometry()[:4]
         self.capture = capture
-        self.property_names = ["title", "class-instance", "client-machine", "window-type", "size-hints", "icon", "shadow"]
+        self.property_names = [
+            "title", "class-instance",
+            "client-machine", "window-type",
+            "size-hints", "icon", "shadow",
+            ]
         self.dynamic_property_names = []
         self.internal_property_names = ["content-type"]
 
@@ -102,27 +106,29 @@ class RootWindowModel(object):
         #otherwise fallback to default behaviour:
         if prop=="title":
             return prettify_plug_name(self.window.get_screen().get_display().get_name())
-        elif prop=="client-machine":
+        if prop=="client-machine":
             return socket.gethostname()
-        elif prop=="window-type":
+        if prop=="window-type":
             return ["NORMAL"]
-        elif prop=="fullscreen":
+        if prop=="fullscreen":
             return False
-        elif prop=="shadow":
+        if prop=="shadow":
             return True
-        elif prop=="scaling":
+        if prop=="scaling":
             return None
-        elif prop=="opacity":
+        if prop=="opacity":
             return None
-        elif prop=="size-hints":
+        if prop=="size-hints":
             size = self.get_dimensions()
-            return {"maximum-size"  : size,
-                    "minimum-size"  : size,
-                    "base-size" : size}
-        elif prop=="class-instance":
+            return {
+                "maximum-size"  : size,
+                "minimum-size"  : size,
+                "base-size" : size,
+                }
+        if prop=="class-instance":
             osn = get_generic_os_name()
             return ("xpra-%s" % osn, "Xpra-%s" % osn.upper())
-        elif prop=="icon":
+        if prop=="icon":
             try:
                 from xpra.platform.paths import get_icon
                 icon_name = get_generic_os_name()+".png"
@@ -132,11 +138,9 @@ class RootWindowModel(object):
             except:
                 log("failed to return window icon")
                 return None
-        elif prop=="content-type":
+        if prop=="content-type":
             return "desktop"
-        else:
-            raise ValueError("invalid property: %s" % prop)
-        return None
+        raise ValueError("invalid property: %s" % prop)
 
     def get(self, name, default_value=None):
         try:

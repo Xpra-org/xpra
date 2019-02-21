@@ -192,7 +192,8 @@ class GDICapture(object):
         else:
             raise Exception("unsupported bit depth: %s" % self.bit_depth)
         bpp = self.bit_depth//8
-        v = ImageWrapper(0, 0, width, height, pixels, rgb_format, self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
+        v = ImageWrapper(0, 0, width, height, pixels, rgb_format,
+                         self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
         if self.bit_depth==8:
             count = GetSystemPaletteEntries(self.dc, 0, 0, None)
             log("palette size: %s", count)

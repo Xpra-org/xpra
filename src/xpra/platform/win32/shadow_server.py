@@ -5,8 +5,11 @@
 # later version. See the file COPYING for details.
 
 import os
-import ctypes
 from collections import namedtuple
+from ctypes import (
+    create_string_buffer, create_unicode_buffer,
+    sizeof, byref, addressof, c_int,
+    )
 from ctypes.wintypes import RECT, POINT, BYTE, MAX_PATH
 
 from xpra.os_util import strtobytes
@@ -91,23 +94,24 @@ def get_cursor_data(hCursor):
     pixels = None
     try:
         ii = ICONINFO()
-        ii.cbSize = ctypes.sizeof(ICONINFO)
-        if not GetIconInfo(hCursor, ctypes.byref(ii)):
+        ii.cbSize = sizeof(ICONINFO)
+        if not GetIconInfo(hCursor, byref(ii)):
             raise WindowsError()    #@UndefinedVariable
         x = ii.xHotspot
         y = ii.yHotspot
-        cursorlog("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x", hCursor, x, y, ii.hbmColor or 0, ii.hbmMask or 0)
+        cursorlog("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x",
+                  hCursor, x, y, ii.hbmColor or 0, ii.hbmMask or 0)
         if not ii.hbmColor:
             #FIXME: we don't handle black and white cursors
             return None
         iie = ICONINFOEXW()
-        iie.cbSize = ctypes.sizeof(ICONINFOEXW)
-        if not GetIconInfoExW(hCursor, ctypes.byref(iie)):
+        iie.cbSize = sizeof(ICONINFOEXW)
+        if not GetIconInfoExW(hCursor, byref(iie)):
             raise WindowsError()    #@UndefinedVariable
         name = iie.szResName[:MAX_PATH]
         cursorlog("wResID=%i, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
         bm = Bitmap()
-        if not GetObjectA(ii.hbmColor, ctypes.sizeof(Bitmap), ctypes.byref(bm)):
+        if not GetObjectA(ii.hbmColor, sizeof(Bitmap), byref(bm)):
             raise WindowsError()    #@UndefinedVariable
         cursorlog("cursor bitmap: type=%i, width=%i, height=%i, width bytes=%i, planes=%i, bits pixel=%i, bits=%#x",
                   bm.bmType, bm.bmWidth, bm.bmHeight, bm.bmWidthBytes, bm.bmPlanes, bm.bmBitsPixel, bm.bmBits or 0)
@@ -131,10 +135,10 @@ def get_cursor_data(hCursor):
             raise WindowsError()    #@UndefinedVariable
 
         buf_size = bm.bmWidthBytes*h
-        buf = ctypes.create_string_buffer(b"", buf_size)
-        r = GetBitmapBits(bitmap, buf_size, ctypes.byref(buf))
-        cursorlog("get_cursor_data(%#x) GetBitmapBits(%#x, %#x, %#x)=%i", hCursor, bitmap, buf_size, ctypes.addressof(buf), r)
-        if r==0:
+        buf = create_string_buffer(b"", buf_size)
+        r = GetBitmapBits(bitmap, buf_size, byref(buf))
+        cursorlog("get_cursor_data(%#x) GetBitmapBits(%#x, %#x, %#x)=%i", hCursor, bitmap, buf_size, addressof(buf), r)
+        if not r:
             cursorlog.error("Error: failed to copy screen bitmap data")
             return None
         elif r!=buf_size:
@@ -189,10 +193,10 @@ def init_capture(w, h, pixel_depth=32):
                         30  : "r210",
                         }[pixel_depth]
                     if NVFBC_CUDA:
-                        from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_CUDACapture
+                        from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_CUDACapture #@UnresolvedImport
                         capture = NvFBC_CUDACapture()
                     else:
-                        from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_SysCapture
+                        from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_SysCapture  #@UnresolvedImport
                         capture = NvFBC_SysCapture()
                     capture.init_context(w, h, pixel_format)
             except Exception as e:
@@ -234,7 +238,7 @@ class SeamlessRootWindowModel(RootWindowModel):
             shapelog("refresh_shape() notifying: %s", cb)
             try:
                 cb(self, pspec, *args)
-            except:
+            except Exception:
                 shapelog.error("error in shape notify callback %s", cb, exc_info=True)
 
     def connect(self, signal, cb, *args):
@@ -257,21 +261,21 @@ class SeamlessRootWindowModel(RootWindowModel):
             if not IsWindowVisible(hwnd):
                 l("skipped invisible window %#x", hwnd)
                 return True
-            pid = ctypes.c_int()
-            thread_id = GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            pid = c_int()
+            thread_id = GetWindowThreadProcessId(hwnd, byref(pid))
             if pid==ourpid:
                 l("skipped our own window %#x", hwnd)
                 return True
             #skipping IsWindowEnabled check
             length = GetWindowTextLengthW(hwnd)
-            buf = ctypes.create_unicode_buffer(length+1)
+            buf = create_unicode_buffer(length+1)
             if GetWindowTextW(hwnd, buf, length+1)>0:
                 window_title = buf.value
             else:
                 window_title = ''
             l("get_shape_rectangles() found window '%s' with pid=%i and thread id=%i", window_title, pid, thread_id)
             rect = RECT()
-            if GetWindowRect(hwnd, ctypes.byref(rect))==0:
+            if GetWindowRect(hwnd, byref(rect))==0:
                 l("GetWindowRect failure")
                 return True
             left, top, right, bottom = rect.left, rect.top, rect.right, rect.bottom
@@ -296,8 +300,8 @@ class SeamlessRootWindowModel(RootWindowModel):
             #    ('rgstate', DWORD * 6),
             #]
             #ti = TITLEBARINFO()
-            #ti.cbSize = ctypes.sizeof(ti)
-            #GetTitleBarInfo(hwnd, ctypes.byref(ti))
+            #ti.cbSize = sizeof(ti)
+            #GetTitleBarInfo(hwnd, byref(ti))
             #if ti.rgstate[0] & win32con.STATE_SYSTEM_INVISIBLE:
             #    log("skipped system invisible window")
             #    return True
@@ -375,7 +379,8 @@ class ShadowServer(GTKShadowServerBase):
             log.info("WM_POWERBROADCAST: PBT_APMSUSPEND")
             for source in self._server_sources.values():
                 source.may_notify(XPRA_IDLE_NOTIFICATION_ID, "Server Suspending",
-                                  "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon.", expire_timeout=10*1000, icon_name="shutdown")
+                                  "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon.",
+                                  expire_timeout=10*1000, icon_name="shutdown")
         elif wParam==win32con.PBT_APMRESUMEAUTOMATIC:
             log.info("WM_POWERBROADCAST: PBT_APMRESUMEAUTOMATIC")
 
@@ -397,7 +402,8 @@ class ShadowServer(GTKShadowServerBase):
 
     def make_tray_widget(self):
         from xpra.platform.win32.win32_tray import Win32Tray
-        return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected", None, self.tray_click_callback, None, self.tray_exit_callback)
+        return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected",
+                         None, self.tray_click_callback, None, self.tray_exit_callback)
 
 
     def setup_capture(self):
@@ -439,8 +445,8 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_get_cursor_data(self):
         ci = CURSORINFO()
-        ci.cbSize = ctypes.sizeof(CURSORINFO)
-        GetCursorInfo(ctypes.byref(ci))
+        ci.cbSize = sizeof(CURSORINFO)
+        GetCursorInfo(byref(ci))
         #cursorlog("GetCursorInfo handle=%#x, last handle=%#x", ci.hCursor or 0, self.cursor_handle or 0)
         if not (ci.flags & win32con.CURSOR_SHOWING):
             #cursorlog("do_get_cursor_data() cursor not shown")
@@ -464,7 +470,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def get_pointer_position(self):
         pos = POINT()
-        GetPhysicalCursorPos(ctypes.byref(pos))
+        GetPhysicalCursorPos(byref(pos))
         return pos.x, pos.y
 
     def do_process_mouse_common(self, proto, wid, pointer, *_args):
