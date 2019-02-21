@@ -103,6 +103,10 @@ Recommends:
 #bionic:        ,libwebp6
 #cosmic:        ,libwebp6
 #buster:        ,libwebp6
+# to make the system tray work again with gnome-shell:
+#bionic:        ,gnome-shell-extension-top-icons-plus
+#buster:        ,gnome-shell-extension-top-icons-plus
+#cosmic:        ,gnome-shell-extension-top-icons-plus
 # audio-related:
         ,gstreamer1.0-pulseaudio
         ,gstreamer1.0-alsa
