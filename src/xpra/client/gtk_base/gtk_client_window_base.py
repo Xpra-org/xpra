@@ -64,9 +64,9 @@ cairo   = import_cairo()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
-USE_X11_BINDINGS = envbool("XPRA_USE_X11_BINDINGS", is_X11())
-SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
-if POSIX and USE_X11_BINDINGS:
+USE_X11_BINDINGS = POSIX and envbool("XPRA_USE_X11_BINDINGS", is_X11())
+prop_get, prop_set = None, None
+if USE_X11_BINDINGS:
     try:
         from xpra.gtk_common.error import xsync, verify_sync
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
@@ -83,6 +83,7 @@ if POSIX and USE_X11_BINDINGS:
         SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
         def can_set_workspace():
+            SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
             if not SET_WORKSPACE:
                 return False
             try:
@@ -95,8 +96,10 @@ if POSIX and USE_X11_BINDINGS:
                 workspacelog.error("Error: failed to setup workspace hooks:")
                 workspacelog.error(" %s", e)
         CAN_SET_WORKSPACE = can_set_workspace()
-    except ImportError:
-        prop_get, prop_set = None, None
+    except ImportError as e:
+        log("x11 bindings", exc_info=True)
+        log.error("Error: cannot import X11 bindings:")
+        log.error(" %s", e)
 
 
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
@@ -795,7 +798,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #iconification is handled a bit differently...
         try:
             iconified = server_updates.pop("iconified")
-        except:
+        except IndexError:
             iconified = None
         else:
             statelog("iconified=%s", iconified)
@@ -861,11 +864,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         v = command
         if not isinstance(command, unicode):
-            v = bytestostr(command)
             try:
                 v = v.decode("utf8")
-            except:
-                pass
+            except UnicodeDecodeError:
+                v = bytestostr(command)
         def do_set_command():
             metalog("do_set_command() str(%s)='%s' (type=%s)", command, nonl(v), type(command))
             prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
@@ -1132,7 +1134,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         window_workspace = self.get_window_workspace()
         desktop_workspace = self.get_desktop_workspace()
         workspacelog("do_workspace_changed(%s) (window, desktop): from %s to %s",
-                     info, (wn(self._window_workspace), wn(self._desktop_workspace)), (wn(window_workspace), wn(desktop_workspace)))
+                     info,
+                     (wn(self._window_workspace), wn(self._desktop_workspace)),
+                     (wn(window_workspace), wn(desktop_workspace)))
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
             #no change
             return
@@ -1174,6 +1178,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def get_workspace_count(self):
         if not self._can_set_workspace:
             return None
+        root = get_default_root_window()
         return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
 
     def set_workspace(self, workspace):
@@ -1500,7 +1505,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
         statelog("initiate_moveresize%s",
-                 (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
+                 (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
+                  button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_X11(x_root, y_root, direction, button, source_indication)
             return
@@ -1515,7 +1521,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def initiate_moveresize_X11(self, x_root, y_root, direction, button, source_indication):
         statelog("initiate_moveresize_X11%s",
-                 (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
+                 (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
+                  button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
         root = self.get_window().get_screen().get_root_window()
         root_xid = get_xwindow(root)
@@ -1944,7 +1951,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return v
 
     def _event_buttons(self, event):
-        return [button for mask, button in self.BUTTON_MASK.items() if (event.state & mask)]
+        return [button for mask, button in self.BUTTON_MASK.items() if event.state & mask]
 
     def parse_key_event(self, event, pressed):
         keyval = event.keyval
