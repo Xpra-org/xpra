@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -108,8 +108,6 @@ class ClientWindowBase(ClientWidgetBase):
     def get_window_workspace(self):
         return None
 
-    def get_backing_class(self):
-        raise NotImplementedError()
 
     def new_backing(self, bw, bh):
         backing_class = self.get_backing_class()
@@ -383,53 +381,6 @@ class ClientWindowBase(ClientWidgetBase):
         if b"menu" in metadata:
             self.set_menu(metadata.dictget("menu"))
 
-
-    def queue_draw(self, x, y, w, h):
-        raise NotImplementedError()
-
-    def get_size(self):
-        raise NotImplementedError()
-
-    def is_mapped(self):
-        raise NotImplementedError()
-
-    def set_title(self, title):
-        raise NotImplementedError()
-    def set_icon_name(self, icon_name):
-        raise NotImplementedError()
-    def set_modal(self, modal):
-        raise NotImplementedError()
-    def set_role(self, role):
-        raise NotImplementedError()
-    def set_opacity(self, opacity):
-        raise NotImplementedError()
-    def apply_geometry_hints(self, hints):
-        raise NotImplementedError()
-    def maximize(self):
-        raise NotImplementedError()
-    def unmaximize(self):
-        raise NotImplementedError()
-    def iconify(self):
-        raise NotImplementedError()
-    def deiconify(self):
-        raise NotImplementedError()
-    def set_decorated(self, decorated):
-        raise NotImplementedError()
-    def set_keep_above(self, keep_above):
-        raise NotImplementedError()
-    def set_keep_below(self, keep_below):
-        raise NotImplementedError()
-    def stick(self):
-        raise NotImplementedError()
-    def unstick(self):
-        raise NotImplementedError()
-    def set_skip_taskbar_hint(self, skip_taskbar_hint):
-        raise NotImplementedError()
-    def set_skip_pager_hint(self, skip_pager_hint):
-        raise NotImplementedError()
-
-    def set_type_hint(self, type_hint):
-        raise NotImplementedError()
 
     def set_menu(self, menu):
         pass

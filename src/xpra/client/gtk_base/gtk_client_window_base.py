@@ -181,7 +181,7 @@ class GTKKeyEvent(AdHocStruct):
     pass
 
 
-class GTKClientWindowBase(gtk.Window, ClientWindowBase):
+class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     __common_gsignals__ = {
         "state-updated"         : no_arg_signal,
