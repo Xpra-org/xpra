@@ -9,16 +9,17 @@
 from __future__ import absolute_import
 
 import errno as pyerrno
+
 from xpra.os_util import strtobytes
-from libc.stdint cimport uint64_t, uintptr_t
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
 from xpra.monotonic_time cimport monotonic_time
 from xpra.x11.bindings.display_source import get_display_name
+from xpra.log import Logger
 
 from libc.stdlib cimport free
 from libc.string cimport memcpy
+from libc.stdint cimport uint64_t, uintptr_t
 
-from xpra.log import Logger
 xshmlog = Logger("x11", "bindings", "ximage", "xshm")
 log = Logger("x11", "bindings", "ximage")
 xshmdebug = Logger("x11", "bindings", "ximage", "xshm", "verbose")
@@ -225,18 +226,18 @@ SBFirst = {
            LSBFirst : "LSBFirst"
            }
 
-RLE8    = b"RLE8"
-RGB565  = b"RGB565"
-BGR565  = b"BGR565"
-XRGB    = b"XRGB"
-BGRX    = b"BGRX"
-ARGB    = b"ARGB"
-BGRA    = b"BGRA"
-RGB     = b"RGB"
-RGBA    = b"RGBA"
-RGBX    = b"RGBX"
-R210    = b"R210"
-r210    = b"r210"
+RLE8    = "RLE8"
+RGB565  = "RGB565"
+BGR565  = "BGR565"
+XRGB    = "XRGB"
+BGRX    = "BGRX"
+ARGB    = "ARGB"
+BGRA    = "BGRA"
+RGB     = "RGB"
+RGBA    = "RGBA"
+RGBX    = "RGBX"
+R210    = "R210"
+r210    = "r210"
 
 RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210, RGB565, BGR565, RLE8]
 
@@ -397,7 +398,8 @@ cdef class XImageWrapper(object):
             raise Exception("source image does not have pixels!")
         cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
-        return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format, self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True, self.palette)
+        return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
+                             self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True, self.palette)
 
     cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:
@@ -439,7 +441,7 @@ cdef class XImageWrapper(object):
         self.rowstride = rowstride
 
     def set_pixel_format(self, pixel_format):
-        assert pixel_format is not None and strtobytes(pixel_format) in RGB_FORMATS, "invalid pixel format: %s" % pixel_format
+        assert pixel_format is not None and pixel_format in RGB_FORMATS, "invalid pixel format: %s" % pixel_format
         self.pixel_format = pixel_format
 
     def set_pixels(self, pixels):

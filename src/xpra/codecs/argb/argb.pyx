@@ -383,7 +383,7 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
 
 def argb_swap(image, rgb_formats, supports_transparency):
     """ use the argb codec to do the RGB byte swapping """
-    pixel_format = bytestostr(image.get_pixel_format())
+    pixel_format = image.get_pixel_format()
     #try to fallback to argb module
     #if we have one of the target pixel formats:
     pixels = image.get_pixels()
