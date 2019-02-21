@@ -12,23 +12,27 @@ import os
 import sys
 import numpy
 from collections import deque, OrderedDict
+import ctypes
+from ctypes import cdll as loader, POINTER
 
 from pycuda import driver
 
 from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr, strtobytes
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time
-from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, get_device_info, get_device_name, \
-                get_cuda_info, get_pycuda_info, device_info, reset_state, \
-                get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
+from xpra.codecs.cuda_common.cuda_context import (
+    init_all_devices, get_devices, select_device, get_device_info, get_device_name,
+    get_cuda_info, get_pycuda_info, device_info, reset_state,
+    get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO,
+    )
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, get_license_keys, validate_driver_yuv444lossless, get_cards
-
+from xpra.codecs.nv_util import (
+    get_nvidia_module_version, get_license_keys,
+    validate_driver_yuv444lossless, get_cards,
+    )
 from xpra.log import Logger
-log = Logger("encoder", "nvenc")
 
-import ctypes
-from ctypes import cdll as loader, POINTER
+log = Logger("encoder", "nvenc")
 
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 from libc.stdlib cimport free, malloc

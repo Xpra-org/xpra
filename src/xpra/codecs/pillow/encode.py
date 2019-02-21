@@ -119,7 +119,8 @@ def encode(coding, image, quality, speed, supports_transparency):
             rgb = "RGB"
             bpp = 24
     except Exception:
-        log.error("PIL_encode%s converting %s pixels from %s to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride()), type(pixels), pixel_format, rgb, exc_info=True)
+        log.error("PIL_encode%s converting %s pixels from %s to %s failed",
+                  (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride()), type(pixels), pixel_format, rgb, exc_info=True)
         raise
     client_options = {}
     if coding in ("jpeg", "webp", "jpeg2000"):

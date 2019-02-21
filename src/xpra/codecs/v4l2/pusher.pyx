@@ -127,33 +127,33 @@ V4L2_CAP_STREAMING              = 0x04000000
 V4L2_CAP_DEVICE_CAPS            = 0x80000000
 
 V4L2_CAPS = {
-             V4L2_CAP_VIDEO_CAPTURE         : "VIDEO_CAPTURE",
-             V4L2_CAP_VIDEO_CAPTURE_MPLANE  : "VIDEO_CAPTURE_MPLANE",
-             V4L2_CAP_VIDEO_OUTPUT          : "VIDEO_OUTPUT",
-             V4L2_CAP_VIDEO_OUTPUT_MPLANE   : "VIDEO_OUTPUT_MPLANE",
-             V4L2_CAP_VIDEO_M2M             : "VIDEO_M2M",
-             V4L2_CAP_VIDEO_M2M_MPLANE      : "VIDEO_M2M_MPLANE",
-             V4L2_CAP_VIDEO_OVERLAY         : "VIDEO_OVERLAY",
-             V4L2_CAP_VBI_CAPTURE           : "VBI_CAPTURE",
-             V4L2_CAP_VBI_OUTPUT            : "VBI_OUTPUT",
-             V4L2_CAP_SLICED_VBI_CAPTURE    : "SLICED_VBI_CAPTURE",
-             V4L2_CAP_SLICED_VBI_OUTPUT     : "SLICED_VBI_OUTPUT",
-             V4L2_CAP_RDS_CAPTURE           : "RDS_CAPTURE",
-             V4L2_CAP_VIDEO_OUTPUT_OVERLAY  : "VIDEO_OUTPUT_OVERLAY",
-             V4L2_CAP_HW_FREQ_SEEK          : "HW_FREQ_SEEK",
-             V4L2_CAP_RDS_OUTPUT            : "RDS_OUTPUT",
-             V4L2_CAP_TUNER                 : "TUNER",
-             V4L2_CAP_AUDIO                 : "AUDIO",
-             V4L2_CAP_RADIO                 : "RADIO",
-             V4L2_CAP_MODULATOR             : "MODULATOR",
-             V4L2_CAP_SDR_CAPTURE           : "SDR_CAPTURE",
-             V4L2_CAP_EXT_PIX_FORMAT        : "EXT_PIX_FORMAT",
-             V4L2_CAP_SDR_OUTPUT            : "SDR_OUTPUT",
-             V4L2_CAP_READWRITE             : "READWRITE",
-             V4L2_CAP_ASYNCIO               : "ASYNCIO",
-             V4L2_CAP_STREAMING             : "STREAMING",
-             V4L2_CAP_DEVICE_CAPS           : "DEVICE_CAPS",
-             }
+    V4L2_CAP_VIDEO_CAPTURE         : "VIDEO_CAPTURE",
+    V4L2_CAP_VIDEO_CAPTURE_MPLANE  : "VIDEO_CAPTURE_MPLANE",
+    V4L2_CAP_VIDEO_OUTPUT          : "VIDEO_OUTPUT",
+    V4L2_CAP_VIDEO_OUTPUT_MPLANE   : "VIDEO_OUTPUT_MPLANE",
+    V4L2_CAP_VIDEO_M2M             : "VIDEO_M2M",
+    V4L2_CAP_VIDEO_M2M_MPLANE      : "VIDEO_M2M_MPLANE",
+    V4L2_CAP_VIDEO_OVERLAY         : "VIDEO_OVERLAY",
+    V4L2_CAP_VBI_CAPTURE           : "VBI_CAPTURE",
+    V4L2_CAP_VBI_OUTPUT            : "VBI_OUTPUT",
+    V4L2_CAP_SLICED_VBI_CAPTURE    : "SLICED_VBI_CAPTURE",
+    V4L2_CAP_SLICED_VBI_OUTPUT     : "SLICED_VBI_OUTPUT",
+    V4L2_CAP_RDS_CAPTURE           : "RDS_CAPTURE",
+    V4L2_CAP_VIDEO_OUTPUT_OVERLAY  : "VIDEO_OUTPUT_OVERLAY",
+    V4L2_CAP_HW_FREQ_SEEK          : "HW_FREQ_SEEK",
+    V4L2_CAP_RDS_OUTPUT            : "RDS_OUTPUT",
+    V4L2_CAP_TUNER                 : "TUNER",
+    V4L2_CAP_AUDIO                 : "AUDIO",
+    V4L2_CAP_RADIO                 : "RADIO",
+    V4L2_CAP_MODULATOR             : "MODULATOR",
+    V4L2_CAP_SDR_CAPTURE           : "SDR_CAPTURE",
+    V4L2_CAP_EXT_PIX_FORMAT        : "EXT_PIX_FORMAT",
+    V4L2_CAP_SDR_OUTPUT            : "SDR_OUTPUT",
+    V4L2_CAP_READWRITE             : "READWRITE",
+    V4L2_CAP_ASYNCIO               : "ASYNCIO",
+    V4L2_CAP_STREAMING             : "STREAMING",
+    V4L2_CAP_DEVICE_CAPS           : "DEVICE_CAPS",
+    }
 
 
 FIELD_STR = {
@@ -204,10 +204,10 @@ for k,v in FORMAT_STR.items():
 
 log("v4l2.pusher init")
 print_nested_dict({
-                   "FIELD_STR"      : FIELD_STR,
-                   "COLORSPACE_STR" : COLORSPACE_STR,
-                   "FORMAT_STR"     : dict((hex(k),v) for k,v in FORMAT_STR.items()),
-                   }, print_fn=log.debug)
+    "FIELD_STR"      : FIELD_STR,
+    "COLORSPACE_STR" : COLORSPACE_STR,
+    "FORMAT_STR"     : dict((hex(k),v) for k,v in FORMAT_STR.items()),
+    }, print_fn=log.debug)
 
 
 def query_video_device(device="/dev/video0"):
@@ -220,12 +220,12 @@ def query_video_device(device="/dev/video0"):
             if r<0:
                 return {}
             info = {
-                    "driver"        : vid_caps.driver,
-                    "card"          : vid_caps.card,
-                    "bus_info"      : vid_caps.bus_info,
-                    "version"       : vid_caps.version,
-                    "capabilities"  : [v for k,v in V4L2_CAPS.items() if vid_caps.capabilities & k],
-                    }
+                "driver"        : vid_caps.driver,
+                "card"          : vid_caps.card,
+                "bus_info"      : vid_caps.bus_info,
+                "version"       : vid_caps.version,
+                "capabilities"  : [v for k,v in V4L2_CAPS.items() if vid_caps.capabilities & k],
+                }
             IF ENABLE_DEVICE_CAPS:
                 info["device_caps"] = [v for k,v in V4L2_CAPS.items() if vid_caps.device_caps & k]
             return dict((k,v) for k,v in info.items() if v)
@@ -247,8 +247,8 @@ def get_type():
 def get_info():
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
-            "version"   : get_version(),
-            }
+        "version"   : get_version(),
+        }
 
 def get_input_colorspaces():
     return  ["YUV420P"]     #,"YUV422P"
@@ -361,12 +361,12 @@ cdef class Pusher:
     def get_info(self):             #@DuplicatedSignature
         info = get_info()
         info.update({
-                     "frames"    : int(self.frames),
-                     "width"     : self.width,
-                     "height"    : self.height,
-                     "src_format": self.src_format,
-                     "device"    : self.device_name,
-                     })
+            "frames"    : int(self.frames),
+            "width"     : self.width,
+            "height"    : self.height,
+            "src_format": self.src_format,
+            "device"    : self.device_name,
+            })
         return info
 
     def __repr__(self):

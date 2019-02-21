@@ -282,26 +282,26 @@ cdef extern from "webp/encode.h":
 
 ERROR_TO_NAME = {
 #VP8_ENC_OK
-                VP8_ENC_ERROR_OUT_OF_MEMORY             : "memory error allocating objects",
-                VP8_ENC_ERROR_BITSTREAM_OUT_OF_MEMORY   : "memory error while flushing bits",
-                VP8_ENC_ERROR_NULL_PARAMETER            : "a pointer parameter is NULL",
-                VP8_ENC_ERROR_INVALID_CONFIGURATION     : "configuration is invalid",
-                VP8_ENC_ERROR_BAD_DIMENSION             : "picture has invalid width/height",
-                VP8_ENC_ERROR_PARTITION0_OVERFLOW       : "partition is bigger than 512k",
-                VP8_ENC_ERROR_PARTITION_OVERFLOW        : "partition is bigger than 16M",
-                VP8_ENC_ERROR_BAD_WRITE                 : "error while flushing bytes",
-                VP8_ENC_ERROR_FILE_TOO_BIG              : "file is bigger than 4G",
-                VP8_ENC_ERROR_USER_ABORT                : "abort request by user",
-                }
+    VP8_ENC_ERROR_OUT_OF_MEMORY             : "memory error allocating objects",
+    VP8_ENC_ERROR_BITSTREAM_OUT_OF_MEMORY   : "memory error while flushing bits",
+    VP8_ENC_ERROR_NULL_PARAMETER            : "a pointer parameter is NULL",
+    VP8_ENC_ERROR_INVALID_CONFIGURATION     : "configuration is invalid",
+    VP8_ENC_ERROR_BAD_DIMENSION             : "picture has invalid width/height",
+    VP8_ENC_ERROR_PARTITION0_OVERFLOW       : "partition is bigger than 512k",
+    VP8_ENC_ERROR_PARTITION_OVERFLOW        : "partition is bigger than 16M",
+    VP8_ENC_ERROR_BAD_WRITE                 : "error while flushing bytes",
+    VP8_ENC_ERROR_FILE_TOO_BIG              : "file is bigger than 4G",
+    VP8_ENC_ERROR_USER_ABORT                : "abort request by user",
+    }
 
 PRESETS = {
-           WEBP_PRESET_DEFAULT      : "default",
-           WEBP_PRESET_PICTURE      : "picture",
-           WEBP_PRESET_PHOTO        : "photo",
-           WEBP_PRESET_DRAWING      : "drawing",
-           WEBP_PRESET_ICON         : "icon",
-           WEBP_PRESET_TEXT         : "text",
-           }
+    WEBP_PRESET_DEFAULT      : "default",
+    WEBP_PRESET_PICTURE      : "picture",
+    WEBP_PRESET_PHOTO        : "photo",
+    WEBP_PRESET_DRAWING      : "drawing",
+    WEBP_PRESET_ICON         : "icon",
+    WEBP_PRESET_TEXT         : "text",
+    }
 PRESET_NAME_TO_CONSTANT = {}
 for k,v in PRESETS.items():
     PRESET_NAME_TO_CONSTANT[v] = k
@@ -313,11 +313,11 @@ CONTENT_TYPE_PRESET = {
     }
 
 IMAGE_HINT = {
-              WEBP_HINT_DEFAULT     : "default",
-              WEBP_HINT_PICTURE     : "picture",
-              WEBP_HINT_PHOTO       : "photo",
-              WEBP_HINT_GRAPH       : "graph",
-              }
+    WEBP_HINT_DEFAULT     : "default",
+    WEBP_HINT_PICTURE     : "picture",
+    WEBP_HINT_PHOTO       : "photo",
+    WEBP_HINT_GRAPH       : "graph",
+    }
 HINT_NAME_TO_CONSTANT = {}
 for k,v in IMAGE_HINT.items():
     HINT_NAME_TO_CONSTANT[v] = k

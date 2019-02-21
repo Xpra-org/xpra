@@ -62,7 +62,8 @@ def main():
         rgb_format = image.get_pixel_format()
         try:
             img = Image.frombuffer("RGB", (w, h), pixels, "raw", rgb_format, stride, 1)
-            filename = os.path.join(os.path.expanduser(get_download_dir()), "screenshot-%s-%i.png" % (rgb_format, time.time()))
+            filename = os.path.join(os.path.expanduser(get_download_dir()),
+                                    "screenshot-%s-%i.png" % (rgb_format, time.time()))
             img.save(filename, "png")
             log.info("screenshot saved to %s", filename)
             return 0

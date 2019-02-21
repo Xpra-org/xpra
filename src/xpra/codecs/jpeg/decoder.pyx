@@ -152,7 +152,8 @@ def decompress_to_yuv(data, int width, int height, options={}):
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
-    log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
+    log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s",
+        w, h, subsamp_str, TJCS_STR.get(cs, cs))
     #allocate YUV buffers:
     cdef unsigned long plane_sizes[3]
     cdef unsigned char *planes[3]
@@ -189,7 +190,8 @@ def decompress_to_yuv(data, int width, int height, options={}):
         close()
     if LOG_PERF:
         elapsed = monotonic_time()-start
-        log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)", subsamp_str, float(total_size)/elapsed//1024//1024, total_size, 1000*elapsed)
+        log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)",
+            subsamp_str, float(total_size)/elapsed//1024//1024, total_size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper._3_PLANES)
 
 
@@ -219,7 +221,8 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
         raise Exception("failed to decompress JPEG header: %s" % get_error_str())
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
-    log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
+    log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s",
+        w, h, subsamp_str, TJCS_STR.get(cs, cs))
     cdef MemBuf membuf
     cdef unsigned char *dst_buf
     cdef int stride, flags = 0      #TJFLAG_BOTTOMUP
@@ -242,7 +245,8 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
         close()
     if LOG_PERF:
         elapsed = monotonic_time()-start
-        log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)", rgb_format, float(size)/elapsed//1024//1024, size, 1000*elapsed)
+        log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)",
+            rgb_format, float(size)/elapsed//1024//1024, size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, memoryview(membuf), rgb_format, 24, stride, ImageWrapper.PACKED)
 
 

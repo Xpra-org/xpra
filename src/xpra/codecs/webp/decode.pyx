@@ -131,14 +131,14 @@ cdef extern from "webp/decode.h":
 
 ERROR_TO_NAME = {
 #VP8_STATUS_OK
-            VP8_STATUS_OUT_OF_MEMORY        : "out of memory",
-            VP8_STATUS_INVALID_PARAM        : "invalid parameter",
-            VP8_STATUS_BITSTREAM_ERROR      : "bitstream error",
-            VP8_STATUS_UNSUPPORTED_FEATURE  : "unsupported feature",
-            VP8_STATUS_SUSPENDED            : "suspended",
-            VP8_STATUS_USER_ABORT           : "user abort",
-            VP8_STATUS_NOT_ENOUGH_DATA      : "not enough data",
-        }
+    VP8_STATUS_OUT_OF_MEMORY        : "out of memory",
+    VP8_STATUS_INVALID_PARAM        : "invalid parameter",
+    VP8_STATUS_BITSTREAM_ERROR      : "bitstream error",
+    VP8_STATUS_UNSUPPORTED_FEATURE  : "unsupported feature",
+    VP8_STATUS_SUSPENDED            : "suspended",
+    VP8_STATUS_USER_ABORT           : "user abort",
+    VP8_STATUS_NOT_ENOUGH_DATA      : "not enough data",
+    }
 
 def get_version():
     cdef int version = WebPGetDecoderVersion()
@@ -147,9 +147,9 @@ def get_version():
 
 def get_info():
     return  {
-            "version"      : get_version(),
-            "encodings"    : get_encodings(),
-            }
+        "version"      : get_version(),
+        "encodings"    : get_encodings(),
+        }
 
 def webp_check(int ret):
     if ret==0:
@@ -288,7 +288,8 @@ def decompress_yuv(data, has_alpha=False):
         YUVA.a = NULL
         strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride)
     config.output.is_external_memory = 1
-    log("WebPDecode: image size %ix%i : buffer=%#x, strides=%s", w, h, <uintptr_t> buf, strides)
+    log("WebPDecode: image size %ix%i : buffer=%#x, strides=%s",
+        w, h, <uintptr_t> buf, strides)
     webp_check(WebPDecode(data, len(data), &config))
     if alpha:
         planes = (
