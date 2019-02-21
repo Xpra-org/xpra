@@ -108,6 +108,8 @@ class ClientWindowBase(ClientWidgetBase):
     def get_window_workspace(self):
         return None
 
+    def get_backing_class(self):
+        raise NotImplementedError()
 
     def new_backing(self, bw, bh):
         backing_class = self.get_backing_class()
@@ -143,7 +145,7 @@ class ClientWindowBase(ClientWidgetBase):
                 #ie: "encodings.rgb_formats" -> "rgb_formats"
                 #ie: "encoding.full_csc_modes" -> "full_csc_modes"
                 ek = k.split(".", 1)[1]
-            except:
+            except IndexError:
                 ek = k
             dv = encoding_defaults.get(ek)
             if dv is not None and dv==v:
