@@ -34,15 +34,7 @@ REGION_CONSTS = {
                 SIMPLEREGION    : "the region is a single rectangle",
                 COMPLEXREGION   : "the region is more than a single rectangle",
                 }
-DISABLE_DWM_COMPOSITION = True
-#no composition on XP, don't bother trying:
-try:
-    from sys import getwindowsversion       #@UnresolvedImport
-    if getwindowsversion().major<6:
-        DISABLE_DWM_COMPOSITION = False
-except:
-    pass
-DISABLE_DWM_COMPOSITION = envbool("XPRA_DISABLE_DWM_COMPOSITION", DISABLE_DWM_COMPOSITION)
+DISABLE_DWM_COMPOSITION = envbool("XPRA_DISABLE_DWM_COMPOSITION", False)
 
 class PALETTEENTRY(ctypes.Structure):
     _fields_ = [
