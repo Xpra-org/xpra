@@ -63,7 +63,7 @@ class DisplayClient(StubClientMixin):
         self.server_randr = False
 
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts, _extra_args=()):
         self.desktop_fullscreen = opts.desktop_fullscreen
         self.desktop_scaling = opts.desktop_scaling
         self.dpi = int(opts.dpi)
@@ -120,7 +120,9 @@ class DisplayClient(StubClientMixin):
                 sinfo = "%i%%" % iround(self.xscale*100)
             else:
                 sinfo = "%i%% x %i%%" % (iround(self.xscale*100), iround(self.yscale*100))
-            log.info(" %sscaled to %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
+            scaled_up = u_root_w>root_w or u_root_h>root_h
+            log.info(" %sscaled to %s, virtual screen size: %ix%i",
+                     "up" if scaled_up else "down", sinfo, root_w, root_h)
             log_screen_sizes(root_w, root_h, sss)
         else:
             root_w, root_h = u_root_w, u_root_h
@@ -242,7 +244,8 @@ class DisplayClient(StubClientMixin):
         if not self.server_is_desktop and not skip_vfb_size_check and self.server_max_desktop_size:
             avail_w, avail_h = self.server_max_desktop_size
             root_w, root_h = self.get_root_size()
-            log("validating server_max_desktop_size=%s vs root size %s scaled to %s", self.server_max_desktop_size, (root_w, root_h), (self.cx(root_w), self.cy(root_h)))
+            log("validating server_max_desktop_size=%s vs root size %s scaled to %s",
+                self.server_max_desktop_size, (root_w, root_h), (self.cx(root_w), self.cy(root_h)))
             if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
                 log.warn("Server's virtual screen is too small")
                 log.warn(" server: %sx%s vs client: %sx%s", avail_w, avail_h, self.cx(root_w), self.cy(root_h))
@@ -303,7 +306,8 @@ class DisplayClient(StubClientMixin):
 
 
     def may_adjust_scaling(self):
-        log("may_adjust_scaling() server_is_desktop=%s, desktop_fullscreen=%s", self.server_is_desktop, self.desktop_fullscreen)
+        log("may_adjust_scaling() server_is_desktop=%s, desktop_fullscreen=%s",
+            self.server_is_desktop, self.desktop_fullscreen)
         if self.server_is_desktop and not self.desktop_fullscreen:
             #don't try to make it fit
             return
@@ -311,7 +315,8 @@ class DisplayClient(StubClientMixin):
         max_w, max_h = self.server_max_desktop_size             #ie: server limited to 8192x4096?
         w, h = self.get_root_size()                             #ie: 5760, 2160
         sw, sh = self.cp(w, h)                                  #ie: upscaled to: 11520x4320
-        scalinglog("may_adjust_scaling() server desktop size=%s, client root size=%s", self.server_actual_desktop_size, self.get_root_size())
+        scalinglog("may_adjust_scaling() server desktop size=%s, client root size=%s",
+                   self.server_actual_desktop_size, self.get_root_size())
         scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
         if sw<(max_w+1) and sh<(max_h+1):
             #no change needed
@@ -406,7 +411,8 @@ class DisplayClient(StubClientMixin):
     def do_process_screen_size_change(self):
         self.screen_size_change_timer = None
         self.update_screen_size()
-        log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s", MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
+        log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s",
+            MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
         if MONITOR_CHANGE_REINIT and MONITOR_CHANGE_REINIT=="0":
             return
         if MONITOR_CHANGE_REINIT or REINIT_WINDOWS:
@@ -501,7 +507,8 @@ class DisplayClient(StubClientMixin):
             scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
             return
         if monotonic_time()<self.scale_change_embargo:
-            scalinglog("scale_change(%s, %s) screen size change not permitted during embargo time - try again", xchange, ychange)
+            scalinglog("scale_change(%s, %s) screen size change not permitted during embargo time - try again",
+                       xchange, ychange)
             return
         def clamp(v):
             return max(MIN_SCALING, min(MAX_SCALING, v))
