@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger("screen")
-
 from xpra.util import iround, log_screen_sizes, engs
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
 
+log = Logger("screen")
 
 """
 Mixin for servers that handle displays.
@@ -113,7 +112,8 @@ class DisplayManager(StubServerMixin):
                 if not ss.screen_sizes:
                     log.info(" client root window size is %sx%s", dw, dh)
                 else:
-                    log.info(" client root window size is %sx%s with %s display%s:", dw, dh, len(ss.screen_sizes), engs(ss.screen_sizes))
+                    log.info(" client root window size is %sx%s with %s display%s:",
+                             dw, dh, len(ss.screen_sizes), engs(ss.screen_sizes))
                     log_screen_sizes(dw, dh, ss.screen_sizes)
             except:
                 dw, dh = None, None
@@ -161,7 +161,8 @@ class DisplayManager(StubServerMixin):
             if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
                 count +=1
         if count>0:
-            log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)", count, engs(count), root_w, root_h, max_w, max_h)
+            log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)",
+                     count, engs(count), root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self):
         max_w, max_h = self.get_root_window_size()
@@ -171,7 +172,7 @@ class DisplayManager(StubServerMixin):
         client_size = server_source.desktop_size
         log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
-            """ client did not specify size, just return what we have """
+            #client did not specify size, just return what we have
             return root_w, root_h
         client_w, client_h = client_size
         w = min(client_w, root_w)
@@ -209,7 +210,8 @@ class DisplayManager(StubServerMixin):
         self.set_screen_size(width, height)
         if len(packet)>=4:
             log.info("received updated display dimensions")
-            log.info("client display size is %sx%s with %s screen%s:", width, height, len(ss.screen_sizes), engs(ss.screen_sizes))
+            log.info("client display size is %sx%s with %s screen%s:",
+                     width, height, len(ss.screen_sizes), engs(ss.screen_sizes))
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
         #ensures that DPI and antialias information gets reset:
@@ -237,7 +239,7 @@ class DisplayManager(StubServerMixin):
                     #newer clients send bytes...
                     try :
                         v = dn.decode("utf8")
-                    except:
+                    except UnicodeDecodeError:
                         v = dn
                     if v!="0" or i!=0:
                         name = v

@@ -265,7 +265,8 @@ class WindowServer(StubServerMixin):
             #may have been destroyed since the request was made
             log("invalid window specified for refresh: %s", wid)
             return
-        log("process_buffer_refresh for windows: %s options=%s, client_properties=%s", wid_windows, options, client_properties)
+        log("process_buffer_refresh for windows: %s options=%s, client_properties=%s",
+            wid_windows, options, client_properties)
         batch_props = options.dictget("batch", {})
         if batch_props or client_properties:
             #change batch config and/or client properties

@@ -770,7 +770,7 @@ class ServerBase(ServerBaseClass):
         #from this connection as these could potentially set some keys pressed, etc
         try:
             del self._potential_protocols[protocol]
-        except:
+        except KeyError:
             pass
         source = self._server_sources.pop(protocol, None)
         if source:
@@ -912,4 +912,5 @@ class ServerBase(ServerBaseClass):
         except KeyboardInterrupt:
             raise
         except:
-            netlog.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
+            netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
+                         packet_type, handler, exc_info=True)

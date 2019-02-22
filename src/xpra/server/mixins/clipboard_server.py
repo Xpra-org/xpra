@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 
-from xpra.log import Logger
-log = Logger("clipboard")
-
 from xpra.platform.features import CLIPBOARDS
 from xpra.util import csv, nonl, XPRA_CLIPBOARD_NOTIFICATION_ID
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
+
+log = Logger("clipboard")
 
 
 """
@@ -87,15 +87,18 @@ class ClipboardServer(StubServerMixin):
         clipboard_filter_res = []
         if self.clipboard_filter_file:
             if not os.path.exists(self.clipboard_filter_file):
-                log.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!", self.clipboard_filter_file)
+                log.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!",
+                          self.clipboard_filter_file)
                 return
             try:
                 with open(self.clipboard_filter_file, "r" ) as f:
                     for line in f:
                         clipboard_filter_res.append(line.strip())
-                    log("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), self.clipboard_filter_file)
+                    log("loaded %s regular expressions from clipboard filter file %s",
+                        len(clipboard_filter_res), self.clipboard_filter_file)
             except:
-                log.error("Error: reading clipboard filter file %s - clipboard disabled!", self.clipboard_filter_file, exc_info=True)
+                log.error("Error: reading clipboard filter file %s - clipboard disabled!",
+                          self.clipboard_filter_file, exc_info=True)
                 return
         try:
             from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
@@ -207,7 +210,8 @@ class ClipboardServer(StubServerMixin):
                 ss.send_clipboard_enabled("probable clipboard loop detected")
                 body = "Too many clipboard requests,\n"+\
                        "a clipboard synchronization loop is likely to be causing this problem"
-                ss.may_notify(XPRA_CLIPBOARD_NOTIFICATION_ID, "Clipboard synchronization is now disabled", body, icon_name="clipboard")
+                ss.may_notify(XPRA_CLIPBOARD_NOTIFICATION_ID,
+                              "Clipboard synchronization is now disabled", body, icon_name="clipboard")
             return  False
         return True
 
@@ -251,5 +255,8 @@ class ClipboardServer(StubServerMixin):
             self._authenticated_packet_handlers.update({
                 "set-clipboard-enabled":                self._process_clipboard_enabled_status,
               })
-            for x in ("token", "request", "contents", "contents-none", "pending-requests", "enable-selections", "loop-uuids"):
+            for x in (
+                "token", "request", "contents", "contents-none",
+                "pending-requests", "enable-selections", "loop-uuids",
+                ):
                 self._authenticated_ui_packet_handlers["clipboard-%s" % x] = self._process_clipboard_packet

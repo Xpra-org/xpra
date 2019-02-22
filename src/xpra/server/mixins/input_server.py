@@ -325,7 +325,8 @@ class InputServer(StubServerMixin):
                         if dx!=0 or dy!=0:
                             px, py = pointer[:2]
                             ax, ay = px+dx, py+dy
-                            mouselog("client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s", ss.counter, pos, mapped_at, pointer, (ax, ay))
+                            mouselog("client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s",
+                                     ss.counter, pos, mapped_at, pointer, (ax, ay))
                             return [ax, ay]+list(pointer[2:])
         return pointer
 
