@@ -131,13 +131,14 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
             nid.hIcon = hicon
             nid.hBalloonIcon = hicon
         except Exception as e:
+            log("notify%s", (hwnd, app_id, title, message, timeout, icon), exc_info=True)
             log.error("Error: failed to set notification icon:")
             log.error(" %s", e)
         else:
             nid.dwInfoFlags = NIIF_USER
     Shell_NotifyIcon = windll.shell32.Shell_NotifyIcon
     Shell_NotifyIcon(NIM_MODIFY, nid.pack())
-
+    log("notify using %s", Shell_NotifyIcon)
 
 def main():
     from xpra.platform.win32.win32_NotifyIcon import main

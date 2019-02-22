@@ -43,7 +43,7 @@ class Win32_Notifier(NotifierBase):
             return
         hwnd = getHWND()
         app_id = tray.app_id
-        log("show_notify%s hwnd=%i, app_id=%i", (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon), hwnd, app_id)
+        log("show_notify%s hwnd=%#x, app_id=%i", (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon), hwnd, app_id)
         #FIXME: remove handles when notification is closed
         self.notification_handles[nid] = (hwnd, app_id)
         notify(hwnd, app_id, summary, body, expire_timeout, icon)
