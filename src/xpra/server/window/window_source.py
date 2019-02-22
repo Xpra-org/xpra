@@ -1018,9 +1018,10 @@ class WindowSource(WindowIconSource):
         if self.batch_config.delay<=2*DamageBatchConfig.START_DELAY and lr>0 and elapsed<60 and self.get_packets_backlog()==0:
             #delay is low-ish, figure out if we should bother updating it
             lde = tuple(self.statistics.last_damage_events)
-            if len(lde)==0:
+            if not lde:
                 return      #things must have got reset anyway
-            since_last = [(pixels, compressed_size) for t, _, pixels, _, compressed_size, _ in tuple(self.statistics.encoding_stats) if t>=lr]
+            since_last = tuple((pixels, compressed_size) for t, _, pixels, _, compressed_size, _
+                               in tuple(self.statistics.encoding_stats) if t>=lr)
             if len(since_last)<=5:
                 statslog("calculate_batch_delay for wid=%i, skipping - only %i events since the last update",
                          self.wid, len(since_last))
@@ -1043,7 +1044,10 @@ class WindowSource(WindowIconSource):
                              self.wid, nbytes)
                     return
                 statslog("calculate_batch_delay for wid=%i, %i bytes sent since the last update", self.wid, nbytes)
-        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit)
+        calculate_batch_delay(self.wid, self.window_dimensions, has_focus,
+                              other_is_fullscreen, other_is_maximized,
+                              self.is_OR, self.soft_expired, self.batch_config,
+                              self.global_statistics, self.statistics, self.bandwidth_limit)
         #update the normalized value:
         ww, wh = self.window_dimensions
         self.batch_config.delay_per_megapixel = int(self.batch_config.delay*1000000//(ww*wh))
@@ -1081,7 +1085,9 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         #make a copy to work on:
         speed_data = list(self._encoding_speed)
-        info, target, max_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
+        info, target, max_speed = get_target_speed(self.window_dimensions, self.batch_config,
+                                                   self.global_statistics, self.statistics,
+                                                   self.bandwidth_limit, self._fixed_min_speed, speed_data)
         speed_data.append((monotonic_time(), target))
         speed = int(time_weighted_average(speed_data, min_offset=1, rpow=1.1))
         speed = max(0, self._fixed_min_speed, speed)
@@ -1139,7 +1145,9 @@ class WindowSource(WindowIconSource):
             self._encoding_quality_info = {"pending" : True}
             return
         now = monotonic_time()
-        info, target = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
+        info, target = get_target_quality(self.window_dimensions, self.batch_config,
+                                          self.global_statistics, self.statistics,
+                                          self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
         if self.content_type=="text":
             target = min(100, target+20)
         elif self.content_type=="video":
@@ -1620,7 +1628,8 @@ class WindowSource(WindowIconSource):
 
         def send_full_window_update(cause):
             actual_encoding = get_encoding(ww, wh)
-            log("send_delayed_regions: using full window update %sx%s as %5s: %s, from %s", ww, wh, actual_encoding, cause, get_best_encoding)
+            log("send_delayed_regions: using full window update %sx%s as %5s: %s, from %s",
+                ww, wh, actual_encoding, cause, get_best_encoding)
             assert actual_encoding is not None
             self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
 
@@ -1649,7 +1658,8 @@ class WindowSource(WindowIconSource):
             merge_threshold = ww*wh*self.max_bytes_percent//100
             pixel_count = sum(rect.width*rect.height for rect in regions)
             packet_cost = pixel_count+self.small_packet_cost*len(regions)
-            log("send_delayed_regions: packet_cost=%s, merge_threshold=%s, pixel_count=%s", packet_cost, merge_threshold, pixel_count)
+            log("send_delayed_regions: packet_cost=%s, merge_threshold=%s, pixel_count=%s",
+                packet_cost, merge_threshold, pixel_count)
             if packet_cost>=merge_threshold and exclude_region is None:
                 send_full_window_update("bytes cost (%i) too high (max %i)" % (packet_cost, merge_threshold))
                 return
@@ -1685,7 +1695,8 @@ class WindowSource(WindowIconSource):
         for i,region in enumerate(regions):
             actual_encoding = get_encoding(region.width, region.height)
             if self.must_encode_full_frame(actual_encoding):
-                log("send_delayed_regions: using full frame for %s encoding of %ix%i", actual_encoding, region.width, region.height)
+                log("send_delayed_regions: using full frame for %s encoding of %ix%i",
+                    actual_encoding, region.width, region.height)
                 self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
                 #we can stop here (full screen update will include the other regions)
                 return
@@ -1845,7 +1856,8 @@ class WindowSource(WindowIconSource):
                 self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                 msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
         self.last_auto_refresh_message = now, msg
-        refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s), %s (region=%s, refresh regions=%s)", encoding, actual_quality, lossy, msg, region, self.refresh_regions)
+        refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s), %s (region=%s, refresh regions=%s)",
+                   encoding, actual_quality, lossy, msg, region, self.refresh_regions)
 
     def remove_refresh_region(self, region):
         #removes the given region from the refresh list
@@ -2020,7 +2032,7 @@ class WindowSource(WindowIconSource):
         if len(gs.bytes_sent)>=5:
             #find a sample more than a second old
             #(hopefully before the congestion started)
-            for i in range(1,4):
+            for i in range(1, 4):
                 stime1, svalue1 = gs.bytes_sent[-i]
                 if now-stime1>1:
                     break
@@ -2037,7 +2049,7 @@ class WindowSource(WindowIconSource):
                 if t>=4 and (svalue1-svalue2)>=65536:
                     break
                 i += 1
-            if t>=4 and t<=10:
+            if 4<=t<=10:
                 #calculate the send speed over that interval:
                 bcount = svalue1-svalue2
                 avg_send_speed = int(bcount*8//t)
@@ -2047,7 +2059,8 @@ class WindowSource(WindowIconSource):
                     send_speed = (avg_send_speed*100 + cur_send_speed*late_pct)//2//(100+late_pct)
                 else:
                     send_speed = avg_send_speed
-        bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps) for wid=%i", source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024, self.wid)
+        bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps) for wid=%i",
+                     source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024, self.wid)
         rtt = self.refresh_target_time
         if rtt:
             #a refresh now would really hurt us!
@@ -2084,7 +2097,8 @@ class WindowSource(WindowIconSource):
             (warning: this runs from the non-UI network parse thread,
             don't access the window from here!)
         """
-        statslog.info("packet decoding sequence %s for window %s: %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
+        statslog.info("packet decoding sequence %s for window %s: %sx%s took %.1fms",
+                      damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
             self.statistics.client_decode_time.append((monotonic_time(), width*height, decode_time))
         elif decode_time<0:
@@ -2226,7 +2240,8 @@ class WindowSource(WindowIconSource):
                 if lw==w and lh==h and lpixel_format==pixel_format and lcoding==coding and buflen==dlen:
                     bucket = i
                     if MAX_DELTA_HITS>0 and hits<MAX_DELTA_HITS:
-                        deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)", i, lw, lh, lpixel_format, dlen, lsequence, hits)
+                        deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)",
+                                 i, lw, lh, lpixel_format, dlen, lsequence, hits)
                         #xor with this matching delta bucket:
                         delta = lsequence
                         xored = xor_str(dpixels, ldata)
@@ -2246,8 +2261,7 @@ class WindowSource(WindowIconSource):
         if encoder is None:
             if self.is_cancelled(sequence):
                 return None
-            else:
-                raise Exception("BUG: no encoder not found for %s" % coding)
+            raise Exception("BUG: no encoder not found for %s" % coding)
         ret = encoder(coding, image, options)
         if ret is None:
             log("%s%s returned None", encoder, (coding, image, options))
