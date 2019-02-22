@@ -220,7 +220,7 @@ class WindowSource(WindowIconSource):
         if "children" in window.get_internal_property_names():
             #we just copy the value to an attribute of window-source,
             #so that we can access it from any thread
-            def children_updated(*args):
+            def children_updated(*_args):
                 self.children = window.get_property("children")
             sid = window.connect("notify::children", children_updated)
             self.window_signal_handlers.append(sid)
@@ -828,9 +828,8 @@ class WindowSource(WindowIconSource):
                 #as alpha support does not change without going through this method
                 if self._want_alpha and "rgb32" in self.common_encodings:
                     return self.encoding_is_rgb32
-                else:
-                    assert "rgb24" in self.common_encodings
-                    return self.encoding_is_rgb24
+                assert "rgb24" in self.common_encodings
+                return self.encoding_is_rgb24
             return self.get_strict_encoding
         elif self._want_alpha or self.is_tray:
             if self.encoding in ("rgb", "rgb32") and "rgb32" in self.common_encodings:
@@ -846,7 +845,7 @@ class WindowSource(WindowIconSource):
             #if we're here we don't need alpha, so try rgb24 first:
             if "rgb24" in self.common_encodings:
                 return self.encoding_is_rgb24
-            elif "rgb32" in self.common_encodings:
+            if "rgb32" in self.common_encodings:
                 return self.encoding_is_rgb32
         return self.get_best_encoding_impl_default()
 
@@ -1406,7 +1405,7 @@ class WindowSource(WindowIconSource):
             t, _ = self.batch_config.last_delays[-5]
             #do batch if we got more than 5 damage events in the last 10 milliseconds:
             return monotonic_time()-t<0.010
-        except:
+        except IndexError:
             #probably not enough events to grab -5
             return False
 
@@ -2029,11 +2028,12 @@ class WindowSource(WindowIconSource):
         if len(gs.bytes_sent)>=5:
             #find a sample more than a second old
             #(hopefully before the congestion started)
-            for i in range(1, 4):
+            i = 1
+            while i<4:
                 stime1, svalue1 = gs.bytes_sent[-i]
+                i += 1
                 if now-stime1>1:
                     break
-            i += 1
             #find a sample more than 4 seconds earlier,
             #with at least 64KB sent in between:
             t = 0
@@ -2141,7 +2141,8 @@ class WindowSource(WindowIconSource):
                         send_speed = 0
                     else:
                         send_speed = bytecount*8*1000//actual_send_latency
-                    #statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps", latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
+                    #statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps",
+                    #    latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
                     self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, late_by, latency, (netlatency, sendlatency, decode_time, ack_tolerance)), late_pct, send_speed)
         damage_delayed = self._damage_delayed
         if not damage_delayed:
