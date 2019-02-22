@@ -221,6 +221,12 @@ class win32NotifyIcon(object):
         self.app_id = app_id
         self.title = title
         self.current_icon = None
+        self.move_callback = move_callbacks
+        self.click_callback = click_callback
+        self.exit_callback = exit_callback
+        self.command_callback = command_callback
+        self.reset_function = None
+        self.image_cache = {}
         # Create the Window.
         if iconPathName:
             try:
@@ -231,12 +237,6 @@ class win32NotifyIcon(object):
         self.create_tray_window()
         #register callbacks:
         win32NotifyIcon.instances[self.hwnd] = self
-        self.move_callback = move_callbacks
-        self.click_callback = click_callback
-        self.exit_callback = exit_callback
-        self.command_callback = command_callback
-        self.reset_function = None
-        self.image_cache = {}
 
     def __repr__(self):
         return "win32NotifyIcon(%#x)" % self.app_id
@@ -370,6 +370,7 @@ class win32NotifyIcon(object):
             iconPathName = iconPathName.replace("/", "\\")
         icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
         try:
+            assert os.path.exists(iconPathName)
             img_type = win32con.IMAGE_ICON
             if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
                 img_type = win32con.IMAGE_BITMAP
@@ -380,6 +381,7 @@ class win32NotifyIcon(object):
                                             win32con.IMAGE_BITMAP  : "BITMAP",
                                          }.get(img_type))
             v = LoadImageW(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
+            assert v is not None
         except:
             log.error("Error: failed to load icon '%s'", iconPathName, exc_info=True)
             return None
@@ -474,9 +476,9 @@ NIwc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
 NIwc.lpszClassName = u"win32NotifyIcon"
 
 NIclassAtom = RegisterClassExA(byref(NIwc))
+log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 if NIclassAtom==0:
     raise ctypes.WinError(ctypes.get_last_error())
-log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 
 
 def main():
@@ -522,7 +524,7 @@ def main():
 
     from xpra.platform.paths import get_app_dir
     idir = os.path.abspath(get_app_dir())
-    wdir = os.path.join(idir, "win32")
+    wdir = os.path.join(idir, "icons")
     if os.path.exists(wdir):
         idir = wdir
     iconPathName = os.path.join(idir, "xpra.ico")
