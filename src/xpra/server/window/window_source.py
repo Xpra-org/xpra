@@ -2166,11 +2166,16 @@ class WindowSource(WindowIconSource):
     def client_decode_error(self, error, message):
         #don't print error code -1, which is just a generic code for error
         emsg = {-1 : ""}.get(error, error)
+        def s(v):
+            try:
+                return (v or b"").decode("utf8")
+            except (AttributeError, UnicodeDecodeError):
+                return str(v)
         if emsg:
-            emsg = (" %s" % emsg).replace("\n", "").replace("\r", "")
+            emsg = (" %s" % s(emsg)).replace("\n", "").replace("\r", "")
         log.warn("Warning: client decoding error:")
         if message or emsg:
-            log.warn(" %s%s", message, emsg)
+            log.warn(" %s%s", s(message), emsg)
         else:
             log.warn(" unknown cause")
         self.global_statistics.decode_errors += 1
