@@ -242,10 +242,7 @@ class WindowSource(WindowIconSource):
         self.jitter = jitter
 
         self.pixel_format = None                            #ie: BGRX
-        try:
-            self.image_depth = window.get_property("depth")
-        except:
-            self.image_depth = 24
+        self.image_depth = window.get_property("depth")
 
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
