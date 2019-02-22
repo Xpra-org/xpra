@@ -78,17 +78,20 @@ class WindowPerformanceStatistics(object):
 
     def update_averages(self):
         #damage "in" latency: (the time it takes for damage requests to be processed only)
-        if len(self.damage_in_latency)>0:
-            data = [(when, latency) for when, _, _, latency in tuple(self.damage_in_latency)]
+        dil = tuple(self.damage_in_latency)
+        if dil:
+            data = tuple((when, latency) for when, _, _, latency in dil)
             self.avg_damage_in_latency, self.recent_damage_in_latency =  calculate_time_weighted_average(data)
         #damage "out" latency: (the time it takes for damage requests to be processed and sent out)
-        if len(self.damage_out_latency)>0:
-            data = [(when, latency) for when, _, _, latency in tuple(self.damage_out_latency)]
+        dol = tuple(self.damage_out_latency)
+        if dol:
+            data = tuple((when, latency) for when, _, _, latency in dol)
             self.avg_damage_out_latency, self.recent_damage_out_latency = calculate_time_weighted_average(data)
         #client decode speed:
-        if len(self.client_decode_time)>0:
+        cdt = tuple(self.client_decode_time)
+        if cdt:
             #the elapsed time recorded is in microseconds:
-            decode_speed = tuple((event_time, size, size*1000*1000/elapsed) for event_time, size, elapsed in tuple(self.client_decode_time))
+            decode_speed = tuple((event_time, size, size*1000*1000/elapsed) for event_time, size, elapsed in cdt)
             r = calculate_size_weighted_average(decode_speed)
             self.avg_decode_speed = int(r[0])
             self.recent_decode_speed = int(r[1])
@@ -163,7 +166,7 @@ class WindowPerformanceStatistics(object):
                                }
                 }
         #encoding stats:
-        if len(self.encoding_stats)>0:
+        if self.encoding_stats:
             estats = tuple(self.encoding_stats)
             encodings_used = [x[1] for x in estats]
             def add_compression_stats(enc_stats, encoding=None):
@@ -212,7 +215,7 @@ class WindowPerformanceStatistics(object):
             Then we add the average decoding latency.
             """
         decoding_latency = 0.010
-        if len(self.client_decode_time)>0:
+        if not self.client_decode_time:
             decoding_latency, _ = calculate_timesize_weighted_average(tuple(self.client_decode_time))
             decoding_latency /= 1000.0
         min_latency = max(abs_min, min_client_latency or abs_min)*1.2
@@ -222,7 +225,7 @@ class WindowPerformanceStatistics(object):
 
     def get_client_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
-        if len(self.damage_ack_pending)>0:
+        if self.damage_ack_pending:
             sent_before = monotonic_time()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
             dropped_acks_time = monotonic_time()-60      #1 minute
             drop_missing_acks = []
@@ -237,14 +240,14 @@ class WindowPerformanceStatistics(object):
                     bytes_backlog += (end_bytes - start_bytes)
             log("get_client_backlog missing acks: %s", drop_missing_acks)
             #this should never happen...
-            if len(drop_missing_acks)>0:
+            if drop_missing_acks:
                 log.error("Error: expiring %i missing damage ACK%s,", len(drop_missing_acks), engs(drop_missing_acks))
                 log.error(" connection may be closed or closing,")
                 log.error(" sequence numbers missing: %s", csv(drop_missing_acks))
                 for sequence in drop_missing_acks:
                     try:
                         del self.damage_ack_pending[sequence]
-                    except:
+                    except KeyError:
                         pass
         return packets_backlog, pixels_backlog, bytes_backlog
 
@@ -253,9 +256,11 @@ class WindowPerformanceStatistics(object):
 
     def get_packets_backlog(self, latency_tolerance_pct=100):
         packets_backlog = 0
-        if len(self.damage_ack_pending)>0:
+        if self.damage_ack_pending:
             sent_before = monotonic_time()-((self.target_latency+0.020)*latency_tolerance_pct/100.0)
-            for _, (start_send_at, _, _, end_send_at, _, _, _) in self.damage_ack_pending.items():
+            for item in self.damage_ack_pending.values():
+                start_send_at = item[0]
+                end_send_at = item[3]
                 if end_send_at>0 and start_send_at<=sent_before:
                     packets_backlog += 1
         return packets_backlog
