@@ -6,12 +6,13 @@
 
 import sys
 import os
+import socket
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
 from xpra.scripts.config import python_platform
 from xpra.util import updict, envbool, get_util_logger
-from xpra.os_util import get_linux_distribution, PYTHON3, BITS
+from xpra.os_util import get_linux_distribution, PYTHON3, BITS, POSIX
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
@@ -59,25 +60,24 @@ def version_compat_check(remote_version):
 
 def get_host_info():
     #this function is for non UI thread info
-    info = {}
+    info = {
+        "pid"                   : os.getpid(),
+        "byteorder"             : sys.byteorder,
+        "python"                : {
+            "bits"                  : BITS,
+            "full_version"          : sys.version,
+            "version"               : ".".join(str(x) for x in sys.version_info[:3]),
+            },
+        }
     try:
-        import socket
-        info.update({
-                    "pid"                   : os.getpid(),
-                    "byteorder"             : sys.byteorder,
-                    "hostname"              : socket.gethostname(),
-                    "python"                : {
-                                               "bits"                  : BITS,
-                                               "full_version"          : sys.version,
-                                               "version"               : ".".join(str(x) for x in sys.version_info[:3]),
-                                               },
-                    })
-    except:
+        info["hostname"] = socket.gethostname()
+    except (OSError, IOError):
         pass
-    for x in ("uid", "gid"):
-        fn = getattr(os, "get%s" % x, None)
-        if fn:
-            info[x] = fn()
+    if POSIX:
+        info.update({
+            "uid"   : os.getuid(),
+            "gid"   : os.getgid(),
+            })
     return info
 
 def get_version_info():

@@ -36,11 +36,11 @@ def get_all_loggers():
     global all_loggers
     a = set()
     for loggers in all_loggers.values():
-        for l in list(loggers):
+        for logger in list(loggers):
             #weakref:
-            v = l()
-            if v:
-                a.add(v)
+            instance = logger()
+            if instance:
+                a.add(instance)
     return a
 
 
