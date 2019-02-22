@@ -8,6 +8,7 @@
 
 import os
 import sys
+import errno
 import socket
 import signal
 import binascii
@@ -1183,10 +1184,15 @@ class ServerCore(object):
             WebSocketRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, self._http_headers_dir, scripts)
             return
         except (IOError, ValueError) as e:
-            wslog("", exc_info=True)
-            wslog.error("Error: %s request failure", req_info)
-            wslog.error(" for client %s:", pretty_socket(frominfo))
-            wslog.error(" %s", e)
+            httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=True)
+            err = e.args[0]
+            if err==errno.EPIPE:
+                l = httplog
+            else:
+                l = httplog.error
+            l("Error: %s request failure", req_info)
+            l(" for client %s:", pretty_socket(frominfo))
+            l(" %s", e)
         except Exception as e:
             wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)
         try:
