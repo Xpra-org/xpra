@@ -1509,9 +1509,9 @@ class WindowSource(WindowIconSource):
             for seq in sorted(dap.keys()):
                 ack_data = dap[seq]
                 if ack_data[3]==0:
-                    log_fn(" no %6i %-5s: queued but not sent yet", seq, ack_data[1])
+                    log_fn(" %6i %-5s: queued but not sent yet", seq, ack_data[1])
                 else:
-                    log_fn(" no %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
+                    log_fn(" %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
 
 
     def _may_send_delayed(self):
@@ -1538,6 +1538,7 @@ class WindowSource(WindowIconSource):
                 if first_time(key):
                     log.warn("Warning: timeout on screen updates for window %i,", self.wid)
                     log.warn(" already delayed for more than %i seconds", actual_delay//1000)
+                self.statistics.reset_backlog()
                 return
             log("send_delayed for wid %s, delaying again because of backlog:", self.wid)
             log(" batch delay is %i, elapsed time is %ims", self.batch_config.delay, actual_delay)

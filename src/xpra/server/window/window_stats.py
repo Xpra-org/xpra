@@ -76,6 +76,11 @@ class WindowPerformanceStatistics(object):
         self.avg_decode_speed = -1
         self.recent_decode_speed = -1
 
+    def reset_backlog(self):
+        #this should be a last resort..
+        self.damage_ack_pending = {}
+
+
     def update_averages(self):
         #damage "in" latency: (the time it takes for damage requests to be processed only)
         dil = tuple(self.damage_in_latency)
