@@ -13,8 +13,9 @@ log = Logger("dbus", "notify")
 
 def parse_image_data(data):
     try:
-        width, height, rowstride, has_alpha, bpp, channels, image_data = data
-        log("parse_image_data(%i, %i, %i, %s, %i, %i, %i bytes)", width, height, rowstride, bool(has_alpha), bpp, channels, len(image_data))
+        width, height, rowstride, has_alpha, bpp, channels, pixels = data
+        log("parse_image_data(%i, %i, %i, %s, %i, %i, %i bytes)",
+            width, height, rowstride, bool(has_alpha), bpp, channels, len(pixels))
         from PIL import Image
         if channels==4:
             if has_alpha:
@@ -23,7 +24,7 @@ def parse_image_data(data):
                 rgb_format = "RGBX"
         elif channels==3:
             rgb_format = "RGB"
-        img = Image.frombuffer("RGBA", (width, height), image_data, "raw", rgb_format, rowstride)
+        img = Image.frombuffer("RGBA", (width, height), pixels, "raw", rgb_format, rowstride)
         return image_data(img)
     except Exception as e:
         log("parse_image_data(%s)", data, exc_info=True)
