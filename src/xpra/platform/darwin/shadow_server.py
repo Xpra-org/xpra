@@ -7,6 +7,7 @@
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
 from xpra.util import envbool
+from xpra.os_util import memoryview_to_bytes, _buffer
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
@@ -28,13 +29,13 @@ ALPHA = {
          CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
    }
 
+BTYPES = tuple(x for x in (str, bytes, memoryview, _buffer, bytearray) if x is not None)
+
 #ensure that picture_encode can deal with pixels as NSCFData:
 def patch_picture_encode():
     from CoreFoundation import CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
-    from xpra.os_util import memoryview_to_bytes, _buffer
-    btypes = [x for x in (str, bytes, memoryview, _buffer, bytearray) if x is not None]
     def pixels_to_bytes(v):
-        if type(v) in btypes:
+        if isinstance(v, BTYPES):
             return memoryview_to_bytes(v)
         l = CFDataGetLength(v)
         return CFDataGetBytes(v, (0, l), None)
@@ -94,7 +95,8 @@ class ShadowServer(GTKShadowServerBase):
 
     def make_tray_widget(self):
         from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
-        return GTKStatusIconTray(self, 0, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
+        return GTKStatusIconTray(self, 0, self.tray, "Xpra Shadow Server", None, None,
+                                 self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
 
 
     def setup_capture(self):
@@ -138,9 +140,8 @@ class ShadowServer(GTKShadowServerBase):
             if err==0:
                 self.refresh_registered = True
                 return
-            else:
-                log.warn("Warning: CGRegisterScreenRefreshCallback failed with error %i", err)
-                log.warn(" using fallback timer method")
+            log.warn("Warning: CGRegisterScreenRefreshCallback failed with error %i", err)
+            log.warn(" using fallback timer method")
         GTKShadowServerBase.start_refresh(self, wid)
 
     def stop_refresh(self, wid):
