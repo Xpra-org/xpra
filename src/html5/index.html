@@ -188,8 +188,12 @@
 				return false;
 			}
 
-			var cdebug = console.debug;
-			var clog = console.log;
+			var cdebug = function () {
+				Utilities.clog.apply(Utilities, arguments);
+			}
+			var clog = function () {
+				Utilities.clog.apply(Utilities, arguments);
+			}
 
 			if (!getboolparam("top_bar", true)) {
 				$("#top_bar").hide();
@@ -364,7 +368,7 @@
 					touchaction = "auto";
 					label = "scroll";
 				}
-				cdebug("set_touchaction() touchaction=", touchaction, "label=", label);
+				cdebug("mouse", "set_touchaction() touchaction=", touchaction, "label=", label);
 				$('div.window canvas').css("touch-action", touchaction);
 				$('#touchaction_link').html("Set Touch Action: "+label);
 				if (!Utilities.isEdge()) {
@@ -674,7 +678,7 @@
 							client.send(packet);
 				   		}
 				   		catch (e) {
-					   		client.error("input handling error: "+e);
+					   		client.exc(e, "input handling error");
 				   		}
 			   		}
 			   	});

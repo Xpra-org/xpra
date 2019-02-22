@@ -109,7 +109,7 @@ var MediaSourceUtil = {
 		getMediaSource : function() {
 			var ms = MediaSourceUtil.getMediaSourceClass();
 			if(!ms) {
-				throw Exception("no MediaSource support!");
+				throw new Error("no MediaSource support!");
 			}
 			return new ms();
 		},

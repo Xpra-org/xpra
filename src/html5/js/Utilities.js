@@ -12,6 +12,9 @@
 var Utilities = {
 	VERSION	: "2.5",
 
+	exc : function() {
+		console.error.apply(console, arguments);
+	},
 	error : function() {
 		console.error.apply(console, arguments);
 	},
@@ -19,6 +22,20 @@ var Utilities = {
 		console.log.apply(console, arguments);
 	},
 	log : function() {
+		console.log.apply(console, arguments);
+	},
+
+	//these versions should not be redirected:
+	cexc : function() {
+		console.error.apply(console, arguments);
+	},
+	cerror : function() {
+		console.error.apply(console, arguments);
+	},
+	cwarn : function() {
+		console.log.apply(console, arguments);
+	},
+	clog : function() {
 		console.log.apply(console, arguments);
 	},
 
@@ -471,7 +488,7 @@ var Utilities = {
 		}
 	},
 
-	
+
 	getConnectionInfo : function() {
 		var c = navigator.connection;
 		if (!c) {

@@ -28,6 +28,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.log = function() { client.log.apply(client, arguments); };
 	this.warn = function() { client.warn.apply(client, arguments); };
 	this.error = function() { client.error.apply(client, arguments); };
+	this.exc = function() { client.exc.apply(client, arguments); };
 	this.debug = function() { client.debug.apply(client, arguments); };
 	this.debug_categories = client.debug_categories;
 	//keep reference both the internal canvas and screen drawn canvas:
@@ -983,7 +984,7 @@ XpraWindow.prototype._close_video = function() {
 				}
 				this.media_source.endOfStream();
 			} catch(e) {
-				this.warn("video media source EOS error: "+e);
+				this.exc(e, "video media source EOS error");
 			}
 			this.video_source_buffer = null;
 			this.media_source = null;
@@ -1058,7 +1059,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 		codec_string = 'video/webm;codecs="vp9"';
 	}
 	else {
-		throw Exception("invalid encoding: "+coding);
+		throw new Error("invalid encoding: "+coding);
 	}
 	this.log("video codec string: "+codec_string+" for "+coding+" profile '"+profile+"', level '"+level+"'");
 	this.media_source.addEventListener('sourceopen', function() {
@@ -1356,6 +1357,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		}
 	}
 	catch (e) {
+		this.exc(e, "error painting", coding);
 		paint_error(e);
 	}
 };
