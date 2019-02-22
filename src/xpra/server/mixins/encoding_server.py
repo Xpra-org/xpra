@@ -5,14 +5,14 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from xpra.log import Logger
-log = Logger("encoding")
-
 from xpra.scripts.config import parse_bool_or_int
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.loader import load_codecs, get_codec, has_codec, codec_versions
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
+
+log = Logger("encoding")
 
 
 """
@@ -84,13 +84,18 @@ class EncodingServer(StubServerMixin):
              "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
              "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
-             "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L", "webp"))),
+             "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x)
+                                                for x in self.core_encodings if x in (
+                                                    "h264", "vp8", "vp9",
+                                                    "rgb24", "rgb32",
+                                                    "png", "png/P", "png/L", "webp",
+                                                    ))),
              "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
              "with_lossless_mode"   : self.lossless_mode_encodings,
              }
 
     def init_encodings(self):
-        load_codecs(decoders=False)
+        load_codecs(decoders=False, video=False)
         encs, core_encs = [], []
         def add_encodings(encodings):
             for ce in encodings:
@@ -132,8 +137,10 @@ class EncodingServer(StubServerMixin):
         #now update the variables:
         self.encodings = encs
         self.core_encodings = core_encs
-        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
-        log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s", self.allowed_encodings, encs, core_encs, self.lossless_encodings)
+        self.lossless_encodings = [x for x in self.core_encodings
+                                   if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
+        log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s",
+            self.allowed_encodings, encs, core_encs, self.lossless_encodings)
         pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
         if pref:
             self.default_encoding = pref[0]

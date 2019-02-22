@@ -127,7 +127,7 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
 
 
 loaded = None
-def load_codecs(encoders=True, decoders=True, csc=True):
+def load_codecs(encoders=True, decoders=True, csc=True, video=True):
     global loaded
     if loaded:
         return
@@ -149,12 +149,13 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         xpra_codec_import("enc_pillow", "Pillow encoder", "pillow", "encode", "encode")
         xpra_codec_import("enc_webp", "webp encoder", "webp", "encode", "compress")
         xpra_codec_import("enc_jpeg", "JPEG decoder", "jpeg", "encoder", "encoder")
+    if encoders and video:
         xpra_codec_import("enc_vpx", "vpx encoder", "vpx", "encoder", "Encoder")
         xpra_codec_import("enc_x264", "x264 encoder", "enc_x264", "encoder", "Encoder")
         xpra_codec_import("enc_x265", "x265 encoder", "enc_x265", "encoder", "Encoder")
         xpra_codec_import("nvenc", "nvenc encoder", "nvenc", "encoder", "Encoder")
         xpra_codec_import("enc_ffmpeg", "ffmpeg encoder", "enc_ffmpeg", "encoder", "Encoder")
-    if csc:
+    if csc and video:
         show += list(CSC_CODECS)
         xpra_codec_import("csc_swscale", "swscale colorspace conversion", "csc_swscale", "colorspace_converter", "ColorspaceConverter")
         xpra_codec_import("csc_libyuv", "libyuv colorspace conversion", "csc_libyuv", "colorspace_converter", "ColorspaceConverter")
@@ -163,6 +164,7 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         xpra_codec_import("dec_pillow", "Pillow decoder", "pillow", "decode", "decode")
         xpra_codec_import("dec_webp", "webp decoder", "webp", "decode", "decompress")
         xpra_codec_import("dec_jpeg", "JPEG decoder", "jpeg", "decoder", "decoder")
+    if decoders and video:
         xpra_codec_import("dec_vpx", "vpx decoder", "vpx", "decoder", "Decoder")
         xpra_codec_import("dec_avcodec2", "avcodec2 decoder", "dec_avcodec2", "decoder", "Decoder")
 
