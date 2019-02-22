@@ -435,7 +435,7 @@ class WindowSource(WindowIconSource):
         try:
             #ie: get_strict_encoding -> "strict_encoding"
             einfo["selection"] = self.get_best_encoding.__name__.replace("get_", "")
-        except:
+        except AttributeError:
             pass
 
         #"encodings" info:
@@ -758,14 +758,14 @@ class WindowSource(WindowIconSource):
             ropts = set(REFRESH_ENCODINGS)  #default encodings for auto-refresh
         if self.refresh_quality<100 and self.image_depth>16:
             ropts.add("jpeg")
-        are = None
+        are = ()
         if self.supports_transparency:
-            are = tuple(x for x in PREFERED_ENCODING_ORDER if x in self.common_encodings and x in ropts and x in TRANSPARENCY_ENCODINGS)
+            are = tuple(x for x in self.common_encodings and x in ropts and x in TRANSPARENCY_ENCODINGS)
         if not are:
-            are = tuple(x for x in PREFERED_ENCODING_ORDER if x in self.common_encodings and x in ropts)
+            are = tuple(x for x in self.common_encodings and x in ropts)
         if not are:
-            are = tuple(x for x in PREFERED_ENCODING_ORDER if x in self.common_encodings)
-        self.auto_refresh_encodings = are
+            are = self.common_encodings
+        self.auto_refresh_encodings = tuple(x for x in PREFERED_ENCODING_ORDER if x in are)
         log("update_encoding_selection: client refresh encodings=%s, auto_refresh_encodings=%s",
             self.client_refresh_encodings, self.auto_refresh_encodings)
         self.update_quality()
@@ -1678,7 +1678,7 @@ class WindowSource(WindowIconSource):
         if not regions:
             #nothing left after removing the exclude region
             return
-        elif len(regions)==1:
+        if len(regions)==1:
             merged = regions[0]
             #if we end up with just one region covering almost the entire window,
             #refresh the whole window (ie: when the video encoder mask rounded the dimensions down)
@@ -2313,7 +2313,7 @@ class WindowSource(WindowIconSource):
             #could be a compressed wrapper or just raw bytes:
             try:
                 v = data.data
-            except:
+            except AttributeError:
                 v = data
             md5 = hashlib.md5(v).hexdigest()
             client_options["z.md5"] = md5
@@ -2396,4 +2396,5 @@ class WindowSource(WindowIconSource):
         self.global_statistics.mmap_bytes_sent += written
         self.global_statistics.mmap_free_size = mmap_free_size
         #the data we send is the index within the mmap area:
-        return "mmap", mmap_info, {"rgb_format" : image.get_pixel_format()}, image.get_width(), image.get_height(), image.get_rowstride(), 32
+        client_options = {"rgb_format" : image.get_pixel_format()}
+        return "mmap", mmap_info, client_options, image.get_width(), image.get_height(), image.get_rowstride(), 32
