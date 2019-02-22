@@ -1357,7 +1357,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		}
 	}
 	catch (e) {
-		this.exc(e, "error painting", coding);
+		this.exc(e, "error painting", coding, "sequence no", packet_sequence);
 		paint_error(e);
 	}
 };

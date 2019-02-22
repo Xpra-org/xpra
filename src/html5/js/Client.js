@@ -2361,8 +2361,11 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		);
 	}
 	catch(e) {
-		ctx.exc(e, 'error painting', coding);
+		ctx.exc(e, "error painting", coding, "sequence no", packet_sequence);
 		send_damage_sequence(-1, String(e));
+		//there may be other screen updates pending:
+		win.paint_pending = 0;
+		win.may_paint_now();
 		ctx.request_redraw(win);
 	}
 }
