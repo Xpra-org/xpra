@@ -446,7 +446,7 @@ class win32NotifyIcon(object):
         if hwnd:
             try:
                 del win32NotifyIcon.instances[hwnd]
-            except:
+            except KeyError:
                 pass
 
 
