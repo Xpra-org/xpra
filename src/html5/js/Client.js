@@ -1692,7 +1692,9 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	}
 	ctx.server_connection_data = hello["connection-data"];
 	if (navigator.connection) {
-		navigator.connection.onchange = ctx._connection_change;
+		navigator.connection.onchange = function() {
+			ctx._connection_change();
+		}
 		ctx._connection_change();
 	}
 
