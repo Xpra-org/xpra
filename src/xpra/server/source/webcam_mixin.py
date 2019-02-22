@@ -28,7 +28,8 @@ class WebcamMixin(StubSourceMixin):
         self.webcam_enabled     = server.webcam_enabled
         self.webcam_device      = server.webcam_device
         self.webcam_encodings   = server.webcam_encodings
-        log("WebcamMixin: enabled=%s, device=%s, encodings=%s", self.webcam_enabled, self.webcam_device, self.webcam_encodings)
+        log("WebcamMixin: enabled=%s, device=%s, encodings=%s",
+            self.webcam_enabled, self.webcam_device, self.webcam_encodings)
 
     def init_state(self):
         #for each webcam device_id, the actual device used
@@ -86,7 +87,7 @@ class WebcamMixin(StubSourceMixin):
             fail("webcam forwarding is disabled")
             return False
         devices = self.get_device_options(device_id)
-        if len(devices)==0:
+        if not devices:
             fail("no virtual devices found")
             return False
         if len(self.webcam_forwarding_devices)>MAX_WEBCAM_DEVICES:
@@ -108,7 +109,8 @@ class WebcamMixin(StubSourceMixin):
                 self.send_webcam_ack(device_id, 0, p.get_width(), p.get_height())
                 return True
             except Exception as e:
-                log.error("start_virtual_webcam%s error on device %s: %s", (device_id, w, h), vid, device_info, exc_info=True)
+                log.error("Error: failed to start virtual webcam")
+                log.error(" using device %s: %s", vid, device_info, exc_info=True)
                 errs[device_str] = str(e)
                 del e
         fail("all devices failed")
@@ -141,7 +143,8 @@ class WebcamMixin(StubSourceMixin):
 
     def process_webcam_frame(self, device_id, frame_no, encoding, w, h, data):
         webcam = self.webcam_forwarding_devices.get(device_id)
-        log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, webcam=%s", device_id, frame_no, encoding, w, h, len(data), webcam)
+        log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, webcam=%s",
+            device_id, frame_no, encoding, w, h, len(data), webcam)
         assert encoding and w and h and data
         if not webcam:
             log.error("Error: webcam forwarding is not active, dropping frame")
@@ -164,7 +167,11 @@ class WebcamMixin(StubSourceMixin):
             #one of those two should be present
             try:
                 csc_mod = "csc_libyuv"
-                from xpra.codecs.csc_libyuv.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
+                from xpra.codecs.csc_libyuv.colorspace_converter import (   #@UnresolvedImport
+                    get_input_colorspaces,
+                    get_output_colorspaces,
+                    ColorspaceConverter,
+                    )
             except ImportError:
                 self.send_webcam_stop(device_id, "no csc module")
                 return

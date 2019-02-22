@@ -125,7 +125,8 @@ class InputMixin(StubSourceMixin):
 
 
     def update_mouse(self, wid, x, y, rx, ry):
-        log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i, show=%s", wid, x, y, rx, ry, self.mouse_last_position, self.counter, self.mouse_show)
+        log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i, show=%s",
+            wid, x, y, rx, ry, self.mouse_last_position, self.counter, self.mouse_show)
         if not self.mouse_show:
             return
         if self.mouse_last_position!=(x, y, rx, ry):

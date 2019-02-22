@@ -129,7 +129,8 @@ class WindowsMixin(StubSourceMixin):
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes") or {})
         self.window_min_size = c.intlistget("window.min-size", (0, 0))
         self.window_max_size = c.intlistget("window.max-size", (0, 0))
-        log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
+        log("cursors=%s (encodings=%s), bell=%s, notifications=%s",
+            self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
 
         #window filters:
@@ -171,7 +172,7 @@ class WindowsMixin(StubSourceMixin):
         from xpra.simple_stats import get_list_stats
         pqpixels = [x[2] for x in tuple(self.packet_queue)]
         pqpi = get_list_stats(pqpixels)
-        if len(pqpixels)>0:
+        if pqpixels:
             pqpi["current"] = pqpixels[-1]
         info = {"damage"    : {
                                "compression_queue"      : {"size" : {"current" : self.encode_queue_size()}},
@@ -182,7 +183,7 @@ class WindowsMixin(StubSourceMixin):
                 }
         info.update(self.statistics.get_info())
 
-        if len(self.window_sources)>0:
+        if self.window_sources:
             total_pixels = 0
             total_time = 0.0
             in_latencies, out_latencies = [], []
@@ -255,7 +256,8 @@ class WindowsMixin(StubSourceMixin):
             cpixels = strtobytes(pixels)
             if "png" in self.cursor_encodings:
                 from PIL import Image
-                cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'", len(cpixels), w, h, name)
+                cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'",
+                          len(cpixels), w, h, name)
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
                 buf = BytesIOClass()
                 img.save(buf, "PNG")
@@ -271,7 +273,8 @@ class WindowsMixin(StubSourceMixin):
                 cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
                 encoding = "raw"
             cursor_data[7] = cpixels
-        cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
+        cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
+                  w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
         args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
         if self.cursor_encodings and encoding:
             args = [encoding] + args
@@ -313,7 +316,8 @@ class WindowsMixin(StubSourceMixin):
         #we could also allow filtering for system tray windows?
         if self.window_filters and self.send_windows and not window.is_tray():
             for uuid, window_filter in self.window_filters:
-                filterslog("can_send_window(%s) checking %s for uuid=%s (client uuid=%s)", window, window_filter, uuid, self.uuid)
+                filterslog("can_send_window(%s) checking %s for uuid=%s (client uuid=%s)",
+                           window, window_filter, uuid, self.uuid)
                 if window_filter.matches(window):
                     v = uuid=="*" or uuid==self.uuid
                     filterslog("can_send_window(%s)=%s", window, v)
@@ -348,13 +352,13 @@ class WindowsMixin(StubSourceMixin):
         if prop=="icon":
             self.send_window_icon(wid, window)
         else:
-            v = self._make_metadata(window, prop)
+            metadata = self._make_metadata(window, prop)
             if prop in PROPERTIES_DEBUG:
-                metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
+                metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, metadata)
             else:
-                metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
-            if len(v)>0:
-                self.send("window-metadata", wid, v)
+                metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, metadata)
+            if metadata:
+                self.send("window-metadata", wid, metadata)
 
 
     # Takes the name of a WindowModel property, and returns a dictionary of
@@ -392,7 +396,8 @@ class WindowsMixin(StubSourceMixin):
             else:
                 metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
             metadata.update(v)
-        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s", ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
+        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s",
+            ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
         self.send_async(ptype, wid, x, y, w, h, metadata, client_properties or {})
         if send_raw_icon:
             self.send_window_icon(wid, window)
@@ -459,7 +464,7 @@ class WindowsMixin(StubSourceMixin):
             ws.cleanup()
         try:
             del self.calculate_window_pixels[wid]
-        except:
+        except KeyError:
             pass
 
 
@@ -508,13 +513,15 @@ class WindowsMixin(StubSourceMixin):
             ws = WindowVideoSource(
                               self.idle_add, self.timeout_add, self.source_remove,
                               ww, wh,
-                              self.record_congestion_event, self.encode_queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
+                              self.record_congestion_event, self.encode_queue_size,
+                              self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               av_sync, av_sync_delay,
                               self.video_helper,
                               self.server_core_encodings, self.server_encodings,
-                              self.encoding, self.encodings, self.core_encodings, self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
+                              self.encoding, self.encodings, self.core_encodings,
+                              self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
                               self.rgb_formats,
                               self.default_encoding_options,
                               mmap, mmap_size, bandwidth_limit, self.jitter)
@@ -570,7 +577,8 @@ class WindowsMixin(StubSourceMixin):
             return
         now = monotonic_time()
         elapsed = now-self.bandwidth_warning_time
-        bandwidthlog("record_congestion_event(%s, %i, %i) bandwidth_warnings=%s, elapsed time=%i", source, late_pct, send_speed, self.bandwidth_warnings, elapsed)
+        bandwidthlog("record_congestion_event(%s, %i, %i) bandwidth_warnings=%s, elapsed time=%i",
+                     source, late_pct, send_speed, self.bandwidth_warnings, elapsed)
         gs.last_congestion_time = now
         gs.congestion_send_speed.append((now, late_pct, send_speed))
         if self.bandwidth_warnings and elapsed>CONGESTION_REPEAT_DELAY:
@@ -578,7 +586,8 @@ class WindowsMixin(StubSourceMixin):
             T = 10
             min_time = now-T
             count = len(tuple(True for x in gs.congestion_send_speed if x[0]>min_time))
-            bandwidthlog("record_congestion_event: %i events in the last %i seconds (warnings after %i)", count, T, CONGESTION_WARNING_EVENT_COUNT)
+            bandwidthlog("record_congestion_event: %i events in the last %i seconds (warnings after %i)",
+                         count, T, CONGESTION_WARNING_EVENT_COUNT)
             if count>CONGESTION_WARNING_EVENT_COUNT:
                 self.bandwidth_warning_time = now
                 nid = XPRA_BANDWIDTH_NOTIFICATION_ID
@@ -595,7 +604,8 @@ class WindowsMixin(StubSourceMixin):
                 #    actions += ["lower-quality", "Lower quality"]
                 actions += ["ignore", "Ignore"]
                 hints = {}
-                self.may_notify(nid, summary, body, actions, hints, icon_name="connect", user_callback=self.congestion_notification_callback)
+                self.may_notify(nid, summary, body, actions, hints,
+                                icon_name="connect", user_callback=self.congestion_notification_callback)
 
     def congestion_notification_callback(self, nid, action_id):
         bandwidthlog("congestion_notification_callback(%i, %s)", nid, action_id)

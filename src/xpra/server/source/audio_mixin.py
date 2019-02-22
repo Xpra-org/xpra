@@ -69,7 +69,8 @@ class AudioMixin(StubSourceMixin):
         self.sound_send = c.boolget("sound.send")
         self.sound_bundle_metadata = c.boolget("sound.bundle-metadata")
         log("pulseaudio id=%s, cookie-hash=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
-                 self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
+                 self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server,
+                 self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
 
     def get_caps(self):
         if not self.wants_sound or not self.sound_properties:

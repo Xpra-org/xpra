@@ -140,7 +140,8 @@ class EncodingsMixin(StubSourceMixin):
         sources = self.window_sources.items()
         maximized_wids = tuple(wid for wid, source in sources if source is not None and source.maximized)
         fullscreen_wids = tuple(wid for wid, source in sources if source is not None and source.fullscreen)
-        log("recalculate_delays() wids=%s, focus=%s, maximized=%s, fullscreen=%s", wids, focus, maximized_wids, fullscreen_wids)
+        log("recalculate_delays() wids=%s, focus=%s, maximized=%s, fullscreen=%s",
+            wids, focus, maximized_wids, fullscreen_wids)
         for wid in wids:
             #this is safe because we only add to this set from other threads:
             self.calculate_window_ids.remove(wid)
@@ -187,7 +188,8 @@ class EncodingsMixin(StubSourceMixin):
             ratio = sqrt(1000000.0 / avg_size)
             normalized_delay = int(delay * ratio)
             self.global_batch_config.delay_per_megapixel = normalized_delay
-            log("delay_per_megapixel=%i, delay=%i, for wdelay=%i, avg_size=%i, ratio=%.2f", normalized_delay, delay, wdelay, avg_size, ratio)
+            log("delay_per_megapixel=%i, delay=%i, for wdelay=%i, avg_size=%i, ratio=%.2f",
+                normalized_delay, delay, wdelay, avg_size, ratio)
 
     def may_recalculate(self, wid, pixel_count):
         if wid in self.calculate_window_ids:
@@ -430,7 +432,7 @@ class EncodingsMixin(StubSourceMixin):
         ieo = dict(self.icons_encoding_options)
         try:
             del ieo["default.icons"]
-        except:
+        except KeyError:
             pass
         #encoding:
         info.update({

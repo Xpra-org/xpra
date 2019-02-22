@@ -200,7 +200,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.start_poll_pointer()
 
     def set_refresh_delay(self, v):
-        assert v>0 and v<10000
+        assert 0<v<10000
         self.refresh_delay = v
         if self.mapped:
             self.cancel_refresh_timer()
@@ -236,7 +236,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         raise NotImplementedError()
 
     def start_poll_pointer(self):
-        log("start_poll_pointer() pointer_poll_timer=%s, input_devices=%s, POLL_POINTER=%s", self.pointer_poll_timer, server_features.input_devices, POLL_POINTER)
+        log("start_poll_pointer() pointer_poll_timer=%s, input_devices=%s, POLL_POINTER=%s",
+            self.pointer_poll_timer, server_features.input_devices, POLL_POINTER)
         if self.pointer_poll_timer:
             self.cancel_poll_pointer()
         if server_features.input_devices and POLL_POINTER>0:
@@ -262,10 +263,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         if self.pointer_last_position!=(x, y):
             self.pointer_last_position = (x, y)
             rwm = None
+            wid = None
             rx, ry = 0, 0
             for wid, window in self._id_to_window.items():
                 wx, wy, ww, wh = window.geometry
-                if x>=wx and x<(wx+ww) and y>=wy and y<(wy+wh):
+                if wx<=x<(wx+ww) and wy<=y<(wy+wh):
                     rwm = window
                     rx = x-wx
                     ry = y-wy

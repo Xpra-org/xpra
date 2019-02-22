@@ -87,7 +87,8 @@ class ProxyInstanceProcess(Process):
         self.caps = caps
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
                                video_encoder_modules, csc_modules,
-                               client_conn, disp_desc, repr_ellipsized(str(client_state)), cipher, encryption_key, server_conn,
+                               client_conn, disp_desc, repr_ellipsized(str(client_state)),
+                               cipher, encryption_key, server_conn,
                                "%s: %s.." % (type(caps), repr_ellipsized(str(caps))), message_queue))
         self.client_protocol = None
         self.server_protocol = None
@@ -121,7 +122,7 @@ class ProxyInstanceProcess(Process):
             if m=="stop":
                 self.stop("proxy server request")
                 return
-            elif m=="socket-handover-complete":
+            if m=="socket-handover-complete":
                 log("setting sockets to blocking mode: %s", (self.client_conn, self.server_conn))
                 #set sockets to blocking mode:
                 set_blocking(self.client_conn)
@@ -147,7 +148,7 @@ class ProxyInstanceProcess(Process):
                     del self.timers[tid]
                 if timer:
                     timer.cancel()
-            except:
+            except KeyError:
                 pass
 
     def idle_add(self, fn, *args, **kwargs):
@@ -195,7 +196,7 @@ class ProxyInstanceProcess(Process):
         else:
             try:
                 del self.timers[tid]
-            except:
+            except KeyError:
                 pass
         #we do the scheduling via timers, so always return False here
         #so that the main queue won't re-schedule this function call itself:
@@ -253,9 +254,11 @@ class ProxyInstanceProcess(Process):
         self.client_packets = Queue(PROXY_QUEUE_SIZE)
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
-        self.client_protocol = client_protocol_class(self, self.client_conn, self.process_client_packet, self.get_client_packet)
+        self.client_protocol = client_protocol_class(self, self.client_conn,
+                                                     self.process_client_packet, self.get_client_packet)
         self.client_protocol.restore_state(self.client_state)
-        self.server_protocol = server_protocol_class(self, self.server_conn, self.process_server_packet, self.get_server_packet)
+        self.server_protocol = server_protocol_class(self, self.server_conn,
+                                                     self.process_server_packet, self.get_server_packet)
         #server connection tweaks:
         for x in (b"input-devices", b"draw", b"window-icon", b"keymap-changed", b"server-settings"):
             self.server_protocol.large_packets.append(x)
@@ -422,10 +425,10 @@ class ProxyInstanceProcess(Process):
                 proto.send_now(("hello", self.get_proxy_info(proto)))
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "info sent")
                 return
-            elif is_req("stop"):
+            if is_req("stop"):
                 self.stop("socket request", None)
                 return
-            elif is_req("version"):
+            if is_req("version"):
                 version = XPRA_VERSION
                 if caps.boolget("full-version-request"):
                     version = full_version_str()
@@ -553,7 +556,8 @@ class ProxyInstanceProcess(Process):
             if i==0:
                 log.info("waiting for network connections to close")
             else:
-                log("still waiting %i/10 - client.closed=%s, server.closed=%s", i+1, self.client_protocol._closed, self.server_protocol._closed)
+                log("still waiting %i/10 - client.closed=%s, server.closed=%s",
+                    i+1, self.client_protocol._closed, self.server_protocol._closed)
             sleep(0.1)
         log.info("proxy instance %s stopped", os.getpid())
 
@@ -602,26 +606,27 @@ class ProxyInstanceProcess(Process):
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop("client connection lost", proto)
             return
-        elif packet_type=="disconnect":
+        if packet_type=="set_deflate":
+            #echo it back to the client:
+            self.client_packets.put(packet)
+            self.client_protocol.source_has_more()
+            return
+        if packet_type=="hello":
+            log.warn("Warning: invalid hello packet received after initial authentication (dropped)")
+            return
+        #the packet types below are forwarded:
+        if packet_type=="disconnect":
             log("got disconnect from client: %s", packet[1])
             if self.exit:
                 self.client_protocol.close()
             else:
                 self.stop("disconnect from client: %s" % packet[1])
-        elif packet_type=="set_deflate":
-            #echo it back to the client:
-            self.client_packets.put(packet)
-            self.client_protocol.source_has_more()
-            return
         elif packet_type==b"send-file":
             if packet[6]:
                 packet[6] = Compressed("file-data", packet[6])
         elif packet_type==b"send-file-chunk":
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
-        elif packet_type=="hello":
-            log.warn("Warning: invalid hello packet received after initial authentication (dropped)")
-            return
         self.queue_server_packet(packet)
 
 
@@ -826,7 +831,8 @@ class ProxyInstanceProcess(Process):
             return (wid not in self.lost_windows)
 
         def passthrough(strip_alpha=True):
-            enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)", rgb_format, rowstride, client_options.intget("rowstride", 0), strip_alpha)
+            enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)",
+                   rgb_format, rowstride, client_options.intget("rowstride", 0), strip_alpha)
             if strip_alpha:
                 #passthrough as plain RGB:
                 Xindex = rgb_format.upper().find("X")
@@ -853,7 +859,7 @@ class ProxyInstanceProcess(Process):
         if PASSTHROUGH and (encoding in ("rgb32", "rgb24") or proxy_video):
             #we are dealing with rgb data, so we can pass it through:
             return passthrough(proxy_video)
-        elif not self.video_encoder_types or not client_options or not proxy_video:
+        if not self.video_encoder_types or not client_options or not proxy_video:
             #ensure we don't try to re-compress the pixel data in the network layer:
             #(re-add the "compressed" marker that gets lost when we re-assemble packets)
             packet[7] = Compressed("%s pixels" % encoding, packet[7])

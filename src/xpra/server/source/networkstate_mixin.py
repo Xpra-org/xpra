@@ -51,7 +51,7 @@ class NetworkStateMixin(StubSourceMixin):
     def check_ping_echo_timeout(self, now_ms, timeout):
         try:
             del self.check_ping_echo_timers[now_ms]
-        except:
+        except KeyError:
             pass
         if self.last_ping_echoed_time<now_ms and not self.is_closed():
             self.disconnect(CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
@@ -73,7 +73,7 @@ class NetworkStateMixin(StubSourceMixin):
             except:
                 l1,l2,l3 = 0,0,0
             #and the last client ping latency we measured (if any):
-            if len(self.statistics.client_ping_latency)>0:
+            if self.statistics.client_ping_latency:
                 _, cl = self.statistics.client_ping_latency[-1]
                 cl = int(1000.0*cl)
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, will_have_more=False)
@@ -94,7 +94,7 @@ class NetworkStateMixin(StubSourceMixin):
             try:
                 self.source_remove(timer)
                 del self.check_ping_echo_timers[echoedtime]
-            except:
+            except KeyError:
                 pass
         self.last_ping_echoed_time = echoedtime
         client_ping_latency = monotonic_time()-echoedtime/1000.0

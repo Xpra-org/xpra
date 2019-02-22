@@ -246,7 +246,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         try:
             from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
             classes.append(GTKStatusIconTray)
-        except:
+        except ImportError:
             traylog("no GTKStatusIconTray", exc_info=True)
         traylog("tray classes: %s", classes)
         if not classes:
@@ -255,7 +255,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         errs = []
         for c in classes:
             try:
-                w = c(self, XPRA_APP_ID, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
+                w = c(self, XPRA_APP_ID, self.tray, "Xpra Shadow Server",
+                      None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
                 return w
             except Exception as e:
                 errs.append((c, e))

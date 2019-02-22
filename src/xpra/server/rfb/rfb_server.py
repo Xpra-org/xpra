@@ -45,7 +45,7 @@ class RFBServer(object):
         if not models:
             log.error("RFB: no window models to export, dropping connection")
             return None
-        elif len(models)!=1:
+        if len(models)!=1:
             log.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
             return None
         return models[0]
@@ -69,7 +69,8 @@ class RFBServer(object):
             auth = None
             if len(auths)==1:
                 auth = auths[0]
-            return RFBProtocol(self, conn, auth, self.process_rfb_packet, self.get_rfb_pixelformat, self.session_name or "Xpra Server")
+            return RFBProtocol(self, conn, auth,
+                               self.process_rfb_packet, self.get_rfb_pixelformat, self.session_name or "Xpra Server")
         p = self.do_make_protocol("rfb", conn, rfb_protocol_class)
         p.send_protocol_handshake()
 

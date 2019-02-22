@@ -4,7 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os
+import os
+import sys
 
 #default implementation uses pycups
 from xpra.util import envbool, print_nested_dict
@@ -87,7 +88,14 @@ from xpra.platform import platform_import
 if not WIN32:
     #pycups is not available on win32
     try:
-        from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, init_printing, cleanup_printing, get_info
+        from xpra.platform.pycups_printing import (
+            get_printers,
+            print_files,
+            printing_finished,
+            init_printing,
+            cleanup_printing,
+            get_info,
+            )
         assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
     except Exception as e:
         log("cannot load pycups", exc_info=True)
@@ -113,11 +121,11 @@ def main():
         enable_debug_for("printing")
         try:
             sys.argv.remove("-v")
-        except:
+        except ValueError:
             pass
         try:
             sys.argv.remove("--verbose")
-        except:
+        except ValueError:
             pass
 
     from xpra.util import nonl, pver
@@ -126,7 +134,7 @@ def main():
         try:
             for pk,pv in d.items():
                 try:
-                    if type(pv)==unicode:
+                    if isinstance(pv, unicode):
                         sv = pv.encode("utf8")
                     else:
                         sv = nonl(pver(pv))
@@ -166,7 +174,7 @@ def main():
             dump_info(get_info())
             return 0
         printers = get_printers()
-        if len(printers)==0:
+        if not printers:
             print("Cannot print: no printers found")
             return 1
         if len(sys.argv)==2:

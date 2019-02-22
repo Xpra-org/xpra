@@ -68,7 +68,8 @@ class RFBProtocol(object):
             return 0
         #ie: packet==b'RFB 003.008\n'
         self._protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
-        log.info("RFB version %s connection from %s", ".".join(str(x) for x in self._protocol_version), self._conn.target)
+        log.info("RFB version %s connection from %s",
+                 ".".join(str(x) for x in self._protocol_version), self._conn.target)
         if self._protocol_version!=(3, 8):
             msg = "unsupported protocol version"
             log.error("Error: %s", msg)
@@ -91,7 +92,7 @@ class RFBProtocol(object):
         log("parse_security_handshake(%s)", hexstr(packet))
         try:
             auth = struct.unpack(b"B", packet)[0]
-        except:
+        except struct.error:
             self._internal_error(packet, "cannot parse security handshake response '%s'" % hexstr(packet))
             return 0
         auth_str = RFBAuth.AUTH_STR.get(auth, auth)
@@ -145,7 +146,10 @@ class RFBProtocol(object):
         #send ClientInit
         self._packet_parser = self._parse_rfb
         w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = self._get_rfb_pixelformat()
-        packet =  struct.pack(b"!HH"+PIXEL_FORMAT+b"I", w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift, 0, 0, 0, len(self.session_name))+strtobytes(self.session_name)
+        packet =  struct.pack(b"!HH"+PIXEL_FORMAT+b"I",
+                              w, h, bpp, depth, bigendian, truecolor,
+                              rmax, gmax, bmax, rshift, bshift, gshift,
+                              0, 0, 0, len(self.session_name))+strtobytes(self.session_name)
         self.send(packet)
         self._process_packet_cb(self, [b"authenticated"])
         return 1

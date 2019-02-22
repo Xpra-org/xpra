@@ -217,7 +217,8 @@ class ClientConnection(ClientConnectionClass):
         if bandwidth_limit>0:
             bandwidth_limit = max(MIN_BANDWIDTH, bandwidth_limit)
         self.soft_bandwidth_limit = bandwidth_limit
-        bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s", self.bandwidth_limit, bandwidth_limit)
+        bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s",
+                     self.bandwidth_limit, bandwidth_limit)
         #figure out how to distribute the bandwidth amongst the windows,
         #we use the window size,
         #(we should use the number of bytes actually sent: framerate, compression, etc..)
@@ -270,7 +271,8 @@ class ClientConnection(ClientConnectionClass):
             self.bandwidth_detection = c.boolget("bandwidth-detection", True)
         cd = typedict(c.dictget("connection-data"))
         self.jitter = cd.intget("jitter", 0)
-        bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s", server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
+        bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
+                     server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
 
         cinfo = self.get_connect_info()
         for i,ci in enumerate(cinfo):
@@ -511,11 +513,11 @@ class ClientConnection(ClientConnectionClass):
         #this is one of the few places where we actually do care about character encoding:
         try:
             summary = summary.encode("utf8")
-        except:
+        except UnicodeEncodeError:
             summary = str(summary)
         try:
             body = body.encode("utf8")
-        except:
+        except UnicodeEncodeError:
             body = str(body)
         if self.hello_sent:
             #Warning: actions and hints are send last because they were added later (in version 2.3)

@@ -11,6 +11,7 @@ from xpra.net.protocol import PACKET_JOIN_SIZE
 from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.util import AtomicInteger
 from xpra.log import Logger
+
 log = Logger("rfb")
 
 counter = AtomicInteger()

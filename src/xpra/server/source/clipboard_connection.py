@@ -118,7 +118,8 @@ class ClipboardConnection(StubSourceMixin):
                            "a clipboard synchronization loop may be causing this problem,\n"+\
                            "or an overly aggressive clipboard manager perhaps?"
                     self.send_clipboard_enabled(msg)
-                    self.may_notify(XPRA_CLIPBOARD_NOTIFICATION_ID, "Clipboard synchronization is now disabled", body, icon_name="clipboard")
+                    self.may_notify(XPRA_CLIPBOARD_NOTIFICATION_ID,
+                                    "Clipboard synchronization is now disabled", body, icon_name="clipboard")
                 return
         #call compress_clibboard via the encode work queue:
         self.queue_encode((True, self.compress_clipboard, packet))
@@ -128,6 +129,6 @@ class ClipboardConnection(StubSourceMixin):
         packet = list(packet)
         for i in range(len(packet)):
             v = packet[i]
-            if type(v)==Compressible:
+            if isinstance(v, Compressible):
                 packet[i] = self.compressed_wrapper(v.datatype, v.data)
         self.queue_packet(packet)

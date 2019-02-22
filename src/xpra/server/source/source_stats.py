@@ -9,7 +9,7 @@
 from math import sqrt
 from collections import deque
 
-from xpra.server.cystats import (
+from xpra.server.cystats import (   #@UnresolvedImport
     logp, calculate_time_weighted_average, calculate_size_weighted_average,
     calculate_for_target, time_weighted_average, queue_inspect,
     )
@@ -148,18 +148,18 @@ class GlobalPerformanceStatistics(object):
         def mayaddfac(metric, info, factor, weight):
             if weight>0.01:
                 factors.append((metric, info, factor, weight))
-        if len(self.client_latency)>0:
+        if self.client_latency:
             #client latency: (we want to keep client latency as low as can be)
             metric = "client-latency"
             l = 0.005 + self.min_client_latency
             wm = logp(l / 0.020)
             mayaddfac(*calculate_for_target(metric, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
-        if len(self.client_ping_latency)>0:
+        if self.client_ping_latency:
             metric = "client-ping-latency"
             l = 0.005 + self.min_client_ping_latency
             wm = logp(l / 0.050)
             mayaddfac(*calculate_for_target(metric, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
-        if len(self.server_ping_latency)>0:
+        if self.server_ping_latency:
             metric = "server-ping-latency"
             l = 0.005 + self.min_server_ping_latency
             wm = logp(l / 0.050)
@@ -169,7 +169,9 @@ class GlobalPerformanceStatistics(object):
         #packet queue pixels (global):
         qpix_time_values = [(event_time, value) for event_time, _, value in tuple(self.damage_packet_qpixels)]
         mayaddfac(*queue_inspect("packet-queue-pixels", qpix_time_values, div=pixel_count, smoothing=sqrt))
-        #compression data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
+        #compression data queue: (This is an important metric
+        #since each item will consume a fair amount of memory
+        #and each will later on go through the other queues.)
         mayaddfac(*queue_inspect("compression-work-queue", self.compression_work_qsizes))
         if self.mmap_size>0:
             #full: effective range is 0.0 to ~1.2

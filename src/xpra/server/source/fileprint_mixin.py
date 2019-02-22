@@ -47,7 +47,8 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     ######################################################################
     # printing:
     def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile):
-        log("set_printers(%s, %s, %s, %s, %s) for %s", printers, password_file, auth, encryption, encryption_keyfile, self)
+        log("set_printers(%s, %s, %s, %s, %s) for %s",
+            printers, password_file, auth, encryption, encryption_keyfile, self)
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             log("local client with identical machine id,")
@@ -66,7 +67,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 #unchanged: make sure we don't try adding it again:
                 try:
                     del printers[k]
-                except:
+                except KeyError:
                     pass
                 continue
             if npd is None:

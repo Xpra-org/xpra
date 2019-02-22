@@ -90,7 +90,9 @@ def set_prgname(name):
 
 def fix_unicode_out():
     if PYTHON3:
-        unicode = str
+        _unicode = str
+    else:
+        _unicode = unicode
     #code found here:
     #http://stackoverflow.com/a/3259271/428751
     import codecs
@@ -188,11 +190,11 @@ def fix_unicode_out():
                 def write(self, text):
                     try:
                         if self._hConsole is None:
-                            if isinstance(text, unicode):
+                            if isinstance(text, _unicode):
                                 text = text.encode('utf-8')
                             self._stream.write(text)
                         else:
-                            if not isinstance(text, unicode):
+                            if not isinstance(text, _unicode):
                                 text = str(text).decode('utf-8')
                             remaining = len(text)
                             while remaining:

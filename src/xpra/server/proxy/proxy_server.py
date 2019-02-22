@@ -200,7 +200,7 @@ class ProxyServer(ServerCore):
             def force_exit_request_client():
                 try:
                     self._requests.remove(proto)
-                except:
+                except KeyError:
                     pass
                 if not proto._closed:
                     self.send_disconnect(proto, "timeout")
@@ -279,8 +279,9 @@ class ProxyServer(ServerCore):
         socket_path = None
         display = None
         sns = c.dictget("start-new-session")
-        authlog("proxy_session: displays=%s, start_sessions=%s, start-new-session=%s", displays, self._start_sessions, sns)
-        if len(displays)==0 or sns:
+        authlog("proxy_session: displays=%s, start_sessions=%s, start-new-session=%s",
+                displays, self._start_sessions, sns)
+        if not displays or sns:
             if not self._start_sessions:
                 disconnect(SESSION_NOT_FOUND, "no displays found")
                 return
@@ -295,7 +296,8 @@ class ProxyServer(ServerCore):
                 return
         if display is None:
             display = c.strget("display")
-            authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s", proxy_virtual_display, display, displays)
+            authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s",
+                    proxy_virtual_display, display, displays)
             if display==proxy_virtual_display:
                 disconnect(SESSION_NOT_FOUND, "invalid display")
                 return
@@ -387,7 +389,8 @@ class ProxyServer(ServerCore):
                 client_conn.set_active(True)
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
                                                self.video_encoders, self.csc_modules,
-                                               client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, c, message_queue)
+                                               client_conn, disp_desc, client_state,
+                                               cipher, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())
                 self.processes[process] = (display, message_queue)
                 process.start()
@@ -489,7 +492,11 @@ class ProxyServer(ServerCore):
         #hwinstaold = set_window_station("winsta0")
         def exec_command(command):
             log("exec_command(%s)", command)
-            from xpra.platform.win32.create_process_lib import Popen, CREATIONINFO, CREATION_TYPE_TOKEN, LOGON_WITH_PROFILE, CREATE_NEW_PROCESS_GROUP, STARTUPINFO
+            from xpra.platform.win32.create_process_lib import (
+                Popen,
+                CREATIONINFO, CREATION_TYPE_TOKEN,
+                LOGON_WITH_PROFILE, CREATE_NEW_PROCESS_GROUP, STARTUPINFO,
+                )
             creation_info = CREATIONINFO()
             creation_info.dwCreationType = CREATION_TYPE_TOKEN
             creation_info.dwLogonFlags = LOGON_WITH_PROFILE

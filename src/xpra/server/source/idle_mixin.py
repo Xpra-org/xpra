@@ -107,7 +107,9 @@ class IdleMixin(StubSourceMixin):
         summary += " is about to timeout"
         body = "Unless this session sees some activity,\n" + \
                "it will be terminated soon."
-        self.may_notify(nid, summary, body, actions, {}, expire_timeout=10*1000, icon_name="timer", user_callback=self.idle_notification_action)
+        self.may_notify(nid, summary, body,
+                        actions, {}, expire_timeout=10*1000,
+                        icon_name="timer", user_callback=self.idle_notification_action)
         self.go_idle()
 
     def idle_notification_action(self, nid, action_id):

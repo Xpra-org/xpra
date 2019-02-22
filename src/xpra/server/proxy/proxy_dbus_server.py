@@ -6,12 +6,13 @@
 
 import os
 
+import dbus.service
+
 from xpra.dbus.helper import native_to_dbus
 from xpra.dbus.common import init_system_bus, init_session_bus
 from xpra.server.dbus.dbus_server import DBUS_Server_Base, INTERFACE, BUS_NAME
-import dbus.service
-
 from xpra.log import Logger
+
 log = Logger("dbus", "server")
 
 

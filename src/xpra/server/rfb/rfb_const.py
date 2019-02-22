@@ -310,7 +310,7 @@ RFB_KEYNAMES = {
     0xff9e      : "KP_Insert",
     0xff9c      : "KP_End",
     0xff9b      : "KP_Down",
-    0xffb3      : "KP_Next",
+    #0xffb3      : "KP_Next",
     0xff96      : "KP_Left",
     0xff9d      : "KP_Begin",
     0xff98      : "KP_Right",

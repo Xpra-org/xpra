@@ -74,7 +74,7 @@ class ClientDisplayMixin(StubSourceMixin):
         def b(v):
             try :
                 return v.decode("utf8")
-            except:
+            except UnicodeDecodeError:
                 return v
         if desktop_names:
             self.desktop_names = [b(d) for d in desktop_names]
