@@ -26,8 +26,8 @@ def full_version_str():
     s = XPRA_VERSION
     try:
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-        s += "-r%i%s" % (REVISION, ["","M"][int(LOCAL_MODIFICATIONS>0)])
-    except:
+        s += "-r%i%s" % (REVISION, "M" if LOCAL_MODIFICATIONS>0 else "")
+    except ImportError:
         pass
     return s
 
@@ -75,11 +75,9 @@ def get_host_info():
     except:
         pass
     for x in ("uid", "gid"):
-        if hasattr(os, "get%s" % x):
-            try:
-                info[x] = getattr(os, "get%s" % x)()
-            except:
-                pass
+        fn = getattr(os, "get%s" % x, None)
+        if fn:
+            info[x] = fn()
     return info
 
 def get_version_info():

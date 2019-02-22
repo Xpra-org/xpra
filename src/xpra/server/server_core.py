@@ -854,7 +854,8 @@ class ServerCore(object):
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
 
-        netlog("handle_new_connection%s sockname=%s, target=%s", (conn, sock, address, socktype, peername, socket_info), sockname, target)
+        netlog("handle_new_connection%s sockname=%s, target=%s",
+               (conn, sock, address, socktype, peername, socket_info), sockname, target)
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
         peek_data, line1 = None, None
@@ -1425,7 +1426,8 @@ class ServerCore(object):
         auth_classes = self.auth_classes[socktype]
         i = 0
         if auth_classes:
-            authlog("creating authenticators %s for %s, with username=%s, connection=%s", csv(auth_classes), socktype, username, conn)
+            authlog("creating authenticators %s for %s, with username=%s, connection=%s",
+                    csv(auth_classes), socktype, username, conn)
             for auth_class in auth_classes:
                 auth, aclass, options = auth_class
                 opts = dict(options)
@@ -1524,7 +1526,8 @@ class ServerCore(object):
                 authlog("authenticator[%i]=%s (already passed)", index, authenticator)
                 continue
             req = authenticator.requires_challenge()
-            authlog("authenticator[%i]=%s, requires-challenge=%s, challenge-sent=%s", index, authenticator, req, authenticator.challenge_sent)
+            authlog("authenticator[%i]=%s, requires-challenge=%s, challenge-sent=%s",
+                    index, authenticator, req, authenticator.challenge_sent)
             if not req:
                 #this authentication module does not need a challenge
                 #(ie: "peercred" or "none")
@@ -1666,7 +1669,8 @@ class ServerCore(object):
         self.cancel_upgrade_to_rfb_timer(proto)
 
     def reset_server_timeout(self, reschedule=True):
-        timeoutlog("reset_server_timeout(%s) server_idle_timeout=%s, server_idle_timer=%s", reschedule, self.server_idle_timeout, self.server_idle_timer)
+        timeoutlog("reset_server_timeout(%s) server_idle_timeout=%s, server_idle_timer=%s",
+                   reschedule, self.server_idle_timeout, self.server_idle_timer)
         if self.server_idle_timeout<=0:
             return
         if self.server_idle_timer:
@@ -1731,7 +1735,7 @@ class ServerCore(object):
     def send_hello_info(self, proto, flatten=True):
         #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
         #(ie: see server_base)
-        log.info("processing %s info request from %s", ["structured", "flat"][flatten], proto._conn)
+        log.info("processing %s info request from %s", "flat" if flatten else "structured", proto._conn)
         def cb(proto, info):
             self.do_send_info(proto, info, flatten)
         self.get_all_info(cb, proto)
@@ -1875,7 +1879,8 @@ class ServerCore(object):
         except KeyboardInterrupt:
             raise
         except:
-            netlog.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
+            netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
+                         packet_type, handler, exc_info=True)
 
 
     def handle_rfb_connection(self, conn):

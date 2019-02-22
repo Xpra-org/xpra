@@ -10,8 +10,6 @@ import sys
 import signal
 
 from xpra.platform.gui import init as gui_init
-gui_init()
-
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
     window_defaults, WIN_POS_CENTER,
@@ -105,7 +103,7 @@ class UpdateStatusWindow(object):
             from xpra import __version__ as version_str
             self.label.set_label("Version %s is up to date" % version_str)
             return False
-        elif self.newer_version:
+        if self.newer_version:
             version_str = ".".join(str(x) for x in self.newer_version)
             self.label.set_label("A newer version is available: %s" % version_str)
             return False
@@ -188,5 +186,6 @@ def main():
 
 
 if __name__ == "__main__":
+    gui_init()
     v = main()
     sys.exit(v)

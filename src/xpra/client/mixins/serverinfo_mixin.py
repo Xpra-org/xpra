@@ -35,12 +35,13 @@ class ServerInfoMixin(StubClientMixin):
         pld = c.listget("platform.linux_distribution")
         if pld and len(pld)==3:
             def san(v):
-                if type(v)==int:
+                if isinstance(v, int):
                     return v
                 return bytestostr(v)
             self._remote_platform_linux_distribution = [san(x) for x in pld]
         verr = version_compat_check(self._remote_version)
         if verr is not None:
-            self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version '%s': %s" % (self._remote_version, verr))
+            self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION,
+                               "incompatible remote version '%s': %s" % (self._remote_version, verr))
             return False
         return True
