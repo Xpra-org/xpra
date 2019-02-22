@@ -1491,15 +1491,7 @@ class WindowSource(WindowIconSource):
         elapsed = int(1000 * (now - region_time))
         log.warn("Warning: delayed region timeout")
         log.warn(" region is %i seconds old, will retry - bad connection?", elapsed//1000)
-        dap = dict(self.statistics.damage_ack_pending)
-        if dap:
-            log.warn(" %i late responses:", len(dap))
-            for seq in sorted(dap.keys()):
-                ack_data = dap[seq]
-                if ack_data[3]==0:
-                    log.warn(" %6i %-5s: queued but not sent yet", seq, ack_data[1])
-                else:
-                    log.warn(" %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
+        self._log_late_acks(log.warn)
         #re-try: cancel anything pending and do a full quality refresh
         self.cancel_damage()
         self.cancel_expire_timer()
@@ -1508,6 +1500,19 @@ class WindowSource(WindowIconSource):
         self._damage_delayed = None
         self.full_quality_refresh(options)
         return False
+
+    def _log_late_acks(self, log_fn):
+        dap = dict(self.statistics.damage_ack_pending)
+        if dap:
+            now = monotonic_time()
+            log_fn(" %i late responses:", len(dap))
+            for seq in sorted(dap.keys()):
+                ack_data = dap[seq]
+                if ack_data[3]==0:
+                    log_fn(" no %6i %-5s: queued but not sent yet", seq, ack_data[1])
+                else:
+                    log_fn(" no %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
+
 
     def _may_send_delayed(self):
         #this method is called from the timer,
@@ -1534,8 +1539,12 @@ class WindowSource(WindowIconSource):
                     log.warn("Warning: timeout on screen updates for window %i,", self.wid)
                     log.warn(" already delayed for more than %i seconds", actual_delay//1000)
                 return
-            log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %i, elapsed time is %ims",
-                    self.wid, packets_backlog, self.batch_config.delay, actual_delay)
+            log("send_delayed for wid %s, delaying again because of backlog:", self.wid)
+            log(" batch delay is %i, elapsed time is %ims", self.batch_config.delay, actual_delay)
+            if actual_delay>=1000:
+                self._log_late_acks(log)
+            else:
+                log(" %s packets", packets_backlog)
             #this method will fire again from damage_packet_acked
             return
         #if we're here, there is no packet backlog, but there may be damage acks pending or a bandwidth limit to honour,
