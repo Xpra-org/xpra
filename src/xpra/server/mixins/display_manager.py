@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.os_util import strtobytes
 from xpra.util import iround, log_screen_sizes, engs
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -238,7 +239,7 @@ class DisplayManager(StubServerMixin):
                     #older clients send strings,
                     #newer clients send bytes...
                     try :
-                        v = dn.decode("utf8")
+                        v = strtobytes(dn).decode("utf8")
                     except UnicodeDecodeError:
                         v = dn
                     if v!="0" or i!=0:

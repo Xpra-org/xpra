@@ -385,8 +385,9 @@ def get_desktop_names():
             d = _get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
             if d:
                 v = d.split(b"\0")
-                if len(v)>1 and v[-1]=="":
+                if len(v)>1 and v[-1]==b"":
                     v = v[:-1]
+                return [x.decode("utf8") for x in v]
         except Exception as e:
             screenlog.warn("failed to get desktop names: %s", e)
         screenlog("get_desktop_names() %s=%s", hexstr(d or ""), v)

@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.os_util import strtobytes
 from xpra.util import get_screen_info
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -73,7 +74,7 @@ class ClientDisplayMixin(StubSourceMixin):
         #newer clients send bytes...
         def b(v):
             try :
-                return v.decode("utf8")
+                return strtobytes(v).decode("utf8")
             except UnicodeDecodeError:
                 return v
         if desktop_names:
