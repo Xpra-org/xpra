@@ -91,7 +91,7 @@ class WindowPerformanceStatistics(object):
         cdt = tuple(self.client_decode_time)
         if cdt:
             #the elapsed time recorded is in microseconds:
-            decode_speed = tuple((event_time, size, size*1000*1000/elapsed) for event_time, size, elapsed in cdt)
+            decode_speed = tuple((event_time, size, int(size*1000*1000/elapsed)) for event_time, size, elapsed in cdt)
             r = calculate_size_weighted_average(decode_speed)
             self.avg_decode_speed = int(r[0])
             self.recent_decode_speed = int(r[1])
@@ -108,7 +108,7 @@ class WindowPerformanceStatistics(object):
                 factors.append((metric, info, factor, weight))
         #ratio of "in" and "out" latency indicates network bottleneck:
         #(the difference between the two is the time it takes to send)
-        if len(self.damage_in_latency)>0 and len(self.damage_out_latency)>0:
+        if self.damage_in_latency and self.damage_out_latency:
             #prevent jitter from skewing the values too much
             ad = max(0.010, 0.040+self.avg_damage_out_latency-self.avg_damage_in_latency)
             rd = max(0.010, 0.040+self.recent_damage_out_latency-self.recent_damage_in_latency)
@@ -229,12 +229,17 @@ class WindowPerformanceStatistics(object):
             sent_before = monotonic_time()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
             dropped_acks_time = monotonic_time()-60      #1 minute
             drop_missing_acks = []
-            for sequence, (start_send_at, _, start_bytes, end_send_at, end_bytes, pixels, _) in self.damage_ack_pending.items():
+            for sequence, item in self.damage_ack_pending.items():
+                start_send_at = item[0]
+                end_send_at = item[3]
                 if end_send_at==0 or start_send_at>sent_before:
                     continue
                 if start_send_at<dropped_acks_time:
                     drop_missing_acks.append(sequence)
                 else:
+                    start_bytes = item[2]
+                    end_bytes = item[4]
+                    pixels = item[5]
                     packets_backlog += 1
                     pixels_backlog += pixels
                     bytes_backlog += (end_bytes - start_bytes)
