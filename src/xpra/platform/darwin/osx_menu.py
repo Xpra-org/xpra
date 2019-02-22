@@ -153,8 +153,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def get_menu(self, label):
         if SINGLE_MENU:
             return self.app_menus.get(label)
-        else:
-            return self.menus.get(label)
+        return self.menus.get(label)
 
 
     def add_about(self):
@@ -207,9 +206,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
             self.client.after_handshake(self.set_clipboard_menu, clipboard_menu)
         if mixin_features.audio and SHOW_SOUND_MENU:
             sound_menu = self.make_menu()
-            if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
+            if self.client.speaker_allowed and self.client.speaker_codecs:
                 sound_menu.add(self.make_speakermenuitem())
-            if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
+            if self.client.microphone_allowed and self.client.microphone_codecs:
                 sound_menu.add(self.make_microphonemenuitem())
             menus.append(("Sound", sound_menu))
         if mixin_features.windows and SHOW_ENCODINGS_MENU:
@@ -249,12 +248,14 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
 
     def _clipboard_direction_changed(self, item, label):
-        clipboardlog("_clipboard_direction_changed(%s, %s) clipboard_change_pending=%s", item, label, self._clipboard_change_pending)
+        clipboardlog("_clipboard_direction_changed(%s, %s) clipboard_change_pending=%s",
+                     item, label, self._clipboard_change_pending)
         label = self.select_clipboard_menu_option(item, label, CLIPBOARD_DIRECTION_LABELS)
         self.do_clipboard_direction_changed(label or "")
 
     def _remote_clipboard_changed(self, item, label):
-        clipboardlog("_remote_clipboard_changed(%s, %s) clipboard_change_pending=%s", item, label, self._clipboard_change_pending)
+        clipboardlog("_remote_clipboard_changed(%s, %s) clipboard_change_pending=%s",
+                     item, label, self._clipboard_change_pending)
         #ensure this is the only clipboard label selected:
         label = self.select_clipboard_menu_option(item, label, CLIPBOARD_LABELS)
         if not label:
@@ -275,7 +276,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         clipboard_item = self.checkitem(label)
         clipboard_item.set_draw_as_radio(True)
         def clipboard_option_changed(item):
-            clipboardlog("clipboard_option_changed(%s) label=%s, callback=%s clipboard_change_pending=%s", item, label, cb, self._clipboard_change_pending)
+            clipboardlog("clipboard_option_changed(%s) label=%s, callback=%s clipboard_change_pending=%s",
+                         item, label, cb, self._clipboard_change_pending)
             if cb:
                 cb(item, label)
         clipboard_item.connect("toggled", clipboard_option_changed)
@@ -286,7 +288,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         #(can be specified as a menuitem object, or using its label)
         #all the other menu items whose labels are specified will be made inactive
         #(we use a flag to prevent reentry)
-        clipboardlog("select_clipboard_menu_option(%s, %s, %s) clipboard_change_pending=%s", item, label, labels, self._clipboard_change_pending)
+        clipboardlog("select_clipboard_menu_option(%s, %s, %s) clipboard_change_pending=%s",
+                     item, label, labels, self._clipboard_change_pending)
         if self._clipboard_change_pending:
             return None
         clipboard = self.get_menu("Clipboard")
