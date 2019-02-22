@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -166,8 +166,8 @@ class WindowPerformanceStatistics(object):
                                }
                 }
         #encoding stats:
-        if self.encoding_stats:
-            estats = tuple(self.encoding_stats)
+        estats = tuple(self.encoding_stats)
+        if estats:
             encodings_used = [x[1] for x in estats]
             def add_compression_stats(enc_stats, encoding=None):
                 comp_ratios_pct = []
@@ -194,9 +194,9 @@ class WindowPerformanceStatistics(object):
                 add_compression_stats(enc_stats, encoding)
 
         dinfo = info.setdefault("damage", {})
-        latencies = [x*1000 for _, _, _, x in tuple(self.damage_in_latency)]
+        latencies = tuple(x[-1]*1000 for x in tuple(self.damage_in_latency))
         dinfo["in_latency"]  = get_list_stats(latencies, show_percentile=[9])
-        latencies = [x*1000 for _, _, _, x in tuple(self.damage_out_latency)]
+        latencies = tuple(x[-1]*1000 for x in tuple(self.damage_out_latency))
         dinfo["out_latency"] = get_list_stats(latencies, show_percentile=[9])
         #per encoding totals:
         if self.encoding_totals:
@@ -215,9 +215,9 @@ class WindowPerformanceStatistics(object):
             Then we add the average decoding latency.
             """
         decoding_latency = 0.010
-        if not self.client_decode_time:
-            decoding_latency, _ = calculate_timesize_weighted_average(tuple(self.client_decode_time))
-            decoding_latency /= 1000.0
+        cdt = tuple(self.client_decode_time)
+        if cdt:
+            decoding_latency = calculate_timesize_weighted_average(cdt)[0]/1000.0
         min_latency = max(abs_min, min_client_latency or abs_min)*1.2
         avg_latency = max(min_latency, avg_client_latency or abs_min)
         max_latency = 2.0*min_latency
