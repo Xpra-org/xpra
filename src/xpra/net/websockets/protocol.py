@@ -6,7 +6,7 @@
 import os
 import struct
 
-from xpra.net.websockets.common import encode_hybi_header, decode_hybi_header
+from xpra.net.websockets.header import encode_hybi_header, decode_hybi
 from xpra.net.protocol import Protocol
 from xpra.util import first_time, envbool
 from xpra.os_util import memoryview_to_bytes
@@ -115,7 +115,7 @@ class WebSocketProtocol(Protocol):
             ws_data = buf
         log("parse_ws_frame(%i bytes) total buffer is %i bytes", len(buf), len(ws_data))
         while ws_data and not self._closed:
-            parsed = decode_hybi_header(ws_data)
+            parsed = decode_hybi(ws_data)
             if parsed is None:
                 log("parse_ws_frame(%i bytes) not enough data", len(ws_data))
                 #not enough data to get a full websocket frame,
@@ -138,10 +138,12 @@ class WebSocketProtocol(Protocol):
                 opcode = self.ws_payload_opcode
                 self.ws_payload_opcode = 0
             else:
-                assert not self.ws_payload and not self.ws_payload_opcode, "expected a continuation frame not %s" % OPCODES.get(opcode, opcode)
+                if self.ws_payload and self.ws_payload_opcode:
+                    raise Exception("expected a continuation frame not %s" % OPCODES.get(opcode, opcode))
                 full_payload = payload
                 if not fin:
-                    assert opcode in (OPCODE_BINARY, OPCODE_TEXT), "cannot handle fragmented '%s' frames" % OPCODES.get(opcode, opcode)
+                    if opcode not in (OPCODE_BINARY, OPCODE_TEXT):
+                        raise Exception("cannot handle fragmented '%s' frames" % OPCODES.get(opcode, opcode))
                     #fragmented, keep this payload for later
                     self.ws_payload_opcode = opcode
                     self.ws_payload.append(payload)
