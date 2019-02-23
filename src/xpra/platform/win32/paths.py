@@ -199,11 +199,14 @@ def do_get_xpra_command():
         return [sys.executable]
     mingw = os.environ.get("MINGW_PREFIX")
     if mingw:
-        xpra_script = os.path.join(mingw, "bin", "xpra")
+        xpra_script = os.path.join(os.getcwd(), "scripts", "xpra")
+        xpra_bin_script = os.path.join(mingw, "bin", "xpra")
         py = os.path.join(mingw, "bin", "python%i.exe" % sys.version_info[0])
         if os.path.exists(xpra_script) and os.path.exists(py):
             return [py, xpra_script]
-        elif len(d) == 1:
+        if os.path.exists(xpra_bin_script) and os.path.exists(py):
+            return [py, xpra_bin_script]
+        if len(d) == 1:
             if not d[0].lower().endswith(".exe"):
                 return [sys.executable, d[0]]
     return d
