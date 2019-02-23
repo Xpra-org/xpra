@@ -149,7 +149,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 r = pollwait(gui_client, 10)
                 if r is not None:
                     log.warn("gui client stdout: %s", gui_client.stdout_file)
-                assert r is None, "gui client terminated early and returned %i for server with args=%s" % (r, args)
+                assert r is None, "gui client terminated early and returned %i : '%s' for server with args=%s" % (r, EXIT_STR.get(r, r), args)
 
             if self.display:
                 self.stop_server(server, "exit", *connect_args)
