@@ -2102,7 +2102,7 @@ class WindowSource(WindowIconSource):
             (warning: this runs from the non-UI network parse thread,
             don't access the window from here!)
         """
-        statslog.info("packet decoding sequence %s for window %s: %sx%s took %.1fms",
+        statslog("packet decoding sequence %s for window %s: %sx%s took %.1fms",
                       damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
             self.statistics.client_decode_time.append((monotonic_time(), width*height, decode_time))
