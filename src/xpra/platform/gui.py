@@ -86,55 +86,62 @@ def get_display_icc_info():
     return {}
 
 def get_icc_info():
+    return default_get_icc_info()
+
+def default_get_icc_info():
     ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA")
     if ENV_ICC_DATA:
         import binascii
         return {
-                "source"    : "environment-override",
-                "data"      : binascii.unhexlify(ENV_ICC_DATA),
-                }
-    from xpra.os_util import get_util_logger, bytestostr
-    log = get_util_logger()
+            "source"    : "environment-override",
+            "data"      : binascii.unhexlify(ENV_ICC_DATA),
+            }
+    from xpra.os_util import bytestostr
+    from xpra.log import Logger
+    screenlog = Logger("screen")
     info = {}
     try:
         from PIL import ImageCms
-        from PIL.ImageCms import get_display_profile, getDefaultIntent
+        from PIL.ImageCms import get_display_profile
         INTENT_STR = {}
         for x in ("PERCEPTUAL", "RELATIVE_COLORIMETRIC", "SATURATION", "ABSOLUTE_COLORIMETRIC"):
             v = getattr(ImageCms, "INTENT_%s" % x, None)
             if v:
                 INTENT_STR[v] = x.lower().replace("_", "-")
-        log("get_icc_info() intents=%s", INTENT_STR)
-        def getDefaultIntentStr(_p):
-            return INTENT_STR.get(getDefaultIntent(_p), "unknown")
-        def getData(_p):
-            return _p.tobytes()
+        screenlog("get_icc_info() intents=%s", INTENT_STR)
         p = get_display_profile()
-        log("get_icc_info() display_profile=%s", p)
+        screenlog("get_icc_info() display_profile=%s", p)
         if p:
-            for (k, fn) in {
-                            "name"          : "getProfileName",
-                            "info"          : "getProfileInfo",
-                            "copyright"     : "getProfileCopyright",
-                            "manufacturer"  : "getProfileManufacturer",
-                            "model"         : "getProfileModel",
-                            "description"   : "getProfileDescription",
-                            "default-intent": "getDefaultIntentStr",
-                            "data"          : "getData",
-                            }.items():
+            def getDefaultIntentStr(v):
+                return INTENT_STR.get(v, "unknown")
+            def getData(v):
+                return v.tobytes()
+            for (k, fn, conv) in (
+                ("name",            "getProfileName",           None),
+                ("info",            "getProfileInfo",           None),
+                ("copyright",       "getProfileCopyright",      None),
+                ("manufacturer",    "getProfileManufacturer",   None),
+                ("model",           "getProfileModel",          None),
+                ("description",     "getProfileDescription",    None),
+                ("default-intent",  "getDefaultIntent",         getDefaultIntentStr),
+                ("data",            "getData",                  getData),
+                ):
                 m = getattr(ImageCms, fn, None)
-                if not m:
-                    log("%s lacks %s", ImageCms, fn)
+                if m is None:
+                    screenlog("%s lacks %s", ImageCms, fn)
                     continue
                 try:
                     v = m(p)
+                    if conv:
+                        v = conv(v)
                     info[k] = bytestostr(v).rstrip("\n\r")
                 except Exception as e:
-                    log("ICC profile error on %s using %s: %s", k, fn, e)
+                    screenlog("get_icc_info()", exc_info=True)
+                    screenlog("ICC profile error on %s using %s: %s", k, fn, e)
     except Exception as e:
-        log("get_icc_info()", exc_info=True)
-        log.warn("Warning: cannot query ICC profiles:")
-        log.warn(" %s", e)
+        screenlog("get_icc_info()", exc_info=True)
+        screenlog.warn("Warning: cannot query ICC profiles:")
+        screenlog.warn(" %s", e)
     return info
 
 

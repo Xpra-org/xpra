@@ -272,7 +272,8 @@ def get_icc_info():
             if data:
                 screenlog("_ICC_PROFILE=%s (%s)", type(data), len(data))
                 version = _get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
-                screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", hexstr(version or ""), hexstr(data))
+                screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s",
+                          hexstr(version or ""), hexstr(data))
                 icc = {
                         "source"    : "_ICC_PROFILE",
                         "data"      : data,
@@ -280,15 +281,17 @@ def get_icc_info():
                 if version:
                     try:
                         version = ord(version)
-                    except:
+                    except TypeError:
                         pass
                     icc["version"] = version
+                screenlog("get_icc_info()=%s", icc)
                 return icc
         except Exception as e:
             screenlog.error("Error: cannot access _ICC_PROFILE X11 window property")
             screenlog.error(" %s", e)
             screenlog("get_icc_info()", exc_info=True)
-    return {}
+    from xpra.platform.gui import default_get_icc_info
+    return default_get_icc_info()
 
 
 def get_antialias_info():
@@ -440,7 +443,7 @@ def get_cursor_size():
     d = _get_xresources() or {}
     try:
         return int(d.get("Xcursor.size", 0))
-    except:
+    except ValueError:
         return -1
 
 
@@ -516,7 +519,7 @@ def show_desktop(b):
     _send_client_message(None, "_NET_SHOWING_DESKTOP", int(bool(b)))
 
 def set_fullscreen_monitors(window, fsm, source_indication=0):
-    if type(fsm) not in (tuple, list):
+    if not isinstance(fsm, (tuple, list)):
         log.warn("invalid type for fullscreen-monitors: %s", type(fsm))
         return
     if len(fsm)!=4:
@@ -659,7 +662,8 @@ class XI2_Window(object):
             return
         pointer, relative_pointer, modifiers, buttons = window._pointer_modifiers(event)
         wid = self.window.get_mouse_event_wid(*pointer)
-        #log("server_input_devices=%s, server_precise_wheel=%s", client.server_input_devices, client.server_precise_wheel)
+        #log("server_input_devices=%s, server_precise_wheel=%s",
+        #    client.server_input_devices, client.server_precise_wheel)
         valuators = event.valuators
         unused_valuators = valuators.copy()
         dx, dy = 0, 0
@@ -702,7 +706,8 @@ class XI2_Window(object):
             mv.update(event.valuators)
         #send plain motion first, if any:
         if unused_valuators:
-            xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, device, wid, window._client._focused, window._id, event.device, pointer, modifiers, buttons)
+            xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
+                      event, device, wid, window._client._focused, window._id, event.device, pointer, modifiers, buttons)
             pdata = pointer
             if client.server_pointer_relative:
                 pdata = list(pointer)+list(relative_pointer)
@@ -784,7 +789,8 @@ class ClientExtras(object):
             self._root_props_watcher = None
         if self.system_bus:
             bus = self.system_bus
-            log("cleanup() system bus=%s, matches: %s", bus, (self.upower_resuming_match, self.upower_sleeping_match, self.login1_match))
+            log("cleanup() system bus=%s, matches: %s",
+                bus, (self.upower_resuming_match, self.upower_sleeping_match, self.login1_match))
             self.system_bus = None
             if self.upower_resuming_match:
                 bus._clean_up_signal_match(self.upower_resuming_match)
@@ -916,7 +922,9 @@ class ClientExtras(object):
                 self._root_props_watcher.do_notify("RESOURCE_MANAGER")
         except ImportError as e:
             log("do_setup_xprops%s", args, exc_info=True)
-            log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
+            log.error("Error: failed to load X11 properties/settings bindings:")
+            log.error(" %s", e)
+            log.error(" root window properties will not be propagated")
 
 
     def do_xi_devices_changed(self, event):
@@ -1016,10 +1024,10 @@ def main():
     try:
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
-    except:
+    except ImportError:
         pass
-    from xpra.platform.gui import main
-    main()
+    from xpra.platform.gui import main as gui_main
+    gui_main()
 
 
 if __name__ == "__main__":
