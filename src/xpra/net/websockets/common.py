@@ -26,7 +26,7 @@ HEADERS = {
 
 def make_websocket_accept_hash(key):
     GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-    accept = sha1(strtobytes(key + GUID)).digest()
+    accept = sha1(strtobytes(key) + GUID).digest()
     return b64encode(accept)
 
 def client_upgrade(read, write, client_host):
