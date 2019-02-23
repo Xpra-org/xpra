@@ -17,15 +17,15 @@ MAX_READ_TIME = 5
 READ_CHUNK_SIZE = 4096
 
 HEADERS = {
-    b"Connection"               : "Upgrade",
-    b"Upgrade"                  : "websocket",
-    b"Sec-WebSocket-Version"    : "13",
-    b"Sec-WebSocket-Protocol"   : "binary",
+    b"Connection"               : b"Upgrade",
+    b"Upgrade"                  : b"websocket",
+    b"Sec-WebSocket-Version"    : b"13",
+    b"Sec-WebSocket-Protocol"   : b"binary",
     }
 
 
 def make_websocket_accept_hash(key):
-    GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+    GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     accept = sha1(strtobytes(key + GUID)).digest()
     return b64encode(accept)
 
@@ -35,7 +35,7 @@ def client_upgrade(read, write, client_host):
     headers = HEADERS.copy()
     headers[b"Sec-WebSocket-Key"] = key
     if client_host:
-        headers[b"Host"] = client_host
+        headers[b"Host"] = strtobytes(client_host)
     for k,v in headers.items():
         lines.append(b"%s: %s" % (k, v))
     lines.append(b"")
@@ -49,7 +49,7 @@ def client_upgrade(read, write, client_host):
 
     now = monotonic_time()
     response = b""
-    while response.find("Sec-WebSocket-Protocol")<0 and monotonic_time()-now<MAX_READ_TIME:
+    while response.find(b"Sec-WebSocket-Protocol")<0 and monotonic_time()-now<MAX_READ_TIME:
         response += read(READ_CHUNK_SIZE)
     headers = parse_response_header(response)
     verify_response_headers(headers, key)
@@ -57,8 +57,8 @@ def client_upgrade(read, write, client_host):
 
 def parse_response_header(response):
     #parse response:
-    head = response.split("\r\n\r\n", 1)[0]
-    lines = head.split("\r\n")
+    head = response.split(b"\r\n\r\n", 1)[0]
+    lines = head.split(b"\r\n")
     headers = {}
     for line in lines:
         parts = line.split(b": ", 1)
@@ -70,13 +70,13 @@ def verify_response_headers(headers, key):
     log("verify_response_headers(%s)", headers)
     if not headers:
         raise Exception("no http headers found in response")
-    upgrade = headers.get("Upgrade", b"")
+    upgrade = headers.get(b"Upgrade", b"")
     if upgrade!=b"websocket":
         raise Exception("invalid http upgrade: '%s'" % upgrade)
-    protocol = headers.get("Sec-WebSocket-Protocol", b"")
+    protocol = headers.get(b"Sec-WebSocket-Protocol", b"")
     if protocol!=b"binary":
         raise Exception("invalid websocket protocol: '%s'" % protocol)
-    accept_key = headers.get("Sec-WebSocket-Accept", b"")
+    accept_key = headers.get(b"Sec-WebSocket-Accept", b"")
     if not accept_key:
         raise Exception("websocket accept key is missing")
     expected_key = make_websocket_accept_hash(key)
