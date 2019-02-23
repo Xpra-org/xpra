@@ -717,12 +717,14 @@ class GTKTrayMenuBase(object):
                 log("keyboard_sync_toggled(%s) keyboard_sync=%s", args, ks)
                 set_keyboard_sync_tooltip()
                 self.client.send_keyboard_sync_enabled_status()
-        self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization", keyboard_sync_toggled)
+        self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization")
         set_sensitive(self.keyboard_sync_menuitem, False)
         def set_keyboard_sync_menuitem(*args):
             kh = self.client.keyboard_helper
             can_set_sync = kh and self.client.server_keyboard and self.client.server_toggle_keyboard_sync
             set_sensitive(self.keyboard_sync_menuitem, can_set_sync)
+            if can_set_sync:
+                self.keyboard_sync_menuitem.connect("toggled", keyboard_sync_toggled)
             if kh:
                 log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.keyboard_sync)
             self.keyboard_sync_menuitem.set_active(kh and bool(kh.keyboard_sync))
