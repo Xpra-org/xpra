@@ -12,17 +12,22 @@ from xpra.log import Logger
 
 log = Logger("websocket")
 
+MAX_WRITE_TIME = 5
+MAX_READ_TIME = 5
+READ_CHUNK_SIZE = 4096
+
+HEADERS = {
+    b"Connection"               : "Upgrade",
+    b"Upgrade"                  : "websocket",
+    b"Sec-WebSocket-Version"    : "13",
+    b"Sec-WebSocket-Protocol"   : "binary",
+    }
+
+
 def make_websocket_accept_hash(key):
     GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     accept = sha1(strtobytes(key + GUID)).digest()
     return b64encode(accept)
-
-HEADERS = {
-        b"Connection"               : "Upgrade",
-        b"Upgrade"                  : "websocket",
-        b"Sec-WebSocket-Version"    : "13",
-        b"Sec-WebSocket-Protocol"   : "binary",
-        }
 
 def client_upgrade(read, write, client_host):
     lines = [b"GET / HTTP/1.1"]
@@ -38,16 +43,14 @@ def client_upgrade(read, write, client_host):
     http_request = b"\r\n".join(lines)
     log("client_upgrade: sending http headers: %s", headers)
     now = monotonic_time()
-    MAX_WRITE_TIME = 5
     while http_request and monotonic_time()-now<MAX_WRITE_TIME:
         w = write(http_request)
         http_request = http_request[w:]
 
     now = monotonic_time()
-    MAX_READ_TIME = 5
     response = b""
     while response.find("Sec-WebSocket-Protocol")<0 and monotonic_time()-now<MAX_READ_TIME:
-        response += read(4096)
+        response += read(READ_CHUNK_SIZE)
     headers = parse_response_header(response)
     verify_response_headers(headers, key)
     log("client_upgrade: done")
