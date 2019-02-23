@@ -23,6 +23,7 @@ class RootWindowModel(object):
             "title", "class-instance",
             "client-machine", "window-type",
             "size-hints", "icon", "shadow",
+            "depth",
             ]
         self.dynamic_property_names = []
         self.internal_property_names = ["content-type"]
@@ -114,6 +115,8 @@ class RootWindowModel(object):
             return False
         if prop=="shadow":
             return True
+        if prop=="depth":
+            return 24
         if prop=="scaling":
             return None
         if prop=="opacity":
