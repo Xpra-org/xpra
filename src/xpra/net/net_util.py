@@ -479,9 +479,9 @@ def main():
                     s += bytestostr(x)
                     lastx = x
                 return s
-            if type(v)==bytes:
+            if isinstance(v, bytes):
                 v = bytestostr(v)
-            if type(v)==str and v.startswith("v"):
+            if isinstance(v, str) and v.startswith("v"):
                 return v[1:]
             return str(v)
 
@@ -489,12 +489,9 @@ def main():
         for gt,idefs in get_gateways().items():
             print("* %s" % gt)      #ie: "INET"
             for i, idef in enumerate(idefs):
-                try:
-                    if isinstance(idef, (list, tuple)):
-                        print(" [%i]           %s" % (i, csv(idef)))
-                        continue
-                except:
-                    print(" [%i]           %s" % (i, idef))
+                if isinstance(idef, (list, tuple)):
+                    print(" [%i]           %s" % (i, csv(idef)))
+                    continue
 
         print("")
         print("Protocol Capabilities:")
