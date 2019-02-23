@@ -19,7 +19,7 @@ class StubClientMixin(object):
     Options are usually obtained by parsing the command line,
     or using a default configuration object.
     """
-    def init(self, _opts, _extra_args=[]):
+    def init(self, _opts, _extra_args=()):
         pass
 
     """

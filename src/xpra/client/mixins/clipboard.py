@@ -48,7 +48,7 @@ class ClipboardClient(StubClientMixin):
             self.clipboard_helper = None
             try:
                 ch.cleanup()
-            except:
+            except Exception:
                 log.error("error on clipboard helper '%s' cleanup", ch, exc_info=True)
 
 
@@ -159,7 +159,7 @@ class ClipboardClient(StubClientMixin):
                 log.error("Error: cannot instantiate %s:", helperclass)
                 log.error(" %s", e)
                 del e
-            except:
+            except Exception:
                 log.error("Error: cannot instantiate %s", helperclass, exc_info=True)
         return None
 

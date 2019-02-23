@@ -57,7 +57,8 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             server_printing = self.server_capabilities.boolget("printing")
             printlog("parse_printing_capabilities() server printing support=%s", server_printing)
             if server_printing:
-                self.printer_attributes = self.server_capabilities.strlistget("printer.attributes", ["printer-info", "device-uri"])
+                self.printer_attributes = self.server_capabilities.strlistget("printer.attributes",
+                                                                              ["printer-info", "device-uri"])
                 self.timeout_add(1000, self.init_printing)
 
 
@@ -156,18 +157,19 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
                 printlog("do_send_printers() exported printers unchanged: %s", self.exported_printers)
                 return
             #show summary of what has changed:
-            added = [k for k in exported_printers.keys() if k not in self.exported_printers]
+            added = tuple(k for k in exported_printers if k not in self.exported_printers)
             if added:
                 printlog("do_send_printers() new printers: %s", added)
-            removed = [k for k in self.exported_printers.keys() if k not in exported_printers]
+            removed = tuple(k for k in self.exported_printers if k not in exported_printers)
             if removed:
                 printlog("do_send_printers() printers removed: %s", removed)
-            modified = [k for k,v in exported_printers.items() if self.exported_printers.get(k)!=v and k not in added]
+            modified = (k for k,v in exported_printers.items() if
+                        self.exported_printers.get(k)!=v and k not in added)
             if modified:
                 printlog("do_send_printers() printers modified: %s", modified)
             printlog("do_send_printers() printers=%s", exported_printers.keys())
-            printlog("do_send_printers() exported printers=%s", csv(str(x) for x in exported_printers.keys()))
+            printlog("do_send_printers() exported printers=%s", csv(str(x) for x in exported_printers))
             self.exported_printers = exported_printers
             self.send("printers", self.exported_printers)
-        except:
+        except Exception:
             printlog.error("do_send_printers()", exc_info=True)

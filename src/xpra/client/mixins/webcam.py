@@ -82,7 +82,8 @@ class WebcamForwarder(StubClientMixin):
         self.server_webcam = c.boolget("webcam")
         self.server_webcam_encodings = c.strlistget("webcam.encodings", ("png", "jpeg"))
         self.server_virtual_video_devices = c.intget("virtual-video-devices")
-        log("webcam server support: %s (%i devices, encodings: %s)", self.server_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
+        log("webcam server support: %s (%i devices, encodings: %s)",
+            self.server_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
         if self.webcam_forwarding and self.server_webcam and self.server_virtual_video_devices>0:
             if self.webcam_option=="on" or self.webcam_option.find("/dev/video")>=0:
                 self.start_sending_webcam()
@@ -106,7 +107,7 @@ class WebcamForwarder(StubClientMixin):
             from xpra.platform.webcam import get_virtual_video_devices, get_all_video_devices
             virt_devices = get_virtual_video_devices()
             all_video_devices = get_all_video_devices()
-            non_virtual = dict([(k,v) for k,v in all_video_devices.items() if k not in virt_devices])
+            non_virtual = dict((k,v) for k,v in all_video_devices.items() if k not in virt_devices)
             log("virtual video devices=%s", virt_devices)
             log("all_video_devices=%s", all_video_devices)
             log("found %s known non-virtual video devices: %s", len(non_virtual), non_virtual)
@@ -114,19 +115,19 @@ class WebcamForwarder(StubClientMixin):
             log("no webcam_util: %s", e)
         log("do_start_sending_webcam(%s)", device_str)
         if device_str in ("auto", "on", "yes", "off", "false", "true"):
-            if len(non_virtual)>0:
+            if non_virtual:
                 device = tuple(non_virtual.keys())[0]
         else:
             log("device_str: %s", device_str)
             try:
                 device = int(device_str)
-            except:
+            except ValueError:
                 p = device_str.find("video")
                 if p>=0:
                     try:
                         log("device_str: %s", device_str[p:])
                         device = int(device_str[p+len("video"):])
-                    except:
+                    except ValueError:
                         device = 0
         if device in virt_devices:
             log.warn("Warning: video device %s is a virtual device", virt_devices.get(device, device))
@@ -213,13 +214,14 @@ class WebcamForwarder(StubClientMixin):
         not_acked = self.webcam_frame_no-1-self.webcam_last_ack
         #not all frames have been acked
         latency = 100
-        if len(self.server_ping_latency)>0:
-            l = [x for _,x in tuple(self.server_ping_latency)]
-            latency = int(1000 * sum(l) / len(l))
+        spl = tuple(x for _,x in self.server_ping_latency)
+        if spl:
+            latency = int(1000 * sum(spl) / len(spl))
         #how many frames should be in flight
         n = max(1, latency // (1000//WEBCAM_TARGET_FPS))    #20fps -> 50ms target between frames
         if not_acked>0 and not_acked>n:
-            log("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - will wait for next ack", latency, not_acked, n)
+            log("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - will wait for next ack",
+                latency, not_acked, n)
             return False
         log("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - trying to send now", latency, not_acked, n)
         return self.send_webcam_frame()
@@ -234,7 +236,8 @@ class WebcamForwarder(StubClientMixin):
             from xpra.codecs.pillow.encode import get_encodings
             client_webcam_encodings = get_encodings()
             common_encodings = list(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
-            log("common encodings (server=%s, client=%s): %s", csv(self.server_encodings), csv(client_webcam_encodings), csv(common_encodings))
+            log("common encodings (server=%s, client=%s): %s",
+                csv(self.server_encodings), csv(client_webcam_encodings), csv(common_encodings))
             if not common_encodings:
                 log.error("Error: cannot send webcam image, no common formats")
                 log.error(" the server supports: %s", csv(self.server_webcam_encodings))
@@ -265,7 +268,8 @@ class WebcamForwarder(StubClientMixin):
             log("webcam frame compression to %s took %ims", encoding, (end-start)*1000)
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
-            self.send("webcam-frame", self.webcam_device_no, frame_no, encoding, w, h, compression.Compressed(encoding, data))
+            self.send("webcam-frame", self.webcam_device_no, frame_no, encoding,
+                      w, h, compression.Compressed(encoding, data))
             self.cancel_webcam_check_ack_timer()
             self.webcam_ack_check_timer = self.timeout_add(10*1000, self.webcam_check_acks)
             return True

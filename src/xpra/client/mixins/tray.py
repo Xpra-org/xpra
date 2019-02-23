@@ -68,7 +68,7 @@ class TrayClient(StubClientMixin):
             self.tray = None
             try:
                 t.cleanup()
-            except:
+            except Exception:
                 log.error("error on tray cleanup", exc_info=True)
 
 
@@ -108,7 +108,8 @@ class TrayClient(StubClientMixin):
         menu = None
         if self.menu_helper:
             menu = self.menu_helper.build()
-        tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
+        tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename,
+                              xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
         log("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
         if tray:
             def reset_tray_title():

@@ -75,7 +75,7 @@ class Encodings(StubClientMixin):
     def cleanup(self):
         try:
             getVideoHelper().cleanup()
-        except:
+        except Exception:
             log.error("error on video cleanup", exc_info=True)
 
 
@@ -96,8 +96,10 @@ class Encodings(StubClientMixin):
         c = self.server_capabilities
         self.server_encodings = c.strlistget("encodings")
         self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
-        self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
-        self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("h264",)) #old servers only supported x264
+        #server is telling us to try to avoid those:
+        self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)
+        #old servers only supported x264:
+        self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("h264",))
         self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
         self.server_auto_video_encoding = c.boolget("auto-video-encoding")
@@ -120,7 +122,7 @@ class Encodings(StubClientMixin):
             if evalue:
                 try:
                     caps["batch.%s" % bprop] = int(evalue)
-                except:
+                except ValueError:
                     log.error("Error: invalid environment value for %s: %s", bprop, evalue)
         log("get_batch_caps()=%s", caps)
         return caps
@@ -254,7 +256,8 @@ class Encodings(StubClientMixin):
             if encoding not in core_encodings:
                 core_encodings.append(encoding)
         #remove duplicates and use prefered encoding order:
-        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings) and x in self.allowed_encodings]
+        core_encodings = [x for x in PREFERED_ENCODING_ORDER
+                          if x in set(core_encodings) and x in self.allowed_encodings]
         return core_encodings
 
     def set_encoding(self, encoding):
@@ -271,23 +274,23 @@ class Encodings(StubClientMixin):
     def send_quality(self):
         q = self.quality
         log("send_quality() quality=%s", q)
-        assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
+        assert q==-1 or 0<=q<=100, "invalid quality: %s" % q
         self.send("quality", q)
 
     def send_min_quality(self):
         q = self.min_quality
         log("send_min_quality() min-quality=%s", q)
-        assert q==-1 or (q>=0 and q<=100), "invalid min-quality: %s" % q
+        assert q==-1 or 0<=q<=100, "invalid min-quality: %s" % q
         self.send("min-quality", q)
 
     def send_speed(self):
         s = self.speed
         log("send_speed() min-speed=%s", s)
-        assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
+        assert s==-1 or 0<=s<=100, "invalid speed: %s" % s
         self.send("speed", s)
 
     def send_min_speed(self):
         s = self.min_speed
         log("send_min_speed() min-speed=%s", s)
-        assert s==-1 or (s>=0 and s<=100), "invalid min-speed: %s" % s
+        assert s==-1 or 0<=s<=100, "invalid min-speed: %s" % s
         self.send("min-speed", s)

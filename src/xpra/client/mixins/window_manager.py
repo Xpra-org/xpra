@@ -323,7 +323,11 @@ class WindowClient(StubClientMixin):
         else:
             log.warn("Warning: window forwarding is not enabled on this server")
         self.server_window_signals = c.strlistget("window.signals")
-        self.server_window_states = c.strlistget("window.states", ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"])
+        self.server_window_states = c.strlistget("window.states", [
+            "iconified", "fullscreen",
+            "above", "below",
+            "sticky", "iconified", "maximized",
+            ])
         self.server_window_filters = c.boolget("window-filters")
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
         #input devices:
@@ -343,7 +347,8 @@ class WindowClient(StubClientMixin):
             rx, ry = -1, -1
         cx, cy = self.get_mouse_position()
         start_time = monotonic_time()
-        mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i", x, y, rx, ry, wid, cx, cy)
+        mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i",
+                 x, y, rx, ry, wid, cx, cy)
         size = 10
         for i,w in self._id_to_window.items():
             #not all window implementations have this method:
@@ -360,7 +365,8 @@ class WindowClient(StubClientMixin):
         modifiers = self.get_current_modifiers()
         pointer = self.get_mouse_position()
         buttons = []
-        mouselog("send_wheel_delta(%i, %i, %.4f, %s) precise wheel=%s, modifiers=%s, pointer=%s", wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
+        mouselog("send_wheel_delta(%i, %i, %.4f, %s) precise wheel=%s, modifiers=%s, pointer=%s",
+                 wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
             #send the exact value multiplied by 1000 (as an int)
             idist = int(distance*1000)
@@ -396,7 +402,8 @@ class WindowClient(StubClientMixin):
         button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
         if button>0:
             self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
-        mouselog("wheel_event%s new deltas=%s,%s", (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
+        mouselog("wheel_event%s new deltas=%s,%s",
+                 (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
 
     def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
         pressed_state = self._button_state.get(button, False)
@@ -435,7 +442,7 @@ class WindowClient(StubClientMixin):
                 raise Exception("invalid cursor packet: %s items" % len(packet))
             #newer versions include the cursor encoding as first argument,
             #we know this is it because it will be a string rather than an int:
-            if type(packet[0]) in (str, bytes):
+            if isinstance(packet[0], (str, bytes)):
                 #we have the encoding in the packet already
                 new_cursor = packet
             else:
@@ -503,9 +510,9 @@ class WindowClient(StubClientMixin):
     def setup_system_tray(self, client, app_id, wid, w, h, metadata):
         tray_widget = None
         #this is a tray forwarded for a remote application
-        def tray_click(button, pressed, time=0):
+        def tray_click(button, pressed, event_time=0):
             tray = self._id_to_window.get(wid)
-            traylog("tray_click(%s, %s, %s) tray=%s", button, pressed, time, tray)
+            traylog("tray_click(%s, %s, %s) tray=%s", button, pressed, event_time, tray)
             if tray:
                 x, y = self.get_mouse_position()
                 modifiers = self.get_current_modifiers()
@@ -572,7 +579,8 @@ class WindowClient(StubClientMixin):
             if app_name and app_name.lower()!="xpra":
                 #exact match:
                 for tray in trays:
-                    #traylog("window %s: is_tray=%s, title=%s", window, window.is_tray(), getattr(window, "title", None))
+                    #traylog("window %s: is_tray=%s, title=%s", window,
+                    #    window.is_tray(), getattr(window, "title", None))
                     if tray.title==app_name:
                         return tray.tray_widget
                 for tray in trays:
@@ -608,7 +616,8 @@ class WindowClient(StubClientMixin):
             if icon:
                 has_alpha = icon.mode=="RGBA"
                 width, height = icon.size
-                traylog("set_tray_icon() using unique %s icon: %ix%i (has-alpha=%s)", icon.mode, width, height, has_alpha)
+                traylog("set_tray_icon() using unique %s icon: %ix%i (has-alpha=%s)",
+                        icon.mode, width, height, has_alpha)
                 rowstride = width * (3+int(has_alpha))
                 rgb_data = icon.tobytes("raw", icon.mode)
                 self.tray.set_icon_from_data(rgb_data, has_alpha, width, height, rowstride)
@@ -625,7 +634,8 @@ class WindowClient(StubClientMixin):
         #adding the icon overlay (if enabled)
         from PIL import Image
         coding = bytestostr(coding)
-        iconlog("%s.update_icon(%s, %s, %s, %s bytes) ICON_SHRINKAGE=%s, ICON_OVERLAY=%s", self, width, height, coding, len(data), ICON_SHRINKAGE, ICON_OVERLAY)
+        iconlog("%s.update_icon(%s, %s, %s, %s bytes) ICON_SHRINKAGE=%s, ICON_OVERLAY=%s",
+                self, width, height, coding, len(data), ICON_SHRINKAGE, ICON_OVERLAY)
         if coding=="default":
             img = self.overlay_image
         elif coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
@@ -687,7 +697,8 @@ class WindowClient(StubClientMixin):
         client_properties = {}
         if len(packet)>=8:
             client_properties = packet[7]
-        geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s", wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
+        geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s",
+                wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
         self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
     def make_new_window(self, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties):
@@ -713,7 +724,8 @@ class WindowClient(StubClientMixin):
         if self.border:
             border = self.border.clone()
         window = None
-        log("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
+        log("make_new_window(..) client_window_classes=%s, group_leader_window=%s",
+            client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
                 window = cwc(self, group_leader_window, watcher_pid, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
@@ -965,7 +977,8 @@ class WindowClient(StubClientMixin):
         wid, w, h, coding, data = packet[1:6]
         img = self._window_icon_image(wid, w, h, coding, data)
         window = self._id_to_window.get(wid)
-        iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s", wid, w, h, coding, len(data), img, window)
+        iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s",
+                wid, w, h, coding, len(data), img, window)
         if window and img:
             window.update_icon(img)
             self.set_tray_icon()
@@ -980,7 +993,8 @@ class WindowClient(StubClientMixin):
         if len(packet)>4:
             resize_counter = packet[4]
         window = self._id_to_window.get(wid)
-        geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s", packet[1:], window, wid, (ax, ay, aw, ah))
+        geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s",
+                packet[1:], window, wid, (ax, ay, aw, ah))
         if window:
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
@@ -1008,7 +1022,8 @@ class WindowClient(StubClientMixin):
         ay = self.sy(y)
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
-        geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s", packet[1:], window, wid, (ax,ay,aw,ah))
+        geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s",
+                packet[1:], window, wid, (ax,ay,aw,ah))
         window.move_resize(ax, ay, aw, ah, -1)
 
 
@@ -1336,7 +1351,8 @@ class WindowClient(StubClientMixin):
             options = packet[10]
         options = typedict(options)
         dtype = DRAW_TYPES.get(type(data), type(data))
-        drawlog("process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i using %6s encoding with options=%s", len(data), dtype, wid, packet_sequence, width, height, x, y, bytestostr(coding), options)
+        drawlog("process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i using %6s encoding with options=%s",
+                len(data), dtype, wid, packet_sequence, width, height, x, y, bytestostr(coding), options)
         start = monotonic_time()
         def record_decode_time(success, message=""):
             if success>0:
@@ -1344,18 +1360,22 @@ class WindowClient(StubClientMixin):
                 decode_time = int(end*1000*1000-start*1000*1000)
                 self.pixel_counter.append((start, end, width*height))
                 dms = "%sms" % (int(decode_time/100)/10.0)
-                paintlog("record_decode_time(%s, %s) wid=%s, %s: %sx%s, %s", success, message, wid, coding, width, height, dms)
+                paintlog("record_decode_time(%s, %s) wid=%s, %s: %sx%s, %s",
+                         success, message, wid, coding, width, height, dms)
             elif success==0:
                 decode_time = -1
-                paintlog("record_decode_time(%s, %s) decoding error on wid=%s, %s: %sx%s", success, message, wid, coding, width, height)
+                paintlog("record_decode_time(%s, %s) decoding error on wid=%s, %s: %sx%s",
+                         success, message, wid, coding, width, height)
             else:
                 assert success<0
                 decode_time = 0
-                paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%s, %s: %sx%s", success, message, wid, coding, width, height)
+                paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%s, %s: %sx%s",
+                         success, message, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, str(message))
         self._draw_counter += 1
         if PAINT_FAULT_RATE>0 and (self._draw_counter % PAINT_FAULT_RATE)==0:
-            drawlog.warn("injecting paint fault for %s draw packet %i, sequence number=%i", coding, self._draw_counter, packet_sequence)
+            drawlog.warn("injecting paint fault for %s draw packet %i, sequence number=%i",
+                         coding, self._draw_counter, packet_sequence)
             if PAINT_FAULT_TELL:
                 self.idle_add(record_decode_time, False, "fault injection for %s draw packet %i, sequence number=%i" % (coding, self._draw_counter, packet_sequence))
             return
@@ -1363,7 +1383,8 @@ class WindowClient(StubClientMixin):
         #if self.xscale!=1 or self.yscale!=1:
         #    options["client-scaling"] = self.xscale, self.yscale
         try:
-            window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
+            window.draw_region(x, y, width, height, coding, data, rowstride,
+                               packet_sequence, options, [record_decode_time])
         except KeyboardInterrupt:
             raise
         except Exception as e:

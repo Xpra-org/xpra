@@ -9,7 +9,7 @@ import logging
 
 from xpra.scripts.config import parse_bool
 from xpra.util import csv
-from xpra.os_util import monotonic_time, strtobytes
+from xpra.os_util import monotonic_time, strtobytes, bytestostr
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
 
@@ -64,8 +64,8 @@ class RemoteLogging(StubClientMixin):
         self.in_remote_logging = True
         def enc(x):
             try:
-                return x.encode("utf8")
-            except:
+                return bytestostr(x).encode("utf8")
+            except UnicodeEncodeError:
                 return strtobytes(x)
         try:
             dtime = int(1000*(monotonic_time() - self.monotonic_start_time))
@@ -79,7 +79,7 @@ class RemoteLogging(StubClientMixin):
                     self.send("logging", level, enc(x), dtime)
                 try:
                     etypeinfo = exc_info[0].__name__
-                except:
+                except AttributeError:
                     etypeinfo = str(exc_info[0])
                 self.send("logging", level, enc("%s: %s" % (etypeinfo, exc_info[1])), dtime)
             if self.log_both:
@@ -93,7 +93,7 @@ class RemoteLogging(StubClientMixin):
             self.local_logging(log, logging.WARNING, " original unformatted message: %s", msg)
             try:
                 self.local_logging(log, level, msg, *args, **kwargs)
-            except:
+            except Exception:
                 pass
             try:
                 exc_info = sys.exc_info()

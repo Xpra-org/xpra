@@ -117,7 +117,8 @@ class NetworkState(StubClientMixin):
         self.server_start_time = min(time.time(), c.intget("start_time", -1))
         self.server_bandwidth_limit_change = c.boolget("network.bandwidth-limit-change")
         self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
-        bandwidthlog("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s", self.server_bandwidth_limit_change, self.server_bandwidth_limit)
+        bandwidthlog("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s",
+                     self.server_bandwidth_limit_change, self.server_bandwidth_limit)
         return True
 
     def process_ui_capabilities(self):
@@ -183,7 +184,8 @@ class NetworkState(StubClientMixin):
                 self.ping_echo_timeout_timer = self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, ping_sent_time)
         else:
             self.cancel_ping_echo_timeout_timer()
-        log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)", ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
+        log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)",
+            ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
         if last!=self._server_ok:
             self.server_connection_state_change()
         return False
@@ -208,11 +210,12 @@ class NetworkState(StubClientMixin):
         now_ms = int(1000.0*monotonic_time())
         self.send("ping", now_ms)
         wait = 2.0
-        if len(self.server_ping_latency)>0:
-            l = [x for _,x in tuple(self.server_ping_latency)]
-            avg = sum(l) / len(l)
+        spl = tuple(x for _,x in self.server_ping_latency)
+        if spl:
+            avg = sum(spl) / len(spl)
             wait = min(5, 1.0+avg*2.0)
-            log("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs", now_ms, 1000.0*avg, wait)
+            log("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs",
+                now_ms, 1000.0*avg, wait)
         t = self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
         self.ping_echo_timers[now_ms] = t
         return True
@@ -237,9 +240,10 @@ class NetworkState(StubClientMixin):
                 l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
             except (OSError, AttributeError):
                 pass
-        sl = -1
-        if len(self.server_ping_latency)>0:
-            _, sl = self.server_ping_latency[-1]
+        try:
+            sl = self.server_ping_latency[-1][1]
+        except IndexError:
+            sl = -1
         self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
 
 

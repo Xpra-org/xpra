@@ -6,7 +6,7 @@
 
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, strtobytes
 from xpra.util import envbool, repr_ellipsized, make_instance, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -53,7 +53,7 @@ class NotificationClient(StubClientMixin):
             self.notifier = None
             try:
                 n.cleanup()
-            except:
+            except Exception:
                 log.error("Error on notifier cleanup", exc_info=True)
 
 
@@ -85,7 +85,8 @@ class NotificationClient(StubClientMixin):
         return make_instance(nc, self.notification_closed, self.notification_action)
 
     def notification_closed(self, nid, reason=3, text=""):
-        log("notification_closed(%i, %i, %s) server notification.close=%s", nid, reason, text, self.server_notifications_close)
+        log("notification_closed(%i, %i, %s) server notification.close=%s",
+            nid, reason, text, self.server_notifications_close)
         if self.server_notifications_close:
             self.send("notification-close", nid, reason, text)
 
@@ -102,7 +103,9 @@ class NotificationClient(StubClientMixin):
         return get_native_notifier_classes()
 
     def do_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
-        log("do_notify%s client_supports_notifications=%s, notifier=%s", (nid, summary, body, actions, hints, expire_timeout, icon_name), self.client_supports_notifications, self.notifier)
+        log("do_notify%s client_supports_notifications=%s, notifier=%s",
+            (nid, summary, body, actions, hints, expire_timeout, icon_name),
+            self.client_supports_notifications, self.notifier)
         n = self.notifier
         if not self.client_supports_notifications or not n:
             #just log it instead:
@@ -135,22 +138,25 @@ class NotificationClient(StubClientMixin):
             actions, hints = packet[10], packet[11]
         #note: if the server doesn't support notification forwarding,
         #it can still send us the messages (via xpra control or the dbus interface)
-        log("_process_notify_show(%s) notifier=%s, server_notifications=%s", repr_ellipsized(str(packet)), self.notifier, self.server_notifications)
+        log("_process_notify_show(%s) notifier=%s, server_notifications=%s",
+            repr_ellipsized(str(packet)), self.notifier, self.server_notifications)
         log("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
         #this one of the few places where we actually do care about character encoding:
         try:
-            summary = summary.decode("utf8")
-        except:
+            summary = strtobytes(summary).decode("utf8")
+        except UnicodeDecodeError:
             summary = bytestostr(summary)
         try:
-            body = body.decode("utf8")
-        except:
+            body = strtobytes(body).decode("utf8")
+        except UnicodeDecodeError:
             body = bytestostr(body)
         app_name = bytestostr(app_name)
         tray = self.get_tray_window(app_name, hints)
         log("get_tray_window(%s)=%s", app_name, tray)
-        self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
+        self.notifier.show_notify(dbus_id, tray, nid,
+                                  app_name, replaces_nid, app_icon,
+                                  summary, body, actions, hints, expire_timeout, icon)
 
     def _process_notify_close(self, packet):
         if not self.notifications_enabled:
