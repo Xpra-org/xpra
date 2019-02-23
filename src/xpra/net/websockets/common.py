@@ -24,33 +24,33 @@ HEADERS = {
         b"Sec-WebSocket-Protocol"   : "binary",
         }
 
-def client_upgrade(conn):
+def client_upgrade(read, write, client_host):
     lines = [b"GET / HTTP/1.1"]
     key = b64encode(uuid.uuid4().bytes)
     headers = HEADERS.copy()
     headers[b"Sec-WebSocket-Key"] = key
-    #FIXME: get this from connection!
-    headers[b"Host"] = "localhost:10000"
+    if client_host:
+        headers[b"Host"] = client_host
     for k,v in headers.items():
         lines.append(b"%s: %s" % (k, v))
     lines.append(b"")
     lines.append(b"")
     http_request = b"\r\n".join(lines)
-    log("client_upgrade(%s) sending http headers: %s", conn, headers)
+    log("client_upgrade: sending http headers: %s", headers)
     now = monotonic_time()
     MAX_WRITE_TIME = 5
     while http_request and monotonic_time()-now<MAX_WRITE_TIME:
-        w = conn.write(http_request)
+        w = write(http_request)
         http_request = http_request[w:]
 
     now = monotonic_time()
     MAX_READ_TIME = 5
     response = b""
     while response.find("Sec-WebSocket-Protocol")<0 and monotonic_time()-now<MAX_READ_TIME:
-        response += conn.read(4096)
+        response += read(4096)
     headers = parse_response_header(response)
     verify_response_headers(headers, key)
-    log("client_upgrade(%s) done", conn)
+    log("client_upgrade: done")
 
 def parse_response_header(response):
     #parse response:

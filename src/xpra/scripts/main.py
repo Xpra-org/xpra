@@ -1100,7 +1100,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             except ImportError as e:
                 raise InitExit(EXIT_UNSUPPORTED, "cannot handle websocket connection: %s" % e)
             else:
-                client_upgrade(conn)
+                try:
+                    client_host = ":".join(str(x) for x in conn.local[:2])
+                except (ValueError, IndexError):
+                    client_host = None
+                client_upgrade(conn.read, conn.write, client_host)
         return conn
     raise InitException("unsupported display type: %s" % dtype)
 
