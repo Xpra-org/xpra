@@ -95,7 +95,7 @@ def get_interface_info(int sockfd, ifname):
     sysnetfs = "/sys/class/net/%s" % ifname
     if os.path.exists(sysnetfs):
         wireless_path = "%s/wireless" % sysnetfs
-        if os.path.exists(sysnetfs):
+        if os.path.exists(wireless_path):
             info["adapter-type"] = "wireless"
     cdef ifreq ifr
     cdef ethtool_cmd edata
