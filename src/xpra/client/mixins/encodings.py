@@ -66,7 +66,7 @@ class Encodings(StubClientMixin):
         self.min_speed = opts.min_speed
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
-        load_codecs(encoders=False)
+        load_codecs(encoders=False, video=False)
         vh = getVideoHelper()
         vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
         vh.init()
