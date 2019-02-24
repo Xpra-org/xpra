@@ -1968,17 +1968,16 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 }
 
 XpraClient.prototype._new_window_common = function(packet, override_redirect) {
-	var wid, x, y, w, h, metadata;
-	wid = packet[1];
-	x = packet[2];
-	y = packet[3];
-	w = packet[4];
-	h = packet[5];
-	metadata = packet[6];
+	var wid = packet[1],
+		x = packet[2],
+		y = packet[3],
+		w = packet[4],
+		h = packet[5],
+		metadata = packet[6];
 	if (wid in this.id_to_window)
 		throw new Error("we already have a window " + wid);
 	if (w<=0 || h<=0) {
-		this.error("window dimensions are wrong: "+w+"x"+h);
+		this.error("window dimensions are wrong:", w, h);
 		w, h = 1, 1;
 	}
 	var client_properties = {}
