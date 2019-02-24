@@ -10,7 +10,7 @@ import os
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.net.compression import Compressed
-from xpra.os_util import monotonic_time, BytesIOClass, strtobytes
+from xpra.os_util import monotonic_time, BytesIOClass, strtobytes, bytestostr
 from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID
 from xpra.log import Logger
 
@@ -257,7 +257,7 @@ class WindowsMixin(StubSourceMixin):
             if "png" in self.cursor_encodings:
                 from PIL import Image
                 cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'",
-                          len(cpixels), w, h, name)
+                          len(cpixels), w, h, bytestostr(name))
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
                 buf = BytesIOClass()
                 img.save(buf, "PNG")
@@ -274,7 +274,7 @@ class WindowsMixin(StubSourceMixin):
                 encoding = "raw"
             cursor_data[7] = cpixels
         cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
-                  w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
+                  w, h, (encoding or "empty"), bytestostr(name), serial, delay, self.cursor_encodings)
         args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
         if self.cursor_encodings and encoding:
             args = [encoding] + args

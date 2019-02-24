@@ -109,7 +109,7 @@ def get_cursor_data(hCursor):
         if not GetIconInfoExW(hCursor, byref(iie)):
             raise WindowsError()    #@UndefinedVariable
         name = iie.szResName[:MAX_PATH]
-        cursorlog("wResID=%i, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
+        cursorlog("wResID=%#x, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
         bm = Bitmap()
         if not GetObjectA(ii.hbmColor, sizeof(Bitmap), byref(bm)):
             raise WindowsError()    #@UndefinedVariable
