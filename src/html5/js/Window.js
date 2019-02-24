@@ -735,18 +735,11 @@ XpraWindow.prototype.screen_resized = function() {
 	this.log("window: screen resized");
 	if (this.client.server_is_desktop) {
 		this.match_screen_size();
-		this.handle_resized();
 	}
 	if (this.client.server_is_shadow) {
 		if (Object.keys(this.client.id_to_window).length==1) {
-			//recenter it:
-			if (this.x<=this.client.desktop_width) {
-				this.x = Math.round((this.client.desktop_width-this.w)/2);
-			}
-			if (this.w<=this.client.desktop_height) {
-				this.y = Math.round((this.client.desktop_height-this.h)/2);
-			}
-			this.handle_resized();
+			//single window, recenter it:
+			this.recenter();
 		}
 	}
 	if (this.fullscreen || this.maximized) {
@@ -755,6 +748,25 @@ XpraWindow.prototype.screen_resized = function() {
 	}
 	this.ensure_visible();
 };
+
+XpraWindow.prototype.recenter = function() {
+	var x = this.x,
+		y = this.y;
+	if (this.x<=this.client.desktop_width) {
+		x = Math.round((this.client.desktop_width-this.w)/2);
+	}
+	if (this.w<=this.client.desktop_height) {
+		y = Math.round((this.client.desktop_height-this.h)/2);
+	}
+	if (this.x!=x || this.y!=y) {
+		this.log("window re-centered to:", x, y);
+		this.x = x;
+		this.y = y;
+		this.updateCSSGeometry();
+		this.geometry_cb(this);
+	}
+}
+
 
 XpraWindow.prototype.match_screen_size = function() {
 	var maxw = this.client.desktop_width;
@@ -767,6 +779,7 @@ XpraWindow.prototype.match_screen_size = function() {
 	}
 	else {
 		if (this.client.server_screen_sizes.length==0) {
+			this.recenter();
 			return;
 		}
 		//try to find the best screen size to use,
@@ -802,6 +815,7 @@ XpraWindow.prototype.match_screen_size = function() {
 		this.log("best screen size:", neww, newh);
 	}
 	this.resize(neww, newh);
+	this.handle_resized();
 };
 
 
