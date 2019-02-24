@@ -145,7 +145,8 @@ def configure_logging(options, mode):
     from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
     setloghandler(logging.StreamHandler(to))
     if mode in (
-        "start", "start-desktop", "upgrade", "attach", "shadow", "proxy",
+        "start", "start-desktop", "upgrade", "upgrade-desktop",
+        "attach", "shadow", "proxy",
         "_sound_record", "_sound_play",
         "stop", "print", "showconfig",
         "request-start", "request-start-desktop", "request-shadow",
@@ -298,7 +299,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
         #"attach" does it when it received the session name from the server
-        if mode not in ("attach", "start", "start-desktop", "upgrade", "proxy", "shadow"):
+        if mode not in ("attach", "start", "start-desktop", "upgrade", "upgrade-desktop", "proxy", "shadow"):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
@@ -313,11 +314,12 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         if mode in ("start", "start-desktop", "shadow") and display_is_remote:
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
-        elif (mode in ("start", "start-desktop", "upgrade") and supports_server) or \
+        if (mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and supports_server) or \
             (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
             try:
                 cwd = os.getcwd()
-            except:
+            except OSError:
+                os.chdir("/")
                 cwd = "/"
             env = os.environ.copy()
             start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)

@@ -48,6 +48,9 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBupgrade\fP \fI:[DISPLAY]\fP [...any options accepted by
 \fBxpra start\fP...]
+.HP
+\fBxpra\fP \fBupgrade\-desktop\fP \fI:[DISPLAY]\fP [...any options accepted by
+\fBxpra start\-desktop\fP...]
 .PD
 .\" --------------------------------------------------------------------
 .SH DESCRIPTION
@@ -287,6 +290,10 @@ the name suggests, the main use case is to replace a server running
 against an older version of xpra with a newer version, without having
 to restart your session.  Any currently-running \fBxpra attach\fP
 command will exit and need to be restarted.
+.SS xpra upgrade\-desktop
+Same as \fIupgrade\fP but for servers started using \fIstart\-desktop\fP.
+It is possible to upgrade seamless server into a desktop server
+and vice versa.
 .SS xpra shadow
 This command shadows an existing X11 display. If there is only one
 X11 display active and its number is below 10, it can be auto-detected.

@@ -570,14 +570,19 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if opts.encoding=="help" or "help" in opts.encodings:
         return show_encoding_help(opts)
 
-    assert mode in ("start", "start-desktop", "upgrade", "shadow", "proxy")
+    assert mode in (
+        "start", "start-desktop",
+        "upgrade", "upgrade-desktop",
+        "shadow", "proxy",
+        )
     starting  = mode == "start"
     starting_desktop = mode == "start-desktop"
     upgrading = mode == "upgrade"
+    upgrading_desktop = mode == "upgrade-desktop"
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
-    clobber   = upgrading or opts.use_display
-    start_vfb = not shadowing and not proxying and not clobber
+    clobber   = upgrading or upgrading_desktop or opts.use_display
+    start_vfb = not (shadowing or proxying or clobber)
 
     if shadowing and is_Wayland():
         warn("shadow servers do not support Wayland, switch to X11")
@@ -589,7 +594,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if not shadowing and not starting_desktop:
         opts.rfb_upgrade = 0
 
-    if upgrading or shadowing:
+    if upgrading or upgrading_desktop or shadowing:
         #there should already be one running
         opts.pulseaudio = False
 
@@ -602,7 +607,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             from xpra.scripts.main import guess_X11_display
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
             display_name = guess_X11_display(dotxpra, desktop_display)
-    elif upgrading and not extra_args:
+    elif (upgrading or upgrading_desktop) and not extra_args:
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
         if len(extra_args) > 1:
@@ -634,7 +639,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 # Use the temporary magic value 'S' as marker:
                 display_name = 'S' + str(os.getpid())
 
-    if not shadowing and not proxying and not upgrading and opts.exit_with_children and not opts.start_child:
+    if not (shadowing or proxying or upgrading or upgrading_desktop) and \
+    opts.exit_with_children and not opts.start_child:
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
 
     atexit.register(run_cleanups)
@@ -878,7 +884,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         def noerr(fn, *args):
             try:
                 fn(*args)
-            except:
+            except Exception:
                 pass
         log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name), username, uid, gid)
         if log_filename0 != log_filename1:
@@ -1028,7 +1034,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     else:
         if not check_xvfb():
             return  1
-        assert starting or starting_desktop or upgrading
+        assert starting or starting_desktop or upgrading or upgrading_desktop
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source, close_gdk_display_source
         init_gdk_display_source()
         insert_cleanup(close_gdk_display_source)
@@ -1122,11 +1128,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             log("XShape=%s", X11Window.displayHasXShape())
             app = make_server(clobber)
         else:
-            assert starting_desktop
+            assert starting_desktop or upgrading_desktop
             app = make_desktop_server()
         app.init_virtual_devices(devices)
 
-    if proxying or upgrading:
+    if proxying or upgrading or upgrading_desktop:
         #when proxying or upgrading, don't exec any plain start commands:
         opts.start = opts.start_child = []
     elif opts.exit_with_children:
@@ -1166,8 +1172,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
         if MDNS_EXPOSE_NAME and app.session_name:
             mdns_info["name"] = app.session_name
-        for mode, listen_on in mdns_recs.items():
-            mdns_publish(display_name, mode, listen_on, mdns_info)
+        for mdns_mode, listen_on in mdns_recs.items():
+            mdns_publish(display_name, mdns_mode, listen_on, mdns_info)
 
     del opts
 
@@ -1178,7 +1184,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     try:
         #from here on, we own the vfb, even if we inherited one:
-        if (starting or starting_desktop or upgrading) and clobber:
+        if (starting or starting_desktop or upgrading or upgrading_desktop) and clobber:
             #and it will be killed if exit cleanly:
             xvfb_pid = get_xvfb_pid()
 
