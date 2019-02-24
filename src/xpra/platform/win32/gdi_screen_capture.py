@@ -113,6 +113,9 @@ class GDICapture(object):
     def clean(self):
         if self.disabled_dwm_composition:
             set_dwm_composition(DWM_EC_ENABLECOMPOSITION)
+        self.clean_dc()
+
+    def clean_dc(self):
         dc = self.dc
         wnd = self.wnd
         if dc and wnd:
@@ -160,7 +163,11 @@ class GDICapture(object):
             self.memdc = CreateCompatibleDC(self.dc)
             assert self.memdc, "failed to get a compatible drawing context from %s" % self.dc
         bitmap = CreateCompatibleBitmap(self.dc, width, height)
-        assert bitmap, "failed to get a compatible bitmap from %s" % self.dc
+        if not bitmap:
+            log.error("Error: failed to get a compatible bitmap")
+            log.error(" from drawing context %#x with size %ix%i", self.dc, width, height)
+            self.clean_dc()
+            return None
         r = SelectObject(self.memdc, bitmap)
         if not r:
             log.error("Error: cannot select bitmap object")
@@ -178,8 +185,9 @@ class GDICapture(object):
                 return None
         except Exception as e:
             log("BitBlt error", exc_info=True)
-            log.error("Error: cannot capture screen")
+            log.error("Error: cannot capture screen with BitBlt")
             log.error(" %s", e)
+            self.clean_dc()
             return None
         bitblt_time = time.time()
         log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
@@ -190,6 +198,7 @@ class GDICapture(object):
         r = GetBitmapBits(bitmap, buf_size, ctypes.byref(pixels))
         if not r:
             log.error("Error: failed to copy screen bitmap data")
+            self.clean_dc()
             return None
         if r!=buf_size:
             log.warn("Warning: truncating pixel buffer, got %i bytes but expected %i", r, buf_size)
