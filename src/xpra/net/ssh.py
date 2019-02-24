@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,11 @@ from xpra.platform import get_username
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
-from xpra.os_util import bytestostr, osexpand, monotonic_time, setsid, nomodule_context, umask_context, is_WSL, WIN32, OSX, POSIX
+from xpra.os_util import (
+    bytestostr, osexpand, monotonic_time,
+    setsid, nomodule_context, umask_context,
+    is_WSL, WIN32, OSX, POSIX,
+    )
 from xpra.util import envint, envbool, nonl, engs
 from xpra.log import Logger
 
@@ -100,14 +104,14 @@ def dialog_pass(title="Password Input", prompt="enter password", icon=""):
     cmd = get_xpra_command()+["_pass", nonl(title), nonl(prompt), icon]
     return exec_dialog_subprocess(cmd)
 
-def dialog_confirm(title, prompt, qinfo="", icon="", buttons=[("OK", 1)]):
+def dialog_confirm(title, prompt, qinfo="", icon="", buttons=(("OK", 1),)):
     cmd = get_xpra_command()+["_dialog", nonl(title), nonl(prompt), nonl("\\n".join(qinfo)), icon]
     for label, code in buttons:
         cmd.append(nonl(label))
         cmd.append(str(code))
     return exec_dialog_subprocess(cmd)
 
-def confirm_key(info=[]):
+def confirm_key(info=()):
     if SKIP_UI:
         return False
     from xpra.platform.paths import get_icon_filename
@@ -241,7 +245,9 @@ def ssh_paramiko_connect_to(display_desc):
                     ssh_client.load_system_host_keys()
                     ssh_client.connect(host, port, sock=sock)
                     transport = ssh_client.get_transport()
-                    do_ssh_paramiko_connect_to(transport, host, username, password, host_config or ssh_config.lookup("*"))
+                    do_ssh_paramiko_connect_to(transport, host,
+                                               username, password,
+                                               host_config or ssh_config.lookup("*"))
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
                     conn = SSHProxyCommandConnection(chan, peername, target, socket_info)
@@ -269,7 +275,9 @@ def ssh_paramiko_connect_to(display_desc):
                 log("start_client()", exc_info=True)
                 raise InitException("SSH negotiation failed: %s" % e)
             proxy_host_config = ssh_config.lookup(host)
-            do_ssh_paramiko_connect_to(middle_transport, proxy_host, proxy_username, proxy_password, proxy_host_config or ssh_config.lookup("*"))
+            do_ssh_paramiko_connect_to(middle_transport, proxy_host,
+                                       proxy_username, proxy_password,
+                                       proxy_host_config or ssh_config.lookup("*"))
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
 
@@ -499,7 +507,7 @@ keymd5(host_key),
         log("trying none authentication")
         try:
             transport.auth_none(username)
-        except SSHException as e:
+        except SSHException:
             log("auth_none()", exc_info=True)
 
     def auth_password():
@@ -515,7 +523,7 @@ keymd5(host_key),
         class iauthhandler:
             def __init__(self):
                 self.authcount = 0
-            def handlestuff(self, title, instructions, prompt_list):
+            def handlestuff(self, _title, _instructions, prompt_list):
                 p = []
                 for pent in prompt_list:
                     if self.authcount==0 and password:
@@ -572,7 +580,7 @@ keymd5(host_key),
 
 def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None, socket_dir=None, display_as_args=None):
     from paramiko import SSHException
-    assert len(remote_xpra)>0
+    assert remote_xpra
     log("will try to run xpra from: %s", remote_xpra)
     for xpra_cmd in remote_xpra:
         try:
@@ -650,7 +658,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         elif not display_desc.get("exit_ssh", False) and not OSX:
             kwargs["preexec_fn"] = setsid
         remote_xpra = display_desc["remote_xpra"]
-        assert len(remote_xpra)>0
+        assert remote_xpra
         socket_dir = display_desc.get("socket_dir")
         proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
         display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
@@ -679,7 +687,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         #non-string arguments can make Popen choke,
         #instead of lazily converting everything to a string, we validate the command:
         for x in cmd:
-            if type(x)!=str:
+            if not isinstance(x, str):
                 raise InitException("argument is not a string: %s (%s), found in command: %s" % (x, type(x), cmd))
         password = display_desc.get("password")
         if password and not display_desc.get("is_putty", False):
@@ -704,7 +712,8 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             log.info("executing ssh command: %s" % (" ".join("\"%s\"" % x for x in cmd)))
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
-        raise InitExit(EXIT_SSH_FAILURE, "Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))
+        raise InitExit(EXIT_SSH_FAILURE,
+                       "Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))
     def abort_test(action):
         """ if ssh dies, we don't need to try to read/write from its sockets """
         e = child.poll()
@@ -775,7 +784,9 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         }
     from xpra.net.bytestreams import TwoFileConnection
     target = ssh_target_string(display_desc)
-    conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=target, socktype="ssh", close_cb=stop_tunnel, info=info)
+    conn = TwoFileConnection(child.stdin, child.stdout,
+                             abort_test, target=target,
+                             socktype="ssh", close_cb=stop_tunnel, info=info)
     conn.timeout = 0            #taken care of by abort_test
     conn.process = (child, "ssh", cmd)
     return conn
