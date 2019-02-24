@@ -7,7 +7,7 @@
 import os
 
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
+from xpra.clipboard.clipboard_base import log
 
 
 DEFAULT_LOCAL_SELECTION     = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_LOCAL_SELECTION")
@@ -42,7 +42,7 @@ class TranslatedClipboardProtocolHelper(GDKClipboardProtocolHelper):
         kwargs["clipboards.local"] = [self.local_clipboard]
         #this one can be changed (we send a packet to change the enabled selections)
         kwargs["clipboards.remote"] = [self.remote_clipboard]
-        ClipboardProtocolHelperBase.__init__(self, *args, **kwargs)
+        GDKClipboardProtocolHelper.__init__(self, *args, **kwargs)
 
     def __repr__(self):
         return "TranslatedClipboardProtocolHelper"
