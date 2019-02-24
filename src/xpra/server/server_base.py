@@ -905,12 +905,14 @@ class ServerBase(ServerBaseClass):
                 ss = self._server_sources.get(proto)
                 if not self._closing and not proto._closed and (ss is None or not ss.is_closed()):
                     netlog("invalid packet: %s", packet)
-                    netlog.error("unknown or invalid packet type: %s from %s", packet_type, proto)
+                    netlog.error("Error: unknown or invalid packet type '%s'", packet_type)
+                    netlog.error(" received from %s", proto)
                 if not ss:
                     proto.close()
             self.idle_add(invalid_packet)
         except KeyboardInterrupt:
             raise
-        except:
-            netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
-                         packet_type, handler, exc_info=True)
+        except Exception:
+            netlog.error("Error processing a '%s' packet", packet_type)
+            netlog.error(" received from %s:", proto)
+            netlog.error(" using %s", handler, exc_info=True)
