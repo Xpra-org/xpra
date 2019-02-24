@@ -48,7 +48,7 @@ def info(msg):
     try:
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
-    except:
+    except (IOError, OSError):
         if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_INFO, msg)
@@ -61,7 +61,7 @@ def warn(msg):
     try:
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
-    except:
+    except (IOError, OSError):
         if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_WARNING, msg)
@@ -74,7 +74,7 @@ def error(msg):
     try:
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
-    except:
+    except (IOError, OSError):
         if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_ERR, msg)
@@ -86,12 +86,12 @@ supports_server = LOCAL_SERVERS_SUPPORTED
 if supports_server:
     try:
         from xpra.x11.bindings.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
-    except:
+    except ImportError:
         supports_server = False
 try:
     from xpra.net import mdns
     supports_mdns = bool(mdns)
-except:
+except ImportError:
     supports_mdns = False
 
 
@@ -268,25 +268,40 @@ def do_parse_cmdline(cmdline, defaults):
                       help="program to spawn in server (may be repeated). Default: %default.")
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
-                      help="program to spawn in server, taken into account by the exit-with-children option (may be repeated to run multiple commands). Default: %default.")
+                      help="program to spawn in server,"
+                      +" taken into account by the exit-with-children option"
+                      +" (may be repeated to run multiple commands)."
+                      +" Default: %default.")
     group.add_option("--start-after-connect", action="append",
                       dest="start_after_connect", default=defaults.start_after_connect,
-                      help="program to spawn in server after the first client has connected (may be repeated). Default: %default.")
+                      help="program to spawn in server after the first client has connected (may be repeated)."
+                      +" Default: %default.")
     group.add_option("--start-child-after-connect", action="append",
                       dest="start_child_after_connect", default=defaults.start_child_after_connect,
-                      help="program to spawn in server after the first client has connected, taken into account by the exit-with-children option (may be repeated to run multiple commands). Default: %default.")
+                      help="program to spawn in server after the first client has connected,"
+                      +" taken into account by the exit-with-children option"
+                      +" (may be repeated to run multiple commands)."
+                      +" Default: %default.")
     group.add_option("--start-on-connect", action="append",
                       dest="start_on_connect", default=defaults.start_on_connect,
-                      help="program to spawn in server every time a client connects (may be repeated). Default: %default.")
+                      help="program to spawn in server every time a client connects (may be repeated)."
+                      +" Default: %default.")
     group.add_option("--start-child-on-connect", action="append",
                       dest="start_child_on_connect", default=defaults.start_child_on_connect,
-                      help="program to spawn in server every time a client connects, taken into account by the exit-with-children option (may be repeated). Default: %default.")
+                      help="program to spawn in server every time a client connects,"
+                      +" taken into account by the exit-with-children option (may be repeated)."
+                      +" Default: %default.")
     group.add_option("--start-on-last-client-exit", action="append",
                       dest="start_on_last_client_exit", default=defaults.start_on_last_client_exit,
-                      help="program to spawn in server every time a client disconnects and there are no other clients left (may be repeated). Default: %default.")
+                      help="program to spawn in server every time a client disconnects"
+                      +" and there are no other clients left (may be repeated)."
+                      +" Default: %default.")
     group.add_option("--start-child-on-last-client-exit", action="append",
                       dest="start_child_on_last_client_exit", default=defaults.start_child_on_last_client_exit,
-                      help="program to spawn in server every time a client disconnects and there are no other clients left, taken into account by the exit-with-children option (may be repeated). Default: %default.")
+                      help="program to spawn in server every time a client disconnects"
+                      +" and there are no other clients left,"
+                      +" taken into account by the exit-with-children option (may be repeated)."
+                      +" Default: %default.")
     group.add_option("--exec-wrapper", action="store",
                       dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
                       help="Wrapper for executing commands. Default: %default.")
@@ -301,7 +316,8 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("start-new-commands")
     group.add_option("--start-new-commands", action="store", metavar="yes|no",
                       dest="start_new_commands", default=defaults.start_new_commands,
-                      help="Allows clients to execute new commands on the server. Default: %s." % enabled_str(defaults.start_new_commands))
+                      help="Allows clients to execute new commands on the server."
+                      +" Default: %s." % enabled_str(defaults.start_new_commands))
     legacy_bool_parse("start-via-proxy")
     group.add_option("--start-via-proxy", action="store", metavar="yes|no|auto",
                       dest="start_via_proxy", default=defaults.start_via_proxy,
@@ -309,13 +325,17 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("proxy-start-sessions")
     group.add_option("--proxy-start-sessions", action="store", metavar="yes|no",
                       dest="proxy_start_sessions", default=defaults.proxy_start_sessions,
-                      help="Allows proxy servers to start new sessions on demand. Default: %s." % enabled_str(defaults.proxy_start_sessions))
+                      help="Allows proxy servers to start new sessions on demand."
+                      +" Default: %s." % enabled_str(defaults.proxy_start_sessions))
     group.add_option("--dbus-launch", action="store",
                       dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,
-                      help="Start the session within a dbus-launch context, leave empty to turn off. Default: %default.")
+                      help="Start the session within a dbus-launch context,"
+                      +" leave empty to turn off. Default: %default.")
     group.add_option("--start-env", action="append",
                       dest="start_env", default=list(defaults.start_env or []),
-                      help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % csv(("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")))
+                      help="Define environment variables used with 'start-child' and 'start',"
+                      +" can be specified multiple times. Default: %s." % csv(
+                          ("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")))
     if POSIX:
         legacy_bool_parse("systemd-run")
         group.add_option("--systemd-run", action="store", metavar="yes|no|auto",
@@ -346,10 +366,12 @@ def do_parse_cmdline(cmdline, defaults):
     if POSIX and getuid()==0:
         group.add_option("--uid", action="store",
                           dest="uid", default=defaults.uid,
-                          help="The user id to change to when the server is started by root. Default: %s." % defaults.uid)
+                          help="The user id to change to when the server is started by root."
+                          +" Default: %s." % defaults.uid)
         group.add_option("--gid", action="store",
                           dest="gid", default=defaults.gid,
-                          help="The group id to change to when the server is started by root. Default: %s." % defaults.gid)
+                          help="The group id to change to when the server is started by root."
+                          +" Default: %s." % defaults.gid)
     else:
         ignore({
                 "uid"   : defaults.uid,
@@ -385,7 +407,8 @@ def do_parse_cmdline(cmdline, defaults):
                 })
     group.add_option("--attach", action="store", metavar="yes|no|auto",
                       dest="attach", default=defaults.attach,
-                      help="Attach a client as soon as the server has started (default: %s)" % enabled_or_auto(defaults.attach))
+                      help="Attach a client as soon as the server has started"
+                      +" (default: %s)" % enabled_or_auto(defaults.attach))
 
     legacy_bool_parse("printing")
     legacy_bool_parse("file-transfer")
@@ -427,21 +450,25 @@ def do_parse_cmdline(cmdline, defaults):
     if (supports_server or supports_shadow):
         group.add_option("--exit-with-client", action="store", metavar="yes|no",
                           dest="exit_with_client", default=defaults.exit_with_client,
-                          help="Terminate the server when the last client disconnects. Default: %s" % enabled_str(defaults.exit_with_client))
+                          help="Terminate the server when the last client disconnects."
+                          +" Default: %s" % enabled_str(defaults.exit_with_client))
     else:
         ignore({"exit_with_client" : defaults.exit_with_client})
     group.add_option("--idle-timeout", action="store",
                       dest="idle_timeout", type="int", default=defaults.idle_timeout,
-                      help="Disconnects the client when idle (0 to disable). Default: %s seconds" % defaults.idle_timeout)
+                      help="Disconnects the client when idle (0 to disable)."
+                      +" Default: %s seconds" % defaults.idle_timeout)
     group.add_option("--server-idle-timeout", action="store",
                       dest="server_idle_timeout", type="int", default=defaults.server_idle_timeout,
-                      help="Exits the server when idle (0 to disable). Default: %s seconds" % defaults.server_idle_timeout)
+                      help="Exits the server when idle (0 to disable)."
+                      +" Default: %s seconds" % defaults.server_idle_timeout)
     legacy_bool_parse("fake-xinerama")
     legacy_bool_parse("use-display")
     if supports_server:
         group.add_option("--use-display", action="store", metavar="yes|no",
                           dest="use_display", default=defaults.use_display,
-                          help="Use an existing display rather than starting one with the xvfb command. Default: %s" % enabled_str(defaults.use_display))
+                          help="Use an existing display rather than starting one with the xvfb command."
+                          +" Default: %s" % enabled_str(defaults.use_display))
         group.add_option("--xvfb", action="store",
                           dest="xvfb",
                           default=defaults.xvfb,
@@ -449,11 +476,13 @@ def do_parse_cmdline(cmdline, defaults):
                           help="How to run the headless X server. Default: '%default'.")
         group.add_option("--displayfd", action="store", metavar="FD",
                           dest="displayfd", default=defaults.displayfd,
-                          help="The xpra server will write the display number back on this file descriptor as a newline-terminated string.")
+                          help="The xpra server will write the display number back on this file descriptor"
+                          +" as a newline-terminated string.")
         group.add_option("--fake-xinerama", action="store", metavar="yes|no",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
-                          help="Setup fake xinerama support for the session. Default: %s." % enabled_str(defaults.fake_xinerama))
+                          help="Setup fake xinerama support for the session."
+                          +" Default: %s." % enabled_str(defaults.fake_xinerama))
     else:
         ignore({
             "use-display"   : defaults.use_display,
@@ -463,48 +492,58 @@ def do_parse_cmdline(cmdline, defaults):
             })
     group.add_option("--resize-display", action="store",
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no",
-                      help="Whether the server display should be resized to match the client resolution. Default: %s." % enabled_str(defaults.resize_display))
+                      help="Whether the server display should be resized to match the client resolution."
+                      +" Default: %s." % enabled_str(defaults.resize_display))
     defaults_bind = defaults.bind
     if supports_server or supports_shadow:
         group.add_option("--bind", action="append",
                           dest="bind", default=[],
                           metavar="SOCKET",
-                          help="Listen for connections over %s. You may specify this option multiple times to listen on different locations. Default: %s" % (["unix domain sockets","named pipes"][WIN32], csv(defaults_bind)))
+                          help="Listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")
+                          +" You may specify this option multiple times to listen on different locations."
+                          +" Default: %s" % csv(defaults_bind))
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
                           metavar="[HOST]:[PORT]",
-                          help="Listen for connections over TCP (use --tcp-auth to secure it)."
-                            + " You may specify this option multiple times with different host and port combinations")
+                          help="Listen for connections over TCP."
+                          + " Use --tcp-auth to secure it."
+                          + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-udp", action="append",
                           dest="bind_udp", default=list(defaults.bind_udp or []),
                           metavar="[HOST]:[PORT]",
-                          help="Listen for connections over UDP (use --udp-auth to secure it)."
-                            + " You may specify this option multiple times with different host and port combinations")
+                          help="Listen for connections over UDP."
+                          + " Use --udp-auth to secure it."
+                          + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-ws", action="append",
                           dest="bind_ws", default=list(defaults.bind_ws or []),
                           metavar="[HOST]:[PORT]",
-                          help="Listen for connections over Websocket (use --ws-auth to secure it)."
-                            + " You may specify this option multiple times with different host and port combinations")
+                          help="Listen for connections over Websocket."
+                          + " Use --ws-auth to secure it."
+                          + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-wss", action="append",
                           dest="bind_wss", default=list(defaults.bind_wss or []),
                           metavar="[HOST]:[PORT]",
-                          help="Listen for connections over HTTPS / wss (secure Websocket). Use --wss-auth to secure it."
-                            + " You may specify this option multiple times with different host and port combinations")
+                          help="Listen for connections over HTTPS / wss (secure Websocket)."
+                          + " Use --wss-auth to secure it."
+                          + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-ssl", action="append",
                           dest="bind_ssl", default=list(defaults.bind_ssl or []),
                           metavar="[HOST]:PORT",
-                          help="Listen for connections over SSL. Use --ssl-auth to secure it."
-                            + " You may specify this option multiple times with different host and port combinations")
+                          help="Listen for connections over SSL."
+                          + " Use --ssl-auth to secure it."
+                          + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-ssh", action="append",
                           dest="bind_ssh", default=list(defaults.bind_ssh or []),
                           metavar="[HOST]:PORT",
-                          help="Listen for connections using SSH transport. Use --ssh-auth to secure it."
-                            + " You may specify this option multiple times with different host and port combinations")
+                          help="Listen for connections using SSH transport."
+                          + " Use --ssh-auth to secure it."
+                          + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-rfb", action="append",
                           dest="bind_rfb", default=list(defaults.bind_rfb or []),
                           metavar="[HOST]:PORT",
-                          help="Listen for RFB connections. Use --rfb-auth to secure it."
-                            + " You may specify this option multiple times with different host and port combinations")
+                          help="Listen for RFB connections."
+                          + " Use --rfb-auth to secure it."
+                          + " You may specify this option multiple times with different host and port combinations")
     else:
         ignore({
             "bind"      : defaults.bind,
@@ -518,7 +557,7 @@ def do_parse_cmdline(cmdline, defaults):
             })
     try:
         from xpra.net import vsock
-    except:
+    except ImportError:
         vsock = None
     if vsock:
         group.add_option("--bind-vsock", action="append",
@@ -541,7 +580,8 @@ def do_parse_cmdline(cmdline, defaults):
     if supports_server:
         group.add_option("--pulseaudio", action="store", metavar="yes|no|auto",
                       dest="pulseaudio", default=defaults.pulseaudio,
-                      help="Start a pulseaudio server for the session. Default: %s." % enabled_or_auto(defaults.pulseaudio))
+                      help="Start a pulseaudio server for the session."
+                      +" Default: %s." % enabled_or_auto(defaults.pulseaudio))
         group.add_option("--pulseaudio-command", action="store",
                       dest="pulseaudio_command", default=defaults.pulseaudio_command,
                       help="The command used to start the pulseaudio server. Default: '%default'.")
@@ -553,7 +593,8 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
         group.add_option("--dbus-control", action="store", metavar="yes|no",
                       dest="dbus_control", default=defaults.dbus_control,
-                      help="Allows the server to be controlled via its dbus interface. Default: %s." % enabled_str(defaults.dbus_control))
+                      help="Allows the server to be controlled via its dbus interface."
+                      + " Default: %s." % enabled_str(defaults.dbus_control))
     else:
         ignore({"pulseaudio"            : defaults.pulseaudio,
                 "pulseaudio-command"    : defaults.pulseaudio_command,
@@ -569,7 +610,8 @@ def do_parse_cmdline(cmdline, defaults):
     replace_option("--bwlimit", "--bandwidth-limit")
     group.add_option("--bandwidth-limit", action="store",
                       dest="bandwidth_limit", default=defaults.bandwidth_limit,
-                      help="Limit the bandwidth used. The value is specified in bits per second, use the value '0' to disable restrictions. Default: '%default'.")
+                      help="Limit the bandwidth used. The value is specified in bits per second,"
+                      +" use the value '0' to disable restrictions. Default: '%default'.")
     legacy_bool_parse("bandwidth-detection")
     group.add_option("--bandwidth-detection", action="store",
                       dest="bandwidth_detection", default=defaults.bandwidth_detection,
@@ -578,7 +620,8 @@ def do_parse_cmdline(cmdline, defaults):
     replace_option("--readonly", "--readonly=yes")
     group.add_option("--readonly", action="store", metavar="yes|no",
                       dest="readonly", default=defaults.readonly,
-                      help="Disable keyboard input and mouse events from the clients. Default: %s." % enabled_str(defaults.readonly))
+                      help="Disable keyboard input and mouse events from the clients. "
+                      +" Default: %s." % enabled_str(defaults.readonly))
     legacy_bool_parse("clipboard")
     group.add_option("--clipboard", action="store", metavar="yes|no|clipboard-type",
                       dest="clipboard", default=defaults.clipboard,
@@ -609,7 +652,8 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("mousewheel")
     group.add_option("--mousewheel", action="store",
                       dest="mousewheel", default=defaults.mousewheel,
-                      help="Mouse wheel forwarding, can be used to disable the device or invert some axes. Default: %s." % defaults.webcam)
+                      help="Mouse wheel forwarding, can be used to disable the device or invert some axes."
+                      +" Default: %s." % defaults.webcam)
     from xpra.platform.features import INPUT_DEVICES
     if len(INPUT_DEVICES)>1:
         group.add_option("--input-devices", action="store", metavar="APINAME",
@@ -636,15 +680,18 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("sharing")
     group.add_option("--sharing", action="store", metavar="yes|no",
                       dest="sharing", default=defaults.sharing,
-                      help="Allow more than one client to connect to the same session. Default: %s." % enabled_or_auto(defaults.sharing))
+                      help="Allow more than one client to connect to the same session. "
+                      +" Default: %s." % enabled_or_auto(defaults.sharing))
     legacy_bool_parse("lock")
     group.add_option("--lock", action="store", metavar="yes|no",
                       dest="lock", default=defaults.lock,
-                      help="Prevent sessions from being taken over by new clients. Default: %s." % enabled_or_auto(defaults.lock))
+                      help="Prevent sessions from being taken over by new clients. "
+                      +" Default: %s." % enabled_or_auto(defaults.lock))
     legacy_bool_parse("remote-logging")
     group.add_option("--remote-logging", action="store", metavar="yes|no|both",
                       dest="remote_logging", default=defaults.remote_logging,
-                      help="Forward all the client's log output to the server. Default: %s." % enabled_str(defaults.remote_logging))
+                      help="Forward all the client's log output to the server. "
+                      +" Default: %s." % enabled_str(defaults.remote_logging))
     legacy_bool_parse("speaker")
     legacy_bool_parse("microphone")
     legacy_bool_parse("av-sync")
@@ -668,7 +715,8 @@ def do_parse_cmdline(cmdline, defaults):
                           help=CODEC_HELP % "microphone")
         group.add_option("--sound-source", action="store",
                           dest="sound_source", default=defaults.sound_source,
-                          help="Specifies which sound system to use to capture the sound stream (use 'help' for options)")
+                          help="Specifies which sound system to use to capture the sound stream "
+                          +" (use 'help' for options)")
         group.add_option("--av-sync", action="store",
                           dest="av_sync", default=defaults.av_sync,
                           help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
@@ -699,33 +747,45 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
     group.add_option("--proxy-video-encoders", action="store",
                       dest="proxy_video_encoders", default=defaults.proxy_video_encoders,
-                      help="Specify which video encoders to enable when running a proxy server, to get a list of all the options specify 'help'")
+                      help="Specify which video encoders to enable when running a proxy server,"
+                      +" to get a list of all the options specify 'help'")
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
-                      help="Specify which colourspace conversion modules to enable, to get a list of all the options specify 'help'. Default: %default.")
+                      help="Specify which colourspace conversion modules to enable,"
+                      +" to get a list of all the options specify 'help'. Default: %default.")
     group.add_option("--video-decoders", action="store",
                       dest="video_decoders", default=defaults.video_decoders,
-                      help="Specify which video decoders to enable, to get a list of all the options specify 'help'")
+                      help="Specify which video decoders to enable,"
+                      +" to get a list of all the options specify 'help'")
     group.add_option("--video-scaling", action="store",
                       metavar="SCALING",
                       dest="video_scaling", type="str", default=defaults.video_scaling,
-                      help="How much automatic video downscaling should be used, from 1 (rarely) to 100 (aggressively), 0 to disable. Default: %default.")
+                      help="How much automatic video downscaling should be used,"
+                      +" from 1 (rarely) to 100 (aggressively), 0 to disable."
+                      +" Default: %default.")
     group.add_option("--min-quality", action="store",
                       metavar="MIN-LEVEL",
                       dest="min_quality", type="int", default=defaults.min_quality,
-                      help="Sets the minimum encoding quality allowed in automatic quality setting, from 1 to 100, 0 to leave unset. Default: %default.")
+                      help="Sets the minimum encoding quality allowed in automatic quality setting,"
+                      +" from 1 to 100, 0 to leave unset."
+                      +" Default: %default.")
     group.add_option("--quality", action="store",
                       metavar="LEVEL",
                       dest="quality", type="int", default=defaults.quality,
-                      help="Use a fixed image compression quality - only relevant to lossy encodings, from 1 to 100, 0 to use automatic setting. Default: %default.")
+                      help="Use a fixed image compression quality - only relevant for lossy encodings,"
+                      +" from 1 to 100, 0 to use automatic setting."
+                      +" Default: %default.")
     group.add_option("--min-speed", action="store",
                       metavar="SPEED",
                       dest="min_speed", type="int", default=defaults.min_speed,
-                      help="Sets the minimum encoding speed allowed in automatic speed setting, from 1 to 100, 0 to leave unset. Default: %default.")
+                      help="Sets the minimum encoding speed allowed in automatic speed setting,"
+                      "from 1 to 100, 0 to leave unset. Default: %default.")
     group.add_option("--speed", action="store",
                       metavar="SPEED",
                       dest="speed", type="int", default=defaults.speed,
-                      help="Use image compression with the given encoding speed, from 1 to 100, 0 to use automatic setting. Default: %default.")
+                      help="Use image compression with the given encoding speed,"
+                      +" from 1 to 100, 0 to use automatic setting."
+                      +" Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=defaults.auto_refresh_delay,
                       metavar="DELAY",
@@ -783,21 +843,26 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("desktop-fullscreen")
     group.add_option("--desktop-fullscreen", action="store",
                       dest="desktop_fullscreen", default=defaults.desktop_fullscreen,
-                      help="Make the window fullscreen if it is from a desktop or shadow server, scaling it to fit the screen."
-                            " Default: '%default'.")
+                      help="Make the window fullscreen if it is from a desktop or shadow server,"
+                      +" scaling it to fit the screen."
+                      +" Default: '%default'.")
     group.add_option("--border", action="store",
                       dest="border", default=defaults.border,
                       help="The border to draw inside xpra windows to distinguish them from local windows."
                         "Format: color[,size]. Default: '%default'")
     group.add_option("--title", action="store",
                       dest="title", default=defaults.title,
-                      help="Text which is shown as window title, may use remote metadata variables. Default: '%default'.")
+                      help="Text which is shown as window title, may use remote metadata variables."
+                      +" Default: '%default'.")
     group.add_option("--window-close", action="store",
                           dest="window_close", default=defaults.window_close,
-                          help="The action to take when a window is closed by the client. Valid options are: 'forward', 'ignore', 'disconnect'. Default: '%default'.")
+                          help="The action to take when a window is closed by the client."
+                          +" Valid options are: 'forward', 'ignore', 'disconnect'."
+                          +" Default: '%default'.")
     group.add_option("--window-icon", action="store",
                           dest="window_icon", default=defaults.window_icon,
-                          help="Path to the default image which will be used for all windows (the application may override this)")
+                          help="Path to the default image which will be used for all windows"
+                          +" (the application may override this)")
     if OSX:
         group.add_option("--dock-icon", action="store",
                               dest="dock_icon", default=defaults.dock_icon,
@@ -818,12 +883,13 @@ def do_parse_cmdline(cmdline, defaults):
             extra_text = ""
         parser.add_option("--tray", action="store", metavar="yes|no",
                           dest="tray", default=defaults.tray,
-                          help="Enable Xpra's own system tray menu%s. Default: %s" % (extra_text, enabled_str(defaults.tray)))
+                          help="Enable Xpra's own system tray menu%s." % extra_text
+                          +" Default: %s" % enabled_str(defaults.tray))
         do_legacy_bool_parse(cmdline, "delay-tray")
         parser.add_option("--delay-tray", action="store", metavar="yes|no",
                           dest="delay_tray", default=defaults.delay_tray,
-                          help="Waits for the first events before showing the system tray%s. Default: %s" % (extra_text, enabled_str(defaults.delay_tray)))
-
+                          help="Waits for the first events before showing the system tray%s." % extra_text
+                          +" Default: %s" % enabled_str(defaults.delay_tray))
     group.add_option("--tray-icon", action="store",
                           dest="tray_icon", default=defaults.tray_icon,
                           help="Path to the image which will be used as icon for the system-tray or dock")
@@ -833,7 +899,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--key-shortcut", action="append",
                       dest="key_shortcut", default=[],
                       help="Define key shortcuts that will trigger specific actions."
-                      + "If no shortcuts are defined, it defaults to: \n%s" % ("\n ".join(defaults.key_shortcut or [])))
+                      + "If no shortcuts are defined, it defaults to: \n%s" % ("\n ".join(defaults.key_shortcut or ())))
     legacy_bool_parse("keyboard-sync")
     group.add_option("--keyboard-sync", action="store", metavar="yes|no",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
@@ -862,81 +928,115 @@ def do_parse_cmdline(cmdline, defaults):
     parser.add_option_group(group)
     group.add_option("--ssl", action="store",
                       dest="ssl", default=defaults.ssl,
-                      help="Whether to enable SSL on TCP sockets and for what purpose (requires 'ssl-cert'). Default: '%s'."  % enabled_str(defaults.ssl))
+                      help="Whether to enable SSL on TCP sockets and for what purpose (requires 'ssl-cert')."
+                      +" Default: '%s'."  % enabled_str(defaults.ssl))
     group.add_option("--ssl-key", action="store",
                       dest="ssl_key", default=defaults.ssl_key,
-                      help="Key file to use. Default: '%default'.")
+                      help="Key file to use."
+                      +" Default: '%default'.")
     group.add_option("--ssl-cert", action="store",
                       dest="ssl_cert", default=defaults.ssl_cert,
-                      help="Certifcate file to use. Default: '%default'.")
+                      help="Certifcate file to use."
+                      +" Default: '%default'.")
     group.add_option("--ssl-protocol", action="store",
                       dest="ssl_protocol", default=defaults.ssl_protocol,
-                      help="Specifies which version of the SSL protocol to use. Default: '%default'.")
+                      help="Specifies which version of the SSL protocol to use."+
+                      " Default: '%default'.")
     group.add_option("--ssl-ca-certs", action="store",
                       dest="ssl_ca_certs", default=defaults.ssl_ca_certs,
-                      help="The ca_certs file contains a set of concatenated 'certification authority' certificates, or you can set this to a directory containing CAs files. Default: '%default'.")
+                      help="The ca_certs file contains a set of concatenated 'certification authority' certificates,"
+                      +" or you can set this to a directory containing CAs files."+
+                      " Default: '%default'.")
     group.add_option("--ssl-ca-data", action="store",
                       dest="ssl_ca_data", default=defaults.ssl_ca_data,
-                      help="PEM or DER encoded certificate data, optionally converted to hex. Default: '%default'.")
+                      help="PEM or DER encoded certificate data, optionally converted to hex."
+                      +" Default: '%default'.")
     group.add_option("--ssl-ciphers", action="store",
                       dest="ssl_ciphers", default=defaults.ssl_ciphers,
-                      help="Sets the available ciphers, it should be a string in the OpenSSL cipher list format. Default: '%default'.")
+                      help="Sets the available ciphers, "
+                      +" it should be a string in the OpenSSL cipher list format."
+                      +" Default: '%default'.")
     group.add_option("--ssl-client-verify-mode", action="store",
                       dest="ssl_client_verify_mode", default=defaults.ssl_client_verify_mode,
-                      help="Whether to try to verify the client's certificates and how to behave if verification fails. Default: '%default'.")
+                      help="Whether to try to verify the client's certificates"
+                      +" and how to behave if verification fails."
+                      +" Default: '%default'.")
     group.add_option("--ssl-server-verify-mode", action="store",
                       dest="ssl_server_verify_mode", default=defaults.ssl_server_verify_mode,
-                      help="Whether to try to verify the server's certificates and how to behave if verification fails. Default: '%default'.")
+                      help="Whether to try to verify the server's certificates"
+                      +" and how to behave if verification fails. "
+                      +" Default: '%default'.")
     group.add_option("--ssl-verify-flags", action="store",
                       dest="ssl_verify_flags", default=defaults.ssl_verify_flags,
-                      help="The flags for certificate verification operations. Default: '%default'.")
+                      help="The flags for certificate verification operations."
+                      +" Default: '%default'.")
     group.add_option("--ssl-check-hostname", action="store", metavar="yes|no",
                       dest="ssl_check_hostname", default=defaults.ssl_check_hostname,
-                      help="Whether to match the peer cert's hostname or accept any host, dangerous. Default: '%s'." % enabled_str(defaults.ssl_check_hostname))
+                      help="Whether to match the peer cert's hostname or accept any host, dangerous."
+                      +" Default: '%s'." % enabled_str(defaults.ssl_check_hostname))
     group.add_option("--ssl-server-hostname", action="store", metavar="hostname",
                       dest="ssl_server_hostname", default=defaults.ssl_server_hostname,
-                      help="The server hostname to match. Default: '%default'.")
+                      help="The server hostname to match."
+                      +" Default: '%default'.")
     group.add_option("--ssl-options", action="store", metavar="options",
                       dest="ssl_options", default=defaults.ssl_options,
-                      help="Set of SSL options enabled on this context. Default: '%default'.")
+                      help="Set of SSL options enabled on this context."
+                      +" Default: '%default'.")
 
     group = optparse.OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
     parser.add_option_group(group)
     group.add_option("--env", action="append",
                       dest="env", default=list(defaults.env or []),
-                      help="Define environment variables which will apply to this process and all subprocesses, can be specified multiple times. Default: %s." % csv(("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")))
+                      help="Define environment variables which will apply to this process and all subprocesses,"
+                      +" can be specified multiple times."
+                      +" Default: %s." % csv(
+                          ("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")))
     group.add_option("--challenge-handlers", action="store",
                       dest="challenge_handlers", default=defaults.challenge_handlers,
-                      help="Which handlers to use for processing server authentication challenges. Default: %default.")
+                      help="Which handlers to use for processing server authentication challenges."
+                      +" Default: %default.")
     group.add_option("--password-file", action="append",
                       dest="password_file", default=defaults.password_file,
-                      help="The file containing the password required to connect (useful to secure TCP mode). Default: %s." % csv(defaults.password_file))
+                      help="The file containing the password required to connect"
+                      +" (useful to secure TCP mode)."
+                      +" Default: %s." % csv(defaults.password_file))
     group.add_option("--forward-xdg-open", action="store",
                       dest="forward_xdg_open", default=defaults.forward_xdg_open,
-                      help="Intercept calls to xdg-open and forward them to the client. Default: '%default'.")
+                      help="Intercept calls to xdg-open and forward them to the client."
+                      +" Default: '%default'.")
     group.add_option("--open-command", action="store",
                       dest="open_command", default=defaults.open_command,
-                      help="Command to use to open files and URLs. Default: '%default'.")
+                      help="Command to use to open files and URLs."
+                      +" Default: '%default'.")
     legacy_bool_parse("modal-windows")
     group.add_option("--modal-windows", action="store",
                       dest="modal_windows", default=defaults.modal_windows,
-                      help="Honour modal windows. Default: '%default'.")
+                      help="Honour modal windows."
+                      +" Default: '%default'.")
     group.add_option("--input-method", action="store",
                       dest="input_method", default=defaults.input_method,
-                      help="Which X11 input method to configure for client applications started with start or start-child (default: '%default', options: none, keep, xim, IBus, SCIM, uim)")
+                      help="Which X11 input method to configure for client applications started with start or"
+                      + "start-child (Default: '%default', options: none, keep, xim, IBus, SCIM, uim)")
     group.add_option("--dpi", action="store",
                       dest="dpi", default=defaults.dpi,
-                      help="The 'dots per inch' value that client applications should try to honour, from 10 to 1000 or 0 for automatic setting. Default: %s." % print_number(defaults.dpi))
+                      help="The 'dots per inch' value that client applications should try to honour,"
+                      +" from 10 to 1000 or 0 for automatic setting."
+                      +" Default: %s." % print_number(defaults.dpi))
     group.add_option("--pixel-depth", action="store",
                       dest="pixel_depth", default=defaults.pixel_depth,
-                      help="The bits per pixel of the virtual framebuffer when starting a server (8, 16, 24 or 30), or for rendering when starting a client. Default: %s." % (defaults.pixel_depth or "0 (auto)"))
+                      help="The bits per pixel of the virtual framebuffer when starting a server"
+                      +" (8, 16, 24 or 30), or for rendering when starting a client. "
+                      +" Default: %s." % (defaults.pixel_depth or "0 (auto)"))
     group.add_option("--sync-xvfb", action="store",
                       dest="sync_xvfb", default=defaults.sync_xvfb,
-                      help="How often to synchronize the virtual framebuffer used for X11 seamless servers (0 to disable). Default: %s." % defaults.sync_xvfb)
+                      help="How often to synchronize the virtual framebuffer used for X11 seamless servers "
+                      +"(0 to disable)."
+                      +" Default: %s." % defaults.sync_xvfb)
     group.add_option("--socket-dirs", action="append",
                       dest="socket_dirs", default=[],
-                      help="Directories to look for the socket files in. Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.socket_dirs))
+                      help="Directories to look for the socket files in."
+                      +" Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.socket_dirs))
     default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or the first valid directory in socket-dirs"
     group.add_option("--socket-dir", action="store",
                       dest="socket_dir", default=defaults.socket_dir,
@@ -949,10 +1049,12 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Upgrade TCP sockets to handle SSH connections. Default: '%default'.")
     group.add_option("--rfb-upgrade", action="store",
                       dest="rfb_upgrade", default=defaults.rfb_upgrade,
-                      help="Upgrade TCP sockets to send a RFB handshake after this delay (in seconds). Default: '%default'.")
+                      help="Upgrade TCP sockets to send a RFB handshake after this delay"
+                      +" (in seconds). Default: '%default'.")
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
-                      help="List of categories to enable debugging for (you can also use \"all\" or \"help\", default: '%default')")
+                      help="List of categories to enable debugging for"
+                      +" (you can also use \"all\" or \"help\", default: '%default')")
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
                       help="How to run ssh. Default: '%default'.")
@@ -1000,10 +1102,14 @@ def do_parse_cmdline(cmdline, defaults):
     if POSIX:
         group.add_option("--mmap-group", action="store",
                           dest="mmap_group", default=defaults.mmap_group,
-                          help="When creating the mmap file with the client, set the group permission on the mmap file to this group, use the special value 'auto' to use the same value as the owner of the server socket file we connect to (default: '%default')")
+                          help="When creating the mmap file with the client,"
+                          +" set the group permission on the mmap file to this group,"
+                          +" use the special value 'auto' to use the same value as the owner"
+                          +" of the server socket file we connect to (default: '%default')")
         group.add_option("--socket-permissions", action="store",
                           dest="socket_permissions", default=defaults.socket_permissions,
-                          help="When creating the server unix domain socket, what file access mode to use (default: '%default')")
+                          help="When creating the server unix domain socket,"
+                          +" what file access mode to use (default: '%default')")
     else:
         ignore({"mmap-group"            : defaults.mmap_group,
                 "socket-permissions"    : defaults.socket_permissions,
@@ -1012,38 +1118,47 @@ def do_parse_cmdline(cmdline, defaults):
     replace_option("--enable-pings", "--pings=5")
     group.add_option("--pings", action="store", metavar="yes|no",
                       dest="pings", default=defaults.pings,
-                      help="How often to send ping packets (in seconds, use zero to disable). Default: %s." % defaults.pings)
+                      help="How often to send ping packets (in seconds, use zero to disable)."
+                      +" Default: %s." % defaults.pings)
     group.add_option("--clipboard-filter-file", action="store",
                       dest="clipboard_filter_file", default=defaults.clipboard_filter_file,
-                      help="Name of a file containing regular expressions of clipboard contents that must be filtered out")
+                      help="Name of a file containing regular expressions of clipboard contents "
+                      +" that must be filtered out")
     group.add_option("--local-clipboard", action="store",
                       dest="local_clipboard", default=defaults.local_clipboard,
                       metavar="SELECTION",
-                      help="Name of the local clipboard selection to be synchronized when using the translated clipboard (default: %default)")
+                      help="Name of the local clipboard selection to be synchronized"
+                      +" when using the translated clipboard (default: %default)")
     group.add_option("--remote-clipboard", action="store",
                       dest="remote_clipboard", default=defaults.remote_clipboard,
                       metavar="SELECTION",
-                      help="Name of the remote clipboard selection to be synchronized when using the translated clipboard (default: %default)")
+                      help="Name of the remote clipboard selection to be synchronized"
+                      +" when using the translated clipboard (default: %default)")
     group.add_option("--remote-xpra", action="store",
                       dest="remote_xpra", default=defaults.remote_xpra,
                       metavar="CMD",
-                      help="How to run xpra on the remote host (default: %s)" % (" or ".join(defaults.remote_xpra)))
+                      help="How to run xpra on the remote host."
+                      +" (Default: %s)" % (" or ".join(defaults.remote_xpra)))
     group.add_option("--encryption", action="store",
                       dest="encryption", default=defaults.encryption,
                       metavar="ALGO",
-                      help="Specifies the encryption cipher to use, specify 'help' to get a list of options. (default: None)")
+                      help="Specifies the encryption cipher to use,"
+                      +" specify 'help' to get a list of options. (default: None)")
     group.add_option("--encryption-keyfile", action="store",
                       dest="encryption_keyfile", default=defaults.encryption_keyfile,
                       metavar="FILE",
-                      help="Specifies the file containing the encryption key. (default: '%default')")
+                      help="Specifies the file containing the encryption key."
+                      +" (Default: '%default')")
     group.add_option("--tcp-encryption", action="store",
                       dest="tcp_encryption", default=defaults.tcp_encryption,
                       metavar="ALGO",
-                      help="Specifies the encryption cipher to use for TCP sockets, specify 'help' to get a list of options. (default: None)")
+                      help="Specifies the encryption cipher to use for TCP sockets,"
+                      +" specify 'help' to get a list of options. (default: None)")
     group.add_option("--tcp-encryption-keyfile", action="store",
                       dest="tcp_encryption_keyfile", default=defaults.tcp_encryption_keyfile,
                       metavar="FILE",
-                      help="Specifies the file containing the encryption key to use for TCP sockets. (default: '%default')")
+                      help="Specifies the file containing the encryption key to use for TCP sockets."
+                      +" (default: '%default')")
 
     options, args = parser.parse_args(cmdline[1:])
 
@@ -1082,11 +1197,10 @@ def do_parse_cmdline(cmdline, defaults):
         from xpra.sound.gstreamer_util import NAME_TO_INFO_PLUGIN
         try:
             from xpra.sound.wrapper import query_sound
-            source_plugins = query_sound().strlistget("sources", [])
+            source_plugins = query_sound().strlistget("sources", ())
             source_default = query_sound().strget("source.default", "")
         except Exception as e:
             raise InitInfo(e)
-            source_plugins = []
         if source_plugins:
             raise InitInfo("The following sound source plugins may be used (default: %s):\n" % source_default+
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
@@ -1141,7 +1255,7 @@ def do_parse_cmdline(cmdline, defaults):
             pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
             assert len(pv)==2
             w, h = pv
-            assert w>=0 and h>0 and w<32768 and h<32768
+            assert 0<w<32768 and 0<h<32768
             return w, h
         except:
             raise InitException("invalid %s: %s" % (attribute, v))
@@ -1167,9 +1281,11 @@ def validated_encodings(encodings):
     return validated
 
 def validate_encryption(opts):
-    do_validate_encryption(opts.auth, opts.tcp_auth, opts.encryption, opts.tcp_encryption, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
+    do_validate_encryption(opts.auth, opts.tcp_auth,
+                           opts.encryption, opts.tcp_encryption, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
 
-def do_validate_encryption(auth, tcp_auth, encryption, tcp_encryption, encryption_keyfile, tcp_encryption_keyfile):
+def do_validate_encryption(auth, tcp_auth,
+                           encryption, tcp_encryption, encryption_keyfile, tcp_encryption_keyfile):
     if not encryption and not tcp_encryption:
         #don't bother initializing anything
         return
@@ -1189,46 +1305,51 @@ def do_validate_encryption(auth, tcp_auth, encryption, tcp_encryption, encryptio
     if tcp_encryption and tcp_encryption not in ENCRYPTION_CIPHERS:
         raise InitException("encryption %s is not supported, try: %s" % (tcp_encryption, csv(ENCRYPTION_CIPHERS)))
     if encryption and not encryption_keyfile and not env_key and not auth:
-        raise InitException("encryption %s cannot be used without an authentication module or keyfile (see --encryption-keyfile option)" % encryption)
+        raise InitException("encryption %s cannot be used without an authentication module or keyfile"
+                            +" (see --encryption-keyfile option)" % encryption)
     if tcp_encryption and not tcp_encryption_keyfile and not env_key and not tcp_auth:
-        raise InitException("tcp-encryption %s cannot be used without a tcp authentication module or keyfile (see --tcp-encryption-keyfile option)" % tcp_encryption)
+        raise InitException("tcp-encryption %s cannot be used without a tcp authentication module or keyfile "
+                            +" (see --tcp-encryption-keyfile option)" % tcp_encryption)
     if pass_key and env_key and pass_key==env_key:
         raise InitException("encryption and authentication should not use the same value")
     #discouraged but not illegal:
     #if password_file and encryption_keyfile and password_file==encryption_keyfile:
     #    if encryption:
-    #        raise InitException("encryption %s should not use the same file as the password authentication file" % encryption)
+    #        raise InitException("encryption %s should not use the same file"
+    #                            +" as the password authentication file" % encryption)
     #    elif tcp_encryption:
-    #        raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % tcp_encryption)
+    #        raise InitException("tcp-encryption %s should not use the same file"
+    #                            +" as the password authentication file" % tcp_encryption)
 
 def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     from xpra.sound.wrapper import query_sound
     props = query_sound()
     if not props:
         return ["sound is not supported - gstreamer not present or not accessible"]
-    info = []
+    codec_help = []
     all_speaker_codecs = props.strlistget("decoders")
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
-        info.append("speaker codecs available: %s" % csv(all_speaker_codecs))
-    elif len(invalid_sc):
-        info.append("WARNING: some of the specified speaker codecs are not available: %s" % csv(invalid_sc))
+        codec_help.append("speaker codecs available: %s" % csv(all_speaker_codecs))
+    elif invalid_sc:
+        codec_help.append("WARNING: some of the specified speaker codecs are not available: %s" % csv(invalid_sc))
         for x in invalid_sc:
             speaker_codecs.remove(x)
-    elif len(speaker_codecs)==0:
+    elif not speaker_codecs:
         speaker_codecs += all_speaker_codecs
 
     all_microphone_codecs = props.strlistget("decoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:
-        info.append("microphone codecs available: %s" % csv(all_microphone_codecs))
-    elif len(invalid_mc):
-        info.append("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
+        codec_help.append("microphone codecs available: %s" % csv(all_microphone_codecs))
+    elif invalid_mc:
+        codec_help.append("WARNING: some of the specified microphone codecs are not available:"
+                          +" %s" % csv(invalid_mc))
         for x in invalid_mc:
             microphone_codecs.remove(x)
-    elif len(microphone_codecs)==0:
+    elif not microphone_codecs:
         microphone_codecs += all_microphone_codecs
     return info
 
