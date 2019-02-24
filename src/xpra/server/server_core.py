@@ -806,6 +806,9 @@ class ServerCore(object):
                 peek_data = conn.peek(PEEK_SIZE)
             except (OSError, IOError):
                 pass
+            except ValueError:
+                log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
+                break
             sleep(timeout/4.0)
         line1 = b""
         netlog("socket %s peek: got %i bytes", conn, len(peek_data))
@@ -813,7 +816,7 @@ class ServerCore(object):
             line1 = peek_data.splitlines()[0]
             netlog("socket peek=%s", repr_ellipsized(peek_data, limit=512))
             netlog("socket peek hex=%s", hexstr(peek_data[:128]))
-            netlog("socket peek line1=%s", repr_ellipsized(line1))
+            netlog("socket peek line1=%s", repr_ellipsized(bytestostr(line1)))
         return peek_data, line1
 
     def new_conn_err(self, conn, sock, socktype, socket_info, network_protocol,
@@ -910,7 +913,7 @@ class ServerCore(object):
                 self.make_protocol(socktype, ssl_conn)
             return
 
-        elif socktype=="ws":
+        if socktype=="ws":
             if peek_data:
                 if (self.ssl_mode not in FALSE_OPTIONS) and peek_data[0] in ("\x16", 0x16):
                     if not self._ssl_wrap_socket:
@@ -925,17 +928,17 @@ class ServerCore(object):
             self.start_http_socket(socktype, conn, False, peek_data)
             return
 
-        elif socktype=="rfb" and not peek_data:
+        if socktype=="rfb" and not peek_data:
             self.handle_rfb_connection(conn)
             return
 
-        elif socktype=="ssh":
+        if socktype=="ssh":
             conn = self.handle_ssh_connection(conn)
             if not conn:
                 return
             peek_data = None
 
-        elif (socktype=="tcp" and (self._tcp_proxy or self._ssl_wrap_socket or self.ssh_upgrade)) or \
+        if (socktype=="tcp" and (self._tcp_proxy or self._ssl_wrap_socket or self.ssh_upgrade)) or \
             (socktype in ("tcp", "unix-domain", "named-pipe") and self._html):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websocket adapter:
@@ -1085,11 +1088,18 @@ class ServerCore(object):
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
-        netlog("may_wrap_socket(..) peek_data=%s from %s", binascii.hexlify(peek_data), frominfo)
+        netlog("may_wrap_socket(..) peek_data=%s from %s", repr_ellipsized(bytestostr(peek_data)), frominfo)
+        try:
+            first_char = ord(peek_data[0])
+        except TypeError:
+            first_char = peek_data[0]
+        netlog("may_wrap_socket(..) first char=%#x / %r", first_char, chr(first_char))
+        netlog("may_wrap_socket(..) upgrade options: ssh=%s, ssl=%s, http/ws=%s, tcp proxy=%s",
+               self.ssh_upgrade, bool(self._ssl_wrap_socket), self._html, bool(self._tcp_proxy))
         if self.ssh_upgrade and peek_data[:4]==b"SSH-":
             conn = self.handle_ssh_connection(conn)
             return conn is not None, conn, None
-        if self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
+        if self._ssl_wrap_socket and first_char==0x16:
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
             sock = self._ssl_wrap_socket(sock)
             if sock is None:
@@ -1142,10 +1152,10 @@ class ServerCore(object):
             c = ord(v[0])
         except TypeError:
             c = int(v[0])
-        netlog("guess_header_protocol(%s)", binascii.hexlify(strtobytes(v)))
+        s = bytestostr(v)
+        netlog("guess_header_protocol(%r) first char=%#x", repr_ellipsized(s), c)
         if c==0x16:
             return "ssl", "SSL packet?"
-        s = bytestostr(v)
         if s[:4]=="SSH-":
             return "ssh", "SSH packet"
         if len(s)>=3 and s.split(" ")[0] in ("GET", "POST"):
