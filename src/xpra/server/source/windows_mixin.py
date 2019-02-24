@@ -266,8 +266,10 @@ class WindowsMixin(StubSourceMixin):
                 cpixels = Compressed("png cursor", pngdata, can_inline=True)
                 encoding = "png"
                 if SAVE_CURSORS:
-                    with open("raw-cursor-%#x.png" % serial, "wb") as f:
+                    filename = "raw-cursor-%#x.png" % serial
+                    with open(filename, "wb") as f:
                         f.write(pngdata)
+                    cursorlog("cursor saved to %s", filename)
             elif len(cpixels)>=256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
                 cpixels = self.compressed_wrapper("cursor", pixels)
                 cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
