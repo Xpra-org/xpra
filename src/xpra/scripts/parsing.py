@@ -1327,7 +1327,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     if not props:
         return ["sound is not supported - gstreamer not present or not accessible"]
     codec_help = []
-    all_speaker_codecs = props.strlistget("decoders")
+    all_speaker_codecs = props.strlistget("encoders" if is_server else "decoders")
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
@@ -1339,7 +1339,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     elif not speaker_codecs:
         speaker_codecs += all_speaker_codecs
 
-    all_microphone_codecs = props.strlistget("decoders")
+    all_microphone_codecs = props.strlistget("decoders" if is_server else "encoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:
