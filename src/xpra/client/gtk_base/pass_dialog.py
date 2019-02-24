@@ -26,7 +26,7 @@ pango = import_pango()
 
 class PasswordInputDialogWindow(object):
 
-    def __init__(self, title="Title", prompt="", info=[], icon="", buttons=[]):
+    def __init__(self, title="Title", prompt="", icon=""):
         if is_gtk3():
             self.window = gtk.Window(type=WINDOW_TOPLEVEL)
         else:
