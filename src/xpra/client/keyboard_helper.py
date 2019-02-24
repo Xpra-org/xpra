@@ -18,7 +18,10 @@ LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 
 class KeyboardHelper(object):
 
-    def __init__(self, net_send, keyboard_sync=True, shortcut_modifiers="auto", key_shortcuts=[], raw=False, layout="", layouts=[], variant="", variants=[], options=""):
+    def __init__(self, net_send, keyboard_sync=True,
+                 shortcut_modifiers="auto", key_shortcuts=(),
+                 raw=False, layout="", layouts=(),
+                 variant="", variants=(), options=""):
         self.reset_state()
         self.send = net_send
         self.locked = False
@@ -35,7 +38,9 @@ class KeyboardHelper(object):
         #the platform class which allows us to map the keys:
         from xpra.platform.keyboard import Keyboard
         self.keyboard = Keyboard()
-        log("KeyboardHelper(%s) keyboard=%s", (net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options), self.keyboard)
+        log("KeyboardHelper(%s) keyboard=%s",
+            (net_send, keyboard_sync, key_shortcuts,
+             raw, layout, layouts, variant, variants, options), self.keyboard)
         key_repeat = self.keyboard.get_keyboard_repeat()
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
@@ -72,7 +77,7 @@ class KeyboardHelper(object):
 
     def cleanup(self):
         self.reset_state()
-        def nosend(*args):
+        def nosend(*_args):
             pass
         self.send = nosend
 
@@ -82,7 +87,7 @@ class KeyboardHelper(object):
 
     def parse_shortcuts(self, strs):
         #TODO: maybe parse with re instead?
-        if len(strs)==0:
+        if not strs:
             """ if none are defined, add this as default
             it would be nicer to specify it via OptionParser in main
             but then it would always have to be there with no way of removing it
@@ -159,13 +164,13 @@ class KeyboardHelper(object):
                     args = []
                     for x in all_args.split(","):
                         x = x.strip()
-                        if len(x)==0:
+                        if not x:
                             continue
                         if (x[0]=='"' and x[-1]=='"') or (x[0]=="'" and x[-1]=="'"):
                             args.append(x[1:-1])
-                        elif x=="None":
+                        if x=="None":
                             args.append(None)
-                        elif x.find("."):
+                        if x.find("."):
                             args.append(float(x))
                         else:
                             args.append(int(x))
@@ -232,7 +237,7 @@ class KeyboardHelper(object):
         return False
 
     def _check_shortcut(self, window, key_name, modifiers, depressed, shortcut):
-        (req_mods, action, args) = shortcut
+        req_mods, action, args = shortcut
         extra_modifiers = list(modifiers)
         for rm in req_mods:
             if rm not in modifiers:
@@ -240,7 +245,7 @@ class KeyboardHelper(object):
                 return False
             try:
                 extra_modifiers.remove(rm)
-            except:
+            except ValueError:
                 pass        #same modifier listed twice?
         kmod = self.keyboard.get_keymap_modifiers()[0]
         if not kmod and self.keyboard.modifier_keys:
@@ -258,17 +263,19 @@ class KeyboardHelper(object):
             return False
         log("matched shortcut %s", shortcut)
         if not depressed:
-            """ when the key is released, just ignore it - do NOT send it to the server! """
+            #when the key is released, just ignore it - do NOT send it to the server!
             return True
         try:
             method = getattr(window, action)
-            log("key_handled_as_shortcut(%s,%s,%s,%s) found shortcut=%s, will call %s%s", window, key_name, modifiers, depressed, shortcut, method, args)
+            log("key_handled_as_shortcut(%s,%s,%s,%s) found shortcut=%s, will call %s%s",
+                window, key_name, modifiers, depressed, shortcut, method, args)
         except AttributeError as e:
             log.error("key dropped, invalid method name in shortcut %s: %s", action, e)
             return True
         try:
             method(*args)
-            log("key_handled_as_shortcut(%s,%s,%s,%s) has been handled: %s", window, key_name, modifiers, depressed, method)
+            log("key_handled_as_shortcut(%s,%s,%s,%s) has been handled: %s",
+                window, key_name, modifiers, depressed, method)
         except Exception as e:
             log.error("key_handled_as_shortcut(%s,%s,%s,%s)", window, key_name, modifiers, depressed)
             log.error(" failed to execute shortcut=%s", shortcut)
@@ -303,7 +310,7 @@ class KeyboardHelper(object):
                 if v in l or v is None:
                     return l
                 return [v]+list(l)
-            except:
+            except Exception:
                 if v is not None:
                     return [v]
                 return []
@@ -338,13 +345,22 @@ class KeyboardHelper(object):
         return _print, query, query_struct
 
     def query_xkbmap(self):
-        self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants, self.xkbmap_options = self.get_layout_spec()
+        (
+            self.xkbmap_layout, self.xkbmap_layouts,
+            self.xkbmap_variant, self.xkbmap_variants,
+            self.xkbmap_options,
+            ) = self.get_layout_spec()
         self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct = self.get_keymap_spec()
         self.xkbmap_keycodes = self.get_full_keymap()
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
-        self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self.keyboard.get_keymap_modifiers()
+        (
+            self.xkbmap_mod_meanings,
+            self.xkbmap_mod_managed,
+            self.xkbmap_mod_pointermissing,
+            ) = self.keyboard.get_keymap_modifiers()
         self.update_hash()
-        log("layout=%s, layouts=%s, variant=%s, variants=%s", self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants)
+        log("layout=%s, layouts=%s, variant=%s, variants=%s",
+            self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants)
         log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), self.xkbmap_query_struct)
         log("keycodes=%s", repr_ellipsized(str(self.xkbmap_keycodes)))
         log("x11 keycodes=%s", repr_ellipsized(str(self.xkbmap_x11_keycodes)))
@@ -358,12 +374,17 @@ class KeyboardHelper(object):
             self.query_xkbmap()
 
     def layout_str(self):
-        return " / ".join([bytestostr(x) for x in (self.layout_option or self.xkbmap_layout, self.variant_option or self.xkbmap_variant) if bool(x)])
+        return " / ".join([bytestostr(x) for x in (
+            self.layout_option or self.xkbmap_layout, self.variant_option or self.xkbmap_variant) if bool(x)])
 
 
     def send_layout(self):
-        log("send_layout() layout_option=%s, xkbmap_layout=%s, variant_option=%s, xkbmap_variant=%s, xkbmap_options=%s", self.layout_option, self.xkbmap_layout, self.variant_option, self.xkbmap_variant, self.xkbmap_options)
-        self.send("layout-changed", self.layout_option or self.xkbmap_layout or "", self.variant_option or self.xkbmap_variant or "", self.xkbmap_options or "")
+        log("send_layout() layout_option=%s, xkbmap_layout=%s, variant_option=%s, xkbmap_variant=%s, xkbmap_options=%s",
+            self.layout_option, self.xkbmap_layout, self.variant_option, self.xkbmap_variant, self.xkbmap_options)
+        self.send("layout-changed",
+                  self.layout_option or self.xkbmap_layout or "",
+                  self.variant_option or self.xkbmap_variant or "",
+                  self.xkbmap_options or "")
 
     def send_keymap(self):
         log("send_keymap()")
@@ -419,7 +440,7 @@ class KeyboardHelper(object):
                     kb_info[x] = v
         if self.xkbmap_layout:
             kb_info["layout"] = self.xkbmap_layout
-        if len(kb_info)==0:
+        if not kb_info:
             log.info(" using default keyboard settings")
         else:
             log.info(" keyboard settings: %s", csv("%s=%s" % (std(k), std(v)) for k,v in kb_info.items()))

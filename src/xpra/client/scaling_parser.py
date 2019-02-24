@@ -66,22 +66,22 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=0.1, max_scaling=
             if v.endswith("%"):
                 div = 100
                 v = v[:-1]
-        except:
+        except ValueError:
             pass
         if div==1:
             try:
                 return int(v)       #ie: desktop-scaling=2
-            except:
+            except ValueError:
                 pass
         try:
             return float(v)/div     #ie: desktop-scaling=1.5
-        except:
+        except (ValueError, ZeroDivisionError):
             pass
         #ie: desktop-scaling=3/2, or desktop-scaling=3:2
         pair = v.replace(":", "/").split("/", 1)
         try:
             return float(pair[0])/float(pair[1])
-        except:
+        except (ValueError, ZeroDivisionError):
             pass
         log.warn("Warning: failed to parse scaling value '%s'", v)
         return None

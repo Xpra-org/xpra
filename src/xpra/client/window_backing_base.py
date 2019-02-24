@@ -210,7 +210,8 @@ class WindowBackingBase(object):
                 raise Exception("delta region bucket %s references pixmap data we do not have!" % bucket)
             lwidth, lheight, lrgb_format, seq, ldata = self._delta_pixel_data[bucket]
             assert width==lwidth and height==lheight and delta==seq, \
-                "delta bucket %s data does not match: expected %s but got %s" % (bucket, (width, height, delta), (lwidth, lheight, seq))
+                "delta bucket %s data does not match: expected %s but got %s" % (
+                    bucket, (width, height, delta), (lwidth, lheight, seq))
             assert lrgb_format==rgb_format, "delta region uses %s format, was expecting %s" % (rgb_format, lrgb_format)
             deltalog("delta: xoring with bucket %i", bucket)
             rgb_data = xor_str(img_data, ldata)
@@ -305,7 +306,11 @@ class WindowBackingBase(object):
             return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
         rgb_format = options.strget("rgb_format")
         has_alpha = options.boolget("has_alpha", False)
-        buffer_wrapper, width, height, stride, has_alpha, rgb_format = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.RGB_MODES)
+        (
+            buffer_wrapper,
+            width, height, stride, has_alpha,
+            rgb_format,
+            ) = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.RGB_MODES)
         def free_buffer(*_args):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
@@ -395,7 +400,8 @@ class WindowBackingBase(object):
                     return csc
                 except Exception as e:
                     log("make_csc%s",
-                        (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), exc_info=True)
+                        (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed),
+                        exc_info=True)
                     log.error("Error: failed to create csc instance %s", spec.codec_class)
                     log.error(" for %s to %s: %s", src_format, dst_format, e)
         log.error("Error: no matching CSC module found")
@@ -493,7 +499,9 @@ class WindowBackingBase(object):
                     #and this frame references those, so assume all is well:
                     fire_paint_callbacks(callbacks)
                 else:
-                    fire_paint_callbacks(callbacks, False, "video decoder %s failed to decode %i bytes of %s data" % (vd.get_type(), len(img_data), coding))
+                    fire_paint_callbacks(callbacks, False,
+                                         "video decoder %s failed to decode %i bytes of %s data" % (
+                                             vd.get_type(), len(img_data), coding))
                     log.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)
                     log.error(" %sx%s pixels using %s", width, height, vd.get_type())
                     log.error(" frame options:")
@@ -585,7 +593,7 @@ class WindowBackingBase(object):
                 deltalog("passed compressed data integrity checks: len=%s, md5=%s (type=%s)", l, md5, type(img_data))
             if coding == "mmap":
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
-            elif coding == "rgb24" or coding == "rgb32":
+            elif coding in ("rgb24", "rgb32"):
                 #avoid confusion over how many bytes-per-pixel we may have:
                 rgb_format = options.strget(b"rgb_format")
                 if rgb_format:
@@ -600,7 +608,9 @@ class WindowBackingBase(object):
                     rowstride = width * Bpp
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
-                self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
+                self.paint_with_video_decoder(VIDEO_DECODERS.get(coding),
+                                              coding,
+                                              img_data, x, y, width, height, options, callbacks)
             elif self.jpeg_decoder and coding=="jpeg":
                 self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
             elif coding == "webp":
