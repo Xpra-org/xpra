@@ -80,7 +80,7 @@ class PixmapBacking(GTK2WindowBacking):
                     self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
             else:
                 self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
-        except Exception as e:
+        except RuntimeError as e:
             log("do_init_new_backing_instance()", exc_info=True)
             log.error("Error creating pixmap backing of size %ix%i", w, h)
             log.error(" %s", e)
