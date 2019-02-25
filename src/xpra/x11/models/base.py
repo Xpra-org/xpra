@@ -25,6 +25,7 @@ menulog = Logger("x11", "window", "menu")
 
 
 dbus_helper = None
+query_actions = None
 MENU_FORWARDING = os.environ.get("XPRA_MENU_FORWARDING", "1")=="1"
 if MENU_FORWARDING:
     try:
@@ -32,6 +33,7 @@ if MENU_FORWARDING:
         assert dbus
     except ImportError as e:
         menulog("this build does not include the dbus module, no menu forwarding")
+        MENU_FORWARDING = False
         del e
     else:
         try:
@@ -40,10 +42,11 @@ if MENU_FORWARDING:
             from xpra.dbus.gtk_menuactions import query_actions, query_menu, ACTIONS, MENUS
         except Exception as e:
             menulog("menu actions", exc_info=True)
-            menulog.warn("Warning: menu forwarding is disabled:")
-            menulog.warn(" cannot load dbus helper: %s", e)
+            menulog.warn("Warning: menu forwarding is disabled")
+            menulog.warn(" cannot load dbus helper:",)
+            for msg in str(e).split(": "):
+                menulog.warn(" %s", msg)
             del e
-            MENU_FORWARDING = False
 
 
 X11Window = X11WindowBindings()
@@ -436,7 +439,7 @@ class BaseWindowModel(CoreX11WindowModel):
     def _handle_gtk_app_menu_change(self):
         def nomenu(*_args):
             self._updateprop("menu", {})
-        if not MENU_FORWARDING:
+        if not query_actions:
             nomenu()
         props = self._get_x11_menu_properties()
         if len(props)<5:        #incomplete
