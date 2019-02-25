@@ -858,7 +858,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                      "type"     : protocol,
                      })
         if len(parts) not in (1, 2, 3):
-            error_cb("invalid %s connection string, use %s/[username[:password]@]host[:port][/display] or %s:[username[:password]@]host[:port]" % (protocol * 3))
+            error_cb("invalid %s connection string,\n" % protocol
+                     +" use %s://[username[:password]@]host[:port][/display]\n" % protocol)
         #display (optional):
         if separator=="/" and len(parts)==2:
             parse_remote_display(parts[-1])
