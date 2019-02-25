@@ -112,11 +112,11 @@ def main(script_file, cmdline):
         platform_clean()
         try:
             sys.stdout.close()
-        except:
+        except (IOError, OSError):
             pass
         try:
             sys.stderr.close()
-        except:
+        except (IOError, OSError):
             pass
 
 
@@ -355,7 +355,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                                     ]
                         if r in NO_RETRY:
                             return r
-                        elif r==EXIT_FAILURE:
+                        if r==EXIT_FAILURE:
                             err = "unknown general failure"
                         else:
                             err = EXIT_STR.get(r, r)
@@ -711,7 +711,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                     port_str = port_str[1:]     #ie: "22"
                 host = host[:epos+1]            #ie: "[HOST]"
             else:
-                devsep = host.split("%")        #ie: fe80::c1:ac45:7351:ea69%eth1:14500 -> ["fe80::c1:ac45:7351:ea69", "eth1:14500"]
+                #ie: fe80::c1:ac45:7351:ea69%eth1:14500 -> ["fe80::c1:ac45:7351:ea69", "eth1:14500"]
+                devsep = host.split("%")
                 if len(devsep)==2:
                     parts = devsep[1].split(":", 1)     #ie: "eth1:14500" -> ["eth1", "14500"]
                     if len(parts)==2:
@@ -1282,7 +1283,8 @@ def get_sockpath(display_desc, error_cb):
             )
         display = display_desc["display"]
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE, matching_display=display)
-        sockpath = single_display_match(dir_servers, error_cb, nomatch="cannot find live server for display %s" % display)[-1]
+        sockpath = single_display_match(dir_servers, error_cb,
+                                        nomatch="cannot find live server for display %s" % display)[-1]
     return sockpath
 
 def run_client(error_cb, opts, extra_args, mode):
@@ -1651,7 +1653,7 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
                 continue
             try:
                 v = int(x[1:])
-            except:
+            except ValueError:
                 warn("'%s' does not parse as a display number" % x)
                 continue
             try:
@@ -1677,7 +1679,7 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
                         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                         sock.settimeout(VERIFY_X11_SOCKET_TIMEOUT)
                         sock.connect(sockpath)
-                except:
+                except (IOError, OSError):
                     pass
                 else:
                     #print("found display path '%s'" % socket_path)
@@ -1706,7 +1708,8 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
         xpra_displays = [display for _, display in results]
         displays = list(set(displays)-set(xpra_displays))
         if not displays:
-            raise InitExit(1, "could not detect any live plain X11 displays, only multiple xpra displays: %s" % csv(xpra_displays))
+            raise InitExit(1, "could not detect any live plain X11 displays,\n"
+                           +" only multiple xpra displays: %s" % csv(xpra_displays))
     if current_display:
         return current_display
     if len(displays)!=1:
@@ -1721,7 +1724,7 @@ def no_gtk():
         return
     try:
         assert gtk.ver is None
-    except:
+    except AttributeError:
         #got an exception, probably using the gi bindings
         #which insert a fake gtk module to trigger exceptions
         return
@@ -1836,7 +1839,9 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         matching_display = None
     else:
         matching_display = display_name
-    existing_sockets = set(dotxpra.socket_paths(check_uid=uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
+    existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
+                                                matching_state=dotxpra.LIVE,
+                                                matching_display=matching_display))
     log("start_server_subprocess: existing_sockets=%s", existing_sockets)
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
@@ -1860,7 +1865,8 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
             #ignore access denied error, launchctl runs as root
             import errno
             if e.args[0]!=errno.EACCES:
-                warn("Error: shadow may not start,\n the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
+                warn("Error: shadow may not start,\n"
+                     +" the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
         argfile = os.path.expanduser("~/.xpra/shadow-args")
         with open(argfile, "w") as f:
             f.write('["Xpra", "--no-daemon"')
@@ -2086,15 +2092,13 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         if final_state is DotXpra.DEAD:
             print("xpra at %s has exited." % display)
             return 0
-        elif final_state is DotXpra.UNKNOWN:
+        if final_state is DotXpra.UNKNOWN:
             print("How odd... I'm not sure what's going on with xpra at %s" % display)
             return 1
-        elif final_state is DotXpra.LIVE:
+        if final_state is DotXpra.LIVE:
             print("Failed to shutdown xpra at %s" % display)
             return 1
-        else:
-            assert False, "invalid state: %s" % final_state
-            return 1
+        raise Exception("invalid state: %s" % final_state)
 
     def multimode(displays):
         sys.stdout.write("Trying to %s %i displays:\n" % (mode, len(displays)))
@@ -2124,7 +2128,7 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         if not displays:
             sys.stdout.write("No xpra sessions found\n")
             return 1
-        elif len(displays)==1:
+        if len(displays)==1:
             #fall through, but use the display we found:
             extra_args = displays
         else:
@@ -2189,7 +2193,7 @@ def run_list_mdns(error_cb, extra_args):
     if len(extra_args)<=1:
         try:
             MDNS_WAIT = int(extra_args[0])
-        except:
+        except (IndexError, ValueError):
             MDNS_WAIT = 5
     else:
         error_cb("too many arguments for mode")
