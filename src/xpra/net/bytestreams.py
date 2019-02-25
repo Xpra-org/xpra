@@ -22,14 +22,14 @@ SOCKET_CORK = envbool("XPRA_SOCKET_CORK", LINUX)
 if SOCKET_CORK:
     try:
         assert socket.TCP_CORK>0
-    except (AttributeError, AssertionError) as e:
+    except (AttributeError, AssertionError) as cork_e:
         log.warn("Warning: unable to use TCP_CORK on %s", sys.platform)
-        log.warn(" %s", e)
+        log.warn(" %s", cork_e)
         SOCKET_CORK = False
 SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY", None)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
-SSL_PEEK = PYTHON2 and envbool("XPRA_SSL_PEEK", True)
+SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
 #this is more proper but would break the proxy server:
 SOCKET_SHUTDOWN = envbool("XPRA_SOCKET_SHUTDOWN", False)
 
@@ -108,8 +108,8 @@ def can_retry(e):
 
         abort = ABORT.get(code, code)
         if abort is not None:
-            errno = getattr(e, "errno", None)
-            log("can_retry: %s, args=%s, errno=%s, code=%s, abort=%s", type(e), e.args, errno, code, abort)
+            err = getattr(e, "errno", None)
+            log("can_retry: %s, args=%s, errno=%s, code=%s, abort=%s", type(e), e.args, err, code, abort)
             raise ConnectionClosedException(e)
     if isinstance(e, CLOSED_EXCEPTIONS):
         raise ConnectionClosedException(e)
@@ -461,58 +461,81 @@ def get_socket_options(sock, level, options):
     return opts
 
 
-SSLSocket = None
-if SSL_PEEK:
-    try:
-        #this wrapper class allows us to override the normal ssl.Socket
-        #class so that we can fake peek() support by actually reading from the socket
-        #and caching the result.
-        class SSLSocket(socket._socketobject):
+class SSLPeekFile(object):
+    def __init__(self, fileobj, peeked, update_peek):
+        self.fileobj = fileobj
+        self.peeked = peeked
+        self.update_peek = update_peek
 
-            def __init__(self, sock):
-                socket._socketobject.__init__(self, _sock=sock)
-                #patch recv:
-                self.saved_recv = getattr(self, "recv")
-                setattr(self, "recv", self._recv)
-                self.saved_makefile = getattr(self, "makefile")
-                setattr(self, "makefile", self._makefile)
-                self.peeked = b""
+    def __getattr__(self, attr):
+        if attr=="readline" and self.peeked:
+            return self.readline
+        return getattr(self.fileobj, attr)
 
-            def _recv(self, bufsize, flags=0):
-                #log("_recv(%s, %#x) peeked=%i bytes", bufsize, flags, len(self.peeked))
-                peek = flags & socket.MSG_PEEK
-                if self.peeked:
-                    #we have peek data aleady
-                    if bufsize<len(self.peeked):
-                        r = self.peeked[:bufsize]
+    def readline(self, limit=-1):
+        if self.peeked:
+            newline = self.peeked.find(b"\n")
+            peeked = self.peeked
+            l = len(peeked)
+            if newline==-1:
+                if limit==-1 or limit>l:
+                    #we need to read more until we hit a newline:
+                    if limit==-1:
+                        more = self.fileobj.readline(limit)
                     else:
-                        r = self.peeked
-                    if not peek:
-                        #remove what we return from peek buffer:
-                        if bufsize<len(self.peeked):
-                            self.peeked = self.peeked[bufsize:]
-                        else:
-                            self.peeked = b""
-                    return r
-                r = self.saved_recv(bufsize, flags & (0xffffffff ^ socket.MSG_PEEK))
-                if peek:
-                    self.peeked = r
-                return r
+                        more = self.fileobj.readline(limit-len(self.peeked))
+                    self.peeked = b""
+                    self.update_peek(self.peeked)
+                    return peeked+more
+                read = limit
+            else:
+                if limit<0 or limit>=newline:
+                    read = newline+1
+                else:
+                    read = limit
+            self.peeked = peeked[read:]
+            self.update_peek(self.peeked)
+            return peeked[:read]
+        return self.fileobj.readline(limit)
 
-            def _makefile(self, mode='r', bufsize=-1):
-                from socket import _fileobject
-                fo = _fileobject(self, mode, bufsize)
-                return fo
+class SSLSocketWrapper(object):
+    def __init__(self, sock):
+        self.socket = sock
+        self.peeked = b""
 
-            def __repr__(self):
-                return "SSLSocket(%s)" % self._sock
+    def __getattr__(self, attr):
+        if attr=="makefile":
+            return self.makefile
+        if attr=="recv":
+            return self.recv
+        return getattr(self.socket, attr)
 
-    except Exception as e:
-        ssllog = Logger("ssl")
-        ssllog("ssl peek", exc_info=True)
-        ssllog.warn("Warning: unable to override socket object")
-        ssllog.warn(" SSL peek support will not be available")
-        ssllog.warn(" %s", e)
+    def makefile(self, mode, bufsize=None):
+        fileobj = self.socket.makefile(mode, bufsize)
+        if self.peeked and mode and mode.startswith("r"):
+            return SSLPeekFile(fileobj, self.peeked, self._update_peek)
+        return fileobj
+
+    def _update_peek(self, peeked):
+        self.peeked = peeked
+
+    def recv(self, bufsize, flags=0):
+        if flags & socket.MSG_PEEK:
+            l = len(self.peeked)
+            if l>=bufsize:
+                log("patched_recv() peeking using existing data: %i bytes", bufsize)
+                return self.peeked[:bufsize]
+            v = self.socket.recv(bufsize-l)
+            if v:
+                log("patched_recv() peeked more: %i bytes", len(v))
+                self.peeked += v
+            return self.peeked
+        if self.peeked:
+            peeked = self.peeked[:bufsize]
+            self.peeked = self.peeked[bufsize:]
+            log("patched_recv() non peek, returned already read data")
+            return peeked
+        return self.socket.recv(bufsize, flags)
 
 
 class SSLSocketConnection(SocketConnection):
@@ -532,8 +555,8 @@ class SSLSocketConnection(SocketConnection):
         return SocketConnection.can_retry(self, e)
 
     def enable_peek(self):
-        if SSLSocket:
-            self._socket = SSLSocket(self._socket)
+        assert not isinstance(self._socket, SSLSocketWrapper)
+        self._socket = SSLSocketWrapper(self._socket)
 
     def get_info(self):
         i = SocketConnection.get_info(self)

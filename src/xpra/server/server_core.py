@@ -1177,7 +1177,8 @@ class ServerCore(object):
         if peek_data:
             line1 = peek_data.splitlines()[0]
         http_proto = "http"+["","s"][int(is_ssl)]
-        netlog("start_http_socket(%s, %s, %s, ..) http proto=%s, line1=%r", socktype, conn, is_ssl, http_proto, line1)
+        netlog("start_http_socket(%s, %s, %s, ..) http proto=%s, line1=%r",
+               socktype, conn, is_ssl, http_proto, bytestostr(line1))
         if line1.startswith(b"GET ") or line1.startswith(b"POST "):
             parts = bytestostr(line1).split(" ")
             httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
@@ -1206,7 +1207,8 @@ class ServerCore(object):
                 self.make_protocol(newsocktype, conn, WebSocketProtocol)
             scripts = self.get_http_scripts()
             conn.socktype = "wss" if is_ssl else "ws"
-            WebSocketRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, self._http_headers_dir, scripts)
+            WebSocketRequestHandler(sock, frominfo, new_websocket_client,
+                                    self._www_dir, self._http_headers_dir, scripts)
             return
         except (IOError, ValueError) as e:
             httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=True)
