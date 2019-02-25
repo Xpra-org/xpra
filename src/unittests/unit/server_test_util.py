@@ -128,7 +128,6 @@ class ServerTestUtil(unittest.TestCase):
         cmd = xpra_cmd + cls.default_xpra_args
         pyexename = "python%i" % sys.version_info[0]
         exe = bytestostr(xpra_cmd[0]).rstrip(".exe")
-        print("get_xpra_cmd() exe=%s, cmd=%s, pyexename=%s" % (exe, cmd, pyexename))
         if not (exe.endswith("python") or exe.endswith(pyexename)):
             #prepend python2 / python3:
             cmd = [pyexename] + xpra_cmd + cls.default_xpra_args
