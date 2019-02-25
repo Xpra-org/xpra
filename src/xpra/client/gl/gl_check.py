@@ -90,6 +90,22 @@ def check_functions(*functions):
     else:
         log("All the required OpenGL functions are available: %s " % csv(available))
 
+def get_max_texture_size():
+    from OpenGL.GL import glGetInteger, GL_MAX_TEXTURE_SIZE
+    texture_size = glGetInteger(GL_MAX_TEXTURE_SIZE)
+    log("GL_MAX_TEXTURE_SIZE=%s", texture_size)
+    #this one may be missing?
+    rect_texture_size = texture_size
+    try:
+        from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE
+        rect_texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE)
+    except ImportError as e:
+        log("OpenGL: %s", e)
+        log("using GL_MAX_TEXTURE_SIZE=%s as default", texture_size)
+    else:
+        log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s", rect_texture_size)
+    return min(rect_texture_size, texture_size)
+
 
 def check_PyOpenGL_support(force_enable):
     props = {}
@@ -298,26 +314,7 @@ def check_PyOpenGL_support(force_enable):
             glBindProgramARB, glProgramStringARB
         check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
 
-        try:
-            from OpenGL.GL import GL_MAX_TEXTURE_SIZE
-            texture_size = glGetInteger(GL_MAX_TEXTURE_SIZE)
-            #this one may be missing?
-            rect_texture_size = texture_size
-            try:
-                from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE
-                rect_texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE)
-            except ImportError as e:
-                log("OpenGL: %s", e)
-                log("using GL_MAX_TEXTURE_SIZE=%s as default", texture_size)
-        except Exception as e:
-            emsg = str(e)
-            if hasattr(e, "description"):
-                emsg = e.description
-            gl_check_error("unable to query max texture size: %s" % emsg)
-            return props
-
-        log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
-        texture_size_limit = min(rect_texture_size, texture_size)
+        texture_size_limit = get_max_texture_size()
         props["texture-size-limit"] = int(texture_size_limit)
 
         try:

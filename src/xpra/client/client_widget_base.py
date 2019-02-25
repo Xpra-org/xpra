@@ -37,6 +37,8 @@ class ClientWidgetBase(object):
         #actual size of window (may be different when scaling):
         ww = max(1, ww)
         wh = max(1, wh)
+        if ww>=32768 or wh>=32768:
+            log.warn("Warning: invalid window dimensions %ix%i", ww, wh)
         backing = self._backing
         if backing is None:
             bc = backing_class

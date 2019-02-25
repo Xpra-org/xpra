@@ -57,7 +57,7 @@ from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks, WEBP_PILLOW
 from xpra.client.window_backing_base import WindowBackingBase
-from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe
+from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe, get_max_texture_size
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, YUV2RGB_FULL_shader, RGBP2RGB_shader
 from xpra.client.gl.gl_spinner import draw_spinner
 from xpra.log import Logger
@@ -406,8 +406,12 @@ class GLWindowBackingBase(WindowBackingBase):
             self.gl_init_debug()
 
         if not self.gl_setup:
+            mt = get_max_texture_size()
             w, h = self.size
-            self.gl_marker("Initializing GL context for window size %s, backing size %s", self.render_size, self.size)
+            if w>mt or h>mt:
+                raise Exception("invalid texture dimensions %ix%i, maximum is %i" % (w, h, mt))
+            self.gl_marker("Initializing GL context for window size %s, backing size %s, max texture size=%i",
+                           self.render_size, self.size, mt)
             # Initialize viewport and matrices for 2D rendering
             x, _, _, y = self.offsets
             glViewport(x, y, w, h)
