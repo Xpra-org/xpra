@@ -381,10 +381,8 @@ class CoreX11WindowModel(WindowModelStub):
                 handlers.add(handler)
                 try:
                     handler(self)
-                except Exception as e:
-                    log.error("_read_initial_X11_properties()", exc_info=True)
-                    log.error("Error parsing initial property '%s':", mutable)
-                    log.error(" %s", e)
+                except:
+                    log.error("Error parsing initial property '%s':", mutable, exc_info=True)
 
     def _scrub_x11(self):
         metalog("scrub_x11() x11 properties=%s", self._scrub_x11_properties)
