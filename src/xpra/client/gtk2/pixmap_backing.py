@@ -62,19 +62,29 @@ class PixmapBacking(GTK2WindowBacking):
         if w==0 or h==0:
             #this can happen during cleanup
             return
-        if self._alpha_enabled:
-            self._backing = gdk.Pixmap(None, w, h, 32)
-            screen = self._backing.get_screen()
-            rgba = screen.get_rgba_colormap()
-            if rgba is not None:
-                self._backing.set_colormap(rgba)
+        if w<0 or h<0:
+            log.warn("Warning: invalid backing dimensions %ix%i", w, h)
+            w = max(1, w)
+            h = max(1, h)
+        try:
+            if self._alpha_enabled:
+                self._backing = gdk.Pixmap(None, w, h, 32)
+                screen = self._backing.get_screen()
+                rgba = screen.get_rgba_colormap()
+                if rgba is not None:
+                    self._backing.set_colormap(rgba)
+                else:
+                    #cannot use transparency
+                    log.warn("Warning: cannot display transparency, no RGBA colormap")
+                    self._alpha_enabled = False
+                    self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
             else:
-                #cannot use transparency
-                log.warn("Warning: cannot display transparency, no RGBA colormap")
-                self._alpha_enabled = False
                 self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
-        else:
-            self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
+        except Exception as e:
+            log("do_init_new_backing_instance()", exc_info=True)
+            log.error("Error creating pixmap backing of size %ix%i", w, h)
+            log.error(" %s", e)
+            self._backing = None
 
     def copy_backing(self, old_backing):
         w, h = self.size
