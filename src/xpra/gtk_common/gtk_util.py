@@ -722,6 +722,10 @@ else:
 
     def set_clipboard_data(clipboard, thevalue, vtype="STRING"):
         TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
+        if WIN32:
+            if vtype in TEXT_TARGETS:
+                clipboard.set_text(thevalue, len(thevalue))
+            return
         if OSX and vtype in TEXT_TARGETS:
             clipboard.set_text(thevalue, len(thevalue))
             return
