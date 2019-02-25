@@ -303,7 +303,9 @@ class GLWindowBackingBase(WindowBackingBase):
         else:
             self.texture_pixel_format = GL_RGB
         log("init_formats() texture pixel format=%s, internal format=%s, rgb modes=%s",
-            CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format), INTERNAL_FORMAT_TO_STR.get(self.internal_format), self.RGB_MODES)
+            CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format),
+            INTERNAL_FORMAT_TO_STR.get(self.internal_format),
+            self.RGB_MODES)
 
     def get_encoding_properties(self):
         props = WindowBackingBase.get_encoding_properties(self)
@@ -328,10 +330,7 @@ class GLWindowBackingBase(WindowBackingBase):
         log(*msg)
         if not bool(glStringMarkerGREMEDY):
             return
-        try:
-            s = "%s" % msg
-        except:
-            s = str(msg)
+        s = str(msg)
         c_string = c_char_p(s)
         glStringMarkerGREMEDY(0, c_string)
 
@@ -552,10 +551,12 @@ class GLWindowBackingBase(WindowBackingBase):
                     if h<=0:
                         continue        #nothing left!
                 if x+xdelta<0:
-                    fail("horizontal scroll by %i: rectangle %s overflows the backing buffer size %s" % (xdelta, (x, y, w, h), self.size))
+                    fail("horizontal scroll by %i:" % xdelta
+                         +" rectangle %s overflows the backing buffer size %s" % ((x, y, w, h), self.size))
                     continue
                 if y+ydelta<0:
-                    fail("vertical scroll by %i: rectangle %s overflows the backing buffer size %s" % (ydelta, (x, y, w, h), self.size))
+                    fail("vertical scroll by %i:" % ydelta
+                         +" rectangle %s overflows the backing buffer size %s" % ((x, y, w, h), self.size))
                     continue
                 #opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
                 glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
