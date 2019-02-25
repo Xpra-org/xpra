@@ -229,6 +229,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             headers = {}
             content_type = EXTENSION_TO_MIMETYPE.get(ext)
             if not content_type:
+                if not mimetypes.inited:
+                    mimetypes.init()
                 ctype = mimetypes.guess_type(path, False)
                 if ctype and ctype[0]:
                     content_type = ctype[0]
