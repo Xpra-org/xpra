@@ -35,8 +35,7 @@ def reaper_cleanup():
     s = singleton
     if not s:
         return
-    s.reap()
-    s.poll()
+    singleton.cleanup()
     singleton = None
 
 
@@ -96,6 +95,12 @@ class ChildReaper(object):
                 self.check()
                 return False # Only call once
             self.glib.timeout_add(0, check_once)
+
+    def cleanup(self):
+        self.reap()
+        self.poll()
+        self._proc_info = []
+        self._quit = None
 
     def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
         pid = process.pid
