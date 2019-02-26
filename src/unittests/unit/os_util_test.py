@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import unittest
 
-from xpra.os_util import strtobytes, bytestostr, memoryview_to_bytes, OSEnvContext
+from xpra.os_util import (
+    strtobytes, bytestostr, memoryview_to_bytes,
+    OSEnvContext,
+    monotonic_time,
+    )
 
 
 class TestOSUtil(unittest.TestCase):
@@ -44,6 +49,16 @@ class TestOSUtil(unittest.TestCase):
         assert os.environ.get("foo")!="bar"
         assert os.environ==env
 
+    def test_monotonic_time(self):
+        for _ in range(100):
+            t1 = monotonic_time()
+            t2 = monotonic_time()
+            assert t1<=t2
+        t1 = monotonic_time()
+        time.sleep(1)
+        t2 = monotonic_time()
+        elapsed = t2-t1
+        assert 0.9<elapsed<2, "expected roughly 1 second but got %.2f" % elapsed
 
 def main():
     unittest.main()
