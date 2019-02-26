@@ -127,7 +127,7 @@ def do_get_platform_info():
             return pp.processor()
         if pp.system() == "Darwin":
             os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
-            command ="sysctl -n machdep.cpu.brand_string"
+            command = ["sysctl", "-n", "machdep.cpu.brand_string"]
             import subprocess
             return subprocess.check_output(command).strip()
         if pp.system() == "Linux":
