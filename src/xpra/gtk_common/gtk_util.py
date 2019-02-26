@@ -441,6 +441,8 @@ if is_gtk3():
         atom = gdk.Atom.intern(target, False)
         return clipboard.wait_for_contents(atom)
 
+    PARAM_READABLE = gobject.ParamFlags.READABLE
+    PARAM_READWRITE = gobject.ParamFlags.READWRITE
 else:
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
@@ -745,6 +747,9 @@ else:
     def wait_for_contents(clipboard, target):
         return clipboard.wait_for_contents(target)
 
+    PARAM_READABLE = gobject.PARAM_READABLE
+    PARAM_READWRITE = gobject.PARAM_READWRITE
+
 #no idea why, but trying to use the threads_init / threads_enter
 #causes deadlocks on win32:
 if WIN32:
@@ -833,9 +838,9 @@ class TrayImageMenuItem(gtk.ImageMenuItem):
 
 ImageMenuItemClass = gtk.ImageMenuItem
 CheckMenuItemClass = gtk.CheckMenuItem
-def CheckMenuItem(*args, **kwargs):
+def CheckMenuItem(label):
     global CheckMenuItemClass
-    return CheckMenuItemClass(*args, **kwargs)
+    return CheckMenuItemClass(label=label)
 
 def set_use_tray_workaround(enabled):
     global CheckMenuItemClass, ImageMenuItemClass

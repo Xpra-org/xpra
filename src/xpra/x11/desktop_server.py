@@ -19,6 +19,7 @@ from xpra.gtk_common.gtk_util import (
     get_screen_sizes, get_root_size,
     get_xwindow,
     display_get_default,
+    PARAM_READABLE, PARAM_READWRITE,
     )
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -66,20 +67,20 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         "iconic": (gobject.TYPE_BOOLEAN,
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
-                   gobject.PARAM_READWRITE),
+                   PARAM_READWRITE),
         "focused": (gobject.TYPE_BOOLEAN,
                        "Is the window focused", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       PARAM_READWRITE),
         "size-hints": (gobject.TYPE_PYOBJECT,
                        "Client hints on constraining its size", "",
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
         "wm-name": (gobject.TYPE_PYOBJECT,
                        "The name of the window manager or session manager", "",
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
         "icon": (gobject.TYPE_PYOBJECT,
                        "The icon of the window manager or session manager", "",
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
         }
 
 

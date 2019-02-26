@@ -11,7 +11,7 @@ from xpra.x11.models.core import CoreX11WindowModel, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.gtk_util import atom_intern
+from xpra.gtk_common.gtk_util import atom_intern, PARAM_READABLE, PARAM_READWRITE
 from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
@@ -72,10 +72,6 @@ WORKSPACE_STR = {WORKSPACE_UNSET    : "UNSET",
                  WORKSPACE_ALL      : "ALL"}
 def workspacestr(w):
     return WORKSPACE_STR.get(w, w)
-
-#aliases to reduce the number of pydev warnings:
-PARAM_READABLE = gobject.PARAM_READABLE
-PARAM_READWRITE = gobject.PARAM_READWRITE
 
 
 class BaseWindowModel(CoreX11WindowModel):

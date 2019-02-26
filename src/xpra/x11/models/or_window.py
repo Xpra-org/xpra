@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 
+from xpra.gtk_common.gtk_util import PARAM_READABLE
 from xpra.x11.common import Unmanageable
 from xpra.x11.models.base import BaseWindowModel, gobject
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
@@ -19,7 +20,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         "override-redirect": (gobject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        True,
-                       gobject.PARAM_READABLE),
+                       PARAM_READABLE),
                         })
     _property_names = BaseWindowModel._property_names + ["override-redirect"]
     _MODELTYPE = "OR-Window"

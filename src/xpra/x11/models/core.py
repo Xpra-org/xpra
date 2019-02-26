@@ -13,6 +13,7 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_xwindow,
     STRUCTURE_MASK, PROPERTY_CHANGE_MASK, FOCUS_CHANGE_MASK, POINTER_MOTION_MASK,
+    PARAM_READABLE, PARAM_READWRITE,
     )
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
@@ -77,10 +78,6 @@ PROPERTIES_DEBUG = [prop_debug.strip()
 
 def sanestr(s):
     return (s or "").strip("\0").replace("\0", " ")
-
-#aliases to reduce the number of pydev warnings:
-PARAM_READABLE = gobject.PARAM_READABLE
-PARAM_READWRITE = gobject.PARAM_READWRITE
 
 
 class CoreX11WindowModel(WindowModelStub):

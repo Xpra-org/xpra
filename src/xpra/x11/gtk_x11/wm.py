@@ -15,6 +15,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, display_get_default, get_xwindow,
     GDKWINDOW_FOREIGN, CLASS_INPUT_ONLY, GDKWindow,
+    PARAM_READABLE,
     )
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.selection import ManagerSelection
@@ -164,10 +165,10 @@ class Wm(gobject.GObject):
     __gproperties__ = {
         "windows": (gobject.TYPE_PYOBJECT,
                     "Set of managed windows (as WindowModels)", "",
-                    gobject.PARAM_READABLE),
+                    PARAM_READABLE),
         "toplevel": (gobject.TYPE_PYOBJECT,
                      "Toplevel container widget for the display", "",
-                     gobject.PARAM_READABLE),
+                     PARAM_READABLE),
         }
     __gsignals__ = {
         # Public use:

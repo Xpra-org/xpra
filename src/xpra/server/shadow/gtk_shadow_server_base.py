@@ -287,8 +287,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return menuitem(title, image, tooltip, cb)
 
     def checkitem(self, title, cb=None, active=False):
-        from xpra.gtk_common.gtk_util import CheckMenuItemClass
-        check_item = CheckMenuItemClass(title)
+        from xpra.gtk_common.gtk_util import CheckMenuItem
+        check_item = CheckMenuItem(title)
         check_item.set_active(active)
         if cb:
             check_item.connect("toggled", cb)
@@ -327,7 +327,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.tray_menu_shown = False
 
     def tray_click_callback(self, button, pressed, time=0):
-        traylog("tray_click_callback(%s, %s, %i) tray menu=%s, shown=%s", button, pressed, time, self.tray_menu, self.tray_menu_shown)
+        traylog("tray_click_callback(%s, %s, %i) tray menu=%s, shown=%s",
+                button, pressed, time, self.tray_menu, self.tray_menu_shown)
         if pressed:
             self.close_tray_menu()
         else:

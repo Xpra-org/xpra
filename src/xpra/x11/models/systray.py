@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.x11.models.core import CoreX11WindowModel, gobject
+from xpra.gtk_common.gtk_util import PARAM_READABLE
 from xpra.log import Logger
 
 log = Logger("x11", "window", "tray")
@@ -16,7 +17,7 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         "tray": (gobject.TYPE_BOOLEAN,
                  "Is the window a system tray icon", "",
                  False,
-                 gobject.PARAM_READABLE),
+                 PARAM_READABLE),
                 })
     __gsignals__ = CoreX11WindowModel.__common_signals__.copy()
     _property_names = CoreX11WindowModel._property_names + ["tray"]

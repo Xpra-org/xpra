@@ -25,6 +25,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow, icon_theme_get_default,
     GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
+    PARAM_READABLE, PARAM_READWRITE,
     )
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
 from xpra.log import Logger
@@ -73,11 +74,6 @@ def configure_bits(value_mask):
 VALIDATE_CONFIGURE_REQUEST = envbool("XPRA_VALIDATE_CONFIGURE_REQUEST", False)
 CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP>=0
-
-
-#aliases to reduce the number of pydev warnings:
-PARAM_READABLE = gobject.PARAM_READABLE
-PARAM_READWRITE = gobject.PARAM_READWRITE
 
 
 class WindowModel(BaseWindowModel):
