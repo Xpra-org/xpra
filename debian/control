@@ -103,10 +103,6 @@ Recommends:
 #bionic:        ,libwebp6
 #cosmic:        ,libwebp6
 #buster:        ,libwebp6
-# to make the system tray work again with gnome-shell:
-#bionic:        ,gnome-shell-extension-top-icons-plus
-#buster:        ,gnome-shell-extension-top-icons-plus
-#cosmic:        ,gnome-shell-extension-top-icons-plus
 # audio-related:
         ,gstreamer1.0-pulseaudio
         ,gstreamer1.0-alsa
@@ -185,6 +181,10 @@ Recommends: python-dbus
         ,python-paramiko
 #the start-session GUI:
         ,python-xdg
+# to make the system tray work again with gnome-shell:
+#buster:		,gnome-shell-extension-appindicator
+#bionic:		,gnome-shell-extension-appindicator
+#cosmic:		,gnome-shell-extension-appindicator
 # for webcam support:
 Suggests: python-pyinotify
         ,python-opencv
@@ -242,6 +242,10 @@ Recommends: python3-dbus
         ,python3-paramiko
 #the start-session GUI:
         ,python3-xdg
+# to make the system tray work again with gnome-shell:
+#stretch:        ,gnome-shell-extension-top-icons-plus
+#bionic:        ,gnome-shell-extension-top-icons-plus
+#cosmic:        ,gnome-shell-extension-top-icons-plus
 # for webcam support:
 Suggests:
         ,python3-pyinotify

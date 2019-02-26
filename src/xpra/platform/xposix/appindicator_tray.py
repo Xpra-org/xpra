@@ -51,7 +51,7 @@ def get_application_category(appindicator):
     return v
 
 def can_use_appindicator():
-    return get_appindicator() is not None and is_unity()
+    return get_appindicator() is not None
 
 
 class AppindicatorTray(TrayBase):
