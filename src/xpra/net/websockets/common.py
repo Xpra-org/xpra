@@ -29,13 +29,13 @@ def make_websocket_accept_hash(key):
     accept = sha1(strtobytes(key) + GUID).digest()
     return b64encode(accept)
 
-def client_upgrade(read, write, client_host):
+def client_upgrade(read, write, host, port):
     lines = [b"GET / HTTP/1.1"]
     key = b64encode(uuid.uuid4().bytes)
     headers = HEADERS.copy()
     headers[b"Sec-WebSocket-Key"] = key
-    if client_host:
-        headers[b"Host"] = strtobytes(client_host)
+    if host:
+        headers[b"Host"] = strtobytes("%s:%s" % (host, port))
     for k,v in headers.items():
         lines.append(b"%s: %s" % (k, v))
     lines.append(b"")
