@@ -1,9 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import signal
 import gi
 
 gi.require_version('Gdk', '3.0')                #@UndefinedVariable
@@ -12,6 +11,7 @@ from gi.repository import Gdk                   #@UnresolvedImport
 from gi.repository import GLib                  #@UnresolvedImport
 
 from xpra.os_util import OSX, POSIX
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk3.client_window import ClientWindow
 from xpra.platform.gui import get_xdpi, get_ydpi
@@ -32,12 +32,7 @@ class XpraClient(GTKXpraClient):
 
 
     def install_signal_handlers(self):
-        if POSIX:
-            GLib.unix_signal_add(GLib.PRIORITY_HIGH, signal.SIGINT, self.handle_app_signal, signal.SIGINT)
-            GLib.unix_signal_add(GLib.PRIORITY_HIGH, signal.SIGTERM, self.handle_app_signal, signal.SIGTERM)
-        else:
-            signal.signal(signal.SIGINT, self.handle_app_signal)
-            signal.signal(signal.SIGTERM, self.handle_app_signal)
+        register_os_signals(self.handle_app_signal)
 
     def get_notifier_classes(self):
         ncs = GTKXpraClient.get_notifier_classes(self)

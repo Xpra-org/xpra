@@ -197,8 +197,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.cleanup()
         os._exit(128 + signum)
     def handle_app_signal(self, signum, _frame=None):
-        sys.stderr.write("\ngot signal %s, exiting\n" % SIGNAMES.get(signum, signum))
-        sys.stderr.flush()
+        try:
+            log.info("exiting")
+        except:
+            pass
         signal.signal(signal.SIGINT, self.handle_deadly_signal)
         signal.signal(signal.SIGTERM, self.handle_deadly_signal)
         self.signal_cleanup()
@@ -206,8 +208,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, reason)
 
     def install_signal_handlers(self):
-        signal.signal(signal.SIGINT, self.handle_app_signal)
-        signal.signal(signal.SIGTERM, self.handle_app_signal)
+        def os_signal(signum, _frame=None):
+            try:
+                sys.stderr.write("\n")
+                sys.stderr.flush()
+                log.info("got signal %s", SIGNAMES.get(signum, signum))
+            except:
+                pass
+            self.handle_app_signal(signum)
+        signal.signal(signal.SIGINT, os_signal)
+        signal.signal(signal.SIGTERM, os_signal)
 
     def signal_disconnect_and_quit(self, exit_code, reason):
         log("signal_disconnect_and_quit(%s, %s) exit_on_signal=%s", exit_code, reason, self.exit_on_signal)

@@ -7,9 +7,11 @@
 
 import os.path
 import sys
-import signal
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_pango, import_glib
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_pango, import_glib,
+    register_os_signals,
+    )
 from xpra.os_util import get_util_logger
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, pixbuf_new_from_file, window_defaults,
@@ -136,7 +138,6 @@ class PasswordInputDialogWindow(object):
 
 
 def show_pass_dialog(argv):
-    from xpra.os_util import SIGNAMES
     from xpra.platform.gui import ready as gui_ready
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     from xpra.platform.gui import init as gui_init
@@ -153,12 +154,7 @@ def show_pass_dialog(argv):
     prompt = arg(1)
     icon = arg(2)
     app = PasswordInputDialogWindow(title, prompt, icon)
-    def app_signal(signum, _frame):
-        print("")
-        log.info("got signal %s", SIGNAMES.get(signum, signum))
-        app.quit()
-    signal.signal(signal.SIGINT, app_signal)
-    signal.signal(signal.SIGTERM, app_signal)
+    register_os_signals(app.quit)
     gui_ready()
     app.show()
     return app.run()

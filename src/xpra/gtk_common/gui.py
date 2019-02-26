@@ -8,14 +8,17 @@ import sys
 import os.path
 import subprocess
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, import_glib
-from xpra.platform.paths import get_icon_dir, get_xpra_command
-from xpra.os_util import OSX, WIN32, platform_name
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_gdk, import_pango, import_glib,
+    register_os_signals,
+    )
 from xpra.gtk_common.gtk_util import (
     gtk_main, set_tooltip_text, add_close_accel,
     pixbuf_new_from_file, add_window_accel, imagebutton,
     window_defaults, scaled_image, WIN_POS_CENTER,
     )
+from xpra.platform.paths import get_icon_dir, get_xpra_command
+from xpra.os_util import OSX, WIN32, platform_name
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -132,9 +135,9 @@ class GUI(gtk.Window):
         log("do_quit()")
         gtk.main_quit()
 
-    def app_signal(self, signum, frame):
+    def app_signal(self, signum):
         self.exit_code = 128 + signum
-        log("app_signal(%s, %s) exit_code=%i", signum, frame, self.exit_code)
+        log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.do_quit()
 
 
@@ -464,9 +467,7 @@ def main():
         enable_color()
         init()
         gui = GUI()
-        import signal
-        signal.signal(signal.SIGINT, gui.app_signal)
-        signal.signal(signal.SIGTERM, gui.app_signal)
+        register_os_signals(gui.app_signal)
         ready()
         if OSX:
             from xpra.platform.darwin.gui import wait_for_open_handlers

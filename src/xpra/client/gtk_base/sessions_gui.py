@@ -18,7 +18,10 @@ from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse,
     imagebutton, STATE_NORMAL, WIN_POS_CENTER,
     )
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, import_glib
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_gdk, import_pango, import_glib,
+    register_os_signals,
+    )
 from xpra.net.net_util import if_indextoname
 from xpra.util import typedict
 from xpra.os_util import bytestostr, WIN32
@@ -108,9 +111,9 @@ class SessionsGUI(gtk.Window):
         log("do_quit()")
         gtk.main_quit()
 
-    def app_signal(self, signum, frame):
+    def app_signal(self, signum):
         self.exit_code = 128 + signum
-        log("app_signal(%s, %s) exit_code=%i", signum, frame, self.exit_code)
+        log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.do_quit()
 
 
@@ -434,9 +437,7 @@ def do_main(opts):
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
         enable_color()
         gui = SessionsGUI(opts)
-        import signal
-        signal.signal(signal.SIGINT, gui.app_signal)
-        signal.signal(signal.SIGTERM, gui.app_signal)
+        register_os_signals(gui.app_signal)
         gtk_main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code

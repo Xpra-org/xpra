@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2009-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,19 +12,12 @@ This is a simple GUI for starting the xpra client.
 
 import os.path
 import sys
-import signal
 import traceback
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango, import_glib
-gobject = import_gobject()
-glib = import_glib()
-gtk = import_gtk()
-gdk = import_gdk()
-pango = import_pango()
-
-from xpra.platform.gui import init as gui_init
-gui_init()
-
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_gdk, import_gobject, import_pango, import_glib,
+    register_os_signals,
+    )
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.quit import gtk_main_quit_really
@@ -51,6 +44,12 @@ from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("launcher")
+
+gobject = import_gobject()
+glib = import_glib()
+gtk = import_gtk()
+gdk = import_gdk()
+pango = import_pango()
 
 #what we save in the config file:
 SAVED_FIELDS = [
@@ -1126,10 +1125,10 @@ def do_main(argv):
     from xpra.os_util import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-    gtk_main_quit_on_fatal_exceptions_enable()
+    from xpra.platform.gui import init as gui_init, ready as gui_ready
 
-    from xpra.platform.gui import ready as gui_ready
     gui_init()
+    gtk_main_quit_on_fatal_exceptions_enable()
     try:
         from xpra.scripts.parsing import parse_cmdline, fixup_debug_option
         options, args = parse_cmdline(argv)
@@ -1152,18 +1151,12 @@ def do_main(argv):
 
     try:
         app = ApplicationWindow()
-        def app_signal(signum, _frame):
-            print("")
-            log("got signal %s" % SIGNAMES.get(signum, signum))
-            def show_signal():
-                app.show()
-                app.client.cleanup()
-                glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
-                glib.timeout_add(1000, app.set_info_color, True)
-            #call from UI thread:
-            glib.idle_add(show_signal)
-        signal.signal(signal.SIGINT, app_signal)
-        signal.signal(signal.SIGTERM, app_signal)
+        def handle_signal(signum):
+            app.show()
+            app.client.cleanup()
+            glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+            glib.timeout_add(1000, app.set_info_color, True)
+        register_os_signals(handle_signal)
         has_file = len(args) == 1
         if has_file:
             app.update_options_from_file(args[0])

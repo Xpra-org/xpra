@@ -7,9 +7,11 @@
 
 import os.path
 import sys
-import signal
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_pango, import_glib
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_pango, import_glib,
+    register_os_signals,
+    )
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
     window_defaults, color_parse, is_gtk3,
@@ -161,12 +163,7 @@ def show_confirm_dialog(argv):
         buttons.append((label, code))
         n += 2
     app = ConfirmDialogWindow(title, prompt, info, icon, buttons)
-    def app_signal(signum, _frame):
-        print("")
-        log.info("got signal %s", SIGNAMES.get(signum, signum))
-        app.quit()
-    signal.signal(signal.SIGINT, app_signal)
-    signal.signal(signal.SIGTERM, app_signal)
+    register_os_signals(app.quit)
     gui_ready()
     app.show()
     return app.run()

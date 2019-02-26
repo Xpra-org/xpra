@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-import signal
 
 
 def main(argv=()):
@@ -14,26 +13,20 @@ def main(argv=()):
         from xpra.log import enable_color
         enable_color()
 
-        from xpra.log import Logger, enable_debug_for
-        log = Logger("util")
+        from xpra.log import enable_debug_for
         #logging init:
         if "-v" in argv:
             enable_debug_for("util")
 
-        from xpra.os_util import SIGNAMES
         from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
         gtk_main_quit_on_fatal_exceptions_enable()
 
         from xpra.client.gtk_base.bug_report import BugReport
+        from xpra.gtk_common.gobject_compat import register_os_signals
         app = BugReport()
         app.close = app.quit
         app.init(True)
-        def app_signal(signum, _frame):
-            print("")
-            log.info("got signal %s", SIGNAMES.get(signum, signum))
-            app.quit()
-        signal.signal(signal.SIGINT, app_signal)
-        signal.signal(signal.SIGTERM, app_signal)
+        register_os_signals(app.quit)
         try:
             from xpra.platform.gui import ready as gui_ready
             gui_ready()

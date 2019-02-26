@@ -11,8 +11,11 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, pixbuf_new_from_file, gtk_main, image_new_from_stock,
     ICON_SIZE_BUTTON,
     )
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_pango, import_glib,
+    register_os_signals,
+    )
 from xpra.platform.paths import get_icon_dir
-from xpra.gtk_common.gobject_compat import import_gtk, import_pango, import_glib
 from xpra.log import Logger
 
 log = Logger("util")
@@ -64,9 +67,7 @@ class AuthDialog(gtk.Window):
         hbox.add(self.btn("Accept", gtk.STOCK_OK, self.accept))
         self.vbox.add(al)
 
-        import signal
-        signal.signal(signal.SIGINT, self.app_signal)
-        signal.signal(signal.SIGTERM, self.app_signal)
+        register_os_signals(self.app_signal)
         self.show_all()
 
     def btn(self, label, stock_icon, callback):
@@ -105,9 +106,9 @@ class AuthDialog(gtk.Window):
         log("do_quit()")
         gtk.main_quit()
 
-    def app_signal(self, signum, _frame):
+    def app_signal(self, signum):
         self.exit_code = 128 + signum
-        log("app_signal(%s, %s) exit_code=%i", signum, _frame, self.exit_code)
+        log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.do_quit()
 
 

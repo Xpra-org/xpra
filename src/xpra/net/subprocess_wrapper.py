@@ -5,10 +5,9 @@
 
 import os
 import sys
-import signal
 import subprocess
 
-from xpra.gtk_common.gobject_compat import import_glib
+from xpra.gtk_common.gobject_compat import import_glib, register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException
@@ -34,8 +33,6 @@ DEBUG_WRAPPER = envbool("XPRA_WRAPPER_DEBUG", False)
 HEXLIFY_PACKETS = envbool("XPRA_HEXLIFY_PACKETS", False)
 #avoids showing a new console window on win32:
 WIN32_SHOWWINDOW = envbool("XPRA_WIN32_SHOWWINDOW", False)
-#this used to cause problems with py3k / gi bindings?
-HANDLE_SIGINT = envbool("XPRA_WRAPPER_SIGINT", True)
 
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
 if FAULT_RATE>0:
@@ -85,10 +82,7 @@ class subprocess_callee(object):
         self.wrapped_object = wrapped_object
         self.send_queue = Queue()
         self.protocol = None
-        if HANDLE_SIGINT:
-            #this breaks gobject3!
-            signal.signal(signal.SIGINT, self.handle_signal)
-        signal.signal(signal.SIGTERM, self.handle_signal)
+        register_os_signals(self.handle_signal)
         self.setup_mainloop()
 
     def setup_mainloop(self):
@@ -196,25 +190,21 @@ class subprocess_callee(object):
         log("stop() stopping mainloop %s", self.mainloop)
         self.mainloop.quit()
 
-    def handle_signal(self, sig, frame):
+    def handle_signal(self, sig):
         """ This is for OS signals SIGINT and SIGTERM """
         #next time, just stop:
-        signal.signal(signal.SIGINT, self.signal_stop)
-        signal.signal(signal.SIGTERM, self.signal_stop)
+        register_os_signals(self.signal_stop)
         signame = SIGNAMES.get(sig, sig)
-        try:
-            log("handle_signal(%s, %s) calling stop from main thread", signame, frame)
-        except:
-            pass        #may fail if we were doing IO logging when the signal was received
+        log("handle_signal(%s) calling stop from main thread", signame)
         self.send("signal", signame)
         self.timeout_add(0, self.cleanup)
         #give time for the network layer to send the signal message
         self.timeout_add(150, self.stop)
 
-    def signal_stop(self, sig, frame):
+    def signal_stop(self, sig):
         """ This time we really want to exit without waiting """
         signame = SIGNAMES.get(sig, sig)
-        log("signal_stop(%s, %s) calling stop", signame, frame)
+        log("signal_stop(%s) calling stop", signame)
         self.stop()
 
 

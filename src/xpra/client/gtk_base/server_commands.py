@@ -4,15 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-import os.path
 import sys
-import signal
+import os.path
 
-from xpra.platform.gui import init as gui_init
-gui_init()
-
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_pango
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_gdk, import_glib, import_pango,
+    register_os_signals,
+    )
 from xpra.os_util import monotonic_time
 from xpra.util import AdHocStruct, typedict
 from xpra.gtk_common.gtk_util import (
@@ -222,13 +220,13 @@ class ServerCommandsWindow(object):
 
 def main():
     from xpra.platform import program_context
-    from xpra.platform.gui import ready as gui_ready
+    from xpra.platform.gui import ready as gui_ready, init as gui_init
+    gui_init()
     with program_context("Start-New-Command", "Start New Command"):
         #logging init:
         if "-v" in sys.argv:
             enable_debug_for("util")
 
-        from xpra.os_util import SIGNAMES
         from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
         gtk_main_quit_on_fatal_exceptions_enable()
 
@@ -265,12 +263,7 @@ def main():
 
         app = ServerCommandsWindow(client)
         app.hide = app.quit
-        def app_signal(signum, _frame):
-            print("")
-            log.info("got signal %s", SIGNAMES.get(signum, signum))
-            app.quit()
-        signal.signal(signal.SIGINT, app_signal)
-        signal.signal(signal.SIGTERM, app_signal)
+        register_os_signals(app.quit)
         try:
             gui_ready()
             app.show()

@@ -163,18 +163,12 @@ def main():
         if "-v" in sys.argv:
             enable_debug_for("util")
 
-        from xpra.os_util import SIGNAMES
         from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
         gtk_main_quit_on_fatal_exceptions_enable()
 
         app = UpdateStatusWindow()
         app.close = app.quit
-        def app_signal(signum, _frame):
-            print("")
-            log.info("got signal %s", SIGNAMES.get(signum, signum))
-            app.quit()
-        signal.signal(signal.SIGINT, app_signal)
-        signal.signal(signal.SIGTERM, app_signal)
+        register_os_signals(app.quit)
         try:
             gui_ready()
             app.show()

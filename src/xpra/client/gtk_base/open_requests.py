@@ -7,12 +7,11 @@
 
 import os.path
 import sys
-import signal
 
-from xpra.platform.gui import init as gui_init
-gui_init()
-
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_pango
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_gdk, import_glib, import_pango,
+    register_os_signals,
+    )
 from xpra.os_util import monotonic_time, bytestostr, get_util_logger
 from xpra.simple_stats import std_unit_dec
 from xpra.gtk_common.gtk_util import (
@@ -229,14 +228,14 @@ class OpenRequestsWindow(object):
 
 def main():
     from xpra.platform import program_context
-    from xpra.platform.gui import ready as gui_ready
+    from xpra.platform.gui import init as gui_init, ready as gui_ready
+    gui_init()
     with program_context("Start-New-Command", "Start New Command"):
         #logging init:
         if "-v" in sys.argv:
             from xpra.log import enable_debug_for
             enable_debug_for("util")
 
-        from xpra.os_util import SIGNAMES
         from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
         gtk_main_quit_on_fatal_exceptions_enable()
 
@@ -248,12 +247,7 @@ def main():
         app.add_request(cb, "3", "file", "document.pdf", 32768, True, False, 200)
         app.add_request(cb, "4", "url", "https://xpra.org/", 0, False, True, 300)
         app.hide = app.quit
-        def app_signal(signum, _frame):
-            print("")
-            log.info("got signal %s", SIGNAMES.get(signum, signum))
-            app.quit()
-        signal.signal(signal.SIGINT, app_signal)
-        signal.signal(signal.SIGTERM, app_signal)
+        register_os_signals(app.quit)
         try:
             gui_ready()
             app.show()

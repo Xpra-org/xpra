@@ -10,7 +10,10 @@ import os.path
 
 from xpra.util import flatten_dict
 from xpra.os_util import monotonic_time, BytesIOClass
-from xpra.gtk_common.gobject_compat import import_gdk, import_glib, is_gtk3
+from xpra.gtk_common.gobject_compat import (
+    import_gdk, import_glib, is_gtk3,
+    register_os_signals,
+    )
 from xpra.gtk_common.quit import (
     gtk_main_quit_really,
     gtk_main_quit_on_fatal_exceptions_enable,
@@ -53,6 +56,9 @@ class GTKServerBase(ServerBase):
         display = display_get_default()
         keymap = keymap_get_for_display(display)
         keymap.connect("keys-changed", self._keys_changed)
+
+    def install_signal_handlers(self, callback):
+        register_os_signals(callback)
 
     def signal_quit(self, signum, frame=None):
         gtk_main_quit_on_fatal_exceptions_disable()

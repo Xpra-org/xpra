@@ -7,21 +7,21 @@
 
 import os.path
 import sys
-import signal
-
-from xpra.platform.gui import init as gui_init
-gui_init()
 
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
     window_defaults, WIN_POS_CENTER,
     )
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, import_pango
+from xpra.gtk_common.gobject_compat import (
+    import_gtk, import_gdk, import_gobject, import_pango, import_glib,
+    register_os_signals,
+    )
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("exec")
 
+glib = import_glib()
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
@@ -188,25 +188,20 @@ class StartNewCommand(object):
 
 
 def main():
+    from xpra.platform.gui import init as gui_init, ready as gui_ready
     from xpra.platform import program_context
-    from xpra.platform.gui import ready as gui_ready
+    gui_init()
     with program_context("Start-New-Command", "Start New Command"):
         #logging init:
         if "-v" in sys.argv:
             enable_debug_for("util")
 
-        from xpra.os_util import SIGNAMES
         from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
         gtk_main_quit_on_fatal_exceptions_enable()
 
         app = StartNewCommand()
         app.hide = app.quit
-        def app_signal(signum, _frame):
-            print("")
-            log.info("got signal %s", SIGNAMES.get(signum, signum))
-            app.quit()
-        signal.signal(signal.SIGINT, app_signal)
-        signal.signal(signal.SIGTERM, app_signal)
+        register_os_signals(app.quit)
         try:
             gui_ready()
             app.show()

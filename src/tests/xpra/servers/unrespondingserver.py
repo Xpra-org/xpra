@@ -93,7 +93,7 @@ def main():
         app = UnrespondingServer()
         app.init(opts)
         app.init_sockets(sockets)
-        signal.signal(signal.SIGTERM, app.signal_quit)
+        register_os_signals(app.signal_quit)
         signal.signal(signal.SIGINT, app.signal_quit)
         return app.run()
     finally:
