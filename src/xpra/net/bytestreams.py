@@ -546,7 +546,7 @@ class SSLSocketConnection(SocketConnection):
             reason = getattr(e, "reason", None)
             if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):
                 return False
-        message = getattr(e, "message", None)
+        message = e.args[0]
         if message in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
             return True
         code = getattr(e, "code", None)
