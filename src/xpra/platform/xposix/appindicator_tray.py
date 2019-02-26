@@ -9,7 +9,7 @@
 import os
 
 from xpra.util import envbool
-from xpra.os_util import is_unity, monotonic_time, getUbuntuVersion, PYTHON2, PYTHON3
+from xpra.os_util import is_unity, is_gnome, monotonic_time, getUbuntuVersion, PYTHON2, PYTHON3
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename
 from xpra.log import Logger
@@ -51,7 +51,7 @@ def get_application_category(appindicator):
     return v
 
 def can_use_appindicator():
-    return get_appindicator() is not None
+    return get_appindicator() is not None and (is_unity() or is_gnome())
 
 
 class AppindicatorTray(TrayBase):
