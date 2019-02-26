@@ -218,7 +218,8 @@ def init_server_mmap(mmap_filename, mmap_size=0):
         if not WIN32:
             actual_mmap_size = os.path.getsize(mmap_filename)
             if mmap_size and actual_mmap_size!=mmap_size:
-                log.warn("Warning: expected mmap file '%s' of size %i but got %i", mmap_filename, mmap_size, actual_mmap_size)
+                log.warn("Warning: expected mmap file '%s' of size %i but got %i",
+                         mmap_filename, mmap_size, actual_mmap_size)
             mmap_area = mmap.mmap(f.fileno(), mmap_size)
         else:
             if mmap_size==0:
@@ -226,6 +227,7 @@ def init_server_mmap(mmap_filename, mmap_size=0):
                 log.error(" try updating your client version?")
             mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
             actual_mmap_size = mmap_size
+        f.close()
         return mmap_area, actual_mmap_size
     except Exception as e:
         log.error("cannot use mmap file '%s': %s", mmap_filename, e, exc_info=True)
@@ -301,12 +303,12 @@ def mmap_write(mmap_area, mmap_size, data):
         log.warn("Warning: mmap area is too small!")
         log.warn(" we need to store %s bytes but the mmap area is limited to %i", l, (mmap_size-8))
         return None, mmap_free_size
-    elif mmap_free_size<=0:
+    if mmap_free_size<=0:
         log.warn("Warning: mmap area is full!")
         log.warn(" we need to store %s bytes but only have %s free space left", l, available)
         return None, mmap_free_size
     if l<chunk:
-        """ data fits in the first chunk """
+        # data fits in the first chunk:
         #ie: initially:
         #[----------------------------------]
         #[*********E------------------------]
@@ -318,9 +320,9 @@ def mmap_write(mmap_area, mmap_size, data):
         chunks = [(end, l)]
         mmap_data_end.value = end+l
     else:
-        """ data does not fit in first chunk alone """
+        # data does not fit in first chunk alone:
         if available>=(mmap_size/2) and available>=(l*3) and l<(start-8):
-            """ still plenty of free space, don't wrap around: just start again """
+            # still plenty of free space, don't wrap around: just start again:
             #[------------------S+++++++++E------]
             #[*******E----------S+++++++++-------]
             mmap_area.seek(8)
@@ -328,7 +330,7 @@ def mmap_write(mmap_area, mmap_size, data):
             chunks = [(8, l)]
             mmap_data_end.value = 8+l
         else:
-            """ split in 2 chunks: wrap around the end of the mmap buffer """
+            # split in 2 chunks: wrap around the end of the mmap buffer:
             #[------------------S+++++++++E------]
             #[******E-----------S+++++++++*******]
             mmap_area.seek(end)
