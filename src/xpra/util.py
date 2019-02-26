@@ -740,7 +740,8 @@ def sorted_nicely(l):
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', bytestostr(key))]
     return sorted(l, key = alphanum_key)
 
-def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=None, version_keys=("version", "revision"), hex_keys=("data", )):
+def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=None,
+                      version_keys=("version", "revision"), hex_keys=("data", )):
     #"smart" value formatting function:
     def sprint(arg):
         if print_fn:
@@ -749,7 +750,11 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
             print(arg)
     def vf(k, v):
         if vformat:
-            return nonl(vformat(v))
+            fmt = vformat
+            if isinstance(vformat, dict):
+                fmt = vformat.get(k)
+            if fmt is not None:
+                return nonl(fmt(v))
         try:
             if any(k.find(x)>=0 for x in version_keys):
                 return nonl(pver(v)).lstrip("v")

@@ -9,10 +9,12 @@ using python-xdg
 """
 
 import os
+import sys
+import glob
 
-from xpra.util import envbool
-from xpra.os_util import load_binary_file, BytesIOClass, PYTHON3
-from xpra.log import Logger
+from xpra.util import envbool, print_nested_dict
+from xpra.os_util import load_binary_file, BytesIOClass, OSEnvContext, PYTHON3
+from xpra.log import Logger, add_debug_category
 
 log = Logger("exec", "menu")
 
@@ -118,32 +120,38 @@ def load_glob_icon(submenu_data, main_dirname="categories"):
         return None
     #doesn't work with IconTheme.getIconPath,
     #so do it the hard way:
-    import glob
     from xdg import IconTheme
     icondirs = getattr(IconTheme, "icondirs", [])
     if not icondirs:
         return None
-    extensions = ["png", "svg", "xpm"]
     for x in ("Icon", "Name", "GenericName"):
-        v = submenu_data.get(x)
-        if not v:
-            continue
-        for dn in [main_dirname, "*"]:
-            for d in icondirs:
-                for ext in extensions:
-                    pathnames = [
-                        os.path.join(d, "*", "*", dn, "%s.%s" % (v, ext)),
-                        os.path.join(d, "*", dn, "*", "%s.%s" % (v, ext)),
-                        ]
-                    for pathname in pathnames:
-                        filenames = glob.glob(pathname)
-                        if filenames:
-                            for f in filenames:
-                                icondata = load_icon_from_file(f)
-                                if icondata:
-                                    log("found icon for '%s' with glob '%s': %s", v, pathname, f)
-                                    return icondata
+        name = submenu_data.get(x)
+        if name:
+            icondata = find_icon(main_dirname, icondirs, name)
+            if icondata:
+                return icondata
     return None
+
+def find_icon(main_dirname, icondirs, name):
+    extensions = ("png", "svg", "xpm")
+    pathnames = []
+    for dn in (main_dirname, "*"):
+        for d in icondirs:
+            for ext in extensions:
+                pathnames += [
+                    os.path.join(d, "*", "*", dn, "%s.%s" % (name, ext)),
+                    os.path.join(d, "*", dn, "*", "%s.%s" % (name, ext)),
+                    ]
+    for pathname in pathnames:
+        filenames = glob.glob(pathname)
+        if filenames:
+            for f in filenames:
+                icondata = load_icon_from_file(f)
+                if icondata:
+                    log("found icon for '%s' with glob '%s': %s", name, pathname, f)
+                    return icondata
+    return None
+
 
 def load_xdg_entry(de):
     #not exposed:
@@ -158,7 +166,7 @@ def load_xdg_entry(de):
     if de.getTryExec():
         try:
             command = de.findTryExec()
-        except:
+        except Exception:
             command = de.getTryExec()
     else:
         command = de.getExec()
@@ -189,7 +197,7 @@ def load_xdg_menu(submenu):
             submenu_data["IconType"] = ext
     entries_data = submenu_data.setdefault("Entries", {})
     for entry in submenu.getEntries():
-        #TODO: can we have more than 2 levels of submenus?
+        #can we have more than 2 levels of submenus?
         from xdg.Menu import MenuEntry
         if isinstance(entry, MenuEntry):
             de = entry.DesktopEntry
@@ -207,29 +215,67 @@ xdg_menu_data = None
 def load_xdg_menu_data():
     global xdg_menu_data
     if not xdg_menu_data:
-        try:
-            from xdg.Menu import parse, Menu
-        except ImportError:
-            log("load_xdg_menu_data()", exc_info=True)
-            log.warn("Warning: no xdg module, cannot use application menu data")
-        else:
-            xdg_menu_data = {}
+        xdg_menu_data = do_load_xdg_menu_data()
+    return xdg_menu_data
+
+def do_load_xdg_menu_data():
+    try:
+        from xdg.Menu import parse, Menu, ParsingError
+    except ImportError:
+        log("do_load_xdg_menu_data()", exc_info=True)
+        log.warn("Warning: cannot use application menu data:")
+        log.warn(" no python-xdg module")
+        return None
+    menu = None
+    error = None
+    with OSEnvContext():
+        #see ticket #2174,
+        #things may break if the prefix is not set,
+        #and it isn't set when logging in via ssh
+        for prefix in (None, "", "gnome-", "kde-"):
+            if prefix is not None:
+                os.environ["XDG_MENU_PREFIX"] = prefix
             try:
                 menu = parse()
+                break
+            except ParsingError as e:
+                log("do_load_xdg_menu_data()", exc_info=True)
+                error = e
+                menu = None
+    if menu is None:
+        if error:
+            log.error("Error parsing xdg menu data:")
+            log.error(" %s", error)
+            log.error(" this is either a bug in python-xdg,")
+            log.error(" or an invalid system menu configuration")
+        return None
+    menu_data = {}
+    for submenu in menu.getEntries():
+        if isinstance(submenu, Menu) and submenu.Visible:
+            name = submenu.getName()
+            try:
+                menu_data[name] = load_xdg_menu(submenu)
             except Exception as e:
                 log("load_xdg_menu_data()", exc_info=True)
-                log.error("Error parsing xdg menu data:")
+                log.error("Error loading submenu '%s':", name)
                 log.error(" %s", e)
-                log.error(" this is either a bug in python-xdg,")
-                log.error(" or an invalid system menu configuration")
-            else:
-                for submenu in menu.getEntries():
-                    if isinstance(submenu, Menu) and submenu.Visible:
-                        name = submenu.getName()
-                        try:
-                            xdg_menu_data[name] = load_xdg_menu(submenu)
-                        except Exception as e:
-                            log("load_xdg_menu_data()", exc_info=True)
-                            log.error("Error loading submenu '%s':", name)
-                            log.error(" %s", e)
-    return xdg_menu_data
+    return menu_data
+
+
+def main():
+    from xpra.platform import program_context
+    with program_context("XDG-Menu-Helper", "XDG Menu Helper"):
+        for x in list(sys.argv):
+            if x in ("-v", "--verbose"):
+                sys.argv.remove(x)
+                add_debug_category("menu")
+                log.enable_debug()
+        def icon_fmt(icondata):
+            return "%i bytes" % len(icondata)
+        menu = load_xdg_menu_data()
+        print_nested_dict(menu, vformat={"IconData" : icon_fmt})
+    return 0
+
+if __name__ == "__main__":
+    v = main()
+    sys.exit(v)
