@@ -509,7 +509,7 @@ def cython_version_check(min_version):
                  "Please upgrade to Cython %s or better"
                  % (cython_version, min_version))
 
-def cython_add(extension, min_version="0.25"):
+def cython_add(extension, min_version="0.23"):
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
     #python2.7 setup.py build -b build-2.7 install --no-compile \
