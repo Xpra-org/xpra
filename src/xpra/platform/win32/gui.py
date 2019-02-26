@@ -1200,7 +1200,6 @@ def main():
 
         from xpra.gtk_common.gobject_compat import import_gobject
         gobject = import_gobject()
-        gobject.threads_init()      #@UndefinedVariable
 
         log.info("Event loop is running")
         loop = gobject.MainLoop()

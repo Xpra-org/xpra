@@ -51,10 +51,8 @@ def main():
         add_debug_category("webcam")
     run = "-r" in sys.argv or "--run" in sys.argv
     if run:
-        from xpra.gtk_common.gobject_compat import import_glib, import_gobject
+        from xpra.gtk_common.gobject_compat import import_glib
         glib = import_glib()
-        gobject = import_gobject()
-        gobject.threads_init()
 
     from xpra.util import engs, print_nested_dict
     from xpra.platform import program_context

@@ -20,10 +20,6 @@ def main(argv=()):
         if "-v" in argv:
             enable_debug_for("util")
 
-        from xpra.gtk_common.gobject_compat import import_gobject
-        gobject = import_gobject()
-        gobject.threads_init()
-
         from xpra.os_util import SIGNAMES
         from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
         gtk_main_quit_on_fatal_exceptions_enable()

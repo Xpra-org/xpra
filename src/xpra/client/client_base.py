@@ -539,14 +539,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def glib_init(self):
-        if PYTHON3:
-            import gi
-            if gi.version_info>=(3, 11):
-                #no longer need to call threads_init
-                return
+        #this will take care of calling threads_init if needed:
         from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
-        glib.threads_init()
+        import_glib()
 
     def run(self):
         self._protocol.start()

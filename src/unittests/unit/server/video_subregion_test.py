@@ -4,11 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import monotonic_time, PYTHON2
+from xpra.os_util import monotonic_time
 from xpra.gtk_common.gobject_compat import import_glib
 glib = import_glib()
-if PYTHON2:
-    glib.threads_init()
 
 import unittest
 from collections import deque

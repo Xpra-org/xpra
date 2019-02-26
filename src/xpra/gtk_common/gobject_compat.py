@@ -105,7 +105,10 @@ def import_gobject():
     return  _try_import(import_gobject3, import_gobject2)
 
 def import_glib3():
+    import gi
     from gi.repository import GLib                  #@UnresolvedImport
+    if gi.version_info<(3, 11):
+        GLib.threads_init()
     return GLib
 def import_glib2():
     import glib                                     #@UnresolvedImport

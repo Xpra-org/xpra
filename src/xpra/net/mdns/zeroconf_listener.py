@@ -81,7 +81,6 @@ def main():
 
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
-    glib.threads_init()
     loop = glib.MainLoop()
 
     from xpra.platform import program_context

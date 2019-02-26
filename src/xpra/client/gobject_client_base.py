@@ -47,7 +47,6 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
         if self.INSTALL_SIGNAL_HANDLERS:
             self.install_signal_handlers()
         self.glib_init()
-        self.gobject_init()
 
     def timeout_add(self, *args):
         return glib.timeout_add(*args)
@@ -82,9 +81,6 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
                   "window-metadata", "configure-override-redirect",
                   "lost-window"]:
             self._packet_handlers[t] = noop
-
-    def gobject_init(self):
-        gobject.threads_init()
 
     def run(self):
         XpraClientBase.run(self)

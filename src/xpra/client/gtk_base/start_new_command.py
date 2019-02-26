@@ -25,7 +25,6 @@ log = Logger("exec")
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
-gobject.threads_init()
 pango = import_pango()
 
 

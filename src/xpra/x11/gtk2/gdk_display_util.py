@@ -15,8 +15,8 @@ def verify_gdk_display(display_name):
     no_gtk()
     from xpra.gtk_common.gobject_compat import import_gdk2, import_glib
     gdk = import_gdk2()
-    glib = import_glib()
-    glib.threads_init()
+    #this will call glib.threads_init()
+    import_glib()
     display = gdk.Display(display_name)
     manager = gdk.display_manager_get()
     default_display = manager.get_default_display()

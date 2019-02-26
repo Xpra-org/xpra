@@ -17,7 +17,6 @@ log = Logger("mdns", "util")
 
 gtk = import_gtk()
 glib = import_glib()
-glib.threads_init()
 
 HIDE_IPV6 = envbool("XPRA_HIDE_IPV6", False)
 

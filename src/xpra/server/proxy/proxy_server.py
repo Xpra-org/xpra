@@ -10,8 +10,14 @@ from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 freeze_support()
 
 from xpra.gtk_common.gobject_compat import import_glib, import_gobject
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, envfloat, envbool, typedict
-from xpra.os_util import get_username_for_uid, get_groups, get_home_for_uid, bytestostr, getuid, getgid, WIN32, POSIX
+from xpra.util import (
+    LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR,
+    repr_ellipsized, print_nested_dict, csv, envfloat, envbool, typedict,
+    )
+from xpra.os_util import (
+    get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
+    getuid, getgid, WIN32, POSIX,
+    )
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -26,9 +32,7 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 glib = import_glib()
-glib.threads_init()
 gobject = import_gobject()
-gobject.threads_init()
 
 
 PROXY_SOCKET_TIMEOUT = envfloat("XPRA_PROXY_SOCKET_TIMEOUT", "0.1")
@@ -85,7 +89,8 @@ class ProxyServer(ServerCore):
 
     def init_control_commands(self):
         ServerCore.init_control_commands(self)
-        self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display", self.handle_stop_command, min_args=1, max_args=1)
+        self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display",
+                                                           self.handle_stop_command, min_args=1, max_args=1)
 
 
     def make_dbus_server(self):
@@ -178,7 +183,7 @@ class ProxyServer(ServerCore):
                 return
             #verify socket type (only local connections by default):
             try:
-                socktype = proto._conn.get_info().get("type")
+                socktype = proto._conn.get_info().get("type", "unknown")
             except:
                 socktype = "unknown"
             if socktype not in STOP_PROXY_SOCKET_TYPES:

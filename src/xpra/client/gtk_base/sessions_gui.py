@@ -30,7 +30,6 @@ gtk = import_gtk()
 gdk = import_gdk()
 pango = import_pango()
 glib = import_glib()
-glib.threads_init()
 
 
 class SessionsGUI(gtk.Window):
