@@ -277,7 +277,7 @@ Requires:			pygtkglext
 Recommends:         python2-xdg
 Recommends:			python2-xpra-audio
 Recommends:			python2-cups
-Recommends:			sshpass
+Suggests:			sshpass
 %if 0%{?run_tests}
 BuildRequires:		xclip
 %endif
@@ -398,10 +398,10 @@ Requires:			python3-xpra = %{version}-%{release}
 Recommends:			python3-xpra-audio
 Recommends:			python3-cups
 Recommends:			python3-pyopengl
-Recommends:			sshpass
 Recommends:			python3-pyu2f
 Recommends:			python3-xdg
 Recommends:			libappindicator-gtk3
+Suggests:			sshpass
 %if 0%{?run_tests}
 BuildRequires:		xclip
 %endif
