@@ -117,6 +117,9 @@ Requires(postun):	desktop-file-utils
 #without this, the system tray is unusable!
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
+%if 0%{?fedora}>=29
+Recommends:			python2-appindicator
+%endif
 %description common-client
 This package contains the files which are shared between all the xpra client packages.
 
@@ -415,7 +418,8 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			sshpass
 Recommends:			python3-pyu2f
-Recommends:         python3-xdg
+Recommends:			python3-xdg
+Recomments:			libappindicator-gtk3
 %if 0%{?run_tests}
 BuildRequires:		xclip
 %endif

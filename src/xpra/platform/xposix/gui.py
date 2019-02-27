@@ -11,7 +11,7 @@ import struct
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv
 from xpra.gtk_common.gtk_util import get_xwindow
-from xpra.os_util import is_X11, is_Wayland
+from xpra.os_util import is_unity, is_gnome, is_kde, is_X11, is_Wayland
 from xpra.log import Logger
 
 log = Logger("posix")
@@ -37,7 +37,7 @@ device_bell = None
 GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
 RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
-USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
+USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", is_unity() or is_gnome() or is_kde())
 XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
 DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
@@ -52,11 +52,10 @@ def get_native_system_tray_classes():
     c = []
     if USE_NATIVE_TRAY:
         try:
-            from xpra.platform.xposix.appindicator_tray import AppindicatorTray, can_use_appindicator
-            if can_use_appindicator():
-                c.append(AppindicatorTray)
-        except Exception as e:
-            traylog("cannot load appindicator tray: %s", e)
+            from xpra.platform.xposix.appindicator_tray import AppindicatorTray
+            c.append(AppindicatorTray)
+        except ImportError:
+            traylog("cannot load appindicator tray: %s", exc_info=True)
     return c
 
 def get_wm_name():
@@ -173,9 +172,9 @@ def has_gtk_menu_support():
         return _has_gtk_menu_support
     try:
         from xpra.gtk_common.gtk_util import get_default_root_window
-        from xpra.x11.dbus.menu import has_gtk_menu_support
+        from xpra.x11.dbus.menu import has_gtk_menu_support as __has_gtk_menu_support
         root = get_default_root_window()
-        _has_gtk_menu_support = has_gtk_menu_support(root)
+        _has_gtk_menu_support = __has_gtk_menu_support(root)
         menulog("has_gtk_menu_support(%s)=%s", root, _has_gtk_menu_support)
     except Exception as e:
         menulog("cannot enable gtk-x11 menu support: %s", e)

@@ -364,6 +364,10 @@ def is_unity():
 def is_gnome():
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("gnome")
 
+def is_kde():
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("kde")
+
+
 def is_WSL():
     if not POSIX:
         return False
