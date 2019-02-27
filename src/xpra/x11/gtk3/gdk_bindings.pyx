@@ -18,7 +18,7 @@ from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
 from gi.repository import Gdk               #@UnresolvedImport
 
 
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, bytestostr
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.error import trap, XError
 from xpra.x11.common import X11Event
@@ -463,7 +463,7 @@ def get_pyatom(display_source, xatom):
     if gdk_atom==GDK_NONE:
         return ""
     cdef char *name = gdk_atom_name(gdk_atom)
-    pyname = str(name)
+    pyname = bytestostr(name)
     return pyname
 
 
