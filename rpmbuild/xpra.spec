@@ -401,7 +401,7 @@ Recommends:			python3-pyopengl
 Recommends:			sshpass
 Recommends:			python3-pyu2f
 Recommends:			python3-xdg
-Recomments:			libappindicator-gtk3
+Recommends:			libappindicator-gtk3
 %if 0%{?run_tests}
 BuildRequires:		xclip
 %endif
