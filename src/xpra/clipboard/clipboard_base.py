@@ -819,7 +819,7 @@ class ClipboardProxy(gtk.Invisible):
         if not self._have_token:
             try:
                 return gtk.Invisible.do_selection_get(self, selection_data, info, time)
-            except NotImplementedError as e:
+            except Exception as e:
                 log("gtk.Invisible.do_selection_get", exc_info=True)
                 if first_time("selection-%s-not-implemented" % self._selection):
                     log.warn("Warning: limited clipboard support for %s", self._selection)
