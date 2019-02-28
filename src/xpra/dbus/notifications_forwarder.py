@@ -162,8 +162,11 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def release(self):
         try:
             self.bus.release_name(BUS_NAME)
-        except Exception as e:
-            log.error("failed to release dbus notification forwarder: %s", e)
+        except dbus.exceptions.DBusException as e:
+            log("release()", exc_info=True)
+            log.error("Error releasing the dbus notification forwarder:")
+            for x in str(e).split(": "):
+                log.error(" %s", x)
 
     def __str__(self):
         return  "DBUS-NotificationsForwarder(%s)" % BUS_NAME

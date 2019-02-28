@@ -23,7 +23,7 @@ from xpra.os_util import (
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand,
     )
-from xpra.util import envbool, csv
+from xpra.util import envbool, csv, nonl
 from xpra.platform.dotxpra import DotXpra
 
 
@@ -217,8 +217,10 @@ def print_DE_warnings():
 def sanitize_env():
     def unsetenv(*varnames):
         for x in varnames:
-            if x in os.environ:
+            try:
                 del os.environ[x]
+            except KeyError:
+                pass
     #we don't want client apps to think these mean anything:
     #(if set, they belong to the desktop the server was started from)
     #TODO: simply whitelisting the env would be safer/better
@@ -323,16 +325,26 @@ def guess_xpra_display(socket_dir, socket_dirs):
 def start_dbus(dbus_launch):
     if not dbus_launch or dbus_launch.lower() in FALSE_OPTIONS:
         return 0, {}
+    from xpra.log import Logger
+    dbuslog = Logger("dbus")
     try:
         def preexec():
             assert POSIX
             os.setsid()
             close_fds()
-        proc = Popen(dbus_launch, stdin=PIPE, stdout=PIPE, shell=True, preexec_fn=preexec)
+        env = dict((k,v) for k,v in os.environ.items() if k in (
+            "PATH",
+            "LANG",
+            "USER",
+            "PATH"))
+        import shlex
+        cmd = shlex.split(dbus_launch)
+        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, shell=False, env=env, preexec_fn=preexec)
         out = proc.communicate()[0]
         assert proc.poll()==0, "exit code is %s" % proc.poll()
         #parse and add to global env:
         dbus_env = {}
+        dbuslog("out(%s)=%s", cmd, nonl(out))
         for l in bytestostr(out).splitlines():
             parts = l.split("=", 1)
             if len(parts)!=2:
@@ -342,13 +354,12 @@ def start_dbus(dbus_launch):
                 v = v[1:-2]
             dbus_env[k] = v
         dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
+        dbuslog("dbus-env=%s", dbus_env)
         return dbus_pid, dbus_env
     except Exception as e:
-        from xpra.log import Logger
-        log = Logger("dbus")
-        log.debug("start_dbus(%s)", dbus_launch, exc_info=True)
-        error("dbus-launch failed to start using command '%s':\n" % dbus_launch)
-        error(" %s\n" % e)
+        dbuslog("start_dbus(%s)", dbus_launch, exc_info=True)
+        dbuslog.error("dbus-launch failed to start using command '%s':\n" % dbus_launch)
+        dbuslog.error(" %s\n" % e)
         return 0, {}
 
 
@@ -794,7 +805,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
-    log = get_util_logger()
+    from xpra.log import Logger
+    log = Logger("server")
     sockets, mdns_recs, wrap_socket_fn = create_sockets(opts, error_cb)
 
     sanitize_env()
@@ -981,7 +993,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #we always need at least one valid socket dir
         from xpra.platform.paths import get_socket_dirs
         opts.socket_dirs = get_socket_dirs()
-    local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions, username, uid, gid)
+    local_sockets = setup_local_sockets(opts.bind,
+                                        opts.socket_dir, opts.socket_dirs,
+                                        display_name, clobber,
+                                        opts.mmap_group, opts.socket_permissions,
+                                        username, uid, gid)
     netlog("setting up local sockets: %s", local_sockets)
     ssh_port = get_ssh_port()
     ssh_access = ssh_port>0 and opts.ssh.lower().strip() not in FALSE_OPTIONS
@@ -1050,6 +1066,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             save_xvfb_pid(xvfb_pid)
 
         if POSIX:
+            dbuslog = Logger("dbus")
             save_uinput_id(uinput_uuid)
             dbus_pid = -1
             dbus_env = {}
@@ -1057,25 +1074,26 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 #get the saved pids and env
                 dbus_pid = get_dbus_pid()
                 dbus_env = get_dbus_env()
-                log("retrieved existing dbus attributes")
+                dbuslog("retrieved existing dbus attributes")
             else:
                 assert starting or starting_desktop
                 if xvfb_pid is not None:
                     #save the new pid (we should have one):
                     save_xvfb_pid(xvfb_pid)
                 bus_address = protected_env.get("DBUS_SESSION_BUS_ADDRESS")
-                log("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", opts.dbus_launch, bus_address)
+                dbuslog("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", opts.dbus_launch, bus_address)
                 if opts.dbus_launch and not bus_address:
                     #start a dbus server:
                     def kill_dbus():
-                        log("kill_dbus: dbus_pid=%s" % dbus_pid)
+                        dbuslog("kill_dbus: dbus_pid=%s" % dbus_pid)
                         if dbus_pid<=0:
                             return
                         try:
                             os.kill(dbus_pid, signal.SIGINT)
                         except Exception as e:
-                            log.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
-                            log.warn(" %s", e)
+                            dbuslog("os.kill(%i, SIGINT)", dbus_pid, exc_info=True)
+                            dbuslog.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
+                            dbuslog.warn(" %s", e)
                     add_cleanup(kill_dbus)
                     #this also updates os.environ with the dbus attributes:
                     dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
@@ -1083,7 +1101,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                         save_dbus_pid(dbus_pid)
                     if dbus_env:
                         save_dbus_env(dbus_env)
-            log("dbus attributes: pid=%s, env=%s", dbus_pid, dbus_env)
+            dbuslog("dbus attributes: pid=%s, env=%s", dbus_pid, dbus_env)
             if dbus_env:
                 os.environ.update(dbus_env)
                 os.environ.update(protected_env)
