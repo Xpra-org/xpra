@@ -57,13 +57,13 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
     def Notify(self, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
-        log("Notify%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout))
         if replaces_nid==0:
             nid = self.next_id()
         else:
             nid = int(replaces_nid)
-        log("Notify%s counter=%i, callback=%s",
-            (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), self.counter, self.notify_callback)
+        log("Notify%s nid=%s, counter=%i, callback=%s",
+            (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout),
+            nid, self.counter, self.notify_callback)
         self.active_notifications.add(nid)
         if self.notify_callback:
             try:
