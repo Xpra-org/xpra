@@ -128,40 +128,40 @@ class MotifWMHints(object):
     TEAROFF_WINDOW  = 0
 
     FLAGS_STR = {
-                 FUNCTIONS_BIT      : "functions",
-                 DECORATIONS_BIT    : "decorations",
-                 INPUT_MODE_BIT     : "input",
-                 STATUS_BIT         : "status",
-                 }
+        FUNCTIONS_BIT      : "functions",
+        DECORATIONS_BIT    : "decorations",
+        INPUT_MODE_BIT     : "input",
+        STATUS_BIT         : "status",
+        }
     FUNCTIONS_STR = {
-                     ALL_BIT        : "all",
-                     RESIZE_BIT     : "resize",
-                     MOVE_BIT       : "move",
-                     MINIMIZE_BIT   : "minimize",
-                     MAXIMIZE_BIT   : "maximize",
-                     CLOSE_BIT      : "close",
-                     SHADE_BIT      : "shade",
-                     STICK_BIT      : "stick",
-                     FULLSCREEN_BIT : "fullscreen",
-                     ABOVE_BIT      : "above",
-                     BELOW_BIT      : "below",
-                     MAXIMUS_BIT    : "maximus",
-                     }
+        ALL_BIT        : "all",
+        RESIZE_BIT     : "resize",
+        MOVE_BIT       : "move",
+        MINIMIZE_BIT   : "minimize",
+        MAXIMIZE_BIT   : "maximize",
+        CLOSE_BIT      : "close",
+        SHADE_BIT      : "shade",
+        STICK_BIT      : "stick",
+        FULLSCREEN_BIT : "fullscreen",
+        ABOVE_BIT      : "above",
+        BELOW_BIT      : "below",
+        MAXIMUS_BIT    : "maximus",
+        }
     DECORATIONS_STR = {
-                       ALL_BIT      : "all",
-                       BORDER_BIT   : "border",
-                       RESIZEH_BIT  : "resizeh",
-                       TITLE_BIT    : "title",
-                       MENU_BIT     : "menu",
-                       MINIMIZE_BIT : "minimize",
-                       MAXIMIZE_BIT : "maximize",
-                       }
+        ALL_BIT      : "all",
+        BORDER_BIT   : "border",
+        RESIZEH_BIT  : "resizeh",
+        TITLE_BIT    : "title",
+        MENU_BIT     : "menu",
+        MINIMIZE_BIT : "minimize",
+        MAXIMIZE_BIT : "maximize",
+        }
     INPUT_STR = {
-                 MODELESS                   : "modeless",
-                 PRIMARY_APPLICATION_MODAL  : "primary-application-modal",
-                 SYSTEM_MODAL               : "system-modal",
-                 FULL_APPLICATION_MODAL     : "full-application-modal",
-                 }
+        MODELESS                   : "modeless",
+        PRIMARY_APPLICATION_MODAL  : "primary-application-modal",
+        SYSTEM_MODAL               : "system-modal",
+        FULL_APPLICATION_MODAL     : "full-application-modal",
+        }
 
     STATUS_STR = {
         TEAROFF_WINDOW : "tearoff",
@@ -194,12 +194,13 @@ class MotifWMHints(object):
                                  MotifWMHints.STATUS_STR)
 
     def __str__(self):
-        return "MotifWMHints(%s)" % {"flags"        : self.flags_strs(),
-                                     "functions"    : self.functions_strs(),
-                                     "decorations"  : self.decorations_strs(),
-                                     "input_mode"   : self.input_strs(),
-                                     "status"       : self.status_strs(),
-                                     }
+        return "MotifWMHints(%s)" % {
+            "flags"         : self.flags_strs(),
+            "functions"     : self.functions_strs(),
+            "decorations"   : self.decorations_strs(),
+            "input_mode"    : self.input_strs(),
+            "status"        : self.status_strs(),
+            }
 
 
 def _read_image(_disp, stream):
