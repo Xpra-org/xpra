@@ -400,6 +400,8 @@ class ServerCore(object):
     # dbus:
     def init_dbus_server(self):
         dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
+        dbuslog("init_dbus_server() env: %s", dict((k,v) for k,v in os.environ.items()
+                                               if bytestostr(k).startswith("DBUS_")))
         if not self.dbus_control:
             return
         try:
