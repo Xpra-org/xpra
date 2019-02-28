@@ -41,7 +41,7 @@ IconicState     = constants["IconicState"]
 InputHint       = constants["InputHint"]
 
 
-def unsupported(*args):
+def unsupported(*_args):
     raise Exception("unsupported")
 
 def _force_length(name, data, length, noerror_length=None):
@@ -168,10 +168,10 @@ class MotifWMHints(object):
         }
 
     def bits_to_strs(self, int_val, flag_bit, dict_str):
-        if flag_bit and not (self.flags & (2**flag_bit)):
+        if flag_bit and not self.flags & (2**flag_bit):
             #the bit is not set, ignore this attribute
-            return []
-        return [v for k,v in dict_str.items() if (int_val & (2**k))]
+            return ()
+        return tuple(v for k,v in dict_str.items() if int_val & (2**k))
     def flags_strs(self):
         return self.bits_to_strs(self.flags,
                                  0,
@@ -308,8 +308,7 @@ PROP_TYPES = {
 def prop_encode(disp, etype, value):
     if isinstance(etype, list):
         return _prop_encode_list(disp, etype[0], value)
-    else:
-        return _prop_encode_scalar(disp, etype, value)
+    return _prop_encode_scalar(disp, etype, value)
 
 def _prop_encode_scalar(disp, etype, value):
     (pytype, atom, formatbits, serialize, _, _) = PROP_TYPES[etype]
@@ -329,8 +328,7 @@ def _prop_encode_list(disp, etype, value):
 def prop_decode(disp, etype, data):
     if isinstance(etype, list):
         return _prop_decode_list(disp, etype[0], data)
-    else:
-        return _prop_decode_scalar(disp, etype, data)
+    return _prop_decode_scalar(disp, etype, data)
 
 def _prop_decode_scalar(disp, etype, data):
     (pytype, _, _, _, deserialize, _) = PROP_TYPES[etype]
