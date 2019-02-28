@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import socket
 
 from xpra.util import prettify_plug_name
-from xpra.os_util import get_generic_os_name
+from xpra.os_util import get_generic_os_name, load_binary_file
+from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -22,7 +23,7 @@ class RootWindowModel(object):
         self.property_names = [
             "title", "class-instance",
             "client-machine", "window-type",
-            "size-hints", "icon", "shadow",
+            "size-hints", "icons", "shadow",
             "depth",
             ]
         self.dynamic_property_names = []
@@ -75,7 +76,7 @@ class RootWindowModel(object):
     def is_shadow(self):
         return True
 
-    def get_default_window_icon(self):
+    def get_default_window_icon(self, _size):
         return None
 
     def acknowledge_changes(self):
@@ -131,16 +132,22 @@ class RootWindowModel(object):
         if prop=="class-instance":
             osn = get_generic_os_name()
             return ("xpra-%s" % osn, "Xpra-%s" % osn.upper())
-        if prop=="icon":
+        if prop=="icons":
             try:
-                from xpra.platform.paths import get_icon
-                icon_name = get_generic_os_name()+".png"
-                icon = get_icon(icon_name)
-                log("icon(%s)=%s", icon_name, icon)
-                return icon
+                icon_name = get_icon_filename((get_generic_os_name() or "").lower()+".png")
+                from PIL import Image
+                img = Image.open(icon_name)
+                log("Image(%s)=%s", icon_name, img)
+                if img:
+                    icon_data = load_binary_file(icon_name)
+                    assert icon_data
+                    w, h = img.size
+                    icon = (w, h, "png", icon_data)
+                    icons = (icon,)
+                    return icons
             except:
                 log("failed to return window icon")
-                return None
+            return ()
         if prop=="content-type":
             return "desktop"
         raise ValueError("invalid property: %s" % prop)

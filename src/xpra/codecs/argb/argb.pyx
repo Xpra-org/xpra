@@ -278,6 +278,36 @@ def rgba_to_bgra(buf):
     return bgra_to_rgba(buf)
 
 
+def premultiply_argb(buf):
+    # b is a Python buffer object
+    cdef unsigned int * argb = <unsigned int *> 0   #@DuplicateSignature
+    cdef Py_ssize_t argb_len = 0                    #@DuplicateSignature
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    assert as_buffer(buf, <const void **>&argb, &argb_len)==0
+    return do_premultiply_argb(argb, argb_len)
+
+cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
+    # cbuf contains non-premultiplied ARGB32 data in native-endian.
+    # We convert to premultiplied ARGB32 data
+    cdef unsigned char a, r, g, b                #@DuplicateSignature
+    cdef unsigned int argb                      #@DuplicateSignature
+    assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
+    cdef MemBuf output_buf = getbuf(argb_len)
+    cdef unsigned char* argb_out = <unsigned char*> output_buf.get_mem()
+    cdef int i                                  #@DuplicateSignature
+    for 0 <= i < argb_len / 4:
+        argb = buf[i]
+        a = (argb >> 24) & 0xff
+        r = (argb >> 16) & 0xff
+        r = r * a // 255
+        g = (argb >> 8) & 0xff
+        g = g * a // 255
+        b = (argb >> 0) & 0xff
+        b = b * a // 255
+        argb_out[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
+    return memoryview(output_buf)
+
+
 def premultiply_argb_in_place(buf):
     # b is a Python buffer object
     cdef unsigned int * cbuf = <unsigned int *> 0
@@ -313,8 +343,8 @@ def unpremultiply_argb_in_place(buf):
     do_unpremultiply_argb_in_place(cbuf, cbuf_len)
 
 cdef do_unpremultiply_argb_in_place(unsigned int * buf, Py_ssize_t buf_len):
-    # cbuf contains non-premultiplied ARGB32 data in native-endian.
-    # We convert to premultiplied ARGB32 data, in-place.
+    # cbuf contains premultiplied ARGB32 data in native-endian.
+    # We convert to non-premultiplied ARGB32 data, in-place.
     cdef unsigned char a, r, g, b                   #@DuplicateSignature
     cdef unsigned int argb                          #@DuplicateSignature
     assert buf_len>0 and buf_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % buf_len

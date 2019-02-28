@@ -120,13 +120,9 @@ class WindowModel(BaseWindowModel):
                        "Icon title (unicode or None)", "",
                        PARAM_READABLE),
         #from _NET_WM_ICON
-        "icon": (gobject.TYPE_PYOBJECT,
-                 "Icon (local Cairo surface)", "",
+        "icons": (gobject.TYPE_PYOBJECT,
+                 "Icons in raw RGBA format, by size", "",
                  PARAM_READABLE),
-        #from _NET_WM_ICON
-        "icon-pixmap": (gobject.TYPE_PYOBJECT,
-                        "Icon (server Pixmap)", "",
-                        PARAM_READABLE),
         #from _MOTIF_WM_HINTS.decorations
         "decorations": (gobject.TYPE_INT,
                        "Should the window decorations be shown", "",
@@ -145,11 +141,11 @@ class WindowModel(BaseWindowModel):
         })
 
     _property_names         = BaseWindowModel._property_names + [
-                              "size-hints", "icon-title", "icon", "decorations",
+                              "size-hints", "icon-title", "icons", "decorations",
                               "modal", "set-initial-position", "iconic",
                               ]
     _dynamic_property_names = BaseWindowModel._dynamic_property_names + [
-                              "size-hints", "icon-title", "icon", "decorations", "modal", "iconic"]
+                              "size-hints", "icon-title", "icons", "decorations", "modal", "iconic"]
     _initial_x11_properties = BaseWindowModel._initial_x11_properties + [
                               "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
                               "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
@@ -734,34 +730,8 @@ class WindowModel(BaseWindowModel):
 
     def _handle_net_wm_icon_change(self):
         iconlog("_NET_WM_ICON changed on %#x, re-reading", self.xid)
-        surf = self.prop_get("_NET_WM_ICON", "icon")
-        if surf is not None:
-            # FIXME: There is no Pixmap.new_for_display(), so this isn't
-            # actually display-clean.  Oh well.
-            pixmap = gdk.Pixmap(None, surf.get_width(), surf.get_height(), 32)
-            screen = get_display_for(pixmap).get_default_screen()
-            colormap = screen.get_rgba_colormap()
-            if not colormap:
-                colormap = screen.get_rgb_colormap()
-            if not colormap:
-                iconlog.warn("Warning: cannot find colormap for default screen")
-                pixmap = None
-            else:
-                pixmap.set_colormap(colormap)
-                cr = pixmap.cairo_create()
-                cr.set_source_surface(surf)
-                # Important to use SOURCE, because a newly created Pixmap can have
-                # random trash as its contents, and otherwise that will show
-                # through any alpha in the icon:
-                cr.set_operator(cairo.OPERATOR_SOURCE)
-                cr.paint()
-        else:
-            pixmap = None
-        #FIXME: it would be more efficient to notify first,
-        #then get the icon pixels on demand and cache them..
-        self._internal_set_property("icon", surf)
-        self._internal_set_property("icon-pixmap", pixmap)
-        iconlog("icon is now %r, pixmap=%s", surf, pixmap)
+        icons = self.prop_get("_NET_WM_ICON", "icons")
+        self._internal_set_property("icons", icons)
 
     _x11_property_handlers = dict(BaseWindowModel._x11_property_handlers)
     _x11_property_handlers.update({
@@ -773,40 +743,40 @@ class WindowModel(BaseWindowModel):
        })
 
 
-    def get_default_window_icon(self):
+    def get_default_window_icon(self, size=48):
         #return the icon which would be used from the wmclass
         c_i = self.get_property("class-instance")
+        iconlog("get_default_window_icon(%i) class-instance=%s", size, c_i)
         if not c_i or len(c_i)!=2:
             return None
-        wmclass_name, wmclass_class = [x.encode("utf-8") for x in c_i]
-        iconlog("get_default_window_icon() using %s", (wmclass_name, wmclass_class))
+        wmclass_name = c_i[0]
         if not wmclass_name:
             return None
         it = icon_theme_get_default()
-        p = None
-        for fmt in ("%s-color", "%s", "%s_48x48", "application-x-%s", "%s-symbolic", "%s.symbolic"):
-            icon_name = fmt % wmclass_name
-            i = it.lookup_icon(icon_name, 48, 0)
-            iconlog("%s.lookup_icon(%s)=%s", it, icon_name, i)
+        pixbuf = None
+        iconlog("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
+        for icon_name in (
+            "%s-color" % wmclass_name,
+            wmclass_name,
+            "%s_%ix%i" % (wmclass_name, size, size),
+            "application-x-%s" % wmclass_name,
+            "%s-symbolic" % wmclass_name,
+            "%s.symbolic" % wmclass_name,
+            ):
+            i = it.lookup_icon(icon_name, size, 0)
+            iconlog("lookup_icon(%s)=%s", icon_name, i)
             if not i:
                 continue
             try:
-                p = i.load_icon()
-                iconlog("%s.load_icon()=%s", i, p)
-                if p:
-                    break
+                pixbuf = i.load_icon()
+                iconlog("load_icon()=%s", pixbuf)
+                if pixbuf:
+                    w, h = pixbuf.props.width, pixbuf.props.height
+                    iconlog("using '%s' pixbuf %ix%i", icon_name, w, h)
+                    return w, h, "BGRA", pixbuf.get_pixels()
             except Exception:
                 iconlog("%s.load_icon()", i, exc_info=True)
-        if p is None:
-            return None
-        #to make it consistent with the "icon" property,
-        #return a cairo surface..
-        surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, p.get_width(), p.get_height())
-        gc = gdk.CairoContext(cairo.Context(surf))
-        gc.set_source_pixbuf(p, 0, 0)
-        gc.paint()
-        iconlog("get_default_window_icon()=%s", surf)
-        return surf
+        return None
 
     def get_wm_state(self, prop):
         state_names = self._state_properties.get(prop)

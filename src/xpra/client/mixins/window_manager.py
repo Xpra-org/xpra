@@ -652,7 +652,7 @@ class WindowClient(StubClientMixin):
             rowstride = width * (3+int(has_alpha))
         icon = img
         if self.overlay_image and self.overlay_image!=img:
-            if ICON_SHRINKAGE>0 and ICON_SHRINKAGE<100:
+            if 0<ICON_SHRINKAGE<100:
                 #paste the application icon in the top-left corner,
                 #shrunk by ICON_SHRINKAGE pct
                 shrunk_width = max(1, width*ICON_SHRINKAGE//100)
@@ -660,7 +660,7 @@ class WindowClient(StubClientMixin):
                 icon_resized = icon.resize((shrunk_width, shrunk_height), Image.ANTIALIAS)
                 icon = Image.new("RGBA", (width, height))
                 icon.paste(icon_resized, (0, 0, shrunk_width, shrunk_height))
-            assert ICON_OVERLAY>0 and ICON_OVERLAY<=100
+            assert 0<ICON_OVERLAY<=100
             overlay_width = max(1, width*ICON_OVERLAY//100)
             overlay_height = max(1, height*ICON_OVERLAY//100)
             xpra_resized = self.overlay_image.resize((overlay_width, overlay_height), Image.ANTIALIAS)

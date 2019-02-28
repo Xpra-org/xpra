@@ -11,7 +11,6 @@ Functions for converting to and from X11 properties.
 """
 
 import struct
-import cairo
 
 from xpra.os_util import hexstr, BytesIOClass, PYTHON3
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
@@ -216,28 +215,7 @@ def _read_image(_disp, stream):
     except Exception as e:
         log.warn("Weird corruption in _NET_WM_ICON: %s", e)
         return None
-    # Cairo wants a native-endian array here, and since the icon is
-    # transmitted as CARDINALs, that's what we get. It might seem more
-    # sensible to use ImageSurface.create_for_data (at least it did to me!)
-    # but then you end up with a surface that refers to the memory you pass in
-    # directly, and also .get_data() doesn't work on it, and it breaks the
-    # test suite and blah. This at least works, as odd as it is:
-    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-    # old versions of cairo do not have this method, just ignore it
-    if not hasattr(surf, "get_data"):
-        log.warn("Your Cairo is too old! Carrying on as best I can, "
-                 "but don't expect a miracle")
-        return None
-    surf.get_data()[:] = data
-    # Cairo uses premultiplied alpha. EWMH actually doesn't specify what it
-    # uses, but apparently the de-facto standard is non-premultiplied. (At
-    # least that's what Compiz's sources say.)
-    try:
-        from xpra.codecs.argb.argb import premultiply_argb_in_place #@UnresolvedImport
-        premultiply_argb_in_place(surf.get_data())
-    except ImportError:
-        log("no argb premultiply", exc_info=True)
-    return (width * height, surf)
+    return width, height, "BGRA", data
 
 # This returns a cairo ImageSurface which contains the largest icon defined in
 # a _NET_WM_ICON property.
@@ -245,14 +223,13 @@ def NetWMIcons(disp, data):
     icons = []
     stream = BytesIOClass(data)
     while True:
-        size_image = _read_image(disp, stream)
-        if size_image is None:
+        icon = _read_image(disp, stream)
+        if icon is None:
             break
-        icons.append(size_image)
+        icons.append(icon)
     if not icons:
         return None
-    icons.sort()
-    return icons[-1][1]
+    return icons
 
 
 def _to_latin1(_disp, v):
@@ -295,7 +272,7 @@ PROP_TYPES = {
                       unsupported, NetWMStrut, None),
     "motif-hints": (MotifWMHints, "_MOTIF_WM_HINTS", 32,
               unsupported, MotifWMHints, None),
-    "icon": (cairo.ImageSurface, "CARDINAL", 32,
+    "icons": (list, "CARDINAL", 32,
               unsupported, NetWMIcons, None),
     # For uploading ad-hoc instances of the above complex structures to the
     # server, so we can test reading them out again:

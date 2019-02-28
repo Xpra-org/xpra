@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import socket
 
-from xpra.os_util import get_generic_os_name, PYTHON3
+from xpra.os_util import get_generic_os_name, load_binary_file, PYTHON3
 from xpra.util import updict, log_screen_sizes
-from xpra.platform.paths import get_icon
+from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
@@ -78,7 +78,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         "wm-name": (gobject.TYPE_PYOBJECT,
                        "The name of the window manager or session manager", "",
                        PARAM_READABLE),
-        "icon": (gobject.TYPE_PYOBJECT,
+        "icons": (gobject.TYPE_PYOBJECT,
                        "The icon of the window manager or session manager", "",
                        PARAM_READABLE),
         }
@@ -87,9 +87,9 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     _property_names         = [
         "xid", "client-machine", "window-type",
         "shadow", "size-hints", "class-instance",
-        "focused", "title", "depth", "icon",
+        "focused", "title", "depth", "icons",
         ]
-    _dynamic_property_names = ["size-hints", "title", "icon"]
+    _dynamic_property_names = ["size-hints", "title", "icons"]
 
     def __init__(self, root, resize_exact=False):
         WindowDamageHandler.__init__(self, root)
@@ -136,14 +136,21 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         return self._updateprop("wm-name", wm_name)
 
     def update_icon(self):
-        icon = None
+        icons = None
         try:
-            icon_name = (get_wm_name() or "").lower()+".png"
-            icon = get_icon(icon_name)
-            iconlog("get_icon(%s)=%s", icon_name, icon)
+            icon_name = get_icon_filename((get_wm_name() or "").lower()+".png")
+            from PIL import Image
+            img = Image.open(icon_name)
+            iconlog("Image(%s)=%s", icon_name, img)
+            if img:
+                icon_data = load_binary_file(icon_name)
+                assert icon_data
+                w, h = img.size
+                icon = (w, h, "png", icon_data)
+                icons = (icon,)
         except:
             iconlog("failed to return window icon")
-        return self._updateprop("icon", icon)
+        return self._updateprop("icons", icons)
 
 
     def get_geometry(self):
@@ -156,7 +163,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         return bool(self._xshm_handle)
 
 
-    def get_default_window_icon(self):
+    def get_default_window_icon(self, _size):
         icon_name = get_generic_os_name()+".png"
         return get_icon(icon_name)
 

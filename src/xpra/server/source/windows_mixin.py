@@ -351,7 +351,7 @@ class WindowsMixin(StubSourceMixin):
     def window_metadata(self, wid, window, prop):
         if not self.can_send_window(window):
             return
-        if prop=="icon":
+        if prop=="icons":
             self.send_window_icon(wid, window)
         else:
             metadata = self._make_metadata(window, prop)
@@ -387,9 +387,9 @@ class WindowsMixin(StubSourceMixin):
         if not self.can_send_window(window):
             return
         send_props = list(window.get_property_names())
-        send_raw_icon = "icon" in send_props
+        send_raw_icon = "icons" in send_props
         if send_raw_icon:
-            send_props.remove("icon")
+            send_props.remove("icons")
         metadata = {}
         for prop in send_props:
             v = self._make_metadata(window, prop, skip_defaults=True)

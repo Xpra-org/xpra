@@ -919,7 +919,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         # (Except, I've found window icons that are strictly larger)
         self.context_check()
         cdef int buffer_size = 64 * 1024
-        if etype=="icon":
+        if etype=="icons":
             buffer_size = 4 * 1024 * 1024
         cdef Atom xactual_type = <Atom> 0
         cdef int actual_format = 0

@@ -151,7 +151,7 @@ class WindowServer(StubServerMixin):
         from xpra.server.window.metadata import make_window_metadata
         info = {}
         for prop in window.get_property_names():
-            if prop=="icon" or prop is None:
+            if prop=="icons" or prop is None:
                 continue
             metadata = make_window_metadata(window, prop, get_transient_for=self.get_transient_for)
             info.update(metadata)
