@@ -40,7 +40,7 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
                 return {}
             return {propname: ""}
         return {propname: v.encode("utf-8")}
-    elif propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity", "quality", "speed"):
+    if propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity", "quality", "speed"):
         v = raw()
         assert v is not None, "%s is None!" % propname
         default_value = {
@@ -55,12 +55,12 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
             #so don't bother sending anything:
             return {}
         return {propname : v}
-    elif propname == "size-hints":
+    if propname == "size-hints":
         #just to confuse things, this is renamed
         #and we have to filter out ratios as floats (already exported as pairs anyway)
         v = dict(raw())
         return {"size-constraints": v}
-    elif propname == "strut":
+    if propname == "strut":
         strut = raw()
         if not strut:
             strut = {}
@@ -69,12 +69,12 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
         if not strut and skip_defaults:
             return {}
         return {"strut": strut}
-    elif propname == "class-instance":
+    if propname == "class-instance":
         c_i = raw()
         if c_i is None:
             return {}
         return {"class-instance": [x.encode("utf-8") for x in c_i]}
-    elif propname == "client-machine":
+    if propname == "client-machine":
         client_machine = raw()
         if client_machine is None:
             import socket
@@ -82,26 +82,31 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
             if client_machine is None:
                 return {}
         return {"client-machine": client_machine.encode("utf-8")}
-    elif propname == "transient-for":
+    if propname == "transient-for":
         wid = None
         if get_transient_for:
             wid = get_transient_for(window)
         if wid:
             return {"transient-for" : wid}
         return {}
-    elif propname in ("window-type", "shape", "menu", "children"):
+    if propname in ("window-type", "shape", "menu", "children"):
         v = raw()
         if not v and skip_defaults:
             return {}
         #always send unchanged:
         return {propname : raw()}
-    elif propname in ("decorations", ):
+    if propname=="decorations":
         #-1 means unset, don't send it
         v = raw()
         if v<0:
             return {}
         return {propname : v}
-    elif propname in ("iconic", "fullscreen", "maximized", "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager", "modal", "focused"):
+    if propname in ("iconic", "fullscreen", "maximized",
+                      "above", "below",
+                      "shaded", "sticky",
+                      "skip-taskbar", "skip-pager",
+                      "modal", "focused",
+                      ):
         v = raw()
         if v is False and skip_defaults:
             #we can skip those when the window is first created,
@@ -109,20 +114,20 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
             return {}
         #always send these when requested
         return {propname : bool(raw())}
-    elif propname in ("has-alpha", "override-redirect", "tray", "shadow", "set-initial-position"):
+    if propname in ("has-alpha", "override-redirect", "tray", "shadow", "set-initial-position"):
         v = raw()
         if v is False and skip_defaults:
             #save space: all these properties are assumed false if unspecified
             return {}
         return {propname : v}
-    elif propname in ("role", "fullscreen-monitors"):
+    if propname in ("role", "fullscreen-monitors"):
         v = raw()
         if v is None or v=="":
             return {}
         return {propname : v}
-    elif propname == "xid":
+    if propname == "xid":
         return {"xid" : hex(raw() or 0)}
-    elif propname == "group-leader":
+    if propname == "group-leader":
         gl = raw()
         if not gl or not get_window_id:
             return  {}
@@ -138,11 +143,11 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
     #the properties below are not actually exported to the client (yet?)
     #it was just easier to handle them here
     #(convert to a type that can be encoded for xpra info):
-    elif propname in ("state", "protocols"):
+    if propname in ("state", "protocols"):
         return {"state" : tuple(raw() or [])}
-    elif propname == "allowed-actions":
+    if propname == "allowed-actions":
         return {"allowed-actions" : tuple(raw())}
-    elif propname == "frame":
+    if propname == "frame":
         frame = raw()
         if not frame:
             return {}
