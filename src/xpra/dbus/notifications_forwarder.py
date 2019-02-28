@@ -176,9 +176,9 @@ def register(notify_callback=None, close_callback=None, replace=False):
     if replace:
         flags |= dbus.bus.NAME_FLAG_REPLACE_EXISTING
     request = bus.request_name(BUS_NAME, flags)
+    log("notifications: bus name '%s', request=%s" % (BUS_NAME, request))
     if request==dbus.bus.REQUEST_NAME_REPLY_EXISTS:
         raise Exception("the name '%s' is already claimed on the session bus" % BUS_NAME)
-    log("notifications: bus name '%s', request=%s" % (BUS_NAME, request))
     return DBUSNotificationsForwarder(bus, notify_callback, close_callback)
 
 

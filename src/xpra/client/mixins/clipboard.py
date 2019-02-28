@@ -104,8 +104,8 @@ class ClipboardClient(StubClientMixin):
         log("client clipboard: supported=%s, direction=%s",
                      self.client_supports_clipboard, self.client_clipboard_direction)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
-        self.server_clipboard_contents_slice_fix = c.boolget("clipboard.contents-slice-fix")
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
+        self.server_clipboard_contents_slice_fix = c.boolget("clipboard.contents-slice-fix")
         if not self.server_clipboard_contents_slice_fix:
             log.info("server clipboard does not include contents slice fix")
         return True

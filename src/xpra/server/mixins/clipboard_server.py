@@ -60,7 +60,8 @@ class ClipboardServer(StubServerMixin):
 
     def get_server_features(self, server_source=None):
         clipboard = self._clipboard_helper is not None
-        log("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s", self._clipboard_helper, self._clipboard_client, server_source, clipboard)
+        log("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s",
+            self._clipboard_helper, self._clipboard_client, server_source, clipboard)
         if not clipboard:
             return {}
         f = {
