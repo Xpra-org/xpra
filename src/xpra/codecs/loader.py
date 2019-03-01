@@ -139,7 +139,7 @@ CODEC_OPTIONS = {
     #encoders:
     "enc_pillow"    : ("Pillow encoder",    "pillow",       "encode", "encode"),
     "enc_webp"      : ("webp encoder",      "webp",         "encode", "compress"),
-    "enc_jpeg"      : ("JPEG decoder",      "jpeg",         "encoder", "encoder"),
+    "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
     #video encoders:
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
     "enc_x264"      : ("x264 encoder",      "enc_x264",     "encoder", "Encoder"),
@@ -275,7 +275,8 @@ def get_encoding_help(encoding):
           "webp"    : "WebP compression (supports lossless and lossy modes)",
           "jpeg"    : "JPEG lossy compression",
           "jpeg2000": "JPEG 2000 lossy compression (slow)",
-          "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
+          "rgb"     : "Raw RGB pixels, lossless,"
+                      +" compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
           }.get(encoding)
 
 
