@@ -349,7 +349,8 @@ class EncodingsMixin(StubSourceMixin):
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #check for mmap:
         if getattr(self, "mmap_size", 0)==0:
-            others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
+            others = tuple(x for x in self.core_encodings
+                           if x in self.server_core_encodings and x!=self.encoding)
             if self.encoding=="auto":
                 s = "automatic picture encoding enabled"
             else:
