@@ -92,13 +92,13 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.mouse_up_cb = mouse_up_cb || null;
 	this.mouse_scroll_cb = mouse_scroll_cb || null;
 	jQuery(this.canvas).mousedown(function (e) {
-		return me.on_mousedown(e);
+		me.on_mousedown(e);
 	});
 	jQuery(this.canvas).mouseup(function (e) {
-		return me.on_mouseup(e);
+		me.on_mouseup(e);
 	});
 	jQuery(this.canvas).mousemove(function (e) {
-		return me.on_mousemove(e);
+		me.on_mousemove(e);
 	});
 
 	this.geometry_cb = geometry_cb || null;
