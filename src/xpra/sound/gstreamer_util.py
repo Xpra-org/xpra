@@ -746,13 +746,13 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
                 dtype = "audio input"
             elif input_or_output is True:
                 dtype = "audio output"
-            log.warn("Warning: found %i %s devices:", len(devices), dtype)
+            log.info("found %i %s devices:", len(devices), dtype)
             for k,v in devices.items():
-                log.warn(" * %s", bytestostr(v))
-                log.warn("   %s", bytestostr(k))
+                log.info(" * %s", bytestostr(v))
+                log.info("   %s", bytestostr(k))
             if not env_device: #used already!
-                log.warn(" to select a specific one,")
-                log.warn(" use the environment variable '%s'", env_device_name)
+                log.info(" to select a specific one,")
+                log.info(" use the environment variable '%s'", env_device_name)
         #default to first one:
         if USE_DEFAULT_DEVICE:
             log.info("using default pulseaudio device")
