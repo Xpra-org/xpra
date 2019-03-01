@@ -127,7 +127,8 @@ class AudioMixin(StubSourceMixin):
             log.warn(" %s", x)
         return False
 
-    def start_sending_sound(self, codec=None, volume=1.0, new_stream=None, new_buffer=None, skip_client_codec_check=False):
+    def start_sending_sound(self, codec=None, volume=1.0,
+                            new_stream=None, new_buffer=None, skip_client_codec_check=False):
         assert self.hello_sent
         log("start_sending_sound(%s)", codec)
         ss = None
@@ -161,7 +162,9 @@ class AudioMixin(StubSourceMixin):
                 return None
             from xpra.sound.wrapper import start_sending_sound
             plugins = self.sound_properties.strlistget("plugins", [])
-            ss = start_sending_sound(plugins, self.sound_source_plugin, None, codec, volume, True, [codec], self.pulseaudio_server, self.pulseaudio_id)
+            ss = start_sending_sound(plugins, self.sound_source_plugin,
+                                     None, codec, volume, True, [codec],
+                                     self.pulseaudio_server, self.pulseaudio_id)
             self.sound_source = ss
             log("start_sending_sound() sound source=%s", ss)
             if not ss:

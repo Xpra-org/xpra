@@ -46,7 +46,9 @@ class CairoBacking(CairoBackingBase):
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
         log("cairo._do_paint_rgb(%s, %s, %s %s, %s, %s, %s, %s, %s, %s) set_image_surface_data=%s, use pixbuf=%s",
-            FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data), type(img_data), x, y, width, height, rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
+            FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
+            type(img_data), x, y, width, height,
+            rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
         rgb_format = options.strget(b"rgb_format", "RGB")
         if set_image_surface_data and not CAIRO_USE_PIXBUF:
             if (cairo_format==cairo.FORMAT_RGB24 and rgb_format in ("RGB", "BGR")) or \
@@ -58,7 +60,8 @@ class CairoBacking(CairoBackingBase):
 
         if rgb_format in ("RGB", "RGBA", "RGBX"):
             data = GLib.Bytes(img_data)
-            pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB, has_alpha, 8, width, height, rowstride)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
+                                                     has_alpha, 8, width, height, rowstride)
             self.cairo_paint_pixbuf(pixbuf, x, y, options)
             return True
 

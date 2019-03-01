@@ -432,7 +432,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             key = self.get_encryption_key()
             if key is None:
                 self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
-                return
+                return None
             self._protocol.set_cipher_in(self.encryption, iv, key, key_salt, iterations, padding)
             netlog("encryption capabilities: %s", dict((k,v) for k,v in capabilities.items() if k.startswith("cipher")))
         capabilities.update(self.hello_extra)

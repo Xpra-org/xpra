@@ -741,7 +741,11 @@ class BaseWindowModel(CoreX11WindowModel):
             iconic = event.data[0]
             log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%#x",
                 ICONIC_STATE_STRING.get(iconic, iconic), event.serial, self.last_unmap_serial)
-            if iconic in (IconicState, NormalState) and self.serial_after_last_unmap(event.serial) and not self.is_OR() and not self.is_tray():
+            if (
+                iconic in (IconicState, NormalState) and
+                self.serial_after_last_unmap(event.serial) and
+                not self.is_OR() and not self.is_tray()
+                ):
                 self._updateprop("iconic", iconic==IconicState)
             return True
         elif event.message_type=="_NET_WM_MOVERESIZE":
@@ -761,7 +765,10 @@ class BaseWindowModel(CoreX11WindowModel):
             ndesktops = prop_get(root, "_NET_NUMBER_OF_DESKTOPS", "u32", ignore_errors=True)
             workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s",
                          workspacestr(workspace), ndesktops)
-            if ndesktops>0 and (workspace in (WORKSPACE_UNSET, WORKSPACE_ALL) or (workspace>=0 and workspace<ndesktops)):
+            if ndesktops>0 and (
+                workspace in (WORKSPACE_UNSET, WORKSPACE_ALL) or
+                0<=workspace<ndesktops
+                ):
                 self.move_to_workspace(workspace)
             else:
                 workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s",

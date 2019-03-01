@@ -16,6 +16,7 @@ from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, ty
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.clientinfo_mixin import ClientInfoMixin
 from xpra.server import server_features
+from xpra.log import Logger
 
 CC_BASES = [ClientInfoMixin]
 #TODO: notifications mixin
@@ -61,7 +62,6 @@ CC_BASES.append(IdleMixin)
 CC_BASES = tuple(CC_BASES)
 ClientConnectionClass = type('ClientConnectionClass', CC_BASES, {})
 
-from xpra.log import Logger
 log = Logger("server")
 elog = Logger("encoding")
 keylog = Logger("keyboard")
@@ -79,7 +79,7 @@ log("ClientConnectionClass%s", CC_BASES)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
-assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
+assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
