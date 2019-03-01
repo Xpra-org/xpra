@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,6 +14,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport makebuf, MemBuf, object_as_buffer
 from xpra.net.compression import Compressed
 from xpra.os_util import bytestostr
+from xpra.util import reverse_dict
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 

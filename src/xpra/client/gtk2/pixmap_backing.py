@@ -5,9 +5,9 @@
 # later version. See the file COPYING for details.
 
 import os
-from gtk import gdk
 import cairo
 from PIL import Image
+from gtk import gdk
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
@@ -195,7 +195,8 @@ class PixmapBacking(GTK2WindowBacking):
         if ww==0 or w==0 or wh==0 or h==0:
             return
         x, y = self.offsets[:2]
-        log("cairo_draw_from_drawable%s render_size=%s, size=%s, offsets=%s, pointer_overlay=%s", (context, drawable), self.render_size, self.size, self.offsets, self.pointer_overlay)
+        log("cairo_draw_from_drawable%s render_size=%s, size=%s, offsets=%s, pointer_overlay=%s",
+            (context, drawable), self.render_size, self.size, self.offsets, self.pointer_overlay)
         setup_cairo_context(context, ww, wh, w, h, x, y)
         context.set_source_pixmap(drawable, 0, 0)
         context.paint()

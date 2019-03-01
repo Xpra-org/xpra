@@ -1020,7 +1020,7 @@ class SessionInfo(gtk.Window):
                 for wid, props in window_encoder_stats.items():
                     l = slabel("%s (%s)" % (wid, bytestostr(props.get(""))))
                     l.show()
-                    info = ["%s=%s" % (k,v) for k,v in props.items() if k!=""]
+                    info = ("%s=%s" % (k,v) for k,v in props.items() if k!="")
                     l.set_tooltip_text(" ".join(info))
                     self.encoder_info_box.add(l)
         return True

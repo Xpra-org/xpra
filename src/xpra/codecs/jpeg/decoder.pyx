@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from __future__ import absolute_import
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
-from xpra.util import envbool
+from xpra.util import envbool, reverse_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer
 
@@ -109,7 +109,7 @@ TJPF_STR = {
     TJPF_ARGB   : "ARGB",
     TJPF_CMYK   : "CMYK",
     }
-TJPF_VAL = dict((v,k) for k,v in TJPF_STR.items())
+TJPF_VAL = reverse_dict(TJPF_STR)
 
 
 def get_version():

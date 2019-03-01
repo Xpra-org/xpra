@@ -8,7 +8,7 @@ import os
 import re
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
-from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized
+from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
 from xpra.os_util import bytestostr, OSX
 from xpra.gtk_common.gtk_util import (
     ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem,
@@ -92,7 +92,7 @@ CLIPBOARD_LABEL_TO_NAME = {
                            "Primary"    : "PRIMARY",
                            "Secondary"  : "SECONDARY"
                            }
-CLIPBOARD_NAME_TO_LABEL  = dict((v,k) for k,v in CLIPBOARD_LABEL_TO_NAME.items())
+CLIPBOARD_NAME_TO_LABEL  = reverse_dict(CLIPBOARD_LABEL_TO_NAME)
 
 CLIPBOARD_DIRECTION_LABELS = ["Client to server only", "Server to client only", "Both directions", "Disabled"]
 CLIPBOARD_DIRECTION_LABEL_TO_NAME = {
@@ -101,7 +101,7 @@ CLIPBOARD_DIRECTION_LABEL_TO_NAME = {
                                      "Both directions"          : "both",
                                      "Disabled"                 : "disabled",
                                      }
-CLIPBOARD_DIRECTION_NAME_TO_LABEL = dict((v,k) for k,v in CLIPBOARD_DIRECTION_LABEL_TO_NAME.items())
+CLIPBOARD_DIRECTION_NAME_TO_LABEL = reverse_dict(CLIPBOARD_DIRECTION_LABEL_TO_NAME)
 
 
 def ll(m):

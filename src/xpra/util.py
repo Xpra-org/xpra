@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2013-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -778,7 +778,8 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
                         pass
             else:
                 sprint("%s%s %s" % (prefix, lchar, bytestostr(k)))
-            print_nested_dict(v, prefix+"  ", "-", vformat=vformat, print_fn=print_fn, version_keys=version_keys, hex_keys=hex_keys)
+            print_nested_dict(v, prefix+"  ", "-", vformat=vformat, print_fn=print_fn,
+                              version_keys=version_keys, hex_keys=hex_keys)
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
 

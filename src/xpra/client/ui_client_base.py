@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -22,11 +22,11 @@ from xpra.util import (
     )
 from xpra.exit_codes import EXIT_FAILURE, EXIT_OK
 from xpra.version_util import get_version_info_full, get_platform_info
+from xpra.client import mixin_features
 from xpra.log import Logger
 
 
 CLIENT_BASES = [XpraClientBase]
-from xpra.client import mixin_features
 if mixin_features.display:
     from xpra.client.mixins.display import DisplayClient
     CLIENT_BASES.append(DisplayClient)
@@ -178,9 +178,14 @@ class UIXpraClient(ClientBaseClass):
                 if str(v).lower()=="auto":
                     return None
                 return v
-            overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in ("layout", "layouts", "variant", "variants", "options")]
+            overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
+                "layout", "layouts", "variant", "variants", "options",
+                )]
             try:
-                self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.shortcut_modifiers, opts.key_shortcut, opts.keyboard_raw, *overrides)
+                self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync,
+                                                                  opts.shortcut_modifiers,
+                                                                  opts.key_shortcut,
+                                                                  opts.keyboard_raw, *overrides)
             except ImportError as e:
                 keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
                 keylog.warn("Warning: no keyboard support, %s", e)
@@ -220,8 +225,8 @@ class UIXpraClient(ClientBaseClass):
         self.send_hello()
 
 
-    def quit(self, exit_code=0):
-        raise Exception("override me!")
+    def quit(self, _exit_code=0):
+        raise NotImplementedError()
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
@@ -278,7 +283,8 @@ class UIXpraClient(ClientBaseClass):
 
 
     def send_start_new_commands(self):
-        log("send_start_new_commands() start_new_commands=%s, start_child_new_commands=%s", self.start_new_commands, self.start_child_new_commands)
+        log("send_start_new_commands() start_new_commands=%s, start_child_new_commands=%s",
+            self.start_new_commands, self.start_child_new_commands)
         import shlex
         for cmd in self.start_new_commands:
             cmd_parts = shlex.split(cmd)
@@ -301,7 +307,8 @@ class UIXpraClient(ClientBaseClass):
     # and wait before actually exiting so the notification has a chance of being seen
     def server_disconnect_warning(self, reason, *info):
         body = "\n".join(info)
-        self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID, "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
+        self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
+                        "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
         self.exit_code = EXIT_FAILURE
         delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
         self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, reason, *info)
@@ -309,7 +316,8 @@ class UIXpraClient(ClientBaseClass):
 
     def server_disconnect(self, reason, *info):
         body = "\n".join(info)
-        self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID, "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
+        self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
+                        "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
         self.exit_code = EXIT_OK
         delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
         self.timeout_add(delay*1000, XpraClientBase.server_disconnect, self, reason, *info)
@@ -398,11 +406,12 @@ class UIXpraClient(ClientBaseClass):
             self.readonly = True
         if not self.server_keyboard and self.keyboard_helper:
             #swallow packets:
-            def nosend(*args):
+            def nosend(*_args):
                 pass
             self.keyboard_helper.send = nosend
 
-        i = platform_name(self._remote_platform, c.strlistget("platform.linux_distribution") or c.strget("platform.release", ""))
+        i = platform_name(self._remote_platform,
+                          c.strlistget("platform.linux_distribution") or c.strget("platform.release", ""))
         r = self._remote_version
         if self._remote_revision:
             r += "-r%s" % self._remote_revision
@@ -418,7 +427,10 @@ class UIXpraClient(ClientBaseClass):
             proxy_version = c.strget("proxy.version")
             proxy_version = c.strget("proxy.build.version", proxy_version)
             proxy_distro = c.strget("linux_distribution")
-            msg = "via: %s proxy version %s" % (platform_name(proxy_platform, proxy_distro or proxy_release), std(proxy_version or "unknown"))
+            msg = "via: %s proxy version %s" % (
+                platform_name(proxy_platform, proxy_distro or proxy_release),
+                std(proxy_version or "unknown")
+                )
             if proxy_hostname:
                 msg += " on '%s'" % std(proxy_hostname)
             log.info(msg)

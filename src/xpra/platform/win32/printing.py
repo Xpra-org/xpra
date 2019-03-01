@@ -7,7 +7,7 @@ import os
 import subprocess
 
 from xpra.platform.win32 import constants as win32con
-from xpra.util import csv, envint
+from xpra.util import csv, envint, reverse_dict
 from xpra.os_util import bytestostr
 from xpra.platform.paths import get_app_dir
 from xpra.log import Logger
@@ -40,7 +40,7 @@ PRINTER_ENUM_VALUES = {
     "ICON7"         : 65536*7,
     "ICON8"         : 65536*8,
     }
-PRINTER_ENUM_NAMES = dict((v,k) for k,v in PRINTER_ENUM_VALUES.items())
+PRINTER_ENUM_NAMES = reverse_dict(PRINTER_ENUM_VALUES)
 log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
 
 log("PRINTER_FLAGS=%s", csv(PRINTER_FLAGS))
