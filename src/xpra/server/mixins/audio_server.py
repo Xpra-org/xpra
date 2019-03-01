@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,7 +8,7 @@
 import os.path
 
 from xpra.os_util import pollwait, monotonic_time, bytestostr, osexpand, OSX, POSIX
-from xpra.util import typedict, envbool, csv
+from xpra.util import typedict, envbool, csv, engs
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
@@ -246,7 +246,9 @@ class AudioServer(StubServerMixin):
                     try:
                         files = os.listdir(path)
                         if files:
-                            soundlog.error(" found some files in '%s': %s", path, files)
+                            soundlog.error(" found %i file%s in '%s':", len(files), engs(files), path)
+                            for f in files:
+                                soundlog.error(" - '%s'", f)
                     except OSError:
                         pass
 
