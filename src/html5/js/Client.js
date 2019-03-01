@@ -1393,7 +1393,7 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
  * Focus
  */
 XpraClient.prototype._window_set_focus = function(win) {
-	if (this.server_readonly) {
+	if (win.client.server_readonly) {
 		return;
 	}
 	// don't send focus packet for override_redirect windows!
