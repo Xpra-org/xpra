@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013 - 2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 from threading import Lock
 
-from xpra.codecs.loader import get_codec, get_codec_error
+from xpra.codecs.loader import load_codec, get_codec, get_codec_error
 from xpra.util import csv, engs
 from xpra.log import Logger
 
@@ -37,7 +37,7 @@ def has_codec_module(module_name):
         log("codec module %s cannot be loaded: %s", module_name, e)
         return False
 
-def try_import_modules(codec_names):
+def try_import_modules(*codec_names):
     names = []
     for codec_name in codec_names:
         module_name = CODEC_TO_MODULE[codec_name]
@@ -47,14 +47,14 @@ def try_import_modules(codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules(["x264", "vpx", "x265", "nvenc", "ffmpeg"])
-HARDWARE_ENCODER_OPTIONS = try_import_modules(["nvenc", ])
-ALL_CSC_MODULE_OPTIONS = try_import_modules(["swscale", "libyuv"])
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg")
+HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc")
+ALL_CSC_MODULE_OPTIONS = try_import_modules("swscale", "libyuv")
 NO_GFX_CSC_OPTIONS = []
-ALL_VIDEO_DECODER_OPTIONS = try_import_modules(["avcodec2", "vpx"])
+ALL_VIDEO_DECODER_OPTIONS = try_import_modules("avcodec2", "vpx")
 
-PREFERRED_ENCODER_ORDER = ["nvenc", "x264", "vpx", "x265"]
-PREFERRED_DECODER_ORDER = ["avcodec2", "vpx"]
+PREFERRED_ENCODER_ORDER = ("nvenc", "x264", "vpx", "x265")
+PREFERRED_DECODER_ORDER = ("avcodec2", "vpx")
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 log("video_helper: NO_GFX_CSC_OPTIONS=%s", NO_GFX_CSC_OPTIONS)
@@ -255,6 +255,7 @@ class VideoHelper(object):
         for x in self.video_encoders:
             try:
                 mod = get_encoder_module_name(x)
+                load_codec(mod)
                 log(" encoder for %s: %s", x, mod)
                 try:
                     self.init_video_encoder_option(mod)
@@ -287,10 +288,10 @@ class VideoHelper(object):
                 encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
             raise
         encodings = encoder_module.get_encodings()
-        log(" %s encodings=%s", encoder_type, csv(encodings))
+        log(" %12s encodings=%s", encoder_type, csv(encodings))
         for encoding in encodings:
             colorspaces = encoder_module.get_input_colorspaces(encoding)
-            log(" %s input colorspaces for %s: %s", encoder_type, encoding, csv(colorspaces))
+            log(" %9s  input colorspaces for %5s: %s", encoder_type, encoding, csv(colorspaces))
             for colorspace in colorspaces:
                 spec = encoder_module.get_spec(encoding, colorspace)
                 self.add_encoder_spec(encoding, colorspace, spec)
@@ -306,6 +307,7 @@ class VideoHelper(object):
         for x in self.csc_modules:
             try:
                 mod = get_csc_module_name(x)
+                load_codec(mod)
                 self.init_csc_option(mod)
             except:
                 log.warn("init_csc_options() cannot add %s csc", x, exc_info=True)
@@ -313,7 +315,7 @@ class VideoHelper(object):
         for src_format, d in sorted(self._csc_encoder_specs.items()):
             log(" %s - %s options:", src_format, len(d))
             for dst_format, specs in sorted(d.items()):
-                log("  * %s via: %s", dst_format, csv(sorted(spec.codec_type for spec in specs)))
+                log("  * %7s via: %s", dst_format, csv(sorted(spec.codec_type for spec in specs)))
         log("csc options: %s", self._csc_encoder_specs)
 
     def init_csc_option(self, csc_name):
@@ -335,7 +337,7 @@ class VideoHelper(object):
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
             out_cscs = csc_module.get_output_colorspaces(in_csc)
-            log("%s output colorspaces for %s: %s", csc_module.get_type(), in_csc, csv(out_cscs))
+            log("%9s output colorspaces for %7s: %s", csc_module.get_type(), in_csc, csv(out_cscs))
             for out_csc in out_cscs:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 self.add_csc_spec(in_csc, out_csc, spec)
@@ -350,6 +352,7 @@ class VideoHelper(object):
         for x in self.video_decoders:
             try:
                 mod = get_decoder_module_name(x)
+                load_codec(mod)
                 self.init_video_decoder_option(mod)
             except:
                 log.warn("Warning: cannot add %s decoder", x, exc_info=True)
@@ -381,7 +384,7 @@ class VideoHelper(object):
             log(" %s input colorspaces for %s: %s", decoder_type, encoding, csv(colorspaces))
             for colorspace in colorspaces:
                 output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
-                log(" %s output colorspace for %s/%s: %s", decoder_type, encoding, colorspace, output_colorspace)
+                log(" %s output colorspace for %5s/%7s: %s", decoder_type, encoding, colorspace, output_colorspace)
                 try:
                     assert decoder_module.Decoder
                     self.add_decoder(encoding, colorspace, decoder_name, decoder_module)
@@ -409,7 +412,7 @@ class VideoHelper(object):
             assert encoding_specs is not None
             for colorspace, decoder_specs in sorted(encoding_specs.items()):
                 for decoder_name, decoder_module in decoder_specs:
-                    log("found decoder %s for %s with %s mode", decoder_name, encoding, colorspace)
+                    log("found decoder %12s for %5s with %7s mode", decoder_name, encoding, colorspace)
                     #figure out the actual output colorspace:
                     output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
                     if output_colorspace in client_supported_csc_modes:

@@ -158,6 +158,17 @@ CODEC_OPTIONS = {
     "dec_avcodec2"  : ("avcodec2 decoder",  "dec_avcodec2", "decoder", "Decoder"),
     }
 
+def load_codec(name):
+    if has_codec(name):
+        return
+    try:
+        description, top_module, class_module, classname = CODEC_OPTIONS[name]
+    except KeyError:
+        log.error("Error: invalid codec name '%s'", name)
+    else:
+        xpra_codec_import(name, description, top_module, class_module, classname)
+
+
 loaded = None
 def load_codecs(encoders=True, decoders=True, csc=True, video=True):
     global loaded
@@ -169,8 +180,7 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True):
 
     def load(*names):
         for name in names:
-            description, top_module, class_module, classname = CODEC_OPTIONS[name]
-            xpra_codec_import(name, description, top_module, class_module, classname)
+            load_codec(name)
 
     if encoders:
         show += list(ENCODER_CODECS)
