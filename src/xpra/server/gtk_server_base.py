@@ -178,7 +178,7 @@ class GTKServerBase(ServerBase):
                 continue
             for display in screen_sizes:
                 #avoid error with old/broken clients:
-                if not display or type(display) not in (list, tuple):
+                if not display or not isinstance(display, (list, tuple)):
                     continue
                 #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
                 if len(display)>=10:

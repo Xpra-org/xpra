@@ -27,7 +27,7 @@ class ClipboardServer(StubServerMixin):
         self.clipboard_filter_file = None
 
     def init(self, opts):
-        self.clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
+        self.clipboard = not (opts.clipboard or "").lower() in FALSE_OPTIONS
         self.clipboard_direction = opts.clipboard_direction
         self.clipboard_filter_file = opts.clipboard_filter_file
 
@@ -108,7 +108,8 @@ class ClipboardServer(StubServerMixin):
                       "can-send"    : self.clipboard_direction in ("to-client", "both"),
                       "can-receive" : self.clipboard_direction in ("to-server", "both"),
                       }
-            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
+            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet,
+                                                                self.clipboard_progress, **kwargs)
             self._clipboard_helper.init_proxies_uuid()
             self._clipboards = CLIPBOARDS
         except Exception:

@@ -132,7 +132,8 @@ class ClipboardInstance(object):
         self.log("Selection has been cleared")
 
     def selection_get_callback(self, _clipboard, selectiondata, _info, *_args):
-        #print("selection_get_callback(%s, %s, %s, %s) targets=%s" % (clipboard, selectiondata, info, args, selectiondata.get_targets()))
+        #log("selection_get_callback(%s, %s, %s, %s) targets=%s",
+        #    clipboard, selectiondata, info, args, selectiondata.get_targets())
         value = self.value_entry.get_text()
         self.log("Answering selection request with value: '%s'" % self.ellipsis(value))
         selectiondata.set("STRING", 8, value)
@@ -159,9 +160,11 @@ class ClipboardInstance(object):
     def owner_changed(self, _cb, event):
         r = {}
         if not is_gtk3():
-            r = {gtk.gdk.OWNER_CHANGE_CLOSE : "close",
-                 gtk.gdk.OWNER_CHANGE_DESTROY : "destroy",
-                 gtk.gdk.OWNER_CHANGE_NEW_OWNER : "new owner"}
+            r = {
+                gtk.gdk.OWNER_CHANGE_CLOSE      : "close",
+                gtk.gdk.OWNER_CHANGE_DESTROY    : "destroy",
+                gtk.gdk.OWNER_CHANGE_NEW_OWNER  : "new owner",
+                }
         owner = self.clipboard.get_owner()
         #print("xid=%s, owner=%s" % (self.value_entry.get_window().xid, event.owner))
         weownit = (owner is not None)

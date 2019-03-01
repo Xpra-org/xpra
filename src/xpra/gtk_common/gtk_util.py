@@ -108,7 +108,9 @@ if is_gtk3():
     def is_realized(widget):
         return widget.get_realized()
 
-    def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL, event_mask=0, wclass=gdk.WindowWindowClass.INPUT_OUTPUT, title=None, x=None, y=None, override_redirect=False, visual=None, **kwargs):
+    def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL,
+                  event_mask=0, wclass=gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
+                  x=None, y=None, override_redirect=False, visual=None, **kwargs):
         attributes_mask = 0
         attributes = gdk.WindowAttr()
         if x is not None:
@@ -447,7 +449,8 @@ else:
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
 
-    def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WINDOW_TOPLEVEL, event_mask=0, wclass=gdk.INPUT_OUTPUT, title=None, x=-1, y=-1, **kwargs):
+    def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WINDOW_TOPLEVEL,
+                  event_mask=0, wclass=gdk.INPUT_OUTPUT, title=None, x=-1, y=-1, **kwargs):
         return gdk.Window(parent, width, height, window_type, event_mask, wclass, title, x, y, **kwargs)
 
     def make_temp_window(title):
@@ -993,11 +996,32 @@ def get_screen_info(display, screen):
         if fo:
             fontoptions = info.setdefault("fontoptions", {})
             for x,vdict in {
-                            "antialias"     : {cairo.ANTIALIAS_DEFAULT      : "default", cairo.ANTIALIAS_NONE       : "none",   cairo.ANTIALIAS_GRAY        : "gray",   cairo.ANTIALIAS_SUBPIXEL    : "subpixel"},
-                            "hint_metrics"  : {cairo.HINT_METRICS_DEFAULT   : "default", cairo.HINT_METRICS_OFF     : "off",    cairo.HINT_METRICS_ON       : "on"},
-                            "hint_style"    : {cairo.HINT_STYLE_DEFAULT     : "default", cairo.HINT_STYLE_NONE      : "none",   cairo.HINT_STYLE_SLIGHT     : "slight", cairo.HINT_STYLE_MEDIUM     : "medium", cairo.HINT_STYLE_FULL       : "full"},
-                            "subpixel_order": {cairo.SUBPIXEL_ORDER_DEFAULT : "default", cairo.SUBPIXEL_ORDER_RGB   : "RGB",    cairo.SUBPIXEL_ORDER_BGR    : "BGR",    cairo.SUBPIXEL_ORDER_VRGB   : "VRGB",   cairo.SUBPIXEL_ORDER_VBGR   : "VBGR"},
-                            }.items():
+                "antialias" : {
+                    cairo.ANTIALIAS_DEFAULT     : "default",
+                    cairo.ANTIALIAS_NONE        : "none",
+                    cairo.ANTIALIAS_GRAY        : "gray",
+                    cairo.ANTIALIAS_SUBPIXEL    : "subpixel",
+                    },
+                "hint_metrics" : {
+                    cairo.HINT_METRICS_DEFAULT  : "default",
+                    cairo.HINT_METRICS_OFF      : "off",
+                    cairo.HINT_METRICS_ON       : "on",
+                    },
+                "hint_style" : {
+                    cairo.HINT_STYLE_DEFAULT    : "default",
+                    cairo.HINT_STYLE_NONE       : "none",
+                    cairo.HINT_STYLE_SLIGHT     : "slight",
+                    cairo.HINT_STYLE_MEDIUM     : "medium",
+                    cairo.HINT_STYLE_FULL       : "full",
+                    },
+                "subpixel_order": {
+                    cairo.SUBPIXEL_ORDER_DEFAULT    : "default",
+                    cairo.SUBPIXEL_ORDER_RGB        : "RGB",
+                    cairo.SUBPIXEL_ORDER_BGR        : "BGR",
+                    cairo.SUBPIXEL_ORDER_VRGB       : "VRGB",
+                    cairo.SUBPIXEL_ORDER_VBGR       : "VBGR",
+                    },
+                }.items():
                 fn = getattr(fo, "get_"+x)
                 val = fn()
                 fontoptions[x] = vdict.get(val, val)
@@ -1007,22 +1031,26 @@ def get_screen_info(display, screen):
     def visual(name, v):
         if not v:
             return
-        for x, vdict in {"bits_per_rgb" : {},
-                         "byte_order"   : {LSB_FIRST    : "LSB", MSB_FIRST  : "MSB"},
-                         "colormap_size": {},
-                         "depth"        : {},
-                         "red_pixel_details"    : {},
-                         "green_pixel_details"  : {},
-                         "blue_pixel_details"   : {},
-                         "visual_type"  : {
-                             STATIC_GRAY    : "STATIC_GRAY",
-                             GRAYSCALE      : "GRAYSCALE",
-                             STATIC_COLOR   : "STATIC_COLOR",
-                             PSEUDO_COLOR   : "PSEUDO_COLOR",
-                             TRUE_COLOR     : "TRUE_COLOR",
-                             DIRECT_COLOR   : "DIRECT_COLOR",
-                             },
-                         }.items():
+        for x, vdict in {
+            "bits_per_rgb"          : {},
+            "byte_order"            : {
+                LSB_FIRST : "LSB",
+                MSB_FIRST : "MSB",
+            },
+            "colormap_size"         : {},
+            "depth"                 : {},
+            "red_pixel_details"     : {},
+            "green_pixel_details"   : {},
+            "blue_pixel_details"    : {},
+            "visual_type"           : {
+                STATIC_GRAY    : "STATIC_GRAY",
+                GRAYSCALE      : "GRAYSCALE",
+                STATIC_COLOR   : "STATIC_COLOR",
+                PSEUDO_COLOR   : "PSEUDO_COLOR",
+                TRUE_COLOR     : "TRUE_COLOR",
+                DIRECT_COLOR   : "DIRECT_COLOR",
+                },
+            }.items():
             val = None
             try:
                 #ugly workaround for "visual_type" -> "type" for GTK2...
@@ -1225,7 +1253,8 @@ def set_tooltip_text(widget, text):
         widget.set_tooltip_text(text)
 
 
-def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, default=False, min_size=None, label_color=None, label_font=None):
+def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32,
+                default=False, min_size=None, label_color=None, label_font=None):
     button = gtk.Button(title)
     settings = button.get_settings()
     settings.set_property('gtk-button-images', True)
@@ -1249,7 +1278,7 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
             alignment = button.get_children()[0]
             b_hbox = alignment.get_children()[0]
             label = b_hbox.get_children()[1]
-        except:
+        except IndexError:
             pass
         else:
             if label_color:
@@ -1396,7 +1425,8 @@ class TableBuilder(object):
         self.inc()
 
     def attach(self, widget, i, count=1, xoptions=FILL, yoptions=FILL, xpadding=10, ypadding=0):
-        self.table.attach(widget, i, i+count, self.row, self.row+1, xoptions=xoptions, yoptions=yoptions, xpadding=xpadding, ypadding=ypadding)
+        self.table.attach(widget, i, i+count, self.row, self.row+1,
+                          xoptions=xoptions, yoptions=yoptions, xpadding=xpadding, ypadding=ypadding)
 
     def inc(self):
         self.row += 1

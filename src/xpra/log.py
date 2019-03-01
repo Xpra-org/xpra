@@ -44,12 +44,15 @@ def get_all_loggers():
     return a
 
 
+debug_enabled_categories = set()
+debug_disabled_categories = set()
+
 class FullDebugContext(object):
 
     def __enter__(self):
         global debug_enabled_categories
         self.debug_enabled_categories = debug_enabled_categories
-        debug_enabled_categories = set(debug_enabled_categories)
+        debug_enabled_categories.clear()
         debug_enabled_categories.add("all")
         self.enabled = []
         for x in get_all_loggers():
@@ -61,11 +64,10 @@ class FullDebugContext(object):
         for x in self.enabled:
             x.disable_debug()
         global debug_enabled_categories
-        debug_enabled_categories = self.debug_enabled_categories
+        debug_enabled_categories.clear()
+        debug_enabled_categories.add(self.debug_enabled_categories)
 
 
-debug_enabled_categories = set()
-debug_disabled_categories = set()
 def add_debug_category(*cat):
     remove_disabled_category(*cat)
     for c in cat:
@@ -312,7 +314,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
 
 #flatten it:
 KNOWN_FILTERS = OrderedDict()
-for category, d in STRUCT_KNOWN_FILTERS.items():
+for d in STRUCT_KNOWN_FILTERS.values():
     for k,v in d.items():
         KNOWN_FILTERS[k] = v
 
@@ -340,8 +342,11 @@ class Logger(object):
     def __init__(self, *categories):
         global default_level, debug_disabled_categories, KNOWN_FILTERS
         self.categories = list(categories)
-        caller = sys._getframe(1).f_globals["__name__"]
-        if caller!="__main__":
+        try:
+            caller = sys._getframe(1).f_globals["__name__"]
+        except AttributeError:
+            caller = None
+        if caller not in ("__main__", None):
             self.categories.insert(0, caller)
         self.logger = logging.getLogger(".".join(self.categories))
         self.logger.setLevel(default_level)

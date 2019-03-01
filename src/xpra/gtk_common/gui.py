@@ -90,23 +90,32 @@ class GUI(gtk.Window):
         label_font = pango.FontDescription("sans 16")
         if has_client:
             icon = get_pixbuf("browse.png")
-            self.browse_button = imagebutton("Browse", icon, "Browse and connect to local sessions", clicked_callback=self.browse, icon_size=48, label_font=label_font)
+            self.browse_button = imagebutton("Browse", icon,
+                                             "Browse and connect to local sessions", clicked_callback=self.browse,
+                                             icon_size=48, label_font=label_font)
             self.widgets.append(self.browse_button)
             icon = get_pixbuf("connect.png")
-            self.connect_button = imagebutton("Connect", icon, "Connect to a session", clicked_callback=self.show_launcher, icon_size=48, label_font=label_font)
+            self.connect_button = imagebutton("Connect", icon,
+                                              "Connect to a session", clicked_callback=self.show_launcher,
+                                              icon_size=48, label_font=label_font)
             self.widgets.append(self.connect_button)
         if has_server:
             icon = get_pixbuf("server-connected.png")
-            self.shadow_button = imagebutton("Shadow", icon, "Start a shadow server", clicked_callback=self.start_shadow, icon_size=48, label_font=label_font)
+            self.shadow_button = imagebutton("Shadow", icon,
+                                             "Start a shadow server", clicked_callback=self.start_shadow,
+                                             icon_size=48, label_font=label_font)
             if not has_shadow:
                 set_tooltip_text(self.shadow_button, "This build of Xpra does not support starting sessions")
                 self.shadow_button.set_sensitive(False)
             self.widgets.append(self.shadow_button)
             icon = get_pixbuf("windows.png")
-            self.start_button = imagebutton("Start", icon, "Start a session", clicked_callback=self.start, icon_size=48, label_font=label_font)
+            self.start_button = imagebutton("Start", icon,
+                                            "Start a session", clicked_callback=self.start,
+                                            icon_size=48, label_font=label_font)
             #not all builds and platforms can start sessions:
             if OSX or WIN32:
-                set_tooltip_text(self.start_button, "Starting sessions is not supported on %s" % platform_name(sys.platform))
+                set_tooltip_text(self.start_button,
+                                 "Starting sessions is not supported on %s" % platform_name(sys.platform))
                 self.start_button.set_sensitive(False)
             elif not has_server:
                 set_tooltip_text(self.start_button, "This build of Xpra does not support starting sessions")

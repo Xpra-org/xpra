@@ -75,7 +75,8 @@ class FileTransferAttributes(object):
 
     def init_opts(self, opts, can_ask=True):
         #get the settings from a config object
-        self.init_attributes(opts.file_transfer, opts.file_size_limit, opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
+        self.init_attributes(opts.file_transfer, opts.file_size_limit,
+                             opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
     def init_attributes(self, file_transfer="yes", file_size_limit=10, printing="yes", open_files="no", open_url="yes", open_command=None, can_ask=True):
         filelog("file transfer: init_attributes%s",
@@ -299,7 +300,8 @@ class FileTransferHandler(FileTransferAttributes):
         start_time = chunk_state[0]
         elapsed = monotonic_time()-start_time
         filelog("%i bytes received in %i chunks, took %ims", filesize, chunk, elapsed*1000)
-        t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False, args=(filename, mimetype, printit, openit, filesize, options))
+        t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False,
+                         args=(filename, mimetype, printit, openit, filesize, options))
         filelog("started process-download thread: %s", t)
 
     def accept_data(self, send_id, dtype, basefilename, printit, openit):
@@ -603,7 +605,8 @@ class FileTransferHandler(FileTransferAttributes):
                          len(self.pending_send_data), engs(self.pending_send_data))
             return None
         self.pending_send_data[send_id] = (dtype, url, mimetype, data, filesize, printit, openit, options)
-        self.pending_send_data_timers[send_id] = self.timeout_add(self.remote_file_ask_timeout*1000, self.send_data_ask_timeout, send_id)
+        delay = self.remote_file_ask_timeout*1000
+        self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog("sending data request for %s '%s' with send-id=%s",
                 bytestostr(dtype), url, send_id)
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit)
@@ -707,6 +710,7 @@ class FileTransferHandler(FileTransferAttributes):
         printit = v[4]
         filelog.warn("Warning: failed to %s file '%s',", ["send", "print"][printit], filename)
         filelog.warn(" the send approval request timed out")
+        return False
 
     def do_send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options={}, send_id=""):
         if printit:
@@ -724,7 +728,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("sha1 digest(%s)=%s", absfile, u.hexdigest())
         options["sha1"] = u.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)
-        if chunk_size>0 and filesize>chunk_size:
+        if 0<chunk_size<filesize:
             if len(self.send_chunks_in_progress)>=MAX_CONCURRENT_FILES:
                 raise Exception("too many file transfers in progress: %i" % len(self.send_chunks_in_progress))
             #chunking is supported and the file is big enough

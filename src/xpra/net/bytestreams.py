@@ -115,16 +115,16 @@ def can_retry(e):
         raise ConnectionClosedException(e)
     return False
 
-def untilConcludes(is_active_cb, can_retry, f, *a, **kw):
+def untilConcludes(is_active_cb, can_retry_cb, f, *a, **kw):
     global continue_wait
     wait = 0
     while is_active_cb():
         try:
             return f(*a, **kw)
         except Exception as e:
-            retry = can_retry(e)
+            retry = can_retry_cb(e)
             log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s",
-                is_active_cb, can_retry, f, a, kw, e, retry, exc_info=True)
+                is_active_cb, can_retry_cb, f, a, kw, e, retry, exc_info=True)
             e = None
             if not retry:
                 raise

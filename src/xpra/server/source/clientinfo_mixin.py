@@ -90,7 +90,9 @@ class ClientInfoMixin(StubSourceMixin):
         bitsstr = ""
         if self.client_bits:
             bitsstr = " %i-bit" % self.client_bits
-        cinfo.append("%s%s client version %s%s%s" % (std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr))
+        cinfo.append("%s%s client version %s%s%s" % (
+            std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr)
+        )
         msg = ""
         if self.hostname:
             msg += "connected from '%s'" % std(self.hostname)
@@ -101,7 +103,10 @@ class ClientInfoMixin(StubSourceMixin):
         if msg:
             cinfo.append(msg)
         if self.client_proxy:
-            msg = "via %s proxy version %s" % (platform_name(self.proxy_platform, self.proxy_release), std(self.proxy_version or "unknown"))
+            msg = "via %s proxy version %s" % (
+                platform_name(self.proxy_platform, self.proxy_release),
+                std(self.proxy_version or "unknown")
+                )
             if self.proxy_hostname:
                 msg += " on '%s'" % std(self.proxy_hostname)
             cinfo.append(msg)

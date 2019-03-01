@@ -14,7 +14,7 @@ from xpra.sound.common import (
     MPEG4, MKA, OGG,
     )
 from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, bytestostr
-from xpra.util import csv, engs, parse_simple_dict, envint, envbool
+from xpra.util import csv, engs, parse_simple_dict, reverse_dict, envint, envbool
 from xpra.log import Logger
 
 log = Logger("sound", "gstreamer")
@@ -64,10 +64,8 @@ NAME_TO_SRC_PLUGIN = {
     "direct"        : "directsoundsrc",
     "wasapi"        : "wasapisrc",
     }
+SRC_TO_NAME_PLUGIN = reverse_dict(NAME_TO_SRC_PLUGIN)
 SRC_HAS_DEVICE_NAME = ["alsasrc", "osssrc", "oss4src", "jackaudiosrc", "pulsesrc", "directsoundsrc", "osxaudiosrc"]
-SRC_TO_NAME_PLUGIN = {}
-for k,v in NAME_TO_SRC_PLUGIN.items():
-    SRC_TO_NAME_PLUGIN[v] = k
 PLUGIN_TO_DESCRIPTION = {
     "pulsesrc"      : "Pulseaudio",
     "jacksrc"       : "JACK Audio Connection Kit",
@@ -101,8 +99,8 @@ CODEC_OPTIONS = [
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mpg123audiodec", None),
         (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mpegaudioparse ! mad",         "qtdemux"),
         (WAV        , "wavenc",         None,           "wavparse",                     None),
-        (WAV_LZ4    , "wavenc",         None,           "wavparse",                     None,                       "lz4"),
-        (WAV_LZO    , "wavenc",         None,           "wavparse",                     None,                       "lzo"),
+        (WAV_LZ4    , "wavenc",         None,           "wavparse",                     None,               "lz4"),
+        (WAV_LZO    , "wavenc",         None,           "wavparse",                     None,               "lzo"),
         (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",                      "oggdemux"),
         (OPUS       , "opusenc",        None,           "opusparse ! opusdec",          None),
         #this can cause "could not link opusenc0 to webmmux0"
@@ -203,7 +201,12 @@ ENCODER_LATENCY = {
         SPEEX       : 0,
        }
 
-CODEC_ORDER = [OPUS, OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS, MP3, FLAC_OGG, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG, VORBIS, OPUS_MKA, FLAC, MP3_MPEG4]
+CODEC_ORDER = [
+    OPUS, OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS,
+    MP3, FLAC_OGG, AAC_MPEG4,
+    WAV_LZ4, WAV_LZO, WAV, WAVPACK,
+    SPEEX_OGG, VORBIS, OPUS_MKA, FLAC, MP3_MPEG4,
+    ]
 
 
 gst = None
@@ -229,7 +232,8 @@ def import_gst():
         log("gstreamer_util: frozen=%s", frozen)
         if frozen:
             #on win32, we keep separate trees
-            #because GStreamer 0.10 and 1.x were built using different and / or incompatible version of the same libraries:
+            #because GStreamer 0.10 and 1.x were built using different
+            # and / or incompatible version of the same libraries:
             from xpra.platform.paths import get_app_dir
             gi_dir = os.path.join(get_app_dir(), "lib", "girepository-1.0")
             gst_dir = os.path.join(get_app_dir(), "lib", "gstreamer-1.0")   #ie: C:\Program Files\Xpra\lib\gstreamer-1.0
@@ -238,7 +242,8 @@ def import_gst():
                 #fallback to old build locations:
                 gi_dir = os.path.join(get_app_dir(), "girepository-1.0")
                 gst_dir = os.path.join(get_app_dir(), "gstreamer-1.0")
-                gst_bin_dir = os.path.join(gst_dir, "bin")                  #ie: C:\Program Files\Xpra\gstreamer-0.10\bin
+                #ie: "C:\Program Files\Xpra\gstreamer-0.10\bin" :
+                gst_bin_dir = os.path.join(gst_dir, "bin")
             os.environ["GI_TYPELIB_PATH"] = gi_dir
             os.environ["GST_PLUGIN_PATH"] = gst_dir
             os.environ["PATH"] = os.pathsep.join(x for x in (gst_bin_dir, os.environ.get("PATH", "")) if x)
@@ -250,13 +255,15 @@ def import_gst():
         bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
         log("OSX: GST_BUNDLE_CONTENTS=%s", bundle_contents)
         if bundle_contents:
-            os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-1.0")
-            os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Resources", "bin", "gst-plugin-scanner-1.0")
+            rsc_dir = os.path.join(bundle_contents, "Resources")
+            os.environ["GST_PLUGIN_PATH"]       = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
+            os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(rsc_dir, "bin", "gst-plugin-scanner-1.0")
             #typelib path should have been set in PythonExecWrapper
             if not os.environ.get("GI_TYPELIB_PATH"):
                 gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-1.0")
                 os.environ["GI_TYPELIB_PATH"]       = gi_dir
-    log("GStreamer 1.x environment: %s", dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
+    log("GStreamer 1.x environment: %s",
+        dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
 
     try:
@@ -275,7 +282,8 @@ def import_gst():
     return gst
 
 def prevent_import():
-    global gst, import_gst
+    global gst
+    global import_gst
     if gst or "gst" in sys.modules or "gi.repository.Gst" in sys.modules:
         raise Exception("cannot prevent the import of the GStreamer bindings, already loaded: %s" % gst)
     def fail_import():
@@ -294,7 +302,7 @@ def normv(v):
 all_plugin_names = []
 def get_all_plugin_names():
     global all_plugin_names, gst
-    if len(all_plugin_names)==0 and gst:
+    if not all_plugin_names and gst:
         registry = gst.Registry.get()
         all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
         all_plugin_names.sort()
@@ -310,7 +318,7 @@ def has_plugins(*names):
             continue
         snames += [v.strip() for v in x.split("!")]
     missing = [name for name in snames if (name is not None and name not in allp)]
-    if len(missing)>0:
+    if missing:
         log("missing %s from %s", missing, names)
     return len(missing)==0
 
@@ -357,8 +365,8 @@ def init_codecs():
     log("initialized sound codecs:")
     def ci(v):
         return "%-22s" % (v or "")
-    log("  - %s", "".join([ci(v) for v in ("encoder/decoder", "(de)payloader", "stream-compressor")]))
-    for k in [x for x in CODEC_ORDER]:
+    log("  - %s", "".join(ci(v) for v in ("encoder/decoder", "(de)payloader", "stream-compressor")))
+    for k in CODEC_ORDER:
         if k in ENCODERS or k in DECODERS:
             CODECS[k] = True
             log("* %s :", k)
@@ -442,7 +450,8 @@ def get_encoder_elements(name):
     encoders = get_encoders()
     assert name in encoders, "invalid codec: %s (should be one of: %s)" % (name, encoders.keys())
     encoder, formatter, stream_compressor = encoders.get(name)
-    assert stream_compressor is None or has_stream_compressor(stream_compressor), "stream-compressor %s not found" % stream_compressor
+    if stream_compressor:
+        assert has_stream_compressor(stream_compressor), "stream-compressor %s not found" % stream_compressor
     assert encoder is None or has_plugins(encoder), "encoder %s not found" % encoder
     assert formatter is None or has_plugins(formatter), "formatter %s not found" % formatter
     return encoder, formatter, stream_compressor
@@ -451,7 +460,8 @@ def get_decoder_elements(name):
     decoders = get_decoders()
     assert name in decoders, "invalid codec: %s (should be one of: %s)" % (name, decoders.keys())
     decoder, parser, stream_compressor = decoders.get(name)
-    assert stream_compressor is None or has_stream_compressor(stream_compressor), "stream-compressor %s not found" % stream_compressor
+    if stream_compressor:
+        assert has_stream_compressor(stream_compressor), "stream-compressor %s not found" % stream_compressor
     assert decoder is None or has_plugins(decoder), "decoder %s not found" % decoder
     assert parser is None or has_plugins(parser), "parser %s not found" % parser
     return decoder, parser, stream_compressor
@@ -485,7 +495,7 @@ def plugin_str(plugin, options):
     s = "%s" % plugin
     def qstr(v):
         #only quote strings
-        if type(v) in (str, unicode):
+        if isinstance(v, (str, unicode)):
             return "\"%s\"" % v
         return v
     if options:
@@ -589,7 +599,8 @@ def get_test_defaults(*_args):
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
 
 WARNED_MULTIPLE_DEVICES = False
-def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, env_device_name=None):
+def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
+                       input_or_output=None, remote=None, env_device_name=None):
     try:
         device = get_pulse_device(device_name_match, want_monitor_device, input_or_output, remote, env_device_name)
     except Exception as e:
@@ -612,7 +623,8 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_o
         log("device %s may still be muted: %s", device, e)
     return {"device" : bytestostr(device)}
 
-def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, env_device_name=None):
+def get_pulse_device(device_name_match=None, want_monitor_device=True,
+                     input_or_output=None, remote=None, env_device_name=None):
     """
         choose the device to use
     """
@@ -752,10 +764,13 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
     return device
 
 def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
-    return get_pulse_defaults(device_name_match, want_monitor_device, input_or_output=not want_monitor_device, remote=remote, env_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
+    return get_pulse_defaults(device_name_match, want_monitor_device,
+                              input_or_output=not want_monitor_device, remote=remote,
+                              env_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
 
 def get_pulse_sink_defaults():
-    return get_pulse_defaults(want_monitor_device=False, input_or_output=False, env_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
+    return get_pulse_defaults(want_monitor_device=False, input_or_output=False,
+                              env_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
 
 def get_directsound_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
     try:
@@ -902,7 +917,9 @@ def main():
         if v[-1]==0:
             v = v[:-1]
         gst_vinfo = ".".join((str(x) for x in v))
-        print("Loaded Python GStreamer version %s for Python %s.%s" % (gst_vinfo, sys.version_info[0], sys.version_info[1]))
+        print("Loaded Python GStreamer version %s for Python %s.%s" % (
+            gst_vinfo, sys.version_info[0], sys.version_info[1])
+        )
         apn = get_all_plugin_names()
         print("GStreamer plugins found: %s" % csv(apn))
         print("")

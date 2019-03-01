@@ -4,9 +4,21 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char, byref, sizeof
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE
-from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE, HMENU
+from ctypes import (
+    WinDLL, POINTER, WINFUNCTYPE,
+    GetLastError, Structure,
+    c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char,
+    byref, sizeof,
+    )
+from ctypes.wintypes import (
+    HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE,
+    SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE,
+    )
+from ctypes.wintypes import (
+    HANDLE, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
+    LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
+    HINSTANCE, HMENU,
+    )
 #imported from this module but not used here:
 assert GetLastError
 

@@ -43,7 +43,8 @@ class EncodingsMixin(StubSourceMixin):
         self.default_speed = 40         #encoding speed (only used by x264)
         self.default_min_speed = 10     #default minimum encoding speed
 
-        self.default_batch_config = DamageBatchConfig()     #contains default values, some of which may be supplied by the client
+        #contains default values, some of which may be supplied by the client:
+        self.default_batch_config = DamageBatchConfig()
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
 
         self.vrefresh = -1
@@ -208,7 +209,8 @@ class EncodingsMixin(StubSourceMixin):
         if delta>RECALCULATE_DELAY:
             add_work_item(self.recalculate_delays)
         else:
-            self.calculate_timer = self.timeout_add(int(1000*(RECALCULATE_DELAY-delta)), add_work_item, self.recalculate_delays)
+            delay = int(1000*(RECALCULATE_DELAY-delta))
+            self.calculate_timer = self.timeout_add(delay, add_work_item, self.recalculate_delays)
 
     def cancel_recalculate_timer(self):
         ct = self.calculate_timer
@@ -367,8 +369,23 @@ class EncodingsMixin(StubSourceMixin):
             for colorspace, spec_props in colorspace_specs.items():
                 for spec_prop in spec_props:
                     #make a new spec based on spec_props:
-                    spec = video_spec(codec_class=Encoder, codec_type="proxy", encoding=encoding)
+                    spec_prop = typedict(spec_prop)
+                    input_colorspace = spec_prop.strget("input_colorspace")
+                    output_colorspaces = spec_prop.strlistget("output_colorspaces")
+                    if not input_colorspace or not output_colorspaces:
+                        log.warn("Warning: invalid proxy video encoding '%s':", encoding)
+                        log.warn(" missing colorspace attributes")
+                        continue
+                    spec = video_spec(codec_class=Encoder,
+                                      has_lossless_mode=spec_prop.boolget("has_lossless_mode", False),
+                                      input_colorspace=input_colorspace,
+                                      output_colorspaces=output_colorspaces,
+                                      codec_type="proxy", encoding=encoding,
+                                      )
                     for k,v in spec_prop.items():
+                        if k.startswith("_") or not hasattr(spec, k):
+                            log.warn("Warning: invalid proxy codec attribute '%s'", k)
+                            continue
                         setattr(spec, k, v)
                     proxylog("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
                     self.video_helper.add_encoder_spec(encoding, colorspace, spec)

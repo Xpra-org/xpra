@@ -14,7 +14,7 @@ from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.gobject_compat import import_glib
-from xpra.gtk_common.error import xswallow
+from xpra.gtk_common.error import xswallow, XError
 from xpra.gtk_common.gtk_util import (
     get_screen_sizes, get_root_size,
     get_xwindow,
@@ -149,7 +149,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 icon = (w, h, "png", icon_data)
                 icons = (icon,)
         except:
-            iconlog("failed to return window icon")
+            iconlog("failed to return window icon", exc_info=True)
         return self._updateprop("icons", icons)
 
 
@@ -213,7 +213,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 try:
                     with xsync:
                         screen_sizes = RandR.get_xrr_screen_sizes()
-                except:
+                except XError:
                     screenlog("failed to query screen sizes", exc_info=True)
                 else:
                     if not screen_sizes:

@@ -44,12 +44,15 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_enabled = c.boolget("clipboard", False)
         self.clipboard_notifications = c.boolget("clipboard.notifications")
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
-        log("client clipboard: enabled=%s, notifications=%s, set-enabled=%s", self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
+        log("client clipboard: enabled=%s, notifications=%s, set-enabled=%s",
+            self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
         self.clipboard_greedy = c.boolget("clipboard.greedy")
         self.clipboard_want_targets = c.boolget("clipboard.want_targets")
         self.clipboard_client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
         self.clipboard_contents_slice_fix = c.boolget("clipboard.contents-slice-fix")
-        log("client clipboard: greedy=%s, want_targets=%s, client_selections=%s, contents_slice_fix=%s", self.clipboard_greedy, self.clipboard_want_targets, self.clipboard_client_selections, self.clipboard_contents_slice_fix)
+        log("client clipboard: greedy=%s, want_targets=%s, client_selections=%s, contents_slice_fix=%s",
+            self.clipboard_greedy, self.clipboard_want_targets,
+            self.clipboard_client_selections, self.clipboard_contents_slice_fix)
         if not self.clipboard_contents_slice_fix:
             log.info("client clipboard does not include contents slice fix")
 
@@ -127,8 +130,7 @@ class ClipboardConnection(StubSourceMixin):
     def compress_clipboard(self, packet):
         #Note: this runs in the 'encode' thread!
         packet = list(packet)
-        for i in range(len(packet)):
-            v = packet[i]
-            if isinstance(v, Compressible):
-                packet[i] = self.compressed_wrapper(v.datatype, v.data)
+        for i, item in enumerate(packet):
+            if isinstance(item, Compressible):
+                packet[i] = self.compressed_wrapper(item.datatype, item.data)
         self.queue_packet(packet)

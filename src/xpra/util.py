@@ -782,6 +782,12 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
 
+def reverse_dict(d):
+    reversed_d = {}
+    for k,v in d.items():
+        reversed_d[v] = k
+    return reversed_d
+
 
 def std(s, extras="-,./: "):
     s = s or ""

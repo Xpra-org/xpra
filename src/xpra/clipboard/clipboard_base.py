@@ -784,7 +784,7 @@ class ClipboardProxy(gtk.Invisible):
         # assert that we can handle the requested sort of target. Fortunately,
         # Xpra never needs to request the clipboard when it owns it, so that's
         # okay.
-        assert str(event.selection) == self._selection, "selection does not match: expected %s but got %s" % (event.selection, self._selection)
+        assert str(event.selection) == self._selection, "expected %s but got %s" % (event.selection, self._selection)
         target = str(event.target)
         if target == "TIMESTAMP":
             pass
@@ -832,7 +832,7 @@ class ClipboardProxy(gtk.Invisible):
         target = selectiondata_get_target(selection_data)
         log("do_selection_get(%s, %s, %s) selection=%s", selection_data, info, time, selection)
         self._selection_get_events += 1
-        assert str(selection) == self._selection, "selection does not match: expected %s but got %s" % (selection, self._selection)
+        assert str(selection) == self._selection, "expected %s but got %s" % (selection, self._selection)
         self._request_contents_events += 1
         result = self.emit("get-clipboard-from-remote", self._selection, target)
         if result is None or result["type"] is None:

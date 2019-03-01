@@ -125,15 +125,17 @@ class ClientConnection(ClientConnectionClass):
             except Exception as e:
                 raise Exception("failed to initialize %s: %s" % (bc, e))
 
-        self.packet_queue = deque()                 #holds actual packets ready for sending (already encoded)
-                                                    #these packets are picked off by the "protocol" via 'next_packet()'
-                                                    #format: packet, wid, pixels, start_send_cb, end_send_cb
-                                                    #(only packet is required - the rest can be 0/None for clipboard packets)
+        #holds actual packets ready for sending (already encoded)
+        #these packets are picked off by the "protocol" via 'next_packet()'
+        #format: packet, wid, pixels, start_send_cb, end_send_cb
+        #(only packet is required - the rest can be 0/None for clipboard packets)
+        self.packet_queue = deque()
         # the encode work queue is used by mixins that need to encode data before sending it,
         # ie: encodings and clipboard
-        self.encode_work_queue = None               #this queue will hold functions to call to compress data (pixels, clipboard)
-                                                    #items placed in this queue are picked off by the "encode" thread,
-                                                    #the functions should add the packets they generate to the 'packet_queue'
+        #this queue will hold functions to call to compress data (pixels, clipboard)
+        #items placed in this queue are picked off by the "encode" thread,
+        #the functions should add the packets they generate to the 'packet_queue'
+        self.encode_work_queue = None
         self.encode_thread = None
         self.ordinary_packets = []
         self.socket_dir = socket_dir
@@ -316,11 +318,12 @@ class ClientConnection(ClientConnectionClass):
     #
     def queue_encode(self, item):
         #start the encode work queue:
-        self.encode_work_queue = Queue()            #holds functions to call to compress data (pixels, clipboard)
-                                                    #items placed in this queue are picked off by the "encode" thread,
-                                                    #the functions should add the packets they generate to the 'packet_queue'
+        #holds functions to call to compress data (pixels, clipboard)
+        #items placed in this queue are picked off by the "encode" thread,
+        #the functions should add the packets they generate to the 'packet_queue'
+        self.encode_work_queue = Queue()
         self.queue_encode = self.encode_work_queue.put
-        self.encode_work_queue.put(item)
+        self.queue_encode(item)
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
     def encode_queue_size(self):
@@ -337,7 +340,8 @@ class ClientConnection(ClientConnectionClass):
         self.statistics.compression_work_qsizes.append((monotonic_time(), self.encode_queue_size()))
         self.queue_encode(fn_and_args)
 
-    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None, fail_cb=None, wait_for_more=False):
+    def queue_packet(self, packet, wid=0, pixels=0,
+                     start_send_cb=None, end_send_cb=None, fail_cb=None, wait_for_more=False):
         """
             Add a new 'draw' packet to the 'packet_queue'.
             Note: this code runs in the non-ui thread
@@ -345,7 +349,9 @@ class ClientConnection(ClientConnectionClass):
         now = monotonic_time()
         self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
         if wid>0:
-            self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1]==wid)))
+            self.statistics.damage_packet_qpixels.append(
+                (now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1]==wid))
+                )
         self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb, wait_for_more))
         p = self.protocol
         if p:
@@ -488,7 +494,8 @@ class ClientConnection(ClientConnectionClass):
     ######################################################################
     # notifications:
     # Utility functions for mixins (makes notifications optional)
-    def may_notify(self, nid, summary, body, actions=(), hints={}, expire_timeout=10*1000, icon_name=None, user_callback=None):
+    def may_notify(self, nid, summary, body, actions=(), hints={}, expire_timeout=10*1000,
+                   icon_name=None, user_callback=None):
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notifications.common import parse_image_path
@@ -499,7 +506,8 @@ class ClientConnection(ClientConnectionClass):
             icon = parse_image_path(icon_filename) or ""
             self.notify("", nid, "Xpra", 0, "", summary, body, actions, hints, expire_timeout, icon, user_callback)
 
-    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon, user_callback=None):
+    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon,
+               summary, body, actions, hints, expire_timeout, icon, user_callback=None):
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         notifylog("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
@@ -521,7 +529,8 @@ class ClientConnection(ClientConnectionClass):
             body = str(body)
         if self.hello_sent:
             #Warning: actions and hints are send last because they were added later (in version 2.3)
-            self.send_async("notify_show", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon, actions, hints)
+            self.send_async("notify_show", dbus_id, nid, app_name, replaces_nid, app_icon,
+                            summary, body, expire_timeout, icon, actions, hints)
         return True
 
     def notify_close(self, nid):

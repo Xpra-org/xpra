@@ -105,8 +105,10 @@ class AudioMixin(StubSourceMixin):
         #check pulseaudio id if we have it
         pulseaudio_id = self.sound_properties.get("pulseaudio", {}).get("id")
         pulseaudio_cookie_hash = self.sound_properties.get("pulseaudio", {}).get("cookie-hash")
-        log("audio_loop_check(%s) pulseaudio id=%s, client pulseaudio id=%s, pulseaudio cookie hash=%s, client pulseaudio cookie hash=%s",
-                 mode, pulseaudio_id, self.pulseaudio_id, pulseaudio_cookie_hash, self.pulseaudio_cookie_hash)
+        log("audio_loop_check(%s) pulseaudio id=%s, client pulseaudio id=%s",
+                 mode, pulseaudio_id, self.pulseaudio_id)
+        log("audio_loop_check(%s) pulseaudio cookie hash=%s, client pulseaudio cookie hash=%s",
+                 mode, pulseaudio_cookie_hash, self.pulseaudio_cookie_hash)
         if pulseaudio_id and self.pulseaudio_id:
             if self.pulseaudio_id!=pulseaudio_id:
                 return True

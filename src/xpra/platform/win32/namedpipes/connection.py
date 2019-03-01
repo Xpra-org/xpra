@@ -13,9 +13,22 @@ from xpra.os_util import strtobytes
 from xpra.net.bytestreams import Connection
 from xpra.net.common import ConnectionClosedException
 from xpra.platform.win32.common import CloseHandle
-from xpra.platform.win32.namedpipes.common import OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE, ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED, INFINITE, ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING
-from xpra.platform.win32.namedpipes.common import CreateEventA, CreateFileA, ReadFile, WriteFile, DisconnectNamedPipe, FlushFileBuffers, WaitNamedPipeA, GetLastError, SetNamedPipeHandleState, WaitForSingleObject, GetOverlappedResult
-from xpra.platform.win32.constants import FILE_FLAG_OVERLAPPED, GENERIC_READ, GENERIC_WRITE, OPEN_EXISTING, PIPE_READMODE_BYTE
+from xpra.platform.win32.namedpipes.common import (
+    OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE,
+    ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED,
+    INFINITE, ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING,
+    )
+from xpra.platform.win32.namedpipes.common import (
+    CreateEventA, CreateFileA,
+    ReadFile, WriteFile,
+    DisconnectNamedPipe, FlushFileBuffers, WaitNamedPipeA,
+    GetLastError, SetNamedPipeHandleState, WaitForSingleObject, GetOverlappedResult,
+    )
+from xpra.platform.win32.constants import (
+    FILE_FLAG_OVERLAPPED,
+    GENERIC_READ, GENERIC_WRITE,
+    OPEN_EXISTING, PIPE_READMODE_BYTE,
+    )
 
 from xpra.log import Logger
 log = Logger("network", "named-pipe", "win32")
@@ -177,7 +190,8 @@ def connect_to_namedpipe(pipe_name, timeout=10):
     while True:
         if time.time()-start>=timeout:
             raise Exception("timeout waiting for named pipe '%s'" % pipe_name)
-        pipe_handle = CreateFileA(strtobytes(pipe_name), GENERIC_READ | GENERIC_WRITE, 0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0)
+        pipe_handle = CreateFileA(strtobytes(pipe_name), GENERIC_READ | GENERIC_WRITE,
+                                  0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0)
         log("CreateFileA(%s)=%#x", pipe_name, pipe_handle)
         if pipe_handle!=INVALID_HANDLE_VALUE:
             break
