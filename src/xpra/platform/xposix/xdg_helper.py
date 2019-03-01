@@ -59,6 +59,7 @@ def export(entry, properties):
         except Exception as e:
             l("error on %s", entry, exc_info=True)
             log.error("Error parsing '%s': %s", prop, e)
+    l("properties(%s)=%s", name, props)
     if EXPORT_ICONS:
         #load icon binary data:
         icon = props.get("Icon")
@@ -67,7 +68,6 @@ def export(entry, properties):
             bdata, ext = icondata
             props["IconData"] = bdata
             props["IconType"] = ext
-    l("properties(%s)=%s", name, props)
     return props
 
 def load_icon_from_file(filename):
