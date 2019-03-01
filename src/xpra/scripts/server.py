@@ -881,7 +881,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             log.error(" %s", str(e) or type(e))
             del e
         try:
-            os.close(displayfd)
+            os.fsync(displayfd)
+            if displayfd>2:
+                os.close(displayfd)
         except IOError:
             pass
 
