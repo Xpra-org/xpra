@@ -40,7 +40,9 @@ class XpraProxy(object):
         self._quit_cb = quit_cb
         self._closed = False
         self._to_client = threading.Thread(target=self._to_client_loop)
+        self._to_client.setDaemon(True)
         self._to_server = threading.Thread(target=self._to_server_loop)
+        self._to_server.setDaemon(True)
 
     def start_threads(self):
         self._to_client.start()
