@@ -5,6 +5,7 @@
 
 import os
 
+from xpra.log import Logger
 from xpra.os_util import monotonic_time, strtobytes
 from xpra.util import envint
 
@@ -24,13 +25,17 @@ def write_displayfd(w_pipe, display, timeout=10):
     import errno
     buf = b"%s\n" % strtobytes(display)
     limit = monotonic_time()+timeout
+    log = Logger("util")
+    log("write_displayfd%s", (w_pipe, display, timeout))
     while buf and monotonic_time()<limit:
         try:
             timeout = max(0, limit-monotonic_time())
             w = select.select([], [w_pipe], [], timeout)[1]
+            log("select.select(..) writeable=%s", w)
             if w_pipe in w:
                 count = os.write(w_pipe, buf)
                 buf = buf[count:]
+                log("wrote %i bytes, remains %s", count, buf)
         except (select.error, OSError, IOError) as e:
             if eerrno(e)!=errno.EINTR:
                 raise
@@ -43,12 +48,17 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     # waiting up to 10 seconds for it to show up
     limit = monotonic_time()+timeout
     buf = b""
+    log = Logger("util")
+    log("read_displayfd%s", (r_pipe, timeout, proc))
     while monotonic_time()<limit and len(buf)<8 and (proc is None or proc.poll() is None):
         try:
             timeout = max(0, limit-monotonic_time())
             r = select.select([r_pipe], [], [], timeout)[0]
+            log("readable=%s", r)
             if r_pipe in r:
-                buf += os.read(r_pipe, 8)
+                v = os.read(r_pipe, 8)
+                buf += v
+                log("read=%s", v)
                 if buf and (buf.endswith(b'\n') or len(buf)>=8):
                     break
         except (select.error, OSError, IOError) as e:
