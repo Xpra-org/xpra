@@ -882,10 +882,13 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             del e
         try:
             os.fsync(displayfd)
-            if displayfd>2:
+        except (IOError, OSError):
+            log("os.fsync(%i)", displayfd, exc_info=True)
+        if displayfd>2:
+            try:
                 os.close(displayfd)
-        except IOError:
-            pass
+            except (IOError, OSError):
+                log("os.close(%i)", displayfd, exc_info=True)
 
     kill_display = None
     if not proxying:
