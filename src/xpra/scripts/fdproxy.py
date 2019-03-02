@@ -1,9 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
+import signal
 import threading
 
 from xpra.net.bytestreams import untilConcludes
@@ -37,12 +39,15 @@ class XpraProxy(object):
         self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn
-        self._quit_cb = quit_cb
+        self._quit_cb = quit_cb or self.do_quit
         self._closed = False
         self._to_client = threading.Thread(target=self._to_client_loop)
         self._to_client.setDaemon(True)
         self._to_server = threading.Thread(target=self._to_server_loop)
         self._to_server.setDaemon(True)
+        self._exit_code = 0
+        signal.signal(signal.SIGINT, self.signal_quit)
+        signal.signal(signal.SIGTERM, self.signal_quit)
 
     def start_threads(self):
         self._to_client.start()
@@ -88,6 +93,10 @@ class XpraProxy(object):
     def is_active(self):
         return not self._closed
 
+    def signal_quit(self, signum, _frame=None):
+        self._exit_code = 128+signum
+        self.quit()
+
     def quit(self, *args):
         log("XpraProxy.quit(%s) %s: closing connections", args,  self._name)
         self._closed = True
@@ -103,3 +112,6 @@ class XpraProxy(object):
             self._server_conn.close()
         except:
             pass
+
+    def do_quit(self, _proxy):
+        sys.exit(self._exit_code)
