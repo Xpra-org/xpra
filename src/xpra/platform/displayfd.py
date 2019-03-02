@@ -49,7 +49,7 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
             r = select.select([r_pipe], [], [], timeout)[0]
             if r_pipe in r:
                 buf += os.read(r_pipe, 8)
-                if buf and (buf[-1]==b'\n' or len(buf)>=8):
+                if buf and (buf.endswith(b'\n') or len(buf)>=8):
                     break
         except (select.error, OSError, IOError) as e:
             if eerrno(e)!=errno.EINTR:
