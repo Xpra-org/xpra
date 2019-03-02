@@ -1894,10 +1894,17 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
             if not OSX and not matching_display:
                 #use "--displayfd" switch to tell us which display was chosen:
                 r_pipe, w_pipe = os.pipe()
+                log("subprocess displayfd pipes: %s", (r_pipe, w_pipe))
                 cmd.append("--displayfd=%s" % w_pipe)
                 close_fds = False
                 def no_close_pipes():
                     from xpra.os_util import close_fds as osclose_fds
+                    if PYTHON3:
+                        try:
+                            for fd in (r_pipe, w_pipe):
+                                os.set_inheritable(fd, True)
+                        except:
+                            log.error("no_close_pipes()", exc_info=True)
                     osclose_fds([0, 1, 2, r_pipe, w_pipe])
                 preexec_fn = no_close_pipes
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
