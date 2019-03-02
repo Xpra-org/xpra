@@ -442,7 +442,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             "_proxy",
             "_proxy_start",
             "_proxy_start_desktop",
-            "_shadow_start",
+            "_proxy_shadow_start",
             ) and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
@@ -1598,7 +1598,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         params["display_as_args"] = proxy_args
         #and use a proxy subcommand to start the server:
         params["proxy_command"] = [{
-                                   "shadow"         : "_shadow_start",
+                                   "shadow"         : "_proxy_shadow_start",
                                    "start"          : "_proxy_start",
                                    "start-desktop"  : "_proxy_start_desktop",
                                    }.get(mode)]
@@ -2031,11 +2031,11 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     no_gtk()
-    if mode in ("_proxy_start", "_proxy_start_desktop", "_shadow_start"):
+    if mode in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
         server_mode = {
                        "_proxy_start"           : "start",
                        "_proxy_start_desktop"   : "start-desktop",
-                       "_shadow_start"          : "shadow",
+                       "_proxy_shadow_start"    : "shadow",
                        }.get(mode)
         #strip defaults, only keep extra ones:
         for x in ("start", "start-child",
