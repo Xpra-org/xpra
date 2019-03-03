@@ -12,7 +12,7 @@ if os.environ.get("XPRA_XDG_OPEN"):
     sys.stderr.write("xdg-open: aborting to avoid forwarding loop\n")
     sys.exit(1)
 
-socket_path = os.environ.get("XPRA_XDG_OPEN_SERVER_SOCKET")
+socket_path = os.environ.get("XPRA_SERVER_SOCKET")
 display = os.environ.get("DISPLAY", "unknown")
 if socket_path and os.path.exists(socket_path):
     #try to forward open commands:

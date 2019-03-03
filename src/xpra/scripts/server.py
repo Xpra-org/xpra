@@ -1121,7 +1121,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                         xdg_override = os.path.join(x, "xdg-open")
                         if os.path.exists(xdg_override):
                             os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
-                            os.environ["XPRA_XDG_OPEN_SERVER_SOCKET"] = ud_paths[0]
+                            os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
                             break
             else:
                 log.warn("Warning: no local server sockets,")
