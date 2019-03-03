@@ -566,7 +566,7 @@ keymd5(host_key),
 
     if not transport.is_authenticated() and PASSWORD_AUTH and not password:
         for _ in range(1+PASSWORD_RETRY):
-            password = input_pass("please enter the SSH password for %s@%s" % (username, host))
+            password = input_pass("please enter the SSH password for %s@%s:" % (username, host))
             if not password:
                 break
             auth_password()
