@@ -6,13 +6,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from threading import Thread
 from time import sleep
 
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
-from xpra.os_util import thread, monotonic_time, bytestostr, strtobytes, WIN32, PYTHON3
+from xpra.os_util import monotonic_time, bytestostr, strtobytes, WIN32, PYTHON3
 from xpra.util import (
-    typedict, flatten_dict, updict, merge_dicts, envbool,
+    typedict, flatten_dict, updict, merge_dicts, envbool, envint,
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
     NEW_CLIENT, DONE, SESSION_BUSY,
     )
@@ -76,6 +77,7 @@ screenlog = Logger("screen")
 log("ServerBaseClass%s", SERVER_BASES)
 
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
+INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 
 
 """
@@ -100,6 +102,7 @@ class ServerBase(ServerBaseClass):
         self.ui_driver = None
         self.sharing = None
         self.lock = None
+        self.init_thread = None
 
         self.idle_timeout = 0
         #duplicated from Server Source...
@@ -146,17 +149,26 @@ class ServerBase(ServerBaseClass):
         log("starting component init")
         for c in SERVER_BASES:
             c.setup(self)
-        thread.start_new_thread(self.threaded_init, ())
+        self.init_thread = Thread(target=self.threaded_init)
+        self.init_thread.start()
 
     def threaded_init(self):
         log("threaded_init() start")
-        sleep(0.1)
         from xpra.platform import threaded_server_init
         threaded_server_init()
         for c in SERVER_BASES:
             if c!=ServerCore:
                 c.threaded_setup(self)
         log("threaded_init() end")
+
+    def wait_for_threaded_init(self):
+        assert self.init_thread
+        log("wait_for_threaded_init() %s.is_alive()=%s", self.init_thread, self.init_thread.is_alive())
+        if self.init_thread.is_alive():
+            log.info("waiting for video encoders initialization")
+            self.init_thread.join(INIT_THREAD_TIMEOUT)
+            if self.init_thread.is_alive():
+                log.warn("Warning: initialization thread is still active")
 
 
     def server_is_ready(self):

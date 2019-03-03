@@ -56,6 +56,10 @@ class EncodingServer(StubServerMixin):
         getVideoHelper().cleanup()
 
 
+    def parse_hello(self, _ss, _caps, _send_ui):
+        self.wait_for_threaded_init()
+ 
+ 
     def get_server_features(self, _source=None):
         return {
             "auto-video-encoding"   : True,
@@ -97,7 +101,9 @@ class EncodingServer(StubServerMixin):
     def init_encodings(self):
         load_codecs(decoders=False, video=False)
         encs, core_encs = [], []
+        log("init_encodings() allowed_encodings=%s", self.allowed_encodings)
         def add_encodings(encodings):
+            log("add_encodings(%s)", encodings)
             for ce in encodings:
                 e = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(ce, ce)
                 if self.allowed_encodings is not None and e not in self.allowed_encodings:
