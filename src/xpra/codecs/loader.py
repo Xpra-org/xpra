@@ -154,8 +154,8 @@ CODEC_OPTIONS = {
     "csc_swscale"   : ("swscale colorspace conversion", "csc_swscale", "colorspace_converter", "ColorspaceConverter"),
     "csc_libyuv"    : ("libyuv colorspace conversion", "csc_libyuv", "colorspace_converter", "ColorspaceConverter"),
     #decoders:
-    "dec_pillow"    : ("Pillow decoder",    "pillow",       "decode"),
-    "dec_webp"      : ("webp decoder",      "webp",         "decode", "decompress"),
+    "dec_pillow"    : ("Pillow decoder",    "pillow",       "decode",  "get_encodings"),
+    "dec_webp"      : ("webp decoder",      "webp",         "decode",  "decompress"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb", "decompress_to_yuv"),
     #video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
