@@ -4,9 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import numpy
 import binascii
 import unittest
+import numpy
 
 from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.util import repr_ellipsized
@@ -35,7 +35,10 @@ class Test_cyxor_hybi(unittest.TestCase):
         def do_cmp_unmask(buf, hlen, plen):
             c = memoryview_to_bytes(hybi_unmask(buf, hlen, plen))
             w = numpy_unmask(buf, hlen, plen)
-            assert w==c, "expected %s got %s" % (repr_ellipsized(binascii.hexlify(w)), repr_ellipsized(binascii.hexlify(c)))
+            assert w==c, "expected %s got %s" % (
+                repr_ellipsized(binascii.hexlify(w)),
+                repr_ellipsized(binascii.hexlify(c)),
+                )
         def cmp_unmask(buf_len, hlen, plen):
             buf = strtobytes("".join(chr(x%256) for x in range(buf_len)))
             do_cmp_unmask(buf, hlen, plen)
