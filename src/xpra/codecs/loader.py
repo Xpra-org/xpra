@@ -27,7 +27,7 @@ log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s,
 
 codec_errors = {}
 codecs = {}
-def codec_import_check(name, description, top_module, class_module, *classnames):
+def codec_import_check(name, description, top_module, class_module, classnames):
     log("%s:", name)
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
     try:
@@ -46,39 +46,43 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         return None
     try:
         #module is present
-        classname = "?"
         try:
             log(" %s found, will check for %s in %s", top_module, classnames, class_module)
-            for classname in classnames:
-                ic =  __import__(class_module, {}, {}, classname)
-                try:
-                    #run init_module?
-                    init_module = getattr(ic, "init_module", None)
-                    log("%s: init_module=%s", class_module, init_module)
-                    if init_module:
-                        init_module()
-                    selftest = getattr(ic, "selftest", None)
-                    log("%s.selftest=%s", name, selftest)
-                    if SELFTEST and selftest:
-                        if name in CODEC_FAIL_SELFTEST:
-                            raise ImportError("codec found in fail selftest list")
-                        try:
-                            selftest(FULL_SELFTEST)
-                        except Exception as e:
-                            log.warn("Warning: %s failed its self test", name)
-                            for x in str(e).splitlines():
-                                log.warn(" %s", x)
-                            log("%s failed", selftest, exc_info=True)
-                            continue
-                finally:
-                    cleanup_module = getattr(ic, "cleanup_module", None)
-                    log("%s: cleanup_module=%s", class_module, cleanup_module)
-                    if cleanup_module:
-                        cleanup_module()
-                #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
-                log(" found %s : %s", name, ic)
-                codecs[name] = ic
-                return ic
+            ic =  __import__(class_module, {}, {}, classnames)
+            try:
+                #run init_module?
+                init_module = getattr(ic, "init_module", None)
+                log("%s: init_module=%s", class_module, init_module)
+                if init_module:
+                    init_module()
+
+                if classnames:
+                    for classname in classnames:
+                        clazz = getattr(ic, classname)
+                        log("%s: %s=%s", class_module, classname, clazz)
+
+                selftest = getattr(ic, "selftest", None)
+                log("%s.selftest=%s", name, selftest)
+                if SELFTEST and selftest:
+                    if name in CODEC_FAIL_SELFTEST:
+                        raise ImportError("codec found in fail selftest list")
+                    try:
+                        selftest(FULL_SELFTEST)
+                    except Exception as e:
+                        log.warn("Warning: %s failed its self test", name)
+                        for x in str(e).splitlines():
+                            log.warn(" %s", x)
+                        log("%s failed", selftest, exc_info=True)
+                        return None
+            finally:
+                cleanup_module = getattr(ic, "cleanup_module", None)
+                log("%s: cleanup_module=%s", class_module, cleanup_module)
+                if cleanup_module:
+                    cleanup_module()
+            #log.warn("codec_import_check(%s, ..)=%s" % (name, ic))
+            log(" found %s : %s", name, ic)
+            codecs[name] = ic
+            return ic
         except ImportError as e:
             codec_errors[name] = str(e)
             l = log.error
@@ -127,8 +131,8 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
 
 def xpra_codec_import(name, description, top_module, class_module, classname):
     xpra_top_module = "xpra.codecs.%s" % top_module
-    xpra_class_module = "xpra.codecs.%s.%s" % (top_module, class_module)
-    codec_import_check(name, description, xpra_top_module, xpra_class_module, [classname])
+    xpra_class_module = "%s.%s" % (xpra_top_module, class_module)
+    codec_import_check(name, description, xpra_top_module, xpra_class_module, classname)
     version_name = name
     if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
         version_name = name[4:]
@@ -150,9 +154,9 @@ CODEC_OPTIONS = {
     "csc_swscale"   : ("swscale colorspace conversion", "csc_swscale", "colorspace_converter", "ColorspaceConverter"),
     "csc_libyuv"    : ("libyuv colorspace conversion", "csc_libyuv", "colorspace_converter", "ColorspaceConverter"),
     #decoders:
-    "dec_pillow"    : ("Pillow decoder",    "pillow",       "decode", "decode"),
+    "dec_pillow"    : ("Pillow decoder",    "pillow",       "decode"),
     "dec_webp"      : ("webp decoder",      "webp",         "decode", "decompress"),
-    "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decoder"),
+    "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb", "decompress_to_yuv"),
     #video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
     "dec_avcodec2"  : ("avcodec2 decoder",  "dec_avcodec2", "decoder", "Decoder"),
@@ -162,11 +166,13 @@ def load_codec(name):
     if has_codec(name):
         return
     try:
-        description, top_module, class_module, classname = CODEC_OPTIONS[name]
+        option = CODEC_OPTIONS[name]
+        description, top_module, class_module = option[:3]
+        classnames = option[3:]
     except KeyError:
         log.error("Error: invalid codec name '%s'", name)
     else:
-        xpra_codec_import(name, description, top_module, class_module, classname)
+        xpra_codec_import(name, description, top_module, class_module, classnames)
 
 
 loaded = None
