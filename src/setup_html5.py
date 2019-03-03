@@ -158,19 +158,19 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                     else:
                         print("Warning: brotli did not create '%s'" % br_dst)
 
-        if os.name=="posix":
-            try:
-                from xpra.platform.paths import get_desktop_background_paths
-            except ImportError as e:
-                print("cannot locate desktop background: %s" % (e,))
-            else:
-                paths = get_desktop_background_paths()
-                print("desktop background paths: %s" % (paths,))
-                if paths:
-                    extra_symlinks = {"background.png" : paths}
-                    for f, symlink_options in extra_symlinks.items():
-                        dst = os.path.join(install_dir, f)
-                        install_symlink(symlink_options, dst)
+    if os.name=="posix":
+        try:
+            from xpra.platform.paths import get_desktop_background_paths
+        except ImportError as e:
+            print("cannot locate desktop background: %s" % (e,))
+        else:
+            paths = get_desktop_background_paths()
+            print("desktop background paths: %s" % (paths,))
+            if paths:
+                extra_symlinks = {"background.png" : paths}
+                for f, symlink_options in extra_symlinks.items():
+                    dst = os.path.join(install_dir, f)
+                    install_symlink(symlink_options, dst)
 
 
 def main():
