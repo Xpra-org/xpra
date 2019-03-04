@@ -9,7 +9,8 @@
 #
 # Then determine the values of the following variables:
 #   prefix: a string to identify the data set
-#   id: a string to identify the variable that the data set is testing (for example '14' because we're testing xpra v14 in this data set)
+#   id: a string to identify the variable that the data set is testing
+#    (for example '14' because we're testing xpra v14 in this data set)
 #   repetitions: decide how many times you want to run the tests
 #
 # The data file names you will produce will then be in the format:
@@ -37,20 +38,27 @@
 
 import re
 import sys
-import subprocess
-import os.path
 import time
+import os.path
+from subprocess import Popen, PIPE, STDOUT
 
+from xpra.gtk_common.gtk_util import get_root_size
 from xpra.log import Logger
-log = Logger()
+
+log = Logger("util")
+
+if sys.version > '3':
+    unicode = str           #@ReservedAssignment
+    long = int
+
 
 def getoutput(cmd, env=None):
     try:
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, close_fds=True)
+        process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT, env=env, close_fds=True)
     except Exception as e:
         print("error running %s: %s" % (cmd, e))
         raise e
-    (out,err) = process.communicate()
+    out, err = process.communicate()
     code = process.poll()
     if code!=0:
         raise Exception("command '%s' returned error code %s, out=%s, err=%s" % (cmd, code, out, err))
@@ -64,12 +72,12 @@ def get_config(config_name):
         return None
     return mod.Config()
 
-if (len(sys.argv) > 1):
+if len(sys.argv) > 1:
     config_name = sys.argv[1]
 else:
     config_name = 'perf_config_default'
 config = get_config(config_name)
-if (config==None):
+if not config:
     raise Exception("Could not load config file")
 
 XPRA_BIN = "/usr/bin/xpra"
@@ -110,7 +118,7 @@ if config.TEST_SOUND:
         #none before that
         XPRA_SPEAKER_OPTIONS = [None]
 
-if (config.XPRA_USE_PASSWORD):
+if config.XPRA_USE_PASSWORD:
     password_filename = "./test-password.txt"
     import uuid
     with open(password_filename, 'wb') as f:
@@ -188,11 +196,11 @@ def getoutput_line(cmd, pattern, setup_info):
 
 def get_cpu_info():
     lines = getoutput_lines(["cat", "/proc/cpuinfo"], "model name", "cannot find cpu info")
-    assert len(lines)>0, "coult not find 'model name' in '/proc/cpuinfo'"
+    assert lines, "coult not find 'model name' in '/proc/cpuinfo'"
     cpu0 = lines[0]
     n = len(lines)
-    for x in lines[1:]:
-        if x!=cpu0:
+    for cpu in lines[1:]:
+        if cpu!=cpu0:
             return " - ".join(lines), n
     cpu_name = cpu0.split(":")[1]
     for o,r in [("Processor", ""), ("(R)", ""), ("(TM)", ""), ("(tm)", ""), ("  ", " ")]:
@@ -208,13 +216,11 @@ CPU_INFO, N_CPUS = get_cpu_info()
 KERNEL_VERSION = getoutput(["uname", "-r"]).replace("\n", "").replace("\r", "")
 PAGE_SIZE = int(getoutput(["getconf", "PAGESIZE"]).replace("\n", "").replace("\r", ""))
 PLATFORM = getoutput(["uname", "-p"]).replace("\n", "").replace("\r", "")
-OPENGL_INFO = getoutput_line(["glxinfo"], "OpenGL renderer string", "Cannot detect OpenGL renderer string").split("OpenGL renderer string:")[1].strip()
+OPENGL_INFO = getoutput_line(["glxinfo"],
+                             "OpenGL renderer string",
+                             "Cannot detect OpenGL renderer string").split("OpenGL renderer string:")[1].strip()
 
-import pygtk
-pygtk.require("2.0")
-import gtk                                      #@UnusedImport
-from gtk import gdk                             #@UnusedImport
-SCREEN_SIZE = gdk.get_default_root_window().get_size()
+SCREEN_SIZE = get_root_size()
 print("screen size=%s" % str(SCREEN_SIZE))
 
 #detect Xvnc version:
@@ -224,9 +230,8 @@ DETECT_XVNC_VERSION_CMD = [config.XVNC_BIN, "--help"]
 DETECT_VNCVIEWER_VERSION_CMD = [config.VNCVIEWER_BIN, "--help"]
 def get_stderr(command):
     try:
-        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        _,err = process.communicate()
-        return err
+        process = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        return process.communicate()[1]
     except Exception as e:
         print("error running %s: %s" % (DETECT_XVNC_VERSION_CMD, e))
 
@@ -259,7 +264,8 @@ if not SVN_VERSION:
         pass
 if not SVN_VERSION:
     #fallback to running python:
-    SVN_VERSION = getoutput(["python", "-c", "from xpra.src_info import REVISION,LOCAL_MODIFICATIONS;print(('r%s%s' % (REVISION, ' M'[int(bool(LOCAL_MODIFICATIONS))])).strip())"])
+    SVN_VERSION = getoutput(["python", "-c",
+                             "from xpra.src_info import REVISION,LOCAL_MODIFICATIONS;print(('r%s%s' % (REVISION, ' M'[int(bool(LOCAL_MODIFICATIONS))])).strip())"])
 print("Found xpra revision: '%s'" % str(SVN_VERSION))
 
 WINDOW_MANAGER = os.environ.get("DESKTOP_SESSION", "unknown")
@@ -267,7 +273,7 @@ WINDOW_MANAGER = os.environ.get("DESKTOP_SESSION", "unknown")
 def clean_sys_state():
     #clear the caches
     cmd = ["echo", "3", ">", "/proc/sys/vm/drop_caches"]
-    process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     assert process.wait()==0, "failed to run %s" % str(cmd)
 
 def zero_iptables():
@@ -348,7 +354,7 @@ def get_iptables_OUTPUT_count():
 def measure_client(server_pid, name, cmd, get_stats_cb):
     print("starting client: %s" % cmd)
     try:
-        client_process = subprocess.Popen(cmd)
+        client_process = Popen(cmd)
         #give it time to settle down:
         time.sleep(config.SETTLE_TIME)
         code = client_process.poll()
@@ -418,7 +424,11 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
     env = {}
     for k,v in os.environ.items():
     #whitelist what we want to keep:
-        if k.startswith("XPRA") or k in ("LOGNAME", "XDG_RUNTIME_DIR", "USER", "HOME", "PATH", "LD_LIBRARY_PATH", "XAUTHORITY", "SHELL", "TERM", "USERNAME", "HOSTNAME", "PWD"):
+        if k.startswith("XPRA") or k in (
+            "LOGNAME", "XDG_RUNTIME_DIR", "USER", "HOME", "PATH",
+            "LD_LIBRARY_PATH", "XAUTHORITY", "SHELL", "TERM",
+            "USERNAME", "HOSTNAME", "PWD",
+            ):
             env[k] = v
     env["DISPLAY"] = ":%s" % config.DISPLAY_NO
     errors = 0
@@ -438,7 +448,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 #start the server:
                 if config.START_SERVER:
                     print("starting server: %s" % str(start_server_command))
-                    server_process = subprocess.Popen(start_server_command, stdin=None)
+                    server_process = Popen(start_server_command, stdin=None)
                     #give it time to settle down:
                     t = config.SERVER_SETTLE_TIME
                     if count==1:
@@ -454,9 +464,9 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 try:
                     #start the test command:
                     if config.USE_VIRTUALGL:
-                        if type(test_command)==str:
+                        if isinstance(test_command, str):
                             cmd = config.VGLRUN_BIN + "-d "+os.environ.get("DISPLAY")+" -- "+ test_command
-                        elif type(test_command) in (list, tuple):
+                        elif isinstance(test_command, (list, tuple)):
                             cmd = [config.VGLRUN_BIN, "-d", os.environ.get("DISPLAY"), "--"] + list(test_command)
                         else:
                             raise Exception("invalid test command type: %s for %s" % (type(test_command), test_command))
@@ -464,11 +474,11 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                         cmd = test_command
 
                     print("starting test command: %s with env=%s, settle time=%s" % (cmd, env, test_command_settle_time))
-                    shell = type(cmd)==str
-                    test_command_process = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=shell)
+                    shell = isinstance(cmd, str)
+                    test_command_process = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, env=env, shell=shell)
 
                     if config.PREVENT_SLEEP:
-                        subprocess.Popen(config.PREVENT_SLEEP_COMMAND)
+                        Popen(config.PREVENT_SLEEP_COMMAND)
 
                     time.sleep(test_command_settle_time)
                     code = test_command_process.poll()
@@ -495,7 +505,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                             "Xorg version"   : XORG_VERSION,
                             "OpenGL"         : OPENGL_INFO,
                             "Client Window Manager"  : WINDOW_MANAGER,
-                            "Screen Size"    : "%sx%s" % gdk.get_default_root_window().get_size(),
+                            "Screen Size"    : "%sx%s" % get_root_size(),
                             "Compression"    : compression,
                             "Encryption"     : encryption,
                             "Connect via"    : ssh,
@@ -524,7 +534,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     for s in stop_server_commands:
                         print("stopping server with: %s" % (s))
                         try:
-                            stop_process = subprocess.Popen(s, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                            stop_process = Popen(s, stdin=None, stdout=PIPE, stderr=PIPE, shell=True)
                             stop_process.wait()
                         except Exception as e:
                             print("error: %s" % e)
@@ -560,11 +570,11 @@ def get_command_name(command_arg):
             return  name
     except:
         pass
-    if type(command_arg)==list:
+    if isinstance(command_arg, list):
         c = command_arg[0]              #["/usr/bin/xterm", "blah"] -> "/usr/bin/xterm"
     else:
         c = command_arg.split(" ")[0]   #"/usr/bin/xterm -e blah" -> "/usr/bin/xterm"
-    assert type(c)==str
+    assert isinstance(c, str)
     return c.split("/")[-1]             #/usr/bin/xterm -> xterm
 
 def get_auth_args():
@@ -629,13 +639,14 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
             if prop_name.find("*")>=0 or prop_name.find("+")>=0:        #ie: "window\[\d+\].encoding.quality.avg"
                 #make it a proper python regex:
                 full_search.append(prop_name)
-        if len(full_search)>0:
+        if full_search:
             for s in full_search:
                 regex = re.compile(s)
-                matches = [d.get(x) for x in d.keys() if regex.match(x)]
+                matches = [d.get(x) for x in d if regex.match(x)]
                 for v in matches:
                     values.append(int(v))
-            #print("add(%s, %s, %s, %s) values from full_search=%s: %s" % (prefix, op, name, prop_names, full_search, values))
+            #print("add(%s, %s, %s, %s) values from full_search=%s: %s" %
+            #    (prefix, op, name, prop_names, full_search, values))
         else:
             #match just one record:
             values.append(iget(actual_prop_names))
@@ -648,7 +659,7 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
             values.append(s.get(full_name))
         #strip missing values:
         values = [x for x in values if x is not None and x!=""]
-        if len(values)>0:
+        if values:
             v = op(values)                          #ie: avg([4,5,4]) or max([4,5,4])
             #print("%s: %s(%s)=%s" % (full_name, op, values, v))
             data[full_name] = v
@@ -669,8 +680,8 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
         add(prefix, op, "Server Ping Latency (ms)", ["server.ping_latency.%s", "server_ping_latency.%s", "server_latency.%s", "%s_server_latency"])
         add(prefix, op, "Damage Latency (ms)",      ["damage.in_latency.%s", "damage_in_latency.%s"])
 
-        add(prefix, op, "Quality",                  ["^window\[\d+\].encoding.quality.%s$"])
-        add(prefix, op, "Speed",                    ["^window\[\d+\].encoding.speed.%s$"])
+        add(prefix, op, "Quality",                  [r"^window\[\d+\].encoding.quality.%s$"])
+        add(prefix, op, "Speed",                    [r"^window\[\d+\].encoding.speed.%s$"])
 
     def addset(name, prop_name):
         regex = re.compile(prop_name)
@@ -682,11 +693,11 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
         data[name] = list(set(values))
 
     #video encoder
-    addset("Video Encoder", "^window\[\d+\].encoder$")
+    addset(r"Video Encoder", "^window\[\d+\].encoder$")
     #record CSC:
-    addset("CSC", "^window\[\d+\].csc$")
-    addset("CSC Mode", "^window\[\d+\].csc.dst_format$")
-    addset("Scaling", "^window\[\d+\].scaling$")
+    addset(r"CSC", "^window\[\d+\].csc$")
+    addset(r"CSC Mode", "^window\[\d+\].csc.dst_format$")
+    addset(r"Scaling", "^window\[\d+\].scaling$")
     #packet layer:
     addset("Compressors", "connection.compression$")
     addset("Packet Encoders", "connection.encoder$")
@@ -697,7 +708,12 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
 def get_xpra_start_server_command():
     cmd = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % config.PORT]
     if config.XPRA_FORCE_XDUMMY:
-        cmd.append("--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (config.XORG_BIN, config.XORG_LOG, config.XORG_CONFIG))
+        cmd.append("--xvfb=%s -nolisten tcp" % config.XORG_BIN
+                   +" +extension GLX"
+                   +" +extension RANDR"
+                   +" +extension RENDER"
+                   +" -logfile %s" % config.XORG_LOG
+                   +" -config %s" % config.XORG_CONFIG)
     if XPRA_VERSION_NO>=[0, 5]:
         cmd.append("--no-notifications")
     cmd += get_auth_args()
@@ -801,7 +817,8 @@ def test_xpra():
                                                         cmd.append("--opengl=%s" % opengl)
                                                     command_name = get_command_name(x11_test_command)
                                                     test_name = "%s (%s - %s - %s - %s - via %s)" % \
-                                                        (name, command_name, compression, encryption, trickle_str(down, up, latency), connect_option)
+                                                        (name, command_name, compression, encryption,
+                                                         trickle_str(down, up, latency), connect_option)
                                                     tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, \
                                                                   encoding, quality, speed,
                                                                   opengl, compression, encryption, connect_option, \
@@ -845,7 +862,7 @@ def get_x11_client_window_info(display, *app_name_strings):
 
 def get_vnc_stats(initial_stats=None, all_stats=[]):
     #print("get_vnc_stats(%s)" % last_record)
-    if initial_stats==None:
+    if initial_stats is None:
         #this is the initial call,
         #start the thread to watch the output of tcbench
         #we first need to figure out the dimensions of the client window
@@ -871,7 +888,7 @@ def get_vnc_stats(initial_stats=None, all_stats=[]):
         tcbench_log  = open(config.TCBENCH_LOG, 'w')
         try:
             print("tcbench starting: %s, logging to %s" % (command, config.TCBENCH_LOG))
-            proc = subprocess.Popen(command, stdin=None, stdout=tcbench_log, stderr=tcbench_log)
+            proc = Popen(command, stdin=None, stdout=tcbench_log, stderr=tcbench_log)
             return {"tcbench" : proc}
         except Exception as e:
             import traceback
@@ -883,7 +900,7 @@ def get_vnc_stats(initial_stats=None, all_stats=[]):
         #found the process watcher,
         #parse the tcbench output and look for frames/sec:
         process = initial_stats.get("tcbench")
-        assert type(process)==subprocess.Popen
+        assert isinstance(process, Popen)
         #print("get_vnc_stats(%s) process.poll()=%s" % (last_record, process.poll()))
         if process.poll() is None:
             try_to_stop(process)
@@ -942,7 +959,8 @@ def test_vnc():
                                 zlibtxt = "zlib=%s" % zlib
                             command_name = get_command_name(x11_test_command)
                             test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % \
-                                        (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
+                                        (command_name, encoding, zlibtxt,
+                                         compression, jpegtxt, trickle_str(down, up, latency))
                             tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, \
                                           encoding, False, compression, None, False, \
                                           (down,up,latency), x11_test_command, cmd))
@@ -954,7 +972,7 @@ def main():
     get_iptables_OUTPUT_count()
 
     #If CUSTOM_PARAMS are supplied on the command line, they override what's in config
-    if (len(sys.argv) > 3):
+    if len(sys.argv) > 3:
         config.CUSTOM_PARAMS = " ".join(sys.argv[3:])
     config.print_options()
 
@@ -965,7 +983,7 @@ def main():
     if config.TEST_VNC:
         vnc_results = test_vnc()
 
-    if (len(sys.argv) > 2):
+    if len(sys.argv) > 2:
         csv_name = sys.argv[2]
     else:
         csv_name = None
@@ -976,29 +994,28 @@ def main():
 
     out_lines = []
     out_line = ", ".join(HEADERS)
-    print out_line
+    print(out_line)
     out_lines.append(out_line)
 
     def s(x):
         if x is None:
             return ""
-        elif type(x) in (list, tuple, set):
+        if isinstance(x, (list, tuple, set)):
             return '"' + (", ".join(list(x))) + '"'
-        elif type(x) in (unicode, str):
-            if len(x)==0:
+        if type(x) in (unicode, str):
+            if not x:
                 return ""
             return '"%s"' % x
-        elif type(x) in (float, long, int):
+        if isinstance(x, (float, long, int)):
             return str(x)
-        else:
-            return "unhandled-type: %s" % type(x)
+        return "unhandled-type: %s" % type(x)
 
     for result in xpra_results+vnc_results:
         out_line = ", ".join([s(x) for x in result])
         print(out_line)
         out_lines.append(out_line)
 
-    if (csv_name != None):
+    if csv_name:
         with open(csv_name, "w") as csv:
             for line in out_lines:
                 csv.write(line+"\n")
