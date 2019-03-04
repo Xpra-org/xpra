@@ -1474,11 +1474,12 @@ class ServerCore(object):
             username = getpass.getuser()
         #authenticator:
         if not proto.authenticators:
+            conn = proto._conn
+            socktype = conn.socktype_wrapped
             try:
-                socktype = proto._conn.socktype_wrapped
-                proto.authenticators = self.make_authenticators(socktype, username, proto._conn)
+                proto.authenticators = self.make_authenticators(socktype, username, conn)
             except Exception as e:
-                authlog("instantiating authenticator for %s", proto.socket_type, exc_info=True)
+                authlog("instantiating authenticator for %s", socktype, exc_info=True)
                 authlog.error("Error instantiating authenticator for %s:", proto.socket_type)
                 authlog.error(" %s", e)
                 auth_failed(str(e))
