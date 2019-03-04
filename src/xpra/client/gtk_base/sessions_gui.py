@@ -229,6 +229,7 @@ class SessionsGUI(gtk.Window):
         self.table.resize(1+len(self.records), 5)
         #group them by uuid
         d = OrderedDict()
+        session_names = {}
         for i, record in enumerate(self.records):
             interface, protocol, name, stype, domain, host, address, port, text = record
             td = typedict(text)
@@ -237,19 +238,22 @@ class SessionsGUI(gtk.Window):
             display = td.strget("display", "")
             platform = td.strget("platform", "")
             dtype = td.strget("type", "")
-            #older servers expose the "session-name" as "session":
-            session_name = td.strget("name", "") or td.strget("session", "")
             if domain=="local" and host.endswith(".local"):
                 host = host[:-len(".local")]
-            key = (uuid, uuid or i, host, display, session_name, platform, dtype)
+            key = (uuid, uuid or i, host, display, platform, dtype)
             log("populate_table: key[%i]=%s", i, key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
+            #older servers expose the "session-name" as "session":
+            td = typedict(text)
+            session_name = td.strget("name", "") or td.strget("session", "")
+            if session_name:
+                session_names[key] = session_name
         for key, recs in d.items():
             if isinstance(key, tuple):
-                uuid, _, host, display, name, platform, dtype = key
+                uuid, _, host, display, platform, dtype = key
             else:
                 display = key
-                uuid, host, name, platform, dtype = None, None, "", sys.platform, None
+                uuid, host, platform, dtype = None, None, sys.platform, None
             title = uuid
             if display:
                 title = display
@@ -266,7 +270,8 @@ class SessionsGUI(gtk.Window):
             if not pwidget:
                 pwidget = gtk.Label(platform)
             w, c, b = self.make_connect_widgets(key, recs, address, port, display)
-            tb.add_row(gtk.Label(host), label, gtk.Label(name), pwidget, gtk.Label(dtype), w, c, b)
+            session_name = session_names.get(key, "")
+            tb.add_row(gtk.Label(host), label, gtk.Label(session_name), pwidget, gtk.Label(dtype), w, c, b)
         self.table.show_all()
 
     def get_uri(self, password, interface, protocol, name, stype, domain, host, address, port, text):
@@ -339,7 +344,6 @@ class SessionsGUI(gtk.Window):
 
     def make_connect_widgets(self, key, recs, address, port, display):
         d = {}
-
         proc = self.clients.get(key)
         if proc and proc.poll() is None:
             icon = self.get_pixbuf("disconnected.png")
