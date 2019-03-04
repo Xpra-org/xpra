@@ -1,7 +1,9 @@
 [Setup]
 AppName=Xpra
 AppId=Xpra_is1
+AppVersion=2.5
 AppVerName=Xpra 2.5
+UninstallDisplayName=Xpra 2.5
 AppPublisher=xpra.org
 AppPublisherURL=http://xpra.org/
 DefaultDirName={pf}\Xpra
