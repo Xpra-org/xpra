@@ -1,5 +1,6 @@
 [Setup]
 AppName=Xpra
+AppId=Xpra_is1
 AppVerName=Xpra 2.5
 AppPublisher=xpra.org
 AppPublisherURL=http://xpra.org/

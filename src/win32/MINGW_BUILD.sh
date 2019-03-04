@@ -94,9 +94,11 @@ echo -n "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
 if [ "${MSYSTEM_CARCH}" == "i686" ]; then
 	BUILD_TYPE=""
 	DO_CUDA="0"
+	APPID="Xpra32bit"
 else
 	BUILD_TYPE="-${MSYSTEM_CARCH}"
 	echo " (64-bit)"
+	APPID="Xpra_is1"
 fi
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	BUILD_TYPE="-Python3${BUILD_TYPE}"
@@ -388,6 +390,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 		#remove shadow start menu entry
 		sed -i"" "s/.*Xpra Shadow Server.*//g" xpra.iss
 	fi
+	sed -i"" "s/AppId=.*/AppId=${APPID}/g" xpra.iss
 	"${INNOSETUP}" "xpra.iss" >& "${INNOSETUP_LOG}"
 	if [ "$?" != "0" ]; then
 		echo "InnoSetup error - see ${INNOSETUP_LOG}:"
