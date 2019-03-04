@@ -23,7 +23,7 @@ from xpra.gtk_common.gobject_compat import (
     register_os_signals,
     )
 from xpra.net.net_util import if_indextoname
-from xpra.util import typedict
+from xpra.util import typedict, DEFAULT_PORTS
 from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
 
@@ -293,7 +293,7 @@ class SessionsGUI(gtk.Window):
                 uri = "%s://%s@%s" % (mode, username, address)
         else:
             uri = "%s://%s" % (mode, address)
-        if port>0:
+        if port>0 and DEFAULT_PORTS.get(mode, 0)!=port:
             uri += ":%s" % port
         if protocol not in ("socket", "namedpipe"):
             uri += "/"
