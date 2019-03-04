@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,6 @@ from xpra.log import Logger
 
 log = Logger("mdns", "util")
 
-gtk = import_gtk()
 glib = import_glib()
 
 HIDE_IPV6 = envbool("XPRA_HIDE_IPV6", False)
@@ -27,7 +26,10 @@ class mdns_sessions(SessionsGUI):
         SessionsGUI.__init__(self, options)
         listener_class = get_listener_class()
         assert listener_class
-        self.listener = listener_class(XPRA_MDNS_TYPE, mdns_found=None, mdns_add=self.mdns_add, mdns_remove=self.mdns_remove)
+        self.listener = listener_class(XPRA_MDNS_TYPE,
+                                       mdns_found=None,
+                                       mdns_add=self.mdns_add,
+                                       mdns_remove=self.mdns_remove)
         log("%s%s=%s", listener_class, (XPRA_MDNS_TYPE, None, self.mdns_add, self.mdns_remove), self.listener)
         self.listener.start()
 
@@ -37,7 +39,11 @@ class mdns_sessions(SessionsGUI):
         old_recs = self.records
         self.records = [(interface, protocol, name, stype, domain, host, address, port, text) for
                         (interface, protocol, name, stype, domain, host, address, port, text) in self.records
-                        if (interface!=r_interface or protocol!=r_protocol or name!=r_name or stype!=r_stype or domain!=r_domain)]
+                        if (interface!=r_interface or
+                            protocol!=r_protocol or
+                            name!=r_name or
+                            stype!=r_stype or
+                            domain!=r_domain)]
         if old_recs!=self.records:
             glib.idle_add(self.populate_table)
 
@@ -69,6 +75,7 @@ def check_mdns(gui):
 def win32_bonjour_download_warning(gui):
     from xpra.gtk_common.gobject_compat import import_pango
     from xpra.gtk_common.gtk_util import DIALOG_MODAL, DESTROY_WITH_PARENT
+    gtk = import_gtk()
     dialog = gtk.Dialog("Bonjour not found",
            gui,
            DIALOG_MODAL | DESTROY_WITH_PARENT)
