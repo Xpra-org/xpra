@@ -227,7 +227,7 @@ XpraClient.prototype.exc = function() {
 			//logging.ERROR = 40
 			this.send_log(40, [exception.stack]);
 		}
-		catch {
+		catch (e) {
 			//we tried our best
 		}
 	}
@@ -1014,7 +1014,7 @@ XpraClient.prototype._make_hello_base = function() {
 			}
 			this.debug("network", "digests:", digests);
 		}
-		catch {
+		catch (e) {
 			this.cerror("Error probing forge crypto digests");
 		}
 	}
