@@ -673,8 +673,8 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
     add("", avg, "Decoding Pixels/s",               ["encoding.pixels_decoded_per_second", "pixels_decoded_per_second"])
 
     for prefix, op in (("Min", min), ("Max", max), ("Avg", avg)):
-        add(prefix, op, "Batch Delay (ms)",         ["batch.delay.%s", "batch_delay.%s", "%s_batch_delay"])
-        add(prefix, op, "Actual Batch Delay (ms)",  ["batch.actual_delay.%s"])
+        add(prefix, op, "Batch Delay (ms)",         ["client.batch.delay.%s", "batch.delay.%s", "batch_delay.%s", "%s_batch_delay"])
+        add(prefix, op, "Actual Batch Delay (ms)",  ["client.batch.actual_delay.%s", "batch.actual_delay.%s"])
         add(prefix, op, "Client Latency (ms)",      ["client.latency.%s", "client_latency.%s", "%s_client_latency"])
         add(prefix, op, "Client Ping Latency (ms)", ["client.ping_latency.%s", "client_ping_latency.%s"])
         add(prefix, op, "Server Ping Latency (ms)", ["server.ping_latency.%s", "server_ping_latency.%s", "server_latency.%s", "%s_server_latency"])
@@ -693,11 +693,11 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
         data[name] = list(set(values))
 
     #video encoder
-    addset(r"Video Encoder", "^window\[\d+\].encoder$")
+    addset("Video Encoder", r"^window\[\d+\].encoder$")
     #record CSC:
-    addset(r"CSC", "^window\[\d+\].csc$")
-    addset(r"CSC Mode", "^window\[\d+\].csc.dst_format$")
-    addset(r"Scaling", "^window\[\d+\].scaling$")
+    addset("CSC", r"^window\[\d+\].csc$")
+    addset("CSC Mode", r"^window\[\d+\].csc.dst_format$")
+    addset("Scaling", r"^window\[\d+\].scaling$")
     #packet layer:
     addset("Compressors", "connection.compression$")
     addset("Packet Encoders", "connection.encoder$")
