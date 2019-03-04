@@ -350,7 +350,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 "signals"                : WINDOW_SIGNALS,
                 "dragndrop"              : True,
                 "states"                 : [
-                    "iconified", "fullscreen",
+                    "iconified", "focused", "fullscreen",
                     "above", "below",
                     "sticky", "iconified", "maximized",
                     ],
