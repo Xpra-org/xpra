@@ -667,21 +667,21 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
     def avg(l):
         return sum(l)/len(l)
 
-    add("", avg, "Regions/s",                       ["encoding.regions_per_second", "regions_per_second"])
-    add("", avg, "Pixels/s Sent",                   ["encoding.pixels_per_second", "pixels_per_second"])
-    add("", avg, "Encoding Pixels/s",               ["encoding.pixels_encoded_per_second", "pixels_encoded_per_second"])
-    add("", avg, "Decoding Pixels/s",               ["encoding.pixels_decoded_per_second", "pixels_decoded_per_second"])
+    add("", avg, "Regions/s",                       ["client.encoding.regions_per_second", "encoding.regions_per_second", "regions_per_second"])
+    add("", avg, "Pixels/s Sent",                   ["client.encoding.pixels_per_second", "encoding.pixels_per_second", "pixels_per_second"])
+    add("", avg, "Encoding Pixels/s",               ["client.encoding.pixels_encoded_per_second", "encoding.pixels_encoded_per_second", "pixels_encoded_per_second"])
+    add("", avg, "Decoding Pixels/s",               ["client.encoding.pixels_decoded_per_second", "encoding.pixels_decoded_per_second", "pixels_decoded_per_second"])
 
     for prefix, op in (("Min", min), ("Max", max), ("Avg", avg)):
         add(prefix, op, "Batch Delay (ms)",         ["client.batch.delay.%s", "batch.delay.%s", "batch_delay.%s", "%s_batch_delay"])
-        add(prefix, op, "Actual Batch Delay (ms)",  ["client.batch.actual_delay.%s", "batch.actual_delay.%s"])
-        add(prefix, op, "Client Latency (ms)",      ["client.latency.%s", "client_latency.%s", "%s_client_latency"])
-        add(prefix, op, "Client Ping Latency (ms)", ["client.ping_latency.%s", "client_ping_latency.%s"])
-        add(prefix, op, "Server Ping Latency (ms)", ["server.ping_latency.%s", "server_ping_latency.%s", "server_latency.%s", "%s_server_latency"])
-        add(prefix, op, "Damage Latency (ms)",      ["damage.in_latency.%s", "damage_in_latency.%s"])
+        add(prefix, op, "Actual Batch Delay (ms)",  ["client.batch.normalized", "client.batch.actual_delay.%s", "batch.actual_delay.%s"])
+        add(prefix, op, "Client Latency (ms)",      ["client.connection.client.latency.%s", "client.latency.%s", "client_latency.%s", "%s_client_latency"])
+        add(prefix, op, "Client Ping Latency (ms)", ["client.connection.client.ping_latency.%s", "client.ping_latency.%s", "client_ping_latency.%s"])
+        add(prefix, op, "Server Ping Latency (ms)", ["client.connection.server.ping_latency.%s", "server.ping_latency.%s", "server_ping_latency.%s", "server_latency.%s", "%s_server_latency"])
+        add(prefix, op, "Damage Latency (ms)",      ["client.damage.in_latency.%s", "damage.in_latency.%s", "damage_in_latency.%s"])
 
-        add(prefix, op, "Quality",                  [r"^window\[\d+\].encoding.quality.%s$"])
-        add(prefix, op, "Speed",                    [r"^window\[\d+\].encoding.speed.%s$"])
+        add(prefix, op, "Quality",                  [r"^client.window\[\d+\].encoding.quality.%s$", r"^window\[\d+\].encoding.quality.%s$"])
+        add(prefix, op, "Speed",                    [r"^client.window\[\d+\].encoding.speed.%s$", r"^window\[\d+\].encoding.speed.%s$"])
 
     def addset(name, prop_name):
         regex = re.compile(prop_name)
