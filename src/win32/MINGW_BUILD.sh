@@ -395,6 +395,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	sed -i"" "s/AppId=.*/AppId=${APPID}/g" xpra.iss
 	sed -i"" "s/AppName=.*/AppName=Xpra ${VERSION} (${BITS}-bit)/g" xpra.iss
 	sed -i"" "s/UninstallDisplayName=.*/UninstallDisplayName=Xpra ${VERSION} (${BITS}-bit)/g" xpra.iss
+	sed -i"" "s/AppVersion=.*/AppVersion=${FULL_VERSION}/g" xpra.iss
 	"${INNOSETUP}" "xpra.iss" >& "${INNOSETUP_LOG}"
 	if [ "$?" != "0" ]; then
 		echo "InnoSetup error - see ${INNOSETUP_LOG}:"
