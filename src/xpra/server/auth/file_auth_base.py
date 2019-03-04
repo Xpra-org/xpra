@@ -24,10 +24,18 @@ def init(opts):
 
 class FileAuthenticatorBase(SysAuthenticator):
     def __init__(self, username, **kwargs):
-        filename = kwargs.pop("filename", password_file)
-        if filename and not os.path.isabs(filename):
-            exec_cwd = kwargs.get("exec_cwd", os.getcwd())
-            filename = os.path.join(exec_cwd, filename)
+        password_files = [kwargs.pop("filename", None)]+list(password_file)
+        log("FileAuthenticatorBase password_files=%s", password_files)
+        filename = None
+        for filename in password_files:
+            if not filename:
+                continue
+            if not os.path.isabs(filename):
+                exec_cwd = kwargs.get("exec_cwd", os.getcwd())
+                filename = os.path.join(exec_cwd, filename)
+            if os.path.exists(filename):
+                break
+        log("FileAuthenticatorBase filename=%s", filename)
         SysAuthenticator.__init__(self, username, **kwargs)
         self.password_filename = filename
         self.password_filedata = None
