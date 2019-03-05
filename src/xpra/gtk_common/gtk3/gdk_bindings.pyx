@@ -122,7 +122,7 @@ def calc_constrained_size(int width, int height, object hints):
         e_height = max(height-base_height, 0)
         height -= e_height%increment_y
 
-    cdef double min_aspect, max_aspect 
+    cdef double min_aspect, max_aspect
     if "min_aspect" in hints:
         min_aspect = hints.get("min_aspect")
         assert min_aspect>0
