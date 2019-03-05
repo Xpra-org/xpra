@@ -123,7 +123,7 @@ def main(argv):
     from xpra.platform import program_context
     with program_context("LDAP-Password-Auth", "LDAP-Password-Authentication"):
         for x in list(argv):
-            if x=="-v" or x=="--verbose":
+            if x in ("-v", "--verbose"):
                 enable_debug_for("auth")
                 argv.remove(x)
         if len(argv) not in (3,4,5,6,7):

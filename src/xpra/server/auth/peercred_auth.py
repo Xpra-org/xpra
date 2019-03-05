@@ -32,7 +32,7 @@ class Authenticator(SysAuthenticator):
                 x = osexpand(x.strip())
                 try:
                     allow_uids.append(int(x))
-                except:
+                except ValueError:
                     import pwd
                     try:
                         pw = pwd.getpwnam(x)
@@ -46,7 +46,7 @@ class Authenticator(SysAuthenticator):
                 x = osexpand(x.strip())
                 try:
                     allow_gids.append(int(x))
-                except:
+                except ValueError:
                     gid = get_group_id(x)
                     if gid>=0:
                         allow_gids.append(gid)

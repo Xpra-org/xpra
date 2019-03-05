@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-def init(opts):
+def init(_opts):
     pass
 
 class Authenticator(object):

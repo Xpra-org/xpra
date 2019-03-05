@@ -52,7 +52,6 @@ class Authenticator(SysAuthenticator):
 
 
 def main():
-    import sys
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Auth-Test", "Auth-Test"):
@@ -71,9 +70,8 @@ def main():
         if a.check(password):
             log.info("authentication succeeded")
             return 0
-        else:
-            log.error("authentication failed")
-            return 1
+        log.error("authentication failed")
+        return 1
 
 if __name__ == "__main__":
     import sys

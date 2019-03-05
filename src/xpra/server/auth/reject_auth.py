@@ -6,7 +6,7 @@
 
 from xpra.net.digest import get_salt, choose_digest
 
-def init(opts):
+def init(_opts):
     pass
 
 

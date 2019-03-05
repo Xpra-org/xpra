@@ -89,8 +89,8 @@ def main():
         sys.argv = sys.argv[1:]
         while len(sys.argv)>=2:
             peername, host = sys.argv[:2]
-            v = check_host(peername, host)
-            print("host check for '%s', '%s': %s" % (peername, host, v))
+            check = check_host(peername, host)
+            print("host check for '%s', '%s': %s" % (peername, host, check))
             sys.argv = sys.argv[2:]
     return 0
 

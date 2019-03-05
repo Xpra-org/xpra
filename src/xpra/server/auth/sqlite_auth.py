@@ -138,7 +138,7 @@ def list_users(filename):
         return s
     def cursor_callback(cursor):
         rows = cursor.fetchall()
-        if len(rows)==0:
+        if not rows:
             print("no rows found")
             return
         print("%i rows found:" % len(rows))
@@ -187,24 +187,23 @@ def main(argv):
             if l!=3:
                 return usage()
             return create(filename)
-        elif cmd=="add":
+        if cmd=="add":
             if l<5 or l>10:
                 return usage()
             return add_user(filename, *argv[3:])
-        elif cmd=="remove":
+        if cmd=="remove":
             if l not in (4, 5):
                 return usage()
             return remove_user(filename, *argv[3:])
-        elif cmd=="list":
+        if cmd=="list":
             if l!=3:
                 return usage()
             return list_users(filename)
-        elif cmd=="authenticate":
+        if cmd=="authenticate":
             if l!=5:
                 return usage()
             return authenticate(filename, *argv[3:])
-        else:
-            return usage("invalid command '%s'" % cmd)
+        return usage("invalid command '%s'" % cmd)
     return 0
 
 

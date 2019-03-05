@@ -53,7 +53,7 @@ class Authenticator(FileAuthenticatorBase):
             i += 1
             line = line.strip()
             log("line %s: %s", i, line)
-            if len(line)==0 or line.startswith(b"#"):
+            if not line or line.startswith(b"#"):
                 continue
             try:
                 v = parse_auth_line(line)
