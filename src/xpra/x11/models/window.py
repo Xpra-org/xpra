@@ -18,7 +18,7 @@ from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr, gobject, xswallow, xsync
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
-    get_display_for, get_children,
+    get_children,
     calc_constrained_size,
     x11_get_server_time,
     )
