@@ -1,6 +1,6 @@
 Index: xpra/codecs/jpeg/decoder.pyx
 ===================================================================
---- a/xpra/codecs/jpeg/decoder.pyx	(revision 21176)
+--- a/xpra/codecs/jpeg/decoder.pyx	(revision 21967)
 +++ b/xpra/codecs/jpeg/decoder.pyx	(working copy)
 @@ -31,7 +31,7 @@
      TJSAMP  TJSAMP_420
@@ -20,7 +20,7 @@ Index: xpra/codecs/jpeg/decoder.pyx
  
      TJCS    TJCS_RGB
      TJCS    TJCS_YCbCr
-@@ -84,7 +84,7 @@
+@@ -84,15 +84,15 @@
      TJSAMP_420  : "420",
      TJSAMP_GRAY : "GRAY",
      TJSAMP_440  : "440",
@@ -29,6 +29,17 @@ Index: xpra/codecs/jpeg/decoder.pyx
      }
  
  TJCS_STR = {
+-    TJCS_RGB    : "RGB",
++    #TJCS_RGB    : "RGB",
+     TJCS_YCbCr  : "YCbCr",
+     TJCS_GRAY   : "GRAY",
+-    TJCS_CMYK   : "CMYK",
+-    TJCS_YCCK   : "YCCK",
++    #TJCS_CMYK   : "CMYK",
++    #TJCS_YCCK   : "YCCK",
+     }
+ 
+ TJPF_STR = {
 @@ -107,7 +107,7 @@
      TJPF_BGRA   : "BGRA",
      TJPF_ABGR   : "ABGR",
@@ -36,13 +47,13 @@ Index: xpra/codecs/jpeg/decoder.pyx
 -    TJPF_CMYK   : "CMYK",
 +    #TJPF_CMYK   : "CMYK",
      }
- TJPF_VAL = dict((v,k) for k,v in TJPF_STR.items())
+ TJPF_VAL = reverse_dict(TJPF_STR)
  
 Index: xpra/codecs/jpeg/encoder.pyx
 ===================================================================
---- a/xpra/codecs/jpeg/encoder.pyx	(revision 21176)
+--- a/xpra/codecs/jpeg/encoder.pyx	(revision 21967)
 +++ b/xpra/codecs/jpeg/encoder.pyx	(working copy)
-@@ -31,7 +31,7 @@
+@@ -32,7 +32,7 @@
      TJSAMP  TJSAMP_420
      TJSAMP  TJSAMP_GRAY
      TJSAMP  TJSAMP_440
@@ -51,7 +62,7 @@ Index: xpra/codecs/jpeg/encoder.pyx
  
      TJPF    TJPF_RGB
      TJPF    TJPF_BGR
-@@ -44,7 +44,7 @@
+@@ -45,7 +45,7 @@
      TJPF    TJPF_BGRA
      TJPF    TJPF_ABGR
      TJPF    TJPF_ARGB
@@ -60,7 +71,7 @@ Index: xpra/codecs/jpeg/encoder.pyx
  
      int TJFLAG_BOTTOMUP
      int TJFLAG_FASTUPSAMPLE
-@@ -73,7 +73,7 @@
+@@ -74,7 +74,7 @@
      "BGRA"  : TJPF_BGRA,
      "ABGR"  : TJPF_ABGR,
      "ARGB"  : TJPF_ARGB,
@@ -69,7 +80,7 @@ Index: xpra/codecs/jpeg/encoder.pyx
      }
  TJSAMP_STR = {
      TJSAMP_444  : "444",
-@@ -81,7 +81,7 @@
+@@ -82,7 +82,7 @@
      TJSAMP_420  : "420",
      TJSAMP_GRAY : "GRAY",
      TJSAMP_440  : "440",

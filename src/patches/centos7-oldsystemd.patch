@@ -1,8 +1,8 @@
 Index: service/xpra.service
 ===================================================================
---- a/service/xpra.service	(revision 16054)
+--- a/service/xpra.service	(revision 21967)
 +++ b/service/xpra.service	(working copy)
-@@ -13,11 +13,11 @@
+@@ -17,11 +17,11 @@
  SuccessExitStatus=0 143
  Restart=on-abnormal
  PIDFile=/run/xpra.pid
