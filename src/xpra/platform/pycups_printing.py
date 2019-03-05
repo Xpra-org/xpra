@@ -7,11 +7,11 @@
 #default implementation using pycups
 import sys
 import os
-import cups
 import time
-import subprocess
+from subprocess import PIPE, Popen
 import shlex
 from threading import Lock
+import cups
 
 from xpra.os_util import OSX, PYTHON3
 from xpra.util import engs, envint, envbool
@@ -48,15 +48,21 @@ PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", PRINTER_PREFIX)
 DEFAULT_CUPS_DBUS = int(not OSX)
 CUPS_DBUS = envint("XPRA_CUPS_DBUS", DEFAULT_CUPS_DBUS)
 POLLING_DELAY = envint("XPRA_CUPS_POLLING_DELAY", 60)
-log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s", DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
-log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s", PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
+log("pycups settings: DEFAULT_CUPS_DBUS=%s, CUPS_DBUS=%s, POLLING_DELAY=%s",
+    DEFAULT_CUPS_DBUS, CUPS_DBUS, POLLING_DELAY)
+log("pycups settings: PRINTER_PREFIX=%s, ADD_LOCAL_PRINTERS=%s",
+    PRINTER_PREFIX, ADD_LOCAL_PRINTERS)
 log("pycups settings: FORWARDER_TMPDIR=%s", FORWARDER_TMPDIR)
 log("pycups settings: SKIPPED_PRINTERS=%s", SKIPPED_PRINTERS)
 
-MIMETYPE_TO_PRINTER = {"application/postscript" : "Generic PostScript Printer",
-                       "application/pdf"        : "Generic PDF Printer"}
-MIMETYPE_TO_PPD = {"application/postscript"     : "CUPS-PDF.ppd",
-                   "application/pdf"            : "Generic-PDF_Printer-PDF.ppd"}
+MIMETYPE_TO_PRINTER = {
+    "application/postscript"    : "Generic PostScript Printer",
+    "application/pdf"           : "Generic PDF Printer",
+    }
+MIMETYPE_TO_PPD = {
+    "application/postscript"    : "CUPS-PDF.ppd",
+    "application/pdf"           : "Generic-PDF_Printer-PDF.ppd",
+    }
 
 
 DEFAULT_CUPS_OPTIONS = {}
@@ -114,7 +120,7 @@ def get_lpinfo_drv(make_and_model):
         os.setsid()
     log("get_lpinfo_drv(%s) command=%s", make_and_model, command)
     try:
-        proc = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, close_fds=True, preexec_fn=preexec)
+        proc = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, preexec_fn=preexec)
     except Exception as e:
         log("get_lp_info_drv(%s) lpinfo command %s failed", make_and_model, command, exc_info=True)
         log.error("Error: lpinfo command failed to run")
@@ -246,7 +252,7 @@ def exec_lpadmin(args, success_cb=None):
     def preexec():
         os.setsid()
     log("exec_lpadmin(%s) command=%s", args, command)
-    proc = subprocess.Popen(command, stdin=None, stdout=None, stderr=None, shell=False, close_fds=True, preexec_fn=preexec)
+    proc = Popen(command, close_fds=True, preexec_fn=preexec)
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
     cr = getChildReaper()
@@ -489,18 +495,12 @@ def get_info():
 
 
 def main():
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        from xpra.log import add_debug_category, enable_debug_for
-        add_debug_category("printing")
-        enable_debug_for("printing")
-        try:
-            sys.argv.remove("-v")
-        except:
-            pass
-        try:
-            sys.argv.remove("--verbose")
-        except:
-            pass
+    for arg in list(sys.argv):
+        if arg in ("-v", "--verbose"):
+            from xpra.log import add_debug_category, enable_debug_for
+            add_debug_category("printing")
+            enable_debug_for("printing")
+            sys.argv.remove(arg)
 
     from xpra.platform import program_context
     from xpra.log import enable_color
