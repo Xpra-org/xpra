@@ -192,7 +192,7 @@ class TestAuth(unittest.TestCase):
 				f = context.file
 				filename = context.filename
 				with f:
-					a = self._init_auth(mod_name, {"password_file" : filename})
+					a = self._init_auth(mod_name, {"password_file" : [filename]})
 					password, filedata = genauthdata(a)
 					#print("saving password file data='%s' to '%s'" % (filedata, filename))
 					f.write(strtobytes(filedata))
