@@ -24,7 +24,7 @@ def init(opts):
 
 class FileAuthenticatorBase(SysAuthenticator):
     def __init__(self, username, **kwargs):
-        password_files = [kwargs.pop("filename", None)]+list(password_file)
+        password_files = [kwargs.pop("filename", None)]+list(password_file or [])
         log("FileAuthenticatorBase password_files=%s", password_files)
         filename = None
         for filename in password_files:
