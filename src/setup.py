@@ -2307,6 +2307,8 @@ libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
 toggle_packages(libav_common, "xpra.codecs.libav_common")
 if libav_common:
     avutil_pkgconfig = pkgconfig("libavutil")
+    if get_gcc_version()>=[9, 0]:
+        add_to_keywords(avutil_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
     cython_add(Extension("xpra.codecs.libav_common.av_log",
                 ["xpra/codecs/libav_common/av_log.pyx"],
                 **avutil_pkgconfig))
