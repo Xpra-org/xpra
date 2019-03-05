@@ -165,7 +165,11 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
 
     def get_default_window_icon(self, _size):
         icon_name = get_generic_os_name()+".png"
-        return get_icon(icon_name)
+        icon = get_icon(icon_name)
+        if not icon:
+            return None
+        filedata = load_binary_file(icon_name)
+        return icon.get_width(), icon.get_height(), "png", filedata
 
 
     def get_property(self, prop):
