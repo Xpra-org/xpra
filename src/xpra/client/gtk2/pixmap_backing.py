@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import cairo
 from PIL import Image
 from gtk import gdk
@@ -14,7 +13,7 @@ from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
 from xpra.os_util import memoryview_to_bytes, _buffer
-from xpra.util import csv, envbool
+from xpra.util import envbool
 from xpra.log import Logger
 
 log = Logger("paint")
@@ -24,18 +23,6 @@ INDIRECT_BGR = envbool("XPRA_PIXMAP_INDIRECT_BGR", False)
 if INDIRECT_BGR:
     PIXMAP_RGB_MODES += ["BGRX", "BGRA", "BGR"]
 
-
-INTERP_DICT = {
-    "nearest"    : gdk.INTERP_NEAREST,
-    "tiles"      : gdk.INTERP_TILES,
-    "bilinear"   : gdk.INTERP_BILINEAR,
-    "hyper"      : gdk.INTERP_HYPER,
-    }
-SCALING_INTERP_STR = os.environ.get("XPRA_SCALING_INTERPOLATION", "HYPER").lower()
-SCALING_INTERP = INTERP_DICT.get(SCALING_INTERP_STR)
-if not SCALING_INTERP:
-    log.warn("Warning: invalid interpolation '%s'")
-    log.warn(" supported types: %s", csv(INTERP_DICT.keys()))
 
 """
 Backing using a gdk.Pixmap
