@@ -2036,7 +2036,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                        "_proxy_start"           : "start",
                        "_proxy_start_desktop"   : "start-desktop",
                        "_proxy_shadow_start"    : "shadow",
-                       }.get(mode)
+                       }[mode]
         #strip defaults, only keep extra ones:
         for x in ("start", "start-child",
                   "start-after-connect", "start-child-after-connect",
@@ -2064,7 +2064,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     from xpra.net.bytestreams import TwoFileConnection
     app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, socktype="stdin/stdout"), server_conn)
     app.run()
-    return  0
+    return 0
 
 def run_stopexit(mode, error_cb, opts, extra_args):
     assert mode in ("stop", "exit")
