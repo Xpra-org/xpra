@@ -36,7 +36,10 @@ def reaper_cleanup():
     if not s:
         return
     singleton.cleanup()
-    singleton = None
+    #keep it around,
+    #so we don't try to reinitialize it from the wrong thread
+    #(signal requires the main thread)
+    #singleton = None
 
 
 class ProcInfo(object):
