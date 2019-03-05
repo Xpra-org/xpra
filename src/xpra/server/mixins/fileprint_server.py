@@ -10,16 +10,15 @@
 import os.path
 import hashlib
 
-from xpra.log import Logger
-printlog = Logger("printing")
-filelog = Logger("file")
-
 from xpra.simple_stats import to_std_unit
 from xpra.os_util import bytestostr, WIN32
 from xpra.util import engs, repr_ellipsized
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.log import Logger
 
+printlog = Logger("printing")
+filelog = Logger("file")
 
 SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
 
@@ -97,7 +96,8 @@ class FilePrintServer(StubServerMixin):
             printer_definitions = pycups_printing.validate_setup()
             printing = bool(printer_definitions)
             if printing:
-                printlog.info("printer forwarding enabled using %s", " and ".join([x.replace("application/", "") for x in printer_definitions.keys()]))
+                printlog.info("printer forwarding enabled using %s", " and ".join(
+                    x.replace("application/", "") for x in printer_definitions))
             else:
                 printlog.warn("Warning: no printer definitions found,")
                 printlog.warn(" cannot enable printer forwarding")
@@ -124,7 +124,8 @@ class FilePrintServer(StubServerMixin):
 
     def _process_print(self, _proto, packet):
         #ie: from the xpraforwarder we call this command:
-        #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
+        #command = ["xpra", "print", "socket:/path/tosocket",
+        #           filename, mimetype, source, title, printer, no_copies, print_options]
         assert self.file_transfer.printing
         #printlog("_process_print(%s, %s)", proto, packet)
         if len(packet)<3:
@@ -150,14 +151,15 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: invalid mimetype in print packet:")
             printlog.error(" %s", repr_ellipsized(mimetype))
             return
-        if type(print_options)!=dict:
+        if isinstance(print_options, dict):
             s = bytestostr(print_options)
             print_options = {}
             for x in s.split(" "):
                 parts = x.split("=", 1)
                 if len(parts)==2:
                     print_options[parts[0]] = parts[1]
-        printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options))
+        printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data),
+                                       source_uuid, title, printer, no_copies, print_options))
         printlog("process_print: got %s bytes for file %s", len(file_data), filename)
         #parse the print options:
         u = hashlib.sha1()
@@ -178,7 +180,7 @@ class FilePrintServer(StubServerMixin):
         sources = tuple(self._server_sources.values())
         printlog("will try to send to %i clients: %s", len(sources), sources)
         for ss in sources:
-            if source_uuid!='*' and ss.uuid!=source_uuid:
+            if source_uuid not in ("*", ss.uuid):
                 printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)
                 continue
             if not ss.printing:
