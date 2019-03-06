@@ -54,7 +54,7 @@ def get_native_system_tray_classes():
         try:
             from xpra.platform.xposix.appindicator_tray import AppindicatorTray
             c.append(AppindicatorTray)
-        except ImportError:
+        except (ImportError, ValueError):
             traylog("cannot load appindicator tray: %s", exc_info=True)
     return c
 
