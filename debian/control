@@ -260,7 +260,7 @@ Recommends: python3-dbus
 #the start-session GUI:
         ,python3-xdg
 #hope that this will allow our status icon to be shown:
-        ,gir1.2-appindicator3
+        ,gir1.2-appindicator3-0.1
 # for webcam support:
 Suggests:
         ,python3-pyinotify
