@@ -72,10 +72,6 @@ Depends: python2-xpra | python3-xpra,
 #cosmic:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
-# if you use Ubuntu, you will "want" this mess:
-#xenial:        ,python-appindicator
-#bionic:        ,python-appindicator
-#cosmic:        ,python-appindicator
 Recommends:
         xpra-html5
 # ffmpeg based codecs:
@@ -122,6 +118,14 @@ Recommends:
         ,sshpass
 #the start-session GUI:
         ,python-xdg
+# to make the system tray work again with gnome-shell:
+#stretch:        ,gnome-shell-extension-top-icons-plus
+#buster:		,gnome-shell-extension-appindicator
+#buster:        ,gnome-shell-extension-top-icons-plus
+#bionic:		,gnome-shell-extension-appindicator
+#bionic:        ,gnome-shell-extension-top-icons-plus
+#cosmic:		,gnome-shell-extension-appindicator
+#cosmic:        ,gnome-shell-extension-top-icons-plus
 Suggests: openssh-server
 # to make the system tray work again (sigh):
 		,gnome-shell-extension-top-icons-plus
@@ -181,10 +185,10 @@ Recommends: python-dbus
         ,python-paramiko
 #the start-session GUI:
         ,python-xdg
-# to make the system tray work again with gnome-shell:
-#buster:		,gnome-shell-extension-appindicator
-#bionic:		,gnome-shell-extension-appindicator
-#cosmic:		,gnome-shell-extension-appindicator
+# if you use Ubuntu, you will "want" this mess:
+#xenial:        ,python-appindicator
+#bionic:        ,python-appindicator
+#cosmic:        ,python-appindicator
 # for webcam support:
 Suggests: python-pyinotify
         ,python-opencv
@@ -242,10 +246,11 @@ Recommends: python3-dbus
         ,python3-paramiko
 #the start-session GUI:
         ,python3-xdg
-# to make the system tray work again with gnome-shell:
-#stretch:        ,gnome-shell-extension-top-icons-plus
-#bionic:        ,gnome-shell-extension-top-icons-plus
-#cosmic:        ,gnome-shell-extension-top-icons-plus
+# if you use Ubuntu, you will "want" this mess:
+#stretch:        ,gir1.2-appindicator3-0.1
+#bionic:        ,gir1.2-appindicator3-0.1
+#cosmic:        ,gir1.2-appindicator3-0.1
+#buster:        ,gir1.2-appindicator3-0.1
 # for webcam support:
 Suggests:
         ,python3-pyinotify
