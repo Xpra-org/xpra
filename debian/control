@@ -26,6 +26,7 @@ Build-Depends: debhelper (>= 8)
 #xenial:              ,python-gobject-dev
 #bionic:              ,python-gobject-2-dev
 #cosmic:              ,python-gobject-2-dev
+#disco:              ,python-gobject-2-dev
 #stretch:              ,python-gobject-dev
 #buster:              ,python-gobject-2-dev
 #python3 :
@@ -41,6 +42,9 @@ Build-Depends: debhelper (>= 8)
 #cosmic:              ,libavcodec-dev
 #cosmic:              ,libavformat-dev
 #cosmic:              ,libswscale-dev
+#disco:              ,libavcodec-dev
+#disco:              ,libavformat-dev
+#disco:              ,libswscale-dev
 #stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
 #buster:              ,libavformat-dev
@@ -70,6 +74,7 @@ Depends: python2-xpra | python3-xpra,
 #xenial:         ,libturbojpeg
 #bionic:        ,libturbojpeg
 #cosmic:        ,libturbojpeg
+#disco:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
 Recommends:
@@ -81,6 +86,8 @@ Recommends:
 #bionic:        ,libswscale4
 #cosmic:        ,libavcodec58
 #cosmic:        ,libswscale5
+#disco:        ,libavcodec58
+#disco:        ,libswscale5
 #buster:        ,libavcodec57
 #buster:        ,libswscale4
 # x264:
@@ -88,6 +95,7 @@ Recommends:
 #xenial:        ,libx264-148
 #bionic:        ,libx264-152
 #cosmic:        ,libx264-152
+#disco:        ,libx264-155
 #buster:        ,libx264-155
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
@@ -98,6 +106,7 @@ Recommends:
 #xenial:        ,libwebp5
 #bionic:        ,libwebp6
 #cosmic:        ,libwebp6
+#disco:        ,libwebp6
 #buster:        ,libwebp6
 # audio-related:
         ,gstreamer1.0-pulseaudio
@@ -124,8 +133,10 @@ Recommends:
 #buster:        ,gnome-shell-extension-top-icons-plus
 #bionic:		,gnome-shell-extension-appindicator
 #bionic:        ,gnome-shell-extension-top-icons-plus
-#cosmic:		,gnome-shell-extension-appindicator
+#cosmic:        ,gnome-shell-extension-appindicator
 #cosmic:        ,gnome-shell-extension-top-icons-plus
+#disco:        ,gnome-shell-extension-appindicator
+#disco:        ,gnome-shell-extension-top-icons-plus
 Suggests: openssh-server
 # to make the system tray work again (sigh):
 		,gnome-shell-extension-top-icons-plus
@@ -190,6 +201,7 @@ Recommends: python-dbus
 #xenial:        ,python-appindicator
 #bionic:        ,python-appindicator
 #cosmic:        ,python-appindicator
+#disco:        ,python-appindicator
 # for webcam support:
 Suggests: python-pyinotify
         ,python-opencv
