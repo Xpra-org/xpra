@@ -185,7 +185,8 @@ Recommends: python-dbus
         ,python-paramiko
 #the start-session GUI:
         ,python-xdg
-# if you use Ubuntu, you will "want" this mess:
+#hope that this will allow our status icon to be shown:
+#stretch:        ,python-appindicator
 #xenial:        ,python-appindicator
 #bionic:        ,python-appindicator
 #cosmic:        ,python-appindicator
@@ -246,11 +247,8 @@ Recommends: python3-dbus
         ,python3-paramiko
 #the start-session GUI:
         ,python3-xdg
-# if you use Ubuntu, you will "want" this mess:
-#stretch:        ,gir1.2-appindicator3-0.1
-#bionic:        ,gir1.2-appindicator3-0.1
-#cosmic:        ,gir1.2-appindicator3-0.1
-#buster:        ,gir1.2-appindicator3-0.1
+#hope that this will allow our status icon to be shown:
+        ,gir1.2-appindicator3
 # for webcam support:
 Suggests:
         ,python3-pyinotify
