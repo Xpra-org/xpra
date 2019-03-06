@@ -13,7 +13,7 @@ from collections import deque, namedtuple
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint
-from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
+from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import (
@@ -1090,7 +1090,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _process_window_signal(self, proto, packet):
         assert proto in self._server_sources
         wid = packet[1]
-        sig = packet[2]
+        sig = bytestostr(packet[2])
         if sig not in WINDOW_SIGNALS:
             log.warn("Warning: window signal '%s' not handled", sig)
             return

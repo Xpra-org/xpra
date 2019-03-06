@@ -813,7 +813,7 @@ class WindowClient(StubClientMixin):
             return False
         if cb_condition==glib.IO_IN:
             try:
-                signame = proc.stdout.readline().strip("\n\r")
+                signame = bytestostr(proc.stdout.readline()).strip("\n\r")
                 log("signal_watcher_event: %s", signame)
                 if not signame:
                     pass
@@ -822,7 +822,7 @@ class WindowClient(StubClientMixin):
                 else:
                     self.send("window-signal", wid, signame)
             except Exception as e:
-                log("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid), exc_info=True)
+                log.error("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid), exc_info=True)
                 log.error("Error: processing signal watcher output for pid %i of window %i", pid, wid)
                 log.error(" %s", e)
         if proc.poll():
