@@ -438,10 +438,6 @@ class GLWindowBackingBase(WindowBackingBase):
             if self.textures is None:
                 self.gl_init_textures()
 
-            #upload pixel buffer full of zeroes:
-            empty_buf = b"\0"*(w*h*4)
-            pixel_data = self.pixels_for_upload(empty_buf)[1]
-
             mag_filter = GL_NEAREST
             if float(rw)/w!=rw//w or float(rh)/h!=rh//h:
                 #non integer scaling, use linear magnification filter:
@@ -453,7 +449,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, self.textures[TEX_TMP_FBO])
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, pixel_data)
+            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -463,7 +459,7 @@ class GLWindowBackingBase(WindowBackingBase):
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, pixel_data)
+            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -1070,9 +1066,6 @@ class GLWindowBackingBase(WindowBackingBase):
             self.texture_size = (width, height)
             self.gl_marker("Creating new planar textures, pixel format %s", pixel_format)
             # Create textures of the same size as the window's
-            empty_buf = b"\0"*(width*height)
-            pixel_data = self.pixels_for_upload(empty_buf)[1]
-
             for texture, index in ((GL_TEXTURE0, TEX_Y), (GL_TEXTURE1, TEX_U), (GL_TEXTURE2, TEX_V)):
                 (div_w, div_h) = divs[index]
                 glActiveTexture(texture)
@@ -1083,7 +1076,7 @@ class GLWindowBackingBase(WindowBackingBase):
                     mag_filter = GL_LINEAR
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
+                glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
                 #glBindTexture(target, 0)        #redundant: we rebind below:
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
