@@ -359,13 +359,13 @@ def getUbuntuVersion():
     return ()
 
 def is_unity():
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("unity")
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("unity")>=0
 
 def is_gnome():
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("gnome")
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("gnome")>=0
 
 def is_kde():
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("kde")
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("kde")>=0
 
 
 def is_WSL():
