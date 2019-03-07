@@ -264,7 +264,7 @@ def exec_lpadmin(args, success_cb=None):
 
 def sanitize_name(name):
     import string
-    name = name.replace(" ", "-")
+    name = name.replace(b" ", b"-")
     valid_chars = "-_.:%s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in name if c in valid_chars)
 
@@ -290,7 +290,7 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
         log.error(" the printing system does not support %s", " or ".join(mimetypes))
         return
     if PYTHON3:
-        from urrlib.parse import urlencode      #@UnresolvedImport @UnusedImport
+        from urllib.parse import urlencode      #@UnresolvedImport @UnusedImport
     else:
         from urllib import urlencode            #@Reimport
     command = [
