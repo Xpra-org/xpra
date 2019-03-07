@@ -683,7 +683,7 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
 
     for prefix, op in (("Min", min), ("Max", max), ("Avg", avg)):
         add(prefix, op, "Batch Delay (ms)",         ["client.batch.delay.%s", "batch.delay.%s", "batch_delay.%s", "%s_batch_delay"])
-        add(prefix, op, "Actual Batch Delay (ms)",  ["client.batch.normalized", "client.batch.actual_delay.%s", "batch.actual_delay.%s"])
+        add(prefix, op, "Actual Batch Delay (ms)",  ["client.window.?[\d+].batch.actual_delays.%s", "client.batch.actual_delay.%s", "batch.actual_delay.%s"])
         add(prefix, op, "Client Latency (ms)",      ["client.connection.client.latency.%s", "client.latency.%s", "client_latency.%s", "%s_client_latency"])
         add(prefix, op, "Client Ping Latency (ms)", ["client.connection.client.ping_latency.%s", "client.ping_latency.%s", "client_ping_latency.%s"])
         add(prefix, op, "Server Ping Latency (ms)", ["client.connection.server.ping_latency.%s", "server.ping_latency.%s", "server_ping_latency.%s", "server_latency.%s", "%s_server_latency"])
