@@ -116,7 +116,8 @@ class FilePrintServer(StubServerMixin):
             except:
                 auth_name = str(auth_class)
             if auth_name not in ("none", "file"):
-                printlog.warn("Warning: printing conflicts with socket authentication module '%s'", auth_name)
+                printlog.warn("Warning: printer forwarding cannot be used,")
+                printlog.warn(" it conflicts with socket authentication module '%r'", auth_name)
                 printing = False
         #update file transfer attributes since printing nay have been disabled here
         self.file_transfer.printing = printing
