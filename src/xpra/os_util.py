@@ -238,7 +238,7 @@ def get_machine_id():
                 break
     elif WIN32:
         v = uuid.getnode()
-    return  str(v).strip("\n\r")
+    return bytestostr(v).strip("\n\r")
 
 def get_user_uuid():
     """
