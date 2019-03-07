@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -14,8 +14,13 @@ from xpra.version_util import full_version_str
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import envbool, csv
 from xpra.os_util import getuid, WIN32, OSX, POSIX
-from xpra.scripts.config import OPTION_TYPES, InitException, InitInfo, InitExit, fixup_debug_option, fixup_options, \
-    make_defaults_struct, parse_bool, print_number, validate_config, has_sound_support, name_to_field
+from xpra.scripts.config import (
+    OPTION_TYPES,
+    InitException, InitInfo, InitExit,
+    fixup_debug_option, fixup_options,
+    make_defaults_struct, parse_bool, print_number,
+    validate_config, has_sound_support, name_to_field,
+    )
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -34,10 +39,11 @@ def bool_or(v, other_value, true_str, false_str, other_str):
     return enabled_str(bv, true_str, false_str)
 
 def sound_option(v):
+    vl = v.lower()
     #ensures we return only: "on", "off" or "disabled" given any value
-    if v=="no":
-        v = "disabled"
-    return bool_or(v, "disabled", "on", "off", "disabled")
+    if vl=="no":
+        vl = "disabled"
+    return bool_or(vl, "disabled", "on", "off", "disabled")
 
 
 def info(msg):

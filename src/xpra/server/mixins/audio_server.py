@@ -36,8 +36,6 @@ class AudioServer(StubServerMixin):
         self.sound_source_plugin = None
         self.supports_speaker = False
         self.supports_microphone = False
-        self.speaker_codec_str = ""
-        self.microphone_codec_str = ""
         self.speaker_codecs = ()
         self.microphone_codecs = ()
         self.sound_properties = typedict()
@@ -45,7 +43,11 @@ class AudioServer(StubServerMixin):
     def init(self, opts):
         self.sound_source_plugin = opts.sound_source
         self.supports_speaker = sound_option(opts.speaker) in ("on", "off")
+        if self.supports_speaker:
+            self.speaker_codecs = opts.speaker_codec
         self.supports_microphone = sound_option(opts.microphone) in ("on", "off")
+        if self.supports_microphone:
+            self.microphone_codecs = opts.microphone_codec
         self.pulseaudio = opts.pulseaudio
         self.pulseaudio_command = opts.pulseaudio_command
         self.pulseaudio_configure_commands = opts.pulseaudio_configure_commands
@@ -277,8 +279,8 @@ class AudioServer(StubServerMixin):
                 self.microphone_allowed = False
         encoders = self.sound_properties.strlistget("encoders", [])
         decoders = self.sound_properties.strlistget("decoders", [])
-        self.speaker_codecs = sound_option_or_all("speaker-codec", self.speaker_codec_str, encoders)
-        self.microphone_codecs = sound_option_or_all("microphone-codec", self.microphone_codec_str, decoders)
+        self.speaker_codecs = sound_option_or_all("speaker-codec", self.speaker_codecs, encoders)
+        self.microphone_codecs = sound_option_or_all("microphone-codec", self.microphone_codecs, decoders)
         if not self.speaker_codecs:
             self.supports_speaker = False
         if not self.microphone_codecs:
