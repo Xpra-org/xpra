@@ -178,9 +178,13 @@ Requires:			xpra-common = %{version}-%{release}
 Requires:			python2-lz4
 Requires:			python2-rencode
 Requires:			python2-pillow
+%if 0%{?el7}
+Requires:			libvpx-xpra
+%else
 Requires:			libvpx
 Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra
+%endif
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			turbojpeg
@@ -328,9 +332,13 @@ Requires:			python3-pillow
 Requires:			python3-rencode
 Requires:			python3-numpy
 Requires:			libyuv
+%if 0%{?el7}
+Requires:			libvpx-xpra
+%else
 Requires:			libvpx
 Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra
+%endif
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			python3-cryptography
