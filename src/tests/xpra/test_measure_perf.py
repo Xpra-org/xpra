@@ -42,6 +42,7 @@ import time
 import os.path
 from subprocess import Popen, PIPE, STDOUT
 
+from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import get_root_size
 from xpra.log import Logger
 
@@ -61,7 +62,8 @@ def getoutput(cmd, env=None):
     out, err = process.communicate()
     code = process.poll()
     if code!=0:
-        raise Exception("command '%s' returned error code %s, out=%s, err=%s" % (cmd, code, out, err))
+        raise Exception("command '%s' returned error code %i: %s, out=%s, err=%s" %
+                        (cmd, code, EXIT_STR.get(code), out, err))
     return out
 
 def get_config(config_name):
@@ -577,21 +579,28 @@ def get_command_name(command_arg):
     assert isinstance(c, str)
     return c.split("/")[-1]             #/usr/bin/xterm -> xterm
 
-def get_auth_args():
+def get_auth_args(server=True):
     cmd = []
     if config.XPRA_USE_PASSWORD:
-        cmd.append("--password-file=%s" % password_filename)
-        if XPRA_VERSION_NO>=[0, 14]:
-            cmd.append("--auth=file")
-        if XPRA_VERSION_NO>=[0, 15]:
-            cmd.append("--auth=none")
-            cmd.append("--tcp-auth=file")
+        if server:
+            if XPRA_VERSION_NO>=[0, 15]:
+                cmd.append("--auth=none")
+                cmd.append("--tcp-auth=file,filename=%s" % password_filename)
+            elif XPRA_VERSION_NO>=[0, 15]:
+                cmd.append("--auth=none")
+                cmd.append("--tcp-auth=file")
+                cmd.append("--password-file=%s" % password_filename)
+            elif XPRA_VERSION_NO>=[0, 14]:
+                cmd.append("--auth=file")
+                cmd.append("--password-file=%s" % password_filename)
+        else:
+            cmd.append("--password-file=%s" % password_filename)
     return cmd
 
 def xpra_get_stats(initial_stats=None, all_stats=[]):
     if XPRA_VERSION_NO<[0, 3]:
         return  {}
-    info_cmd = XPRA_INFO_COMMAND[:] + get_auth_args()
+    info_cmd = XPRA_INFO_COMMAND[:] + get_auth_args(False)
     out = getoutput(info_cmd)
     if not out:
         return  {}
@@ -680,8 +689,8 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
         add(prefix, op, "Server Ping Latency (ms)", ["client.connection.server.ping_latency.%s", "server.ping_latency.%s", "server_ping_latency.%s", "server_latency.%s", "%s_server_latency"])
         add(prefix, op, "Damage Latency (ms)",      ["client.damage.in_latency.%s", "damage.in_latency.%s", "damage_in_latency.%s"])
 
-        add(prefix, op, "Quality",                  [r"^client.window\[\d+\].encoding.quality.%s$", r"^window\[\d+\].encoding.quality.%s$"])
-        add(prefix, op, "Speed",                    [r"^client.window\[\d+\].encoding.speed.%s$", r"^window\[\d+\].encoding.speed.%s$"])
+        add(prefix, op, "Quality",                  [r"^client.window.?[\d+].encoding.quality.%s$", r"^window[\d+].encoding.quality.%s$"])
+        add(prefix, op, "Speed",                    [r"^client.window.?[\d+].encoding.speed.%s$", r"^window[\d+].encoding.speed.%s$"])
 
     def addset(name, prop_name):
         regex = re.compile(prop_name)
@@ -716,7 +725,7 @@ def get_xpra_start_server_command():
                    +" -config %s" % config.XORG_CONFIG)
     if XPRA_VERSION_NO>=[0, 5]:
         cmd.append("--no-notifications")
-    cmd += get_auth_args()
+    cmd += get_auth_args(True)
     cmd.append("--no-pulseaudio")
     cmd += ["start", ":%s" % config.DISPLAY_NO]
     return cmd
@@ -769,7 +778,7 @@ def test_xpra():
                                                         cmd.append("--readonly=yes")
                                                     else:
                                                         cmd.append("--readonly")
-                                                    cmd += get_auth_args()
+                                                    cmd += get_auth_args(False)
                                                     if packet_encoders:
                                                         cmd += ["--packet-encoders=%s" % packet_encoders]
                                                     if comp:
