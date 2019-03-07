@@ -22,6 +22,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     def init_state(self):
         self.printers = {}
+        self.printers_added = set()
 
     def cleanup(self):
         self.remove_printers()
@@ -131,12 +132,14 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 #ie: on FOO (via xpra)
                 location = "on %s (%s)" % (self.hostname, PRINTER_LOCATION_STRING)
         try:
+            printer = name.decode("utf8")
             def printer_added():
                 #once the printer has been added, register it in the list
                 #(so it will be removed on exit)
-                log.info("the remote printer '%s' has been configured", name)
+                log.info("the remote printer '%s' has been configured", printer)
                 self.printers[name] = props
-            add_printer(name, props, info, location, attrs, success_cb=printer_added)
+                self.printers_added.add(name)
+            add_printer(printer, props, info, location, attrs, success_cb=printer_added)
         except Exception as e:
             log.warn("Warning: failed to add printer %s: %s", bytestostr(name), e)
             log("setup_printer(%s, %s, %s)", name, props, attributes, exc_info=True)
@@ -144,16 +147,22 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def remove_printers(self):
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
             return
-        printers = self.printers.copy()
         self.printers = {}
-        for k in printers:
+        for k in tuple(self.printers_added):
             self.remove_printer(k)
 
-    def remove_printer(self, printer):
+    def remove_printer(self, name):
         try:
-            from xpra.platform.pycups_printing import remove_printer
-            remove_printer(printer)
-        except Exception as e:
-            log("remove_printer(%s)", printer, exc_info=True)
-            log.error("Error: failed to remove printer %s:", printer)
-            log.error(" %s", e)
+            self.printers_added.remove(name)
+        except KeyError:
+            log("not removing printer '%s' - since we didn't add it", name)
+        else:
+            try:
+                printer = name.decode("utf8")
+                from xpra.platform.pycups_printing import remove_printer
+                remove_printer(printer)
+                log.info("removed remote printer '%s'", printer)
+            except Exception as e:
+                log("remove_printer(%s)", printer, exc_info=True)
+                log.error("Error: failed to remove printer %s:", printer)
+                log.error(" %s", e)

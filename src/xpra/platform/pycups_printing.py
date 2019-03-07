@@ -264,7 +264,7 @@ def exec_lpadmin(args, success_cb=None):
 
 def sanitize_name(name):
     import string
-    name = name.replace(b" ", b"-")
+    name = name.replace(" ", "-")
     valid_chars = "-_.:%s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in name if c in valid_chars)
 
@@ -272,7 +272,11 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
     log("add_printer%s", (name, options, info, location, attributes, success_cb))
     mimetypes = options.get("mimetypes", [DEFAULT_MIMETYPE])
     if not mimetypes:
-        log.error("Error: no mimetypes specified for printer %s", name)
+        log.error("Error: no mimetypes specified for printer '%s'", name)
+        return
+    xpra_printer_name = PRINTER_PREFIX+sanitize_name(name)
+    if xpra_printer_name in get_all_printers():
+        log.warn("Warning: not adding duplicate printer '%s'", name)
         return
     #find a matching definition:
     mimetype, printer_def = None, None
@@ -294,7 +298,7 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
     else:
         from urllib import urlencode            #@Reimport
     command = [
-               "-p", PRINTER_PREFIX+sanitize_name(name),
+               "-p", xpra_printer_name,
                "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urlencode(attributes),
                "-D", info,
                "-L", location,
