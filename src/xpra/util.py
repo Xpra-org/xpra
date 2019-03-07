@@ -696,11 +696,11 @@ def _flatten_dict(to, sep, path, d):
 def parse_simple_dict(s="", sep=","):
     #parse the options string and add the pairs:
     d = {}
-    for s in s.split(sep):
-        if not s:
+    for el in s.split(sep):
+        if not el:
             continue
         try:
-            k,v = s.split("=", 1)
+            k,v = el.split("=", 1)
             d[k] = v
         except Exception as e:
             log = get_util_logger()

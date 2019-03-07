@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ from threading import Lock
 import cups
 
 from xpra.os_util import OSX, PYTHON3
-from xpra.util import engs, envint, envbool
+from xpra.util import engs, envint, envbool, parse_simple_dict
 from xpra.log import Logger
 
 log = Logger("printing")
@@ -65,19 +65,9 @@ MIMETYPE_TO_PPD = {
     }
 
 
-DEFAULT_CUPS_OPTIONS = {}
 dco = os.environ.get("XPRA_DEFAULT_CUPS_OPTIONS", "fit-to-page=True")
-if dco:
-    for opt in dco.split(","):
-        opt = opt.strip(" ")
-        parts = opt.split("=", 1)
-        if len(parts)!=2:
-            log.warn("Warning: invalid cups option: '%s'", opt)
-            continue
-        #is it a boolean?
-        k,v = parts
-        DEFAULT_CUPS_OPTIONS[k] = v
-    log("DEFAULT_CUPS_OPTIONS=%s", DEFAULT_CUPS_OPTIONS)
+DEFAULT_CUPS_OPTIONS = parse_simple_dict(dco)
+log("DEFAULT_CUPS_OPTIONS=%s", DEFAULT_CUPS_OPTIONS)
 
 
 #allows us to inject the lpadmin and lpinfo commands from the config file
