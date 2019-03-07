@@ -7,7 +7,7 @@
 import os
 
 from xpra.util import envbool
-from xpra.os_util import get_machine_id
+from xpra.os_util import get_machine_id, bytestostr
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -138,7 +138,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 self.printers[name] = props
             add_printer(name, props, info, location, attrs, success_cb=printer_added)
         except Exception as e:
-            log.warn("Warning: failed to add printer %s: %s", name, e)
+            log.warn("Warning: failed to add printer %s: %s", bytestostr(name), e)
             log("setup_printer(%s, %s, %s)", name, props, attributes, exc_info=True)
 
     def remove_printers(self):
