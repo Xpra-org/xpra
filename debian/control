@@ -128,15 +128,10 @@ Recommends:
 #the start-session GUI:
         ,python-xdg
 # to make the system tray work again with gnome-shell:
-#stretch:        ,gnome-shell-extension-top-icons-plus
 #buster:		,gnome-shell-extension-appindicator
-#buster:        ,gnome-shell-extension-top-icons-plus
 #bionic:		,gnome-shell-extension-appindicator
-#bionic:        ,gnome-shell-extension-top-icons-plus
 #cosmic:        ,gnome-shell-extension-appindicator
-#cosmic:        ,gnome-shell-extension-top-icons-plus
 #disco:        ,gnome-shell-extension-appindicator
-#disco:        ,gnome-shell-extension-top-icons-plus
 Suggests: openssh-server
 # to make the system tray work again (sigh):
 		,gnome-shell-extension-top-icons-plus
@@ -145,6 +140,12 @@ Suggests: openssh-server
         ,pulseaudio-utils
 # for webcam support:
         ,v4l2loopback-dkms
+# to make the system tray work again with gnome-shell:
+#stretch:        ,gnome-shell-extension-top-icons-plus
+#buster:        ,gnome-shell-extension-top-icons-plus
+#bionic:        ,gnome-shell-extension-top-icons-plus
+#cosmic:        ,gnome-shell-extension-top-icons-plus
+#disco:        ,gnome-shell-extension-top-icons-plus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
