@@ -180,7 +180,8 @@ class WindowIconSource(object):
         if not idata:
             return
         w, h, pixel_format, pixel_data = idata
-        assert pixel_format in ("BGRA", "png"), "invalid window icon format %s" % pixel_format
+        log("compress_and_send_window_icon() %ix%i in %s format, %i bytes", w, h, pixel_format, len(pixel_data))
+        assert pixel_format in ("BGRA", "RGBA", "png"), "invalid window icon format %s" % pixel_format
         if pixel_format=="BGRA":
             #BGRA data is always unpremultiplied
             #(that's what we get from NetWMIcons)
@@ -196,6 +197,7 @@ class WindowIconSource(object):
         log("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), sending as png=%s, pixel_format=%s",
             w, h, self.window_icon_max_size, self.window_icon_size, use_png, pixel_format)
         must_convert = (use_png and pixel_format!="png") or (pixel_format=="BGRA" and not self.has_premult)
+        log(" must convert=%s, must scale=%s", must_convert, must_scale)
 
         image = None
         if must_scale or must_convert or SAVE_WINDOW_ICONS:
@@ -203,7 +205,7 @@ class WindowIconSource(object):
             if pixel_format=="png":
                 image = Image.open(BytesIOClass(pixel_data))
             else:
-                assert pixel_format=="BGRA"
+                assert pixel_format in ("BGRA", "RGBA")
                 image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", pixel_format, 0, 1)
             if must_scale:
                 #scale the icon down to the size the client wants

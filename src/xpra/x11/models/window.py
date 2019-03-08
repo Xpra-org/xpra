@@ -773,7 +773,7 @@ class WindowModel(BaseWindowModel):
                 if pixbuf:
                     w, h = pixbuf.props.width, pixbuf.props.height
                     iconlog("using '%s' pixbuf %ix%i", icon_name, w, h)
-                    return w, h, "BGRA", pixbuf.get_pixels()
+                    return w, h, "RGBA", pixbuf.get_pixels()
             except Exception:
                 iconlog("%s.load_icon()", i, exc_info=True)
         return None
