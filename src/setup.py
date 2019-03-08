@@ -206,7 +206,7 @@ csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 example_ENABLED         = DEFAULT
 
 #Cython / gcc / packaging build options:
-annotate_ENABLED        = True
+annotate_ENABLED        = DEFAULT
 warn_ENABLED            = True
 strict_ENABLED          = True
 PIC_ENABLED             = not WIN32     #ming32 moans that it is always enabled already
