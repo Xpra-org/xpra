@@ -88,7 +88,7 @@ class AppindicatorTray(TrayBase):
         tmp_dir = osexpand(get_xpra_tmp_dir())
         if not os.path.exists(tmp_dir):
             os.mkdir(tmp_dir, 0o755)
-        self.tmp_filename = tempfile.mkstemp(suffix=".png", dir=tmp_dir)[1]
+        self.tmp_filename = tempfile.mkstemp(prefix="tray", suffix=".png", dir=tmp_dir)[1]
         log("set_icon_from_data%s using temporary file %s",
             ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), self.tmp_filename)
         tray_icon = pixbuf_new_from_data(pixels, COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
