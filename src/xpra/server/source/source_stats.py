@@ -103,18 +103,18 @@ class GlobalPerformanceStatistics(object):
             return max(0.001, avg), max(0.001, recent)
         client_latency = tuple(self.client_latency)
         if client_latency:
-            data = [(when, latency) for _, when, _, latency in client_latency]
-            self.min_client_latency = min([x for _,x in data])
+            data = tuple((when, latency) for _, when, _, latency in client_latency)
+            self.min_client_latency = min(x for _,x in data)
             self.avg_client_latency, self.recent_client_latency = latency_averages(data)
         #client ping latency: from ping packets
         client_ping_latency = tuple(self.client_ping_latency)
         if client_ping_latency:
-            self.min_client_ping_latency = min([x for _,x in client_ping_latency])
+            self.min_client_ping_latency = min(x for _,x in client_ping_latency)
             self.avg_client_ping_latency, self.recent_client_ping_latency = latency_averages(client_ping_latency)
         #server ping latency: from ping packets
         server_ping_latency = tuple(self.server_ping_latency)
         if server_ping_latency:
-            self.min_server_ping_latency = min([x for _,x in server_ping_latency])
+            self.min_server_ping_latency = min(x for _,x in server_ping_latency)
             self.avg_server_ping_latency, self.recent_server_ping_latency = latency_averages(server_ping_latency)
         #set to 0 if we have less than 2 events in the last 60 seconds:
         now = monotonic_time()
@@ -153,21 +153,24 @@ class GlobalPerformanceStatistics(object):
             metric = "client-latency"
             l = 0.005 + self.min_client_latency
             wm = logp(l / 0.020)
-            mayaddfac(*calculate_for_target(metric, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            mayaddfac(*calculate_for_target(metric, l, self.avg_client_latency, self.recent_client_latency,
+                                            aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         if self.client_ping_latency:
             metric = "client-ping-latency"
             l = 0.005 + self.min_client_ping_latency
             wm = logp(l / 0.050)
-            mayaddfac(*calculate_for_target(metric, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            mayaddfac(*calculate_for_target(metric, l, self.avg_client_ping_latency, self.recent_client_ping_latency,
+                                            aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         if self.server_ping_latency:
             metric = "server-ping-latency"
             l = 0.005 + self.min_server_ping_latency
             wm = logp(l / 0.050)
-            mayaddfac(*calculate_for_target(metric, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            mayaddfac(*calculate_for_target(metric, l, self.avg_server_ping_latency, self.recent_server_ping_latency,
+                                            aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         #packet queue size: (includes packets from all windows)
         mayaddfac(*queue_inspect("packet-queue-size", self.packet_qsizes, smoothing=sqrt))
         #packet queue pixels (global):
-        qpix_time_values = [(event_time, value) for event_time, _, value in tuple(self.damage_packet_qpixels)]
+        qpix_time_values = tuple((event_time, value) for event_time, _, value in tuple(self.damage_packet_qpixels))
         mayaddfac(*queue_inspect("packet-queue-pixels", qpix_time_values, div=pixel_count, smoothing=sqrt))
         #compression data queue: (This is an important metric
         #since each item will consume a fair amount of memory
@@ -183,15 +186,15 @@ class GlobalPerformanceStatistics(object):
         return factors
 
     def get_connection_info(self):
-        latencies = [x*1000 for (_, _, _, x) in tuple(self.client_latency)]
+        latencies = tuple(int(x*1000) for (_, _, _, x) in tuple(self.client_latency))
         info = {
             "mmap_bytecount"  : self.mmap_bytes_sent,
             "latency"           : get_list_stats(latencies),
             "server"            : {
-                "ping_latency"   : get_list_stats(1000.0*x for _, x in tuple(self.server_ping_latency)),
+                "ping_latency"   : get_list_stats(int(1000*x[1]) for x in tuple(self.server_ping_latency)),
                 },
             "client"            : {
-                "ping_latency"   : get_list_stats(1000.0*x for _, x in tuple(self.client_ping_latency)),
+                "ping_latency"   : get_list_stats(int(1000*x[1]) for x in tuple(self.client_ping_latency)),
                 },
             }
         if self.min_client_latency is not None:
@@ -200,8 +203,8 @@ class GlobalPerformanceStatistics(object):
 
 
     def get_info(self):
-        cwqsizes = [x for _,x in tuple(self.compression_work_qsizes)]
-        pqsizes = [x for _,x in tuple(self.packet_qsizes)]
+        cwqsizes = tuple(x[1] for x in tuple(self.compression_work_qsizes))
+        pqsizes = tuple(x[1] for x in tuple(self.packet_qsizes))
         now = monotonic_time()
         time_limit = now-60             #ignore old records (60s)
         info = {
