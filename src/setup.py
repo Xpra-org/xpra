@@ -1463,8 +1463,6 @@ if WIN32:
     if data_ENABLED:
         add_data_files(share_xpra,              ["win32/website.url"])
         add_data_files('%s/icons' % share_xpra,  glob.glob('icons\\*.ico'))
-
-    if webcam_ENABLED:
         add_data_files(share_xpra,              ["win32\\DirectShow.tlb"])
 
     remove_packages(*external_excludes)
