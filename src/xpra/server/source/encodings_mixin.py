@@ -11,6 +11,7 @@ from time import sleep
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.batch_config import DamageBatchConfig
+from xpra.server.server_core import ClientException
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net.compression import compressed_wrapper, Compressed, use_lz4, use_lzo
@@ -269,7 +270,7 @@ class EncodingsMixin(StubSourceMixin):
         self.encodings = c.strlistget("encodings")
         self.core_encodings = c.strlistget("encodings.core", self.encodings)
         if self.send_windows and not self.core_encodings:
-            raise Exception("client failed to specify any supported encodings")
+            raise ClientException("client failed to specify any supported encodings")
         if "png" in self.core_encodings:
             self.window_icon_encodings.append("png")
         self.window_icon_encodings = c.strlistget("encodings.window-icon", ["premult_argb32"])
