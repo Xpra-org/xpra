@@ -117,19 +117,20 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", True)
-PADDING_COLORS = 0, 0, 0
-PADDING_COLORS_STR = os.environ.get("XPRA_PADDING_COLORS")
-if PADDING_COLORS_STR:
-    try:
-        PADDING_COLORS = tuple(float(x.strip()) for x in PADDING_COLORS_STR.split(","))
-        assert len(PADDING_COLORS)==3, "you must specify 3 components"
-        log("PADDING_COLORS=%s", PADDING_COLORS)
-    except Exception as e:
-        log.warn("Warning: invalid padding colors specified,")
-        log.warn(" %s", e)
-        log.warn(" using black")
-        PADDING_COLORS = 0, 0, 0
-del PADDING_COLORS_STR
+def parse_padding_colors(colors_str):
+    padding_colors = 0, 0, 0
+    if colors_str:
+        try:
+            padding_colors = tuple(float(x.strip()) for x in colors_str.split(","))
+            assert len(PADDING_COLORS)==3, "you must specify 3 components"
+        except Exception as e:
+            log.warn("Warning: invalid padding colors specified,")
+            log.warn(" %s", e)
+            log.warn(" using black")
+            padding_colors = 0, 0, 0
+    log("parse_padding_colors(%s)=%s", colors_str, padding_colors)
+    return padding_colors
+PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS"))
 
 
 #window types we map to POPUP rather than TOPLEVEL
