@@ -651,6 +651,11 @@ class WindowClient(StubClientMixin):
             has_alpha = img.mode=="RGBA"
             rowstride = width * (3+int(has_alpha))
         icon = img
+        save_time = int(time())
+        if SAVE_WINDOW_ICONS:
+            filename = "client-window-%i-icon-%i.png" % (wid, save_time)
+            icon.save(filename, "png")
+            iconlog("client window icon saved to %s", filename)
         if self.overlay_image and self.overlay_image!=img:
             if 0<ICON_SHRINKAGE<100:
                 #paste the application icon in the top-left corner,
@@ -660,18 +665,26 @@ class WindowClient(StubClientMixin):
                 icon_resized = icon.resize((shrunk_width, shrunk_height), Image.ANTIALIAS)
                 icon = Image.new("RGBA", (width, height))
                 icon.paste(icon_resized, (0, 0, shrunk_width, shrunk_height))
+                if SAVE_WINDOW_ICONS:
+                    filename = "client-window-%i-icon-shrunk-%i.png" % (wid, save_time)
+                    icon.save(filename, "png")
+                    iconlog("client shrunk window icon saved to %s", filename)
             assert 0<ICON_OVERLAY<=100
             overlay_width = max(1, width*ICON_OVERLAY//100)
             overlay_height = max(1, height*ICON_OVERLAY//100)
             xpra_resized = self.overlay_image.resize((overlay_width, overlay_height), Image.ANTIALIAS)
             xpra_corner = Image.new("RGBA", (width, height))
             xpra_corner.paste(xpra_resized, (width-overlay_width, height-overlay_height, width, height))
+            if SAVE_WINDOW_ICONS:
+                filename = "client-window-%i-icon-xpracorner-%i.png" % (wid, save_time)
+                xpra_corner.save(filename, "png")
+                iconlog("client xpracorner window icon saved to %s", filename)
             composite = Image.alpha_composite(icon, xpra_corner)
             icon = composite
-        if SAVE_WINDOW_ICONS:
-            filename = "client-window-%i-icon-%i.png" % (wid, int(time()))
-            icon.save(filename, "png")
-            iconlog("client window icon saved to %s", filename)
+            if SAVE_WINDOW_ICONS:
+                filename = "client-window-%i-icon-composited-%i.png" % (wid, save_time)
+                icon.save(filename, "png")
+                iconlog("client composited window icon saved to %s", filename)
         return icon
 
 
