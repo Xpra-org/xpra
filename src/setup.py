@@ -214,7 +214,7 @@ debug_ENABLED           = False
 verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
 tests_ENABLED           = False
-rebuild_ENABLED         = True
+rebuild_ENABLED         = "--skip-build" not in sys.argv
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = [
