@@ -408,6 +408,10 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:			python3-xdg
+%if 0%{?fedora}
+#without this, the system tray is unusable!
+Recommends:			gnome-shell-extension-topicons-plus
+%endif
 Recommends:			libappindicator-gtk3
 Suggests:			sshpass
 %if 0%{?run_tests}
