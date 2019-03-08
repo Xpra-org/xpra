@@ -450,7 +450,8 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         log("mdns import failure", exc_info=True)
         log.warn("Warning: failed to load the mdns publisher")
         log.warn(" %s", e)
-        log.warn(" either fix your installation or use the 'mdns=no' option")
+        log.warn(" either install the 'python-avahi' module")
+        log.warn(" or use the 'mdns=no' option")
         return
     d = text_dict.copy()
     d["mode"] = mode
