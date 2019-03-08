@@ -240,9 +240,6 @@ SWITCHES = [
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     ]
-if WIN32:
-    SWITCHES.append("zip")
-    zip_ENABLED = True
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
