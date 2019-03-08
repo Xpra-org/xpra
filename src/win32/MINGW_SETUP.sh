@@ -32,7 +32,7 @@ $PACMAN --noconfirm -S ${XPKG}python2 ${XPKG}python2-pygtk ${XPKG}gtkglext ${XPK
 #media libraries (more than we actually need):
 $PACMAN --noconfirm -S ${XPKG}ffmpeg ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
-$PACMAN --noconfirm -S ${XPKG}lz4 ${XPKG}lzo2 ${XPKG}xxhash openssh sshpass
+$PACMAN --noconfirm -S ${XPKG}lz4 ${XPKG}lzo2 openssh sshpass
 #python3 GStreamer bindings:
 $PACMAN --noconfirm -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
