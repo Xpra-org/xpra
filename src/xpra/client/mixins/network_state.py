@@ -210,8 +210,9 @@ class NetworkState(StubClientMixin):
         now_ms = int(1000.0*monotonic_time())
         self.send("ping", now_ms)
         wait = 2.0
-        spl = tuple(x for _,x in self.server_ping_latency)
+        spl = tuple(self.server_ping_latency)
         if spl:
+            spl = tuple(x[1] for x in spl)
             avg = sum(spl) / len(spl)
             wait = min(5, 1.0+avg*2.0)
             log("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs",
