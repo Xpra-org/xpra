@@ -145,19 +145,21 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                         br = os.path.join(x, "brotli")
                         if sys.platform.startswith("win"):
                             br += ".exe"
-                        if os.path.exists(br):
-                            cmd = [br, "-k", dst]
-                            code, out, err = get_status_output(cmd)
-                            if code!=0:
-                                print("brotli error code=%i on %s" % (code, cmd))
-                                if out:
-                                    print("stdout=%s" % out)
-                                if err:
-                                    print("stderr=%s" % err)
-                            elif os.path.exists(br_dst):
-                                os.chmod(br_dst, 0o644)
-                            else:
-                                print("Warning: brotli did not create '%s'" % br_dst)
+                        if not os.path.exists(br):
+                            continue
+                        cmd = [br, "-k", dst]
+                        code, out, err = get_status_output(cmd)
+                        if code!=0:
+                            print("brotli error code=%i on %s" % (code, cmd))
+                            if out:
+                                print("stdout=%s" % out)
+                            if err:
+                                print("stderr=%s" % err)
+                        elif os.path.exists(br_dst):
+                            os.chmod(br_dst, 0o644)
+                            break
+                        else:
+                            print("Warning: brotli did not create '%s'" % br_dst)
 
     if os.name=="posix":
         try:
