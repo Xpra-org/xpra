@@ -15,9 +15,9 @@ import os
 import sys
 
 from xpra.util import envbool
-from xpra.os_util import monotonic_time, PYTHON2
+from xpra.os_util import monotonic_time, osexpand, PYTHON2
 from xpra.client.tray_base import TrayBase
-from xpra.platform.paths import get_icon_dir, get_icon_filename
+from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
 
 log = Logger("tray", "posix")
@@ -83,8 +83,12 @@ class AppindicatorTray(TrayBase):
         #use a temporary file (yuk)
         from xpra.gtk_common.gtk_util import COLORSPACE_RGB, pixbuf_new_from_data, pixbuf_save_to_memory
         import tempfile
+        filename = None
         try:
-            filename = tempfile.mkstemp(suffix=".png")[1]
+            tmp_dir = osexpand(get_xpra_tmp_dir())
+            if not os.path.exists(tmp_dir):
+                os.mkdir(tmp_dir, 0o755)
+            filename = tempfile.mkstemp(suffix=".png", dir=tmp_dir)[1]
             log("set_icon_from_data%s using temporary file %s",
                 ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
             tray_icon = pixbuf_new_from_data(pixels, COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
@@ -93,7 +97,7 @@ class AppindicatorTray(TrayBase):
                 f.write(png_data)
             self.do_set_icon_from_file(filename)
         finally:
-            if DELETE_TEMP_FILE:
+            if filename and DELETE_TEMP_FILE:
                 os.unlink(filename)
 
     def do_set_icon_from_file(self, filename):
