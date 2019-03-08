@@ -837,9 +837,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def schedule_send_iconify(self):
         #calculate a good delay to prevent races causing minimize/unminimize loops:
         delay = 150
-        spl = tuple(x for _, x in self._client.server_ping_latency)
+        spl = tuple(self._client.server_ping_latency)
         if spl:
-            worst = max(spl)
+            worst = max(x[1] for x in self._client.server_ping_latency)
             delay += int(1000*worst)
             delay = min(1000, delay)
         statelog("telling server about iconification with %sms delay", delay)
