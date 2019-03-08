@@ -47,6 +47,7 @@ class AppindicatorTray(TrayBase):
         TrayBase.__init__(self, *args, **kwargs)
         filename = get_icon_filename(self.default_icon_filename)
         self._has_icon = False
+        self.tmp_filename = None
         self.tray_widget = Indicator(self.tooltip, filename, APPLICATION_STATUS)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
@@ -80,25 +81,21 @@ class AppindicatorTray(TrayBase):
             self.tray_widget.set_label(text or "Xpra")
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
+        self.clean_last_tmp_icon()
         #use a temporary file (yuk)
         from xpra.gtk_common.gtk_util import COLORSPACE_RGB, pixbuf_new_from_data, pixbuf_save_to_memory
         import tempfile
-        filename = None
-        try:
-            tmp_dir = osexpand(get_xpra_tmp_dir())
-            if not os.path.exists(tmp_dir):
-                os.mkdir(tmp_dir, 0o755)
-            filename = tempfile.mkstemp(suffix=".png", dir=tmp_dir)[1]
-            log("set_icon_from_data%s using temporary file %s",
-                ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
-            tray_icon = pixbuf_new_from_data(pixels, COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
-            png_data = pixbuf_save_to_memory(tray_icon)
-            with open(filename, "wb") as f:
-                f.write(png_data)
-            self.do_set_icon_from_file(filename)
-        finally:
-            if filename and DELETE_TEMP_FILE:
-                os.unlink(filename)
+        tmp_dir = osexpand(get_xpra_tmp_dir())
+        if not os.path.exists(tmp_dir):
+            os.mkdir(tmp_dir, 0o755)
+        self.tmp_filename = tempfile.mkstemp(suffix=".png", dir=tmp_dir)[1]
+        log("set_icon_from_data%s using temporary file %s",
+            ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), self.tmp_filename)
+        tray_icon = pixbuf_new_from_data(pixels, COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+        png_data = pixbuf_save_to_memory(tray_icon)
+        with open(self.tmp_filename, "wb") as f:
+            f.write(png_data)
+        self.do_set_icon_from_file(self.tmp_filename)
 
     def do_set_icon_from_file(self, filename):
         if not hasattr(self.tray_widget, "set_icon_theme_path"):
@@ -115,6 +112,18 @@ class AppindicatorTray(TrayBase):
         self.tray_widget.set_icon(noext)
         self._has_icon = True
         self.icon_timestamp = monotonic_time()
+
+    def clean_last_tmp_icon(self):
+        if self.tmp_filename and DELETE_TEMP_FILE:
+            try:
+                os.unlink(self.tmp_filename)
+            except (OSError, IOError):
+                log("failed to remove tmp icon", exc_info=True)
+            self.tmp_filename = None
+
+    def cleanup(self):
+        self.clean_last_tmp_icon()
+        TrayBase.cleanup(self)
 
 
 def main():
