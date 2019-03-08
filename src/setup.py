@@ -170,8 +170,8 @@ vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_socket
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 clipboard_ENABLED       = DEFAULT
-Xdummy_ENABLED          = None          #None means auto-detect
-Xdummy_wrapper_ENABLED  = None          #None means auto-detect
+Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
+Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
 if WIN32 or OSX:
     Xdummy_ENABLED = False
 sound_ENABLED           = DEFAULT
