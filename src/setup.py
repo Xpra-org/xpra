@@ -846,7 +846,7 @@ def build_xpra_conf(install_dir):
         return "yes" if int(b) else "no"
     start_env = "\n".join("start-env = %s" % x for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
-    from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
+    from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
         get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
@@ -886,7 +886,7 @@ def build_xpra_conf(install_dir):
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
             'xvfb_command'          : pretty_cmd(xvfb_command),
-            'ssh_command'           : DEFAULT_SSH_COMMAND,
+            'ssh_command'           : "auto",
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
             'remote_logging'        : "both",
             'start_env'             : start_env,

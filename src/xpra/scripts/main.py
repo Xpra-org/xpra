@@ -21,7 +21,8 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, repr_ellipsized, nonl, pver, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
-    get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, use_tty,
+    get_util_logger, getuid, getgid, which,
+    monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
 from xpra.scripts.parsing import (
@@ -510,20 +511,26 @@ def find_session_by_name(opts, session_name):
         raise InitException("more than one session found matching '%s'" % session_name)
     return "socket://%s" % tuple(session_uuid_to_path.values())[0]
 
-def parse_ssh_string(ssh):
-    if ssh=="auto":
+def parse_ssh_string(ssh_setting):
+    ssh_cmd = ssh_setting
+    from xpra.platform.features import DEFAULT_SSH_COMMAND
+    if ssh_setting=="auto":
+        if DEFAULT_SSH_COMMAND.startswith("plink"):
+            #prefer plink on win32 if found:
+            ssh = shlex.split(DEFAULT_SSH_COMMAND)
+            #find plink.exe?
+            if which(ssh[0]):
+                return ssh
+        #try paramiko:
         try:
             from xpra.net.ssh import nogssapi_context
             with nogssapi_context():
                 import paramiko
             assert paramiko
-            ssh = "paramiko"
+            ssh_cmd = "paramiko"
         except ImportError:
-            if WIN32:
-                ssh = "plink -ssh -agent"
-            else:
-                ssh = "ssh -x"
-    return shlex.split(ssh)
+            ssh_cmd = DEFAULT_SSH_COMMAND
+    return shlex.split(ssh_cmd)
 
 def add_ssh_args(username, password, host, ssh_port, is_putty=False, is_paramiko=False):
     args = []

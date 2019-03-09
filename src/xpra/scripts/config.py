@@ -810,8 +810,10 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, \
-                                        DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET
+    from xpra.platform.features import (
+        OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS,
+        DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
+        )
     from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts
     try:
         from xpra.platform.info import get_username
@@ -877,7 +879,7 @@ def get_defaults():
                     "encryption-keyfile": "",
                     "tcp-encryption-keyfile": "",
                     "pidfile"           : "",
-                    "ssh"               : DEFAULT_SSH_COMMAND,
+                    "ssh"               : "auto",
                     "systemd-run"       : get_default_systemd_run(),
                     "systemd-run-args"  : "",
                     "system-proxy-socket" : SYSTEM_PROXY_SOCKET,
