@@ -346,12 +346,22 @@ def start_dbus(dbus_launch):
         dbus_env = {}
         dbuslog("out(%s)=%s", cmd, nonl(out))
         for l in bytestostr(out).splitlines():
-            parts = l.split("=", 1)
+            if l.startswith("export "):
+                continue
+            sep = "="
+            if l.startswith("setenv "):
+                l = l[len("setenv "):]
+                sep = " "
+            if l.startswith("set "):
+                l = l[len("set "):]
+            parts = l.split(sep, 1)
             if len(parts)!=2:
                 continue
             k,v = parts
             if v.startswith("'") and v.endswith("';"):
                 v = v[1:-2]
+            elif v.endswith(";"):
+                v = v[:-1]
             dbus_env[k] = v
         dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
         dbuslog("dbus-env=%s", dbus_env)

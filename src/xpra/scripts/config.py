@@ -909,7 +909,7 @@ def get_defaults():
                     "html"              : "auto",
                     "socket-permissions": "600",
                     "exec-wrapper"      : "",
-                    "dbus-launch"       : "dbus-launch --close-stderr",
+                    "dbus-launch"       : "dbus-launch --sh-syntax --close-stderr",
                     "webcam"            : ["auto", "no"][OSX],
                     "mousewheel"        : "on",
                     "input-devices"     : "auto",

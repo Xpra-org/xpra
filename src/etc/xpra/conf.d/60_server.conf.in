@@ -58,7 +58,7 @@ exit-with-children = no
 # Start a dbus-daemon:
 # dbus-launch =
 # dbus-launch = /usr/bin/dbus-launch --close-stderr
-dbus-launch = dbus-launch --close-stderr
+dbus-launch = dbus-launch --sh-syntax --close-stderr
 
 # Start a dbus server which can be used to interact with the server process:
 #dbus-control = no
