@@ -270,8 +270,8 @@ cdef const char * const *get_preset_names():
 cdef float get_x264_quality(int pct, char *profile):
     if pct>=100 and profile:
         #easier to compare as python strings:
-        pyiprofile = str(profile)
-        pycprofile = str(PROFILE_HIGH444_PREDICTIVE)
+        pyiprofile = bytestostr(profile)
+        pycprofile = bytestostr(PROFILE_HIGH444_PREDICTIVE)
         if pycprofile==pyiprofile:
             return 0.0
     return <float> (50.0 - (min(100, max(0, pct)) * 49.0 / 100.0))
@@ -646,7 +646,7 @@ cdef class Encoder:
             return {}
         info = get_info()
         info.update({
-            "profile"       : self.profile,
+            "profile"       : bytestostr(self.profile),
             "preset"        : get_preset_names()[self.preset],
             "fast-decode"   : bool(self.fast_decode),
             "max-delayed"   : self.max_delayed,
@@ -774,8 +774,8 @@ cdef class Encoder:
         #use the environment as default if present:
         profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
         #now see if the client has requested a different value:
-        profile = options.get("h264.%s.profile" % csc_mode, profile)
-        return options.get("x264.%s.profile" % csc_mode, profile)
+        profile = options.strget("h264.%s.profile" % csc_mode, profile)
+        return options.strget("x264.%s.profile" % csc_mode, profile)
 
 
     def compress_image(self, image, int quality=-1, int speed=-1, options={}):
