@@ -3,9 +3,6 @@ Section: x11
 Priority: optional
 Maintainer: Antoine Martin <antoine@xpra.org>
 Uploaders: Antoine Martin <antoine@xpra.org>
-Provides: xserver-xorg-video-dummy
-Replaces: xserver-xorg-video-dummy
-Conflicts: xserver-xorg-video-dummy
 Build-Depends:
  debhelper,
  quilt,
@@ -22,6 +19,9 @@ Standards-Version: 3.9.8
 
 Package: xserver-xorg-video-dummy-hwe
 Architecture: any
+Provides: xserver-xorg-video-dummy
+Replaces: xserver-xorg-video-dummy
+Conflicts: xserver-xorg-video-dummy
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
