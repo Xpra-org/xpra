@@ -12,7 +12,7 @@ import threading
 from math import sqrt
 from collections import deque
 
-from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
+from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.util import envint, envbool, csv, typedict, first_time
 from xpra.server.window.windowicon_source import WindowIconSource
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
@@ -2280,7 +2280,7 @@ class WindowSource(WindowIconSource):
             return  None
 
         coding, data, client_options, outw, outh, outstride, bpp = ret
-        coding = strtobytes(coding)
+        coding = bytestostr(coding)
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
