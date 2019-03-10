@@ -5,6 +5,7 @@ Maintainer: Antoine Martin <antoine@xpra.org>
 Uploaders: Antoine Martin <antoine@xpra.org>
 Provides: xserver-xorg-video-dummy
 Replaces: xserver-xorg-video-dummy
+Conflicts: xserver-xorg-video-dummy
 Build-Depends:
  debhelper,
  quilt,
