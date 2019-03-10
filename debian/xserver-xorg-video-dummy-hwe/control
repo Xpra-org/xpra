@@ -19,14 +19,13 @@ Standards-Version: 3.9.8
 
 Package: xserver-xorg-video-dummy-hwe
 Architecture: any
-Provides: xserver-xorg-video-dummy
 Replaces: xserver-xorg-video-dummy
 Conflicts: xserver-xorg-video-dummy
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
  ${xviddriver:Depends},
-Provides:
+Provides: xserver-xorg-video-dummy,
  ${xviddriver:Provides}
 Description: X.Org X server -- dummy display driver
  This package provides a 'dummy' display driver, which does not actually
