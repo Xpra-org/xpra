@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -45,14 +45,16 @@ def webp_encode(image, supports_transparency, quality, speed, content_type):
 
 
 def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False):
-    pixel_format = strtobytes(image.get_pixel_format())
-    #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
+    pixel_format = image.get_pixel_format()
+    bpixel_format = strtobytes(pixel_format)
+    #log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
+    #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
-        log("rgb_encode reformatting because %s not in %s", pixel_format, rgb_formats)
+        log("rgb_encode reformatting because %s not in %s", bpixel_format, rgb_formats)
         if not rgb_reformat(image, rgb_formats, supports_transparency):
             raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
         #get the new format:
-        pixel_format = strtobytes(image.get_pixel_format())
+        bpixel_format = strtobytes(image.get_pixel_format())
         #switch encoding if necessary:
         if len(pixel_format)==4 and coding=="rgb24":
             coding = "rgb32"
@@ -112,11 +114,12 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         #and even if we could, the image containing those pixels may be freed by the time we get to the encoder
         algo = "not"
         cwrapper = compression.Compressed(coding, pixels_to_bytes(pixels), True)
-    if pixel_format.upper().find(b"A")>=0 or pixel_format.upper().find(b"X")>=0:
+    if bpixel_format.find(b"A")>=0 or bpixel_format.find(b"X")>=0:
         bpp = 32
     else:
         bpp = 24
-    log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s", level, l, speed, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cwrapper.data))
+    log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s",
+        level, l, speed, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cwrapper.data))
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, options, width, height, stride, bpp
