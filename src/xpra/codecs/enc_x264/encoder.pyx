@@ -894,7 +894,7 @@ cdef class Encoder:
         #info for client:
         client_options = {
                 "frame"     : int(self.frames),
-                "pts"       : pic_out.i_pts,
+                "pts"       : int(pic_out.i_pts),
                 #"quality"   : max(0, min(100, quality)),
                 #"speed"     : max(0, min(100, speed)),
                 "type"      : slice_type,
