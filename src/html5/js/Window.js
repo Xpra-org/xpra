@@ -231,11 +231,10 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		});
 	}
 
-	// need to update the CSS geometry
-	this.ensure_visible();
+	// adapt to screen size if needed (ie: shadow / desktop windows):
+	this.screen_resized();
+	// set the CSS geometry
 	this.updateCSSGeometry();
-	//show("placing new window at "+this.x+","+this.y);
-
 	// now read all metadata
 	this.update_metadata(metadata);
 };
@@ -263,6 +262,11 @@ XpraWindow.prototype.set_spinner = function(state) {
 }
 
 XpraWindow.prototype.ensure_visible = function() {
+	if (this.client.server_is_desktop || this.client.server_is_shadow) {
+		//those windows should usually be centered on screen,
+		//moving them would mess that up
+		return;
+	}
 	var oldx = this.x;
 	var oldy = this.y;
 	// for now make sure we don't out of top left
@@ -499,7 +503,6 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 };
 
 XpraWindow.prototype.apply_size_constraints = function() {
-	var size_constraints = this.metadata["size-constraints"];
 	if (!this.resizable) {
 		return;
 	}
@@ -515,6 +518,7 @@ XpraWindow.prototype.apply_size_constraints = function() {
 		hdec = jQuery('#head' + this.wid).outerHeight(true);
 	}
 	var min_size = null, max_size = null;
+	var size_constraints = this.metadata["size-constraints"];
 	if (size_constraints) {
 		min_size = size_constraints["minimum-size"];
 		max_size = size_constraints["maximum-size"];
@@ -747,7 +751,10 @@ XpraWindow.prototype.screen_resized = function() {
 		this.match_screen_size();
 	}
 	if (this.client.server_is_shadow) {
-		if (Object.keys(this.client.id_to_window).length==1) {
+		//note: when this window is created,
+		// it may not have been added to the client's list yet
+		var ids = Object.keys(this.client.id_to_window);
+		if (ids.length==0 || ids[0]==this.wid) {
 			//single window, recenter it:
 			this.recenter();
 		}
@@ -763,12 +770,8 @@ XpraWindow.prototype.recenter = function() {
 	var x = this.x,
 		y = this.y;
 	this.debug("geometry", "recenter() x=", x, ", y=", y, ", desktop size: ", this.client.desktop_width, this.client.desktop_height);
-	if (this.x<=this.client.desktop_width) {
-		x = Math.round((this.client.desktop_width-this.w)/2);
-	}
-	if (this.w<=this.client.desktop_height) {
-		y = Math.round((this.client.desktop_height-this.h)/2);
-	}
+	x = Math.round((this.client.desktop_width-this.w)/2);
+	y = Math.round((this.client.desktop_height-this.h)/2);
 	if (this.x!=x || this.y!=y) {
 		this.debug("geometry", "window re-centered to:", x, y);
 		this.x = x;
