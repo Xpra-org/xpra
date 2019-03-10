@@ -451,7 +451,7 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 			opacity = 1.0;
 		}
 		else {
-			opacity = opacity / 0x100000000
+			opacity = opacity / 0x100000000;
 		}
 		jQuery(this.div).css('opacity', ''+opacity);
 	}
