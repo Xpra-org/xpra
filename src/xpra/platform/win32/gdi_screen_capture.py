@@ -157,8 +157,16 @@ class GDICapture(object):
         x, y, width, height = self.get_capture_coords(x, y, width, height)
         if not self.dc:
             self.wnd = GetDesktopWindow()
+            if not self.wnd:
+                log.error("Error: cannot access the desktop window")
+                log.error(" capturing the screen is not possible")
+                return None
             self.dc = GetWindowDC(self.wnd)
-            assert self.dc, "failed to get a drawing context from the desktop window %s" % self.wnd
+            if not self.dc:
+                log.error("Error: cannot get a drawing context")
+                log.error(" capturing the screen is not possible")
+                log.error(" desktop window=%#x", self.wnd)
+                return None
             self.bit_depth = GetDeviceCaps(self.dc, win32con.BITSPIXEL)
             self.memdc = CreateCompatibleDC(self.dc)
             assert self.memdc, "failed to get a compatible drawing context from %s" % self.dc
