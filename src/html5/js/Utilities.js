@@ -24,6 +24,9 @@ var Utilities = {
 	log : function() {
 		console.log.apply(console, arguments);
 	},
+	debug : function() {
+		console.debug.apply(console, arguments);
+	},
 
 	//these versions should not be redirected:
 	cexc : function() {
@@ -37,6 +40,9 @@ var Utilities = {
 	},
 	clog : function() {
 		console.log.apply(console, arguments);
+	},
+	cdebug : function() {
+		console.debug.apply(console, arguments);
 	},
 
 	getHexUUID: function() {

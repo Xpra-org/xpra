@@ -249,6 +249,7 @@
 				  	<span>Debugging</span>:<br/>
 				  	<input type="checkbox" id="debug_main"> <span>Main</span>,
 				  	<input type="checkbox" id="debug_keyboard"> <span>keyboard</span>,
+				  	<input type="checkbox" id="debug_geometry"> <span>geometry</span>,
 				  	<input type="checkbox" id="debug_mouse"> <span>mouse</span>,
 				  	<input type="checkbox" id="debug_clipboard"> <span>clipboard</span>
 				  	<input type="checkbox" id="debug_draw"> <span>draw</span>,
@@ -323,7 +324,7 @@ function doConnect() {
 		"sharing", "steal", "reconnect", "swap_keys",
 		"video", "mediasource_video",
 		"ssl", "insecure", "top_bar", "clock",
-		"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
+		"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
 		];
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
@@ -538,7 +539,7 @@ $(document).ready(function() {
 			"exit_with_children", "exit_with_client",
 			"sharing", "steal", "reconnect", "swap_keys",
 			"video", "mediasource_video", "top_bar", "clock",
-			"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network"];
+			"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network"];
 	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "top_bar", "clock", "exit_with_children", "exit_with_client", "video"];
 	if (Utilities.isMacOS()) {
 		default_on.push("swap_keys");
