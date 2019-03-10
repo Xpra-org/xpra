@@ -868,7 +868,8 @@ cdef class Encoder:
             raise Exception("x264_encoder_encode produced no data (frame=%i, frame-size=%i, b-frames=%s, delayed-frames=%i)" % (self.frames, frame_size, self.b_frames, self.delayed_frames))
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
-        log("x264 encode %7s frame %5i as %4s slice with %i nals, tune=%s, total %7i bytes, keyframe=%-5s, delayed=%i", self.src_format, self.frames, slice_type, i_nals, self.tune, frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
+        log("x264 encode %7s frame %5i as %4s slice with %i nals, tune=%s, total %7i bytes, keyframe=%-5s, delayed=%i",
+            self.src_format, self.frames, slice_type, i_nals, bytestostr(self.tune), frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
         bnals = []
         nal_indexes = []
         cdef unsigned int index = 0
