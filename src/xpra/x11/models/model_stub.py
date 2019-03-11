@@ -123,7 +123,8 @@ class WindowModelStub(AutoPropGObjectMixin, gobject.GObject):
             l("get(%s, %s) using get_property=%s", name, default_value, v)
         else:
             v = default_value
-            l("get(%s, %s) not a property of %s, returning default value=%s", name, default_value, type(self), v)
+            if name not in ("override-redirect", "tray"):
+                l("get(%s, %s) not a property of %s, returning default value=%s", name, default_value, type(self), v)
         return v
 
 
