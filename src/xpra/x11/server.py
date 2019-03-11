@@ -160,7 +160,7 @@ class DesktopManager(gtk.Widget):
             return (1, self)
         return (-1, self)
 
-    def take_window(self, model, window):
+    def take_window(self, _model, window):
         #log.info("take_window(%s, %s)", model, window)
         if not is_realized(self):
             assert is_gtk3()
@@ -172,6 +172,7 @@ class DesktopManager(gtk.Widget):
             parent = gdkwin.get_screen().get_root_window()
         else:
             parent = gdkwin
+        log("take_window: reparenting %s to %s", window, parent)
         window.reparent(parent, 0, 0)
 
     def window_size(self, model):
@@ -179,7 +180,7 @@ class DesktopManager(gtk.Widget):
         return w, h
 
     def window_position(self, model, w=None, h=None):
-        [x, y, w0, h0] = self._models[model].geom
+        x, y, w0, h0 = self._models[model].geom
         if (w is not None and abs(w0-w)>1) or (h is not None and abs(h0-h)>1):
             log("Uh-oh, our size doesn't fit window sizing constraints: "
                      "%sx%s vs %sx%s", w0, h0, w, h)
@@ -1163,9 +1164,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         image.free()
 
     def repaint_root_overlay(self):
+        if not self.root_overlay:
+            return
         log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims",
             self.root_overlay, self.repaint_root_overlay_timer, self.sync_xvfb)
-        if not self.root_overlay or self.repaint_root_overlay_timer:
+        if self.repaint_root_overlay_timer:
             return
         self.repaint_root_overlay_timer = self.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
 
