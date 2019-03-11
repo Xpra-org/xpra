@@ -262,7 +262,7 @@ def set_wait_for_input():
         #(which usually does not popup a new shell window)
         _wait_for_input = False
         return
-    if os.environ.get("MSYSCON"):
+    if os.environ.get("MSYSCON") or os.environ.get("CYGWIN"):
         #msys environment doesn't popup a new shell window
         _wait_for_input = False
         return
