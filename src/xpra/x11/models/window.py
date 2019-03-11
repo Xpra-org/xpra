@@ -7,7 +7,7 @@
 
 from xpra.util import envint, envbool, typedict
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
-from xpra.gtk_common.error import XError
+from xpra.gtk_common.error import XError, XSwallowContext
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.prop_conv import MotifWMHints
@@ -311,13 +311,16 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("owner", None)
         if self.corral_window:
             remove_event_receiver(self.corral_window, self)
-            with xswallow:
-                for prop in WindowModel.SCRUB_PROPERTIES:
-                    X11Window.XDeleteProperty(self.xid, prop)
-            if self.client_reparented:
-                self.client_window.reparent(get_default_root_window(), 0, 0)
-                self.client_reparented = False
-            self.client_window.set_events(self.client_window_saved_events)
+            geom = None
+            #use a new context so we will XSync right here
+            #and detect if the window is already gone:
+            with XSwallowContext():
+                geom = X11Window.getGeometry(self.xid)
+            if geom is not None:
+                if self.client_reparented:
+                    self.client_window.reparent(get_default_root_window(), 0, 0)
+                self.client_window.set_events(self.client_window_saved_events)
+            self.client_reparented = False
             #it is now safe to destroy the corral window:
             self.corral_window.destroy()
             self.corral_window = None
