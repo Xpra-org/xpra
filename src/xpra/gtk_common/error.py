@@ -37,6 +37,7 @@ __all__ = ["XError", "trap", "xsync", "xswallow"]
 
 #run xpra in synchronized mode to debug X11 errors:
 XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", False)
+XPRA_LOG_SYNC = envbool("XPRA_LOG_SYNC", False)
 
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
@@ -90,11 +91,15 @@ class _ErrorManager(object):
     def _enter(self):
         assert self.depth >= 0
         gdk.error_trap_push()
+        if XPRA_LOG_SYNC:
+            log("X11trap.enter at level %i", self.depth)
         self.depth += 1
 
     def _exit(self, need_sync=True):
         assert self.depth >= 0
         self.depth -= 1
+        if XPRA_LOG_SYNC:
+            log("X11trap.exit at level %i, need_sync=%s", self.depth, need_sync)
         if self.depth == 0 and need_sync:
             gdk.flush()
         # This is a Xlib error constant (Success == 0)
@@ -112,8 +117,8 @@ class _ErrorManager(object):
             self._enter()
             value = fun(*args, **kwargs)
         except Exception as e:
-            elog("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e, exc_info=True)
-            log("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e)
+            elog("_call%s", (need_sync, fun, args, kwargs), exc_info=True)
+            log("_call%s %s", (need_sync, fun, args, kwargs), e)
             try:
                 self._exit(need_sync)
             except XError as ee:
@@ -185,8 +190,9 @@ class XSwallowContext(object):
     def __enter__(self):
         trap._enter()
 
-    def __exit__(self, *_args):
-        #log("xswallow.exit%s", (e_typ, e_val, trcbak))
+    def __exit__(self, e_typ, e_val, trcbak):
+        if e_typ:
+            log("xswallow.exit%s", (e_typ, e_val, trcbak), exc_info=True)
         try:
             trap._exit()
         except XError as ee:
