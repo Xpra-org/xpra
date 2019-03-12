@@ -59,15 +59,15 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         noclient = AdHocStruct()
         def no_idle_add(fn, *args, **kwargs):
             fn(*args, **kwargs)
-        def no_timeout_add(*args, **kwargs):
+        def no_timeout_add(*_args, **_kwargs):
             raise Exception("timeout_add should not have been called")
-        def no_source_remove(*args, **kwargs):
+        def no_source_remove(*_args, **_kwargs):
             raise Exception("source_remove should not have been called")
         def no_scaling(*args):
             return args
-        def get_None(*args):
+        def get_None(*_args):
             return None
-        def noop(*args):
+        def noop(*_args):
             pass
         #we have to suspend idle_add to make this synchronous
         #we can do this because this method must be running in the UI thread already:
@@ -87,9 +87,10 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         window = gl_client_window_class(noclient, None, None, 2**32-1, -100, -100, w, h, w, h,
                                         typedict({}), False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
-        window._backing.idle_add = no_idle_add
-        window._backing.timeout_add = no_timeout_add
-        window._backing.source_remove = no_source_remove
+        window_backing = window._backing
+        window_backing.idle_add = no_idle_add
+        window_backing.timeout_add = no_timeout_add
+        window_backing.source_remove = no_source_remove
         window.realize()
         pixel_format = "BGRX"
         bpp = len(pixel_format)
@@ -97,7 +98,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         stride = bpp*w
         img_data = b"\0"*stride*h
         coding = "rgb32"
-        widget = window._backing._backing
+        widget = window_backing._backing
         widget.realize()
         def paint_callback(success, message):
             log("paint_callback(%s, %s)", success, message)
