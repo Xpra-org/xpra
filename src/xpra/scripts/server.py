@@ -334,9 +334,11 @@ def start_dbus(dbus_launch):
             close_fds()
         env = dict((k,v) for k,v in os.environ.items() if k in (
             "PATH",
-            "LANG",
-            "USER",
-            "PATH"))
+            "SSH_CLIENT", "SSH_CONNECTION",
+            "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR",
+            "SHELL", "LANG", "USER", "LOGNAME", "HOME",
+            "DISPLAY", "XAUTHORITY", "CKCON_X11_DISPLAY",
+            ))
         import shlex
         cmd = shlex.split(dbus_launch)
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, shell=False, env=env, preexec_fn=preexec)
