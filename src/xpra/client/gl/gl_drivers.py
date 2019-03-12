@@ -30,7 +30,7 @@ BLACKLIST = {
             #"Mesa DRI Intel(R) Ivybridge Desktop"
         ],
     "vendor"    : [
-        #"VMware, Inc.",
+        "VMware, Inc.",
         #"Humper",
         #to disable nvidia, uncomment this:
         #"NVIDIA Corporation",
