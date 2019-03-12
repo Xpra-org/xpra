@@ -819,7 +819,7 @@ XpraWindow.prototype.match_screen_size = function() {
 			}
 		}
 		if (neww==0 && newh==0) {
-			//not found, try to fine the smallest one:
+			//not found, try to find the smallest one:
 			best = 0;
 			for (var i = 0; i < screen_sizes.length; i++) {
 				screen_size = screen_sizes[i];
