@@ -341,6 +341,7 @@ def start_dbus(dbus_launch):
             ))
         import shlex
         cmd = shlex.split(dbus_launch)
+        dbuslog("start_dbus(%s) env=%s", dbus_launch, env)
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, shell=False, env=env, preexec_fn=preexec)
         out = proc.communicate()[0]
         assert proc.poll()==0, "exit code is %s" % proc.poll()
