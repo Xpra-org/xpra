@@ -29,6 +29,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_size_unscaled = None
         self.desktop_size_server = None
         self.screen_sizes = ()
+        self.screen_resize_bigger = True
         self.desktops = 1
         self.desktop_names = ()
         self.show_desktop_allowed = False
@@ -57,6 +58,7 @@ class ClientDisplayMixin(StubSourceMixin):
                 self.desktop_size = None
         self.desktop_mode_size = c.intpair("desktop_mode_size")
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
+        self.screen_resize_bigger = c.boolget("screen-resize-bigger", True)
         self.set_screen_sizes(c.listget("screen_sizes"))
         self.set_desktops(c.intget("desktops", 1), c.strlistget("desktop.names"))
         self.show_desktop_allowed = c.boolget("show-desktop")

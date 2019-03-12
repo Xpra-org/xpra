@@ -207,8 +207,9 @@ class DisplayManager(StubServerMixin):
             self.calculate_desktops()
         if len(packet)>=4:
             ss.set_screen_sizes(packet[3])
-        log("client requesting new size: %sx%s", width, height)
-        self.set_screen_size(width, height)
+        bigger = ss.screen_resize_bigger
+        log("client requesting new size: %sx%s (bigger=%s)", width, height, bigger)
+        self.set_screen_size(width, height, bigger)
         if len(packet)>=4:
             log.info("received updated display dimensions")
             log.info("client display size is %sx%s with %s screen%s:",

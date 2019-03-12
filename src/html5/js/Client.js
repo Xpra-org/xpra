@@ -1101,6 +1101,7 @@ XpraClient.prototype._make_hello = function() {
 		"generic-rgb-encodings"		: true,
 		"window.raise"				: true,
         "window.initiate-moveresize": true,
+        "screen-resize-bigger"		: false,
         "metadata.supported"		: [
         								"fullscreen", "maximized", "above", "below",
         								//"set-initial-position", "group-leader",

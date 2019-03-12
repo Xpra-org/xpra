@@ -352,7 +352,8 @@ class XpraDesktopServer(DesktopServerBaseClass):
         if len(sss)!=1:
             screenlog.info("screen used by %i clients:", len(sss))
             return root_w, root_h
-        requested_size = sss[0].desktop_mode_size
+        ss = sss[0]
+        requested_size = ss.desktop_mode_size
         if not requested_size:
             screenlog("configure_best_screen_size() client did not request a specific desktop mode size")
             return root_w, root_h
@@ -362,7 +363,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         if w<=0 or h<=0 or w>=32768 or h>=32768:
             screenlog("configure_best_screen_size() client requested an invalid desktop mode size: %s", requested_size)
             return root_w, root_h
-        return self.set_screen_size(w, h)
+        return self.set_screen_size(w, h, ss.screen_resize_bigger)
 
     def cancel_resize_timer(self):
         rt = self.resize_timer
