@@ -228,8 +228,8 @@ class EncodingsMixin(StubSourceMixin):
                 if value is not None:
                     try:
                         return int(value)
-                    except:
-                        log.error("invalid value for batch option %s: %s", varname, value)
+                    except (TypeError, ValueError):
+                        log.error("Error: invalid value '%s' for batch option %s", value, varname)
                 return None
             #from client caps first:
             cpname = "batch.%s" % prop
