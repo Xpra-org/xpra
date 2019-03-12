@@ -596,16 +596,13 @@ class WindowBackingBase(object):
             elif coding in ("rgb24", "rgb32"):
                 #avoid confusion over how many bytes-per-pixel we may have:
                 rgb_format = options.strget(b"rgb_format")
-                if rgb_format:
-                    Bpp = len(rgb_format)
-                elif coding=="rgb24":
-                    #legacy:
-                    rgb_format = "RGB"
-                else:
-                    #legacy:
-                    rgb_format = "RGBX"
+                if not rgb_format:
+                    rgb_format = {
+                        "rgb24" : "RGB",
+                        "rgb32" : "RGBX",
+                        }.get(coding)
                 if rowstride==0:
-                    rowstride = width * Bpp
+                    rowstride = width * len(rgb_format)
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding),
