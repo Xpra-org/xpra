@@ -1,21 +1,42 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from ctypes import c_int, byref, cast, POINTER
+from OpenGL import GLX
+from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 
 from xpra.util import envbool
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
 from xpra.gtk_common.gtk_util import display_get_default, get_xwindow, make_temp_window
-from ctypes import c_int, byref, cast, POINTER
-from OpenGL import GLX
-from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 from xpra.log import Logger
 
 log = Logger("opengl")
 
 
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
+
+
+GLX_ATTRIBUTES = {
+    GLX.GLX_ACCUM_RED_SIZE      : "accum-red-size",
+    GLX.GLX_ACCUM_GREEN_SIZE    : "accum-green-size",
+    GLX.GLX_ACCUM_BLUE_SIZE     : "accum-blue-size",
+    GLX.GLX_ACCUM_ALPHA_SIZE    : "accum-alpha-size",
+    GLX.GLX_RED_SIZE            : "red-size",
+    GLX.GLX_GREEN_SIZE          : "green-size",
+    GLX.GLX_BLUE_SIZE           : "blue-size",
+    GLX.GLX_ALPHA_SIZE          : "alpha-size",
+    GLX.GLX_DEPTH_SIZE          : "depth-size",
+    GLX.GLX_STENCIL_SIZE        : "stencil-size",
+    GLX.GLX_BUFFER_SIZE         : "buffer-size",
+    GLX.GLX_AUX_BUFFERS         : "aux-buffers",
+    GLX.GLX_DOUBLEBUFFER        : "double-buffered",
+    GLX.GLX_LEVEL               : "level",
+    GLX.GLX_STEREO              : "stereo",
+    GLX.GLX_RGBA                : "rgba",
+    }
 
 
 def c_attrs(props):
@@ -41,6 +62,7 @@ class GLXWindowContext(object):
         self.valid = False
 
     def __enter__(self):
+        log("glXMakeCurrent: xid=%#x, context=%s", self.xid, self.context)
         if not GLX.glXMakeCurrent(self.xdisplay, self.xid, self.context):
             raise Exception("glXMakeCurrent failed")
         self.valid = True
@@ -50,6 +72,7 @@ class GLXWindowContext(object):
         if self.context:
             context_type = type(self.context)
             null_context = cast(0, context_type)
+            log("glXMakeCurrent: NULL for xid=%#x", self.xid)
             GLX.glXMakeCurrent(self.xdisplay, 0, null_context)
 
     def swap_buffers(self):
@@ -88,29 +111,13 @@ class GLXContext(object):
         assert GLX.glXQueryVersion(self.xdisplay, byref(major), byref(minor))
         log("found GLX version %i.%i", major.value, minor.value)
         self.props["GLX"] = (major.value, minor.value)
-        self.bit_depth = getconfig(GLX.GLX_RED_SIZE) + getconfig(GLX.GLX_GREEN_SIZE) + getconfig(GLX.GLX_BLUE_SIZE) + getconfig(GLX.GLX_ALPHA_SIZE)
+        self.bit_depth = sum(getconfig(x) for x in (
+            GLX.GLX_RED_SIZE, GLX.GLX_GREEN_SIZE, GLX.GLX_BLUE_SIZE, GLX.GLX_ALPHA_SIZE))
         self.props["depth"] = self.bit_depth
         self.props["has-depth-buffer"] = getconfig(GLX.GLX_DEPTH_SIZE)>0
         self.props["has-stencil-buffer"] = getconfig(GLX.GLX_STENCIL_SIZE)>0
         self.props["has-alpha"] = getconfig(GLX.GLX_ALPHA_SIZE)>0
-        for attrib,name in {
-            GLX.GLX_ACCUM_RED_SIZE      : "accum-red-size",
-            GLX.GLX_ACCUM_GREEN_SIZE    : "accum-green-size",
-            GLX.GLX_ACCUM_BLUE_SIZE     : "accum-blue-size",
-            GLX.GLX_ACCUM_ALPHA_SIZE    : "accum-alpha-size",
-            GLX.GLX_RED_SIZE            : "red-size",
-            GLX.GLX_GREEN_SIZE          : "green-size",
-            GLX.GLX_BLUE_SIZE           : "blue-size",
-            GLX.GLX_ALPHA_SIZE          : "alpha-size",
-            GLX.GLX_DEPTH_SIZE          : "depth-size",
-            GLX.GLX_STENCIL_SIZE        : "stencil-size",
-            GLX.GLX_BUFFER_SIZE         : "buffer-size",
-            GLX.GLX_AUX_BUFFERS         : "aux-buffers",
-            GLX.GLX_DOUBLEBUFFER        : "double-buffered",
-            GLX.GLX_LEVEL               : "level",
-            GLX.GLX_STEREO              : "stereo",
-            GLX.GLX_RGBA                : "rgba",
-            }.items():
+        for attrib,name in GLX_ATTRIBUTES.items():
             v = getconfig(attrib)
             if name in ("stereo", "double-buffered", "rgba"):
                 v = bool(v)
@@ -167,7 +174,7 @@ class GLXContext(object):
             GLX.glXDestroyContext(self.xdisplay, c)
 
     def __repr__(self):
-        return "GLXContext"
+        return "GLXContext(%s)" % self.props
 
 GLContext = GLXContext
 
@@ -177,9 +184,9 @@ def check_support():
     ptr = get_display_ptr()
     if not ptr:
         if PYTHON3:
-            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source        #@UnresolvedImport, @UnusedImport
+            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source    #@UnresolvedImport, @UnusedImport
         else:
-            from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source        #@UnresolvedImport, @Reimport
+            from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source    #@UnresolvedImport, @Reimport
         init_gdk_display_source()
 
     return GLContext().check_support()
