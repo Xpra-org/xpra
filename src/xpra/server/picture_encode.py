@@ -8,14 +8,14 @@ from xpra.net import compression
 from xpra.codecs.loader import get_codec
 from xpra.util import envbool, first_time
 from xpra.codecs.rgb_transform import rgb_reformat
-from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
+from xpra.os_util import memoryview_to_bytes, bytestostr, monotonic_time
 from xpra.log import Logger
 
 #"pixels_to_bytes" gets patched up by the OSX shadow server
 pixels_to_bytes = memoryview_to_bytes
 try:
     from xpra.net.mmap_pipe import mmap_write
-except:
+except ImportError:
     mmap_write = None               #no mmap
 
 log = Logger("window", "encoding")
@@ -45,26 +45,27 @@ def webp_encode(image, supports_transparency, quality, speed, content_type):
 
 
 def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False):
-    pixel_format = image.get_pixel_format()
-    bpixel_format = strtobytes(pixel_format)
+    pixel_format = bytestostr(image.get_pixel_format())
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
-        log("rgb_encode reformatting because %s not in %s", bpixel_format, rgb_formats)
+        log("rgb_encode reformatting because %s not in %s", pixel_format, rgb_formats)
         if not rgb_reformat(image, rgb_formats, supports_transparency):
             raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
         #get the new format:
-        bpixel_format = strtobytes(image.get_pixel_format())
+        pixel_format = bytestostr(image.get_pixel_format())
         #switch encoding if necessary:
-        if len(pixel_format)==4 and coding=="rgb24":
+        if len(pixel_format)==4:
             coding = "rgb32"
-        elif len(pixel_format)==3 and coding=="rgb32":
+        elif len(pixel_format)==3:
             coding = "rgb24"
+        else:
+            raise Exception("invalid pixel format %s" % pixel_format)
+    else:
+        #we may still want to re-stride:
+        image.may_restride()
     #always tell client which pixel format we are sending:
     options = {"rgb_format" : pixel_format}
-
-    #we may want to re-stride:
-    image.may_restride()
 
     #compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()
@@ -114,7 +115,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
         #and even if we could, the image containing those pixels may be freed by the time we get to the encoder
         algo = "not"
         cwrapper = compression.Compressed(coding, pixels_to_bytes(pixels), True)
-    if bpixel_format.find(b"A")>=0 or bpixel_format.find(b"X")>=0:
+    if pixel_format.find("A")>=0 or pixel_format.find("X")>=0:
         bpp = 32
     else:
         bpp = 24
