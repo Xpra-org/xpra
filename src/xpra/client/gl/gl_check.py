@@ -249,7 +249,10 @@ def check_PyOpenGL_support(force_enable):
                 log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
                 log.warn(" force enabled by option")
             else:
-                raise_fatal_error("%s '%s' is blacklisted!" % (blacklisted))
+                if force_enable:
+                    log.warn("%s '%s' is blacklisted!" % (blacklisted))
+                else:
+                    raise_fatal_error("%s '%s' is blacklisted!" % (blacklisted))
         safe = bool(whitelisted) or not bool(blacklisted)
         if greylisted and not whitelisted:
             log.warn("Warning: %s '%s' is greylisted,", *greylisted)
@@ -282,7 +285,7 @@ def check_PyOpenGL_support(force_enable):
         glEnablei = None
         try:
             from OpenGL.GL import glEnablei
-        except:
+        except ImportError:
             pass
         if not bool(glEnablei):
             log.warn("OpenGL glEnablei is not available, disabling transparency")
@@ -354,7 +357,7 @@ def check_PyOpenGL_support(force_enable):
             if p>0:
                 format_handler = format_handler[:p]
                 missing_handlers.append(format_handler)
-        if len(missing_handlers)>0:
+        if missing_handlers:
             log.warn("PyOpenGL warning: missing array format handlers: %s", csv(missing_handlers))
 
         for x in elogger.handlers[0].records:
