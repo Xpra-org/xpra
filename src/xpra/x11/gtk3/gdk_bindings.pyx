@@ -908,10 +908,14 @@ cdef _route_event(int etype, event, signal, parent_signal):
     else:
         if parent_signal is not None:
             window = event.delivered_to
-            if DEBUG:
-                log.info("  delivering event to parent window: %#x (signal=%s)", window.get_xid(), parent_signal)
-            handlers = get_event_receivers(window)
-            _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %#x" % window.get_xid())
+            if window is None:
+                if DEBUG:
+                    log.info("  event.delivered_to is None, ignoring")
+            else:
+                if DEBUG:
+                    log.info("  delivering event to parent window: %#x (signal=%s)", window.get_xid(), parent_signal)
+                handlers = get_event_receivers(window)
+                _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %#x" % window.get_xid())
         else:
             if DEBUG:
                 log.info("  received event on a parent window but have no parent signal")
