@@ -328,12 +328,12 @@ NAL_PRIORITIES = {
     }
 
 
-cdef char *PROFILE_BASELINE = "baseline"
-cdef char *PROFILE_MAIN     = "main"
-cdef char *PROFILE_HIGH     = "high"
-cdef char *PROFILE_HIGH10   = "high10"
-cdef char *PROFILE_HIGH422  = "high422"
-cdef char *PROFILE_HIGH444_PREDICTIVE = "high444"
+cdef unsigned char *PROFILE_BASELINE = "baseline"
+cdef unsigned char *PROFILE_MAIN     = "main"
+cdef unsigned char *PROFILE_HIGH     = "high"
+cdef unsigned char *PROFILE_HIGH10   = "high10"
+cdef unsigned char *PROFILE_HIGH422  = "high422"
+cdef unsigned char *PROFILE_HIGH444_PREDICTIVE = "high444"
 I420_PROFILES = [PROFILE_BASELINE, PROFILE_MAIN, PROFILE_HIGH, PROFILE_HIGH10, PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE]
 I422_PROFILES = [PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE]
 I444_PROFILES = [PROFILE_HIGH444_PREDICTIVE]
@@ -514,8 +514,8 @@ cdef class Encoder:
         self.profile = self._get_profile(options, self.src_format)
         self.export_nals = options.intget("h264.export-nals", 0)
         if self.profile is not None and self.profile not in cs_info[2]:
-            log.warn("Warning: '%s' is not a valid profile for %s", self.profile, src_format)
-            log.warn(" (must be one of: %s)", csv(cs_info[2]))
+            log.warn("Warning: '%s' is not a valid profile for %s", bytestostr(self.profile), src_format)
+            log.warn(" must be one of: %s", csv(bytestostr(x) for x in cs_info[2]))
             self.profile = None
         if self.profile is None:
             self.profile = cs_info[1]
@@ -775,7 +775,10 @@ cdef class Encoder:
         profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
         #now see if the client has requested a different value:
         profile = options.strget("h264.%s.profile" % csc_mode, profile)
-        return options.strget("x264.%s.profile" % csc_mode, profile)
+        profile = options.strget("x264.%s.profile" % csc_mode, profile)
+        if profile is None:
+            return None
+        return strtobytes(profile)
 
 
     def compress_image(self, image, int quality=-1, int speed=-1, options={}):
