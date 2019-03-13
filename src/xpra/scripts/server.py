@@ -985,6 +985,40 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if opts.chdir:
         os.chdir(opts.chdir)
 
+    dbus_pid = 0
+    dbus_env = {}
+    if not shadowing and POSIX:
+        no_gtk()
+        dbuslog = Logger("dbus")
+        if clobber:
+            #get the saved pids and env
+            dbus_pid = get_dbus_pid()
+            dbus_env = get_dbus_env()
+            dbuslog("retrieved existing dbus attributes")
+        else:
+            assert starting or starting_desktop
+            bus_address = protected_env.get("DBUS_SESSION_BUS_ADDRESS")
+            dbuslog("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", opts.dbus_launch, bus_address)
+            if opts.dbus_launch and not bus_address:
+                #start a dbus server:
+                def kill_dbus():
+                    dbuslog("kill_dbus: dbus_pid=%s" % dbus_pid)
+                    if dbus_pid<=0:
+                        return
+                    try:
+                        os.kill(dbus_pid, signal.SIGINT)
+                    except Exception as e:
+                        dbuslog("os.kill(%i, SIGINT)", dbus_pid, exc_info=True)
+                        dbuslog.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
+                        dbuslog.warn(" %s", e)
+                add_cleanup(kill_dbus)
+                #this also updates os.environ with the dbus attributes:
+                dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
+        dbuslog("dbus attributes: pid=%s, env=%s", dbus_pid, dbus_env)
+        if dbus_env:
+            os.environ.update(dbus_env)
+            os.environ.update(protected_env)
+
     display = None
     if not proxying:
         no_gtk()
@@ -1079,50 +1113,17 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #make sure the pid we save is the real one:
         if not check_xvfb():
             return  1
-        if xvfb_pid is not None:
-            #save the new pid (we should have one):
-            save_xvfb_pid(xvfb_pid)
 
-        if POSIX:
-            dbuslog = Logger("dbus")
-            save_uinput_id(uinput_uuid)
-            dbus_pid = -1
-            dbus_env = {}
-            if clobber:
-                #get the saved pids and env
-                dbus_pid = get_dbus_pid()
-                dbus_env = get_dbus_env()
-                dbuslog("retrieved existing dbus attributes")
-            else:
-                assert starting or starting_desktop
-                if xvfb_pid is not None:
-                    #save the new pid (we should have one):
-                    save_xvfb_pid(xvfb_pid)
-                bus_address = protected_env.get("DBUS_SESSION_BUS_ADDRESS")
-                dbuslog("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", opts.dbus_launch, bus_address)
-                if opts.dbus_launch and not bus_address:
-                    #start a dbus server:
-                    def kill_dbus():
-                        dbuslog("kill_dbus: dbus_pid=%s" % dbus_pid)
-                        if dbus_pid<=0:
-                            return
-                        try:
-                            os.kill(dbus_pid, signal.SIGINT)
-                        except Exception as e:
-                            dbuslog("os.kill(%i, SIGINT)", dbus_pid, exc_info=True)
-                            dbuslog.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
-                            dbuslog.warn(" %s", e)
-                    add_cleanup(kill_dbus)
-                    #this also updates os.environ with the dbus attributes:
-                    dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
-                    if dbus_pid>0:
-                        save_dbus_pid(dbus_pid)
-                    if dbus_env:
-                        save_dbus_env(dbus_env)
-            dbuslog("dbus attributes: pid=%s, env=%s", dbus_pid, dbus_env)
+        #now we can save values on the display
+        #(we cannot access gtk3 until dbus has started up)
+        if not clobber:
+            if xvfb_pid:
+                save_xvfb_pid(xvfb_pid)
+            if dbus_pid:
+                save_dbus_pid(dbus_pid)
             if dbus_env:
-                os.environ.update(dbus_env)
-                os.environ.update(protected_env)
+                save_dbus_env(dbus_env)
+        save_uinput_id(uinput_uuid)
 
         if POSIX:
             #all unix domain sockets:
