@@ -127,7 +127,7 @@ class GTKServerBase(ServerBase):
     def send_initial_cursors(self, ss, _sharing=False):
         #cursors: get sizes and send:
         display = display_get_default()
-        self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
+        self.cursor_sizes = int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
         cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
 
