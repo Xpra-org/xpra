@@ -892,8 +892,10 @@ cdef _route_event(int etype, event, signal, parent_signal):
     if event.window is None:
         if DEBUG:
             log.info("  event.window is None, ignoring")
-        assert etype in (CreateNotify, UnmapNotify, DestroyNotify, PropertyNotify), \
-                "event window is None for event type %s!" % (x_event_type_names.get(etype, etype))
+        #in GTK3, all events can have a None window
+        #ie: when running gtkperf -a
+        #assert etype in (CreateNotify, UnmapNotify, DestroyNotify, PropertyNotify), \
+        #        "event window is None for event type %s!" % (x_event_type_names.get(etype, etype))
     elif event.window is event.delivered_to:
         if signal is not None:
             window = event.window

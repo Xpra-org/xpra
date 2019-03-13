@@ -327,6 +327,8 @@ class Wm(gobject.GObject):
     # This is in some sense the key entry point to the entire WM program.  We
     # have detected a new client window, and start managing it:
     def _manage_client(self, gdkwindow):
+        if not gdkwindow:
+            return
         if gdkwindow in self._windows:
             #already managed
             return
@@ -336,7 +338,7 @@ class Wm(gobject.GObject):
                 desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
                 win = WindowModel(self._root, gdkwindow, desktop_geometry, self.size_constraints)
         except Exception as e:
-            if LOG_MANAGE_FAILURES or type(e) not in (Unmanageable, ):
+            if LOG_MANAGE_FAILURES or not isinstance(e, Unmanageable):
                 l = log.warn
             else:
                 l = log

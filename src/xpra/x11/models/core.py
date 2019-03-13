@@ -378,7 +378,11 @@ class CoreX11WindowModel(WindowModelStub):
                 handlers.add(handler)
                 try:
                     handler(self)
+                except XError:
+                    #these will be caught in call_setup()
+                    raise
                 except:
+                    #try to continue:
                     log.error("Error parsing initial property '%s':", mutable, exc_info=True)
 
     def _scrub_x11(self):
