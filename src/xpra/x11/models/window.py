@@ -289,10 +289,11 @@ class WindowModel(BaseWindowModel):
         super(WindowModel, self)._read_initial_X11_properties()
         net_wm_state = self.get_property("state")
         assert net_wm_state is not None, "_NET_WM_STATE should have been read already"
-        #initial position and size, from the Window object,
-        #but allow size hints to override it is specified
         geom = X11Window.getGeometry(self.xid)
-        assert geom, "failed to get geometry for %#x" % self.xid
+        if not geom:
+            raise Unmanageable("failed to get geometry for %#x" % self.xid)
+        #initial position and size, from the Window object,
+        #but allow size hints to override it if specified
         x, y, w, h = geom[:4]
         size_hints = self.get_property("size-hints")
         ax, ay = size_hints.get("position", (x, y))
