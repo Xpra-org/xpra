@@ -50,7 +50,9 @@ except ImportError:
 
 
 def exec_command(cmd):
-    proc = subprocess.Popen(cmd)
+    env = os.environ.copy()
+    env["XPRA_WAIT_FOR_INPUT"] = "0"
+    proc = subprocess.Popen(cmd, env=env)
     log("exec_command(%s)=%s", cmd, proc)
     return proc
 
