@@ -1050,7 +1050,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 netlog.error(" %s", repr_ellipsized(data))
         else:
             netlog.error("Error: received uninterpretable nonsense: %s", message)
-            netlog.error(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
+            if p:
+                netlog.error(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
+            else:
+                netlog.error(" data: %s", repr_ellipsized(data))
         self.quit(EXIT_PACKET_FAILURE)
 
     def _process_invalid(self, packet):
