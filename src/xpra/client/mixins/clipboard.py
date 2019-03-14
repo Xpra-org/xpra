@@ -53,9 +53,12 @@ class ClipboardClient(StubClientMixin):
 
 
     def get_caps(self):
+        if not self.client_supports_clipboard:
+            return {}
         caps = flatten_dict({
             "clipboard" : {
-                "notifications"             : self.client_supports_clipboard,
+                ""                          : True,
+                "notifications"             : True,
                 "selections"                : CLIPBOARDS,
                 #buggy osx clipboards:
                 "want_targets"              : CLIPBOARD_WANT_TARGETS,
@@ -65,7 +68,6 @@ class ClipboardClient(StubClientMixin):
                 "contents-slice-fix"        : True,
                 },
              })
-        caps["clipboard"] = self.client_supports_clipboard
         return caps
 
     def parse_server_capabilities(self):
