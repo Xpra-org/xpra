@@ -22,7 +22,11 @@ except Exception:
 
 
 def get_digests():
-    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))]
+    digests = ["hmac", "xor"]
+    #python versions older than 2.7.9 may not have this attribute:
+    #(in which case, your options will be more limited)
+    if hasattr(hashlib, "algorithms_available"):
+         digests += ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))]
     try:
         from xpra.net import d3des
         assert d3des

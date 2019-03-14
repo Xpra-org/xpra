@@ -33,7 +33,9 @@ if sys.version<'2.7':
 if sys.version[0]=='3' and sys.version<'3.4':
     raise Exception("xpra no longer supports Python 3 versions older than 3.4")
 #we don't support versions of Python without the new ssl code:
-assert ssl.SSLContext, "xpra requires a Python version with ssl.SSLContext support"
+if not hasattr(ssl, "SSLContext"):
+    print("Warning: xpra requires a Python version with ssl.SSLContext support")
+    print(" SSL support will not be available!")
 
 print(" ".join(sys.argv))
 
@@ -506,7 +508,7 @@ def cython_version_check(min_version):
                  "Please upgrade to Cython %s or better"
                  % (cython_version, min_version))
 
-def cython_add(extension, min_version="0.23"):
+def cython_add(extension, min_version="0.20"):
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
     #python2.7 setup.py build -b build-2.7 install --no-compile \
@@ -737,7 +739,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 # error: function declaration isn't a prototype [-Werror=strict-prototypes]
                 eifd.append("-Wno-error=strict-prototypes")
                 #the cython version shipped with Xenial emits warnings:
-                if getUbuntuVersion()<=(16,4):
+                if (14,4)<getUbuntuVersion()<=(16,4):
                     eifd.append("-Wno-error=shift-count-overflow")
                     eifd.append("-Wno-error=sign-compare")
             if NETBSD:

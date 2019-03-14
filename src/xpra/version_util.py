@@ -27,7 +27,7 @@ def full_version_str():
     s = XPRA_VERSION
     try:
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-        s += "-r%i%s" % (REVISION, "M" if LOCAL_MODIFICATIONS>0 else "")
+        s += "-r%s%s" % (REVISION, "M" if LOCAL_MODIFICATIONS>0 else "")
     except ImportError:
         pass
     return s

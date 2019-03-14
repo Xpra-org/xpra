@@ -438,7 +438,8 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
                 if nohost.find(".")>0:
                     display_name = self.display_name[:self.display_name.rfind(".")]
                     log("getXkbProperties retrying on '%s'", display_name)
-                    display = XOpenDisplay(strtobytes(display_name))
+                    dn = strtobytes(display_name)
+                    display = XOpenDisplay(dn)
                     if display:
                         r = XkbRF_GetNamesProp(display, &tmp, &vd)
             if r==0 or tmp==NULL:
@@ -810,7 +811,8 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         success = True
         log("add modifier: modifier %s=%s", modifier, keysyms)
         for keysym_str in keysyms:
-            keysym = XStringToKeysym(strtobytes(keysym_str))
+            kss = strtobytes(keysym_str)
+            keysym = XStringToKeysym(kss)
             log("add modifier: keysym(%s)=%s", keysym_str, keysym)
             keycodes = self.KeysymToKeycodes(keysym)
             log("add modifier: keycodes(%s)=%s", keysym, keycodes)
