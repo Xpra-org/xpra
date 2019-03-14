@@ -834,8 +834,7 @@ XpraWindow.prototype.match_screen_size = function() {
 		}
 		this.log("best screen size:", neww, newh);
 	}
-	this.resize(neww, newh);
-	this.handle_resized();
+	this.recenter();
 };
 
 
