@@ -66,7 +66,7 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 
 def get_encoder_module_name(x):
     if x.find("enc")>=0:
-        return (x,)             #ie: "nvenc" or "enc_vpx"
+        return x                #ie: "nvenc" or "enc_vpx"
     return "enc_"+x             #ie: "enc_x264"
 
 def get_decoder_module_name(x):
@@ -259,7 +259,6 @@ class VideoHelper(object):
                 log(" encoder for %s: %s", x, mod)
                 try:
                     self.init_video_encoder_option(mod)
-                    break
                 except Exception as e:
                     log(" init_video_encoder_option(%s) error", mod, exc_info=True)
                     log.warn("Warning: cannot load %s video encoder:", mod)
