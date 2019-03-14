@@ -1026,7 +1026,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if not shadowing and POSIX and not clobber:
         no_gtk()
         dbuslog = Logger("dbus")
-        assert starting or starting_desktop
+        assert starting or starting_desktop or proxying
         bus_address = protected_env.get("DBUS_SESSION_BUS_ADDRESS")
         dbuslog("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", opts.dbus_launch, bus_address)
         if opts.dbus_launch and not bus_address:
