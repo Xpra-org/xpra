@@ -132,11 +132,11 @@ def add_codec_version(name, top_module, version="get_version()", alt_version="__
 def xpra_codec_import(name, description, top_module, class_module, classname):
     xpra_top_module = "xpra.codecs.%s" % top_module
     xpra_class_module = "%s.%s" % (xpra_top_module, class_module)
-    codec_import_check(name, description, xpra_top_module, xpra_class_module, classname)
-    version_name = name
-    if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
-        version_name = name[4:]
-    add_codec_version(version_name, xpra_class_module)
+    if codec_import_check(name, description, xpra_top_module, xpra_class_module, classname):
+        version_name = name
+        if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
+            version_name = name[4:]
+        add_codec_version(version_name, xpra_class_module)
 
 
 CODEC_OPTIONS = {
