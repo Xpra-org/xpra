@@ -192,15 +192,17 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True):
         show += list(ENCODER_CODECS)
         load(*ENCODER_CODECS)
         if video:
-            load("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg")
+            show += list(ENCODER_VIDEO_CODECS)
+            load(*ENCODER_VIDEO_CODECS)
     if csc and video:
         show += list(CSC_CODECS)
-        load("csc_swscale", "csc_libyuv")
+        load(*CSC_CODECS)
     if decoders:
         show += list(DECODER_CODECS)
-        load("dec_pillow", "dec_webp", "dec_jpeg")
-    if decoders and video:
-        load("dec_vpx", "dec_avcodec2")
+        load(*DECODER_CODECS)
+        if video:
+            show += list(DECODER_VIDEO_CODECS)
+            load(*DECODER_VIDEO_CODECS)
 
     log("done loading codecs")
     log("found:")
@@ -233,10 +235,12 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_libyuv"
-ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", "enc_jpeg"
-DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2", "dec_jpeg"
+ENCODER_CODECS = "enc_pillow", "enc_webp", "enc_jpeg"
+ENCODER_VIDEO_CODECS = "enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg"
+DECODER_CODECS = "dec_pillow", "dec_webp", "dec_jpeg"
+DECODER_VIDEO_CODECS = "dec_vpx", "dec_avcodec2"
 
-ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
+ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS))
 
 
 def get_rgb_compression_options():
