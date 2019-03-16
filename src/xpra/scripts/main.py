@@ -67,6 +67,13 @@ def main(script_file, cmdline):
         from xpra.util import start_mem_watcher
         start_mem_watcher(ml)
 
+    if sys.flags.optimize>0:
+        sys.stderr.write("************************************************************\n")
+        sys.stderr.write("Warning: the python optimize flag is set to %i\n" % sys.flags.optimize)
+        sys.stderr.write(" xpra is very likely to crash\n")
+        sys.stderr.write("************************************************************\n")
+        sleep(5)
+
     from xpra.platform import clean as platform_clean, command_error, command_info
     if len(cmdline)==1:
         cmdline.append("gui")
