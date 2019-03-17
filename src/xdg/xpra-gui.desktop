@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Xpra
+Comment=Xpra GUI
+Exec=xpra
+Icon=xpra
+Terminal=false
+Type=Application
+StartupNotify=false
+Categories=Network;RemoteAccess;
