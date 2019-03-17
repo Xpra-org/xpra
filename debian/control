@@ -184,8 +184,9 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 Recommends: python-dbus
 # for the proxy server:
         ,python-setproctitle
-# AES encryption:
-        ,python-cryptography
+# for publishing servers via mdns:
+        ,python-avahi
+        ,python-netifaces
 #authentication:
         ,python-kerberos
         ,python-gssapi
@@ -206,9 +207,6 @@ Recommends: python-dbus
 # for webcam support:
 Suggests: python-pyinotify
         ,python-opencv
-# for publishing servers via mdns:
-        ,python-avahi
-        ,python-netifaces
 # only useful when connecting using a JSON / YAML only client:
         ,python-yaml
 #nvenc support requires pycuda (and its huge list of dependencies!)
@@ -216,6 +214,8 @@ Suggests: python-pyinotify
         ,python-pycuda, libnvidia-encode1
 #python-lz4 is better and available everywhere now, alternatively use:
         ,python-lzo
+# AES encryption:
+        ,python-cryptography
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
@@ -247,8 +247,9 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 Recommends: python3-dbus
 # for the proxy server:
         ,python3-setproctitle
-# AES encryption:
-        ,python3-cryptography
+#not available?
+        ,python3-zeroconf
+        ,python3-netifaces
 #authentication:
         ,python3-kerberos
         ,python3-gssapi
@@ -267,9 +268,6 @@ Suggests:
         ,python3-pyinotify
         ,python3-opencv
 # for publishing servers via mdns:
-#not available?
-        ,python3-avahi
-        ,python3-netifaces
 # only useful when connecting using a JSON / YAML only client:
         ,python3-yaml
 #nvenc support requires pycuda (and its huge list of dependencies!)
@@ -277,6 +275,8 @@ Suggests:
         ,python3-pycuda, libnvidia-encode1
 #python-lz4 is better and available everywhere now, alternatively use:
         ,python3-lzo
+# AES encryption:
+        ,python3-cryptography
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
