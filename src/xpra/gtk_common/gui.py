@@ -178,12 +178,14 @@ class GUI(gtk.Window):
             self.busy_cursor(self.shadow_button)
 
     def browse(self, *_args):
-        subcommand = "mdns-gui"
+        subcommand = "sessions"
         try:
-            from xpra.net import mdns
-            assert mdns
+            from xpra.net.mdns import get_listener_class
+            listener = get_listener_class()
+            if listener:
+                subcommand = "mdns-gui"
         except ImportError:
-            subcommand = "sessions"
+            pass
         cmd = get_xpra_command()+[subcommand]
         proc = exec_command(cmd)
         if proc.poll() is None:
