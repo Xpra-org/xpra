@@ -4,6 +4,7 @@ Comment=Browse Xpra sessions on the local network using mDNS
 Exec=xpra mdns-gui
 Icon=xpra-mdns
 Terminal=false
+NoDisplay=true
 Type=Application
 StartupNotify=false
 Categories=Network;RemoteAccess;

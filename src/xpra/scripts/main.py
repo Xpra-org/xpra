@@ -75,6 +75,8 @@ def main(script_file, cmdline):
         sleep(5)
 
     from xpra.platform import clean as platform_clean, command_error, command_info
+    if cmdline[1:]==["attach", "%u"]:
+        cmdline = cmdline[:1]+["gui"]
     if len(cmdline)==1:
         cmdline.append("gui")
 
