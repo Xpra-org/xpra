@@ -485,8 +485,11 @@ class ClientWindowBase(ClientWidgetBase):
                     del hints[x]
                 except KeyError:
                     pass
-            hints[b"max_width"] = maxw
-            hints[b"max_height"] = maxh
+            #bug 2214: GTK3 on win32 gets confused if we specify a large max-size
+            # and it will mess up maximizing the window
+            if not WIN32 or PYTHON2 or (maxw<32000 or maxh<32000):
+                hints[b"max_width"] = maxw
+                hints[b"max_height"] = maxh
         try:
             geomlog("calling: %s(%s)", self.apply_geometry_hints, hints)
             #save them so the window hooks can use the last value used:
