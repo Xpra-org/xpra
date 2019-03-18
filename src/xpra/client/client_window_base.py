@@ -28,6 +28,7 @@ REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
+SET_SIZE_CONSTRAINTS = envbool("XPRA_SET_SIZE_CONSTRAINTS", True)
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -408,6 +409,8 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def set_size_constraints(self, size_constraints, max_window_size):
+        if not SET_SIZE_CONSTRAINTS:
+            return
         geomlog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
         hints = typedict()
         for (a, h1, h2) in [
