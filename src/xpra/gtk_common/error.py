@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -27,6 +27,7 @@
 # super-fast connections to the X server, everything running on fast
 # computers... does being this careful to avoid sync's actually matter?)
 
+import threading
 import traceback
 
 from xpra.util import envbool
@@ -38,11 +39,25 @@ __all__ = ["XError", "trap", "xsync", "xswallow"]
 #run xpra in synchronized mode to debug X11 errors:
 XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", False)
 XPRA_LOG_SYNC = envbool("XPRA_LOG_SYNC", False)
+VERIFY_MAIN_THREAD = envbool("XPRA_VERIFY_MAIN_THREAD", True)
 
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
 
 gdk = import_gdk()
+
+
+if not VERIFY_MAIN_THREAD:
+    def verify_main_thread():
+        return
+else:
+    main_thread = threading.current_thread()
+    def verify_main_thread():
+        ct = threading.current_thread()
+        if main_thread != ct:
+            log.error("Error: invalid access from thread %s", ct)
+            traceback.print_stack()
+    verify_main_thread()
 
 
 class XError(Exception):
@@ -90,6 +105,7 @@ class _ErrorManager(object):
 
     def _enter(self):
         assert self.depth >= 0
+        verify_main_thread()
         gdk.error_trap_push()
         if XPRA_LOG_SYNC:
             log("X11trap.enter at level %i", self.depth)
