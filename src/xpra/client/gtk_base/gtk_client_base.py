@@ -25,7 +25,7 @@ from xpra.gtk_common.gtk_util import (
     new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default,
     pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data,
     get_default_root_window, get_root_size, get_xwindow, image_new_from_stock,
-    get_screen_sizes, GDKWindow,
+    get_screen_sizes, load_contents_async, load_contents_finish, GDKWindow,
     FILE_CHOOSER_ACTION_OPEN,
     CLASS_INPUT_ONLY,
     RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_ACCEPT,
@@ -478,12 +478,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         gfile = dialog.get_file()
         self.close_file_upload_dialog()
         filelog("load_contents: filename=%s, response=%s", filename, v)
-        gfile.load_contents_async(self.file_upload_ready, user_data=(filename, v==RESPONSE_ACCEPT))
+        load_contents_async(gfile, self.file_upload_ready, user_data=(filename, v==RESPONSE_ACCEPT))
 
     def file_upload_ready(self, gfile, result, user_data):
         filelog("file_upload_ready%s", (gfile, result, user_data))
         filename, openit = user_data
-        data, filesize, entity = gfile.load_contents_finish(result)
+        data, filesize, entity = load_contents_finish(gfile, result)
         filelog("load_contents_finish(%s)=%s", result, (type(data), filesize, entity))
         if not data:
             log.warn("Warning: failed to load file '%s'", filename)
