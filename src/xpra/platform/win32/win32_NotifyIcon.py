@@ -311,7 +311,7 @@ class win32NotifyIcon(object):
         pass
 
     def set_tooltip(self, tooltip):
-        log("set_tooltip(%s)", tooltip)
+        log("set_tooltip(%s)", nonl(tooltip))
         self.title = tooltip
         Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
 
