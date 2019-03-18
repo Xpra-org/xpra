@@ -85,6 +85,7 @@ class NetworkState(StubClientMixin):
         if socket_speed:
             connection_data["speed"] = socket_speed
         adapter_type = os.environ.get("XPRA_NETWORK_ADAPTER_TYPE", device_info.get("adapter-type"))
+        log("get_caps() found adapter-type=%s", adapter_type)
         if adapter_type:
             at = adapter_type.lower()
             if any(at.find(x)>=0 for x in ("ethernet", "local", "fiber", "1394")):
@@ -93,6 +94,8 @@ class NetworkState(StubClientMixin):
                 jitter = 20
             elif at.find("wireless")>=0 or at.find("wifi")>=0 or at.find("80211")>=0:
                 jitter = 1000
+            else:
+                jitter = None
             if jitter is not None:
                 connection_data["jitter"] = jitter
         caps["connection-data"] = connection_data
