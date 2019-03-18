@@ -20,6 +20,7 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, label, title_box, \
     TableBuilder, imagebutton, scaled_image, get_preferred_size, get_gtk_version_info, \
     RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER,
+    RESPONSE_CANCEL, RESPONSE_OK,
     )
 from xpra.net.net_util import get_network_caps
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, is_gtk3
@@ -1176,7 +1177,7 @@ class SessionInfo(gtk.Window):
         log("save_graph(%s)", args)
         chooser = gtk.FileChooserDialog("Save graphs as a PNG image",
                                     parent=self, action=gtk.FILE_CHOOSER_ACTION_SAVE,
-                                    buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+                                    buttons=(gtk.STOCK_CANCEL, RESPONSE_CANCEL, gtk.STOCK_SAVE, RESPONSE_OK))
         chooser.set_select_multiple(False)
         chooser.set_default_response(gtk.RESPONSE_OK)
         file_filter = gtk.FileFilter()

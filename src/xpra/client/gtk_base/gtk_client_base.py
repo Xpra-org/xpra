@@ -26,7 +26,9 @@ from xpra.gtk_common.gtk_util import (
     pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data,
     get_default_root_window, get_root_size, get_xwindow, image_new_from_stock,
     get_screen_sizes, GDKWindow,
+    FILE_CHOOSER_ACTION_OPEN,
     CLASS_INPUT_ONLY,
+    RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_ACCEPT,
     INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO,
     BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING,
     BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK,
@@ -439,16 +441,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_dialog.present()
             return
         filelog("show_file_upload%s can open=%s", args, self.remote_open_files)
-        buttons = [gtk.STOCK_CANCEL,    gtk.RESPONSE_CANCEL]
+        buttons = [gtk.STOCK_CANCEL,    RESPONSE_CANCEL]
         if self.remote_open_files:
-            buttons += [gtk.STOCK_OPEN,      gtk.RESPONSE_ACCEPT]
-        buttons += [gtk.STOCK_OK,        gtk.RESPONSE_OK]
+            buttons += [gtk.STOCK_OPEN,      RESPONSE_ACCEPT]
+        buttons += [gtk.STOCK_OK,        RESPONSE_OK]
         self.file_dialog = gtk.FileChooserDialog(
             "File to upload",
             parent=None,
-            action=gtk.FILE_CHOOSER_ACTION_OPEN,
+            action=FILE_CHOOSER_ACTION_OPEN,
             buttons=tuple(buttons))
-        self.file_dialog.set_default_response(gtk.RESPONSE_OK)
+        self.file_dialog.set_default_response(RESPONSE_OK)
         self.file_dialog.connect("response", self.file_upload_dialog_response)
         self.file_dialog.show()
 
@@ -459,7 +461,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_dialog = None
 
     def file_upload_dialog_response(self, dialog, v):
-        if v not in (gtk.RESPONSE_OK, gtk.RESPONSE_ACCEPT):
+        if v not in (RESPONSE_OK, RESPONSE_ACCEPT):
             filelog("dialog response code %s", v)
             self.close_file_upload_dialog()
             return
@@ -476,7 +478,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         gfile = dialog.get_file()
         self.close_file_upload_dialog()
         filelog("load_contents: filename=%s, response=%s", filename, v)
-        gfile.load_contents_async(self.file_upload_ready, user_data=(filename, v==gtk.RESPONSE_ACCEPT))
+        gfile.load_contents_async(self.file_upload_ready, user_data=(filename, v==RESPONSE_ACCEPT))
 
     def file_upload_ready(self, gfile, result, user_data):
         filelog("file_upload_ready%s", (gfile, result, user_data))
