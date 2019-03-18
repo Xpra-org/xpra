@@ -228,9 +228,8 @@ def get_window_handle(window):
     if PYTHON2:
         return gdk_window.handle
     gpointer =  PyCapsule_GetPointer(gdk_window.__gpointer__, None)
-    log("gpointer=%#x", gpointer)
     hwnd = gdkdll.gdk_win32_window_get_handle(gpointer)
-    log("hwnd=%#x", hwnd)
+    #log("get_window_handle(%s) gpointer=%#x, hwnd=%#x", gpointer, hwnd)
     return hwnd
 
 def get_desktop_name():
@@ -398,10 +397,12 @@ def fixup_window_style(self, *_args):
                     style &= ~win32con.WS_MAXIMIZEBOX
                     style &= ~win32con.WS_SIZEBOX
         if style!=cur_style:
-            log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s", style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
+            log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s",
+                style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
             SetWindowLongW(hwnd, win32con.GWL_STYLE, style)
         else:
-            log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
+            log("fixup_window_style() unchanged style %s (%#x) on window %#x",
+                style_str(style), style, hwnd)
         ws_visible = bool(style & win32con.WS_VISIBLE)
         client = self._client
         cur_ws_visible = getattr(self, "_ws_visible", True)
