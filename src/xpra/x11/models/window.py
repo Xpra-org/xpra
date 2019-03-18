@@ -728,6 +728,7 @@ class WindowModel(BaseWindowModel):
         # their properties every time they see a ConfigureNotify, and this
         # reduces the chance for us to get caught in loops:
         if self._updateprop("size-hints", hints):
+            metalog("updated: size-hints=%s", hints)
             if self._setup_done:
                 self._update_client_geometry()
 
