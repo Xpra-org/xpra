@@ -413,24 +413,34 @@ class ClientWindowBase(ClientWidgetBase):
             return
         geomlog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
         hints = typedict()
+        client = self._client
         for (a, h1, h2) in [
             (b"maximum-size", b"max_width", b"max_height"),
             (b"minimum-size", b"min_width", b"min_height"),
             (b"base-size", b"base_width", b"base_height"),
             (b"increment", b"width_inc", b"height_inc"),
             ]:
-            if a in (b"base-size", b"increment"):
-                def closetoint(v):
-                    return abs(int(v)-v)<0.00001
-                int_scaling = closetoint(self._client.xscale) and closetoint(self._client.yscale)
-                if not int_scaling:
-                    #don't scale increment and base size constraints with non integer scaling values
-                    #as this would use rounding
-                    continue
             v = size_constraints.intpair(a)
+            geomlog("intpair(%s)=%s", a, v)
             if v:
                 v1, v2 = v
-                hints[h1], hints[h2] = self._client.sp(v1, v2)
+                sv1 = client.sx(v1)
+                sv2 = client.sy(v2)
+                if a in (b"base-size", b"increment"):
+                    #rounding is not allowed for these values
+                    fsv1 = client.fsx(v1)
+                    fsv2 = client.fsy(v2)
+                    def closetoint(v):
+                        #tolerate some rounding error:
+                        #(ie: 2:3 scaling may not give an integer without a tiny bit of rounding)
+                        return abs(int(v)-v)<0.00001
+                    if not closetoint(fsv1) or not closetoint(fsv2):
+                        #the scaled value is not close to an int,
+                        #so we can't honour it:
+                        geomlog("cannot honour '%s' due to scaling, scaled values are not integers: %s, %s",
+                                a, fsv1, fsv2)
+                        continue
+                hints[h1], hints[h2] = sv1, sv2
         if not OSX:
             for (a, h) in [
                 (b"minimum-aspect-ratio", b"min_aspect"),

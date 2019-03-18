@@ -1408,6 +1408,12 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # screen scaling:
+    def fsx(self, v):
+        """ convert X coordinate from server to client """
+        return v
+    def fsy(self, v):
+        """ convert Y coordinate from server to client """
+        return v
     def sx(self, v):
         """ convert X coordinate from server to client """
         return iround(v)

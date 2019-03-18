@@ -355,12 +355,18 @@ class DisplayClient(StubClientMixin):
 
     ######################################################################
     # screen scaling:
+    def fsx(self, v):
+        """ convert X coordinate from server to client """
+        return v*self.xscale
+    def fsy(self, v):
+        """ convert Y coordinate from server to client """
+        return v*self.yscale
     def sx(self, v):
         """ convert X coordinate from server to client """
-        return iround(v*self.xscale)
+        return iround(self.fsx(v))
     def sy(self, v):
         """ convert Y coordinate from server to client """
-        return iround(v*self.yscale)
+        return iround(self.fsy(v))
     def srect(self, x, y, w, h):
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)

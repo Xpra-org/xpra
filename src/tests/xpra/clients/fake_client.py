@@ -135,6 +135,10 @@ class FakeClient(FileTransferHandler):
     def get_window_frame_sizes(self):
         return None
 
+    def fsx(self, v):
+        return v
+    def fsy(self, v):
+        return v
     def sx(self, v):
         return v
     def sy(self, v):
