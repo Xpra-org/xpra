@@ -35,8 +35,8 @@ from xpra.platform.win32.common import (
     GetMonitorInfo,
     user32,
     )
-from xpra.util import AdHocStruct, csv, envint, envbool
-from xpra.os_util import PYTHON2, PYTHON3, get_util_logger
+from xpra.util import AdHocStruct, csv, envint, envbool, typedict
+from xpra.os_util import PYTHON2, PYTHON3, get_util_logger, strtobytes
 
 from xpra.log import Logger
 
@@ -442,16 +442,17 @@ def apply_maxsize_hints(window, hints):
     handle = get_window_handle(window)
     if not handle:
         return
-    log("apply_maxsize_hints(%s, %s) handle=%s", window, hints, handle)
+    log("apply_maxsize_hints(%s, %s) handle=%#x", window, hints, handle)
     if not window.get_decorated():
         workarea = get_monitor_workarea_for_window(handle)
         log("using workarea as window size limit for undecorated window: %s", workarea)
         if workarea:
             workw, workh = workarea[2:4]
-    minw = hints.get("min_width", 0)
-    minh = hints.get("min_height", 0)
-    maxw = hints.get("max_width", 0)
-    maxh = hints.get("max_height", 0)
+    thints = typedict(hints)
+    minw = thints.intget("min_width", 0)
+    minh = thints.intget("min_height", 0)
+    maxw = thints.intget("max_width", 0)
+    maxh = thints.intget("max_height", 0)
     if workw>0 and workh>0:
         #clamp to workspace for undecorated windows:
         if maxw>0 and maxh>0:
@@ -476,8 +477,14 @@ def apply_maxsize_hints(window, hints):
     #remove them so GTK doesn't try to set attributes,
     #which would remove the maximize button:
     for x in ("min_width", "min_height", "max_width", "max_height"):
-        if x in hints:
+        try:
             del hints[x]
+        except KeyError:
+            pass
+        try:
+            del hints[strtobytes(x)]
+        except KeyError:
+            pass
     window_state_updated(window)
 
 def apply_geometry_hints(self, hints):
