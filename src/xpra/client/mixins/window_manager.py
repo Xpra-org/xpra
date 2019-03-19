@@ -862,6 +862,15 @@ class WindowClient(StubClientMixin):
             window.deiconify()
 
 
+    def resize_windows(self, new_size_fn):
+        for window in self._id_to_window.values():
+            if window:
+                ww, wh = window._size
+                nw, nh = new_size_fn(ww, wh)
+                window.resize(nw, nh)
+        self.send_refresh_all()
+
+
     def reinit_window_icons(self):
         #make sure the window icons are the ones we want:
         iconlog("reinit_window_icons()")
