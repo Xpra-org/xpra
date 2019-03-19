@@ -7,6 +7,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import threading
 
 from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.x11.bindings.core_bindings import set_context_check, X11CoreBindings     #@UnresolvedImport
@@ -363,7 +364,6 @@ class X11ServerCore(GTKServerBase):
         return info
 
     def get_ui_info(self, proto, wids=None, *args):
-        import threading
         log("do_get_info thread=%s", threading.current_thread())
         info = GTKServerBase.get_ui_info(self, proto, wids, *args)
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
