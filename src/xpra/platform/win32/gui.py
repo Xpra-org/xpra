@@ -293,7 +293,7 @@ def win32_propsys_set_group_leader(self, leader):
     if not lhandle:
         return
     try:
-        log("win32 hooks: get_window_handle(%s)=%s, set_group(%#x)", self, hwnd, lhandle)
+        log("win32 hooks: get_window_handle(%s)=%#x, set_group(%#x)", self, hwnd, lhandle)
         set_window_group(hwnd, lhandle)
     except Exception as e:
         log("set_window_group error", exc_info=True)
