@@ -126,9 +126,9 @@ if [ "${DO_CLEAN}" == "1" ]; then
 	#clean sometimes errors on removing pyd files,
 	#so do it with rm instead:
 	#python2:
-	find xpra/ -name "*.pyd" -exec rm {} \;
+	find xpra/ -name "*.pyd" -exec rm -f {} \;
 	#python3:
-	find xpra/ -name "*-cpython-*dll" -exec rm {} \;
+	find xpra/ -name "*-cpython-*dll" -exec rm -f {} \;
 	CLEAN_LOG="clean.log"
 	${PYTHON} ./setup.py clean >& "${CLEAN_LOG}"
 	if [ "$?" != "0" ]; then
