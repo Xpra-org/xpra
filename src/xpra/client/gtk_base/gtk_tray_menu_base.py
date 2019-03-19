@@ -1567,7 +1567,6 @@ class GTKTrayMenuBase(object):
         start_menu_item = self.handshake_menuitem("Start", "start.png")
 
         def start_menu_init(*args):
-            log("start_menu_init(%s)", args)
             if not self.client.server_start_new_commands:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("This server does not support starting new commands")
@@ -1580,6 +1579,7 @@ class GTKTrayMenuBase(object):
             start_menu_item.set_submenu(menu)
             self.popup_menu_workaround(menu)
             for category, category_props in sorted(self.client.xdg_menu.items()):
+                log("start_menu_init() category: %s", category)
                 #log("category_props(%s)=%s", category, category_props)
                 if isinstance(category_props, dict):
                     entries = category_props.get(b"Entries", {})
@@ -1590,13 +1590,13 @@ class GTKTrayMenuBase(object):
                 if not entries:
                     continue
                 icondata = category_props.get(b"IconData")
-                image = self.get_appimage(category, icondata)
-                category_menu_item = self.handshake_menuitem(category.decode("utf-8"), "windows.png", image=image)
+                category_menu_item = self.start_menuitem(category.decode("utf-8"), icondata)
                 cat_menu = gtk.Menu()
                 category_menu_item.set_submenu(cat_menu)
                 self.popup_menu_workaround(cat_menu)
                 menu.append(category_menu_item)
                 for app_name, command_props in sorted(entries.items()):
+                    log("start_menu_init() app_name=%s", app_name)
                     app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
                     cat_menu.append(app_menu_item)
             menu.show_all()
@@ -1641,10 +1641,17 @@ class GTKTrayMenuBase(object):
             return scaled_image(pixbuf, icon_size=self.menu_icon_size)
         return None
 
+    def start_menuitem(self, title, icondata=None):
+        menuitem = self.handshake_menuitem(title)
+        if icondata:
+            image = self.get_appimage(title, icondata)
+            if image:
+                menuitem.set_image(image)
+        return menuitem
+
     def make_applaunch_menu_item(self, app_name, command_props):
         icondata = command_props.get(b"IconData")
-        image = self.get_appimage(app_name, icondata)
-        app_menu_item = self.handshake_menuitem(app_name.decode("utf-8"), image=image)
+        app_menu_item = self.start_menuitem(app_name.decode("utf-8"), icondata)
         def app_launch(*_args):
             command = command_props.get(b"command")
             command = re.sub(r'\%[fFuU]', '', command)
