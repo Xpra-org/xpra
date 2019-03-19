@@ -135,11 +135,11 @@ class X11ServerBase(X11ServerCore):
             screenlog("%i UI clients, resetting ICC profile to default", len(ui_clients))
             self.reset_icc_profile()
             return
-        icc = ui_clients[0].icc
+        icc = typedict(ui_clients[0].icc)
         data = None
         for x in ("data", "icc-data", "icc-profile"):
-            if x in icc:
-                data = icc.get(x)
+            data = icc.strget(x)
+            if data:
                 break
         if not data:
             screenlog("no icc data found in %s", icc)
