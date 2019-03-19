@@ -1,6 +1,52 @@
-v2.5 (2018-10-14)
+v2.5 (2019-03-19)
 ======================
-	-- TODO
+	-- Python 3 port mostly complete, including packaging for Debian
+	-- pixel compression and bandwidth management:
+	 - better recovery from network congestion
+	 - distinguish refresh from normal updates
+	 - better tuning for mmap connections
+	 - heuristics improvements
+	 - use video encoders more aggressively
+	 - prevent too many delayed frames with x264
+	 - better video region detection with opengl content
+	-- better automatic tuning for client applications
+	 - based on application categories
+	 - application supplied hints
+	 - application window encoding hints
+	 - using environment variables and disabling video
+	-- HTML5 client improvements
+	-- Client improvements:
+	 - make it easier to start new commands, provide start menu
+	 - probe OpenGL in a subprocess to detect and workaround driver crashes
+	 - use appindicator if available
+	-- Packaging:
+	 - merge xpra and its dependencies into the ​MSYS2 repository
+	 - ship fewer files in MS Windows installers
+	 - partial support for parallel installation of 32-bit and 64-bit version on MS Windows
+	 - MacOS library updates
+	 - CentOS 7: libyuv and turbojpeg
+	 - Windows Services for Linux (WSL) support
+	 - Fedora 30 and Ubuntu Disco support
+	 - Ubuntu HWE compatibility (manual steps required due to upstream bug)
+	-- Server improvements:
+	 - start command on last client exit
+	 - honour minimum window size
+	 - Python 3
+	 - upgrade-desktop subcommand
+	-- Network layer:
+	 - less copying
+	 - use our own websocket layer
+	 - make it easier to install mdns on MS Windows
+	 - make mmap group configurable
+	 - TCP CORK support on Linux
+	-- SSH transport:
+	 - support .ssh/config with paramiko backend
+	 - connecting via ssh proxy hosts
+	-- SSHFP with paramiko:
+	 - clipboard: restrict clipboard data transfers size
+	 - audio: support wasapi on MS Windows
+	-- code cleanups, etc
+	
 
 v2.4 (2018-10-13)
 ======================
