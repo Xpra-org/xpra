@@ -566,8 +566,8 @@ class DisplayClient(StubClientMixin):
             minx, miny = 16384, 16384
             if self.max_window_size!=(0, 0):
                 minx, miny = self.max_window_size
-            return max(1, min(minx, int(w*xchange))), max(1, min(miny, int(h*ychange)))
-        self.reinit_windows(new_size_fn)
+            return max(1, min(minx, iround(w*xchange))), max(1, min(miny, iround(h*ychange)))
+        self.resize_windows(new_size_fn)
         self.reinit_window_icons()
         self.emit("scaling-changed")
 
