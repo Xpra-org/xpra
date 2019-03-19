@@ -522,12 +522,6 @@ def parse_ssh_string(ssh_setting):
     ssh_cmd = ssh_setting
     from xpra.platform.features import DEFAULT_SSH_COMMAND
     if ssh_setting=="auto":
-        if DEFAULT_SSH_COMMAND.startswith("plink"):
-            #prefer plink on win32 if found:
-            ssh = shlex.split(DEFAULT_SSH_COMMAND)
-            #find plink.exe?
-            if which(ssh[0]):
-                return ssh
         #try paramiko:
         try:
             from xpra.net.ssh import nogssapi_context
