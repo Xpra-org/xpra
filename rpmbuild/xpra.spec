@@ -822,6 +822,9 @@ fi
 
 
 %changelog
+* Tue Mar 19 2018 Antoine Martin <antoine@xpra.org> 3.0-1
+- TODO
+
 * Tue Mar 19 2018 Antoine Martin <antoine@xpra.org> 2.5-1
 - Python 3 port mostly complete, including packaging for Debian
 - pixel compression and bandwidth management:
