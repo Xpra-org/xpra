@@ -929,11 +929,11 @@ class WindowClient(StubClientMixin):
                 self.send("unmap-window", wid)
             try:
                 del self._id_to_window[wid]
-            except:
+            except KeyError:
                 pass
             try:
                 del self._window_to_id[window]
-            except:
+            except KeyError:
                 pass
             #create the new window,
             #which should honour the new state of the opengl_enabled flag if that's what we changed,
