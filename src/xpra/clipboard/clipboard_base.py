@@ -32,7 +32,7 @@ glib = import_glib()
 gtk = import_gtk()
 gdk = import_gdk()
 
-MIN_CLIPBOARD_COMPRESSION_SIZE = 512
+MIN_CLIPBOARD_COMPRESS_SIZE = envint("XPRA_MIN_CLIPBOARD_COMPRESS_SIZE", 512)
 MAX_CLIPBOARD_PACKET_SIZE = 4*1024*1024
 MAX_CLIPBOARD_RECEIVE_SIZE = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
@@ -552,7 +552,7 @@ class ClipboardProtocolHelperBase(object):
             log.warn("Warning: clipboard contents are too big and have not been sent")
             log.warn(" %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
             return  None
-        if isinstance(wire_data, str) and len(wire_data)>=MIN_CLIPBOARD_COMPRESSION_SIZE:
+        if isinstance(wire_data, (str, bytes)) and len(wire_data)>=MIN_CLIPBOARD_COMPRESS_SIZE:
             return Compressible("clipboard: %s / %s" % (dtype, dformat), wire_data)
         return wire_data
 
@@ -800,8 +800,9 @@ class ClipboardProxy(gtk.Invisible):
                 for t in targets:
                     selection_add_target(self, self._selection, t, 0)
         else:
-            log("target for %s: %r", self._selection, target)
-            selection_add_target(self, self._selection, target, 0)
+            if not must_discard(target):
+                log("target for %s: %r", self._selection, target)
+                selection_add_target(self, self._selection, target, 0)
         log("do_selection_request_event(%s) target=%s, selection=%s", event, target, self._selection)
         gtk.Invisible.do_selection_request_event(self, event)
 
