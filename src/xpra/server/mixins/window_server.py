@@ -76,7 +76,7 @@ class WindowServer(StubServerMixin):
     def get_info(self, _proto):
         return {
             "state" : {
-                "windows" : len([window for window in tuple(self._id_to_window.values()) if window.is_managed()]),
+                "windows" : sum(int(window.is_managed()) for window in tuple(self._id_to_window.values())),
                 },
             "filters" : tuple((uuid,repr(f)) for uuid, f in self.window_filters),
             }
