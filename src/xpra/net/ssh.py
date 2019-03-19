@@ -516,7 +516,8 @@ keymd5(host_key),
             transport.auth_password(username, password)
         except SSHException as e:
             log("auth_password(..)", exc_info=True)
-            log.info("SSH password authentication failed: %s", e)
+            log.info("SSH password authentication failed:")
+            log.info(" %s", e.message)
 
     def auth_interactive():
         log("trying interactive authentication")
@@ -537,7 +538,8 @@ keymd5(host_key),
             transport.auth_interactive(username, myiauthhandler.handlestuff, "")
         except SSHException as e:
             log("auth_interactive(..)", exc_info=True)
-            log.info("SSH password authentication failed: %s", e)
+            log.info("SSH password authentication failed:")
+            log.info(" %s", e.message)
 
     banner = transport.get_banner()
     if banner:
