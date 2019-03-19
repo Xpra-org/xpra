@@ -374,10 +374,15 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
             log.info("dnscheck=%s", dnscheck)
             def adddnscheckinfo(q):
                 if dnscheck is not True:
-                    q += [
-                        "SSHFP validation failed:",
-                        dnscheck
-                        ]
+                    if dnscheck:
+                        q += [
+                            "SSHFP validation failed:",
+                            dnscheck
+                            ]
+                    else:
+                        q += [
+                            "SSHFP validation failed"
+                            ]
             if dnscheck is True:
                 #DNSSEC provided a matching record
                 log.info("found a valid SSHFP record for host %s", host)
