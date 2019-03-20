@@ -6,14 +6,13 @@
 
 import hashlib
 from threading import Lock
-from PIL import Image
 
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
 from xpra.util import typedict, csv, envint, envbool, repr_ellipsized
 from xpra.codecs.loader import get_codec, is_loaded
 from xpra.codecs.video_helper import getVideoHelper
-from xpra.os_util import BytesIOClass, bytestostr, _buffer
+from xpra.os_util import bytestostr, _buffer
 try:
     from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 except ImportError:
@@ -98,10 +97,11 @@ class WindowBackingBase(object):
         self.default_cursor_data = None
         self.jpeg_decoder = None
         self.webp_decoder = None
+        self.pil_decoder = None
         if is_loaded():
-            PIL = get_codec("dec_pillow")
-            if PIL:
-                self._PIL_encodings = PIL.get_encodings()
+            self.pil_decoder = get_codec("dec_pillow")
+            if self.pil_decoder:
+                self._PIL_encodings = self.pil_decoder.get_encodings()
             self.jpeg_decoder = get_codec("dec_jpeg")
             self.webp_decoder = get_codec("dec_webp")
         self.draw_needs_refresh = True
@@ -234,76 +234,16 @@ class WindowBackingBase(object):
 
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
-        """ can be called from any thread """
-        buf = BytesIOClass(img_data)
-        img = Image.open(buf)
-        assert img.mode in ("L", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
-        transparency = options.intget("transparency", -1)
-        if img.mode=="P":
-            if transparency>=0:
-                #this deals with alpha without any extra work
-                img = img.convert("RGBA")
-            else:
-                img = img.convert("RGB")
-        elif img.mode=="L":
-            if transparency>=0:
-                #why do we have to deal with alpha ourselves??
-                def mask_value(a):
-                    if a!=transparency:
-                        return 255
-                    return 0
-                mask = Image.eval(img, mask_value)
-                mask = mask.convert("L")
-                def nomask_value(a):
-                    if a!=transparency:
-                        return a
-                    return 0
-                img = Image.eval(img, nomask_value)
-                img = img.convert("RGBA")
-                img.putalpha(mask)
-            else:
-                img = img.convert("RGB")
-
-        raw_data = img.tobytes("raw", img.mode)
-        paint_options = typedict(options)
-        if img.mode=="RGB":
-            #PIL flattens the data to a continuous straightforward RGB format:
-            rowstride = width*3
-            rgb_format = options.strget("rgb_format", "")
-            rgb_format = rgb_format.replace("A", "").replace("X", "")
-            #the webp encoder only takes BGRX input,
-            #so we have to swap things around if it was fed "RGB":
-            if rgb_format=="RGB":
-                rgb_format = "BGR"
-            else:
-                rgb_format = "RGB"
-            img_data = self.process_delta(raw_data, width, height, rowstride, options)
-        elif img.mode in ("RGBA", "RGBX"):
-            rowstride = width*4
-            rgb_format = options.strget("rgb_format", img.mode)
-            if coding=="webp":
-                #the webp encoder only takes BGRX input,
-                #so we have to swap things around if it was fed "RGBA":
-                if rgb_format=="RGBA":
-                    rgb_format = "BGRA"
-                elif rgb_format=="RGBX":
-                    rgb_format = "BGRX"
-                elif rgb_format=="BGRA":
-                    rgb_format = "RGBA"
-                elif rgb_format=="BGRX":
-                    rgb_format = "RGBX"
-                else:
-                    log.warn("Warning: unexpected RGB format '%s'", rgb_format)
-            img_data = self.process_delta(raw_data, width, height, rowstride, options)
-        else:
-            raise Exception("invalid image mode: %s" % img.mode)
-        self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, width, height, rowstride, paint_options, callbacks)
-        return False
+        # can be called from any thread
+        rgb_format, raw_data, rowstride = self.pil_decoder.decompress(coding, img_data, options)
+        img_data = self.process_delta(raw_data, width, height, rowstride, options)
+        self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         if not self.webp_decoder or WEBP_PILLOW:
             #if webp is enabled, then Pillow should be able to take care of it:
-            return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
+            self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
+            return
         rgb_format = options.strget("rgb_format")
         has_alpha = options.boolget("has_alpha", False)
         (

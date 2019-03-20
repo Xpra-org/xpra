@@ -142,7 +142,7 @@ def xpra_codec_import(name, description, top_module, class_module, classname):
 CODEC_OPTIONS = {
     #encoders:
     "enc_pillow"    : ("Pillow encoder",    "pillow",       "encode", "encode"),
-    "enc_webp"      : ("webp encoder",      "webp",         "encode", "compress"),
+    "enc_webp"      : ("webp encoder",      "webp",         "encode", "encode"),
     "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
     #video encoders:
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
@@ -154,7 +154,7 @@ CODEC_OPTIONS = {
     "csc_swscale"   : ("swscale colorspace conversion", "csc_swscale", "colorspace_converter", "ColorspaceConverter"),
     "csc_libyuv"    : ("libyuv colorspace conversion", "csc_libyuv", "colorspace_converter", "ColorspaceConverter"),
     #decoders:
-    "dec_pillow"    : ("Pillow decoder",    "pillow",       "decode",  "get_encodings"),
+    "dec_pillow"    : ("Pillow decoder",    "pillow",       "decode",  "decompress"),
     "dec_webp"      : ("webp decoder",      "webp",         "decode",  "decompress"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb", "decompress_to_yuv"),
     #video decoders:

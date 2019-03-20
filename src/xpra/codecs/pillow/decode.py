@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 
 from xpra.codecs.pillow import PIL_VERSION
+from xpra.os_util import BytesIOClass
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
@@ -43,10 +44,75 @@ def get_info():
             "encodings"     : get_encodings(),
             }
 
+def decompress(coding, img_data, options):
+    # can be called from any thread
+    buf = BytesIOClass(img_data)
+    img = Image.open(buf)
+    assert img.mode in ("L", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
+    transparency = options.intget("transparency", -1)
+    if img.mode=="P":
+        if transparency>=0:
+            #this deals with alpha without any extra work
+            img = img.convert("RGBA")
+        else:
+            img = img.convert("RGB")
+    elif img.mode=="L":
+        if transparency>=0:
+            #why do we have to deal with alpha ourselves??
+            def mask_value(a):
+                if a!=transparency:
+                    return 255
+                return 0
+            mask = Image.eval(img, mask_value)
+            mask = mask.convert("L")
+            def nomask_value(a):
+                if a!=transparency:
+                    return a
+                return 0
+            img = Image.eval(img, nomask_value)
+            img = img.convert("RGBA")
+            img.putalpha(mask)
+        else:
+            img = img.convert("RGB")
+
+    width = img.size[0]
+    if img.mode=="RGB":
+        #PIL flattens the data to a continuous straightforward RGB format:
+        rowstride = width*3
+        rgb_format = options.strget("rgb_format", "")
+        rgb_format = rgb_format.replace("A", "").replace("X", "")
+        #the webp encoder only takes BGRX input,
+        #so we have to swap things around if it was fed "RGB":
+        if rgb_format=="RGB":
+            rgb_format = "BGR"
+        else:
+            rgb_format = "RGB"
+    elif img.mode in ("RGBA", "RGBX"):
+        rowstride = width*4
+        rgb_format = options.strget("rgb_format", img.mode)
+        if coding=="webp":
+            #the webp encoder only takes BGRX input,
+            #so we have to swap things around if it was fed "RGBA":
+            if rgb_format=="RGBA":
+                rgb_format = "BGRA"
+            elif rgb_format=="RGBX":
+                rgb_format = "BGRX"
+            elif rgb_format=="BGRA":
+                rgb_format = "RGBA"
+            elif rgb_format=="BGRX":
+                rgb_format = "RGBX"
+            else:
+                log.warn("Warning: unexpected RGB format '%s'", rgb_format)
+    else:
+        raise Exception("invalid image mode: %s" % img.mode)
+    raw_data = img.tobytes("raw", img.mode)
+    log("pillow decoded %i bytes of %s data to %i bytes of %s", len(img_data), coding, len(raw_data), rgb_format)
+    return rgb_format, raw_data, rowstride
+
+
 def selftest(_full=False):
     global ENCODINGS
     import binascii
-    from xpra.os_util import BytesIOClass
     #test data generated using the encoder:
     for encoding, hexdata in (
                        ('png',      "89504e470d0a1a0a0000000d4948445200000020000000200806000000737a7af40000002849444154785eedd08100000000c3a0f9531fe4855061c0800103060c183060c0800103060cbc0f0c102000013337932a0000000049454e44ae426082"),

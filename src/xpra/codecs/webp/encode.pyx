@@ -391,7 +391,7 @@ cdef get_config_info(WebPConfig *config):
         "low_memory"        : config.low_memory,
         }
 
-def compress(image, int quality=50, int speed=50, supports_alpha=False, content_type=""):
+def encode(image, int quality=50, int speed=50, supports_alpha=False, content_type=""):
     pixel_format = image.get_pixel_format()
     if pixel_format not in ("RGBX", "RGBA", "BGRX", "BGRA"):
         raise Exception("unsupported pixel format %s" % pixel_format)
@@ -547,7 +547,7 @@ def selftest(full=False):
     for has_alpha in (True, False):
         img = make_test_image("BGR%s" % ["X", "A"][has_alpha], w, h)
         for q in (10, 50, 90):
-            r = compress(img, quality=q, speed=50, supports_alpha=has_alpha)
+            r = encode(img, quality=q, speed=50, supports_alpha=has_alpha)
             assert len(r)>0
         #import binascii
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

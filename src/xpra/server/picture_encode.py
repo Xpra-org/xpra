@@ -30,7 +30,7 @@ def webp_encode(image, supports_transparency, quality, speed, content_type):
     #log("WEBP_PILLOW=%s, enc_webp=%s, stride=%s, pixel_format=%s", WEBP_PILLOW, enc_webp, stride, pixel_format)
     if not WEBP_PILLOW and enc_webp and stride>0 and stride%4==0 and pixel_format in ("BGRA", "BGRX", "RGBA", "RGBX"):
         #prefer Cython module:
-        cdata, client_options = enc_webp.compress(image, quality, speed, supports_transparency, content_type)
+        cdata, client_options = enc_webp.encode(image, quality, speed, supports_transparency, content_type)
         return "webp", compression.Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
     #fallback using Pillow:
     enc_pillow = get_codec("enc_pillow")
