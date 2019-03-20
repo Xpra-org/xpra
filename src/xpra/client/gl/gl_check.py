@@ -135,7 +135,7 @@ def check_PyOpenGL_support(force_enable):
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
-        from OpenGL.GL import glGetString, glGetInteger, glGetIntegerv
+        from OpenGL.GL import glGetString, glGetIntegerv
         gl_version_str = glGetString(GL_VERSION)
         if gl_version_str is None:
             raise_fatal_error("OpenGL version is missing - cannot continue")
