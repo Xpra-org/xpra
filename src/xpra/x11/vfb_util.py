@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,7 +8,7 @@
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
 # (also do not import anything that imports gtk)
-import subprocess
+from subprocess import Popen, PIPE, call
 import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
@@ -242,8 +242,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                         setuidgid(uid, gid)
                     close_fds([0, 1, 2, r_pipe, w_pipe])
                 try:
-                    xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
-                                            stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
+                    xvfb = Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
+                                            stdin=PIPE, preexec_fn=preexec, cwd=cwd)
                 except OSError as e:
                     log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
                     raise InitException("failed to execute xvfb command %s: %s" % (xvfb_cmd, e))
@@ -284,8 +284,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                 else:
                     setsid()
             log("xvfb_cmd=%s", xvfb_cmd)
-            xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
-                                    stdin=subprocess.PIPE, preexec_fn=preexec)
+            xvfb = Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
+                         stdin=PIPE, preexec_fn=preexec)
 
         xauth_add(xauthority, display_name, xauth_data, uid, gid)
     except Exception as e:
@@ -337,7 +337,7 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
                 setuidgid(uid, gid)
         xauth_cmd = ["xauth"]+xauth_args
         start = monotonic_time()
-        code = subprocess.call(xauth_cmd, preexec_fn=preexec, close_fds=True)
+        code = call(xauth_cmd, preexec_fn=preexec, close_fds=True)
         end = monotonic_time()
         if code!=0 and (end-start>=10):
             log = get_vfb_logger()
@@ -347,7 +347,7 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
             if glob.glob("%s-*" % filename):
                 log.warn("Warning: trying to clean some stale xauth locks")
                 xauth_cmd = ["xauth", "-b"]+xauth_args
-                code = subprocess.call(xauth_cmd, preexec_fn=preexec, close_fds=True)
+                code = call(xauth_cmd, preexec_fn=preexec, close_fds=True)
         if code!=0:
             raise OSError("non-zero exit code: %s" % code)
     except OSError as e:
