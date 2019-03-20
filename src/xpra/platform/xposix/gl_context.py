@@ -10,7 +10,11 @@ from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 from xpra.util import envbool
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
-from xpra.gtk_common.gtk_util import display_get_default, get_xwindow, make_temp_window
+from xpra.gtk_common.gobject_compat import import_gtk
+from xpra.gtk_common.gtk_util import (
+    display_get_default, get_xwindow, enable_alpha,
+    WINDOW_TOPLEVEL,
+    )
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -150,9 +154,15 @@ class GLXContext(object):
 
     def check_support(self, force_enable=False):
         i = self.props
-        tmp = make_temp_window("tmp-opengl-check")
+        gtk = import_gtk()
+        tmp = gtk.Window(WINDOW_TOPLEVEL)
+        tmp.resize(1, 1)
+        tmp.set_decorated(False)
+        tmp.realize()
+        enable_alpha(tmp)
+        win = tmp.get_window()
         log("check_support(%s) using temporary window=%s", force_enable, tmp)
-        with self.get_paint_context(tmp):
+        with self.get_paint_context(win):
             i.update(check_PyOpenGL_support(force_enable))
         tmp.destroy()
         return i
