@@ -10,7 +10,7 @@ import os
 import threading
 from PIL import Image
 
-from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes, BytesIOClass
+from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes, strtobytes, BytesIOClass
 from xpra.net import compression
 from xpra.util import envbool, envint
 from xpra.log import Logger
@@ -236,7 +236,7 @@ class WindowIconSource(object):
         else:
             if image:
                 pixel_data = image.tobytes("raw", "RGBA")
-            wrapper = self.compressed_wrapper("premult_argb32", str(pixel_data))
+            wrapper = self.compressed_wrapper("premult_argb32", strtobytes(pixel_data))
         packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
         log("queuing window icon update: %s", packet)
         self.queue_packet(packet, wait_for_more=True)

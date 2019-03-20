@@ -2275,11 +2275,11 @@ if pillow_ENABLED:
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
     webp_pkgconfig = pkgconfig("libwebp")
-    cython_add(Extension("xpra.codecs.webp.encode",
-                    ["xpra/codecs/webp/encode.pyx"],
+    cython_add(Extension("xpra.codecs.webp.encoder",
+                    ["xpra/codecs/webp/encoder.pyx"],
                     **webp_pkgconfig))
-    cython_add(Extension("xpra.codecs.webp.decode",
-                ["xpra/codecs/webp/decode.pyx"],
+    cython_add(Extension("xpra.codecs.webp.decoder",
+                ["xpra/codecs/webp/decoder.pyx"],
                 **webp_pkgconfig))
 
 jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED
