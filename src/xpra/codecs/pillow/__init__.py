@@ -26,7 +26,10 @@ for x in ("Image", "PngImagePlugin", "WebPImagePlugin", "JpegImagePlugin"):
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 assert PIL is not None and Image is not None
-PIL_VERSION = PIL.__version__
+try:
+    PIL_VERSION = PIL.__version__
+except AttributeError:
+    PIL_VERSION = PIL.PILLOW_VERSION
 if hasattr(Image, "DEBUG"):
     #for older versions (pre 3.0), use Image.DEBUG flag:
     Image.DEBUG = int(PIL_DEBUG)
