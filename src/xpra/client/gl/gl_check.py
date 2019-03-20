@@ -111,7 +111,7 @@ def check_PyOpenGL_support(force_enable):
     props = {}
     try:
         if CRASH:
-            import ctypes;
+            import ctypes
             ctypes.string_at(0)
             raise Exception("should have crashed!")
         elif TIMEOUT>0:
