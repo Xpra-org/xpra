@@ -21,7 +21,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, repr_ellipsized, nonl, pver, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
-    get_util_logger, getuid, getgid, which,
+    get_util_logger, getuid, getgid,
     monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
