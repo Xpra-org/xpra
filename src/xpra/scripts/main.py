@@ -1762,7 +1762,7 @@ def do_run_glcheck(opts):
         log("run_glprobe() backends=%s", backends)
         opengl_props, gl_client_window_module = get_gl_client_window_module(backends, force_enable)
         log("run_glprobe() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
-        if gl_client_window_module and opengl_props.get("safe", False):
+        if gl_client_window_module and (opengl_props.get("safe", False) or force_enable):
             gl_client_window_class = gl_client_window_module.GLClientWindow
             pixel_depth = int(opts.pixel_depth)
             log("run_glprobe() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
