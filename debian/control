@@ -166,6 +166,7 @@ Description: html5 xpra client
 
 
 Package: python2-xpra
+Conflicts: xpra (<< 2.5)
 Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,xpra
@@ -230,6 +231,7 @@ Description: tool to detach/reattach running X programs
 
 
 Package: python3-xpra
+Conflicts: xpra (<< 2.5)
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,xpra
