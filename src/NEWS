@@ -93,7 +93,7 @@ v2.4 (2018-10-13)
 	-- new platforms: Ubuntu Cosmic, Fedora 29
 
 
-v2.3 (2017-05-08)
+v2.3 (2018-05-08)
 ======================
 	-- stackable authentication modules
 	-- tcp wrappers authentication module
