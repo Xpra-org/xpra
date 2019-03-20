@@ -250,20 +250,20 @@ def configure_imsettings_env(input_method):
         #the default: set DISABLE_IMSETTINGS=1, fallback to xim
         #that's because the 'ibus' 'immodule' breaks keyboard handling
         #unless its daemon is also running - and we don't know if it is..
-        imsettings_env(True, "xim", "xim", "none", "@im=none")
+        imsettings_env(True, "xim", "xim", "xim", "none", "@im=none")
     elif im=="keep":
         #do nothing and keep whatever is already set, hoping for the best
         pass
     elif im in ("xim", "IBus", "SCIM", "uim"):
         #ie: (False, "ibus", "ibus", "IBus", "@im=ibus")
-        imsettings_env(True, im.lower(), im.lower(), im, "@im=%s" % im.lower())
+        imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=%s" % im.lower())
     else:
-        v = imsettings_env(True, im.lower(), im.lower(), im, "@im=%s" % im.lower())
+        v = imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=%s" % im.lower())
         warn("using input method settings: %s" % str(v))
         warn("unknown input method specified: %s" % input_method)
         warn(" if it is correct, you may want to file a bug to get it recognized")
 
-def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmodifiers):
+def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, imsettings_module, xmodifiers):
     #for more information, see imsettings:
     #https://code.google.com/p/imsettings/source/browse/trunk/README
     if disabled is True:
@@ -273,6 +273,8 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
     v = {
          "GTK_IM_MODULE"      : gtk_im_module,            #or "gtk-im-context-simple"?
          "QT_IM_MODULE"       : qt_im_module,             #or "simple"?
+         "QT4_IM_MODULE"      : qt_im_module,
+         "CLUTTER_IM_MODULE"  : clutter_im_module,
          "IMSETTINGS_MODULE"  : imsettings_module,        #or "xim"?
          "XMODIFIERS"         : xmodifiers,
          #not really sure what to do with those:
