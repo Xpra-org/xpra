@@ -115,7 +115,10 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         #the paint code is actually synchronous here,
         #so we can check the present_fbo() result:
         if window_backing.last_present_fbo_error:
-            raise Exception("failed to present FBO on screen: %s" % window_backing.last_present_fbo_error)
+            return {
+                "success" : False,
+                "message" : "failed to present FBO on screen: %s" % window_backing.last_present_fbo_error
+                }
     finally:
         if window:
             window.destroy()
