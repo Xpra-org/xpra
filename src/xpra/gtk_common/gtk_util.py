@@ -140,7 +140,7 @@ if is_gtk3():
         mask = gdk.WindowAttributesType(attributes_mask)
         return gdk.Window(parent, attributes, mask)
 
-    def make_temp_window(title):
+    def make_temp_window(title, window_type=gdk.WindowType.TEMP):
         return GDKWindow(title=title)
 
     def enable_alpha(window):
@@ -475,7 +475,7 @@ else:
                   event_mask=0, wclass=gdk.INPUT_OUTPUT, title=None, x=-1, y=-1, **kwargs):
         return gdk.Window(parent, width, height, window_type, event_mask, wclass, title, x, y, **kwargs)
 
-    def make_temp_window(title):
+    def make_temp_window(title, window_type=gdk.WINDOW_TEMP):
         return GDKWindow(title=title)
 
     def enable_alpha(window):
