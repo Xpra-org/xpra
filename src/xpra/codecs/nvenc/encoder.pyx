@@ -1581,7 +1581,10 @@ cdef class Encoder:
 
     def select_cuda_device(self, options={}):
         self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
-        assert self.cuda_device_id>=0 and self.cuda_device, "failed to select a cuda device"
+        if self.cuda_device_id<0 or not self.cuda_device:
+            #we've initialized this codec,
+            #so some devices must be available?
+            raise TransientCodecException("failed to select a cuda device")
         log("selected device %s", device_info(self.cuda_device))
 
 

@@ -1602,7 +1602,9 @@ class WindowVideoSource(WindowSource):
             except TransientCodecException as e:
                 if self.is_cancelled():
                     return False
-                videolog.warn("setup_pipeline failed for %s: %s", option, e)
+                videolog.warn("Warning: setup_pipeline failed for")
+                videolog.warn(" %s:", option)
+                videolog.warn(" %s", e)
                 del e
             except:
                 if self.is_cancelled():
