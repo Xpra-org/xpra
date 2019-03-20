@@ -155,6 +155,7 @@ Description: tool to detach/reattach running X programs
 
 Package: xpra-html5
 Architecture: any
+Conflicts: xpra (<< 2.5)
 Depends:
         libjs-jquery
         ,libjs-jquery-ui
