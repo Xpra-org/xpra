@@ -86,27 +86,6 @@ class ClientWindow(GTKClientWindowBase):
     def get_backing_class(self):
         return CairoBacking
 
-    def enable_alpha(self):
-        screen = self.get_screen()
-        visual = screen.get_rgba_visual()
-        #we can't do alpha on win32 with plain GTK,
-        #(though we handle it in the opengl backend)
-        if WIN32:
-            l = log
-        else:
-            l = log.error
-        if visual is None or not screen.is_composited():
-            l("Error: cannot handle window transparency")
-            if visual is None:
-                l(" no RGBA visual")
-            else:
-                assert not screen.is_composited()
-                l(" screen is not composited")
-            return False
-        log("enable_alpha() using rgba visual %s for wid %s", visual, self._id)
-        self.set_visual(visual)
-        return True
-
 
     def xget_u32_property(self, target, name):
         if HAS_X11_BINDINGS:

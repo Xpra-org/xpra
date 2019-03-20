@@ -30,6 +30,7 @@ from xpra.gtk_common.gtk_util import (
     is_realized, display_get_default, drag_status,
     newTargetEntry, drag_context_targets, drag_context_actions,
     drag_dest_window, drag_widget_get_data,
+    enable_alpha,
     gio_File, query_info_async, load_contents_async, load_contents_finish,
     WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS,
     SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
@@ -726,7 +727,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._client_properties["encoding.transparency"] = False
             return
         if self._has_alpha and not self.is_realized():
-            if self.enable_alpha():
+            if enable_alpha(self):
                 self._client_properties["encodings.rgb_formats"] = ["RGBA", "RGB", "RGBX"]
                 self._window_alpha = True
             else:

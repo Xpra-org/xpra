@@ -73,17 +73,6 @@ class GTK2WindowBase(GTKClientWindowBase):
         self.set_data("_kde_no_window_grab", 1)
 
 
-    def enable_alpha(self):
-        screen = self.get_screen()
-        rgba = screen.get_rgba_colormap()
-        statelog("enable_alpha() rgba colormap=%s", rgba)
-        if rgba is None:
-            log.error("Error: cannot handle window transparency, no RGBA colormap", exc_info=True)
-            return False
-        statelog("enable_alpha() using rgba colormap %s for wid %s", rgba, self._id)
-        self.set_colormap(rgba)
-        return True
-
     def xget_u32_property(self, target, name):
         try:
             if not HAS_X11_BINDINGS:

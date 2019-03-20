@@ -143,6 +143,27 @@ if is_gtk3():
     def make_temp_window(title):
         return GDKWindow(title=title)
 
+    def enable_alpha(window):
+        screen = window.get_screen()
+        visual = screen.get_rgba_visual()
+        #we can't do alpha on win32 with plain GTK,
+        #(though we handle it in the opengl backend)
+        if WIN32:
+            l = log
+        else:
+            l = log.error
+        if visual is None or not screen.is_composited():
+            l("Error: cannot handle window transparency")
+            if visual is None:
+                l(" no RGBA visual")
+            else:
+                assert not screen.is_composited()
+                l(" screen is not composited")
+            return False
+        log("enable_alpha(%s) using rgba visual %s", window, visual)
+        window.set_visual(visual)
+        return True
+
 
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         data = array.array('B', strtobytes(rgb_data))
@@ -456,6 +477,17 @@ else:
 
     def make_temp_window(title):
         return GDKWindow(title=title)
+
+    def enable_alpha(window):
+        screen = window.get_screen()
+        rgba = screen.get_rgba_colormap()
+        log("enable_alpha(%s) rgba colormap=%s", window, rgba)
+        if rgba is None:
+            log.error("Error: cannot handle window transparency, no RGBA colormap", exc_info=True)
+            return False
+        log("enable_alpha(%s) using rgba colormap %s", window, rgba)
+        window.set_colormap(rgba)
+        return True
 
     def get_pixbuf_from_window(window, x, y, w, h):
         pixbuf = gdk.Pixbuf(gdk.COLORSPACE_RGB, False, 8, w, h)
