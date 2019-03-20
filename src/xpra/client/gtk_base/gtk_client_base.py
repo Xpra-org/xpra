@@ -968,8 +968,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         parts = enable_opengl.split(":", 1)
         enable_option = parts[0]            #ie: "on"
         opengllog("init_opengl: enable_option=%s", enable_option)
-        if enable_option=="probe-failed":
-            msg = "probe failed: %s" % csv(parts[1:])
+        if enable_option in ("probe-failed", "probe-error"):
+            msg = enable_option.replace("-", " ")
+            if len(parts)>1:
+                msg += ": %s" % csv(parts[1:])
             self.opengl_props["info"] = "disabled, %s" % msg
             self.opengl_setup_failure(body=msg)
             return
