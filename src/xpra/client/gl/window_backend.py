@@ -95,6 +95,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         window_backing.timeout_add = no_timeout_add
         window_backing.source_remove = no_source_remove
         window.realize()
+        window_backing.paint_screen = True
         pixel_format = "BGRX"
         bpp = len(pixel_format)
         options = typedict({"pixel_format" : pixel_format})
