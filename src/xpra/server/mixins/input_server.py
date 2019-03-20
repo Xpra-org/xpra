@@ -393,26 +393,23 @@ class InputServer(StubServerMixin):
         pass
 
 
-    def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
+    def send_hello(self, server_source, _root_w, _root_h, key_repeat, _server_cipher):
         capabilities = self.make_hello(server_source)
         if key_repeat:
             capabilities.update({
-                     "key_repeat"           : key_repeat,
-                     "key_repeat_modifiers" : True})
+                "key_repeat"           : key_repeat,
+                "key_repeat_modifiers" : True,
+                })
 
 
     def init_packet_handlers(self):
-        self._authenticated_packet_handlers.update({
-            "set-keyboard-sync-enabled":            self._process_keyboard_sync_enabled_status,
-          })
-        self._authenticated_ui_packet_handlers.update({
-            "key-action":                           self._process_key_action,
-            "key-repeat":                           self._process_key_repeat,
-            "layout-changed":                       self._process_layout,
-            "keymap-changed":                       self._process_keymap,
-            #mouse:
-            "button-action":                        self._process_button_action,
-            "pointer-position":                     self._process_pointer_position,
-            #setup:
-            "input-devices":                        self._process_input_devices,
-            })
+        self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync_enabled_status)
+        self.add_packet_handler("key-action", self._process_key_action)
+        self.add_packet_handler("key-repeat", self._process_key_repeat)
+        self.add_packet_handler("layout-changed", self._process_layout)
+        self.add_packet_handler("keymap-changed", self._process_keymap)
+        #mouse:
+        self.add_packet_handler("button-action", self._process_button_action)
+        self.add_packet_handler("pointer-position", self._process_pointer_position)
+        #setup:
+        self.add_packet_handler("input-devices", self._process_input_devices)

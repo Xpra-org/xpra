@@ -297,10 +297,6 @@ class ChildCommandServer(StubServerMixin):
 
     def init_packet_handlers(self):
         if COMMAND_SIGNALS:
-            self._authenticated_packet_handlers.update({
-                "command-signal" : self._process_command_signal,
-              })
+            self.add_packet_handler("command-signal", self._process_command_signal, False)
         if self.start_new_commands:
-            self._authenticated_ui_packet_handlers.update({
-                "start-command" : self._process_start_command,
-                })
+            self.add_packet_handler("start-command", self._process_start_command)

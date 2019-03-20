@@ -254,11 +254,9 @@ class ClipboardServer(StubServerMixin):
 
     def init_packet_handlers(self):
         if self.clipboard:
-            self._authenticated_packet_handlers.update({
-                "set-clipboard-enabled":                self._process_clipboard_enabled_status,
-              })
+            self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_enabled_status)
             for x in (
                 "token", "request", "contents", "contents-none",
                 "pending-requests", "enable-selections", "loop-uuids",
                 ):
-                self._authenticated_ui_packet_handlers["clipboard-%s" % x] = self._process_clipboard_packet
+                self.add_packet_handler("clipboard-%s" % x, self._process_clipboard_packet)

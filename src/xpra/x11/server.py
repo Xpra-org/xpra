@@ -320,9 +320,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def init_packet_handlers(self):
         X11ServerBase.init_packet_handlers(self)
-        self._authenticated_ui_packet_handlers.update({
-            "window-signal"         : self._process_window_signal,
-            })
+        self.add_packet_handler("window-signal", self._process_window_signal)
 
 
     def get_server_mode(self):

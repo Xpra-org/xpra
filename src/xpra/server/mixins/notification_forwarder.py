@@ -176,8 +176,6 @@ class NotificationForwarder(StubServerMixin):
 
     def init_packet_handlers(self):
         if self.notifications:
-            self._authenticated_ui_packet_handlers.update({
-                "notification-close"    : self._process_notification_close,
-                "notification-action"   : self._process_notification_action,
-                "set-notify"            : self._process_set_notify,
-                })
+            self.add_packet_handler("notification-close",   self._process_notification_close)
+            self.add_packet_handler("notification-action",  self._process_notification_action)
+            self.add_packet_handler("set-notify",           self._process_set_notify)

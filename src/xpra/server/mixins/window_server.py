@@ -396,14 +396,15 @@ class WindowServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self._authenticated_ui_packet_handlers.update({
-            "map-window":                           self._process_map_window,
-            "unmap-window":                         self._process_unmap_window,
-            "configure-window":                     self._process_configure_window,
-            "close-window":                         self._process_close_window,
-            "focus":                                self._process_focus,
-            "damage-sequence":                      self._process_damage_sequence,
-            "buffer-refresh":                       self._process_buffer_refresh,
-            "suspend":                              self._process_suspend,
-            "resume":                               self._process_resume,
-            })
+        for packet_type, handler in {
+            "map-window" :          self._process_map_window,
+            "unmap-window" :        self._process_unmap_window,
+            "configure-window" :    self._process_configure_window,
+            "close-window" :        self._process_close_window,
+            "focus" :               self._process_focus,
+            "damage-sequence" :     self._process_damage_sequence,
+            "buffer-refresh" :      self._process_buffer_refresh,
+            "suspend" :             self._process_suspend,
+            "resume" :              self._process_resume,
+            }.items():
+            self.add_packet_handler(packet_type, handler)

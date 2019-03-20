@@ -285,8 +285,8 @@ class X11ServerCore(GTKServerBase):
 
     def init_packet_handlers(self):
         GTKServerBase.init_packet_handlers(self)
-        self._authenticated_ui_packet_handlers["force-ungrab"] = self._process_force_ungrab
-        self._authenticated_ui_packet_handlers["wheel-motion"] = self._process_wheel_motion
+        self.add_packet_handler("force-ungrab", self._process_force_ungrab)
+        self.add_packet_handler("wheel-motion", self._process_wheel_motion)
 
 
     def init_virtual_devices(self, _devices):

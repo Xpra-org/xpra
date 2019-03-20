@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from threading import Thread
-from time import sleep
 
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
@@ -870,22 +869,27 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # packets:
+    def add_packet_handler(self, packet_type, handler, main_thread=True):
+        netlog("add_packet_handler%s", (packet_type, handler, main_thread))
+        if main_thread:
+            handlers = self._authenticated_ui_packet_handlers
+        else:
+            handlers = self._authenticated_packet_handlers
+        handlers[packet_type] = handler
+
     def init_packet_handlers(self):
         for c in SERVER_BASES:
             c.init_packet_handlers(self)
-        self._authenticated_packet_handlers.update({
-            "sharing-toggle":                       self._process_sharing_toggle,
-            "lock-toggle":                          self._process_lock_toggle,
-          })
-        self._authenticated_ui_packet_handlers.update({
-            #attributes / settings:
-            "server-settings":                      self._process_server_settings,
-            "set_deflate":                          self._process_set_deflate,
-            #requests:
-            "shutdown-server":                      self._process_shutdown_server,
-            "exit-server":                          self._process_exit_server,
-            "info-request":                         self._process_info_request,
-            })
+        #no need for main thread:
+        self.add_packet_handler("sharing-toggle",   self._process_sharing_toggle, False)
+        self.add_packet_handler("lock-toggle",      self._process_lock_toggle, False)
+        #attributes / settings:
+        self.add_packet_handler("server-settings",  self._process_server_settings)
+        self.add_packet_handler("set_deflate",      self._process_set_deflate)
+        #requests:
+        self.add_packet_handler("shutdown-server",  self._process_shutdown_server)
+        self.add_packet_handler("exit-server",      self._process_exit_server)
+        self.add_packet_handler("info-request",     self._process_info_request)
 
     def init_aliases(self):
         packet_types = list(self._default_packet_handlers.keys())

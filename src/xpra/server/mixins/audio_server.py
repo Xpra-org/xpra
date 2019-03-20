@@ -328,7 +328,5 @@ class AudioServer(StubServerMixin):
 
     def init_packet_handlers(self):
         if self.supports_speaker or self.supports_microphone:
-            self._authenticated_ui_packet_handlers.update({
-                "sound-control":                        self._process_sound_control,
-                "sound-data":                           self._process_sound_data,
-                })
+            self.add_packet_handler("sound-control", self._process_sound_control)
+            self.add_packet_handler("sound-data", self._process_sound_data)

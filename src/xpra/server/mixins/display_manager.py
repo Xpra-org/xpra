@@ -291,9 +291,7 @@ class DisplayManager(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self._authenticated_ui_packet_handlers.update({
-            "set-cursors":                          self._process_set_cursors,
-            "set-bell":                             self._process_set_bell,
-            "desktop_size":                         self._process_desktop_size,
-            "screenshot":                           self._process_screenshot,
-            })
+        self.add_packet_handler("set-cursors",  self._process_set_cursors)
+        self.add_packet_handler("set-bell",     self._process_set_bell)
+        self.add_packet_handler("desktop_size", self._process_desktop_size)
+        self.add_packet_handler("screenshot",   self._process_screenshot)
