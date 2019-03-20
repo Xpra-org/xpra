@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018, 2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 
 from xpra.util import typedict, AdHocStruct
-from xpra.os_util import PYTHON3
+from xpra.os_util import PYTHON3, WIN32
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")
@@ -84,8 +84,11 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         noclient._set_window_menu = None
         noclient._focused = None
         noclient.request_frame_extents = noop
+        #test with alpha, but not on win32
+        #because we can't do alpha on win32 with opengl
+        metadata = typedict({b"has-alpha" : not WIN32})
         window = gl_client_window_class(noclient, None, None, 2**32-1, -100, -100, w, h, w, h,
-                                        typedict({}), False, typedict({}),
+                                        metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
         window_backing.idle_add = no_idle_add
