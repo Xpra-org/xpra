@@ -1063,7 +1063,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i",
                   self.gl_texture_size_limit, self.gl_texture_size_limit)
                 l(" for OpenGL %s renderer '%s'", pver(self.opengl_props.get("opengl", "")), self.opengl_props.get("renderer", "unknown"))
-            if self.opengl_enabled:
+            if self.opengl_enabled and enable_opengl!="probe-success":
                 draw_result = test_gl_client_window(self.GLClientWindowClass, max_window_size=self.max_window_size, pixel_depth=self.pixel_depth)
                 if not draw_result.get("success", False):
                     err("OpenGL test rendering failed:", draw_result.get("message", "unknown error"))
