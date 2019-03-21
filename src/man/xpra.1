@@ -774,6 +774,10 @@ process.
 
 .SS Options for start, upgrade
 .TP
+\fB\-\-exec\-wrapper\fP=\fICMD\fP
+A wrapper command which is prepended to all start commands.
+Typically, this is used for starting all sub-commands via VirtualGL.
+.TP
 \fB\-\-start\fP=\fICMD\fP
 After starting the server, runs the command \fICMD\fP using the
 default shell.  The command is run with its \fB$DISPLAY\fP set to point to
