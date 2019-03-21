@@ -825,7 +825,7 @@ class SessionInfo(gtk.Window):
             delta = datetime.timedelta(seconds=(int(time.time())-int(from_time)))
             label.set_text(str(delta))
         if self.client.server_load:
-            self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
+            self.server_load_label.set_text("  ".join("%.1f" % (x/1000.0) for x in self.client.server_load))
         if self.client.server_start_time>0:
             settimedeltastr(self.session_started_label, self.client.server_start_time)
         else:
@@ -988,10 +988,10 @@ class SessionInfo(gtk.Window):
             setall(labels, rounded_values)
 
         if self.client.server_ping_latency:
-            spl = [1000.0*x[1] for x in tuple(self.client.server_ping_latency)]
+            spl = tuple(int(1000*x[1]) for x in tuple(self.client.server_ping_latency))
             setlabels(self.server_latency_labels, spl)
         if self.client.client_ping_latency:
-            cpl = [1000.0*x[1] for x in tuple(self.client.client_ping_latency)]
+            cpl = tuple(int(1000*x[1]) for x in tuple(self.client.client_ping_latency))
             setlabels(self.client_latency_labels, cpl)
         if mixin_features.windows and self.client.windows_enabled:
             setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
@@ -1072,32 +1072,6 @@ class SessionInfo(gtk.Window):
                         window_encoder_stats[wid] = encoder_stats
                 except:
                     log.error("Error: cannot lookup window dict", exc_info=True)
-            return window_encoder_stats
-        #fallback code, we are interested in string data like:
-        #window[1].encoder=x264
-        #window[1].encoder.frames=1
-        #window[1].encoder.fps=25
-        for k,v in self.client.server_last_info.items():
-            k = bytestostr(k)
-            if not k.startswith("window["):
-                continue
-            pos = k.find("].encoder")
-            if pos<=0:
-                continue
-            try:
-                wid_str = k[len("window["):pos]     #ie: "1"
-                wid = int(wid_str)
-            except (TypeError, ValueError):
-                #wid_str may be invalid, ie:
-                #window[1].pipeline_option[1].encoder=video_spec(xpra.codecs.enc_x264.encoder.Encoder)
-                # -> wid_str= "1].pipeline_option[1"
-                continue
-            ekey = k[(pos+len("].encoder")):]   #ie: "" or ".frames"
-            if ekey.startswith("."):
-                ekey = ekey[1:]
-            if ekey=="build_config":
-                continue
-            window_encoder_stats.setdefault(wid, {})[ekey] = v
         return window_encoder_stats
 
 
@@ -1197,6 +1171,9 @@ class SessionInfo(gtk.Window):
                 (self.avg_decoding_latency,     "decoding"),
                 (self.avg_total,                "frame total"),
             ))
+        #debug:
+        #for i, v in enumerate(latency_values):
+        #    log.warn("%20s = %s", latency_labels[i], v)
         surface = make_graph_imagesurface(latency_values, labels=latency_labels,
                                           width=w, height=h,
                                           title="Latency (ms)", min_y_scale=10, rounding=25,
