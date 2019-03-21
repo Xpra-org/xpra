@@ -306,7 +306,7 @@ class WindowModel(BaseWindowModel):
                 geom = X11Window.getGeometry(self.xid)
             if geom is not None:
                 if self.client_reparented:
-                    self.client_window.reparent(get_default_root_window(), 0, 0)
+                    self.client_window.reparent(gdk.get_default_root_window(), 0, 0)
                 self.client_window.set_events(self.client_window_saved_events)
             self.client_reparented = False
             #it is now safe to destroy the corral window:
