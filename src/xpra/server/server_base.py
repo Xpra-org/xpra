@@ -936,7 +936,7 @@ class ServerBase(ServerCore):
         #this ensures that from now on we ignore any incoming packets coming
         #from this connection as these could potentially set some keys pressed, etc
         try:
-            del self._potential_protocols[protocol]
+            self._potential_protocols.remove(protocol)
         except:
             pass
         source = self._server_sources.pop(protocol, None)
