@@ -33,7 +33,7 @@ cdef class rectangle:
         self.y = y
         self.width = w
         self.height = h
-        self.hash = (self.x+self.y)<<16 + (self.width + self.height)
+        self.hash = (self.x&0xffff)<<48+(self.y&0xffff)<<32+(self.width&0xffff)<<16+(self.height&0xffff)
 
     def __hash__(self):
         return self.hash
