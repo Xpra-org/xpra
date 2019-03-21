@@ -592,7 +592,7 @@ class CoreX11WindowModel(WindowModelStub):
             return
         #remove serial before comparing dicts:
         try:
-            cur_shape["serial"]
+            del cur_shape["serial"]
         except:
             pass
         #read new xshape:
