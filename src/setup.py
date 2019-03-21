@@ -2250,7 +2250,7 @@ if nvenc7_ENABLED:
                          ] + path_options
     else:
         nvcc_exe = "nvcc"
-        for v in ("", "-10.0", "-9.0", "-8.0", "-7.5", "-7.0", "-6.5", "6.0", "-5.5"):
+        for v in ("", "-10.1", "-10.0", "-9.0", "-8.0", "-7.5", "-7.0", "-6.5", "-6.0", "-5.5"):
             path_options += ["/usr/local/cuda%s/bin" % v, "/opt/cuda%s/bin" % v]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     if not WIN32:
