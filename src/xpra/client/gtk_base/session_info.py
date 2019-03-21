@@ -11,14 +11,14 @@ from collections import deque
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monotonic_time
-from xpra.util import prettify_plug_name, typedict, csv, engs
+from xpra.util import prettify_plug_name, typedict, csv, engs, iround
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.scripts.config import python_platform
 from xpra.client import mixin_features
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, label, title_box, \
-    TableBuilder, imagebutton, get_preferred_size, get_gtk_version_info, \
+    add_close_accel, label, title_box,
+    TableBuilder, imagebutton, get_preferred_size, get_gtk_version_info,
     RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER,
     RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_CLOSE, RESPONSE_DELETE_EVENT,
     FILE_CHOOSER_ACTION_SAVE,
@@ -637,7 +637,7 @@ class SessionInfo(gtk.Window):
                 i = now-2-x
                 if i not in recs:
                     recs[i] = None
-            return [recs.get(x) for x in sorted(recs.keys())]
+            return tuple(recs.get(x) for x in sorted(recs.keys()))
         self.server_latency = get_ping_latency_records(self.client.server_ping_latency)
         self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
         if self.client.server_last_info:
@@ -656,7 +656,7 @@ class SessionInfo(gtk.Window):
             spl = tuple(1000.0*x[1] for x in self.client.server_ping_latency)
             cpl = tuple(1000.0*x[1] for x in self.client.client_ping_latency)
             if spl and cpl:
-                self.avg_ping_latency.append(sum(spl+cpl)/len(spl+cpl))
+                self.avg_ping_latency.append(iround(sum(spl+cpl)/len(spl+cpl)))
             pc = tuple(self.client.pixel_counter)
             if mixin_features.windows and pc:
                 tsize = 0
@@ -664,7 +664,7 @@ class SessionInfo(gtk.Window):
                 for start_time, end_time, size in pc:
                     ttime += 1000.0 * (end_time-start_time) * size
                     tsize += size
-                self.avg_decoding_latency.append(int(ttime/tsize))
+                self.avg_decoding_latency.append(iround(ttime/tsize))
         #totals: ping latency is halved since we only care about sending, not sending+receiving
         els  = (
             (tuple(self.avg_batch_delay), 1),
@@ -675,7 +675,7 @@ class SessionInfo(gtk.Window):
         if all(x[0] for x in els):
             totals = tuple(x[-1]/r for x, r in els)
             log("frame totals=%s", totals)
-            self.avg_total.append(sum(totals))
+            self.avg_total.append(iround(sum(totals)))
         return not self.is_closed
 
     def init_counters(self):
