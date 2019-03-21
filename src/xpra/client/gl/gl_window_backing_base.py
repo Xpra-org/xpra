@@ -240,7 +240,6 @@ class GLWindowBackingBase(WindowBackingBase):
         self.last_present_fbo_error = None
 
         WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
-        log.warn("window_alpha=%s, HAS_ALPHA=%s", window_alpha, self.HAS_ALPHA)
         self.init_gl_config(window_alpha)
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
