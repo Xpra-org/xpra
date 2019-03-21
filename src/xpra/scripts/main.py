@@ -66,6 +66,13 @@ def warn(msg):
     #(which uses stdin / stdout as communication channel)
     sys.stderr.write(msg+"\n")
 
+
+    if sys.flags.optimize>0:
+        sys.stderr.write("************************************************************\n")
+        sys.stderr.write("Warning: the python optimize flag is set to %i\n" % sys.flags.optimize)
+        sys.stderr.write(" xpra is very likely to crash\n")
+        sys.stderr.write("************************************************************\n")
+        sleep(5)
 def nox():
     DISPLAY = os.environ.get("DISPLAY")
     if DISPLAY is not None:
