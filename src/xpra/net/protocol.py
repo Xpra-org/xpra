@@ -216,27 +216,6 @@ class Protocol(object):
             "compression_level"     : self.compression_level,
             "max_packet_size"       : self.max_packet_size,
             "aliases"               : USE_ALIASES,
-            "input" : {
-                       "buffer-size"            : READ_BUFFER_SIZE,
-                       "packetcount"            : self.input_packetcount,
-                       "raw_packetcount"        : self.input_raw_packetcount,
-                       "count"                  : self.input_stats,
-                       "cipher"                 : {"": self.cipher_in_name or "",
-                                                   "padding"        : self.cipher_in_padding,
-                                                   },
-                        },
-            "output" : {
-                        "packet-join-size"      : PACKET_JOIN_SIZE,
-                        "large-packet-size"     : LARGE_PACKET_SIZE,
-                        "inline-size"           : INLINE_SIZE,
-                        "min-compress-size"     : MIN_COMPRESS_SIZE,
-                        "packetcount"           : self.output_packetcount,
-                        "raw_packetcount"       : self.output_raw_packetcount,
-                        "count"                 : self.output_stats,
-                        "cipher"                : {"": self.cipher_out_name or "",
-                                                   "padding" : self.cipher_out_padding
-                                                   },
-                        },
             }
         c = self._compress
         if c:
@@ -256,6 +235,28 @@ class Protocol(object):
                 info.update(self._conn.get_info())
             except:
                 log.error("error collecting connection information on %s", self._conn, exc_info=True)
+        ##add stats to connection info:
+        info.setdefault("input", {}).update({
+                       "buffer-size"            : READ_BUFFER_SIZE,
+                       "packetcount"            : self.input_packetcount,
+                       "raw_packetcount"        : self.input_raw_packetcount,
+                       "count"                  : self.input_stats,
+                       "cipher"                 : {"": self.cipher_in_name or "",
+                                                   "padding"        : self.cipher_in_padding,
+                                                   },
+                       })
+        info.setdefault("output", {}).update({
+                        "packet-join-size"      : PACKET_JOIN_SIZE,
+                        "large-packet-size"     : LARGE_PACKET_SIZE,
+                        "inline-size"           : INLINE_SIZE,
+                        "min-compress-size"     : MIN_COMPRESS_SIZE,
+                        "packetcount"           : self.output_packetcount,
+                        "raw_packetcount"       : self.output_raw_packetcount,
+                        "count"                 : self.output_stats,
+                        "cipher"                : {"": self.cipher_out_name or "",
+                                                   "padding" : self.cipher_out_padding,
+                                                   },
+                        })
         info["has_more"] = self._source_has_more.is_set()
         for t in (self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread):
             if t:
