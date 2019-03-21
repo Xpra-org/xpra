@@ -80,9 +80,17 @@ DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 INFINITY = float("inf")
-TRANSPARENCY_ENCODINGS = ("webp", "png", "rgb32")
-LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L")
-REFRESH_ENCODINGS = ("webp", "png", "rgb24", "rgb32", "jpeg2000")
+def get_env_encodings(etype, valid_options=()):
+    v = os.environ.get("XPRA_%s_ENCODINGS" % etype)
+    encodings = valid_options
+    if v:
+        options = v.split(",")
+        encodings = tuple(x for x in options if x in valid_options)
+    log.info("%s encodings: %s", etype, encodings)
+    return encodings
+TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32"))
+LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", ("rgb", "png", "png/P", "png/L"))
+REFRESH_ENCODINGS = get_env_encodings("REFRESH", ("webp", "png", "rgb24", "rgb32", "jpeg2000"))
 
 
 class DelayedRegions(object):
