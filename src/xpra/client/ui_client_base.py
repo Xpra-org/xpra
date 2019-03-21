@@ -601,8 +601,8 @@ class UIXpraClient(XpraClientBase):
         #normalize absolute values into floats:
         if x>MAX_SCALING or y>MAX_SCALING:
             scalinglog(" normalizing dimensions to a ratio of %ix%i", root_w, root_h)
-            x = float(x / root_w)
-            y = float(y / root_h)
+            x = float(x) / root_w
+            y = float(y) / root_h
         if x<MIN_SCALING or y<MIN_SCALING or x>MAX_SCALING or y>MAX_SCALING:
             scalinglog.warn("Warning: scaling values %sx%s are out of range", x, y)
             return 1, 1
