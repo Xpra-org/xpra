@@ -502,7 +502,7 @@ class ServerBase(ServerBaseClass):
         #if len(packet>=2):
         #    uuid = packet[1]
         if len(packet)>=4:
-            categories = packet[3]
+            categories = tuple(bytestostr(x) for x in packet[3])
         def info_callback(_proto, info):
             assert proto==_proto
             if categories:
