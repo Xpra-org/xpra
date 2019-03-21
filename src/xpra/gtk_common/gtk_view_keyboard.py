@@ -73,7 +73,7 @@ class KeyboardStateInfoWindow:
         self.window.connect("key-press-event", self.key_press)
         self.window.connect("key-release-event", self.key_release)
         if not is_gtk3():
-            self.window.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
+            self.window.window.set_cursor(gdk.Cursor(gdk.HAND2))
 
         icon = get_icon("keyboard.png")
         if icon:
