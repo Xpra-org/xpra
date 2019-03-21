@@ -2677,7 +2677,7 @@ class UIXpraClient(XpraClientBase):
     def clipboard_toggled(self, *args):
         clipboardlog("clipboard_toggled%s clipboard_enabled=%s, server_supports_clipboard=%s", args, self.clipboard_enabled, self.server_supports_clipboard)
         if self.server_supports_clipboard:
-            self.send("set-clipboard-enabled", self.clipboard_enabled)
+            self.send_now("set-clipboard-enabled", self.clipboard_enabled)
             if self.clipboard_enabled:
                 ch = self.clipboard_helper
                 assert ch is not None
@@ -2689,7 +2689,7 @@ class UIXpraClient(XpraClientBase):
     def send_clipboard_selections(self, selections):
         clipboardlog("send_clipboard_selections(%s) server_supports_clipboard_enable_selections=%s", selections, self.server_supports_clipboard_enable_selections)
         if self.server_supports_clipboard_enable_selections:
-            self.send("clipboard-enable-selections", selections)
+            self.send_now("clipboard-enable-selections", selections)
 
     def send_keyboard_sync_enabled_status(self, *args):
         self.send("set-keyboard-sync-enabled", self.keyboard_sync)
