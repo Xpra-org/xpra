@@ -330,7 +330,7 @@ class ClientWindowBase(ClientWidgetBase):
             skip_pager = metadata.boolget("skip-pager")
             if self._skip_pager!=skip_pager:
                 self._skip_pager = skip_pager
-                self.set_skip_taskbar_hint(skip_pager)
+                self.set_skip_pager_hint(skip_pager)
 
         if b"workspace" in metadata:
             self.set_workspace(metadata.intget("workspace"))
