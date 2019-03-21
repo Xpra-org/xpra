@@ -1736,7 +1736,7 @@ class WindowVideoSource(WindowSource):
         return packet
 
 
-    def encode_scrolling(self, scroll_data, image, options={}):
+    def encode_scrolling(self, scroll_data, image, options, match_pct):
         start = monotonic_time()
         try:
             del options["av-sync"]
@@ -1744,7 +1744,7 @@ class WindowVideoSource(WindowSource):
             pass
         #tells make_data_packet not to invalidate the scroll data:
         ww, wh = self.window_dimensions
-        scrolllog("encode_scrolling(%s, %s) window-dimensions=%s", image, options, (ww, wh))
+        scrolllog("encode_scrolling([], %s, %s, %i) window-dimensions=%s", image, options, match_pct, (ww, wh))
         x, y, w, h = image.get_geometry()[:4]
         raw_scroll, non_scroll = {}, {0 : h}
         if x+y>ww or y+h>wh:
@@ -1791,6 +1791,9 @@ class WindowVideoSource(WindowSource):
         #send the rest as rectangles:
         if non_scroll:
             speed, quality = self._current_speed, self._current_quality
+            #boost quality a bit, because lossless saves refreshing,
+            #more so if we have a high match percentage (less to send):
+            quality = min(100, quality + 10 + max(0, match_pct-50)//2)
             nsstart = monotonic_time()
             client_options = options.copy()
             for sy, sh in non_scroll.items():
@@ -1960,7 +1963,7 @@ class WindowVideoSource(WindowSource):
                               (end-start)*1000, match_pct, h, scroll)
                     #if enough scrolling is detected, use scroll encoding for this frame:
                     if match_pct>=self.scroll_min_percent:
-                        return self.encode_scrolling(scroll_data, image, options)
+                        return self.encode_scrolling(scroll_data, image, options, match_pct)
                 except Exception:
                     scrolllog("do_video_encode%s scrolling detection", (encoding, image, options), exc_info=True)
                     if not self.is_cancelled():
