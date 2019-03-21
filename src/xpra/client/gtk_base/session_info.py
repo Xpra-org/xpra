@@ -20,7 +20,7 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, label, title_box, \
     TableBuilder, imagebutton, get_preferred_size, get_gtk_version_info, \
     RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER,
-    RESPONSE_CANCEL, RESPONSE_OK,
+    RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_CLOSE, RESPONSE_DELETE_EVENT,
     FILE_CHOOSER_ACTION_SAVE,
     )
 from xpra.net.net_util import get_network_caps
@@ -1217,7 +1217,7 @@ class SessionInfo(gtk.Window):
                 log("saving surface %s to %s", surface, filename)
                 with open(filename, "wb") as f:
                     surface.write_to_png(f)
-        elif response in (gtk.RESPONSE_CANCEL, gtk.RESPONSE_CLOSE, gtk.RESPONSE_DELETE_EVENT):
+        elif response in (RESPONSE_CANCEL, RESPONSE_CLOSE, RESPONSE_DELETE_EVENT):
             log("closed/cancelled")
         else:
             log.warn("unknown chooser response: %d" % response)
