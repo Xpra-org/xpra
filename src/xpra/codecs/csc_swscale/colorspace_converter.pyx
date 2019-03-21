@@ -198,7 +198,7 @@ def get_swscale_flags_strs(int flags):
                 SWS_FAST_BILINEAR   : "FAST_BILINEAR",
                 SWS_ACCURATE_RND    : "ACCURATE_RND"}.items():
         if (flag_value & flags)>0:
-            strs.append(flag)
+            strs.append(flag_name)
     return strs
 
 
