@@ -251,7 +251,7 @@ ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
 PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
 #encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "webp", "png/P", "png/L", "rgb"]
+EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "png", "webp", "png/P", "png/L", "rgb", "jpeg"]
 
 
 from xpra.net import compression
