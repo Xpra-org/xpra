@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.13
+%define version 1.0.14
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -461,6 +461,31 @@ fi
 
 
 %changelog
+* Thu Mar 21 2019 Antoine Martin <antoine@devloop.org.uk> 1.0.14-2
+- fix html5 clipboard wrongly disabled
+- fix html5 handling of websocket frames with more than one packet
+- fix desktop-scaling normalization calculations
+- fix MS Windows tray icon backport
+- fix XShape serial not being ignored as it should
+- fix race condition with some clipboard control packets
+- fix unused method call for consistency
+- fix skip-pager window hint wrongly applied to skip-taskbar attribute
+- fix CUDA reset_state function
+- fix wrong flags shown on swscale debug output
+- fix resource leak in server connection tracking
+- fix missing network statistics
+- fix window model cleanup code
+- fix error in packet failure handler logging
+- warn that Python optimized code will crash
+- avoid using jpeg for video edges
+- add missing exec-wrapper section to man page
+- remove support for broken python3 builds
+- packaging fixes for Ubuntu cosmic, appindicator
+- disable xvid and ffmpeg
+- disable avcodec decoder on MS Windows
+- avoid keyboard warnings
+- fix sdist
+
 * Sat Jan 12 2019 Antoine Martin <antoine@devloop.org.uk> 1.0.13-2
 - fix server crash with application setting invalid X11 atoms
 - fix missing windows with some mono applications (ignore invalid X11 atoms)
@@ -566,7 +591,7 @@ fi
 - remove outdated option from the man page, fix missing paragraphs
 - disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
 
-* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.13-1
+* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.14-1
 - fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
 - fix errors with some unauthenticated connections
