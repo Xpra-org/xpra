@@ -745,7 +745,7 @@ class WindowVideoSource(WindowSource):
             #find how many pixels are within the region (roughly):
             #find all unique regions that intersect with it:
             inter = tuple(x for x in (vr.intersection_rect(r) for r in regions) if x is not None)
-            if len(inter)>0:
+            if inter:
                 #merge all regions into one:
                 in_region = merge_all(inter)
                 pixels_in_region = vr.width*vr.height
