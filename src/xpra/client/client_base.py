@@ -876,7 +876,10 @@ class XpraClientBase(FileTransferHandler):
                 netlog.warn("Failed to connect, received: %s", repr_ellipsized(data.strip("\n").strip("\r")))
         else:
             netlog.warn("Received uninterpretable nonsense: %s", message)
-            netlog.warn(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
+            if p:
+                netlog.error(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
+            else:
+                netlog.error(" data: %s", repr_ellipsized(data))
         self.quit(EXIT_PACKET_FAILURE)
 
     def _process_invalid(self, packet):
