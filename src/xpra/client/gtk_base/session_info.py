@@ -229,9 +229,11 @@ class SessionInfo(gtk.Window):
         pygst_version = props.strlistget("pygst.version")
         tb.new_row("GStreamer", slabel(make_version_str(gst_version)), slabel(server_version_info("sound.gst.version")))
         tb.new_row("pygst", slabel(make_version_str(pygst_version)), slabel(server_version_info("sound.pygst.version")))
-        tb.new_row("OpenGL", slabel(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), slabel(server_version_info("opengl.opengl")))
-        tb.new_row("OpenGL Vendor", slabel(make_version_str(self.client.opengl_props.get("vendor", ""))), slabel(server_version_info("opengl.vendor")))
-        tb.new_row("PyOpenGL", slabel(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), slabel(server_version_info("opengl.pyopengl")))
+        def gllabel(prop="opengl", default_value="n/a"):
+            return slabel(make_version_str(self.client.opengl_props.get(prop, default_value)))
+        tb.new_row("OpenGL", gllabel("opengl", "n/a"), slabel(server_version_info("opengl.opengl")))
+        tb.new_row("OpenGL Vendor", gllabel("vendor", ""), slabel(server_version_info("opengl.vendor")))
+        tb.new_row("PyOpenGL", gllabel("pyopengl", "n/a"), slabel(server_version_info("opengl.pyopengl")))
 
         # Features Table:
         vbox = self.vbox_tab("features.png", "Features", self.populate_features)
@@ -320,7 +322,7 @@ class SessionInfo(gtk.Window):
                    xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
 
         # Connection Table:
-        tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
+        tb = self.table_tab("connect.png", "Connection", self.populate_connection)[0]
         if self.connection:
             tb.new_row("Server Endpoint", slabel(self.connection.target))
         if mixin_features.display and self.client.server_display:
@@ -951,7 +953,7 @@ class SessionInfo(gtk.Window):
                 return ""
             try:
                 return op(values)
-            except:
+            except (TypeError, ValueError):
                 log("%s(%s)", op, values, exc_info=True)
                 return ""
         return getv("cur", avg), getv("min", min), getv("avg", avg), getv("90p", avg), getv("max", max)
@@ -1187,13 +1189,14 @@ class SessionInfo(gtk.Window):
             return values, labels
 
         #latency graph:
-        latency_values, latency_labels = norm_lists((
-                                (self.avg_ping_latency, "network"),
-                                (self.avg_batch_delay, "batch delay"),
-                                (self.avg_damage_out_latency, "encode&send"),
-                                (self.avg_decoding_latency, "decoding"),
-                                (self.avg_total, "frame total"),
-                                ))
+        latency_values, latency_labels = norm_lists(
+            (
+                (self.avg_ping_latency,         "network"),
+                (self.avg_batch_delay,          "batch delay"),
+                (self.avg_damage_out_latency,   "encode&send"),
+                (self.avg_decoding_latency,     "decoding"),
+                (self.avg_total,                "frame total"),
+            ))
         surface = make_graph_imagesurface(latency_values, labels=latency_labels,
                                           width=w, height=h,
                                           title="Latency (ms)", min_y_scale=10, rounding=25,
@@ -1202,11 +1205,12 @@ class SessionInfo(gtk.Window):
 
         if mixin_features.audio and SHOW_SOUND_STATS and self.client.sound_sink:
             #sound queue graph:
-            queue_values, queue_labels = norm_lists((
-                                 (self.sound_out_queue_max, "Max"),
-                                 (self.sound_out_queue_cur, "Level"),
-                                 (self.sound_out_queue_min, "Min"),
-                                 ), N_SAMPLES*10)
+            queue_values, queue_labels = norm_lists(
+                (
+                    (self.sound_out_queue_max, "Max"),
+                    (self.sound_out_queue_cur, "Level"),
+                    (self.sound_out_queue_min, "Min"),
+                    ), N_SAMPLES*10)
             surface = make_graph_imagesurface(queue_values, labels=queue_labels,
                                               width=w, height=h,
                                               title="Sound Buffer (ms)", min_y_scale=10, rounding=25,
