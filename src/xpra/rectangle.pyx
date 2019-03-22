@@ -178,15 +178,16 @@ def add_rectangle(object regions, rectangle region):
 
 def remove_rectangle(object regions, rectangle region):
     copy = regions[:]
-    regions[:] = []
     cdef int x = region.x               #
     cdef int y = region.y               #
     cdef int w = region.width           #
     cdef int h = region.height          #
     cdef int l = len(copy)
     cdef rectangle r
+    new_regions = []
     for r in copy:
-        regions += r.substract(x, y, w, h)
+        new_regions += r.substract(x, y, w, h)
+    regions[:] = new_regions
 
 def merge_all(rectangles):
     cdef rectangle r               #
