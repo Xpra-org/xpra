@@ -534,7 +534,7 @@ def test_gvim_damage_performance(rectangles):
             r = rectangle(x, y, width, height)
             rects.append(r)
     end = time.time()
-    print("created %s rectangles %s times in %.2fms" % (len(rectangles), N, (end-start)*1000.0/N))
+    print("created %s rectangles %s times in %.3fms" % (len(rectangles), N, (end-start)*1000.0/N))
     #now try add rectangle:
     start = time.time()
     for _ in range(N):
@@ -543,7 +543,7 @@ def test_gvim_damage_performance(rectangles):
             r = rectangle(x, y, width, height)
             add_rectangle(rects, r)
     end = time.time()
-    print("add_rectangle %s rectangles %s times in %.2fms" % (len(rectangles), N, (end-start)*1000.0/N))
+    print("add_rectangle %s rectangles %s times in %.3fms" % (len(rectangles), N, (end-start)*1000.0/N))
     #now try remove rectangle:
     start = time.time()
     for _ in range(N):
@@ -552,7 +552,7 @@ def test_gvim_damage_performance(rectangles):
             r = rectangle(x+width//4, y+height//3, width//2, height//2)
             remove_rectangle(rects, r)
     end = time.time()
-    print("remove_rectangle %s rectangles %s times in %.2fms" % (len(rectangles), N, (end-start)*1000.0/N))
+    print("remove_rectangle %s rectangles %s times in %.3fms" % (len(rectangles), N, (end-start)*1000.0/N))
 
     start = time.time()
     n = N*1000
@@ -560,7 +560,7 @@ def test_gvim_damage_performance(rectangles):
         for r in rects:
             contains_rect(rects, r)
     end = time.time()
-    print("contains_rect %s rectangles %s times in %.2fms" % (len(rectangles), n, (end-start)*1000.0/N))
+    print("contains_rect %s rectangles %s times in %.3fms" % (len(rectangles), n, (end-start)*1000.0/N))
 
 
 def test_merge_all():
@@ -570,7 +570,7 @@ def test_merge_all():
     for _ in range(n):
         v = merge_all(R)
     end = time.time()
-    print("merged %s rectangles %s times in %.2fms" % (len(R), n, (end-start)*1000.0/N))
+    print("merged %s rectangles %s times in %.3fms" % (len(R), n, (end-start)*1000.0/N))
 
 
 def main():

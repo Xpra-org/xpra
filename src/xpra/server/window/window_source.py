@@ -1881,8 +1881,7 @@ class WindowSource(WindowIconSource):
         #returns the number of pixels in the region update
         #(overriden in window video source to exclude the video region)
         #Note: this does not run in the UI thread!
-        add_rectangle(self.refresh_regions, region)
-        return region.width*region.height
+        return add_rectangle(self.refresh_regions, region)
 
     def can_refresh(self):
         if not AUTO_REFRESH:
