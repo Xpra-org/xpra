@@ -150,6 +150,17 @@ cdef extern from "X11/Xlib.h":
         Window above
         int detail
         unsigned long value_mask
+    ctypedef struct XSelectionRequestEvent:
+        Window owner
+        Window requestor
+        Atom selection
+        Atom target
+        Atom property
+        Time time
+    ctypedef struct XSelectionClearEvent:
+        Window window
+        Atom selection
+        Time time
     ctypedef struct XResizeRequestEvent:
         Window window
         int width, height
@@ -240,6 +251,8 @@ cdef extern from "X11/Xlib.h":
         XButtonEvent xbutton
         XMapRequestEvent xmaprequest
         XConfigureRequestEvent xconfigurerequest
+        XSelectionRequestEvent xselectionrequest
+        XSelectionClearEvent xselectionclear
         XResizeRequestEvent xresizerequest
         XCirculateRequestEvent xcirculaterequest
         XConfigureEvent xconfigure
@@ -650,6 +663,8 @@ cdef init_x11_events():
     add_x_event_signals({
         MapRequest          : (None, "child-map-request-event"),
         ConfigureRequest    : (None, "child-configure-request-event"),
+        SelectionRequest    : ("xpra-selection-request", None),
+        SelectionClear      : ("xpra-selection-clear", None),
         FocusIn             : ("xpra-focus-in-event", None),
         FocusOut            : ("xpra-focus-out-event", None),
         ClientMessage       : ("xpra-client-message-event", None),
@@ -1033,6 +1048,19 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.above = e.xconfigurerequest.above
             pyev.detail = e.xconfigurerequest.detail
             pyev.value_mask = e.xconfigurerequest.value_mask
+        elif etype == SelectionRequest:
+            selectionrequest_e = <XSelectionRequestEvent*> e
+            pyev.window = _gw(d, selectionrequest_e.owner)
+            pyev.requestor = _gw(d, selectionrequest_e.requestor)
+            pyev.selection = get_pyatom(d, selectionrequest_e.selection)
+            pyev.target = get_pyatom(d, selectionrequest_e.target)
+            pyev.property = get_pyatom(d, selectionrequest_e.property)
+            pyev.time = selectionrequest_e.time
+        elif etype == SelectionClear:
+            selectionclear_e = <XSelectionClearEvent*> e
+            pyev.window = _gw(d, selectionclear_e.window)
+            pyev.selection = get_pyatom(d, selectionclear_e.selection)
+            pyev.time = selectionclear_e.time
         elif etype == ResizeRequest:
             pyev.window = _gw(d, e.xresizerequest.window)
             pyev.width = e.xresizerequest.width

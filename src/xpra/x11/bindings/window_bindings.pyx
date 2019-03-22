@@ -127,6 +127,12 @@ cdef extern from "X11/Xlib.h":
         unsigned int state      # key or button mask
         unsigned int button
         Bool same_screen
+    ctypedef struct XSelectionEvent:
+        Window requestor
+        Atom selection
+        Atom target
+        Atom property
+        Time time
     # The only way we can learn about override redirects is through MapNotify,
     # which means we need to be able to get MapNotify for windows we have
     # never seen before, which means we can't rely on GDK:
@@ -136,6 +142,7 @@ cdef extern from "X11/Xlib.h":
         XButtonEvent xbutton
         XConfigureEvent xconfigure
         XClientMessageEvent xclient
+        XSelectionEvent xselection
 
     Status XSendEvent(Display *, Window target, Bool propagate,
                       unsigned long event_mask, XEvent * event)
@@ -522,11 +529,9 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         return depth
 
     # Focus management
-    def XSetInputFocus(self, Window xwindow, object time=None):
+    def XSetInputFocus(self, Window xwindow, object time=CurrentTime):
         self.context_check()
         # Always does RevertToParent
-        if time is None:
-            time = CurrentTime
         XSetInputFocus(self.display, xwindow, RevertToParent, time)
 
     def XGetInputFocus(self):
@@ -722,10 +727,8 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         self.context_check()
         return XGetSelectionOwner(self.display, self.xatom(atom))
 
-    def XSetSelectionOwner(self, Window xwindow, atom, time=None):
+    def XSetSelectionOwner(self, Window xwindow, atom, time=CurrentTime):
         self.context_check()
-        if time is None:
-            time = CurrentTime
         return XSetSelectionOwner(self.display, self.xatom(atom), xwindow, time)
 
     def sendClientMessage(self, Window xtarget, Window xwindow, int propagate, int event_mask,
@@ -805,6 +808,22 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         s = XSendEvent(self.display, xwindow, False, NoEventMask, &e)
         if s == 0:
             raise ValueError("failed to serialize XEmbed Message")
+
+    def sendSelectionNotify(self, Window xwindow, selection, time=CurrentTime):
+        self.context_check()
+        cdef XEvent e                       #@DuplicatedSignature
+        e.type = SelectionNotify
+        e.xselection.requestor = xwindow
+        e.xselection.selection = self.xatom(selection)
+        e.xselection.target = xwindow
+        e.xselection.time = time
+        e.xselection.property = 0
+        cdef Status s                       #@DuplicatedSignature
+        s = XSendEvent(self.display, xwindow, True, 0, &e)
+        if s == 0:
+            raise ValueError("failed to serialize SelectionNotify")
+        self.context_check()
+
 
     def sendConfigureNotify(self, Window xwindow):
         self.context_check()

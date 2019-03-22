@@ -13,7 +13,7 @@ if is_gtk3():
         x11_get_server_time = None
     from xpra.x11.gtk3 import gdk_bindings  #@UnresolvedImport, @UnusedImport
 else:
-    from gtk import gdk
+    from gtk import gdk                     #@UnresolvedImport
     x11_get_server_time = gdk.x11_get_server_time
     from xpra.x11.gtk2 import gdk_bindings  #@UnresolvedImport, @Reimport
 
