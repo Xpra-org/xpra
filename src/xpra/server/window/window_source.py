@@ -1806,10 +1806,14 @@ class WindowSource(WindowIconSource):
         if not self.can_refresh():
             self.cancel_refresh_timer()
             return
-        encoding = strtobytes(packet[6])
+        encoding = bytestostr(packet[6])
+        data = packet[7]
         region = rectangle(*packet[2:6])    #x,y,w,h
         client_options = packet[10]     #info about this packet from the encoder
-        if (encoding.startswith(b"png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith(b"rgb"):
+        self.do_schedule_auto_refresh(encoding, data, region, client_options, options)
+
+    def do_schedule_auto_refresh(self, encoding, data, region, client_options, options):
+        if (encoding.startswith("png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith("rgb"):
             actual_quality = 100
             lossy = False
         else:

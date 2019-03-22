@@ -17,7 +17,7 @@ from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
     STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB,
     )
-from xpra.rectangle import merge_all          #@UnresolvedImport
+from xpra.rectangle import rectangle, add_rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
@@ -670,10 +670,7 @@ class WindowVideoSource(WindowSource):
         self.video_subregion.add_video_refresh(ir)
         #add any rectangles not in the video region
         #(if any: keep track if we actually added anything)
-        pixels_modified = 0
-        for r in region.substract_rect(vr):
-            pixels_modified += WindowSource.add_refresh_region(self, r)
-        return pixels_modified
+        return sum(WindowSource.add_refresh_region(self, r) for r in region.substract_rect(vr))
 
     def matches_video_subregion(self, width, height):
         vr = self.video_subregion.rectangle
@@ -1834,6 +1831,38 @@ class WindowVideoSource(WindowSource):
         self.last_scroll_time = monotonic_time()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         return None
+
+    def do_schedule_auto_refresh(self, encoding, data, region, client_options, options):
+        #for scroll encoding, data is a LargeStructure wrapper:
+        if encoding=="scroll" and hasattr(data, "data"):
+            if not self.refresh_regions:
+                return
+            #check if any pending refreshes intersect the area containing the scroll data:
+            if not any(region.intersects_rect(r) for r in self.refresh_regions):
+                #nothing to do!
+                return
+            pixels_added = 0
+            for x, y, w, h, dx, dy in data.data:
+                #the region that moved
+                src_rect = rectangle(x, y, w, h)
+                for rect in self.refresh_regions:
+                    inter = src_rect.intersection_rect(rect)
+                    if inter:
+                        dst_rect = rectangle(inter.x+dx, inter.y+dy, inter.width, inter.height)
+                        pixels_added += self.add_refresh_region(dst_rect)
+            if pixels_added:
+                #if we end up with too many rectangles,
+                #bail out and simplify:
+                if len(self.refresh_regions)>=200:
+                    self.refresh_regions = [merge_all(self.refresh_regions)]
+                refreshlog("updated refresh regions with scroll data: %i pixels added", pixels_added)
+                refreshlog(" refresh_regions=%s", self.refresh_regions)
+            #we don't change any of the refresh scheduling
+            #if there are non-scroll packets following this one, they will
+            #and if not then we're OK anyway
+            return
+        WindowSource.do_schedule_auto_refresh(self, encoding, data, region, client_options, options)
+
 
     def get_fallback_encoding(self, encodings, order):
         if order is None:
