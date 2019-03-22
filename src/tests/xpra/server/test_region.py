@@ -5,8 +5,6 @@
 # later version. See the file COPYING for details.
 
 import time
-import gobject
-gobject.threads_init()
 
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all, contains_rect #@UnresolvedImport (cython)
 
@@ -526,7 +524,7 @@ R2 = [
     (2,    61,    8,    15)
     ]
 
-N = 1000
+N = 10000
 
 def test_gvim_damage_performance(rectangles):
     start = time.time()
