@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,17 +12,17 @@ from xpra.gtk_common.gtk_util import (
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
-
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                          #@UnresolvedImport
     remove_event_receiver,                       #@UnresolvedImport
     )
+from xpra.log import Logger
+
+X11Window = X11WindowBindings()
 
 gdk = import_gdk()
 gobject = import_gobject()
 
-from xpra.log import Logger
 log = Logger("x11", "tray")
 
 
@@ -115,7 +115,8 @@ class SystemTray(gobject.GObject):
             owner = X11Window.XGetSelectionOwner(SELECTION)
             if owner==get_xwindow(self.tray_window):
                 X11Window.XSetSelectionOwner(0, SELECTION)
-                log("SystemTray.cleanup() reset %s selection owner to %#x", SELECTION, X11Window.XGetSelectionOwner(SELECTION))
+                log("SystemTray.cleanup() reset %s selection owner to %#x",
+                    SELECTION, X11Window.XGetSelectionOwner(SELECTION))
             else:
                 log.warn("Warning: we were no longer the tray selection owner")
         remove_event_receiver(self.tray_window, self)
@@ -167,7 +168,8 @@ class SystemTray(gobject.GObject):
         try:
             with xsync:
                 setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
-                log("setup tray: set selection owner returned %s, owner=%#x", setsel, X11Window.XGetSelectionOwner(SELECTION))
+                log("setup tray: set selection owner returned %s, owner=%#x",
+                    setsel, X11Window.XGetSelectionOwner(SELECTION))
                 event_mask = StructureNotifyMask
                 log("setup tray: sending client message")
                 xid = get_xwindow(root)
@@ -239,7 +241,8 @@ class SystemTray(gobject.GObject):
         if title is None:
             title = ""
         xid = get_xwindow(root)
-        log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s, visual.depth=%s", xid, xid, window.get_geometry(), title, window.get_visual().depth)
+        log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s, visual.depth=%s",
+            xid, xid, window.get_geometry(), title, window.get_visual().depth)
         kwargs = {}
         if not is_gtk3():
             kwargs["colormap"] = window.get_colormap()
