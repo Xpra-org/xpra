@@ -303,6 +303,10 @@ cdef extern from "X11/extensions/xfixeswire.h":
     unsigned long XFixesDisplayCursorNotifyMask
     void XFixesSelectCursorInput(Display *, Window w, long mask)
 
+    unsigned int XFixesSetSelectionOwnerNotifyMask
+    unsigned int XFixesSelectionWindowDestroyNotifyMask
+    unsigned int XFixesSelectionClientCloseNotifyMask
+
 cdef extern from "X11/extensions/Xfixes.h":
     ctypedef struct XFixesCursorNotify:
         char* subtype
@@ -341,6 +345,8 @@ cdef extern from "X11/extensions/Xfixes.h":
     void XFixesDestroyRegion(Display *dpy, XserverRegion region)
 
     void XFixesSetWindowShapeRegion(Display *dpy, Window win, int shape_kind, int x_off, int y_off, XserverRegion region)
+
+    void XFixesSelectSelectionInput(Display *dpy, Window win, Atom selection, unsigned long eventMask)
 
 
 ###################################
@@ -625,6 +631,18 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         XShapeCombineRectangles(self.display, window, kind, x_off, y_off,
                                 rects, n_rects, op, ordering)
         free(rects)
+
+    ###################################
+    # Clipboard
+    ###################################
+    def setSelectionInput(self, Window window, selection_str):
+        cdef unsigned long event_mask = (
+            XFixesSetSelectionOwnerNotifyMask |
+            XFixesSelectionWindowDestroyNotifyMask |
+            XFixesSelectionClientCloseNotifyMask
+            )
+        cdef Atom selection = self.xatom(selection_str)
+        XFixesSelectSelectionInput(self.display, window, selection, event_mask)
 
 
     ###################################
