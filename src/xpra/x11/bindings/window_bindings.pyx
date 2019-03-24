@@ -95,6 +95,8 @@ cdef extern from "X11/Xlib.h":
 
     int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time ctime)
 
+    int XConvertSelection(Display * display, Atom selection, Atom target, Atom property, Window requestor, Time time)
+
     # There are way more event types than this; add them as needed.
     ctypedef struct XAnyEvent:
         int type
@@ -632,18 +634,6 @@ cdef class _X11WindowBindings(_X11CoreBindings):
                                 rects, n_rects, op, ordering)
         free(rects)
 
-    ###################################
-    # Clipboard
-    ###################################
-    def setSelectionInput(self, Window window, selection_str):
-        cdef unsigned long event_mask = (
-            XFixesSetSelectionOwnerNotifyMask |
-            XFixesSelectionWindowDestroyNotifyMask |
-            XFixesSelectionClientCloseNotifyMask
-            )
-        cdef Atom selection = self.xatom(selection_str)
-        XFixesSelectSelectionInput(self.display, window, selection, event_mask)
-
 
     ###################################
     # Composite
@@ -827,7 +817,23 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         if s == 0:
             raise ValueError("failed to serialize XEmbed Message")
 
-    def sendSelectionNotify(self, Window xwindow, selection, time=CurrentTime):
+    ###################################
+    # Clipboard
+    ###################################
+    def selectXFSelectionInput(self, Window window, selection_str):
+        cdef unsigned long event_mask = (
+            XFixesSetSelectionOwnerNotifyMask |
+            XFixesSelectionWindowDestroyNotifyMask |
+            XFixesSelectionClientCloseNotifyMask
+            )
+        cdef Atom selection = self.xatom(selection_str)
+        XFixesSelectSelectionInput(self.display, window, selection, event_mask)
+
+    def selectSelectionInput(self, Window xwindow):
+        self.context_check()
+        self.addXSelectInput(xwindow, SelectionNotify)
+
+    def sendSelectionNotify(self, Window xwindow, selection, property, time=CurrentTime):
         self.context_check()
         cdef XEvent e                       #@DuplicatedSignature
         e.type = SelectionNotify
@@ -835,13 +841,19 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         e.xselection.selection = self.xatom(selection)
         e.xselection.target = xwindow
         e.xselection.time = time
-        e.xselection.property = 0
+        if property:
+            e.xselection.property = self.xatom(property)
+        else:
+            e.xselection.property = 0
         cdef Status s                       #@DuplicatedSignature
         s = XSendEvent(self.display, xwindow, True, 0, &e)
         if s == 0:
             raise ValueError("failed to serialize SelectionNotify")
         self.context_check()
 
+    def ConvertSelection(self, selection, target, property, Window requestor, time=CurrentTime):
+        return XConvertSelection(self.display, self.xatom(selection), self.xatom(target),
+                                 self.xatom(property), requestor, time)
 
     def sendConfigureNotify(self, Window xwindow):
         self.context_check()
