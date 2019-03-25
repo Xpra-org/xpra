@@ -284,7 +284,7 @@ PROP_TYPES = {
 
 
 def prop_encode(disp, etype, value):
-    if isinstance(etype, list):
+    if isinstance(etype, (list, tuple)):
         return _prop_encode_list(disp, etype[0], value)
     return _prop_encode_scalar(disp, etype, value)
 
@@ -296,15 +296,14 @@ def _prop_encode_scalar(disp, etype, value):
 def _prop_encode_list(disp, etype, value):
     (_, atom, formatbits, _, _, terminator) = PROP_TYPES[etype]
     value = tuple(value)
-    serialized = [_prop_encode_scalar(disp, etype, v)[2] for v in value]
-    no_none = [x for x in serialized if x is not None]
+    serialized = tuple(_prop_encode_scalar(disp, etype, v)[2] for v in value)
     # Strings in X really are null-separated, not null-terminated (ICCCM
     # 2.7.1, see also note in 4.1.2.5)
-    return (atom, formatbits, terminator.join(no_none))
+    return (atom, formatbits, terminator.join(x for x in serialized if x is not None))
 
 
 def prop_decode(disp, etype, data):
-    if isinstance(etype, list):
+    if isinstance(etype, (list, tuple)):
         return _prop_decode_list(disp, etype[0], data)
     return _prop_decode_scalar(disp, etype, data)
 

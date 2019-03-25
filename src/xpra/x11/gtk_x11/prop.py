@@ -132,7 +132,7 @@ def prop_set(target, key, etype, value):
 
 # May return None.
 def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
-    if isinstance(etype, list):
+    if isinstance(etype, (list, tuple)):
         scalar_type = etype[0]
     else:
         scalar_type = etype
