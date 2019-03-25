@@ -64,12 +64,13 @@ class NetWMStrut(object):
             self.left, self.right, self.top, self.bottom = struct.unpack(b"=IIII", data)
         else:
             data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 4 * 12)
-            (self.left, self.right, self.top, self.bottom,
-             self.left_start_y, self.left_end_y,
-             self.right_start_y, self.right_end_y,
-             self.top_start_x, self.top_end_x,
-             self.bottom_start_x, self.bottom_stop_x,
-             ) = struct.unpack(b"=" + "I" * 12, data)
+            (
+                self.left, self.right, self.top, self.bottom,
+                self.left_start_y, self.left_end_y,
+                self.right_start_y, self.right_end_y,
+                self.top_start_x, self.top_end_x,
+                self.bottom_start_x, self.bottom_stop_x,
+                ) = struct.unpack(b"=" + "I" * 12, data)
 
     def todict(self):
         return self.__dict__
@@ -289,7 +290,7 @@ def prop_encode(disp, etype, value):
     return _prop_encode_scalar(disp, etype, value)
 
 def _prop_encode_scalar(disp, etype, value):
-    (pytype, atom, formatbits, serialize, _, _) = PROP_TYPES[etype]
+    pytype, atom, formatbits, serialize = PROP_TYPES[etype][:4]
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return (atom, formatbits, serialize(disp, value))
 
