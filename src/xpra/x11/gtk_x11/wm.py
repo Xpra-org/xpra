@@ -400,7 +400,8 @@ class Wm(gobject.GObject):
                 if not frame:
                     #fallback:
                     frame = (0, 0, 0, 0)
-                framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, get_xwindow(event.window))
+                framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x",
+                         frame, get_xwindow(event.window))
                 prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
     def _lost_wm_selection(self, selection):
@@ -433,10 +434,12 @@ class Wm(gobject.GObject):
             #the window has been reparented already,
             #but we're getting the configure request event on the root window
             #forward it to the model
-            log("do_child_configure_request_event(%s) value_mask=%s, forwarding to %s", event, configure_bits(event.value_mask), model)
+            log("do_child_configure_request_event(%s) value_mask=%s, forwarding to %s",
+                event, configure_bits(event.value_mask), model)
             model.do_child_configure_request_event(event)
             return
-        log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window", event, configure_bits(event.value_mask))
+        log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window",
+            event, configure_bits(event.value_mask))
         with xswallow:
             xid = get_xwindow(event.window)
             x, y, w, h = X11Window.getGeometry(xid)[:4]
@@ -449,7 +452,8 @@ class Wm(gobject.GObject):
             if event.value_mask & CWHeight:
                 h = event.height
             if event.value_mask & (CWX | CWY | CWWidth | CWHeight):
-                log("updated window geometry for window %#x from %s to %s", xid, X11Window.getGeometry(xid)[:4], (x, y, w, h))
+                log("updated window geometry for window %#x from %s to %s",
+                    xid, X11Window.getGeometry(xid)[:4], (x, y, w, h))
             X11Window.configureAndNotify(xid, x, y, w, h, event.value_mask)
 
     def do_xpra_focus_in_event(self, event):
