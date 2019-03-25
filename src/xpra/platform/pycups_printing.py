@@ -293,10 +293,10 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
         log.error("Error: cannot add printer '%s':", name)
         log.error(" the printing system does not support %s", " or ".join(mimetypes))
         return
-    if PYTHON3:
+    try:
         from urllib.parse import urlencode      #@UnresolvedImport @UnusedImport
-    else:
-        from urllib import urlencode            #@Reimport
+    except ImportError:
+        from urllib import urlencode            #@UnresolvedImport @Reimport
     command = [
                "-p", xpra_printer_name,
                "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urlencode(attributes),
