@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -48,7 +48,7 @@ def _get_atom(_disp, d):
     if not pyatom:
         log.error("invalid atom: %s - %s", repr(d), repr(unpacked))
         return  None
-    if type(pyatom)!=str:
+    if not isinstance(pyatom, str):
         #py3k:
         return pyatom.decode()
     return pyatom
@@ -69,7 +69,7 @@ def _get_multiple(disp, d):
 def _get_display_name(disp):
     try:
         return disp.get_display().get_name()
-    except:
+    except Exception:
         return None
 
 def set_xsettings(disp, v):
@@ -136,7 +136,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
         scalar_type = etype[0]
     else:
         scalar_type = etype
-    (_, atom, _, _, _, _) = PROP_TYPES[scalar_type]
+    atom = PROP_TYPES[scalar_type][1]
     try:
         with XSyncContext():
             data = X11Window.XGetWindowProperty(get_xwindow(target), key, atom, etype)
