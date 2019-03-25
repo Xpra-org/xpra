@@ -257,6 +257,7 @@ cdef extern from "X11/Xlib.h":
         Window window
     ctypedef struct XPropertyEvent:
         Atom atom
+        Time time
     ctypedef struct XKeyEvent:
         unsigned int keycode, state
     ctypedef struct XButtonEvent:
@@ -1196,6 +1197,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
         elif etype == PropertyNotify:
             pyev.window = _gw(d, e.xany.window)
             pyev.atom = trap.call_synced(get_pyatom, d, e.xproperty.atom)
+            pyev.time = e.xproperty.time
         elif etype == ConfigureNotify:
             pyev.window = _gw(d, e.xconfigure.window)
             pyev.x = e.xconfigure.x
