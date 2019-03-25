@@ -205,8 +205,8 @@ class Wm(gobject.GObject):
         self._windows_in_order = []
 
         # Become the Official Window Manager of this year's display:
-        self._wm_selection = ManagerSelection(self._display, "WM_S0")
-        self._cm_wm_selection = ManagerSelection(self._display, "_NET_WM_CM_S0")
+        self._wm_selection = ManagerSelection("WM_S0")
+        self._cm_wm_selection = ManagerSelection("_NET_WM_CM_S0")
         self._wm_selection.connect("selection-lost", self._lost_wm_selection)
         self._cm_wm_selection.connect("selection-lost", self._lost_wm_selection)
         # May throw AlreadyOwned:

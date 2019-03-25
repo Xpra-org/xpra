@@ -53,9 +53,9 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
         X11Window.XCompositeRedirectWindow(self.xid)
         WindowDamageHandler.setup(self)
 
-    def do_destroy(self, window):
+    def do_destroy(self, win):
         trap.swallow_synced(X11Window.XCompositeUnredirectWindow, self.xid)
-        WindowDamageHandler.do_destroy(self, window)
+        WindowDamageHandler.do_destroy(self, win)
 
     def invalidate_pixmap(self):
         lt = self._listening_to
@@ -112,7 +112,7 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
         except Exception as e:
             try:
                 self._cleanup_listening(listening)
-            except:
+            except Exception:
                 pass
             raise
         if handle is None:

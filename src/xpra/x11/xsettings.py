@@ -1,10 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gtk_util import display_get_default, GetClipboard
+from xpra.gtk_common.gtk_util import GetClipboard
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
@@ -35,7 +35,7 @@ XNone = constants["XNone"]
 class XSettingsManager(object):
     def __init__(self, screen_number=0):
         selection = "_XSETTINGS_S%i" % screen_number
-        self._manager = ManagerSelection(display_get_default(), selection)
+        self._manager = ManagerSelection(selection)
         # Technically I suppose ICCCM says we should use FORCE, but it's not
         # like a window manager where you have to wait for the old wm to clean
         # things up before you can do anything... as soon as the selection is

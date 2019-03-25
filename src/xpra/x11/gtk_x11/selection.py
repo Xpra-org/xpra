@@ -52,7 +52,7 @@ class ManagerSelection(gobject.GObject):
     def __str__(self):
         return "ManagerSelection(%s)" % self.atom
 
-    def __init__(self, display, selection):
+    def __init__(self, selection):
         gobject.GObject.__init__(self)
         self.atom = selection
         self.clipboard = GetClipboard(selection)
