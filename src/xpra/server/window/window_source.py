@@ -86,7 +86,7 @@ def get_env_encodings(etype, valid_options=()):
     if v:
         options = v.split(",")
         encodings = tuple(x for x in options if x in valid_options)
-    log.info("%s encodings: %s", etype, encodings)
+    log("%s encodings: %s", etype, encodings)
     return encodings
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32"))
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", ("rgb", "png", "png/P", "png/L"))
