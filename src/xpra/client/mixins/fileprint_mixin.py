@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,7 +24,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         self.send_printers_timer = 0
         self.exported_printers = None
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts, _extra_args=()):
         #printing and file transfer:
         FileTransferHandler.init_opts(self, opts)
 
