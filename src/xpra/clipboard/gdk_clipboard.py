@@ -8,7 +8,8 @@ import struct
 
 from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import is_gtk3
-from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, _filter_targets, log
+from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
+from xpra.clipboard.clipboard_core import _filter_targets
 
 try:
     if is_gtk3():
