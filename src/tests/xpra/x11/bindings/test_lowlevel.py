@@ -77,13 +77,13 @@ class TestLowlevelMisc(TestLowlevel):
         data = "\x01\x02\x03\x04\x05\x06\x07\x08"
         assert_raises(l.NoSuchProperty,
                       l.XGetWindowProperty, r, "ASDF", "ASDF")
-        l.XChangeProperty(r, "ASDF", ("GHJK", 32, data))
+        l.XChangeProperty(r, "ASDF", "GHJK", 32, data)
         assert_raises(l.BadPropertyType,
                       l.XGetWindowProperty, r, "ASDF", "ASDF")
 
         for n in (8, 16, 32):
             print(n)
-            l.XChangeProperty(r, "ASDF", ("GHJK", n, data))
+            l.XChangeProperty(r, "ASDF", "GHJK", n, data)
             assert l.XGetWindowProperty(r, "ASDF", "GHJK") == data
 
         l.XDeleteProperty(r, "ASDF")
@@ -97,13 +97,13 @@ class TestLowlevelMisc(TestLowlevel):
 
         # Giant massive property
         l.XChangeProperty(r, "ASDF",
-                          ("GHJK", 32, "\x00" * 512 * (2 ** 10)))
+                          "GHJK", 32, "\x00" * 512 * (2 ** 10))
         assert_raises(l.PropertyOverflow,
                       l.XGetWindowProperty, r, "ASDF", "GHJK")
 
     def test_BadProperty_on_empty(self):
         win = self.window()
-        l.XChangeProperty(win, "ASDF", ("GHJK", 32, ""))
+        l.XChangeProperty(win, "ASDF", "GHJK", 32, "")
         assert l.XGetWindowProperty(win, "ASDF", "GHJK") == ""
         assert_raises(l.BadPropertyType,
                       l.XGetWindowProperty, win, "ASDF", "ASDF")

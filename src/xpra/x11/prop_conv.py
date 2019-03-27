@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -61,7 +61,7 @@ class NetWMStrut(object):
         # will be only length 4 instead of 12, we just don't define the other values
         # and let the client deal with it appropriately
         if len(data)==16:
-            self.left, self.right, self.top, self.bottom = struct.unpack(b"=IIII", data)
+            self.left, self.right, self.top, self.bottom = struct.unpack(b"@LLLL", data)
         else:
             data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 4 * 12)
             (
@@ -70,7 +70,7 @@ class NetWMStrut(object):
                 self.right_start_y, self.right_end_y,
                 self.top_start_x, self.top_end_x,
                 self.bottom_start_x, self.bottom_stop_x,
-                ) = struct.unpack(b"=" + "I" * 12, data)
+                ) = struct.unpack(b"@" + b"L" * 12, data)
 
     def todict(self):
         return self.__dict__
@@ -84,7 +84,7 @@ class MotifWMHints(object):
         #some applications use the wrong size (ie: blender uses 16) so pad it:
         pdata = _force_length("_MOTIF_WM_HINTS", data, 20, 16)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
-            struct.unpack(b"=IIIiI", pdata)
+            struct.unpack(b"@LLLlL", pdata)
         log("MotifWMHints(%s)=%s", hexstr(data), self)
 
     #found in mwmh.h:
@@ -208,7 +208,7 @@ def _read_image(_disp, stream):
         header = stream.read(2 * 4)
         if not header:
             return None
-        (width, height) = struct.unpack(b"=II", header)
+        (width, height) = struct.unpack(b"@LL", header)
         data = stream.read(width * height * 4)
         if len(data) < width * height * 4:
             log.warn("Corrupt _NET_WM_ICON")
@@ -256,16 +256,16 @@ PROP_TYPES = {
     # that Xutf8TextPropertyToTextList exists.
     "latin1": (unicode, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
     "state": ((int, long), "WM_STATE", 32,
-            lambda _disp, c: struct.pack(b"=I", c),
-            lambda _disp, d: struct.unpack(b"=I", d)[0],
+            lambda _disp, c: struct.pack(b"@L", c),
+            lambda _disp, d: struct.unpack(b"@L", d)[0],
             b""),
     "u32": ((int, long), "CARDINAL", 32,
-            lambda _disp, c: struct.pack(b"=I", c),
-            lambda _disp, d: struct.unpack(b"=I", d)[0],
+            lambda _disp, c: struct.pack(b"@L", c),
+            lambda _disp, d: struct.unpack(b"@L", d)[0],
             b""),
     "integer": ((int, long), "INTEGER", 32,
-            lambda _disp, c: struct.pack(b"=I", c),
-            lambda _disp, d: struct.unpack(b"=I", d)[0],
+            lambda _disp, c: struct.pack(b"@L", c),
+            lambda _disp, d: struct.unpack(b"@L", d)[0],
             b""),
     "strut": (NetWMStrut, "CARDINAL", 32,
               unsupported, NetWMStrut, None),
@@ -275,12 +275,6 @@ PROP_TYPES = {
               unsupported, MotifWMHints, None),
     "icons": (list, "CARDINAL", 32,
               unsupported, NetWMIcons, None),
-    # For uploading ad-hoc instances of the above complex structures to the
-    # server, so we can test reading them out again:
-    "debug-CARDINAL": (str, "CARDINAL", 32,
-                       lambda _disp, c: c,
-                       lambda _disp, d: d,
-                       None),
     }
 
 
@@ -320,10 +314,12 @@ def _prop_decode_list(disp, etype, data):
         datums = data.split(terminator)
     else:
         datums = []
-        nbytes = formatbits // 8
+        if formatbits==32:
+            nbytes = struct.calcsize("@L")
+        else:
+            nbytes = formatbits // 8
         while data:
             datums.append(data[:nbytes])
             data = data[nbytes:]
-    props = [_prop_decode_scalar(disp, etype, datum) for datum in datums]
-    #assert None not in props
+    props = (_prop_decode_scalar(disp, etype, datum) for datum in datums)
     return [x for x in props if x is not None]

@@ -373,28 +373,6 @@ cdef extern from "X11/extensions/Xdamage.h":
     void XDamageSubtract(Display *, Damage, XserverRegion repair, XserverRegion parts)
 
 
-
-
-
-cdef _munge_packed_ints_to_longs(data):
-    assert len(data) % sizeof(int) == 0
-    cdef unsigned int n = len(data) // sizeof(int)
-    format_from = b"@" + b"i" * n
-    format_to = b"@" + b"l" * n
-    return struct.pack(format_to, *struct.unpack(format_from, data))
-
-cdef _munge_packed_longs_to_ints(data):
-    assert len(data) % sizeof(long) == 0
-    cdef unsigned int n = len(data) // sizeof(long)
-    format_from = b"@" + b"l" * n
-    format_to = b"@" + b"i" * n
-    return struct.pack(format_to, *struct.unpack(format_from, data))
-
-
-
-
-
-
 cdef long cast_to_long(i):
     if i < 0:
         return <long>i
@@ -1018,10 +996,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         cdef int nbytes = bytes_per_item * nitems
         data = (<char *> prop)[:nbytes]
         XFree(prop)
-        if actual_format == 32:
-            return _munge_packed_longs_to_ints(data)
-        else:
-            return data
+        return data
 
 
     def GetWindowPropertyType(self, Window xwindow, property):
@@ -1055,32 +1030,31 @@ cdef class _X11WindowBindings(_X11CoreBindings):
             raise BadPropertyType("incomplete data: %i bytes after" % bytes_after)
         assert actual_format in (8, 16, 32)
         XFree(prop)
-        return self.XGetAtomName(xactual_type)
+        return self.XGetAtomName(xactual_type), actual_format
 
 
     def XDeleteProperty(self, Window xwindow, property):
         self.context_check()
         XDeleteProperty(self.display, xwindow, self.xatom(property))
 
-    def XChangeProperty(self, Window xwindow, property, value):
+    def XChangeProperty(self, Window xwindow, property, dtype, int dformat, data):
         "Set a property on a window."
         self.context_check()
-        (type, format, data) = value
-        assert format in (8, 16, 32), "invalid format for property: %s" % format
-        assert (len(data) % (format / 8)) == 0, "size of data is not a multiple of %s" % (format/8)
-        cdef int nitems = len(data) / (format / 8)
-        if format == 32:
-            data = _munge_packed_ints_to_longs(data)
+        assert dformat in (8, 16, 32), "invalid format for property: %s" % dformat
+        cdef unsigned char nbytes = dformat//8
+        if dformat==32:
+            nbytes = sizeof(long)
+        assert len(data) % nbytes == 0, "size of data is not a multiple of %s" % nbytes
+        cdef int nitems = len(data) // nbytes
         cdef char * data_str
         data_str = data
-        #print("XChangeProperty(%#x, %s, %s) data=%s" % (xwindow, property, value, str([hex(x) for x in data_str])))
         XChangeProperty(self.display, xwindow,
-                         self.xatom(property),
-                         self.xatom(type),
-                         format,
-                         PropModeReplace,
-                         <unsigned char *>data_str,
-                         nitems)
+                        self.xatom(property),
+                        self.xatom(dtype),
+                        dformat,
+                        PropModeReplace,
+                        <unsigned char *>data_str,
+                        nitems)
 
 
     # Save set handling

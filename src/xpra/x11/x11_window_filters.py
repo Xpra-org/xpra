@@ -24,7 +24,7 @@ def get_x11_window_value(prop, window):
     with xsync:
         try:
             xid = get_xwindow(window)
-            x11type = window_bindings.GetWindowPropertyType(xid, prop)
+            x11type = window_bindings.GetWindowPropertyType(xid, prop)[0]
         except:
             log("get_x11_window_value(%s, %s)", prop, window, exc_info=True)
             x11type = None
