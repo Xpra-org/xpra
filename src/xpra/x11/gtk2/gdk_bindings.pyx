@@ -1078,27 +1078,27 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.selection = get_pyatom(d, selectionrequest_e.selection)
             pyev.target = get_pyatom(d, selectionrequest_e.target)
             pyev.property = get_pyatom(d, selectionrequest_e.property)
-            pyev.time = selectionrequest_e.time
+            pyev.time = int(selectionrequest_e.time)
         elif etype == SelectionClear:
             selectionclear_e = <XSelectionClearEvent*> e
             pyev.window = _gw(d, selectionclear_e.window)
             pyev.selection = get_pyatom(d, selectionclear_e.selection)
-            pyev.time = selectionclear_e.time
+            pyev.time = int(selectionclear_e.time)
         elif etype == SelectionNotify:
             selection_e = <XSelectionEvent*> e
             pyev.requestor = _gw(d, selection_e.requestor)
             pyev.selection = get_pyatom(d, selection_e.selection)
             pyev.target = get_pyatom(d, selection_e.target)
             pyev.property = get_pyatom(d, selection_e.property)
-            pyev.time = selection_e.time
+            pyev.time = int(selection_e.time)
         elif etype == XFSelectionNotify:
             selectionnotify_e = <XFixesSelectionNotifyEvent*> e
             pyev.window = _gw(d, selectionnotify_e.window)
             pyev.subtype = selectionnotify_e.subtype
             pyev.owner = _gw(d, selectionnotify_e.owner)
             pyev.selection = get_pyatom(d, selectionnotify_e.selection)
-            pyev.timestamp = selectionnotify_e.timestamp
-            pyev.selection_timestamp = selectionnotify_e.selection_timestamp
+            pyev.timestamp = int(selectionnotify_e.timestamp)
+            pyev.selection_timestamp = int(selectionnotify_e.selection_timestamp)
         elif etype == ResizeRequest:
             pyev.window = _gw(d, e.xresizerequest.window)
             pyev.width = e.xresizerequest.width
