@@ -203,8 +203,8 @@ class ClipboardServer(StubServerMixin):
         if not cc.clipboard_enabled:
             log("not %s clipboard packet '%s': client %s has clipboard disabled", action, packet_type, cc)
             return False
-        from xpra.clipboard.clipboard_base import nesting_check
-        if not nesting_check():
+        ch = self._clipboard_helper
+        if ch and not ch.nesting_check():
             #turn off clipboard at our end:
             self.set_clipboard_enabled_status(ss, False)
             #if we can, tell the client to do the same:

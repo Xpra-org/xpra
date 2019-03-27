@@ -1248,12 +1248,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def process_clipboard_packet(self, packet):
         clipboardlog("process_clipboard_packet(%s) level=%s", packet, gtk.main_level())
         #check for clipboard loops:
-        from xpra.clipboard.clipboard_base import nesting_check
-        if not nesting_check():
+        ch = self.clipboard_helper
+        if not ch.nesting_check():
             self.clipboard_enabled = False
             self.emit("clipboard-toggled")
             return
-        self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
+        self.idle_add(ch.process_clipboard_packet, packet)
 
 
     def setup_clipboard_helper(self, helperClass):

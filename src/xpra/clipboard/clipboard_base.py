@@ -172,6 +172,10 @@ class ClipboardProtocolHelperBase(object):
         self._clipboard_proxies = {}
 
 
+    def nesting_check(self):
+        return nesting_check()
+
+
     def client_reset(self):
         #if the client disconnects,
         #we can re-enable the clipboards it had problems with:
