@@ -811,13 +811,14 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         self.context_check()
         self.addXSelectInput(xwindow, SelectionNotify)
 
-    def sendSelectionNotify(self, Window xwindow, selection, property, time=CurrentTime):
+    def sendSelectionNotify(self, Window xwindow, selection, target, property, time=CurrentTime):
         self.context_check()
         cdef XEvent e                       #@DuplicatedSignature
         e.type = SelectionNotify
         e.xselection.requestor = xwindow
         e.xselection.selection = self.xatom(selection)
-        e.xselection.target = xwindow
+        e.xselection.target = self.xatom(target)
+        e.xselection.property = self.xatom(property)
         e.xselection.time = time
         if property:
             e.xselection.property = self.xatom(property)

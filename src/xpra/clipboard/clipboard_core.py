@@ -309,7 +309,8 @@ class ClipboardProtocolHelperCore(object):
                     return
                 target = send_now[0]
                 def got_contents(dtype, dformat, data):
-                    log("got_contents for selection %s: %s, %s, %s", selection, dtype, dformat, repr_ellipsized(data))
+                    log("got_contents for selection %s: %s, %s, %s",
+                        selection, dtype, dformat, repr_ellipsized(str(data)))
                     #code mostly duplicated from _process_clipboard_request
                     #see there for details
                     if dtype is None or data is None:

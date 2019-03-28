@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,6 +31,8 @@ DEFAULT_ENV = [
              ]
 
 DEFAULT_SSH_CMD = "ssh"
+
+CLIPBOARD_NATIVE_CLASS = "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 CLIPBOARDS=["CLIPBOARD", "PRIMARY", "SECONDARY"]
 
 OPEN_COMMAND = ["/usr/bin/xdg-open"]

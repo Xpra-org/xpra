@@ -102,14 +102,15 @@ class ClipboardServer(StubServerMixin):
                           self.clipboard_filter_file, exc_info=True)
                 return
         try:
-            from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
+            #from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper as X11Clipboard
+            from xpra.x11.gtk_x11.clipboard import X11Clipboard
             kwargs = {
                       "filters"     : clipboard_filter_res,
                       "can-send"    : self.clipboard_direction in ("to-client", "both"),
                       "can-receive" : self.clipboard_direction in ("to-server", "both"),
                       }
-            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet,
-                                                                self.clipboard_progress, **kwargs)
+            self._clipboard_helper = X11Clipboard(self.send_clipboard_packet,
+                                                  self.clipboard_progress, **kwargs)
             self._clipboard_helper.init_proxies_uuid()
             self._clipboards = CLIPBOARDS
         except Exception:
