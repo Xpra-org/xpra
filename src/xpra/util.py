@@ -651,7 +651,7 @@ def repr_ellipsized(obj, limit=100):
     if isinstance(obj, (str, unicode)) and len(obj) > limit:
         try:
             s = repr(obj)
-        except:
+        except ValueError:
             s = binascii.hexlify(obj)
         if len(s)<=limit or limit<=6:
             return s
