@@ -24,7 +24,7 @@ class X11Event(object):
     def __repr__(self):
         d = {}
         for k,v in self.__dict__.items():
-            if k=="name":
+            if k in ("name", "display", "type"):
                 continue
             elif k=="serial":
                 d[k] = "%#x" % v
