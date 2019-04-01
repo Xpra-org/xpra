@@ -117,7 +117,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
                         data[dsti + 0] = cbuf[srci + 0]     #B
                         data[dsti + 1] = cbuf[srci + 1]     #G
                         data[dsti + 2] = cbuf[srci + 2]     #R
-                        data[dsti + 3] = 255                #X
+                        data[dsti + 3] = 0                  #X
         elif rgb_format=="RGB":
             with nogil:
                 for y in range(height):
@@ -127,7 +127,27 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
                         data[dsti + 0] = cbuf[srci + 2]     #B
                         data[dsti + 1] = cbuf[srci + 1]     #G
                         data[dsti + 2] = cbuf[srci + 0]     #R
-                        data[dsti + 3] = 255                #X
+                        data[dsti + 3] = 0                  #X
+        if rgb_format=="BGRX":
+            with nogil:
+                for y in range(height):
+                    for x in range(width):
+                        srci = x*4 + y*stride
+                        dsti = x*4 + y*istride
+                        data[dsti + 0] = cbuf[srci + 0]     #B
+                        data[dsti + 1] = cbuf[srci + 1]     #G
+                        data[dsti + 2] = cbuf[srci + 2]     #R
+                        data[dsti + 3] = 0                  #X
+        elif rgb_format=="RGBX":
+            with nogil:
+                for y in range(height):
+                    for x in range(width):
+                        srci = x*4 + y*stride
+                        dsti = x*4 + y*istride
+                        data[dsti + 0] = cbuf[srci + 2]     #B
+                        data[dsti + 1] = cbuf[srci + 1]     #G
+                        data[dsti + 2] = cbuf[srci + 0]     #R
+                        data[dsti + 3] = 0                  #X
         else:
             raise ValueError("unhandled RGB format '%s'" % rgb_format)
     elif format==CAIRO_FORMAT_ARGB32:

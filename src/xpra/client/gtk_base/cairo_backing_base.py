@@ -133,7 +133,11 @@ class CairoBackingBase(WindowBackingBase):
         return self._do_paint_rgb(cairo.FORMAT_RGB24, False, img_data, x, y, width, height, rowstride, options)
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        return self._do_paint_rgb(cairo.FORMAT_ARGB32, True, img_data, x, y, width, height, rowstride, options)
+        if self._alpha_enabled:
+            cformat = cairo.FORMAT_ARGB32
+        else:
+            cformat = cairo.FORMAT_RGB24
+        return self._do_paint_rgb(cformat, True, img_data, x, y, width, height, rowstride, options)
 
     def _do_paint_rgb(self, *args):
         raise NotImplementedError()
