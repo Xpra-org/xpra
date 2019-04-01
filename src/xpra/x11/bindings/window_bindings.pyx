@@ -9,7 +9,6 @@
 from __future__ import absolute_import
 
 import struct
-import time
 
 from xpra.gtk_common.error import XError
 from xpra.os_util import strtobytes
