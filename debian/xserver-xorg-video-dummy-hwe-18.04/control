@@ -7,7 +7,7 @@ Build-Depends:
  debhelper,
  quilt,
  pkg-config,
- xserver-xorg-dev,
+ xserver-xorg-dev-hwe-18.04,
  x11proto-video-dev,
  x11proto-xf86dga-dev,
  x11proto-core-dev,
