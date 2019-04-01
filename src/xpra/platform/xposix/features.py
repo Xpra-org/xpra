@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 #don't bother trying to forward system tray with Ubuntu's "unity":
-from xpra.os_util import is_unity
+from xpra.os_util import is_unity, is_Wayland
 
 SYSTEM_TRAY_SUPPORTED = not is_unity()
 
@@ -32,7 +32,11 @@ DEFAULT_ENV = [
 
 DEFAULT_SSH_CMD = "ssh"
 
-CLIPBOARD_NATIVE_CLASS = "xpra.x11.gtk_x11.clipboard.X11Clipboard"
+if is_Wayland():
+    CLIPBOARD_NATIVE_CLASS = None
+else:
+    CLIPBOARD_NATIVE_CLASS = "xpra.x11.gtk_x11.clipboard.X11Clipboard"
+
 CLIPBOARDS=["CLIPBOARD", "PRIMARY", "SECONDARY"]
 
 OPEN_COMMAND = ["/usr/bin/xdg-open"]
