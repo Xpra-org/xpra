@@ -48,10 +48,17 @@ cdef extern from "gdk_x11_macros.h":
     int is_x11_display(void *)
 
 def is_X11_Display(display=None):
+    cdef GdkDisplay *gdk_display
     if display is None:
         manager = Gdk.DisplayManager.get()
         display = manager.get_default_display()
-    return bool(is_x11_display(get_raw_display_for(display)))
+    if display is None:
+        return False
+    try:
+        gdk_display = get_raw_display_for(display)
+    except TypeError:
+        return False
+    return bool(is_x11_display(gdk_display))
 
 ###################################
 # Headers, python magic

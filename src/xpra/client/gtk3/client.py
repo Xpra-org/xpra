@@ -8,9 +8,8 @@ import gi
 gi.require_version('Gdk', '3.0')                #@UndefinedVariable
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gdk                   #@UnresolvedImport
-from gi.repository import GLib                  #@UnresolvedImport
 
-from xpra.os_util import OSX, POSIX
+from xpra.os_util import OSX
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk3.client_window import ClientWindow
@@ -47,18 +46,24 @@ class XpraClient(GTKXpraClient):
                 log.warn(" %s", e)
         return ncs
 
+    def get_screen_resolution(self):
+        screen = Gdk.Screen.get_default()
+        if not screen:
+            #wayland?
+            return -1
+        return screen.get_resolution()
 
     def get_xdpi(self):
         xdpi = get_xdpi()
         if xdpi>0:
             return xdpi
-        return Gdk.Screen.get_default().get_resolution()
+        return self.get_screen_resolution()
 
     def get_ydpi(self):
         ydpi = get_ydpi()
         if ydpi>0:
             return ydpi
-        return Gdk.Screen.get_default().get_resolution()
+        return self.get_screen_resolution()
 
 
     def get_tray_menu_helper_class(self):
@@ -68,7 +73,10 @@ class XpraClient(GTKXpraClient):
 
     def get_mouse_position(self):
         #with GTK3, we can get None values!
-        p = self.get_root_window().get_pointer()[-3:-1]
+        root = self.get_root_window()
+        if not root:
+            return -1, -1
+        p = root.get_pointer()[-3:-1]
         return self.sp(p[0] or 0, p[1] or 0)
 
 

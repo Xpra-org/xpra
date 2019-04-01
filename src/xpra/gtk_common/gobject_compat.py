@@ -126,6 +126,7 @@ def import_gtk3():
     gi_gtk()
     from gi.repository import Gtk                   #@UnresolvedImport
     try_import_GdkX11()
+    Gtk.init()
     return Gtk
 def import_gtk():
     return  _try_import(import_gtk3, import_gtk2)

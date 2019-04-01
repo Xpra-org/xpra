@@ -15,7 +15,10 @@ from xpra.util import (
     updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time,
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
-from xpra.os_util import bytestostr, strtobytes, hexstr, monotonic_time, WIN32, OSX, POSIX
+from xpra.os_util import (
+    bytestostr, strtobytes, hexstr, monotonic_time,
+    WIN32, OSX, POSIX, is_Wayland,
+    )
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
@@ -673,7 +676,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return self.cp(p[0], p[1])
 
     def get_current_modifiers(self):
-        modifiers_mask = self.get_root_window().get_pointer()[-1]
+        root = self.get_root_window()
+        if root is None:
+            return ()
+        modifiers_mask = root.get_pointer()[-1]
         return self.mask_to_names(modifiers_mask)
 
 
@@ -685,22 +691,23 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             #tell the server which icons GTK can use
             #so it knows when it should supply one as fallback
             it = icon_theme_get_default()
-            #this would add our bundled icon directory
-            #to the search path, but I don't think we have
-            #any extra icons that matter in there:
-            #from xpra.platform.paths import get_icon_dir
-            #d = get_icon_dir()
-            #if d not in it.get_search_path():
-            #    it.append_search_path(d)
-            #    it.rescan_if_needed()
-            log("default icon theme: %s", it)
-            log("icon search path: %s", it.get_search_path())
-            log("contexts: %s", it.list_contexts())
-            icons = []
-            for context in it.list_contexts():
-                icons += it.list_icons(context)
-            log("icons: %s", icons)
-            capabilities["theme.default.icons"] = tuple(set(icons))
+            if it:
+                #this would add our bundled icon directory
+                #to the search path, but I don't think we have
+                #any extra icons that matter in there:
+                #from xpra.platform.paths import get_icon_dir
+                #d = get_icon_dir()
+                #if d not in it.get_search_path():
+                #    it.append_search_path(d)
+                #    it.rescan_if_needed()
+                log("default icon theme: %s", it)
+                log("icon search path: %s", it.get_search_path())
+                log("contexts: %s", it.list_contexts())
+                icons = []
+                for context in it.list_contexts():
+                    icons += it.list_icons(context)
+                log("icons: %s", icons)
+                capabilities["theme.default.icons"] = tuple(set(icons))
         if METADATA_SUPPORTED:
             ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
         else:
@@ -758,7 +765,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def has_transparency(self):
-        return screen_get_default().get_rgba_visual() is not None
+        screen = screen_get_default()
+        if screen is None:
+            return is_Wayland()
+        return screen.get_rgba_visual() is not None
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):

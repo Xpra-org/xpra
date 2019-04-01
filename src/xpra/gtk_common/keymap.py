@@ -24,6 +24,8 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
     from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, import_gdk, is_gtk3
     gdk = import_gdk()
     display = display_get_default()
+    if not display:
+        return ()
     keymap = keymap_get_for_display(display)
     log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
         display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())

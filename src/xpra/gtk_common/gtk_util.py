@@ -8,7 +8,10 @@ import os.path
 import array
 
 from xpra.util import iround, first_time
-from xpra.os_util import strtobytes, bytestostr, WIN32, OSX, PYTHON2
+from xpra.os_util import (
+    strtobytes, bytestostr,
+    WIN32, OSX, PYTHON2, POSIX, is_Wayland,
+    )
 from xpra.gtk_common.gobject_compat import (
     import_gtk, import_gdk, import_glib, import_pixbufloader,
     import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3,
@@ -195,20 +198,21 @@ if is_gtk3():
     def get_xwindow(w):
         return w.get_xid()
     def get_default_root_window():
-        return gdk.Screen.get_default().get_root_window()
+        screen = gdk.Screen.get_default()
+        if screen is None:
+            return None
+        return screen.get_root_window()
     def get_root_size():
-        if WIN32:
+        if WIN32 or (POSIX and not OSX):
             #FIXME: hopefully, we can remove this code once GTK3 on win32 is fixed?
             #we do it the hard way because the root window geometry is invalid on win32:
             #and even just querying it causes this warning:
             #"GetClientRect failed: Invalid window handle."
-            display = gdk.Display.get_default()
-            n = display.get_n_screens()
-            w, h = 0, 0
-            for i in range(n):
-                screen = display.get_screen(i)
-                w += screen.get_width()
-                h += screen.get_height()
+            screen = gdk.Screen.get_default()
+            if screen is None:
+                return 1920, 1024
+            w = screen.get_width()
+            h = screen.get_height()
         else:
             #the easy way for platforms that work out of the box:
             root = get_default_root_window()
@@ -913,6 +917,8 @@ def get_screen_sizes(xscale=1, yscale=1):
     def swork(*workarea):
         return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
     display = display_get_default()
+    if not display:
+        return ()
     n_screens = display.get_n_screens()
     get_n_monitors = getattr(display, "get_n_monitors", None)
     if get_n_monitors:
