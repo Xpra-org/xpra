@@ -357,10 +357,8 @@ class ClipboardProxy(ClipboardProxyCore, gtk.Invisible):
         if self._enabled and not selection_owner_set(self, self._selection):
             # I don't know how this can actually fail, given that we pass
             # CurrentTime, but just in case:
-            log.warn("Failed to acquire local clipboard %s; "
-                     % (self._selection,)
-                     + "will not be able to pass local apps "
-                     + "contents of remote clipboard")
+            log.warn("Warning: failed to acquire local clipboard %s", self._selection)
+            log.warn(" will not be able to pass local apps contents of remote clipboard")
 
 
     # This function is called by the xpra core when the peer has requested the
