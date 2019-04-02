@@ -35,7 +35,7 @@ assert INITIAL_PADDING in ALL_PADDING_OPTIONS, "invalid padding: %s" % INITIAL_P
 def get_padding_options():
     options = [PREFERRED_PADDING]
     for x in ALL_PADDING_OPTIONS:
-        if x not in PADDING_OPTIONS:
+        if x not in options:
             options.append(x)
     return options
 PADDING_OPTIONS = get_padding_options()
