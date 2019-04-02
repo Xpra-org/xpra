@@ -109,6 +109,7 @@ def dialog_confirm(title, prompt, qinfo="", icon="", buttons=(("OK", 1),)):
     for label, code in buttons:
         cmd.append(nonl(label))
         cmd.append(str(code))
+    log("dialog_confirm%s", (title, prompt, qinfo, icon, buttons))
     return exec_dialog_subprocess(cmd)
 
 def confirm_key(info=()):
@@ -124,6 +125,7 @@ def confirm_key(info=()):
         r = code==200
         log.info("host key %sconfirmed", ["not ", ""][r])
         return r
+    log("confirm_key(%s) will use stdin prompt", nonl(info))
     prompt = "Are you sure you want to continue connecting (yes/NO)? "
     sys.stderr.write(os.linesep.join(info)+os.linesep+prompt)
     v = sys.stdin.readline().rstrip(os.linesep)
