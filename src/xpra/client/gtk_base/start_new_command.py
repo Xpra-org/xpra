@@ -174,7 +174,7 @@ class StartNewCommand(object):
         if self.xdg_menu:
             category = self.category_combo.get_active_text()
             log("category=%s", category)
-            entries = self.xdg_menu.get(category.encode("utf-8"))
+            entries = self.xdg_menu.get(category.encode("utf-8"), {}).get("Entries", {})
             if entries:
                 command_name = self.command_combo.get_active_text()
                 command_props = entries.get(command_name.encode("utf-8"))
