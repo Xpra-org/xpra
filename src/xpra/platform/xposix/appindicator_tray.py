@@ -45,7 +45,7 @@ class AppindicatorTray(TrayBase):
 
     def __init__(self, *args, **kwargs):
         TrayBase.__init__(self, *args, **kwargs)
-        filename = get_icon_filename(self.default_icon_filename)
+        filename = get_icon_filename(self.default_icon_filename) or "xpra.png"
         self._has_icon = False
         self.tmp_filename = None
         self.tray_widget = Indicator(self.tooltip, filename, APPLICATION_STATUS)
