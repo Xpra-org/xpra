@@ -128,7 +128,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
                         data[dsti + 1] = cbuf[srci + 1]     #G
                         data[dsti + 2] = cbuf[srci + 0]     #R
                         data[dsti + 3] = 0                  #X
-        if rgb_format=="BGRX":
+        elif rgb_format=="BGRX":
             with nogil:
                 for y in range(height):
                     for x in range(width):
