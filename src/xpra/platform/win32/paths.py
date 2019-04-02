@@ -179,34 +179,59 @@ def do_get_app_dir():
     from xpra.platform.paths import default_get_app_dir   #imported here to prevent import loop
     return default_get_app_dir()
 
-def do_get_sound_command():
-    from xpra.platform.paths import get_app_dir
-    app_dir = get_app_dir()
-    for apaths in (
-        ("Audio", "Xpra_Audio.exe"),    #python3 bundled sound subdirectory
-        ("Xpra_Audio.exe",),            #same directory, but with a nicer name:
-        ("xpra_cmd.exe",),              #fallback for older build method
-        ):
-        sound_exe = os.path.join(app_dir, *apaths)
-        if os.path.exists(sound_exe):
-            return [sound_exe]
-    return do_get_xpra_command()
+def do_get_nodock_command():
+    return _get_xpra_exe_command(
+        "Xpra",             #executable without a shell
+        "Xpra_cmd",         #we should never end up using this one
+        )
 
-def do_get_xpra_command():
+def do_get_sound_command():
+    return _get_xpra_exe_command(
+        "Xpra_Audio",       #executable without a shell, and with a nicer name
+        "Xpra",             #executable without a shell
+        "Xpra_cmd",         #we should never end up using this one
+        )
+
+def _get_xpra_exe_command(*cmd_options):
+    from xpra.platform.paths import get_app_dir
+    exe_dir = get_app_dir()
+    mingw = os.environ.get("MINGW_PREFIX")
+    for cmd in cmd_options:
+        exe_name = "%s.exe" % cmd
+        if sys.executable.lower().endswith(exe_name):
+            #prefer the same executable we were launch from:
+            return [sys.executable]
+        #try to find it in exe dir:
+        exe = os.path.join(exe_dir, exe_name)
+        if os.path.exists(exe) and os.path.isfile(exe):
+            return [exe]
+        #without ".exe" extension:
+        script = os.path.join(exe_dir, cmd)
+        if os.path.exists(script) and os.path.isfile(script):
+            return [script]
+        if mingw:
+            #the python interpreter to use with the scripts:
+            py = os.path.join(mingw, "bin", "python%i.exe" % sys.version_info[0])
+            if os.path.exists(py):
+                #ie: /e/Xpra/trunk/src/dist/scripts/xpra
+                script = os.path.join(os.getcwd(), "scripts", cmd.lower())
+                if os.path.exists(script) and os.path.isfile(script):
+                    return [py, script]
+                #ie: /mingw64/bin/xpra
+                script = os.path.join(mingw, "bin", cmd.lower())
+                if os.path.exists(script) and os.path.isfile(script):
+                    return [py, script]
     from xpra.platform.paths import default_do_get_xpra_command
     d = default_do_get_xpra_command()
-    if sys.executable.lower().endswith("xpra_cmd.exe") or sys.executable.lower().endswith("xpra.exe"):
-        return [sys.executable]
-    mingw = os.environ.get("MINGW_PREFIX")
-    if mingw:
-        xpra_script = os.path.join(os.getcwd(), "scripts", "xpra")
-        xpra_bin_script = os.path.join(mingw, "bin", "xpra")
-        py = os.path.join(mingw, "bin", "python%i.exe" % sys.version_info[0])
-        if os.path.exists(xpra_script) and os.path.exists(py):
-            return [py, xpra_script]
-        if os.path.exists(xpra_bin_script) and os.path.exists(py):
-            return [py, xpra_bin_script]
-        if len(d) == 1:
-            if not d[0].lower().endswith(".exe"):
-                return [sys.executable, d[0]]
+    if len(d) == 1:
+        #ie: d="xpra"
+        if not d[0].lower().endswith(".exe"):
+            return [sys.executable, d[0]]
     return d
+
+def do_get_xpra_command():
+    sl = sys.executable.lower()
+    #keep the exact same command used to launch if we can:
+    if sl.endswith("xpra_cmd.exe") or sl.endswith("xpra.exe"):
+        return [sys.executable]
+    return _get_xpra_exe_command("Xpra", "Xpra_cmd")
