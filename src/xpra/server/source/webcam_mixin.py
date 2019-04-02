@@ -151,7 +151,7 @@ class WebcamMixin(StubSourceMixin):
             self.send_webcam_stop(device_id, "not started")
             return
         try:
-            from xpra.codecs.pillow.decode import get_encodings
+            from xpra.codecs.pillow.decoder import get_encodings
             assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())
             rgb_pixel_format = "BGRX"       #BGRX
             from PIL import Image
