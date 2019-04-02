@@ -129,8 +129,8 @@ class GTKStatusIconTray(TrayBase):
             return self.geometry_guess
         if x==0 and y==0 and w==200 and h==200:
             #this isn't right, take a better guess, at least for the size:
-            w = 24
-            h = 64
+            w = 48
+            h = 48
         return x, y, w, h
 
     def get_size(self):
