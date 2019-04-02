@@ -371,7 +371,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
                         log("verifyhostkeydns failed", exc_info=True)
                         log.warn("Warning: cannot check SSHFP DNS records")
                         log.warn(" %s", e)
-            log.info("dnscheck=%s", dnscheck)
+            log("dnscheck=%s", dnscheck)
             def adddnscheckinfo(q):
                 if dnscheck is not True:
                     if dnscheck:
