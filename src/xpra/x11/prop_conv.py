@@ -205,16 +205,22 @@ class MotifWMHints(object):
 
 def _read_image(_disp, stream):
     try:
-        header = stream.read(2 * 4)
+        int_size = struct.calcsize(b"@I")
+        long_size = struct.calcsize(b"@L")
+        header = stream.read(long_size*2)
         if not header:
             return None
-        (width, height) = struct.unpack(b"@LL", header)
-        data = stream.read(width * height * 4)
-        if len(data) < width * height * 4:
+        width, height = struct.unpack(b"@LL", header)
+        data = stream.read(width * height * long_size)
+        if len(data) < width * height * long_size:
             log.warn("Corrupt _NET_WM_ICON")
             return None
-    except Exception as e:
-        log.warn("Weird corruption in _NET_WM_ICON: %s", e)
+        if int_size!=long_size:
+            #long to ints (CARD32):
+            longs = struct.unpack(b"@"+b"l"*(width*height), data)
+            data = struct.pack(b"@"+b"i"*(width*height), *longs)
+    except Exception:
+        log.warn("Weird corruption in _NET_WM_ICON", exc_info=True)
         return None
     return width, height, "BGRA", data
 
