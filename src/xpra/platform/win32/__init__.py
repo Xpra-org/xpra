@@ -262,8 +262,9 @@ def set_wait_for_input():
         #(which usually does not popup a new shell window)
         _wait_for_input = False
         return
-    if os.environ.get("MSYSCON") or os.environ.get("CYGWIN"):
-        #msys environment doesn't popup a new shell window
+    if os.environ.get("TERM", "")=="xterm":
+        #msys, cygwin and git bash environments don't popup a new shell window
+        #and they all set TERM=xterm
         _wait_for_input = False
         return
     try:
