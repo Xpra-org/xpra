@@ -1399,9 +1399,9 @@ def get_client_app(error_cb, opts, extra_args, mode):
             os.environ["GDK_BACKEND"] = "x11"
         if opts.opengl=="probe":
             from xpra.os_util import pollwait
-            from xpra.platform.paths import get_xpra_command
+            from xpra.platform.paths import get_nodock_command
             log = Logger("opengl")
-            cmd = get_xpra_command()+["opengl-probe"]
+            cmd = get_nodock_command()+["opengl-probe"]
             env = os.environ.copy()
             if is_debug_enabled("opengl"):
                 cmd += ["-d", "opengl"]
