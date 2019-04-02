@@ -122,7 +122,7 @@ class StartNewCommand(object):
     def category_changed(self, *args):
         category = self.category_combo.get_active_text().encode("utf-8")
         log("category_changed(%s) category=%s", args, category)
-        entries = self.xdg_menu.get(category)
+        entries = self.xdg_menu.get(category, {}).get("Entries", {})
         self.command_combo.get_model().clear()
         for name in entries.keys():
             self.command_combo.append_text(name.decode("utf-8"))
