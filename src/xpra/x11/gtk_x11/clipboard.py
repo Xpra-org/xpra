@@ -511,7 +511,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         log.warn("Warning: clipboard request for '%s' timed out", target)
         log.warn(" request %i at time=%i", request_id, time)
         if target=="TARGETS":
-            got_contents("ATOM", 32, ())
+            got_contents("ATOM", 32, b"")
         else:
             got_contents(None, None, None)
 
