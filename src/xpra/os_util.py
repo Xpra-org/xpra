@@ -486,9 +486,10 @@ def close_all_fds(exceptions=()):
 
 def use_tty():
     from xpra.util import envbool
-    NOTTY = envbool("XPRA_NOTTY", False)
-    stdin = sys.stdin
-    return not os.environ.get("MSYSCON") and not NOTTY and stdin and stdin.isatty()
+    if envbool("XPRA_NOTTY", False):
+        return False
+    from xpra.platform.gui import use_stdin
+    return use_stdin()
 
 
 def shellsub(s, subs=None):

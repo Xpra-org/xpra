@@ -37,6 +37,10 @@ def do_ready():
     pass
 
 
+def use_stdin():
+    stdin = sys.stdin
+    return stdin and stdin.isatty()
+
 #defaults:
 def get_native_tray_menu_helper_class():
     #classes that generate menus for xpra's system tray
@@ -273,6 +277,7 @@ platform_import(globals(), "gui", False,
                 "do_ready",
                 "do_init",
                 "gl_check",
+                "use_stdin",
                 "get_wm_name",
                 "show_desktop", "set_fullscreen_monitors", "set_shaded",
                 "ClientExtras",

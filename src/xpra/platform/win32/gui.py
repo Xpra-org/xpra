@@ -147,6 +147,24 @@ def init_appid():
         log.warn("Warning: failed to set process app ID")
 
 
+def use_stdin():
+    if os.environ.get("MSYSCON") or os.environ.get("CYGWIN"):
+        return False
+    stdin = sys.stdin
+    if not stdin or not stdin.isatty():
+        return False
+    try:
+        from xpra.platform.win32.common import GetStdHandle
+        from xpra.platform.win32 import STD_INPUT_HANDLE, not_a_console, get_console_position 
+        hstdin = GetStdHandle(STD_INPUT_HANDLE)
+        if not_a_console(hstdin):
+            return False
+        return get_console_position(hstdin)!=(-1, -1)
+    except:
+        pass
+    return True
+
+
 def get_native_notifier_classes():
     try:
         from xpra.platform.win32.win32_notifier import Win32_Notifier

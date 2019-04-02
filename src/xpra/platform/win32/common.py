@@ -183,6 +183,7 @@ CloseHandle.restype = BOOL
 GetProductInfo = kernel32.GetProductInfo
 GetProductInfo.argtypes = [DWORD, DWORD, DWORD, DWORD, PDWORD]
 GetProductInfo.restype  = BOOL
+GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", kernel32))
 
 user32 = WinDLL("user32", use_last_error=True)
 RegisterClassExA = user32.RegisterClassExA
