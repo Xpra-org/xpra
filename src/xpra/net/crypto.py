@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -7,7 +7,7 @@
 import os
 from struct import pack
 
-from xpra.util import envint, envbool, xor
+from xpra.util import envint, envbool
 from xpra.log import Logger
 from xpra.os_util import hexstr, get_hex_uuid
 from xpra.net.digest import get_salt
@@ -32,10 +32,13 @@ PREFERRED_PADDING = os.environ.get("XPRA_CRYPTO_PREFERRED_PADDING", PADDING_PKCS
 assert PREFERRED_PADDING in ALL_PADDING_OPTIONS, "invalid preferred padding: %s" % PREFERRED_PADDING
 assert INITIAL_PADDING in ALL_PADDING_OPTIONS, "invalid padding: %s" % INITIAL_PADDING
 #make sure the preferred one is first in the list:
-PADDING_OPTIONS = [PREFERRED_PADDING]
-for x in ALL_PADDING_OPTIONS:
-    if x not in PADDING_OPTIONS:
-        PADDING_OPTIONS.append(x)
+def get_padding_options():
+    options = [PREFERRED_PADDING]
+    for x in ALL_PADDING_OPTIONS:
+        if x not in PADDING_OPTIONS:
+            options.append(x)
+    return options
+PADDING_OPTIONS = get_padding_options()
 
 
 try:
@@ -94,10 +97,9 @@ def validate_backend(try_backend):
 def pad(padding, size):
     if padding==PADDING_LEGACY:
         return b" "*size
-    elif padding==PADDING_PKCS7:
+    if padding==PADDING_PKCS7:
         return pack("B", size)*size
-    else:
-        raise Exception("invalid padding: %s" % padding)
+    raise Exception("invalid padding: %s" % padding)
 
 def choose_padding(options):
     for x in options:
