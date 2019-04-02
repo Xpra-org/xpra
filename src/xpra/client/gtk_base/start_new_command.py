@@ -72,20 +72,21 @@ class StartNewCommand(object):
             self.command_combo = gtk.combo_box_new_text()
             hbox.pack_start(gtk.Label("Command:"))
             hbox.pack_start(self.command_combo)
+            self.command_combo.connect("changed", self.command_changed)
             #this will populate the command combo:
             self.category_changed()
-        else:
-            entry_label = gtk.Label("Command to run:")
-            entry_label.modify_font(pango.FontDescription("sans 14"))
-            entry_al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-            entry_al.add(entry_label)
-            vbox.add(entry_al)
-            # Actual command:
-            self.entry = gtk.Entry()
-            self.entry.set_max_length(255)
-            self.entry.set_width_chars(32)
-            self.entry.connect('activate', self.run_command)
-            vbox.add(self.entry)
+        #always show the command as text so it can be edited:
+        entry_label = gtk.Label("Command to run:")
+        entry_label.modify_font(pango.FontDescription("sans 14"))
+        entry_al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
+        entry_al.add(entry_label)
+        vbox.add(entry_al)
+        # Actual command:
+        self.entry = gtk.Entry()
+        self.entry.set_max_length(255)
+        self.entry.set_width_chars(32)
+        self.entry.connect('activate', self.run_command)
+        vbox.add(self.entry)
 
         if can_share:
             self.share = gtk.CheckButton("Shared", use_underline=False)
@@ -129,6 +130,17 @@ class StartNewCommand(object):
         if entries:
             self.command_combo.set_active(0)
 
+    def command_changed(self, *args):
+        category = self.category_combo.get_active_text()
+        log("command_changed(%s) category=%s", args, category)
+        entries = self.xdg_menu.get(category.encode("utf-8"), {}).get("Entries", {})
+        if entries:
+            command_name = self.command_combo.get_active_text()
+            command_props = entries.get(command_name.encode("utf-8"), "")
+            log("command properties=%s", command_props)
+            command = command_props.get(b"command")
+            self.entry.set_text(command)
+
 
     def show(self):
         log("show()")
@@ -170,18 +182,7 @@ class StartNewCommand(object):
 
     def run_command(self, *_args):
         self.hide()
-        command = None
-        if self.xdg_menu:
-            category = self.category_combo.get_active_text()
-            log("category=%s", category)
-            entries = self.xdg_menu.get(category.encode("utf-8"), {}).get("Entries", {})
-            if entries:
-                command_name = self.command_combo.get_active_text()
-                command_props = entries.get(command_name.encode("utf-8"))
-                log("command properties=%s", command_props)
-                command = command_props.get(b"command")
-        else:
-            command = self.entry.get_text()
+        command = self.entry.get_text()
         log("command=%s", command)
         if self.run_callback and command:
             self.run_callback(command, self.share is None or self.share.get_active())
