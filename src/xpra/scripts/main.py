@@ -1408,11 +1408,14 @@ def get_client_app(error_cb, opts, extra_args, mode):
             else:
                 env["NOTTY"] = "1"
             try:
+                kwargs = {}
+                if POSIX:
+                    kwargs["close_fds"] = True
                 try:
                     from subprocess import DEVNULL
                 except ImportError:
                     DEVNULL = open(os.devnull, 'wb')
-                proc = Popen(cmd, shell=False, stderr=DEVNULL, close_fds=True, env=env)
+                proc = Popen(cmd, shell=False, stderr=DEVNULL, env=env, **kwargs)
             except Exception as e:
                 log.warn("Warning: failed to execute OpenGL probe command")
                 log.warn(" %s", e)
