@@ -751,7 +751,7 @@ else:
             gobject.timeout_add(OUTSIDE_TRAY_TIMEOUT, check_menu_left, mouse_in_tray_menu_counter)
         mouse_in_tray_menu_counter = 0
         mouse_in_tray_menu = False
-        traylog("popup_menu_workaround: adding events callbacks")
+        #traylog("popup_menu_workaround: adding events callbacks")
         menu.connect("enter-notify-event", enter_menu)
         menu.connect("leave-notify-event", leave_menu)
 
