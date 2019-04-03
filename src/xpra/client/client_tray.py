@@ -3,15 +3,20 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import time
+
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.os_util import memoryview_to_bytes, _buffer
+from xpra.util import envbool
 from xpra.log import Logger
 
 log = Logger("tray")
 
 glib = import_glib()
+
+SAVE = envbool("XPRA_SAVE_SYSTRAY", False)
 
 
 class ClientTray(ClientWidgetBase):
@@ -221,10 +226,22 @@ class TrayBacking(WindowBackingBase):
         log("TrayBacking(%i)._do_paint_rgb24%s",
             self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
         self.data = ("rgb24", width, height, rowstride, img_data[:], options)
+        if SAVE:
+            from PIL import Image
+            img = Image.frombytes("RGBA", (width, height), img_data, "raw", "BGR", width*3, 1)
+            filename = "./tray-%s.png" % time()
+            img.save(filename, "PNG")
+            log("tray rgb24 update saved to %s", filename)
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         log("TrayBacking(%i)._do_paint_rgb32%s",
             self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
         self.data = ("rgb32", width, height, rowstride, img_data[:], options)
+        if SAVE:
+            from PIL import Image
+            img = Image.frombytes("RGBA", (width, height), img_data, "raw", "BGRA", width*4, 1)
+            filename = "./tray-%s.png" % time()
+            img.save(filename, "PNG")
+            log("tray rgb32 update saved to %s", filename)
         return True
