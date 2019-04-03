@@ -231,7 +231,7 @@ class TrayBacking(WindowBackingBase):
             img = Image.frombytes("RGBA", (width, height), img_data, "raw", "BGR", width*3, 1)
             filename = "./tray-%s.png" % time()
             img.save(filename, "PNG")
-            log("tray rgb24 update saved to %s", filename)
+            log.info("tray rgb24 update saved to %s", filename)
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
@@ -243,5 +243,5 @@ class TrayBacking(WindowBackingBase):
             img = Image.frombytes("RGBA", (width, height), img_data, "raw", "BGRA", width*4, 1)
             filename = "./tray-%s.png" % time()
             img.save(filename, "PNG")
-            log("tray rgb32 update saved to %s", filename)
+            log.info("tray rgb32 update saved to %s", filename)
         return True
