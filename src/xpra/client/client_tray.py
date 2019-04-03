@@ -228,7 +228,7 @@ class TrayBacking(WindowBackingBase):
         self.data = ("rgb24", width, height, rowstride, img_data[:], options)
         if SAVE:
             from PIL import Image
-            img = Image.frombytes("RGBA", (width, height), img_data, "raw", "BGR", width*3, 1)
+            img = Image.frombytes("RGB", (width, height), img_data, "raw", "BGR", width*3, 1)
             filename = "./tray-%s.png" % time()
             img.save(filename, "PNG")
             log.info("tray rgb24 update saved to %s", filename)
