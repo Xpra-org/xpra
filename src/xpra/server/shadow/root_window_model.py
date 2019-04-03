@@ -87,8 +87,7 @@ class RootWindowModel(object):
         return self.geometry[2:4]
 
     def get_geometry(self):
-        w, h = self.get_dimensions()
-        return (0, 0, w, h)
+        return self.geometry
 
 
     def get_property_names(self):

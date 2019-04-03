@@ -155,13 +155,17 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             return None
         pointer = super(GTKShadowServerBase, self)._adjust_pointer(proto, wid, opointer)
         #the window may be at an offset (multi-window for multi-monitor):
-        wx, wy, ww, wh = window.geometry
+        wx, wy, ww, wh = window.get_geometry()
         #or maybe the pointer is off-screen:
         x, y = pointer[:2]
         if x<0 or x>=ww or y<0 or y>=wh:
             self.suspend_cursor(proto)
             return None
         self.restore_cursor(proto)
+        #note: with x11 shadow servers,
+        # X11ServerCore._get_pointer_abs_coordinates() will recalculate
+        # the absolute coordinates from the relative ones,
+        # and it should end up with the same values we calculated here
         ax = x+wx
         ay = y+wy
         return [ax, ay]+list(pointer[2:])
