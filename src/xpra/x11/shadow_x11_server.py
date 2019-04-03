@@ -27,7 +27,9 @@ USE_NVFBC = envbool("XPRA_NVFBC", True)
 USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 if USE_NVFBC:
     try:
-        from xpra.codecs.nvfbc.fbc_capture_linux import init_module, NvFBC_SysCapture, NvFBC_CUDACapture    #@UnresolvedImport
+        from xpra.codecs.nvfbc.fbc_capture_linux import (        #@UnresolvedImport
+            init_module, NvFBC_SysCapture, NvFBC_CUDACapture,
+            )
         init_module()
     except Exception:
         log("NvFBC Capture is not available", exc_info=True)
@@ -91,7 +93,8 @@ class XImageCapture(object):
             return None
         finally:
             end = monotonic_time()
-            log("X11 shadow captured %s pixels at %i MPixels/s using %s", width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
+            log("X11 shadow captured %s pixels at %i MPixels/s using %s",
+                width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
 
 
 def setup_capture(window):
