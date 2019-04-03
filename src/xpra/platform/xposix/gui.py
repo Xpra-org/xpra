@@ -55,7 +55,7 @@ def get_native_system_tray_classes():
             from xpra.platform.xposix.appindicator_tray import AppindicatorTray
             c.append(AppindicatorTray)
         except (ImportError, ValueError):
-            traylog("cannot load appindicator tray: %s", exc_info=True)
+            traylog("cannot load appindicator tray", exc_info=True)
     return c
 
 def get_wm_name():
