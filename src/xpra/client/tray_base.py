@@ -76,7 +76,7 @@ class TrayBase(object):
         raise NotImplementedError("override me!")
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
         raise NotImplementedError("override me!")
 
     def get_icon_filename(self, basename=None):
@@ -108,7 +108,7 @@ class TrayBase(object):
         if self.geometry_guess is None:
             #better than nothing!
             self.geometry_guess = x, y, width, height
-        if len(self.tray_event_locations)>0 and self.tray_event_locations[-1]==(x,y):
+        if self.tray_event_locations and self.tray_event_locations[-1]==(x,y):
             #unchanged
             log("tray event location unchanged")
             return
