@@ -75,12 +75,12 @@ class GTKStatusIconTray(TrayBase):
             self.click_cb(button, 0, time)
 
 
-    def hide(self, *_args):
+    def hide(self):
         log("%s.set_visible(False)", self.tray_widget)
         if self.tray_widget:
             self.tray_widget.set_visible(False)
 
-    def show(self, *_args):
+    def show(self):
         log("%s.set_visible(True)", self.tray_widget)
         if self.tray_widget:
             self.tray_widget.set_visible(True)
@@ -92,7 +92,7 @@ class GTKStatusIconTray(TrayBase):
         ag = self.tray_widget.get_geometry()
         if ag is None:
             return -1
-        screen, _, _ = ag[-3:]
+        screen = ag[-3]
         if not screen:
             return -1
         return screen.get_number()
@@ -103,7 +103,7 @@ class GTKStatusIconTray(TrayBase):
         ag = self.tray_widget.get_geometry()
         if ag is None:
             return None
-        _, _, gtk_orientation = ag[-3:]
+        gtk_orientation = ag[-1]
         return ORIENTATION.get(gtk_orientation)
 
     def get_geometry(self):
@@ -119,10 +119,12 @@ class GTKStatusIconTray(TrayBase):
             if not self.geometry_guess:
                 self.may_guess()
             #probably win32 or OSX, gnome-shell or KDE5..
-            log("GTKStatusIconTray.get_geometry() no geometry value available, returning guess: %s", self.geometry_guess)
+            log("GTKStatusIconTray.get_geometry() no geometry value available, returning guess: %s",
+                self.geometry_guess)
             return self.geometry_guess or (0, 0, 0, 0)
-        #gtk3 adds an extra argument.. at the beginning!
-        _, geom, _ = ag[-3:]
+        #gtk3 adds an extra argument.. at the beginning
+        #so we index from the end of the array:
+        geom = ag[-2]
         x, y, w, h = geom.x, geom.y, geom.width, geom.height
         log("GTKStatusIconTray.get_geometry() geometry area rectangle=%s", (x, y, w, h))
         if x==0 and y==0 and w==0 and h==0 and self.geometry_guess:
@@ -138,16 +140,16 @@ class GTKStatusIconTray(TrayBase):
         return [s, s]
 
 
-    def set_tooltip(self, text=None):
+    def set_tooltip(self, tooltip=None):
         if self.tray_widget:
-            self.tray_widget.set_tooltip_text(text or "Xpra")
+            self.tray_widget.set_tooltip_text(tooltip or "Xpra")
 
     def set_blinking(self, on):
         if self.tray_widget and hasattr(self.tray_widget, "set_blinking"):
             self.tray_widget.set_blinking(on)
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options={}):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.set_icon_from_pixbuf(tray_icon)
 
