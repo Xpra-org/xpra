@@ -16,7 +16,15 @@ from xpra.os_util import get_linux_distribution, PYTHON3, BITS, POSIX, WIN32
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
-CHECK_SSL = envbool("XPRA_VERSION_CHECK_SSL", not WIN32)
+CHECK_SSL = envbool("XPRA_VERSION_CHECK_SSL", True)
+SSL_CAFILE = None
+if WIN32:
+    try:
+        import certifi
+        SSL_CAFILE = certifi.where()
+    except ImportError:
+        pass
+SSL_CAFILE = os.environ.get("XPRA_SSL_CAFILE", SSL_CAFILE)
 
 
 def log(msg, *args, **kwargs):
@@ -176,7 +184,7 @@ def get_version_from_url(url):
         log("get_version_from_url(%s) urllib2 not found: %s", url, e)
         return None
     try:
-        response = urlopen(url)
+        response = urlopen(url, cafile=SSL_CAFILE)
         latest_version = response.read().rstrip(b"\n\r")
         latest_version_no = tuple(int(y) for y in latest_version.split(b"."))
         log("get_version_from_url(%s)=%s", url, latest_version_no)

@@ -39,7 +39,7 @@ $PACMAN --noconfirm -S ${XPKG}gst-python
 $PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi
 #python libraries and packaging tools:
 $PACMAN --noconfirm -S ${XPKG}python2-enum34
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 PyOpenGL nvidia-ml zeroconf; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 PyOpenGL nvidia-ml zeroconf certifi; do
 	$PACMAN --noconfirm -S ${XPKG}python2-${x}
 	$PACMAN --noconfirm -S ${XPKG}python3-${x}
 done
