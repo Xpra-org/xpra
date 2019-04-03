@@ -63,6 +63,10 @@ TRAY_ORIENTATION_VERT   = 1
 
 XPRA_TRAY_WINDOW_PROPERTY = "_xpra_tray_window_"
 
+SYSTEM_TRAY_REQUEST_DOCK = 0
+SYSTEM_TRAY_BEGIN_MESSAGE = 1
+SYSTEM_TRAY_CANCEL_MESSAGE = 2
+
 #TRANSPARENCY = False
 TRANSPARENCY = True
 
@@ -187,9 +191,6 @@ class SystemTray(gobject.GObject):
     def do_xpra_client_message_event(self, event):
         if event.message_type=="_NET_SYSTEM_TRAY_OPCODE" and event.window==self.tray_window and event.format==32:
             opcode = event.data[1]
-            SYSTEM_TRAY_REQUEST_DOCK = 0
-            SYSTEM_TRAY_BEGIN_MESSAGE = 1
-            SYSTEM_TRAY_CANCEL_MESSAGE = 2
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
                 log("tray docking request from %#x", xid)
