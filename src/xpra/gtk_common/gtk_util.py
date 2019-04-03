@@ -64,7 +64,7 @@ def get_gtk_version_info():
             V("pixbuf",     Pixbuf,     "PIXBUF_VERSION")
             def MAJORMICROMINOR(name, module):
                 try:
-                    v = [getattr(module, x) for x in ["MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"]]
+                    v = tuple(getattr(module, x) for x in ("MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"))
                     av(name, ".".join(str(x) for x in v))
                 except:
                     pass

@@ -1043,7 +1043,7 @@ class ClientExtras(object):
                     if keyname.startswith("Super"):
                         keycode = 0
                         #find the modifier keycode: (try the exact key we hit first)
-                        for x in [keyname, "Super_L", "Super_R"]:
+                        for x in (keyname, "Super_L", "Super_R"):
                             keycodes = modifier_keycodes.get(x, [])
                             for k in keycodes:
                                 #only interested in numeric keycodes:

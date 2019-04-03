@@ -74,12 +74,14 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
             log("ignoring packet: %s", args)
         #ignore the following packet types without error:
         #(newer servers should avoid sending us any of those)
-        for t in ["new-window", "new-override-redirect",
-                  "draw", "cursor", "bell",
-                  "notify_show", "notify_close",
-                  "ping", "ping_echo",
-                  "window-metadata", "configure-override-redirect",
-                  "lost-window"]:
+        for t in (
+            "new-window", "new-override-redirect",
+            "draw", "cursor", "bell",
+            "notify_show", "notify_close",
+            "ping", "ping_echo",
+            "window-metadata", "configure-override-redirect",
+            "lost-window",
+            ):
             self._packet_handlers[t] = noop
 
     def run(self):

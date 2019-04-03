@@ -232,7 +232,7 @@ def get_machine_id():
     """
     v = u""
     if POSIX:
-        for filename in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
+        for filename in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
             v = load_binary_file(filename)
             if v is not None:
                 break

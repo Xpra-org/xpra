@@ -71,10 +71,10 @@ class PasswordInputDialogWindow(object):
         al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
         al.add(hbox)
         vbox.pack_start(al)
-        for label, isdefault, cb in [
+        for label, isdefault, cb in (
             ("Confirm", True, self.activate),
             ("Cancel", False, self.quit),
-            ]:
+            ):
             b = self.btn(label, isdefault, cb)
             hbox.pack_start(b)
 

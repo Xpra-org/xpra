@@ -186,14 +186,15 @@ class ServerBaseControlCommands(StubServerMixin):
         if client_uuids_str=="UI":
             sources = [ss for ss in self._server_sources.values() if ss.ui_client]
             client_uuids = [ss.uuid for ss in sources]
-            notfound = []
+            notfound = ()
         elif client_uuids_str=="*":
             sources = self._server_sources.values()
             client_uuids = [ss.uuid for ss in sources]
         else:
             client_uuids = client_uuids_str.split(",")
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
-            notfound = [x for x in client_uuids if x not in [ss.uuid for ss in sources]]
+            uuids = tuple(ss.uuid for ss in sources)
+            notfound = any(x for x in client_uuids if x not in uuids)
             if notfound:
                 log.warn("client connection not found for uuid(s): %s", notfound)
         return sources
@@ -204,7 +205,8 @@ class ServerBaseControlCommands(StubServerMixin):
             log(msg)
             return msg
         sources = self._control_get_sources(client_uuids)
-        log("control_command_send_notification(%i, %s, %s, %s) will send to sources %s (matching %s)", nid, title, message, client_uuids, sources, client_uuids)
+        log("control_command_send_notification(%i, %s, %s, %s) will send to sources %s (matching %s)",
+            nid, title, message, client_uuids, sources, client_uuids)
         count = 0
         for source in sources:
             if source.notify(0, nid, "control channel", 0, "", title, message, [], {}, 10, ""):

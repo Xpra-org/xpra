@@ -904,7 +904,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # Compute alignment and row length
         row_length = 0
         alignment = 1
-        for a in [2, 4, 8]:
+        for a in (2, 4, 8):
             # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
             if (rowstride & a-1) == 0:
                 alignment = a

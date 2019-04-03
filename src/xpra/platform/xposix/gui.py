@@ -735,7 +735,7 @@ class XI2_Window(object):
         args = [event.device]
         for x in ("x", "y", "x_root", "y_root"):
             args.append(intscaled(getattr(event, x)))
-        for v in [event.valuators, raw_valuators]:
+        for v in (event.valuators, raw_valuators):
             args.append(dictscaled(v))
         return args
 

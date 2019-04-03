@@ -412,7 +412,7 @@ cdef class Decoder:
         #as this requires the context to still be valid!
         #copying the pixels should ensure we free the AVFrameWrapper associated with it:
         if self.weakref_images:
-            images = [y for y in [x() for x in self.weakref_images] if y is not None]
+            images = tuple(y for y in [x() for x in self.weakref_images] if y is not None)
             self.weakref_images = []
             log("clean_decoder() cloning pixels for images still in use: %s", images)
             for img in images:

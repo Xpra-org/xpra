@@ -145,11 +145,13 @@ def do_get_app_dir():
 
 def default_get_app_dir():
     if os.name=="posix":
-        for prefix in [os.environ.get("RPM_BUILD_ROOT"),
-                       get_install_prefix(),
-                       sys.exec_prefix,
-                       "/usr",
-                       "/usr/local"]:
+        for prefix in (
+            os.environ.get("RPM_BUILD_ROOT"),
+            get_install_prefix(),
+            sys.exec_prefix,
+            "/usr",
+            "/usr/local",
+            ):
             if not prefix:
                 continue
             adir = os.path.join(prefix, "share", "xpra")
@@ -184,7 +186,7 @@ def do_get_icon_dir():
     idir = os.path.join(adir, "icons")
     if valid_dir(idir):
         return idir
-    for prefix in [sys.exec_prefix, "/usr", "/usr/local"]:
+    for prefix in (sys.exec_prefix, "/usr", "/usr/local"):
         idir = os.path.join(prefix, "icons")
         if os.path.exists(idir):
             return idir

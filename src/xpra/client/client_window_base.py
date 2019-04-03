@@ -414,12 +414,12 @@ class ClientWindowBase(ClientWidgetBase):
         geomlog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
         hints = typedict()
         client = self._client
-        for (a, h1, h2) in [
+        for (a, h1, h2) in (
             (b"maximum-size", b"max_width", b"max_height"),
             (b"minimum-size", b"min_width", b"min_height"),
             (b"base-size", b"base_width", b"base_height"),
             (b"increment", b"width_inc", b"height_inc"),
-            ]:
+            ):
             v = size_constraints.intpair(a)
             geomlog("intpair(%s)=%s", a, v)
             if v:
@@ -442,10 +442,10 @@ class ClientWindowBase(ClientWidgetBase):
                         continue
                 hints[h1], hints[h2] = sv1, sv2
         if not OSX:
-            for (a, h) in [
+            for (a, h) in (
                 (b"minimum-aspect-ratio", b"min_aspect"),
                 (b"maximum-aspect-ratio", b"max_aspect"),
-                ]:
+                ):
                 v = size_constraints.intpair(a)
                 if v:
                     v1, v2 = v

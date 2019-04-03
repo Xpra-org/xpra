@@ -444,7 +444,7 @@ def get_demuxers():
     return demuxers
 
 def get_stream_compressors():
-    return [x for x in ["lz4", "lzo"] if has_stream_compressor(x)]
+    return [x for x in ("lz4", "lzo") if has_stream_compressor(x)]
 
 def get_encoder_elements(name):
     encoders = get_encoders()

@@ -192,7 +192,7 @@ def get_iface(ip):
                 log.error("incorrect ip or mask: %s/%s", test_ip, mask)
             match = True
             try:
-                for i in [0,1,2,3]:
+                for i in (0,1,2,3):
                     mask_part = int(mask_parts[i])
                     ip_part = int(ip_parts[i]) & mask_part
                     test_ip_part = int(test_ip_parts[i]) & mask_part

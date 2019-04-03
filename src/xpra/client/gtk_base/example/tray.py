@@ -74,7 +74,7 @@ class FakeApplication:
                 from xpra.client.gtk2.tray_menu import GTK2TrayMenu as GTKTrayMenu
         except ImportError as e:
             log.warn("failed to load GTK tray menu class: %s", e)
-        for x in [get_native_tray_menu_helper_class(), GTKTrayMenu]:
+        for x in (get_native_tray_menu_helper_class(), GTKTrayMenu):
             if x:
                 try:
                     self.menu_helper = x(self)

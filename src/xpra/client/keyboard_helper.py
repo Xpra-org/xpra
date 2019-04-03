@@ -434,7 +434,7 @@ class KeyboardHelper(object):
                 #parse query into a dict
                 from xpra.keyboard.layouts import parse_xkbmap_query
                 xkbqs = parse_xkbmap_query(self.xkbmap_query)
-            for x in ["rules", "model", "layout"]:
+            for x in ("rules", "model", "layout"):
                 v = xkbqs.get(x)
                 if v:
                     kb_info[x] = v
