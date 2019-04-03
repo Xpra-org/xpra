@@ -85,7 +85,7 @@ def get_native_tray_classes():
             return [GTKMenuTray]
         except Exception as e:
             traylog("cannot load gtk menu tray: %s", e)
-    return get_native_system_tray_classes()
+    return []
 
 
 def get_native_notifier_classes():
