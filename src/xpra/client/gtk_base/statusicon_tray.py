@@ -1,12 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # A tray implemented using gtk.StatusIcon
 
 import os
+from time import time
 
 from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, monotonic_time
 from xpra.util import envbool
@@ -28,6 +29,7 @@ ORIENTATION = {
 GUESS_GEOMETRY = WIN32 or OSX
 GUESS_GEOMETRY = envbool("XPRA_GUESS_ICON_GEOMETRY", GUESS_GEOMETRY)
 log("tray GUESS_GEOMETRY=%s", GUESS_GEOMETRY)
+SAVE = envbool("XPRA_SAVE_SYSTRAY", False)
 
 
 class GTKStatusIconTray(TrayBase):
@@ -178,9 +180,16 @@ class GTKStatusIconTray(TrayBase):
                     scaled_w, scaled_h = 24, 48
                 tray_icon = tray_icon.scale_simple(scaled_w, scaled_h, INTERP_HYPER)
                 tray_icon.copy_area(0, 0, scaled_w, scaled_h, new_icon, (tw-scaled_w)//2, (th-scaled_h)//2)
+                log("tray icon scaled to %ix%i and pasted into the middle of %ix%i blank icon",
+                    scaled_w, scaled_h, tw, th)
                 tray_icon = new_icon
             else:
                 tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
+                log("tray icon scaled to %ix%i", tw, th)
+        if SAVE:
+            filename = "./statusicon-%s.png" % time()
+            tray_icon.save(filename, "png")
+            log.info("statusicon tray saved to %s", filename)
         self.tray_widget.set_from_pixbuf(tray_icon)
         self.icon_timestamp = monotonic_time()
 
