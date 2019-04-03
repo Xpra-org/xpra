@@ -195,7 +195,7 @@ class TrayBacking(WindowBackingBase):
 
     #keep it simple: only accept 32-bit RGB(X),
     #all tray implementations support alpha
-    RGB_MODES = ["RGBA", "RGBX"]
+    RGB_MODES = ("RGBA", "RGBX")
     HAS_ALPHA = True
 
     def __init__(self, wid, _w, _h, _has_alpha, data=None):
@@ -220,11 +220,11 @@ class TrayBacking(WindowBackingBase):
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
         log("TrayBacking(%i)._do_paint_rgb24%s",
             self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
-        self.data = ["rgb24", width, height, rowstride, img_data[:], options]
+        self.data = ("rgb24", width, height, rowstride, img_data[:], options)
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         log("TrayBacking(%i)._do_paint_rgb32%s",
             self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
-        self.data = ["rgb32", width, height, rowstride, img_data[:], options]
+        self.data = ("rgb32", width, height, rowstride, img_data[:], options)
         return True
