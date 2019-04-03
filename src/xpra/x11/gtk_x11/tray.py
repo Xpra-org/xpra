@@ -6,7 +6,7 @@
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_glib, is_gtk3
 from xpra.gtk_common.gtk_util import (
     display_get_default, get_default_root_window, get_xwindow, GDKWindow,
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
@@ -22,6 +22,7 @@ X11Window = X11WindowBindings()
 
 gdk = import_gdk()
 gobject = import_gobject()
+glib = import_glib()
 
 log = Logger("x11", "tray")
 
@@ -194,14 +195,10 @@ class SystemTray(gobject.GObject):
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
                 log("tray docking request from %#x", xid)
-                try:
-                    with xsync:
-                        self.dock_tray(xid)
-                except Exception as e:
-                    log("do_xpra_client_message_event(%s)", event, exc_info=True)
-                    log.warn("Warning: failed to dock tray %#x:", xid)
-                    log.warn(" %s", e)
-                    log.warn(" the application may retry later")
+                window = gdk.window_foreign_new(xid)
+                log("tray docking window %s", window)
+                if window:
+                    glib.idle_add(self.dock_tray, xid)
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]
                 mlen = event.data[3]
@@ -220,6 +217,16 @@ class SystemTray(gobject.GObject):
 
     def dock_tray(self, xid):
         log("dock_tray(%#x)", xid)
+        try:
+            with xsync:
+                X11Window.getGeometry(xid)
+                self.do_dock_tray(xid)
+        except Exception as e:
+            log.warn("Warning: failed to dock tray %#x:", xid)
+            log.warn(" %s", e)
+            log.warn(" the application may retry later")
+
+    def do_dock_tray(self, xid):
         root = get_default_root_window()
         window = gdk.window_foreign_new(xid)
         if window is None:
@@ -242,17 +249,21 @@ class SystemTray(gobject.GObject):
         if title is None:
             title = ""
         xid = get_xwindow(root)
-        log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s, visual.depth=%s",
-            xid, xid, window.get_geometry(), title, window.get_visual().depth)
+        log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s",
+            xid, xid, window.get_geometry(), title)
         kwargs = {}
         if not is_gtk3():
-            kwargs["colormap"] = window.get_colormap()
+            colormap = window.get_colormap()
+            if colormap:
+                kwargs["colormap"] = colormap
+        visual = window.get_visual()
+        if visual:
+            kwargs["visual"] = visual
         tray_window = GDKWindow(root, width=w, height=h,
                                            event_mask = event_mask,
                                            title=title,
                                            x=-200, y=-200,
                                            override_redirect=True,
-                                           visual=window.get_visual(),
                                            **kwargs)
         log("dock_tray(%#x) setting tray properties", xid)
         set_tray_window(tray_window, window)
