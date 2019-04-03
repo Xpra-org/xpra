@@ -361,7 +361,8 @@ class InputServer(StubServerMixin):
         pass
 
     def _process_pointer_position(self, proto, packet):
-        mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s", proto, packet, self.readonly, self.ui_driver)
+        mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
+                 proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
         ss = self._server_sources.get(proto)
