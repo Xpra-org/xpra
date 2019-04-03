@@ -49,14 +49,7 @@ def gl_check():
 
 
 def get_native_system_tray_classes():
-    c = []
-    if USE_NATIVE_TRAY:
-        try:
-            from xpra.platform.xposix.appindicator_tray import AppindicatorTray
-            c.append(AppindicatorTray)
-        except (ImportError, ValueError):
-            traylog("cannot load appindicator tray", exc_info=True)
-    return c
+    return []
 
 def get_wm_name():
     wm_name = os.environ.get("XDG_CURRENT_DESKTOP", "")
@@ -78,14 +71,21 @@ def get_wm_name():
 
 def get_native_tray_classes():
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
+    c = []
+    if USE_NATIVE_TRAY:
+        try:
+            from xpra.platform.xposix.appindicator_tray import AppindicatorTray
+            c.append(AppindicatorTray)
+        except (ImportError, ValueError):
+            traylog("cannot load appindicator tray", exc_info=True)
     if has_gtk_menu_support():  #and wm_name=="GNOME Shell":
         try:
             from xpra.platform.xposix.gtkmenu_tray import GTKMenuTray
             traylog("using GTKMenuTray for '%s' window manager", get_wm_name() or "unknown")
-            return [GTKMenuTray]
+            c.append(GTKMenuTray)
         except Exception as e:
             traylog("cannot load gtk menu tray: %s", e)
-    return []
+    return c
 
 
 def get_native_notifier_classes():
