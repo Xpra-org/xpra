@@ -12,9 +12,11 @@ import socket
 import xpra
 from xpra.scripts.config import python_platform
 from xpra.util import updict, envbool, get_util_logger
-from xpra.os_util import get_linux_distribution, PYTHON3, BITS, POSIX
+from xpra.os_util import get_linux_distribution, PYTHON3, BITS, POSIX, WIN32
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
+
+CHECK_SSL = envbool("XPRA_VERSION_CHECK_SSL", not WIN32)
 
 
 def log(msg, *args, **kwargs):
@@ -189,13 +191,7 @@ def get_version_from_url(url):
 
 def version_update_check():
     FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
-    from xpra.os_util import WIN32
-    if WIN32:
-        #no idea how to make it verify the certificate properly
-        #so don't bother
-        CURRENT_VERSION_URL = "http://xpra.org/CURRENT_VERSION"
-    else:
-        CURRENT_VERSION_URL = "https://xpra.org/CURRENT_VERSION"
+    CURRENT_VERSION_URL = "%s://xpra.org/CURRENT_VERSION" % ("https" if CHECK_SSL else "http")
     PLATFORM_FRIENDLY_NAMES = {
         "linux2"    : "LINUX",
         "win"       : "WINDOWS",
