@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,8 @@ from xpra.os_util import memoryview_to_bytes, _buffer
 from xpra.log import Logger
 
 log = Logger("tray")
+
+glib = import_glib()
 
 
 class ClientTray(ClientWidgetBase):
@@ -111,7 +113,8 @@ class ClientTray(ClientWidgetBase):
                     client_properties["screen"] = screen
             #scale to server coordinates
             sx, sy, sw, sh = self._client.crect(x, y, w, h)
-            log("%s.reconfigure(%s) sending configure for geometry=%s : %s", self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
+            log("%s.reconfigure(%s) sending configure for geometry=%s : %s",
+                self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
             self._client.send("configure-window", self._id, sx, sy, sw, sh, client_properties)
         if self._size!=(w, h):
             self.new_backing(w, h)
@@ -141,7 +144,8 @@ class ClientTray(ClientWidgetBase):
 
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
-        log("%s.draw_region%s", self, (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
+        log("%s.draw_region%s", self,
+            (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
 
         #note: a new backing may be assigned between the time we call draw_region
         # and the time we get the callback (as the draw may use idle_add)
@@ -197,7 +201,6 @@ class TrayBacking(WindowBackingBase):
     def __init__(self, wid, _w, _h, _has_alpha, data=None):
         self.data = data
         WindowBackingBase.__init__(self, wid, True)
-        self.idle_add = import_glib().idle_add
         self._backing = object()    #pretend we have a backing structure
 
     def get_encoding_properties(self):
@@ -207,13 +210,21 @@ class TrayBacking(WindowBackingBase):
             "encoding.transparency" : True,
             }
 
+    def idle_add(self, *args, **kwargs):
+        return glib.idle_add(*args, **kwargs)
+
+    def paint_scroll(self, _img_data, _options, callbacks):
+        raise Exception("scroll should not be used with tray icons")
+
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
-        log("TrayBacking(%i)._do_paint_rgb24%s", self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
+        log("TrayBacking(%i)._do_paint_rgb24%s",
+            self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
         self.data = ["rgb24", width, height, rowstride, img_data[:], options]
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
-        log("TrayBacking(%i)._do_paint_rgb32%s", self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
+        log("TrayBacking(%i)._do_paint_rgb32%s",
+            self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
         self.data = ["rgb32", width, height, rowstride, img_data[:], options]
         return True
