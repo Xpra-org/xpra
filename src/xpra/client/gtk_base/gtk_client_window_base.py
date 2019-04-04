@@ -1405,10 +1405,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.queue_draw_area(x, y, w, h)
 
 
+    def do_button_press_event(self, event):
+        gtk.Window.do_button_press_event(self, event)
+        self._button_action(event.button, event, True)
+
+    def do_button_release_event(self, event):
+        gtk.Window.do_button_release_event(self, event)
+        self._button_action(event.button, event, False)
+
     ######################################################################
     # pointer motion
 
     def do_motion_notify_event(self, event):
+        gtk.Window.do_motion_notify_event(self, event)
         if self.moveresize_event:
             self.motion_moveresize(event)
         ClientWindowBase.do_motion_notify_event(self, event)
@@ -1921,6 +1930,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.send("unmap-window", self._id, False)
 
     def do_delete_event(self, event):
+        #not implemented in gi.repository.Gtk.Window
+        #gtk.Window.do_delete_event(self, event)
         eventslog("do_delete_event(%s)", event)
         self._client.window_close_event(self._id)
         return True
