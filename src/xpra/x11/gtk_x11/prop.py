@@ -23,9 +23,9 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_xvisual,                #@UnresolvedImport
     )
 from xpra.gtk_common.gtk_util import get_xwindow
-from xpra.x11.bindings.window_bindings import (
-    X11WindowBindings,          #@UnresolvedImport
-    PropertyError,              #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
+    X11WindowBindings,
+    PropertyError,
     )
 from xpra.gtk_common.error import xsync, XError, XSyncContext
 from xpra.util import repr_ellipsized
