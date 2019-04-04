@@ -70,7 +70,10 @@ def _root_prop_set(prop_name, ptype="u32", value=0):
 def _root_prop_get(prop_name, ptype="u32"):
     from xpra.gtk_common.gtk_util import get_default_root_window
     from xpra.x11.gtk_x11.prop import prop_get
-    return prop_get(get_default_root_window(), prop_name, ptype)
+    try:
+        return prop_get(get_default_root_window(), prop_name, ptype)
+    except Exception:
+        return None
 
 def _save_int(prop_name, pid):
     _root_prop_set(prop_name, "u32", pid)
