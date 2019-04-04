@@ -10,7 +10,7 @@ import array
 from xpra.util import iround, first_time
 from xpra.os_util import (
     strtobytes, bytestostr,
-    WIN32, OSX, PYTHON2, POSIX, is_Wayland,
+    WIN32, OSX, PYTHON2, POSIX,
     )
 from xpra.gtk_common.gobject_compat import (
     import_gtk, import_gdk, import_glib, import_pixbufloader,
