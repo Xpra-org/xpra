@@ -44,6 +44,8 @@ class ClientTray(ClientWidgetBase):
         self._backing = None
         self.new_backing(w, h)
         self.idle_add(self.reconfigure)
+        #things may have settled by now
+        self.timeout_add(1000, self.send_configure)
 
     def set_alpha(self):
         #nothing to do,
