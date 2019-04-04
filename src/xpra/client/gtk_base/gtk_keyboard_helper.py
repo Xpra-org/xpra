@@ -50,8 +50,9 @@ class GTKKeyboardHelper(KeyboardHelper):
                 #automatic changes not allowed!
                 log.info("ignoring keymap change: layout is locked to '%s'", self.layout_str())
                 return
-            if self.update():
-                log.info("keymap has been changed to '%s', sending updated mappings to the server", self.layout_str())
+            if self.update() and self.xkbmap_layout:
+                log.info("keymap has been changed to '%s'", self.layout_str())
+                log.info(" sending updated mappings to the server")
                 if self.xkbmap_layout:
                     self.send_layout()
                 self.send_keymap()
