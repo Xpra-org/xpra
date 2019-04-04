@@ -50,7 +50,7 @@ def _force_length(name, data, length, noerror_length=None):
         log.warn("Odd-lengthed property %s: wanted %s bytes, got %s: %r"
                  % (name, length, len(data), data))
     # Zero-pad data
-    data += "\0" * length
+    data += b"\0" * length
     return data[:length]
 
 
@@ -82,7 +82,8 @@ class NetWMStrut(object):
 class MotifWMHints(object):
     def __init__(self, _disp, data):
         #some applications use the wrong size (ie: blender uses 16) so pad it:
-        pdata = _force_length("_MOTIF_WM_HINTS", data, 20, 16)
+        sizeof_long = struct.calcsize(b"@L")
+        pdata = _force_length("_MOTIF_WM_HINTS", data, sizeof_long*5, sizeof_long*4)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
             struct.unpack(b"@LLLlL", pdata)
         log("MotifWMHints(%s)=%s", hexstr(data), self)
