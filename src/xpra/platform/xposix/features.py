@@ -37,7 +37,9 @@ if is_Wayland():
 else:
     CLIPBOARD_NATIVE_CLASS = "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
-CLIPBOARDS=["CLIPBOARD", "PRIMARY", "SECONDARY"]
+CLIPBOARDS=["CLIPBOARD", "PRIMARY"]
+if not is_Wayland():
+    CLIPBOARDS.append("SECONDARY")
 
 OPEN_COMMAND = ["/usr/bin/xdg-open"]
 
