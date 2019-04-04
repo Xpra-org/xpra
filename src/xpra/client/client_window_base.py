@@ -606,7 +606,7 @@ class ClientWindowBase(ClientWidgetBase):
         if b:
             b.toggle()
             log("magic_key%s border=%s", args, b)
-            self.queue_draw(0, 0, *self._size)
+            self.queue_draw_area(0, 0, *self._size)
 
     def refresh_window(self, *args):
         log("refresh_window(%s) wid=%s", args, self._id)
@@ -641,7 +641,7 @@ class ClientWindowBase(ClientWidgetBase):
                 if self.window_offset:
                     rx += self.window_offset[0]
                     ry += self.window_offset[1]
-                self.idle_add(self.queue_draw, rx, ry, rw, rh)
+                self.idle_add(self.queue_draw_area, rx, ry, rw, rh)
         #only register this callback if we actually need it:
         if backing.draw_needs_refresh:
             callbacks.append(after_draw_refresh)
@@ -660,7 +660,7 @@ class ClientWindowBase(ClientWidgetBase):
         #with normal windows, we just queue a draw request
         #and let the expose event paint the spinner
         w, h = self.get_size()
-        self.queue_draw(0, 0, w, h)
+        self.queue_draw_area(0, 0, w, h)
 
     def can_have_spinner(self):
         if self._backing is None:

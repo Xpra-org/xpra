@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import math
 import os.path
 try:
@@ -13,7 +12,7 @@ try:
 except ImportError:
     from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
 
-from xpra.os_util import bytestostr, is_X11, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import bytestostr, is_X11, monotonic_time, WIN32, OSX, POSIX, PYTHON3
 from xpra.util import (
     AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
@@ -785,7 +784,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 state_updates, self.window_offset, (w, h), (ww, wh))
             if self._backing.offsets!=(0, 0, 0, 0):
                 self.center_backing(w, h)
-                self.queue_draw(0, 0, ww, wh)
+                self.queue_draw_area(0, 0, ww, wh)
         #decide if this is really an update by comparing with our local state vars:
         #(could just be a notification of a state change we already know about)
         actual_updates = {}
@@ -1394,7 +1393,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if value:
             #repaint the scale value (in window coordinates):
             x, y, w, h = abs_coords(*value[2:5])
-            self.queue_draw(x, y, w, h)
+            self.queue_draw_area(x, y, w, h)
             #clear it shortly after:
             self.cancel_remove_pointer_overlay_timer()
             def remove_pointer_overlay():
@@ -1403,7 +1402,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.remove_pointer_overlay_timer = self.timeout_add(CURSOR_IDLE_TIMEOUT*1000, remove_pointer_overlay)
         if prev:
             x, y, w, h = abs_coords(*prev[2:5])
-            self.queue_draw(x, y, w, h)
+            self.queue_draw_area(x, y, w, h)
 
 
     ######################################################################
@@ -1613,7 +1612,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         context.set_line_cap(cairo.LINE_CAP_ROUND)
         context.translate(w/2, h/2)
         from xpra.client.spinner import cv
-        count = int(time.time()*4.0)
+        count = int(monotonic_time()*4.0)
         for i in range(8):      #8 lines
             context.set_source_rgba(0, 0, 0, cv.trs[count%8][i])
             context.move_to(0.0, -dim/4.0)
@@ -1628,7 +1627,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #with normal windows, we just queue a draw request
         #and let the expose event paint the spinner
         w, h = self.get_size()
-        self.queue_draw(0, 0, w, h)
+        self.queue_draw_area(0, 0, w, h)
 
 
     def do_map_event(self, event):
@@ -1730,7 +1729,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._set_backing_size(w, h)
         elif self._backing and not self._iconified:
             geomlog("configure event: size unchanged, queueing redraw")
-            self.queue_draw(0, 0, w, h)
+            self.queue_draw_area(0, 0, w, h)
 
     def send_configure_event(self, skip_geometry=False):
         assert skip_geometry or not self.is_OR()
@@ -1781,7 +1780,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._resize_counter = resize_counter
         if (w, h)==(ww, wh):
             self._backing.offsets = 0, 0, 0, 0
-            self.queue_draw(0, 0, w, h)
+            self.queue_draw_area(0, 0, w, h)
             return
         if not self._fullscreen and not self._maximized:
             gtk.Window.resize(self, w, h)
@@ -1791,7 +1790,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.center_backing(w, h)
         geomlog("backing offsets=%s, window offset=%s", self._backing.offsets, self.window_offset)
         self._set_backing_size(w, h)
-        self.queue_draw(0, 0, ww, wh)
+        self.queue_draw_area(0, 0, ww, wh)
 
     def center_backing(self, w, h):
         ww, wh = self.get_size()
@@ -1915,6 +1914,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_unmap_event(self, event):
+        gtk.Window.do_unmap_event(self, event)
         eventslog("do_unmap_event(%s)", event)
         self._unfocus()
         if not self._override_redirect:

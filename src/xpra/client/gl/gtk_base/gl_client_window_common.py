@@ -44,9 +44,9 @@ class GLClientWindowCommon(object):
         log("spinner(%s) backing=%s, paint_screen=%s, paint_spinner=%s", ok, b._backing, b.paint_screen, b.paint_spinner)
         if b._backing and b.paint_screen:
             w, h = self.get_size()
-            self.queue_draw(0, 0, w, h)
+            self.queue_draw_area(0, 0, w, h)
 
-    def queue_draw(self, x, y, w, h):
+    def queue_draw_area(self, x, y, w, h):
         b = self._backing
         if not b:
             return
@@ -86,5 +86,5 @@ class GLClientWindowCommon(object):
                 with b.gl_context():
                     b.gl_init()
                     b.present_fbo(0, 0, *b.size)
-                self.queue_draw(0, 0, *self._size)
+                self.queue_draw_area(0, 0, *self._size)
         log("gl magic_key%s border=%s, backing=%s", args, self.border, b)

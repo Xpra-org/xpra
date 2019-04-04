@@ -100,9 +100,9 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     ######################################################################
 
-    def queue_draw(self, x, y, width, height):
+    def queue_draw_area(self, x, y, width, height):
         window = self.get_window()
-        drawlog("queue_draw%s window=%s, window offset=%s", (x, y, width, height), window, self.window_offset)
+        drawlog("queue_draw_area%s window=%s, window offset=%s", (x, y, width, height), window, self.window_offset)
         if not window:
             log.warn("Warning: ignoring draw packet,")
             log.warn(" received for a window which is not realized yet or gone already")
