@@ -155,7 +155,7 @@ class ClientWindow(GTKClientWindowBase):
 
 
     def do_draw(self, context):
-        #Gtk.Window.do_draw(self, context)
+        Gtk.Window.do_draw(self, context)
         paintlog("do_draw(%s)", context)
         backing = self._backing
         if self.get_mapped() and backing:
