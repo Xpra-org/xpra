@@ -12,7 +12,7 @@ from PIL import Image
 
 from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes, strtobytes, BytesIOClass
 from xpra.net import compression
-from xpra.util import envbool, envint
+from xpra.util import envbool, envint, csv
 from xpra.log import Logger
 
 log = Logger("icon")
@@ -180,7 +180,8 @@ class WindowIconSource(object):
         if not idata:
             return
         w, h, pixel_format, pixel_data = idata
-        log("compress_and_send_window_icon() %ix%i in %s format, %i bytes", w, h, pixel_format, len(pixel_data))
+        log("compress_and_send_window_icon() %ix%i in %s format, %i bytes for wid=%i",
+            w, h, pixel_format, len(pixel_data), self.wid)
         assert pixel_format in ("BGRA", "RGBA", "png"), "invalid window icon format %s" % pixel_format
         if pixel_format=="BGRA":
             #BGRA data is always unpremultiplied
@@ -245,10 +246,13 @@ class WindowIconSource(object):
     def choose_icon(self, icons, max_w=1024, max_h=1024):
         if not icons:
             return None
+        log("choose_icon from: %s", csv("%ix%i %s" % icon[:3] for icon in icons))
         size_image = dict((icon[0]*icon[1], icon) for icon in icons if icon[0]<max_w and icon[1]<max_h)
         if not size_image:
             return None
         #we should choose one whose size is close to what the client wants,
         #take the biggest one for now:
         largest_size = sorted(size_image)[-1]
-        return size_image[largest_size]
+        icon = size_image[largest_size]
+        log("choose_icon(..)=%ix%i %s", *icon[:3])
+        return icon
