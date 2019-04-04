@@ -293,7 +293,7 @@ cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
     cdef unsigned int argb                      #@DuplicateSignature
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     cdef MemBuf output_buf = getbuf(argb_len)
-    cdef unsigned char* argb_out = <unsigned char*> output_buf.get_mem()
+    cdef unsigned int* argb_out = <unsigned int*> output_buf.get_mem()
     cdef int i                                  #@DuplicateSignature
     for 0 <= i < argb_len / 4:
         argb = buf[i]
