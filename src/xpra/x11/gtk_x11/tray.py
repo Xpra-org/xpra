@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
@@ -73,6 +74,9 @@ TRANSPARENCY = True
 
 #Java can send this message to the tray (no idea why):
 IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES", )
+
+
+MAX_TRAY_SIZE = envint("XPRA_MAX_TRAY_SIZE", 64)
 
 
 def get_tray_window(tray_window):
@@ -241,8 +245,8 @@ class SystemTray(gobject.GObject):
         event_mask = STRUCTURE_MASK | EXPOSURE_MASK | PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
         add_event_receiver(window, self)
-        w = max(1, min(128, w))
-        h = max(1, min(128, h))
+        w = max(1, min(MAX_TRAY_SIZE, w))
+        h = max(1, min(MAX_TRAY_SIZE, h))
         title = prop_get(window, "_NET_WM_NAME", "utf8", ignore_errors=True)
         if title is None:
             title = prop_get(window, "WM_NAME", "latin1", ignore_errors=True)
