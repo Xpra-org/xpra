@@ -6,6 +6,7 @@
 
 from xpra.x11.models.core import CoreX11WindowModel, gobject
 from xpra.gtk_common.gtk_util import PARAM_READABLE
+from xpra.util import AdHocStruct
 from xpra.log import Logger
 
 log = Logger("x11", "window", "tray")
@@ -39,5 +40,10 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         log("SystemTrayModel.move_resize(%s, %s, %s, %s)", x, y, width, height)
         self.client_window.move_resize(x, y, width, height)
         self._updateprop("geometry", (x, y, width, height))
+        #force a refresh:
+        event = AdHocStruct()
+        event.x = event.y = 0
+        event.width , event.height = self.get_dimensions()
+        self.emit("client-contents-changed", event)
 
 gobject.type_register(SystemTrayWindowModel)
