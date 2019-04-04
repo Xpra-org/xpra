@@ -720,7 +720,8 @@ class CoreX11WindowModel(WindowModelStub):
             title = self.get_property("title")
             xid = self.get_property("xid")
             if FORCE_QUIT:
-                log.warn("window %#x ('%s') does not support WM_DELETE_WINDOW... using force_quit", xid, title)
+                log.info("window %#x ('%s') does not support WM_DELETE_WINDOW", xid, title)
+                log.info(" using force_quit")
                 # You don't wanna play ball?  Then no more Mr. Nice Guy!
                 self.force_quit()
             else:
