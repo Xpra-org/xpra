@@ -14,8 +14,9 @@ from gi.repository import GdkPixbuf             #@UnresolvedImport @UnusedImport
 from xpra.client.gtk3.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
-from xpra.os_util import bytestostr, WIN32
+from xpra.os_util import bytestostr
 from xpra.log import Logger
+
 log = Logger("gtk", "window")
 paintlog = Logger("paint")
 metalog = Logger("metadata")
