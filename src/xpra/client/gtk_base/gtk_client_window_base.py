@@ -201,7 +201,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #gtk.Window.__init__() is called from do_init_window()
 
     def init_window(self, metadata):
-        self.init_max_window_size(metadata)
+        self.init_max_window_size()
         if self._is_popup(metadata):
             window_type = WINDOW_POPUP
         else:
@@ -277,8 +277,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         dest_window = xid(drag_dest_window(context))
         source_window = xid(context.get_source_window())
         suggested_action = context.get_suggested_action()
-        draglog("drag_got_data_cb context: source_window=%#x, dest_window=%#x, suggested_action=%s, actions=%s, targets=%s",
-                source_window, dest_window, suggested_action, actions, targets)
+        draglog("drag_got_data_cb context: source_window=%#x, dest_window=%#x",
+                source_window, dest_window)
+        draglog("drag_got_data_cb context: suggested_action=%s, actions=%s, targets=%s",
+                suggested_action, actions, targets)
         dtype = selection.get_data_type()
         fmt = selection.get_format()
         l = selection.get_length()
@@ -421,7 +423,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return self.schedule_recheck_focus()
 
 
-    def init_max_window_size(self, metadata):
+    def init_max_window_size(self):
         """ used by GL windows to enforce a hard limit on window sizes """
         saved_mws = self.max_window_size
         def clamp_to(maxw, maxh):
@@ -441,8 +443,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #we have to take scaling into account (if any):
         clamp_to(*self._client.sp(*self.MAX_BACKING_DIMS))
         if self.max_window_size!=saved_mws:
-            log("init_max_window_size(..) max-window-size changed from %s to %s, because of max viewport dims %s and max backing dims %s",
-                saved_mws, self.max_window_size, self.MAX_VIEWPORT_DIMS, self.MAX_BACKING_DIMS)
+            log("init_max_window_size(..) max-window-size changed from %s to %s",
+                saved_mws, self.max_window_size)
+            log(" because of max viewport dims %s and max backing dims %s",
+                self.MAX_VIEWPORT_DIMS, self.MAX_BACKING_DIMS)
 
 
     def is_awt(self, metadata):
@@ -520,6 +524,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def setup_window(self, *args):
+        log("setup_window%s", args)
         self.set_alpha()
 
         if self._override_redirect:
@@ -780,8 +785,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #if we unfullscreen or unmaximize, re-calculate offsets if we have any:
             w, h = self._backing.render_size
             ww, wh = self.get_size()
-            log("update_window_state(%s) unmax / unfullscreen - window_offset=%s, backing render_size=%s, window size=%s",
-                state_updates, self.window_offset, (w, h), (ww, wh))
+            log("update_window_state(%s) unmax or unfullscreen", state_updates)
+            log("window_offset=%s, backing render_size=%s, window size=%s",
+                self.window_offset, (w, h), (ww, wh))
             if self._backing.offsets!=(0, 0, 0, 0):
                 self.center_backing(w, h)
                 self.queue_draw_area(0, 0, ww, wh)
@@ -1066,60 +1072,64 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def property_changed(self, widget, event):
         statelog("property_changed(%s, %s) : %s", widget, event, event.atom)
-        if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect and self._can_set_workspace:
-            self.do_workspace_changed(event)
-        elif event.atom=="_NET_FRAME_EXTENTS" and prop_get:
-            v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
-            statelog("_NET_FRAME_EXTENTS: %s", v)
-            if v:
-                if v==self._current_frame_extents:
-                    #unchanged
-                    return
-                if not self._been_mapped:
-                    #map event will take care of sending it
-                    return
-                if self.is_OR() or self.is_tray():
-                    #we can't do it: the server can't handle configure packets for OR windows!
-                    return
-                if not self._client.server_window_frame_extents:
-                    #can't send cheap "skip-geometry" packets or frame-extents feature not supported:
-                    return
-                #tell server about new value:
-                self._current_frame_extents = v
-                statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
-                self._window_state["frame"] = self._client.crect(*v)
-                self.send_configure_event(True)
-        elif event.atom=="XKLAVIER_STATE" and prop_get:
-            #unused for now, but log it:
-            xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
-            keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
-        elif event.atom=="_NET_WM_STATE" and prop_get:
-            wm_state_atoms = prop_get(self.get_window(), "_NET_WM_STATE", ["atom"], ignore_errors=False)
-            #code mostly duplicated from gtk_x11/window.py:
-            WM_STATE_NAME = {
-                             "fullscreen"            : ("_NET_WM_STATE_FULLSCREEN", ),
-                             "maximized"             : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
-                             "shaded"                : ("_NET_WM_STATE_SHADED", ),
-                             "sticky"                : ("_NET_WM_STATE_STICKY", ),
-                             "skip-pager"            : ("_NET_WM_STATE_SKIP_PAGER", ),
-                             "skip-taskbar"          : ("_NET_WM_STATE_SKIP_TASKBAR", ),
-                             "above"                 : ("_NET_WM_STATE_ABOVE", ),
-                             "below"                 : ("_NET_WM_STATE_BELOW", ),
-                             "focused"               : ("_NET_WM_STATE_FOCUSED", ),
-                             }
-            state_atoms = set(wm_state_atoms or [])
-            state_updates = {}
-            for state, atoms in WM_STATE_NAME.items():
-                var = "_" + state.replace("-", "_")           #ie: "skip-pager" -> "_skip_pager"
-                cur_state = getattr(self, var)
-                wm_state_is_set = set(atoms).issubset(state_atoms)
-                if wm_state_is_set and not cur_state:
-                    state_updates[state] = True
-                elif cur_state and not wm_state_is_set:
-                    state_updates[state] = False
-            log("_NET_WM_STATE=%s, state_updates=%s", wm_state_atoms, state_updates)
-            if state_updates:
-                self.update_window_state(state_updates)
+        if event.atom=="_NET_WM_DESKTOP":
+            if self._been_mapped and not self._override_redirect and self._can_set_workspace:
+                self.do_workspace_changed(event)
+        elif event.atom=="_NET_FRAME_EXTENTS":
+            if prop_get:
+                v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+                statelog("_NET_FRAME_EXTENTS: %s", v)
+                if v:
+                    if v==self._current_frame_extents:
+                        #unchanged
+                        return
+                    if not self._been_mapped:
+                        #map event will take care of sending it
+                        return
+                    if self.is_OR() or self.is_tray():
+                        #we can't do it: the server can't handle configure packets for OR windows!
+                        return
+                    if not self._client.server_window_frame_extents:
+                        #can't send cheap "skip-geometry" packets or frame-extents feature not supported:
+                        return
+                    #tell server about new value:
+                    self._current_frame_extents = v
+                    statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
+                    self._window_state["frame"] = self._client.crect(*v)
+                    self.send_configure_event(True)
+        elif event.atom=="XKLAVIER_STATE":
+            if prop_get:
+                #unused for now, but log it:
+                xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
+                keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
+        elif event.atom=="_NET_WM_STATE":
+            if prop_get:
+                wm_state_atoms = prop_get(self.get_window(), "_NET_WM_STATE", ["atom"], ignore_errors=False)
+                #code mostly duplicated from gtk_x11/window.py:
+                WM_STATE_NAME = {
+                    "fullscreen"    : ("_NET_WM_STATE_FULLSCREEN", ),
+                    "maximized"     : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
+                    "shaded"        : ("_NET_WM_STATE_SHADED", ),
+                    "sticky"        : ("_NET_WM_STATE_STICKY", ),
+                    "skip-pager"    : ("_NET_WM_STATE_SKIP_PAGER", ),
+                    "skip-taskbar"  : ("_NET_WM_STATE_SKIP_TASKBAR", ),
+                    "above"         : ("_NET_WM_STATE_ABOVE", ),
+                    "below"         : ("_NET_WM_STATE_BELOW", ),
+                    "focused"       : ("_NET_WM_STATE_FOCUSED", ),
+                    }
+                state_atoms = set(wm_state_atoms or [])
+                state_updates = {}
+                for state, atoms in WM_STATE_NAME.items():
+                    var = "_" + state.replace("-", "_")           #ie: "skip-pager" -> "_skip_pager"
+                    cur_state = getattr(self, var)
+                    wm_state_is_set = set(atoms).issubset(state_atoms)
+                    if wm_state_is_set and not cur_state:
+                        state_updates[state] = True
+                    elif cur_state and not wm_state_is_set:
+                        state_updates[state] = False
+                log("_NET_WM_STATE=%s, state_updates=%s", wm_state_atoms, state_updates)
+                if state_updates:
+                    self.update_window_state(state_updates)
 
 
     ######################################################################
@@ -1154,12 +1164,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("window is on all workspaces")
             suspend_resume = False
         elif desktop_workspace!=window_workspace:
-            workspacelog("window is on a different workspace, increasing its batch delay (desktop: %s, window: %s)",
-                         wn(desktop_workspace), wn(window_workspace))
+            workspacelog("window is on a different workspace, increasing its batch delay")
+            workspacelog(" desktop: %s, window: %s", wn(desktop_workspace), wn(window_workspace))
             suspend_resume = True
         elif self._window_workspace!=self._desktop_workspace:
             assert desktop_workspace==window_workspace
-            workspacelog("window was on a different workspace, resetting its batch delay (was desktop: %s, window: %s, now both on %s)",
+            workspacelog("window was on a different workspace, resetting its batch delay")
+            workspacelog(" (was desktop: %s, window: %s, now both on %s)",
                          wn(self._window_workspace), wn(self._desktop_workspace), wn(desktop_workspace))
             suspend_resume = False
         self._window_workspace = window_workspace
@@ -1194,8 +1205,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         desktop = self.get_desktop_workspace()
         ndesktops = self.get_workspace_count()
         current = self.get_window_workspace()
-        workspacelog("set_workspace(%s) realized=%s, current workspace=%s, detected=%s, desktop workspace=%s, ndesktops=%s",
-                     wn(workspace), self.is_realized(), wn(self._window_workspace), wn(current), wn(desktop), ndesktops)
+        workspacelog("set_workspace(%s) realized=%s", wn(workspace), self.is_realized())
+        workspacelog(" current workspace=%s, detected=%s, desktop workspace=%s, ndesktops=%s",
+                     wn(self._window_workspace), wn(current), wn(desktop), ndesktops)
         if not self._can_set_workspace or ndesktops is None:
             return
         if workspace==desktop or workspace==WORKSPACE_ALL or desktop is None:
