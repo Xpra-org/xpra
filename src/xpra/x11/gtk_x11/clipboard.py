@@ -12,7 +12,6 @@ from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow, GDKWindow,
     PROPERTY_CHANGE_MASK, CLASS_INPUT_ONLY,
     )
-from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                          #@UnresolvedImport
     remove_event_receiver,                       #@UnresolvedImport
@@ -21,9 +20,9 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProtocolHelperCore, ClipboardProxyCore,
     must_discard,
     )
-from xpra.x11.bindings.window_bindings import (
-    constants, PropertyError, #@UnresolvedImport
-    X11WindowBindings, #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
+    constants, PropertyError,
+    X11WindowBindings,
     )
 from xpra.util import csv, repr_ellipsized
 from xpra.log import Logger
@@ -220,7 +219,7 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
         return ClipboardProtocolHelperCore._do_munge_raw_selection_to_wire(self, target, dtype, dformat, data)
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
-        if encoding==b"atoms":
+        if dtype==b"ATOM":
             return strings_to_xatoms(data)
         return ClipboardProtocolHelperCore._munge_wire_selection_to_raw(self, encoding, dtype, dformat, data)
 
@@ -367,7 +366,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         prop = event.property
         target = str(event.target)
         def nodata():
-            self.set_selection_response(requestor, target, prop, "STRING", 8, "", time=event.time)
+            self.set_selection_response(requestor, target, prop, "STRING", 8, b"", time=event.time)
         if not self.owned:
             log.warn("Warning: clipboard selection request received,")
             log.warn(" but we don't own the selection,")
@@ -406,6 +405,8 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         if target_data:
             #we have it already
             dtype, dformat, data = target_data
+            log("setting target data for '%s': %s, %s, %s (%s)",
+                target, dtype, dformat, repr_ellipsized(str(data)), type(data))
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, event.time)
             return
 
@@ -435,7 +436,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         log("got_contents%s pending=%s",
             (target, dtype, dformat, repr_ellipsized(str(data))), csv(pending))
         for requestor, prop, time in pending:
-            log("sending response %s to property %s of window %s as %s",
+            log("setting response %s to property %s of window %s as %s",
                      repr_ellipsized(data), prop, self.get_wininfo(get_xwindow(requestor)), dtype)
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, time)
 

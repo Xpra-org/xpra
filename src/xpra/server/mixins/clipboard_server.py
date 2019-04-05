@@ -196,7 +196,6 @@ class ClipboardServer(StubServerMixin):
         self.idle_add(do_check)
 
     def clipboard_nesting_check(self, action, packet_type, ss):
-        log("clipboard_nesting_check(%s, %s, %s)", action, packet_type, ss)
         cc = self._clipboard_client
         if cc is None:
             log("not %s clipboard packet '%s': no clipboard client", action, packet_type)
