@@ -1297,8 +1297,6 @@ def do_validate_encryption(auth, tcp_auth,
         return
     from xpra.net.crypto import crypto_backend_init
     crypto_backend_init()
-    if not encryption and not tcp_encryption:
-        return
     env_key = os.environ.get("XPRA_ENCRYPTION_KEY")
     pass_key = os.environ.get("XPRA_PASSWORD")
     from xpra.net.crypto import ENCRYPTION_CIPHERS
