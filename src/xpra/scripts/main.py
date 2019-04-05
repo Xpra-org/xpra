@@ -1259,7 +1259,16 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 SSLEOFError = getattr(ssl, "SSLEOFError", None)
                 if SSLEOFError and isinstance(e, SSLEOFError):
                     return None
-                raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % e)
+                SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
+                if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
+                    try:
+                        msg = e.args[1].split(":", 2)[2]
+                    except:
+                        msg = str(e)
+                    #ssllog.warn("host failed SSL verification: %s", msg)
+                else:
+                    msg = str(e)
+                raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % msg)
         return ssl_sock
     return do_wrap_socket
 
