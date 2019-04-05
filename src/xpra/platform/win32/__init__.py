@@ -280,24 +280,23 @@ def get_console_position(handle):
 _wait_for_input = False
 def set_wait_for_input():
     global _wait_for_input
+    _wait_for_input = should_wait_for_input()
+
+def should_wait_for_input():
     wfi = os.environ.get("XPRA_WAIT_FOR_INPUT")
     if wfi is not None:
-        _wait_for_input = wfi!="0"
-        return
+        return wfi!="0"
     if is_wine():
         #don't wait for input when running under wine
         #(which usually does not popup a new shell window)
-        _wait_for_input = False
-        return
+        return False
     if os.environ.get("TERM", "")=="xterm":
         #msys, cygwin and git bash environments don't popup a new shell window
         #and they all set TERM=xterm
-        _wait_for_input = False
-        return
+        return False
     handle = GetStdHandle(STD_OUTPUT_HANDLE)
     if not_a_console(handle):
-        _wait_for_input = False
-        return
+        return False
     #wait for input if this is a brand new console:
     return get_console_position(handle)==(0, 0)
 
