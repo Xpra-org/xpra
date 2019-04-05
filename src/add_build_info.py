@@ -13,13 +13,14 @@ import os.path
 import re
 import sys
 
-def bytestostr(x):
-    return str(x)
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
     def bytestostr(x):
-        if type(x)==bytes:
+        if isinstance(x, bytes):
             return x.decode("latin1")
+        return str(x)
+else:
+    def bytestostr(x):
         return str(x)
 
 
@@ -52,7 +53,7 @@ def save_properties(props, filename):
             s = bytestostr(value).replace("'", "\\'")
             w(name)
             w("=")
-            quote_it = type(value) not in (bool, tuple, int)
+            quote_it = not isinstance(value, (bool, tuple, int))
             if quote_it:
                 w("'")
             w(s)

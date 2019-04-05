@@ -204,7 +204,8 @@ class AvahiPublisher(object):
 
 
 def main():
-    import glib
+    from xpra.gtk_common.gobject_compat import import_glib
+    glib = import_glib()
     import random
     import signal
     port = int(20000*random.random())+10000
