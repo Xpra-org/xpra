@@ -376,7 +376,7 @@ class ClipboardProtocolHelperCore(object):
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
         log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s",
-            encoding, dtype, dformat, len(data or ""))
+            encoding, dtype, dformat, len(data or b""))
         if self.max_clipboard_receive_size > 0:
             max_recv_datalen = self.max_clipboard_receive_size * 8 // get_format_size(dformat)
             if len(data) > max_recv_datalen:
@@ -510,8 +510,8 @@ class ClipboardProtocolHelperCore(object):
     def process_clipboard_packet(self, packet):
         packet_type = bytestostr(packet[0])
         handler = self._packet_handlers.get(packet_type)
-        log("process clipboard handler(%s)=%s", packet_type, handler)
         if handler:
+            #log("process clipboard handler(%s)=%s", packet_type, handler)
             handler(packet)
         else:
             log.warn("Warning: no clipboard packet handler for '%s'", packet_type)
