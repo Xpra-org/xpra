@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2013 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,9 +15,9 @@ import sys
 if sys.version_info[0] >= 3:
     long = int              #@ReservedAssignment
     #idiotic py3k unicode mess makes us reinvent the wheel again:
-    def strindex(s, c, start):
+    def strindex(s, char, start):
         i = start
-        while s[i] != ord(c):
+        while s[i] != ord(char):
             i += 1
             if i>=len(s):
                 return -1
@@ -27,12 +27,12 @@ if sys.version_info[0] >= 3:
         return ord(x)
     import codecs
     def b(x):
-        if type(x)==bytes:
+        if isinstance(x, bytes):
             return x
         return codecs.latin_1_encode(x)[0]
 else:
-    def strindex(s, c, start):
-        return s.index(c, start)
+    def strindex(s, char, start):
+        return s.index(char, start)
     def cv(x):
         return x
     def b(x):               #@DuplicatedSignature
@@ -102,8 +102,8 @@ for c in '0123456789':
     decode_func[c] = decode_string
 decode_func['u'] = decode_unicode
 #now as byte values:
-for k,v in dict(decode_func).items():
-    decode_func[ord(k)] = v
+for dk,dv in dict(decode_func).items():
+    decode_func[ord(dk)] = dv
 
 
 def bdecode(x):
@@ -147,8 +147,10 @@ def encode_dict(x,r):
 
 encode_func = {}
 if sys.version_info[0] < 3:
-    from types import (StringType, UnicodeType, IntType, LongType, DictType, ListType,
-                       TupleType, BooleanType)
+    from types import (
+        StringType, UnicodeType, IntType, LongType, DictType, ListType, #@UnresolvedImport
+        TupleType, BooleanType,                                         #@UnresolvedImport
+        )
     encode_func[IntType] = encode_int
     encode_func[LongType] = encode_int
     encode_func[StringType] = encode_string
