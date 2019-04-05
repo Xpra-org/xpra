@@ -285,7 +285,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._protocol.enable_default_compressor()
         if self.encryption and ENCRYPT_FIRST_PACKET:
             key = self.get_encryption_key()
-            self._protocol.set_cipher_out(self.encryption, DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
+            self._protocol.set_cipher_out(self.encryption,
+                                          DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         self.have_more = self._protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
@@ -456,7 +457,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         lz4 = "lz4" in self.server_compressors and compression.use_lz4
         lzo = "lzo" in self.server_compressors and compression.use_lzo
         if level>0 and len(data)>=256 and (zlib or lz4 or lzo):
-            cw = compression.compressed_wrapper(datatype, data, level=level, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
+            cw = compression.compressed_wrapper(datatype, data, level=level,
+                                                zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
             if len(cw)<len(data):
                 #the compressed version is smaller, use it:
                 return cw
@@ -488,9 +490,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_pending = packet
         now = monotonic_time()
         elapsed = int(1000*(now-self._mouse_position_send_time))
-        mouselog("send_mouse_position(%s) elapsed=%i, delay=%i", packet, elapsed, self._mouse_position_delay)
-        if elapsed<self._mouse_position_delay:
-            self._mouse_position_timer = self.timeout_add(self._mouse_position_delay-elapsed, self.do_send_mouse_position)
+        delay = self._mouse_position_delay-elapsed
+        mouselog("send_mouse_position(%s) elapsed=%i, delay left=%i", packet, elapsed, delay)
+        if delay>0:
+            self._mouse_position_timer = self.timeout_add(delay, self.do_send_mouse_position)
         else:
             self.do_send_mouse_position()
 
@@ -856,7 +859,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         try:
             from xpra.net.bytestreams import pretty_socket
             conn = self._protocol._conn
-            text += " for user '%s',\n connecting to %s server %s" % (self.username, conn.socktype, pretty_socket(conn.remote))
+            text += " for user '%s',\n connecting to %s server %s" % (
+                self.username, conn.socktype, pretty_socket(conn.remote),
+                )
         except:
             pass
         return text
