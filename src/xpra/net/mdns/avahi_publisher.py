@@ -24,11 +24,12 @@ log = Logger("network", "mdns")
 
 def get_interface_index(host):
     log("get_interface_index(%s)", host)
-    if host == "0.0.0.0" or host =="" or host=="*" or host=="::":
+    if host in ("0.0.0.0", "", "*", "::"):
         return avahi.IF_UNSPEC
 
     if not if_nametoindex:
-        log.error("cannot convert interface to index (if_nametoindex is missing), so returning 'IF_UNSPEC', avahi will publish on ALL interfaces")
+        log.warn("Warning: cannot convert interface to index (if_nametoindex is missing)")
+        log.warn(" so returning 'IF_UNSPEC', avahi will publish on ALL interfaces")
         return avahi.IF_UNSPEC
 
     iface = get_iface(host)
@@ -116,7 +117,7 @@ class AvahiPublisher(object):
         self.name = name
         self.stype = stype
         self.domain = domain
-        if (host=="::"):
+        if host=="::":
             host = ""
         self.host = host
         self.port = port
@@ -204,7 +205,8 @@ class AvahiPublisher(object):
 
 def main():
     import glib
-    import random, signal
+    import random
+    import signal
     port = int(20000*random.random())+10000
     host = ""
     name = "test service"

@@ -1,16 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from xpra.util import envbool
 
 XPRA_MDNS_TYPE = "_xpra._tcp."
 RFB_MDNS_TYPE = "_rfb._tcp"
 
-from xpra.util import envbool
-
 AVAHI = envbool("XPRA_AVAHI", True)
 ZEROCONF = envbool("XPRA_ZEROCONF", True)
-SHOW_INTERFACE = envbool("XPRA_MDNS_SHOW_INTERFACE", True)            #publishes the name of the interface we broadcast from
+#publishes the name of the interface we broadcast from:
+SHOW_INTERFACE = envbool("XPRA_MDNS_SHOW_INTERFACE", True)
 
 
 def get_listener_class():
