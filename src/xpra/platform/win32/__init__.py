@@ -296,7 +296,8 @@ def set_wait_for_input():
         return
     handle = GetStdHandle(STD_OUTPUT_HANDLE)
     if not_a_console(handle):
-        return False
+        _wait_for_input = False
+        return
     #wait for input if this is a brand new console:
     return get_console_position(handle)==(0, 0)
 
