@@ -71,11 +71,11 @@ def get_properties(filename):
             for line in f:
                 try:
                     s = line.decode("utf-8")
-                except:
+                except UnicodeDecodeError:
                     #str cannot be decoded!
                     s = str(line)
                 s = s.strip()
-                if len(s)==0:
+                if not s:
                     continue
                 if s[0] in ('!', '#'):
                     continue
@@ -85,6 +85,8 @@ def get_properties(filename):
                     continue
                 name = parts[0]
                 value = parts[1]
+                if not value:
+                    continue
                 if value[0]!="'" or value[-1]!="'":
                     continue
                 props[name]= value[1:-1]
