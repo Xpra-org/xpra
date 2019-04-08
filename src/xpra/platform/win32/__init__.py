@@ -306,7 +306,6 @@ def setup_console_event_listener(handler, enable):
         from xpra.platform.win32.common import SetConsoleCtrlHandler, ConsoleCtrlHandler
         from xpra.log import Logger
         log = Logger("win32")
-        log.enable_debug()
         log("calling SetConsoleCtrlHandler(%s, %s)", handler, enable)
         ctypes_handler = ConsoleCtrlHandler(handler)
         result = SetConsoleCtrlHandler(ctypes_handler, enable)
