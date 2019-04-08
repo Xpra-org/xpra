@@ -163,7 +163,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             removed = tuple(k for k in self.exported_printers if k not in exported_printers)
             if removed:
                 printlog("do_send_printers() printers removed: %s", removed)
-            modified = (k for k,v in exported_printers.items() if
+            modified = tuple(k for k,v in exported_printers.items() if
                         self.exported_printers.get(k)!=v and k not in added)
             if modified:
                 printlog("do_send_printers() printers modified: %s", modified)
