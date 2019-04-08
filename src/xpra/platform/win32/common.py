@@ -7,7 +7,7 @@
 from ctypes import (
     WinDLL, POINTER, WINFUNCTYPE,
     GetLastError, Structure,
-    c_ulong, c_ushort, c_ubyte, c_int, c_uint, c_long, c_void_p, c_size_t, c_char,
+    c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char,
     byref, sizeof,
     )
 from ctypes.wintypes import (
@@ -164,7 +164,7 @@ GetModuleHandleA = kernel32.GetModuleHandleA
 GetModuleHandleA.restype = HMODULE
 GetModuleHandleW = kernel32.GetModuleHandleW
 GetModuleHandleW.restype = HMODULE
-ConsoleCtrlHandler = WINFUNCTYPE(c_int, c_uint)
+ConsoleCtrlHandler = WINFUNCTYPE(BOOL, DWORD)
 SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
 SetConsoleCtrlHandler.argtypes = (ConsoleCtrlHandler, BOOL)
 SetConsoleCtrlHandler.restype = BOOL
