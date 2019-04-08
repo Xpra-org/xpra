@@ -1056,19 +1056,20 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     display = None
     if not proxying:
-        no_gtk()
-        if POSIX and not OSX and (starting or starting_desktop or shadowing):
-            #check that we can access the X11 display:
-            from xpra.x11.vfb_util import verify_display_ready
-            if not verify_display_ready(xvfb, display_name, shadowing):
-                return 1
-            if not PYTHON3:
-                from xpra.x11.gtk2.gdk_display_util import verify_gdk_display       #@UnusedImport
-            else:
-                from xpra.x11.gtk3.gdk_display_util import verify_gdk_display       #@Reimport
-            display = verify_gdk_display(display_name)
-            if not display:
-                return 1
+        if POSIX and not OSX:
+            no_gtk()
+            if starting or starting_desktop or shadowing:
+                #check that we can access the X11 display:
+                from xpra.x11.vfb_util import verify_display_ready
+                if not verify_display_ready(xvfb, display_name, shadowing):
+                    return 1
+                if not PYTHON3:
+                    from xpra.x11.gtk2.gdk_display_util import verify_gdk_display       #@UnusedImport
+                else:
+                    from xpra.x11.gtk3.gdk_display_util import verify_gdk_display       #@Reimport
+                display = verify_gdk_display(display_name)
+                if not display:
+                    return 1
         #on win32, this ensures that we get the correct screen size to shadow:
         from xpra.platform.gui import init as gui_init
         gui_init()
