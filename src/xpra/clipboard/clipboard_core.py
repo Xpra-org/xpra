@@ -339,12 +339,18 @@ class ClipboardProtocolHelperCore(object):
                     "PIXEL", "COLORMAP"):
             log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data or ""))
             return None, None
-        if target==b"TARGETS" and dtype==b"ATOM":
+        if target=="TARGETS" and dtype=="ATOM":
             #targets is special cased here
             #because we get the values in wire format already (not atoms)
             #thanks to the request_targets() function (required on win32)
             return "atoms", _filter_targets(data)
-        return self._do_munge_raw_selection_to_wire(target, dtype, dformat, data)
+        try:
+            return self._do_munge_raw_selection_to_wire(target, dtype, dformat, data)
+        except Exception:
+            log.error("Error: failed to convert selection data to wire format")
+            log.error(" target was %s", target)
+            log.error(" dtype=%s, dformat=%s, data=%s (%s)", dtype, dformat, repr_ellipsized(str(data)), type(data))
+            raise
 
     def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         """ this method is overriden in xclipboard to parse X11 atoms """
