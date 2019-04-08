@@ -109,15 +109,19 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         #if we can, tell it exactly where to connect:
         if self.unix_socket_paths:
             #prefer sockets in public paths:
-            spath = self.unix_socket_paths[0]
-            for x in self.unix_socket_paths:
-                if x.startswith("/tmp") or x.startswith("/var") or x.startswith("/run"):
-                    spath = x
-            attributes["socket-path"] = spath
+            attributes["socket-path"] = self.choose_socket_path()
         log("printer attributes: %s", attributes)
         for k,props in printers.items():
             if k not in self.printers:
                 self.setup_printer(k, props, attributes)
+
+    def choose_socket_path(self):
+        assert self.unix_socket_paths
+        for x in self.unix_socket_paths:
+            if x.startswith("/tmp") or x.startswith("/var") or x.startswith("/run"):
+                return x
+        return self.unix_socket_paths[0]
+
 
     def setup_printer(self, name, props, attributes):
         from xpra.platform.pycups_printing import add_printer
