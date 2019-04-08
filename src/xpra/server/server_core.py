@@ -963,6 +963,7 @@ class ServerCore(object):
     def handle_ssh_connection(self, conn):
         from xpra.server.ssh import make_ssh_server_connection, log as sshlog
         socktype = conn.socktype_wrapped
+        none_auth = not self.auth_classes[socktype]
         sshlog("handle_ssh_connection(%s) socktype wrapped=%s", conn, socktype)
         def ssh_password_authenticate(username, password):
             if not POSIX or getuid()!=0:
@@ -996,7 +997,7 @@ class ServerCore(object):
                     if not r:
                         return False
             return True
-        return make_ssh_server_connection(conn, ssh_password_authenticate)
+        return make_ssh_server_connection(conn, none_auth=none_auth, password_auth=ssh_password_authenticate)
 
     def try_upgrade_to_rfb(self, proto):
         self.cancel_upgrade_to_rfb_timer(proto)

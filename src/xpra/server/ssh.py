@@ -221,9 +221,9 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
 
-def make_ssh_server_connection(conn, password_auth=None):
-    log("make_ssh_server_connection(%s)", conn)
-    ssh_server = SSHServer(password_auth=password_auth)
+def make_ssh_server_connection(conn, none_auth=False, password_auth=None):
+    log("make_ssh_server_connection%s", (conn, none_auth, password_auth))
+    ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth)
     DoGSSAPIKeyExchange = False
     t = None
     def close():
@@ -314,5 +314,6 @@ def make_ssh_server_connection(conn, password_auth=None):
         log.warn(" closing connection from %s", pretty_socket(conn.target))
         close()
         return None
-    #log("client authenticated, channel=%s", chan)
-    return SSHSocketConnection(ssh_server.proxy_channel, conn._socket, target="ssh client")
+    log("client authenticated, channel=%s", chan)
+    sock = conn._socket
+    return SSHSocketConnection(ssh_server.proxy_channel, sock, conn.local, conn.endpoint, conn.target)
