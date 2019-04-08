@@ -300,6 +300,26 @@ def should_wait_for_input():
     #wait for input if this is a brand new console:
     return get_console_position(handle)==(0, 0)
 
+
+def setup_console_event_listener(handler, enable):
+    try:
+        from xpra.platform.win32.common import SetConsoleCtrlHandler
+        from xpra.log import Logger
+        log = Logger("win32")
+        log.enable_debug()
+        log("calling SetConsoleCtrlHandler(%s, %s)", handler, enable)
+        ctypes_handler = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)(handler)
+        result = SetConsoleCtrlHandler(ctypes_handler, enable)
+        log("SetConsoleCtrlHandler(%s, %s)=%s", handler, enable, result)
+        if result==0 and enable:
+            log.error("Error: could not set console control handler:")
+            log.error(" SetConsoleCtrlHandler: %r", ctypes.GetLastError())
+            return False
+        return True
+    except Exception as e:
+        log.error("SetConsoleCtrlHandler error: %s", e)
+        return False
+
 def do_init():
     if FIX_UNICODE_OUT:
         fix_unicode_out()

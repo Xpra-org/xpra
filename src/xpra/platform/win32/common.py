@@ -165,6 +165,7 @@ GetModuleHandleA.restype = HMODULE
 GetModuleHandleW = kernel32.GetModuleHandleW
 GetModuleHandleW.restype = HMODULE
 SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
+SetConsoleCtrlHandler.restype = BOOL
 GetComputerNameW = kernel32.GetComputerNameW
 GetComputerNameW.restype = BOOL
 GetComputerNameW.argtypes = [LPWSTR, LPDWORD]
