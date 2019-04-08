@@ -36,10 +36,10 @@
 import sys, os, syslog
 import subprocess, traceback
 try:
-	#py2:
-	from urlparse import urlparse, parse_qs
+    #py2:
+    from urlparse import urlparse, parse_qs
 except ImportError:
-	from urllib.parse import urlparse, parse_qs
+    from urllib.parse import urlparse, parse_qs
 
 
 __version__ = "3.0"
@@ -47,117 +47,117 @@ __version__ = "3.0"
 
 #Writes a syslog entry (msg) at the default facility:
 def debug(msg):
-	syslog.syslog(syslog.LOG_DEBUG, msg)
+    syslog.syslog(syslog.LOG_DEBUG, msg)
 
 def info(msg):
-	syslog.syslog(syslog.LOG_INFO, msg)
+    syslog.syslog(syslog.LOG_INFO, msg)
 
 def err(msg):
-	syslog.syslog(syslog.LOG_ERR, msg)
+    syslog.syslog(syslog.LOG_ERR, msg)
 
 
 def exec_command(command, env=os.environ.copy()):
-	info("running: %s" % command)
-	PIPE = subprocess.PIPE
-	proc = subprocess.Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, env=env)
-	out,err = proc.communicate()
-	info("returncode=%s" % proc.returncode)
-	if proc.returncode!=0:
-		info("stdout=%s" % out)
-		info("stderr=%s" % err)
-	return proc.returncode
+    info("running: %s" % command)
+    PIPE = subprocess.PIPE
+    proc = subprocess.Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, env=env)
+    out,err = proc.communicate()
+    info("returncode=%s" % proc.returncode)
+    if proc.returncode!=0:
+        info("stdout=%s" % out)
+        info("stderr=%s" % err)
+    return proc.returncode
 
 def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_keyfile,
-				display, filename, mimetype, source, title, printer, no_copies, print_options):
-	if socket_path:
-		#use direct connection to a given socket path:
-		command = ["xpra", "print", "socket:%s" % socket_path]
-	else:
-		#use the display and hope we can find its corresponding socket:
-		command = ["xpra", "print", display]
-		if socket_dir:
-			command.append("--socket-dir=%s" % socket_dir)
-	if encryption:
-		command += ["--encryption=%s" % encryption,
-					"--encryption-keyfile=%s" % encryption_keyfile]
-	if password_file:
-		command += ["--password-file=%s" % password_file]
-	command += [filename, mimetype, source, title, printer, no_copies, print_options]
-	#in this case, running as root cannot be avoided, so skip the warning:
-	#(using "su" causes even more problems)
-	env = os.environ.copy()
-	env["XPRA_NO_ROOT_WARNING"] = "1"
-	return exec_command(command, env=env)
+                display, filename, mimetype, source, title, printer, no_copies, print_options):
+    if socket_path:
+        #use direct connection to a given socket path:
+        command = ["xpra", "print", "socket:%s" % socket_path]
+    else:
+        #use the display and hope we can find its corresponding socket:
+        command = ["xpra", "print", display]
+        if socket_dir:
+            command.append("--socket-dir=%s" % socket_dir)
+    if encryption:
+        command += ["--encryption=%s" % encryption,
+                    "--encryption-keyfile=%s" % encryption_keyfile]
+    if password_file:
+        command += ["--password-file=%s" % password_file]
+    command += [filename, mimetype, source, title, printer, no_copies, print_options]
+    #in this case, running as root cannot be avoided, so skip the warning:
+    #(using "su" causes even more problems)
+    env = os.environ.copy()
+    env["XPRA_NO_ROOT_WARNING"] = "1"
+    return exec_command(command, env=env)
 
 
 def do_main():
-	info(" ".join(["'%s'" % x for x in sys.argv]))
+    info(" ".join(["'%s'" % x for x in sys.argv]))
 
-	if len(sys.argv) == 1:
-		# Without arguments should give backend info.
-		# This is also used when lpinfo -v is issued, where it should include "direct this_backend"
-		sys.stdout.write("direct %s \"Unknown\" \"Direct pdf/postscript printing/forwarding to host via xpra\"\n" % os.path.basename(sys.argv[0]))
-		sys.stdout.flush()
-		return 0
-	if len(sys.argv) not in (6,7):
-		sys.stdout.write("Usage: %s job-id user title copies options [file]\n" % os.path.basename(sys.argv[0]))
-		sys.stdout.flush()
-		err("Wrong number of arguments. Usage: %s job-id user title copies options [file]" % sys.argv[0])
-		return 1
-	job_id, username, title, no_copies, print_options = sys.argv[1:6]
-	if len(sys.argv)==7:
-		filename = sys.argv[6]
-	else:
-		filename = "-"
-	info("version %s, username: %s, title: %s, filename: %s, job_id: %s" % (__version__, username, title, filename, job_id))
-	try:
-		info("uid=%s, gid=%s" % (os.getresuid(), os.getresgid()))
-	except:
-		#osx doesn't have getresuid or getresgid
-		pass
+    if len(sys.argv) == 1:
+        # Without arguments should give backend info.
+        # This is also used when lpinfo -v is issued, where it should include "direct this_backend"
+        sys.stdout.write("direct %s \"Unknown\" \"Direct pdf/postscript printing/forwarding to host via xpra\"\n" % os.path.basename(sys.argv[0]))
+        sys.stdout.flush()
+        return 0
+    if len(sys.argv) not in (6,7):
+        sys.stdout.write("Usage: %s job-id user title copies options [file]\n" % os.path.basename(sys.argv[0]))
+        sys.stdout.flush()
+        err("Wrong number of arguments. Usage: %s job-id user title copies options [file]" % sys.argv[0])
+        return 1
+    job_id, username, title, no_copies, print_options = sys.argv[1:6]
+    if len(sys.argv)==7:
+        filename = sys.argv[6]
+    else:
+        filename = "-"
+    info("version %s, username: %s, title: %s, filename: %s, job_id: %s" % (__version__, username, title, filename, job_id))
+    try:
+        info("uid=%s, gid=%s" % (os.getresuid(), os.getresgid()))
+    except:
+        #osx doesn't have getresuid or getresgid
+        pass
 
-	dev_uri = os.environ['DEVICE_URI']
-	info("DEVICE_URI=%s" % dev_uri)
-	parsed_url = urlparse(dev_uri)
-	attributes = parse_qs(parsed_url.query)
-	info("parsed attributes=%s" % attributes)
-	def aget(k, default_value=""):
-		v =  attributes.get(k)
-		if v is None:
-			return default_value
-		assert len(v)==1
-		return v[0]
+    dev_uri = os.environ['DEVICE_URI']
+    info("DEVICE_URI=%s" % dev_uri)
+    parsed_url = urlparse(dev_uri)
+    attributes = parse_qs(parsed_url.query)
+    info("parsed attributes=%s" % attributes)
+    def aget(k, default_value=""):
+        v =  attributes.get(k)
+        if v is None:
+            return default_value
+        assert len(v)==1
+        return v[0]
 
-	source = aget("source")
-	if not source:
-		raise Exception("Device URI: client source uuid is missing")
-	socket_path = aget("socket-path")
-	display = aget("display", os.environ.get("DISPLAY"))
-	socket_dir = aget("socket-dir")
-	if not display and not socket_path:
-		raise Exception("Device URI: display number and socket path are not specified!")
-	mimetype = aget("mimetype", "application/postscript")
-	printer = aget("remote-printer")
-	password_file = aget("password-file")
-	encryption = aget("encryption")
-	encryption_keyfile = aget("encryption-keyfile")
+    source = aget("source")
+    if not source:
+        raise Exception("Device URI: client source uuid is missing")
+    socket_path = aget("socket-path")
+    display = aget("display", os.environ.get("DISPLAY"))
+    socket_dir = aget("socket-dir")
+    if not display and not socket_path:
+        raise Exception("Device URI: display number and socket path are not specified!")
+    mimetype = aget("mimetype", "application/postscript")
+    printer = aget("remote-printer")
+    password_file = aget("password-file")
+    encryption = aget("encryption")
+    encryption_keyfile = aget("encryption-keyfile")
 
-	info("xpra display: %s, socket-path: %s" % (display, socket_path))
+    info("xpra display: %s, socket-path: %s" % (display, socket_path))
 
-	return xpra_print(socket_path, socket_dir, password_file, encryption, encryption_keyfile,
-					display, filename, mimetype, source, title, printer, no_copies, print_options,)
+    return xpra_print(socket_path, socket_dir, password_file, encryption, encryption_keyfile,
+                    display, filename, mimetype, source, title, printer, no_copies, print_options,)
 
 
 def main():
-	try:
-		r = do_main()
-	except Exception as e:
-		err("failure in xpraforwarder main: %s" % e)
-		for x in traceback.format_tb(sys.exc_info()[2]):
-			err(x)
-		r = 1
-	sys.exit(r)
+    try:
+        r = do_main()
+    except Exception as e:
+        err("failure in xpraforwarder main: %s" % e)
+        for x in traceback.format_tb(sys.exc_info()[2]):
+            err(x)
+        r = 1
+    sys.exit(r)
 
 
 if __name__=='__main__':
-	main()
+    main()
