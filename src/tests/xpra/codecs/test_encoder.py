@@ -5,11 +5,11 @@
 # later version. See the file COPYING for details.
 
 import time
-import binascii
 from tests.xpra.codecs.test_codec import make_planar_input, make_rgb_input
 from xpra.codecs.image_wrapper import ImageWrapper
-
+from xpra.util import typedict, repr_ellipsized
 from xpra.log import Logger
+
 log = Logger("encoder", "test")
 
 #DEFAULT_TEST_DIMENSIONS = [(32, 32), (72, 72), (256, 256), (1920, 1080), (512, 512)]
@@ -42,6 +42,7 @@ def log_output(args):
     log(args)
 
 def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=4, quality=20, speed=0, after_encode_cb=None, input_colorspaces=None):
+    options = typedict(options)
     encoder_module.init_module()
     log("test_encoder(%s, %s)", encoder_module, dimensions)
     log("version=%s" % str(encoder_module.get_version()))
@@ -124,7 +125,7 @@ def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None,
             assert client_options.get("delayed", 0)>0
             continue
         tsize += len(data)
-        log("data %6i byte: %s" % (len(data), binascii.hexlify(data[:60])))
+        log("data %6i bytes: %s" % (len(data), repr_ellipsized(str(data))))
         if pause>0:
             time.sleep(pause)
         if after_encode_cb:
