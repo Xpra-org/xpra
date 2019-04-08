@@ -201,23 +201,24 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             tw.cleanup()
 
     def setup_tray(self):
+        if OSX:
+            return
         try:
             from xpra.gtk_common.gobject_compat import import_gtk
             gtk = import_gtk()
             from xpra.gtk_common.gtk_util import popup_menu_workaround
             #menu:
-            if not OSX:
-                label = u"Xpra Shadow Server"
-                display = os.environ.get("DISPLAY")
-                if POSIX and display:
-                    label = u"Xpra %s Shadow Server" % display
-                self.tray_menu = gtk.Menu()
-                self.tray_menu.set_title(label)
-                title_item = gtk.MenuItem()
-                title_item.set_label(label)
-                title_item.set_sensitive(False)
-                title_item.show()
-                self.tray_menu.append(title_item)
+            label = u"Xpra Shadow Server"
+            display = os.environ.get("DISPLAY")
+            if POSIX and display:
+                label = u"Xpra %s Shadow Server" % display
+            self.tray_menu = gtk.Menu()
+            self.tray_menu.set_title(label)
+            title_item = gtk.MenuItem()
+            title_item.set_label(label)
+            title_item.set_sensitive(False)
+            title_item.show()
+            self.tray_menu.append(title_item)
             from xpra.gtk_common.about import about
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", None, about))
             if server_features.windows:
