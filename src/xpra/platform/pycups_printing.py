@@ -13,7 +13,7 @@ import shlex
 from threading import Lock
 import cups
 
-from xpra.os_util import OSX, PYTHON3
+from xpra.os_util import OSX, PYTHON3, bytestostr
 from xpra.util import engs, envint, envbool, parse_simple_dict
 from xpra.log import Logger
 
@@ -422,8 +422,9 @@ def print_files(printer, filenames, title, options):
         raise Exception("invalid printer: '%s'" % printer)
     log("pycups.print_files%s", (printer, filenames, title, options))
     actual_options = DEFAULT_CUPS_OPTIONS.copy()
-    used_options = dict((str(k),str(v)) for k,v in options.items() if str(k) in CUPS_OPTIONS_WHITELIST)
-    unused_options = dict((str(k),str(v)) for k,v in options.items() if str(k) not in CUPS_OPTIONS_WHITELIST)
+    s = bytestostr
+    used_options = dict((s(k),s(v)) for k,v in options.items() if s(k) in CUPS_OPTIONS_WHITELIST)
+    unused_options = dict((s(k),s(v)) for k,v in options.items() if s(k) not in CUPS_OPTIONS_WHITELIST)
     log("used options=%s", used_options)
     log("unused options=%s", unused_options)
     actual_options.update(used_options)
