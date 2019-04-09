@@ -940,14 +940,11 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         self.addXSelectInput(xwindow, FocusChangeMask)
 
 
-    def XGetWindowProperty(self, Window xwindow, property, req_type=0, etype=None):
+    def XGetWindowProperty(self, Window xwindow, property, req_type=None, etype=None, int buffer_size=64*1024):
         # NB: Accepts req_type == 0 for AnyPropertyType
         # "64k is enough for anybody"
         # (Except, I've found window icons that are strictly larger)
         self.context_check()
-        cdef int buffer_size = 64 * 1024
-        if etype=="icons":
-            buffer_size = 4 * 1024 * 1024
         cdef Atom xactual_type = <Atom> 0
         cdef int actual_format = 0
         cdef unsigned long nitems = 0, bytes_after = 0

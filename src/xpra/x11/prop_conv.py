@@ -284,6 +284,10 @@ PROP_TYPES = {
               unsupported, NetWMIcons, None),
     }
 
+PROP_SIZES = {
+    "icons" : 4*1024*1024,
+    }
+
 
 def prop_encode(disp, etype, value):
     if isinstance(etype, (list, tuple)):

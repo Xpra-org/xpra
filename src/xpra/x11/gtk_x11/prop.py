@@ -16,7 +16,7 @@ the conversions for plain python types is found in prop_conv.py
 
 import struct
 
-from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES
+from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES, PROP_SIZES
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.x11.gtk_x11.gdk_bindings import (
     get_pywindow,               #@UnresolvedImport
@@ -139,8 +139,9 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
         scalar_type = etype
     atom = PROP_TYPES[scalar_type][1]
     try:
+        buffer_size = PROP_SIZES.get(scalar_type, 64*1024)
         with XSyncContext():
-            data = X11Window.XGetWindowProperty(get_xwindow(target), key, atom, etype)
+            data = X11Window.XGetWindowProperty(get_xwindow(target), key, atom, etype, buffer_size)
         if data is None:
             if not ignore_errors:
                 log("Missing property %s (%s)", key, etype)

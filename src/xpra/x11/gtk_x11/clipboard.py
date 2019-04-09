@@ -213,10 +213,10 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
             proxy.got_contents(target, dtype, dformat, data)
 
 
-    def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
+    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         if dformat==32 and dtype in (b"ATOM", b"ATOM_PAIR"):
             return "atoms", xatoms_to_strings(data)
-        return ClipboardProtocolHelperCore._do_munge_raw_selection_to_wire(self, target, dtype, dformat, data)
+        return ClipboardProtocolHelperCore._munge_raw_selection_to_wire(self, target, dtype, dformat, data)
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
         if dtype==b"ATOM":
@@ -526,7 +526,8 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         try:
             with xsync:
                 dtype, dformat = X11Window.GetWindowPropertyType(self.xid, event.atom)
-                data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype)
+                MAX_DATA_SIZE = 4*1024*1024
+                data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype, None, MAX_DATA_SIZE)
                 X11Window.XDeleteProperty(self.xid, event.atom)
         except PropertyError:
             log("do_property_notify() property '%s' is gone?", event.atom, exc_info=True)
