@@ -152,7 +152,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: invalid mimetype in print packet:")
             printlog.error(" %s", repr_ellipsized(mimetype))
             return
-        if isinstance(print_options, dict):
+        if not isinstance(print_options, dict):
             s = bytestostr(print_options)
             print_options = {}
             for x in s.split(" "):
