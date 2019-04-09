@@ -138,7 +138,7 @@ class FilePrintServer(StubServerMixin):
         if len(packet)>=4:
             mimetype = packet[3]
         if len(packet)>=5:
-            source_uuid = packet[4]
+            source_uuid = bytestostr(packet[4])
         if len(packet)>=6:
             title = packet[5]
         if len(packet)>=7:
@@ -182,7 +182,7 @@ class FilePrintServer(StubServerMixin):
         printlog("will try to send to %i clients: %s", len(sources), sources)
         for ss in sources:
             if source_uuid not in ("*", ss.uuid):
-                printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)
+                printlog("not sending to %s (uuid=%s, wanted uuid=%s)", ss, ss.uuid, source_uuid)
                 continue
             if not ss.printing:
                 if source_uuid!='*':
@@ -197,7 +197,7 @@ class FilePrintServer(StubServerMixin):
             if printer not in ss.printers:
                 printlog.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
                 continue
-            printlog("'%s' sent to %s for printing on '%s'", title or filename, ss, printer)
+            printlog("'%s' sent to %s for printing on '%s'", bytestostr(title or filename), ss, printer)
             if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
                 sent += 1
         #warn if not sent:
