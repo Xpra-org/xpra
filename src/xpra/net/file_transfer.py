@@ -437,7 +437,7 @@ class FileTransferHandler(FileTransferAttributes):
             delfile()
             return
         try:
-            job_options = options.get("options")
+            job_options = options.dictget("options")
             job_options["copies"] = copies
             job = print_files(printer, [filename], title, job_options)
         except Exception as e:
