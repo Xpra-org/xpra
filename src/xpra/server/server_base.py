@@ -38,7 +38,7 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait
+from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, bytestostr
 from xpra.util import typedict, flatten_dict, updict, envbool, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
@@ -1716,20 +1716,20 @@ class ServerBase(ServerCore):
         return "auto-refresh delay set to %sms for windows %s" % (delay, wids)
 
     def control_command_refresh(self, *wids):
-        for ws, window in self._control_windowsources_from_args(*wids).items():
-            ws.full_quality_refresh(window, {})
+        for ws in self._control_windowsources_from_args(*wids).keys():
+            ws.full_quality_refresh({})
         return "refreshed windows %s" % str(wids)
 
     def control_command_scaling_control(self, scaling_control, *wids):
-        for ws, window in self._control_windowsources_from_args(*wids).items():
+        for ws in self._control_windowsources_from_args(*wids).keys():
             ws.set_scaling_control(scaling_control)
-            ws.refresh(window)
+            ws.refresh()
         return "scaling-control set to %s on windows %s" % (scaling_control, wids)
 
     def control_command_scaling(self, scaling, *wids):
-        for ws, window in self._control_windowsources_from_args(*wids).items():
+        for ws in self._control_windowsources_from_args(*wids).keys():
             ws.set_scaling(scaling)
-            ws.refresh(window)
+            ws.refresh()
         return "scaling set to %s on windows %s" % (str(scaling), wids)
 
     def control_command_encoding(self, encoding, *args):
@@ -1739,9 +1739,9 @@ class ServerBase(ServerCore):
             strict = args[0]=="strict"
             args = args[1:]
         wids = args
-        for ws, window in self._control_windowsources_from_args(*wids).items():
+        for ws in self._control_windowsources_from_args(*wids).keys():
             ws.set_new_encoding(encoding, strict)
-            ws.refresh(window, {})
+            ws.refresh({})
         return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
 
     def control_command_clipboard_direction(self, direction, *args):
