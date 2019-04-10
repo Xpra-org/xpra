@@ -269,6 +269,7 @@ class EncodingsMixin(StubSourceMixin):
         #encodings:
         self.encodings = c.strlistget("encodings")
         self.core_encodings = c.strlistget("encodings.core", self.encodings)
+        log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
         if self.send_windows and not self.core_encodings:
             raise ClientException("client failed to specify any supported encodings")
         if "png" in self.core_encodings:
