@@ -400,7 +400,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	if [ "$?" != "0" ]; then
 		echo "InnoSetup error - see ${INNOSETUP_LOG}:"
 		tail -n 20 "${INNOSETUP_LOG}"
-		rm "xpra.iss"
+		#rm "xpra.iss"
 		exit 1
 	fi
 	rm "xpra.iss"
