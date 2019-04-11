@@ -38,21 +38,31 @@ DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
 LOOP_DISABLE = envbool("XPRA_CLIPBOARD_LOOP_DISABLE", True)
 LOOP_PREFIX = os.environ.get("XPRA_CLIPBOARD_LOOP_PREFIX", "Xpra-Clipboard-Loop-Detection:")
 
-def get_discard_targets():
-    _discard_target_strs_ = os.environ.get("XPRA_DISCARD_TARGETS")
+def get_discard_targets(envname="DISCARD", default_value=()):
+    _discard_target_strs_ = os.environ.get("XPRA_%s_TARGETS" % envname)
     if _discard_target_strs_ is None:
-        return  [
-            r"^SAVE_TARGETS$",
-            r"^COMPOUND_TEXT",
-            r"^NeXT",
-            r"^com\.apple\.",
-            r"^CorePasteboardFlavorType",
-            r"^dyn\.",
-            r"^text/plain;charset=utf-8",
-            ]
+        return default_value
     return _discard_target_strs_.split(",")
-DISCARD_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets())
-log("discard_targets=%s", csv(get_discard_targets()))
+#targets we never wish to handle:
+DISCARD_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets("DISCARD", (
+    r"^NeXT",
+    r"^com\.apple\.",
+    r"^CorePasteboardFlavorType",
+    r"^dyn\.",
+    )))
+#targets some applications are known to request,
+#even when the peer did not expose them as valid targets,
+#rather forwarding the request and then timing out,
+#we will just drop them
+DISCARD_EXTRA_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets("DISCARD_EXTRA", (
+    r"^SAVE_TARGETS$",
+    r"^COMPOUND_TEXT",
+    r"GTK_TEXT_BUFFER_CONTENTS",
+    r"^text/plain;charset=utf-8",
+    )))
+log("DISCARD_TARGETS=%s", csv(DISCARD_TARGETS))
+log("DISCARD_EXTRA_TARGETS=%s", csv(DISCARD_EXTRA_TARGETS))
+
 
 TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
@@ -69,8 +79,12 @@ assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
 def must_discard(target):
     return any(x for x in DISCARD_TARGETS if x.match(bytestostr(target)))
 
+def must_discard_extra(target):
+    return any(x for x in DISCARD_EXTRA_TARGETS if x.match(bytestostr(target)))
+
+
 def _filter_targets(targets):
-    f = [target for target in targets if not must_discard(target)]
+    f = tuple(target for target in targets if not must_discard(target))
     log("_filter_targets(%s)=%s", targets, f)
     return f
 
@@ -267,6 +281,9 @@ class ClipboardProtocolHelperCore(object):
                 targets = packet[2]
             if len(packet)>=8:
                 target, dtype, dformat, wire_encoding, wire_data = packet[3:8]
+                target = bytestostr(target)
+                wire_encoding = bytestostr(wire_encoding)
+                dtype = bytestostr(dtype)
                 raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
                 target_data = {target : (dtype, dformat, raw_data)}
         #older versions always claimed the selection when the token is received:
@@ -333,11 +350,11 @@ class ClipboardProtocolHelperCore(object):
         send_token(rsel)
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
-        log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, data))
+        log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, repr_ellipsized(bytestostr(data))))
         # Some types just cannot be marshalled:
         if type in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
                     "PIXEL", "COLORMAP"):
-            log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data or ""))
+            log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data or b""))
             return None, None
         if target=="TARGETS" and dtype=="ATOM":
             #targets is special cased here
@@ -389,9 +406,9 @@ class ClipboardProtocolHelperCore(object):
                 olen = len(data)
                 data = data[:max_recv_datalen]
                 log.info("Data copied out truncated because of clipboard policy %d to %d", olen, max_recv_datalen)
-        if encoding == b"bytes":
+        if encoding == "bytes":
             return data
-        if encoding == b"integers":
+        if encoding == "integers":
             if not data:
                 return ""
             if dformat == 32:
@@ -441,6 +458,7 @@ class ClipboardProtocolHelperCore(object):
             log.warn("clipboard request %s dropped for testing!", request_id)
             return
         def got_contents(dtype, dformat, data):
+            dtype = bytestostr(dtype)
             log("got_contents(%s, %s, %s:%s) data=0x%s..",
                   dtype, dformat, type(data), len(data or ""), hexstr((data or "")[:200]))
             if dtype is None or data is None or (dformat==0 and data==b""):
@@ -481,6 +499,8 @@ class ClipboardProtocolHelperCore(object):
     def _process_clipboard_contents(self, packet):
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:7]
         log("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
+        wire_encoding = bytestostr(wire_encoding)
+        dtype = bytestostr(dtype)
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
         log("clipboard wire -> raw: %r -> %r", (dtype, dformat, wire_encoding, wire_data), raw_data)
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)

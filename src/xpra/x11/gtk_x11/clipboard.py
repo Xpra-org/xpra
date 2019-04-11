@@ -18,13 +18,14 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     )
 from xpra.clipboard.clipboard_core import (
     ClipboardProtocolHelperCore, ClipboardProxyCore,
-    must_discard,
+    must_discard, must_discard_extra, _filter_targets,
     )
 from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
     constants, PropertyError,
     X11WindowBindings,
     )
-from xpra.util import csv, repr_ellipsized
+from xpra.os_util import bytestostr
+from xpra.util import csv, repr_ellipsized, envint
 from xpra.log import Logger
 
 gdk = import_gdk()
@@ -41,17 +42,23 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 
 sizeof_long = struct.calcsize(b'@L')
 
+CONVERT_TIMEOUT = envint("XPRA_CLIPBOARD_CONVERT_TIMEOUT", 500)
+REMOTE_TIMEOUT = envint("XPRA_CLIPBOARD_REMOTE_TIMEOUT", 1500)
+assert 0<CONVERT_TIMEOUT<5000
+assert 0<REMOTE_TIMEOUT<5000
+
+
 def xatoms_to_strings(data):
     l = len(data)
     assert l%sizeof_long==0, "invalid length for atom array: %i" % l
     natoms = l//sizeof_long
     atoms = struct.unpack(b"@"+b"L"*natoms, data)
     with xsync:
-        return [X11Window.XGetAtomName(atom) for atom in atoms]
+        return tuple(name for name in (bytestostr(X11Window.XGetAtomName(atom)) for atom in atoms if atom) if name is not None)
 
 def strings_to_xatoms(data):
     with xsync:
-        atom_array = [X11Window.get_xatom(atom) for atom in data]
+        atom_array = tuple(X11Window.get_xatom(atom) for atom in data if atom)
     return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
 
 
@@ -178,7 +185,7 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
         log("send_clipboard_request id=%s", request_id)
-        timer = glib.timeout_add(1500, self.timeout_request, request_id)
+        timer = glib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id)
         self._clipboard_outstanding_requests[request_id] = (timer, selection, target)
         self.progress()
         self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
@@ -214,13 +221,13 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
 
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
-        if dformat==32 and dtype in (b"ATOM", b"ATOM_PAIR"):
-            return "atoms", xatoms_to_strings(data)
+        if dformat==32 and dtype in ("ATOM", "ATOM_PAIR"):
+            return "atoms", _filter_targets(xatoms_to_strings(data))
         return ClipboardProtocolHelperCore._munge_raw_selection_to_wire(self, target, dtype, dformat, data)
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
-        if dtype==b"ATOM":
-            return strings_to_xatoms(data)
+        if encoding=="atoms":
+            return strings_to_xatoms(_filter_targets(data))
         return ClipboardProtocolHelperCore._munge_wire_selection_to_raw(self, encoding, dtype, dformat, data)
 
 gobject.type_register(X11Clipboard)
@@ -287,13 +294,14 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s",
             self._selection, targets, target_data, claim, self._can_receive)
         if self._can_receive:
-            self.targets = targets
+            self.targets = tuple(bytestostr(x) for x in (targets or ()))
             self.target_data = target_data or {}
             if targets:
                 self.got_contents("TARGETS", "ATOM", 32, targets)
             if target_data and synchronous_client:
                 target = target_data.keys()[0]
                 dtype, dformat, data = target_data.get(target)
+                dtype = bytestostr(dtype)
                 self.got_contents(target, dtype, dformat, data)
         if not claim:
             log("token packet without claim, not setting the token flag")
@@ -361,7 +369,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         log("do_selection_request_event(%s)", event)
         requestor = event.requestor
         assert requestor
-        log("clipboard request for %s from window %#x: '%s'",
+        log("clipboard request for %s from window %#x: %s",
             self._selection, get_xwindow(requestor), self.get_wininfo(get_xwindow(requestor)))
         prop = event.property
         target = str(event.target)
@@ -400,11 +408,16 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         if self.targets and target not in self.targets:
             log.info("client is requesting an unknown target: '%s'", target)
             log.info(" valid targets: %s", csv(self.targets))
+            if must_discard_extra(target):
+                log.info(" dropping the request")
+                nodata()
+                return
 
         target_data = self.target_data.get(target)
         if target_data:
             #we have it already
             dtype, dformat, data = target_data
+            dtype = bytestostr(dtype)
             log("setting target data for '%s': %s, %s, %s (%s)",
                 target, dtype, dformat, repr_ellipsized(str(data)), type(data))
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, event.time)
@@ -429,6 +442,9 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             X11Window.sendSelectionNotify(xid, self._selection, target, prop, time)
 
     def got_contents(self, target, dtype=None, dformat=None, data=None):
+        #if this is the special target 'TARGETS', cache the result:
+        if target=="TARGETS" and dtype=="ATOM" and dformat==32:
+            self.targets = xatoms_to_strings(data)
         #the remote peer sent us a response,
         #find all the pending requests for this target
         #and give them the response they are waiting for:
@@ -477,21 +493,22 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
     def get_contents(self, target, got_contents, time=0):
         log("get_contents(%s, %s, %i) owned=%s, have-token=%s",
             target, got_contents, time, self.owned, self._have_token)
-        if target=="TARGETS":
-            if self.targets:
-                xatoms = strings_to_xatoms(self.targets)
-                got_contents("ATOM", 32, xatoms)
-                return
-        else:
-            target_data = self.target_data.get(target)
-            if target_data:
-                dtype, dformat, value = target_data
-                got_contents(dtype, dformat, value)
-                return
+        if False:
+            if target=="TARGETS":
+                if self.targets:
+                    xatoms = strings_to_xatoms(self.targets)
+                    got_contents("ATOM", 32, xatoms)
+                    return
+            else:
+                target_data = self.target_data.get(target)
+                if target_data:
+                    dtype, dformat, value = target_data
+                    got_contents(dtype, dformat, value)
+                    return
         prop = "%s-%s" % (self._selection, target)
         request_id = self.local_request_counter
         self.local_request_counter += 1
-        timer = glib.timeout_add(1000, self.timeout_get_contents, target, request_id)
+        timer = glib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
         self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents, time)
         with xsync:
             owner = X11Window.XGetSelectionOwner(self._selection)
@@ -509,7 +526,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         except KeyError:
             return
         glib.source_remove(timer)
-        log.warn("Warning: clipboard request for '%s' timed out", target)
+        log.warn("Warning: %s selection request for '%s' timed out", self._selection, target)
         log.warn(" request %i at time=%i", request_id, time)
         if target=="TARGETS":
             got_contents("ATOM", 32, b"")
@@ -517,7 +534,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             got_contents(None, None, None)
 
     def do_property_notify(self, event):
-        log("property_notify(%s)", event)
+        log("do_property_notify(%s)", event)
         #ie: atom="PRIMARY-TARGETS", atom="PRIMARY-STRING"
         parts = event.atom.split("-", 1)
         assert len(parts)==2
@@ -526,13 +543,14 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         try:
             with xsync:
                 dtype, dformat = X11Window.GetWindowPropertyType(self.xid, event.atom)
+                dtype = bytestostr(dtype)
                 MAX_DATA_SIZE = 4*1024*1024
                 data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype, None, MAX_DATA_SIZE)
                 X11Window.XDeleteProperty(self.xid, event.atom)
         except PropertyError:
             log("do_property_notify() property '%s' is gone?", event.atom, exc_info=True)
             return
-        log("%s=%s (%s : %s)", event.atom, repr_ellipsized(str(data)), dtype, dformat)
+        log("%s=%s (%s : %s)", event.atom, repr_ellipsized(bytestostr(data)), dtype, dformat)
         if target=="TARGETS":
             self.targets = data or ()
         self.got_local_contents(target, dtype, dformat, data)
