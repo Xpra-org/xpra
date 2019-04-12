@@ -108,7 +108,7 @@ begin
 	    FWMIService := Unassigned;
 	    FSWbemLocator := Unassigned;
 	except
-		;MsgBox('Warning: failed to check for existing process', mbError, MB_OK);
+		//MsgBox('Warning: failed to check for existing process', mbError, MB_OK);
 	end;
 end;
 
@@ -121,7 +121,7 @@ begin
   begin
       nMsgBoxResult := MsgBox('Xpra is already running, you must stop it to proceed.', mbInformation, MB_RETRYCANCEL);
   end;
-  ; if Cancel is pressed
+  //if Cancel is pressed
   if nMsgBoxResult = IDCANCEL then
   begin
     Result := False;
@@ -137,7 +137,7 @@ begin
   begin
       nMsgBoxResult := MsgBox('Xpra is still running, you must stop it to be able to uninstall everything.', mbInformation, MB_RETRYCANCEL);
   end;
-  ; if Cancel is pressed
+  //if Cancel is pressed
   if nMsgBoxResult = IDCANCEL then
   begin
     Result := False;
@@ -157,14 +157,14 @@ begin
     openssl := ExpandConstant('{app}\OpenSSL.exe');
     Exec(openssl, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   end;
-  ; move old config file:
+  //move old config file:
   config := ExpandConstant('{app}\xpra.conf');
   saved_config := ExpandConstant('{app}\etc\xpra.conf.bak');
   if (FileExists(config)) then
   begin
 	RenameFile(config, saved_config);
   end;
-  ;ssh host key:
+  //ssh host key:
   ssh_keygen := ExpandConstant('{app}\ssh-keygen.exe');
   if (FileExists(ssh_keygen)) then
   begin
@@ -203,15 +203,15 @@ var
   sUnInstallString: String;
   iResultCode: Integer;
 begin
-; Return Values:
-; 1 - uninstall string is empty
-; 2 - error executing the UnInstallString
-; 3 - successfully executed the UnInstallString
+  // Return Values:
+  // 1 - uninstall string is empty
+  // 2 - error executing the UnInstallString
+  // 3 - successfully executed the UnInstallString
 
-  ; default return value
+  // default return value
   Result := 0;
 
-  ; get the uninstall string of the old app
+  // get the uninstall string of the old app
   sUnInstallString := GetUninstallString();
   if sUnInstallString <> '' then begin
     sUnInstallString := RemoveQuotes(sUnInstallString);
