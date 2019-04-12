@@ -398,12 +398,9 @@ if is_gtk3():
         widget.drag_get_data(context, atom, time)
 
     from gi.repository.Gtk import Clipboard     #@UnresolvedImport
-    CLIPBOARD_SELECTION = {}
-    #gtk2: uses strings:
-    for x in ("PRIMARY", "SECONDARY", "CLIPBOARD"):
-        CLIPBOARD_SELECTION[x] = getattr(gdk, "SELECTION_%s" % bytestostr(x))
     def GetClipboard(selection):
-        atom = CLIPBOARD_SELECTION.get(selection) or gdk.Atom.intern(bytestostr(selection), False)
+        sstr = bytestostr(selection)
+        atom = getattr(gdk, "SELECTION_%s" % sstr, None) or gdk.Atom.intern(sstr, False)
         return Clipboard.get(atom)
     def clipboard_request_contents(clipboard, target, unpack):
         target_atom = gdk.Atom.intern(bytestostr(target), False)
