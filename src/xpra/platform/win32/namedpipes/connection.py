@@ -12,11 +12,14 @@ from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, 
 from xpra.os_util import strtobytes
 from xpra.net.bytestreams import Connection
 from xpra.net.common import ConnectionClosedException
-from xpra.platform.win32.common import CloseHandle
+from xpra.platform.win32.common import (
+    CloseHandle,
+    ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED,
+    IO_ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING,
+    )
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE,
-    ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED,
-    INFINITE, ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING,
+    INFINITE,
     )
 from xpra.platform.win32.namedpipes.common import (
     CreateEventA, CreateFileA,
@@ -97,7 +100,7 @@ class NamedPipeConnection(Connection):
         if not r and self.pipe_handle:
             e = GetLastError()
             if e!=ERROR_IO_PENDING:
-                log("ReadFile: %s", ERROR_STR.get(e, e))
+                log("ReadFile: %s", IO_ERROR_STR.get(e, e))
             r = WaitForSingleObject(self.read_event, INFINITE)
             log("WaitForSingleObject(..)=%s, len=%s", WAIT_STR.get(r, r), read.value)
             if r and self.pipe_handle:
@@ -106,7 +109,7 @@ class NamedPipeConnection(Connection):
             if not GetOverlappedResult(self.pipe_handle, byref(self.read_overlapped), byref(read), False):
                 e = GetLastError()
                 if e!=ERROR_BROKEN_PIPE:
-                    raise Exception("overlapped read failed: %s" % ERROR_STR.get(e, e))
+                    raise Exception("overlapped read failed: %s" % IO_ERROR_STR.get(e, e))
         if read.value==0:
             data = None
         else:
@@ -126,7 +129,7 @@ class NamedPipeConnection(Connection):
         if not r and self.pipe_handle:
             e = GetLastError()
             if e!=ERROR_IO_PENDING:
-                log("WriteFile: %s", ERROR_STR.get(e, e))
+                log("WriteFile: %s", IO_ERROR_STR.get(e, e))
             r = WaitForSingleObject(self.write_event, INFINITE)
             log("WaitForSingleObject(..)=%s, len=%i", WAIT_STR.get(r, r), written.value)
             if not self.pipe_handle:
@@ -137,7 +140,7 @@ class NamedPipeConnection(Connection):
         if self.pipe_handle:
             if not GetOverlappedResult(self.pipe_handle, byref(self.write_overlapped), byref(written), False):
                 e = GetLastError()
-                raise Exception("overlapped write failed: %s" % ERROR_STR.get(e, e))
+                raise Exception("overlapped write failed: %s" % IO_ERROR_STR.get(e, e))
             log("pipe_write: %i bytes written", written.value)
             if self.pipe_handle:
                 FlushFileBuffers(self.pipe_handle)

@@ -187,6 +187,14 @@ GetProductInfo = kernel32.GetProductInfo
 GetProductInfo.argtypes = [DWORD, DWORD, DWORD, DWORD, PDWORD]
 GetProductInfo.restype  = BOOL
 GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", kernel32))
+HGLOBAL = HANDLE
+GlobalLock = kernel32.GlobalLock
+GlobalLock.restype = LPVOID
+GlobalLock.argtypes = [HGLOBAL]
+GlobalUnlock = kernel32.GlobalUnlock
+GlobalUnlock.restype = BOOL
+GlobalUnlock.argtypes = [HGLOBAL]
+
 
 user32 = WinDLL("user32", use_last_error=True)
 RegisterClassExA = user32.RegisterClassExA
@@ -356,6 +364,27 @@ CreatePopupMenu.argtypes = []
 AppendMenu = user32.AppendMenuW
 AppendMenu.restype = BOOL
 AppendMenu.argtypes = [HMENU, UINT, UINT, LPCWSTR]
+OpenClipboard = user32.OpenClipboard
+OpenClipboard.restype = BOOL
+OpenClipboard.argtypes = [HWND]
+CloseClipboard = user32.CloseClipboard
+CloseClipboard.restype = BOOL
+CloseClipboard.argtypes = []
+EmptyClipboard = user32.EmptyClipboard
+EmptyClipboard.restype = BOOL
+EmptyClipboard.argtypes = []
+SetClipboardData = user32.SetClipboardData
+SetClipboardData.restype = HANDLE
+SetClipboardData.argtypes = [UINT, HANDLE]
+RegisterClipboardFormatA = user32.RegisterClipboardFormatA
+RegisterClipboardFormatA.restype = UINT
+RegisterClipboardFormatA.argtypes = [LPCSTR]
+GetClipboardFormatNameA = user32.GetClipboardFormatNameA
+GetClipboardFormatNameA.restype = int
+GetClipboardFormatNameA.argtypes = [UINT, LPCTSTR, int]
+RegisterClipboardFormatA = user32.RegisterClipboardFormatA
+RegisterClipboardFormatA.restype = UINT
+RegisterClipboardFormatA.argtypes = [LPCSTR]
 
 gdi32 = WinDLL("gdi32", use_last_error=True)
 CreateCompatibleDC = gdi32.CreateCompatibleDC
@@ -480,3 +509,41 @@ class GUID(Structure):
 
 IID = GUID
 REFIID = POINTER(IID)
+
+
+ERROR_BROKEN_PIPE = 109
+ERROR_PIPE_NOT_CONNECTED = 233
+ERROR_MORE_DATA = 234
+ERROR_BROKEN_PIPE = 109
+ERROR_NO_DATA = 232
+ERROR_HANDLE_EOF = 38
+ERROR_IO_INCOMPLETE = 996
+ERROR_IO_PENDING = 997
+ERROR_MORE_DATA = 234
+ERROR_CANCELLED = 1223
+ERROR_ACCESS_DENIED = 5
+ERROR_INVALID_HANDLE = 6
+ERROR_OPERATION_ABORTED = 995
+ERROR_INVALID_PARAMETER = 87
+ERROR_SUCCESS = 0
+ERROR_COUNTER_TIMEOUT = 1121
+ERROR_PIPE_BUSY = 231
+
+IO_ERROR_STR = {
+    ERROR_PIPE_NOT_CONNECTED    : "PIPE_NOT_CONNECTED",
+    ERROR_MORE_DATA             : "MORE_DATA",
+    ERROR_BROKEN_PIPE           : "BROKEN_PIPE",
+    ERROR_NO_DATA               : "NO_DATA",
+    ERROR_HANDLE_EOF            : "HANDLE_EOF",
+    ERROR_IO_INCOMPLETE         : "IO_INCOMPLETE",
+    ERROR_IO_PENDING            : "IO_PENDING",
+    ERROR_MORE_DATA             : "MORE_DATA",
+    ERROR_CANCELLED             : "CANCELLED",
+    ERROR_ACCESS_DENIED         : "ACCESS_DENIED",
+    ERROR_INVALID_HANDLE        : "INVALID_HANDLE",
+    ERROR_OPERATION_ABORTED     : "OPERATION_ABORTED",
+    ERROR_INVALID_PARAMETER     : "INVALID_PARAMETER",
+    ERROR_SUCCESS               : "SUCCESS",
+    ERROR_COUNTER_TIMEOUT       : "COUNTER_TIMEOUT",
+    ERROR_PIPE_BUSY             : "PIPE_BUSY",
+    }
