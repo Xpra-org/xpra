@@ -17,7 +17,7 @@ Build-Depends:
  xutils-dev
 Standards-Version: 3.9.8
 
-Package: xserver-xorg-video-dummy-hwe
+Package: xserver-xorg-video-dummy-hwe-18.04
 Architecture: any
 Replaces: xserver-xorg-video-dummy
 Conflicts: xserver-xorg-video-dummy
