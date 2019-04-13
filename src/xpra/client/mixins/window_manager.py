@@ -191,7 +191,12 @@ class WindowClient(StubClientMixin):
             Z1 = 8
             for i in range(20):
                 btn = 4+i*2
-                invert = mw=="invert" or (btn==UP and mw=="inverty") or (btn==LEFT and mw=="invertx") or (btn==Z1 and mw=="invertz")
+                invert = (
+                    mw=="invert" or
+                    (btn==UP and mw=="inverty") or
+                    (btn==LEFT and mw=="invertx") or
+                    (btn==Z1 and mw=="invertz")
+                    )
                 if not invert:
                     self.wheel_map[btn] = btn
                     self.wheel_map[btn+1] = btn+1
@@ -199,7 +204,7 @@ class WindowClient(StubClientMixin):
                     self.wheel_map[btn+1] = btn
                     self.wheel_map[btn] = btn+1
 
-        if ICON_OVERLAY>0 and ICON_OVERLAY<=100:
+        if 0<ICON_OVERLAY<=100:
             icon_filename = get_icon_filename("xpra")
             if icon_filename:
                 try:
@@ -698,7 +703,7 @@ class WindowClient(StubClientMixin):
     def _process_new_common(self, packet, override_redirect):
         self._ui_event()
         wid, x, y, w, h = packet[1:6]
-        assert w>=0 and h>=0 and w<32768 and h<32768
+        assert 0<=w<32768 and 0<=h<32768
         metadata = self.cook_metadata(True, packet[6])
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window %s: %s" % (wid, self._id_to_window.get(wid))
@@ -885,8 +890,6 @@ class WindowClient(StubClientMixin):
                 reset_icon()
 
     def reinit_windows(self, new_size_fn=None):
-        def fake_send(*args):
-            log("fake_send%s", args)
         #now replace all the windows with new ones:
         for wid, window in self._id_to_window.items():
             if window:
@@ -1092,8 +1095,7 @@ class WindowClient(StubClientMixin):
                         log.info("%s, disconnecting", close)
                         self.quit(0)
                         return True
-                    else:
-                        log("there are %i windows, so forwarding %s", len(self._id_to_window), close)
+                    log("there are %i windows, so forwarding %s", len(self._id_to_window), close)
             #default to forward:
             self.send("close-window", wid)
         else:
