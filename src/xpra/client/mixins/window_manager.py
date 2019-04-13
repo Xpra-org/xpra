@@ -985,6 +985,14 @@ class WindowClient(StubClientMixin):
         self._process_new_common(packet, False)
 
     def _process_new_override_redirect(self, packet):
+        if self.modal_windows:
+            #find any modal windows and remove the flag
+            #so that the OR window can get the focus
+            #(it will be re-enabled when the OR window disappears)
+            for wid, window in self._id_to_window.items():
+                if window.get_modal():
+                    metalog("temporarily removing modal flag from %s", wid)
+                    window.set_modal(False)
         self._process_new_common(packet, True)
 
 
@@ -1107,6 +1115,14 @@ class WindowClient(StubClientMixin):
         wid = packet[1]
         window = self._id_to_window.get(wid)
         if window:
+            if window.is_OR() and self.modal_windows:
+                #re-enable modal windows if there are no other OR windows left:
+                orwids = tuple(wid for wid, w in self._id_to_window.items() if w.is_OR() and w!=window)
+                if not orwids:
+                    for wid, w in self._id_to_window.items():
+                        if w._metadata.boolget("modal") and not w.get_modal():
+                            metalog("re-enabling modal flag on %s", wid)
+                            window.set_modal(True)
             del self._id_to_window[wid]
             del self._window_to_id[window]
             self.destroy_window(wid, window)
