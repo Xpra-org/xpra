@@ -1,4 +1,4 @@
-Source: xserver-xorg-video-dummy-hwe
+Source: xserver-xorg-video-dummy-hwe-18.04
 Section: x11
 Priority: optional
 Maintainer: Antoine Martin <antoine@xpra.org>
