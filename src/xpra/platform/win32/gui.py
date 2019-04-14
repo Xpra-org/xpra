@@ -990,7 +990,8 @@ class ClientExtras(object):
         cha = self._console_handler_added
         if cha:
             self._console_handler_added = False
-            setup_console_event_listener(self.handle_console_event, False)
+            #removing can cause crashes!?
+            #setup_console_event_listener(self.handle_console_event, False)
         el = self._el
         if el:
             self._el = None
