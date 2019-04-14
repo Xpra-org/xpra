@@ -834,7 +834,14 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         return desc
     elif protocol=="socket":
         #use the socketfile specified:
-        if afterproto.find("@")>=0:
+        slash = afterproto.find("/")
+        if 0<afterproto.find(":")<slash:
+            #ie: username:password/run/user/1000/xpra/hostname-number
+            #remove username and password prefix:
+            parse_username_and_password(afterproto[:slash])
+            sockfile = afterproto[slash:]
+        elif afterproto.find("@")>=0:
+            #ie: username:password@/run/user/1000/xpra/hostname-number
             parts = afterproto.split("@")
             parse_username_and_password("@".join(parts[:-1]))
             sockfile = parts[-1]
