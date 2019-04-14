@@ -851,12 +851,12 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         desc.update({
                 "type"          : "unix-domain",
                 "local"         : True,
-                "display"       : display_name,
+                "display"       : "socket://%s" % sockfile,
                 "socket_dir"    : os.path.basename(sockfile),
                 "socket_dirs"   : opts.socket_dirs,
                 "socket_path"   : sockfile,
                 })
-        opts.display = display_name
+        opts.display = None
         return desc
     elif display_name.startswith(":"):
         assert not WIN32, "unix-domain sockets are not supported on MS Windows"
