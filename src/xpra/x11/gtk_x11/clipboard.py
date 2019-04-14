@@ -20,12 +20,13 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProtocolHelperCore, ClipboardProxyCore, TEXT_TARGETS,
     must_discard, must_discard_extra, _filter_targets,
     )
+from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
-    constants, PropertyError,
-    X11WindowBindings,
+    constants, PropertyError,                   #@UnresolvedImport
+    X11WindowBindings,                          #@UnresolvedImport
     )
 from xpra.os_util import bytestostr
-from xpra.util import csv, repr_ellipsized, envint
+from xpra.util import csv, repr_ellipsized
 from xpra.log import Logger
 
 gdk = import_gdk()
@@ -42,11 +43,6 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 
 sizeof_long = struct.calcsize(b'@L')
 
-CONVERT_TIMEOUT = envint("XPRA_CLIPBOARD_CONVERT_TIMEOUT", 500)
-REMOTE_TIMEOUT = envint("XPRA_CLIPBOARD_REMOTE_TIMEOUT", 1500)
-assert 0<CONVERT_TIMEOUT<5000
-assert 0<REMOTE_TIMEOUT<5000
-
 
 def xatoms_to_strings(data):
     l = len(data)
@@ -62,7 +58,7 @@ def strings_to_xatoms(data):
     return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
 
 
-class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
+class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
 
     #handle signals from the X11 bindings,
     #and dispatch them to the proxy handling the selection specified:
@@ -77,7 +73,7 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         gobject.GObject.__init__(self)
         self.init_window()
-        ClipboardProtocolHelperCore.__init__(self, send_packet_cb, progress_cb)
+        ClipboardTimeoutHelper.__init__(self, send_packet_cb, progress_cb)
 
     def __repr__(self):
         return "X11Clipboard"
@@ -91,15 +87,16 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
             X11Window.selectSelectionInput(xid)
         add_event_receiver(self.window, self)
 
-    def cleanup(self):
-        #reply to outstanding requests with "no data":
-        for request_id in tuple(self._clipboard_outstanding_requests.keys()):
-            self._clipboard_got_contents(request_id)
+    def cleanup_window(self):
         w = self.window
         if w:
             self.window = None
             remove_event_receiver(w, self)
             w.destroy()
+
+    def cleanup(self):
+        ClipboardTimeoutHelper.cleanup(self)
+        self.cleanup_window()
 
     def make_proxy(self, selection):
         xid = get_xwindow(self.window)
@@ -111,19 +108,6 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
         with xsync:
             X11Window.selectXFSelectionInput(xid, selection)
         return proxy
-
-    def _get_proxy(self, selection):
-        proxy = self._clipboard_proxies.get(selection)
-        if not proxy:
-            log.warn("Warning: no clipboard proxy for '%s'", selection)
-            return None
-        return proxy
-
-    def set_want_targets_client(self, want_targets):
-        ClipboardProtocolHelperCore.set_want_targets_client(self, want_targets)
-        #pass it on to the ClipboardProxy instances:
-        for proxy in self._clipboard_proxies.values():
-            proxy.set_want_targets(want_targets)
 
 
     ############################################################################
@@ -174,67 +158,8 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
 
 
     ############################################################################
-    # network methods for communicating with the remote clipboard:
+    # x11 specific munging support:
     ############################################################################
-    def _send_clipboard_token_handler(self, proxy, packet_data=()):
-        log("_send_clipboard_token_handler(%s, %s)", proxy, packet_data)
-        packet = ["clipboard-token", proxy._selection]
-        if packet_data:
-            #append 'TARGETS' unchanged:
-            packet.append(packet_data[0])
-            #if present, the next element is the target data,
-            #which we have to convert to wire format:
-            if len(packet_data)>=2:
-                target, dtype, dformat, data = packet_data[1]
-                wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
-                if wire_encoding:
-                    claim = True
-                    greedy = False
-                    packet += [
-                        target, dtype, dformat, wire_encoding, wire_data,
-                        claim, greedy,
-                        ]
-        self.send(*packet)
-
-    def _send_clipboard_request_handler(self, proxy, selection, target):
-        log("send_clipboard_request_handler%s", (proxy, selection, target))
-        request_id = self._clipboard_request_counter
-        self._clipboard_request_counter += 1
-        log("send_clipboard_request id=%s", request_id)
-        timer = glib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id)
-        self._clipboard_outstanding_requests[request_id] = (timer, selection, target)
-        self.progress()
-        self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
-
-    def timeout_request(self, request_id):
-        try:
-            selection, target = self._clipboard_outstanding_requests.pop(request_id)[1:]
-        except KeyError:
-            log.warn("Warning: request id %i not found", request_id)
-            return
-        finally:
-            self.progress()
-        log.warn("Warning: remote clipboard request timed out")
-        log.warn(" request id %i, selection=%s, target=%s", request_id, selection, target)
-        proxy = self._get_proxy(selection)
-        if proxy:
-            proxy.got_contents(target)
-
-    def _clipboard_got_contents(self, request_id, dtype=None, dformat=None, data=None):
-        try:
-            timer, selection, target = self._clipboard_outstanding_requests.pop(request_id)
-        except KeyError:
-            log.warn("Warning: request id %i not found", request_id)
-            return
-        finally:
-            self.progress()
-        glib.source_remove(timer)
-        proxy = self._get_proxy(selection)
-        log("clipboard got contents%s: proxy=%s for selection=%s",
-            (request_id, dtype, dformat, repr_ellipsized(str(data))), proxy, selection)
-        if proxy:
-            proxy.got_contents(target, dtype, dformat, data)
-
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         if dformat==32 and dtype in ("ATOM", "ATOM_PAIR"):
@@ -560,7 +485,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                 log("we are the %s selection owner, using empty reply", self._selection)
                 got_contents(None, None, None)
                 return
-            log("requesting local XConvertSelection from %#x for '%s' into '%s'", owner, target, prop)
+            log("requesting local XConvertSelection from %s for '%s' into '%s'", self.get_wininfo(owner), target, prop)
             X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=time)
 
     def timeout_get_contents(self, target, request_id):

@@ -473,7 +473,8 @@ class ClipboardProtocolHelperCore(object):
                     data = data[:max_send_datalen]
             munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
             wire_encoding, wire_data = munged
-            log("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
+            log("clipboard raw -> wire: %r -> %r",
+                (dtype, dformat, repr_ellipsized(str(data))), repr_ellipsized(str(munged)))
             if wire_encoding is None:
                 no_contents()
                 return
