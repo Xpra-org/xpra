@@ -237,8 +237,8 @@ class ProxyInstanceProcess(Process):
         log.info(" for client %s", self.client_conn)
         log.info(" and server %s", self.server_conn)
 
-        signal.signal(signal.SIGTERM, self.signal_quit)
-        signal.signal(signal.SIGINT, self.signal_quit)
+        from xpra.gtk_common.gobject_compat import register_os_signals
+        register_os_signals(self.signal_quit)
         log("registered signal handler %s", self.signal_quit)
 
         start_thread(self.server_message_queue, "server message queue")

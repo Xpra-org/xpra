@@ -93,6 +93,11 @@ class ProxyServer(ServerCore):
                                                            self.handle_stop_command, min_args=1, max_args=1)
 
 
+    def install_signal_handlers(self, callback):
+        from xpra.gtk_common.gobject_compat import register_os_signals
+        register_os_signals(callback)
+
+
     def make_dbus_server(self):
         from xpra.server.proxy.proxy_dbus_server import Proxy_DBUS_Server
         return Proxy_DBUS_Server(self)
