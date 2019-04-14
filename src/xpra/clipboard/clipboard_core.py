@@ -491,7 +491,7 @@ class ClipboardProtocolHelperCore(object):
         if len(wire_data)>self.max_clipboard_packet_size:
             log.warn("Warning: clipboard contents are too big and have not been sent")
             log.warn(" %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
-            return  None
+            return None
         if isinstance(wire_data, (str, bytes)) and len(wire_data)>=MIN_CLIPBOARD_COMPRESS_SIZE:
             return Compressible("clipboard: %s / %s" % (dtype, dformat), wire_data)
         return wire_data
