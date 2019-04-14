@@ -1592,7 +1592,7 @@ class ServerCore(object):
                 return
             #challenge has been sent already for this module
             if not challenge_response:
-                auth_failed("invalid state, challenge already sent - no response!")
+                auth_failed("invalid state, challenge already sent - no response found!")
                 return
             if not authenticator.authenticate(challenge_response, client_salt):
                 auth_failed("authentication failed")
