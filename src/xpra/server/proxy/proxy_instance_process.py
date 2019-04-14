@@ -563,10 +563,11 @@ class ProxyInstanceProcess(Process):
 
     def stop(self, skip_proto=None, *reasons):
         log("stop(%s, %s)", skip_proto, reasons)
-        log.info("stopping proxy instance:")
-        for x in reasons:
-            log.info(" %s", x)
-        self.exit = True
+        if not self.exit:
+            log.info("stopping proxy instance pid %i:", os.getpid())
+            for x in reasons:
+                log.info(" %s", x)
+            self.exit = True
         try:
             self.control_socket.close()
         except:
