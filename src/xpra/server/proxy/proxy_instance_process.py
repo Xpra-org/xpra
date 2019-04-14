@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -314,9 +314,12 @@ class ProxyInstanceProcess(Process):
                 for spec in especs:                             #ie: video_spec("x264")
                     spec_props = spec.to_dict()
                     del spec_props["codec_class"]               #not serializable!
-                    spec_props["score_boost"] = 50              #we want to win scoring so we get used ahead of other encoders
-                    spec_props["max_instances"] = 3             #limit to 3 video streams we proxy for (we really want 2,
-                                                                # but because of races with garbage collection, we need to allow more)
+                    #we want to win scoring so we get used ahead of other encoders:
+                    spec_props["score_boost"] = 50
+                    #limit to 3 video streams we proxy for (we really want 2,
+                    # but because of races with garbage collection, we need to allow more)
+                    spec_props["max_instances"] = 3
+
                     #store it in encoding defs:
                     self.video_encoding_defs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec_props)
                     encoder_types.add(spec.codec_type)
@@ -464,9 +467,9 @@ class ProxyInstanceProcess(Process):
         hello = self.filter_client_caps(self.caps)
         if challenge_response:
             hello.update({
-                          "challenge_response"      : challenge_response,
-                          "challenge_client_salt"   : client_salt,
-                          })
+                "challenge_response"      : challenge_response,
+                "challenge_client_salt"   : client_salt,
+                })
         self.queue_server_packet(("hello", hello))
 
 
@@ -474,13 +477,15 @@ class ProxyInstanceProcess(Process):
         d = {}
         def number(k, v):
             return parse_number(int, k, v)
-        OPTION_WHITELIST = {"compression_level" : number,
-                            "lz4"               : parse_bool,
-                            "lzo"               : parse_bool,
-                            "zlib"              : parse_bool,
-                            "rencode"           : parse_bool,
-                            "bencode"           : parse_bool,
-                            "yaml"              : parse_bool}
+        OPTION_WHITELIST = {
+            "compression_level" : number,
+            "lz4"               : parse_bool,
+            "lzo"               : parse_bool,
+            "zlib"              : parse_bool,
+            "rencode"           : parse_bool,
+            "bencode"           : parse_bool,
+            "yaml"              : parse_bool,
+            }
         for k,v in options.items():
             parser = OPTION_WHITELIST.get(k)
             if parser:
@@ -604,7 +609,7 @@ class ProxyInstanceProcess(Process):
         return p, None, None, None, True, s>0
 
     def process_client_packet(self, proto, packet):
-        packet_type = packet[0]
+        packet_type = bytestostr(packet[0])
         log("process_client_packet: %s", packet_type)
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop(proto, "client connection lost")
@@ -625,10 +630,10 @@ class ProxyInstanceProcess(Process):
                 self.client_protocol.close()
             else:
                 self.stop(None, "disconnect from client", reason)
-        elif packet_type==b"send-file":
+        elif packet_type=="send-file":
             if packet[6]:
                 packet[6] = Compressed("file-data", packet[6])
-        elif packet_type==b"send-file-chunk":
+        elif packet_type=="send-file-chunk":
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
         self.queue_server_packet(packet)
@@ -664,19 +669,19 @@ class ProxyInstanceProcess(Process):
                 packet[index] = Compressed("raw %s" % name, data, can_inline=True)
 
     def process_server_packet(self, proto, packet):
-        packet_type = packet[0]
+        packet_type = bytestostr(packet[0])
         log("process_server_packet: %s", packet_type)
         if packet_type==Protocol.CONNECTION_LOST:
             self.stop(proto, "server connection lost")
             return
-        elif packet_type==b"disconnect":
+        if packet_type=="disconnect":
             reason = bytestostr(packet[1])
             log("got disconnect from server: %s", reason)
             if self.exit:
                 self.server_protocol.close()
             else:
                 self.stop(None, "disconnect from server", reason)
-        elif packet_type==b"hello":
+        elif packet_type=="hello":
             c = typedict(packet[1])
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
             caps = self.filter_server_caps(c)
@@ -695,27 +700,27 @@ class ProxyInstanceProcess(Process):
             self.client_protocol.max_packet_size = max(self.client_protocol.max_packet_size, file_max_packet_size)
             self.server_protocol.max_packet_size = max(self.server_protocol.max_packet_size, file_max_packet_size)
             packet = ("hello", caps)
-        elif packet_type==b"info-response":
+        elif packet_type=="info-response":
             #adds proxy info:
             #note: this is only seen by the client application
             #"xpra info" is a new connection, which talks to the proxy server...
             info = packet[1]
             info.update(self.get_proxy_info(proto))
-        elif packet_type==b"lost-window":
+        elif packet_type=="lost-window":
             wid = packet[1]
             #mark it as lost so we can drop any current/pending frames
             self.lost_windows.add(wid)
             #queue it so it gets cleaned safely (for video encoders mostly):
             self.encode_queue.put(packet)
             #and fall through so tell the client immediately
-        elif packet_type==b"draw":
+        elif packet_type=="draw":
             #use encoder thread:
             self.encode_queue.put(packet)
             #which will queue the packet itself when done:
             return
         #we do want to reformat cursor packets...
         #as they will have been uncompressed by the network layer already:
-        elif packet_type==b"cursor":
+        elif packet_type=="cursor":
             #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:
             #packet = ["cursor", "png", x, y, width, height, xhot, yhot, serial, pixels, name]
@@ -728,15 +733,15 @@ class ProxyInstanceProcess(Process):
                     self._packet_recompress(packet, 8, "cursor")
                 except:
                     self._packet_recompress(packet, 9, "cursor")
-        elif packet_type==b"window-icon":
+        elif packet_type=="window-icon":
             self._packet_recompress(packet, 5, "icon")
-        elif packet_type==b"send-file":
+        elif packet_type=="send-file":
             if packet[6]:
                 packet[6] = Compressed("file-data", packet[6])
-        elif packet_type==b"send-file-chunk":
+        elif packet_type=="send-file-chunk":
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
-        elif packet_type==b"challenge":
+        elif packet_type=="challenge":
             password = self.disp_desc.get("password", self.session_options.get("password"))
             log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
             if not password:
@@ -915,7 +920,7 @@ class ProxyInstanceProcess(Process):
                         enclog.warn(" sending as plain RGB")
                     return passthrough(True)
                 enclog("no video encoder available: sending as jpeg")
-                coding, compressed_data, client_options, _, _, _, _ = enc_pillow.encode("jpeg", image, quality, speed, False)
+                coding, compressed_data, client_options = enc_pillow.encode("jpeg", image, quality, speed, False)[:3]
                 return send_updated(coding, compressed_data, client_options)
 
             enclog("creating new video encoder %s for window %s", spec, wid)
@@ -957,9 +962,9 @@ class ProxyInstanceProcess(Process):
                 self.encode_queue.put(["check-video-timeout", wid])
         return True     #run again
 
-    def _find_video_encoder(self, encoding, rgb_format):
+    def _find_video_encoder(self, video_encoding, rgb_format):
         #try the one specified first, then all the others:
-        try_encodings = [encoding] + [x for x in self.video_helper.get_encodings() if x!=encoding]
+        try_encodings = [video_encoding] + [x for x in self.video_helper.get_encodings() if x!=video_encoding]
         for encoding in try_encodings:
             colorspace_specs = self.video_helper.get_encoder_specs(encoding)
             especs = colorspace_specs.get(rgb_format)
@@ -970,7 +975,7 @@ class ProxyInstanceProcess(Process):
                     if etype==spec.codec_type:
                         enclog("_find_video_encoder(%s, %s)=%s", encoding, rgb_format, spec)
                         return spec
-        enclog("_find_video_encoder(%s, %s) not found", encoding, rgb_format)
+        enclog("_find_video_encoder(%s, %s) not found", video_encoding, rgb_format)
         return None
 
     def get_window_info(self):
@@ -980,10 +985,10 @@ class ProxyInstanceProcess(Process):
             einfo = encoder.get_info()
             einfo["idle_time"] = int(now-self.video_encoders_last_used_time.get(wid, 0))
             info[wid] = {
-                         "proxy"    : {
-                                       ""           : encoder.get_type(),
-                                       "encoder"    : einfo
-                                       },
-                         }
+                "proxy"    : {
+                    ""           : encoder.get_type(),
+                    "encoder"    : einfo
+                    },
+                }
         enclog("get_window_info()=%s", info)
         return info
