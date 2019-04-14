@@ -47,10 +47,14 @@ enclog = Logger("encoding")
 
 PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 10)
 #for testing only: passthrough as RGB:
-PASSTHROUGH = envbool("XPRA_PROXY_PASSTHROUGH", False)
+PASSTHROUGH_RGB = envbool("XPRA_PROXY_PASSTHROUGH_RGB", False)
 MAX_CONCURRENT_CONNECTIONS = 20
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
+PASSTHROUGH_AUTH = envbool("XPRA_PASSTHROUGH_AUTH", True)
+
+CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
+CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 
 
 def set_blocking(conn):
@@ -92,6 +96,7 @@ class ProxyInstanceProcess(Process):
                                "%s: %s.." % (type(caps), repr_ellipsized(str(caps))), message_queue))
         self.client_protocol = None
         self.server_protocol = None
+        self.client_challenge_packet = None
         self.exit = False
         self.main_queue = None
         self.message_queue = message_queue
@@ -496,8 +501,8 @@ class ProxyInstanceProcess(Process):
                     log.warn("failed to parse value %s for %s using %s: %s", v, k, parser, e)
         return d
 
-    def filter_client_caps(self, caps):
-        fc = self.filter_caps(caps, (b"cipher", b"challenge", b"digest", b"aliases", b"compression", b"lz4", b"lz0", b"zlib"))
+    def filter_client_caps(self, caps, remove=CLIENT_REMOVE_CAPS):
+        fc = self.filter_caps(caps, remove)
         #the display string may override the username:
         username = self.disp_desc.get("username")
         if username:
@@ -512,19 +517,17 @@ class ProxyInstanceProcess(Process):
 
     def filter_server_caps(self, caps):
         self.server_protocol.enable_encoder_from_caps(caps)
-        return self.filter_caps(caps, (b"aliases", ))
+        return self.filter_caps(caps, ("aliases", ))
 
     def filter_caps(self, caps, prefixes):
         #removes caps that the proxy overrides / does not use:
-        #(not very pythonic!)
         pcaps = {}
         removed = []
         for k in caps.keys():
-            skip = len([e for e in prefixes if k.startswith(e)])
-            if skip==0:
-                pcaps[k] = caps[k]
-            else:
+            if any(e for e in prefixes if bytestostr(k).startswith(e)):
                 removed.append(k)
+            else:
+                pcaps[k] = caps[k]
         log("filtered out %s matching %s", removed, prefixes)
         #replace the network caps with the proxy's own:
         pcaps.update(flatten_dict(get_network_caps()))
@@ -620,7 +623,17 @@ class ProxyInstanceProcess(Process):
             self.client_protocol.source_has_more()
             return
         if packet_type=="hello":
-            log.warn("Warning: invalid hello packet received after initial authentication (dropped)")
+            if not self.client_challenge_packet:
+                log.warn("Warning: invalid hello packet from client")
+                log.warn(" received after initial authentication (dropped)")
+                return
+            log("forwarding client hello")
+            log(" for challenge packet %s", self.client_challenge_packet)
+            #update caps with latest hello caps from client:
+            self.caps = typedict(packet[1])
+            #keep challenge data in the hello response:
+            hello = self.filter_client_caps(self.caps, CLIENT_REMOVE_CAPS_CHALLENGE)
+            self.queue_server_packet(("hello", hello))
             return
         #the packet types below are forwarded:
         if packet_type=="disconnect":
@@ -745,39 +758,43 @@ class ProxyInstanceProcess(Process):
             password = self.disp_desc.get("password", self.session_options.get("password"))
             log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
             if not password:
-                self.stop(None, "authentication requested by the server,", "but no password available for this session")
-                return
-            from xpra.net.digest import get_salt, gendigest
-            #client may have already responded to the challenge,
-            #so we have to handle authentication from this end
-            server_salt = bytestostr(packet[1])
-            l = len(server_salt)
-            digest = bytestostr(packet[3])
-            salt_digest = "xor"
-            if len(packet)>=5:
-                salt_digest = bytestostr(packet[4])
-            if salt_digest in ("xor", "des"):
-                if not LEGACY_SALT_DIGEST:
-                    self.stop(None, "server uses legacy salt digest '%s'" % salt_digest)
-                    return
-                log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
-            if salt_digest=="xor":
-                #with xor, we have to match the size
-                assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
-                assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+                if not PASSTHROUGH_AUTH:
+                    self.stop(None, "authentication requested by the server,",
+                              "but no password is available for this session")
+                #otherwise, just forward it to the client
+                self.client_challenge_packet = packet
             else:
-                #other digest, 32 random bytes is enough:
-                l = 32
-            client_salt = get_salt(l)
-            salt = gendigest(salt_digest, client_salt, server_salt)
-            challenge_response = gendigest(digest, password, salt)
-            if not challenge_response:
-                log("invalid digest module '%s': %s", digest)
-                self.stop(None, "server requested '%s' digest but it is not supported" % digest)
+                from xpra.net.digest import get_salt, gendigest
+                #client may have already responded to the challenge,
+                #so we have to handle authentication from this end
+                server_salt = bytestostr(packet[1])
+                l = len(server_salt)
+                digest = bytestostr(packet[3])
+                salt_digest = "xor"
+                if len(packet)>=5:
+                    salt_digest = bytestostr(packet[4])
+                if salt_digest in ("xor", "des"):
+                    if not LEGACY_SALT_DIGEST:
+                        self.stop(None, "server uses legacy salt digest '%s'" % salt_digest)
+                        return
+                    log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
+                if salt_digest=="xor":
+                    #with xor, we have to match the size
+                    assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
+                    assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+                else:
+                    #other digest, 32 random bytes is enough:
+                    l = 32
+                client_salt = get_salt(l)
+                salt = gendigest(salt_digest, client_salt, server_salt)
+                challenge_response = gendigest(digest, password, salt)
+                if not challenge_response:
+                    log("invalid digest module '%s': %s", digest)
+                    self.stop(None, "server requested '%s' digest but it is not supported" % digest)
+                    return
+                log.info("sending %s challenge response", digest)
+                self.send_hello(challenge_response, client_salt)
                 return
-            log.info("sending %s challenge response", digest)
-            self.send_hello(challenge_response, client_salt)
-            return
         self.queue_client_packet(packet)
 
 
@@ -866,7 +883,7 @@ class ProxyInstanceProcess(Process):
             return send_updated("rgb32", wrapped, new_client_options)
 
         proxy_video = client_options.boolget("proxy", False)
-        if PASSTHROUGH and (encoding in ("rgb32", "rgb24") or proxy_video):
+        if PASSTHROUGH_RGB and (encoding in ("rgb32", "rgb24") or proxy_video):
             #we are dealing with rgb data, so we can pass it through:
             return passthrough(proxy_video)
         if not self.video_encoder_types or not client_options or not proxy_video:
