@@ -17,7 +17,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     remove_event_receiver,                       #@UnresolvedImport
     )
 from xpra.clipboard.clipboard_core import (
-    ClipboardProtocolHelperCore, ClipboardProxyCore,
+    ClipboardProtocolHelperCore, ClipboardProxyCore, TEXT_TARGETS,
     must_discard, must_discard_extra, _filter_targets,
     )
 from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
@@ -178,7 +178,23 @@ class X11Clipboard(ClipboardProtocolHelperCore, gobject.GObject):
     ############################################################################
     def _send_clipboard_token_handler(self, proxy, packet_data=()):
         log("_send_clipboard_token_handler(%s, %s)", proxy, packet_data)
-        self.send("clipboard-token", proxy._selection, *packet_data)
+        packet = ["clipboard-token", proxy._selection]
+        if packet_data:
+            #append 'TARGETS' unchanged:
+            packet.append(packet_data[0])
+            #if present, the next element is the target data,
+            #which we have to convert to wire format:
+            if len(packet_data)>=2:
+                target, dtype, dformat, data = packet_data[1]
+                wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+                if wire_encoding:
+                    claim = True
+                    greedy = False
+                    packet += [
+                        target, dtype, dformat, wire_encoding, wire_data,
+                        claim, greedy,
+                        ]
+        self.send(*packet)
 
     def _send_clipboard_request_handler(self, proxy, selection, target):
         log("send_clipboard_request_handler%s", (proxy, selection, target))
@@ -469,16 +485,43 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         self.schedule_emit_token()
 
     def schedule_emit_token(self):
-        if self._want_targets:
-            pass
-        if self._greedy_client:
-            pass
-        #token_data = (targets, )
-        #target_data = (target, dtype, dformat, wire_encoding, wire_data, True, CLIPBOARD_GREEDY)
-        #token_data = (targets, *target_data)
-        token_data = ()
-        self._have_token = False
-        self.emit("send-clipboard-token", token_data)
+        if not (self._want_targets or self._greedy_client):
+            self._have_token = False
+            self.emit("send-clipboard-token")
+        #we need the targets, and the target data for greedy clients:
+        def send_token_with_targets():
+            token_data = (self.targets, )
+            self._have_token = False
+            self.emit("send-clipboard-token", token_data)
+        def with_targets(targets):
+            if not self._greedy_client:
+                send_token_with_targets()
+                return
+            #find the preferred text target:
+            text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
+            if not text_targets:
+                send_token_with_targets()
+                return
+            text_target = text_targets[0]
+            def got_text_target(dtype, dformat, data):
+                log("got_text_target(%s, %s, %s)", dtype, dformat, repr_ellipsized(str(data)))
+                if not (dtype and dformat and data):
+                    send_token_with_targets()
+                    return
+                token_data = (targets, (text_target, dtype, dformat, data))
+                self._have_token = False
+                self.emit("send-clipboard-token", token_data)
+            self.get_contents(text_target, got_text_target)
+        if self.targets:
+            with_targets(self.targets)
+            return
+        def got_targets(dtype, dformat, data):
+            assert dtype=="ATOM" and dformat==32
+            self.targets = xatoms_to_strings(data)
+            log("got_targets: %s", self.targets)
+            with_targets(self.targets)
+        self.get_contents("TARGETS", got_targets)
+
 
     def do_selection_clear_event(self, event):
         log("do_xpra_selection_clear(%s) was owned=%s", event, self.owned)
@@ -493,18 +536,17 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
     def get_contents(self, target, got_contents, time=0):
         log("get_contents(%s, %s, %i) owned=%s, have-token=%s",
             target, got_contents, time, self.owned, self._have_token)
-        if False:
-            if target=="TARGETS":
-                if self.targets:
-                    xatoms = strings_to_xatoms(self.targets)
-                    got_contents("ATOM", 32, xatoms)
-                    return
-            else:
-                target_data = self.target_data.get(target)
-                if target_data:
-                    dtype, dformat, value = target_data
-                    got_contents(dtype, dformat, value)
-                    return
+        if target=="TARGETS":
+            if self.targets:
+                xatoms = strings_to_xatoms(self.targets)
+                got_contents("ATOM", 32, xatoms)
+                return
+        else:
+            target_data = self.target_data.get(target)
+            if target_data:
+                dtype, dformat, value = target_data
+                got_contents(dtype, dformat, value)
+                return
         prop = "%s-%s" % (self._selection, target)
         request_id = self.local_request_counter
         self.local_request_counter += 1
@@ -512,6 +554,12 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents, time)
         with xsync:
             owner = X11Window.XGetSelectionOwner(self._selection)
+            self.owned = owner==self.xid
+            if self.owned:
+                #we are the clipboard owner!
+                log("we are the %s selection owner, using empty reply", self._selection)
+                got_contents(None, None, None)
+                return
             log("requesting local XConvertSelection from %#x for '%s' into '%s'", owner, target, prop)
             X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=time)
 
