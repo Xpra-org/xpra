@@ -1024,6 +1024,10 @@ class Protocol(object):
             we wait again for the queue to flush,
             then no matter what, we close the connection and stop the threads.
         """
+        def closing_already(last_packet, done_callback=None):
+            log("flush_then_close%s had already been called, this new request has been ignored",
+                (last_packet, done_callback))
+        self.flush_then_close = closing_already
         log("flush_then_close(%s, %s) closed=%s", last_packet, done_callback, self._closed)
         def done():
             log("flush_then_close: done, callback=%s", done_callback)
