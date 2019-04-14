@@ -326,7 +326,7 @@ class ProxyInstanceProcess(Process):
 
         enclog("encoder types found: %s", tuple(encoder_types))
         #remove duplicates and use preferred order:
-        order = PREFERRED_ENCODER_ORDER[:]
+        order = list(PREFERRED_ENCODER_ORDER)
         for x in tuple(encoder_types):
             if x not in order:
                 order.append(x)
