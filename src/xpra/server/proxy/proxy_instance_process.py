@@ -120,7 +120,7 @@ class ProxyInstanceProcess(Process):
             m = self.message_queue.get()
             log("received proxy server message: %s", m)
             if m=="stop":
-                self.stop("proxy server request")
+                self.stop(None, "proxy server request")
                 return
             if m=="socket-handover-complete":
                 log("setting sockets to blocking mode: %s", (self.client_conn, self.server_conn))
@@ -136,7 +136,7 @@ class ProxyInstanceProcess(Process):
         self.exit = True
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
-        self.stop(SIGNAMES.get(signum, signum))
+        self.stop(None, SIGNAMES.get(signum, signum))
 
 
     def source_remove(self, tid):
@@ -283,7 +283,7 @@ class ProxyInstanceProcess(Process):
         try:
             self.run_queue()
         except KeyboardInterrupt as e:
-            self.stop(str(e))
+            self.stop(None, str(e))
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
 
@@ -426,7 +426,7 @@ class ProxyInstanceProcess(Process):
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "info sent")
                 return
             if is_req("stop"):
-                self.stop("socket request", None)
+                self.stop(None, "socket request")
                 return
             if is_req("version"):
                 version = XPRA_VERSION
@@ -561,9 +561,11 @@ class ProxyInstanceProcess(Process):
             sleep(0.1)
         log.info("proxy instance %s stopped", os.getpid())
 
-    def stop(self, reason="terminating", skip_proto=None):
-        log("stop(%s, %s)", reason, skip_proto)
-        log.info("stopping proxy instance: %s", reason)
+    def stop(self, skip_proto=None, *reasons):
+        log("stop(%s, %s)", skip_proto, reasons)
+        log.info("stopping proxy instance:")
+        for x in reasons:
+            log.info(" %s", x)
         self.exit = True
         try:
             self.control_socket.close()
@@ -585,7 +587,7 @@ class ProxyInstanceProcess(Process):
         for proto in (self.client_protocol, self.server_protocol):
             if proto and proto!=skip_proto:
                 log("sending disconnect to %s", proto)
-                proto.send_disconnect([SERVER_SHUTDOWN, reason])
+                proto.send_disconnect([SERVER_SHUTDOWN]+list(reasons))
 
 
     def queue_client_packet(self, packet):
@@ -604,7 +606,7 @@ class ProxyInstanceProcess(Process):
         packet_type = packet[0]
         log("process_client_packet: %s", packet_type)
         if packet_type==Protocol.CONNECTION_LOST:
-            self.stop("client connection lost", proto)
+            self.stop(proto, "client connection lost")
             return
         if packet_type=="set_deflate":
             #echo it back to the client:
@@ -616,11 +618,12 @@ class ProxyInstanceProcess(Process):
             return
         #the packet types below are forwarded:
         if packet_type=="disconnect":
-            log("got disconnect from client: %s", packet[1])
+            reason = bytestostr(packet[1])
+            log("got disconnect from client: %s", reason)
             if self.exit:
                 self.client_protocol.close()
             else:
-                self.stop("disconnect from client: %s" % packet[1])
+                self.stop(None, "disconnect from client", reason)
         elif packet_type==b"send-file":
             if packet[6]:
                 packet[6] = Compressed("file-data", packet[6])
@@ -663,14 +666,15 @@ class ProxyInstanceProcess(Process):
         packet_type = packet[0]
         log("process_server_packet: %s", packet_type)
         if packet_type==Protocol.CONNECTION_LOST:
-            self.stop("server connection lost", proto)
+            self.stop(proto, "server connection lost")
             return
         elif packet_type==b"disconnect":
-            log("got disconnect from server: %s", packet[1])
+            reason = bytestostr(packet[1])
+            log("got disconnect from server: %s", reason)
             if self.exit:
                 self.server_protocol.close()
             else:
-                self.stop("disconnect from server: %s" % packet[1])
+                self.stop(None, "disconnect from server", reason)
         elif packet_type==b"hello":
             c = typedict(packet[1])
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
@@ -735,7 +739,7 @@ class ProxyInstanceProcess(Process):
             password = self.disp_desc.get("password", self.session_options.get("password"))
             log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
             if not password:
-                self.stop("authentication requested by the server, but no password available for this session")
+                self.stop(None, "authentication requested by the server,", "but no password available for this session")
                 return
             from xpra.net.digest import get_salt, gendigest
             #client may have already responded to the challenge,
@@ -748,7 +752,7 @@ class ProxyInstanceProcess(Process):
                 salt_digest = bytestostr(packet[4])
             if salt_digest in ("xor", "des"):
                 if not LEGACY_SALT_DIGEST:
-                    self.stop("server uses legacy salt digest '%s'" % salt_digest)
+                    self.stop(None, "server uses legacy salt digest '%s'" % salt_digest)
                     return
                 log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
             if salt_digest=="xor":
@@ -763,7 +767,7 @@ class ProxyInstanceProcess(Process):
             challenge_response = gendigest(digest, password, salt)
             if not challenge_response:
                 log("invalid digest module '%s': %s", digest)
-                self.stop("server requested '%s' digest but it is not supported" % digest)
+                self.stop(None, "server requested '%s' digest but it is not supported" % digest)
                 return
             log.info("sending %s challenge response", digest)
             self.send_hello(challenge_response, client_salt)
