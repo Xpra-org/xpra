@@ -198,7 +198,7 @@ def import_gtkosx_application3():
 def import_gtkosx_application():
     return _try_import(import_gtkosx_application3, import_gtkosx_application2)
 
-
+_glib_unix_signals = {}
 def register_os_signals(callback):
     from xpra.os_util import SIGNAMES, POSIX, PYTHON3, get_util_logger
     glib = import_glib()
@@ -215,6 +215,12 @@ def register_os_signals(callback):
         glib.idle_add(handle_signal, signum)
     for signum in (signal.SIGINT, signal.SIGTERM):
         if POSIX and PYTHON3:
-            glib.unix_signal_add(glib.PRIORITY_HIGH, signum, handle_signal, signum)
+            #replace the previous definition if we had one:
+            global _glib_unix_signals
+            current = _glib_unix_signals.get(signum, None)
+            if current:
+                glib.source_remove(current)
+            source_id = glib.unix_signal_add(glib.PRIORITY_HIGH, signum, handle_signal, signum)
+            _glib_unix_signals[signum] = source_id
         else:
             signal.signal(signum, os_signal)
