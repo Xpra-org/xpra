@@ -132,7 +132,7 @@
 	</distutils>
 
 	<distutils id="python3-parsing" python3="1">
-		<branch repo="pypi.python.org"
+		<branch repo="files.pythonhosted.org"
 			module="/packages/5d/3a/24d275393f493004aeb15a1beae2b4a3043526e8b692b65b4a9341450ebe/pyparsing-2.4.0.tar.gz"
 			hash="sha256:1873c03321fc118f4e9746baf201ff990ceb915f433f23b395f5580d1840cb2a"
 			version="2.4.0"/>
