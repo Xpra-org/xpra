@@ -71,6 +71,7 @@ DEFAULT_PORTS = {
     "wss"   : 443,
     "ssh"   : 22,
     "tcp"   : DEFAULT_PORT,
+    "udp"   : DEFAULT_PORT,
     }
 
 
