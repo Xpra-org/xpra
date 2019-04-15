@@ -1531,7 +1531,7 @@ class ServerCore(object):
         #skip the authentication module we have "passed" already:
         remaining_authenticators = tuple(x for x in proto.authenticators if not x.passed)
 
-        client_expects_challenge = c.get("challenge") is not None
+        client_expects_challenge = c.strget("challenge") is not None
         challenge_response = c.strget("challenge_response")
         client_salt = c.strget("challenge_client_salt")
         if client_expects_challenge and not remaining_authenticators:
