@@ -5,7 +5,7 @@
 %define with_python3 0%{?fedora}
 
 Name:		python2-Cython
-Version:	0.29.6
+Version:	0.29.7
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
@@ -107,6 +107,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Apr 15 2019 Antoine Martin <antoine@xpra.org> - 0.29.7-1
+- new upstream release
+
 * Mon Mar 04 2019 Antoine Martin <antoine@xpra.org> - 0.29.6-1
 - new upstream release
 
