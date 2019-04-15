@@ -225,10 +225,9 @@
 	</distutils>
 
 	<distutils id="python-cython">
-		<branch repo="github.com"
-			module="/cython/cython/archive/0.29.7.tar.gz"
-			hash="sha256:beb698e36ec1c9cb09aaf3b9d1079aa1af5bb3f8f8eb9aacd2636c1302ff4b4e"
-			checkoutdir="cython-0.29.7"
+		<branch repo="files.pythonhosted.org"
+			module="/packages/f8/da/c979464858b257b21a6472a85285548c91f5b4dc773cb049cfdfb3ceeb02/Cython-0.29.7.tar.gz"
+			hash="sha256:55d081162191b7c11c7bfcb7c68e913827dfd5de6ecdbab1b99dab190586c1e8"
 			version="0.29.7"/>
 		<dependencies>
 			<dep package="python"/>
