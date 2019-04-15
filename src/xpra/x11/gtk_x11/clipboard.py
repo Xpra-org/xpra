@@ -206,7 +206,8 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         log("%s.cleanup()", self)
         #give up selection:
         if self.owned:
-            X11Window.XSetSelectionOwner(0, self._selection)
+            with xswallow:
+                X11Window.XSetSelectionOwner(0, self._selection)
         #empty replies for all pending requests,
         #this will also cancel any pending timers:
         rr = self.remote_requests
