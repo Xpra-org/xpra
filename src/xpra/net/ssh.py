@@ -9,7 +9,7 @@ import os
 import socket
 from subprocess import PIPE, Popen
 
-from xpra.scripts.main import InitException, InitExit, shellquote
+from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
 from xpra.platform.paths import get_xpra_command, get_ssh_known_hosts_files
 from xpra.platform import get_username
 from xpra.scripts.config import TRUE_OPTIONS
@@ -43,22 +43,6 @@ PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 assert PASSWORD_RETRY>=0
 
-
-def ssh_target_string(display_desc):
-    target = "ssh://"
-    username = display_desc.get("username")
-    if username:
-        target += "%s@" % username
-    host = display_desc.get("host")
-    target += host
-    ssh_port = display_desc.get("ssh-port")
-    if ssh_port:
-        target += ":%i" % ssh_port
-    display = display_desc.get("display")
-    if display and display.startswith(":"):
-        display = display[1:]
-    target += "/%s" % (display or "")
-    return target
 
 
 def keymd5(k):
@@ -212,10 +196,10 @@ def ssh_paramiko_connect_to(display_desc):
     if "proxy_host" in display_desc:
         display_desc.setdefault("proxy_username", get_username())
     password = display_desc.get("password")
-    target = ssh_target_string(display_desc)
     remote_xpra = display_desc["remote_xpra"]
     proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
     socket_dir = display_desc.get("socket_dir")
+    display = display_desc.get("display")
     display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
     socket_info = {
             "host"  : host,
@@ -252,7 +236,8 @@ def ssh_paramiko_connect_to(display_desc):
                                                host_config or ssh_config.lookup("*"))
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
-                    conn = SSHProxyCommandConnection(chan, peername, target, socket_info)
+                    conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
+                    conn.target = host_target_string("ssh", username, host, port, display)
                     conn.timeout = SOCKET_TIMEOUT
                     conn.start_stderr_reader()
                     conn.process = (sock.process, "ssh", cmd)
@@ -294,7 +279,11 @@ def ssh_paramiko_connect_to(display_desc):
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
 
             peername = (host, port)
-            conn = SSHProxyCommandConnection(chan, peername, target, socket_info)
+            conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
+            conn.target = "%s via %s" % (
+                host_target_string("ssh", username, host, port, display),
+                host_target_string("ssh", proxy_username, proxy_host, proxy_port, None),
+                )
             conn.timeout = SOCKET_TIMEOUT
             conn.start_stderr_reader()
             return conn
@@ -314,7 +303,8 @@ def ssh_paramiko_connect_to(display_desc):
             raise InitException("SSH negotiation failed: %s" % e)
         do_ssh_paramiko_connect_to(transport, host, username, password, host_config or ssh_config.lookup("*"))
         chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
-        conn = SSHSocketConnection(chan, sock, sockname, peername, target, socket_info)
+        conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
+        conn.target = host_target_string("ssh", username, host, port, display)
         conn.timeout = SOCKET_TIMEOUT
         conn.start_stderr_reader()
         return conn
