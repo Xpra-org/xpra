@@ -78,7 +78,8 @@ Depends: python2-xpra | python3-xpra,
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
 Recommends:
-        xpra-html5
+        python3-xpra
+        ,xpra-html5
 # ffmpeg based codecs:
 #stretch:        ,ffmpeg-xpra
 #xenial:        ,ffmpeg-xpra
