@@ -53,7 +53,7 @@ class ClipboardConnection(StubSourceMixin):
         log("client clipboard: greedy=%s, want_targets=%s, client_selections=%s, contents_slice_fix=%s",
             self.clipboard_greedy, self.clipboard_want_targets,
             self.clipboard_client_selections, self.clipboard_contents_slice_fix)
-        if not self.clipboard_contents_slice_fix:
+        if self.clipboard_enabled and not self.clipboard_contents_slice_fix:
             log.info("client clipboard does not include contents slice fix")
 
     def get_info(self):
