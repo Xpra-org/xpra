@@ -193,10 +193,10 @@
 	</distutils>
 
 	<distutils id="python-pillow">
-		<branch repo="github.com"
-			module="/python-pillow/Pillow/archive/6.0.0.tar.gz"
-			hash="sha256:da17ab867ab32a4dc0569271c27c3801461d07009f3a9d41463f1790709f7806"
-			version="6.0"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/81/1a/6b2971adc1bca55b9a53ed1efa372acff7e8b9913982a396f3fa046efaf8/Pillow-6.0.0.tar.gz"
+			hash="sha256:809c0a2ce9032cbcd7b5313f71af4bdc5c8c771cb86eb7559afd954cab82ebb5"
+			version="6.0.0"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="libwebp"/>
