@@ -46,11 +46,13 @@ sizeof_long = struct.calcsize(b'@L')
 
 def xatoms_to_strings(data):
     l = len(data)
-    assert l%sizeof_long==0, "invalid length for atom array: %i" % l
+    if l%sizeof_long!=0:
+        raise Exception("invalid length for atom array: %i, value=%s" % (l, repr_ellipsized(str(data))))
     natoms = l//sizeof_long
     atoms = struct.unpack(b"@"+b"L"*natoms, data)
     with xsync:
-        return tuple(name for name in (bytestostr(X11Window.XGetAtomName(atom)) for atom in atoms if atom) if name is not None)
+        return tuple(bytestostr(name) for name in (X11Window.XGetAtomName(atom)
+                                                   for atom in atoms if atom) if name is not None)
 
 def strings_to_xatoms(data):
     with xsync:
