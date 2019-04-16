@@ -449,7 +449,11 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         log = Logger("mdns")
         log("mdns import failure", exc_info=True)
         log.warn("Warning: failed to load the mdns publisher")
-        log.warn(" %s", e)
+        try:
+            einfo = str(e)
+        except:
+            einfo = str(type(e))
+        log.warn(" %s", einfo)
         log.warn(" either install the 'python-avahi' module")
         log.warn(" or use the 'mdns=no' option")
         return
