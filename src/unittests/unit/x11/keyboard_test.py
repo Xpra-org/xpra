@@ -19,7 +19,11 @@ class TestX11Keyboard(ServerTestUtil):
         with X11DisplayContext(display):
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings        #@UnresolvedImport
             keyboard_bindings = X11KeyboardBindings()
-            for x in ("2030", "0005", "0010", "220F", "2039", "2211", "2248", "FB01", "F8FF", "203A", "FB02", "02C6", "02DA", "02DC", "2206", "2044", "25CA"):
+            for x in (
+                "2030", "0005", "0010", "220F", "2039", "2211",
+                "2248", "FB01", "F8FF", "203A", "FB02", "02C6",
+                "02DA", "02DC", "2206", "2044", "25CA",
+                ):
                 #hex form:
                 hk = keyboard_bindings.parse_keysym("0x"+x)
                 #osx U+ form:
