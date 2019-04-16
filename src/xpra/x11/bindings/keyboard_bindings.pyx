@@ -506,15 +506,15 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
     cdef KeySym _parse_keysym(self, symbol):
         cdef KeySym keysym
-        if symbol in ["NoSymbol", "VoidSymbol"]:
-            return  NoSymbol
         s = strtobytes(symbol)
+        if s in [b"NoSymbol", b"VoidSymbol"]:
+            return  NoSymbol
         keysym = XStringToKeysym(s)
         if keysym==NoSymbol:
-            if s.startswith("U+"):
-                s = "0x"+s[2:]
-            if s.lower().startswith("0x"):
-                return int(symbol, 16)
+            if s.startswith(b"U+"):
+                s = b"0x"+s[2:]
+            if s.lower().startswith(b"0x"):
+                return int(s, 16)
             if len(s)>0:
                 try:
                     return int(s)
