@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. 
  */
 
-var console = console || { log: function(){} };
+var console = console || { log: function(){},  debug: function(){}, warn: function(){}};
 
 if (!String.prototype.startsWith) {
 	String.prototype.startsWith = function(searchString, position){
