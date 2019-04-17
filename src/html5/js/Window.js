@@ -931,6 +931,13 @@ XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 	if (encoding=="png") {
 		//move title to the right:
 		$("#title"+ String(this.wid)).css('left', 32);
+		if (typeof img_data === 'string') {
+			var uint = new Uint8Array(img_data.length);
+			for(var i=0;i<img_data.length;++i) {
+				uint[i] = img_data.charCodeAt(i);
+			}
+			img_data = uint;
+		}
 		src = "data:image/"+encoding+";base64," + Utilities.ArrayBufferToBase64(img_data);
 	}
 	jQuery('#windowicon' + String(this.wid)).attr('src', src);
