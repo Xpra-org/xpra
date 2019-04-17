@@ -1654,7 +1654,7 @@ class GTKTrayMenuBase(object):
         app_menu_item = self.start_menuitem(app_name.decode("utf-8"), icondata)
         def app_launch(*_args):
             command = command_props.get(b"command")
-            command = re.sub(r'\%[fFuU]', '', command)
+            command = re.sub(b'\%[fFuU]', '', command)
             log("command=%s", command)
             if command:
                 self.client.send_start_command(app_name, command, False, self.client.server_sharing)
