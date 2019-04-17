@@ -237,21 +237,23 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         self._got_token_events += 1
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s",
             self._selection, targets, target_data, claim, self._can_receive)
+        if claim:
+            self._have_token = True
         if self._can_receive:
             self.targets = tuple(bytestostr(x) for x in (targets or ()))
             self.target_data = target_data or {}
-            if targets:
-                self.got_contents("TARGETS", "ATOM", 32, targets)
-            if target_data and synchronous_client:
-                target = target_data.keys()[0]
-                dtype, dformat, data = target_data.get(target)
-                dtype = bytestostr(dtype)
-                self.got_contents(target, dtype, dformat, data)
-        if not claim:
-            log("token packet without claim, not setting the token flag")
-            return
-        self._have_token = True
-        if self._can_receive:
+            if targets and claim:
+                xatoms = strings_to_xatoms(targets)
+                self.got_contents("TARGETS", "ATOM", 32, xatoms)
+            if target_data and synchronous_client and claim:
+                targets = target_data.keys()
+                text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
+                if text_targets:
+                    target = text_targets[0]
+                    dtype, dformat, data = target_data.get(target)
+                    dtype = bytestostr(dtype)
+                    self.got_contents(target, dtype, dformat, data)
+        if self._can_receive and claim:
             self.claim()
 
     def claim(self, time=0):
