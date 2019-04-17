@@ -422,7 +422,7 @@ class ClipboardProtocolHelperCore(object):
             fstr = b"@" + format_char * len(data)
             log("struct.pack(%s, %s)", fstr, data)
             return struct.pack(fstr, *data)
-        raise Exception("unhanled encoding: %s" % encoding)
+        raise Exception("unhanled encoding: %s" % ((encoding, dtype, dformat),))
 
     def _process_clipboard_request(self, packet):
         request_id, selection, target = packet[1:4]
