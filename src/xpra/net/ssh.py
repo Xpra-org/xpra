@@ -777,15 +777,19 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 child.terminate()
         except Exception as e:
             print("error trying to stop ssh tunnel process: %s" % e)
+    host = display_desc["host"]
+    port = display_desc.get("ssh-port", 22)
+    username = display_desc.get("username")
+    display = display_desc.get("display")
     info = {
-        "host"  : display_desc["host"],
-        "port"  : display_desc.get("ssh-port", 22),
+        "host"  : host,
+        "port"  : port,
         }
     from xpra.net.bytestreams import TwoFileConnection
-    target = ssh_target_string(display_desc)
     conn = TwoFileConnection(child.stdin, child.stdout,
-                             abort_test, target=target,
+                             abort_test, target=(host, port),
                              socktype="ssh", close_cb=stop_tunnel, info=info)
+    conn.endpoint = host_target_string("ssh", username, host, port, display)
     conn.timeout = 0            #taken care of by abort_test
     conn.process = (child, "ssh", cmd)
     return conn
