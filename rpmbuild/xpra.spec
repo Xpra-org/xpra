@@ -206,7 +206,6 @@ Recommends:         python2-ldap
 Recommends:         python2-ldap3
 Recommends:			python2-dbus
 %endif
-%{Recommends}:		dbus-x11
 %{Recommends}:		python2-netifaces
 %{Suggests}:		python2-cryptography
 BuildRequires:		pkgconfig
@@ -299,6 +298,7 @@ Requires:			xpra-common-server = %{version}-%{release}
 Requires:			python2-xpra = %{version}-%{release}
 Requires:			pygtk2
 %{Recommends}:		cups-filters
+%{Recommends}:		dbus-x11
 %if %{with_cuda}
 %{Recommends}:		python2-pycuda
 %{Recommends}:		python2-pynvml
@@ -428,6 +428,7 @@ Requires:			python3-xpra = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			python3-cups
+Recommends			dbus-x11
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
 %if %{with_cuda}
