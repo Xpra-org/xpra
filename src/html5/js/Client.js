@@ -2906,9 +2906,13 @@ XpraClient.prototype._process_open_url = function(packet, ctx) {
         return
     }
     ctx.clog("opening url:", url);
-	if (window.doNotification) {
-		var summary = "Server URL Open Request";
-		var body = "Link: <a href=\""+url+"\" target=\"_blank\">"+url+"</a>";
-		window.doNotification("info", 0, summary, body, 30);
-	}
+    var new_window = window.open(url, '_blank');
+    if(!new_window || new_window.closed || typeof new_window.closed=='undefined') 
+    {
+		//Popup blocked, display link in notification
+		var summary = "Open URL";
+		var body = "<a href=\""+url+"\" target=\"_blank\">"+url+"</a>";
+		var timeout = 10;
+		window.doNotification("", 0, summary, body, timeout, null, null, null, null, null);
+    }
 }
