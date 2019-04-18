@@ -257,7 +257,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             return
         log("MultiByteToWideChar wlen=%i", wlen)
         #allocate some memory for it:
-        buf = GlobalAlloc(GMEM_MOVEABLE, wlen*2)
+        buf = GlobalAlloc(GMEM_MOVEABLE, (wlen+1)*2)
         if not buf:
             return
         log("GlobalAlloc buf=%#x", buf)
