@@ -210,9 +210,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if target=="TARGETS" and dtype=="ATOM" and dformat==32:
             self.targets = tuple(data)
             #TODO: tell system what targets we have
-            log.warn("got_contents: tell OS we have %s", csv(self.targets))
+            log("got_contents: tell OS we have %s", csv(self.targets))
         if dformat==8 and dtype in TEXT_TARGETS:
-            log.warn("we got a byte string: %s", data)
+            log("we got a byte string: %s", data)
             self.set_clipboard_text(data)
 
 
