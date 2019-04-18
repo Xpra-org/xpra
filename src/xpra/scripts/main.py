@@ -519,6 +519,8 @@ def find_session_by_name(opts, session_name):
     return "socket://%s" % tuple(session_uuid_to_path.values())[0]
 
 def parse_ssh_string(ssh_setting):
+    if is_debug_enabled("ssh"):
+        get_util_logger().info("parse_ssh_string(%s)" % ssh_setting)
     ssh_cmd = ssh_setting
     from xpra.platform.features import DEFAULT_SSH_COMMAND
     if ssh_setting=="auto":
@@ -529,7 +531,11 @@ def parse_ssh_string(ssh_setting):
                 import paramiko
             assert paramiko
             ssh_cmd = "paramiko"
-        except ImportError:
+            if is_debug_enabled("ssh"):
+                get_util_logger().info("using paramiko")
+        except ImportError as e:
+            if is_debug_enabled("ssh"):
+                get_util_logger().info("no paramiko: %s" % e)
             ssh_cmd = DEFAULT_SSH_COMMAND
     return shlex.split(ssh_cmd)
 
