@@ -81,6 +81,7 @@ XpraClient.prototype.init_settings = function(container) {
 
 XpraClient.prototype.init_state = function(container) {
 	// state
+	this.connected = false;
 	this.desktop_width = 0;
 	this.desktop_height = 0;
 	this.server_remote_logging = false;
@@ -199,7 +200,7 @@ XpraClient.prototype.send = function() {
 }
 
 XpraClient.prototype.send_log = function(level, args) {
-	if(this.remote_logging && this.server_remote_logging) {
+	if(this.remote_logging && this.server_remote_logging && this.connected) {
 		try {
 			var sargs = [];
 			for(var i = 0; i < args.length; i++) {
@@ -439,6 +440,7 @@ XpraClient.prototype.close_windows = function() {
 }
 
 XpraClient.prototype.close_protocol = function() {
+	this.connected = false;
 	if (this.protocol) {
 		this.protocol.close();
 		this.protocol = null;
@@ -1725,6 +1727,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.reconnect_attempt = 0;
 	ctx.on_connection_progress("Session started", "", 100);
 	ctx.on_connect();
+	ctx.connected = true;
 }
 
 XpraClient.prototype.on_connect = function() {
