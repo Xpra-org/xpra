@@ -325,7 +325,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
 
     try:
         if mode in ("start", "start-desktop", "shadow") and display_is_remote:
-            #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
+            #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
         if (mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and supports_server) or \
             (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
