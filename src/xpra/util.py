@@ -309,7 +309,7 @@ class typedict(dict):
     def strget(self, k, default=None):
         v = self.capsget(k, default)
         if v is None:
-            return None
+            return default
         from xpra.os_util import bytestostr
         return bytestostr(v)
 
