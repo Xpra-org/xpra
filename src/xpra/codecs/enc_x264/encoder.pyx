@@ -775,7 +775,6 @@ cdef class Encoder:
         profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
         #now see if the client has requested a different value:
         profile = options.strget("h264.%s.profile" % csc_mode, profile)
-        profile = options.strget("x264.%s.profile" % csc_mode, profile)
         if profile is None:
             return None
         return strtobytes(profile)
