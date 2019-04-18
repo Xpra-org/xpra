@@ -4,6 +4,11 @@ html, body {
 	padding: 0;
 	margin: 0;
 	overflow: hidden;
+	background-color: #021d3a;
+    background-image: url(../background.png);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 div.window canvas {
@@ -71,7 +76,6 @@ canvas {
 .window {
 	border: 1px;
 	position: absolute;
-	box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
 	padding: 0;
 	overflow: hidden; /* required for radius clip */
 }
@@ -82,17 +86,23 @@ canvas {
 	float: left;
 }
 .window.desktop {
-	border-radius: 0;
 	box-shadow: none;
 }
 
 .window-NORMAL {
-	border-radius: 6px;
 }
+
+.window.border {
+	border-color : grey;
+	border-width : 1px;
+	border-style : solid;
+	box-shadow : 0px 10px 25px rgba(0, 0, 0, 0.5);
+}
+
 .windowhead {
 	height: 30px;
 	color: #000000;
-	background-color: #c0c0c0;
+	background-color: #ffffff;
 }
 .windowicon {
 	display: inline-block;
@@ -103,6 +113,7 @@ canvas {
 	top: 0px;
 	overflow: hidden;
 	cursor: default;
+	background-color: transparent;
 }
 .windowtitle {
 	display: inline-block;
@@ -136,6 +147,7 @@ canvas {
 }
 div.windowinfocus {
 	z-index: 5000;
+	background-color: white;
 }
 .modal {
 	z-index: 20000;

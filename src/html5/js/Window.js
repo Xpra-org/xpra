@@ -125,6 +125,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	}
 	else if((this.windowtype == "") || (this.windowtype == "NORMAL") || (this.windowtype == "DIALOG") || (this.windowtype == "UTILITY")) {
 		this.resizable = true;
+		jQuery(this.div).addClass("border");
 		// add a title bar to this window if we need to
 		// create header
 		jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> '+
