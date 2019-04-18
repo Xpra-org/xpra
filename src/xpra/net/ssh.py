@@ -550,6 +550,9 @@ keymd5(host_key),
     if not transport.is_authenticated() and NONE_AUTH:
         auth_none()
 
+    if not transport.is_authenticated() and AGENT_AUTH:
+        auth_agent()
+
     # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
     if not transport.is_authenticated() and KEY_AUTH:
         auth_publickey()
@@ -559,9 +562,6 @@ keymd5(host_key),
 
     if not transport.is_authenticated() and PASSWORD_AUTH and password:
         auth_password()
-
-    if not transport.is_authenticated() and AGENT_AUTH:
-        auth_agent()
 
     if not transport.is_authenticated() and PASSWORD_AUTH and not password:
         for _ in range(1+PASSWORD_RETRY):
