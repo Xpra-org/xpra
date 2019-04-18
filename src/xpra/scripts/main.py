@@ -291,7 +291,12 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         if systemd_run:
             #check if we have wrapped it already (or if disabled via env var)
             if SYSTEMD_RUN:
-                return systemd_run_wrap(mode, sys.argv, options.systemd_run_args)
+                #make sure we run via the same interpreter,
+                #inject it into the command line if we have to:
+                argv = list(sys.argv)
+                if argv[0].find("python")<0:
+                    argv.insert(0, "python%i" % sys.version_info[0])
+                return systemd_run_wrap(mode, argv, options.systemd_run_args)
 
     configure_env(options.env)
     configure_logging(options, mode)
