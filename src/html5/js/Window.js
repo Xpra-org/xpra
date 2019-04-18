@@ -138,9 +138,11 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		// make draggable
 		jQuery(this.div).draggable({ cancel: "canvas" });
 		jQuery(this.div).on("dragstart",function(ev,ui){
+			client.mouse_grabbed = true;
 			set_focus_cb(me);
 		});
 		jQuery(this.div).on("dragstop",function(ev,ui){
+			client.mouse_grabbed = false;
 			me.handle_moved(ui);
 		});
 		// attach resize handles
@@ -148,9 +150,13 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		//jQuery(this.div).on("resize",jQuery.debounce(50, function(ev,ui) {
 		//  	me.handle_resized(ui);
 		//}));
+		jQuery(this.div).on("resizestart",function(ev,ui){
+			client.mouse_grabbed = true;
+		});
 		jQuery(this.div).on("resizestop",function(ev,ui){
 		  	me.handle_resized(ui);
 		  	set_focus_cb(me);
+			client.mouse_grabbed = false;
 		});
 		this.d_header = '#head' + String(wid);
 		this.d_closebtn = '#close' + String(wid);

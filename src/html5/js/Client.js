@@ -118,6 +118,7 @@ XpraClient.prototype.init_state = function(container) {
 	this.last_mouse_y = null;
 	this.wheel_delta_x = 0;
 	this.wheel_delta_y = 0;
+	this.mouse_grabbed = false;
 	// clipboard
 	this.clipboard_buffer = "";
 	this.clipboard_pending = false;
@@ -1263,7 +1264,7 @@ XpraClient.prototype._window_mouse_move = function(ctx, e, window) {
 }
 XpraClient.prototype.do_window_mouse_move = function(e, window) {
 	this._check_browser_language();
-	if (this.server_readonly) {
+	if (this.server_readonly || this.mouse_grabbed) {
 		return;
 	}
 	var mouse = this.getMouse(e, window),
@@ -1289,7 +1290,7 @@ XpraClient.prototype._window_mouse_up = function(ctx, e, window) {
 }
 
 XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
-	if (this.server_readonly) {
+	if (this.server_readonly || this.mouse_grabbed) {
 		return;
 	}
 	var mouse = this.getMouse(e, window),
