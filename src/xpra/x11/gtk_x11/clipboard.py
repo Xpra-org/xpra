@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import struct
 
 from xpra.gtk_common.error import xsync, xswallow
@@ -26,7 +27,7 @@ from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport
     )
 from xpra.os_util import bytestostr
-from xpra.util import csv, repr_ellipsized
+from xpra.util import csv, repr_ellipsized, first_time
 from xpra.log import Logger
 
 gdk = import_gdk()
@@ -42,6 +43,8 @@ CurrentTime = constants["CurrentTime"]
 StructureNotifyMask = constants["StructureNotifyMask"]
 
 sizeof_long = struct.calcsize(b'@L')
+
+BLACKLISTED_CLIPBOARD_CLIENTS = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
 
 
 def xatoms_to_strings(data):
@@ -315,12 +318,19 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         log("do_selection_request_event(%s)", event)
         requestor = event.requestor
         assert requestor
+        wininfo = self.get_wininfo(get_xwindow(requestor))
         log("clipboard request for %s from window %#x: %s",
-            self._selection, get_xwindow(requestor), self.get_wininfo(get_xwindow(requestor)))
+            self._selection, get_xwindow(requestor), wininfo)
         prop = event.property
         target = str(event.target)
         def nodata():
             self.set_selection_response(requestor, target, prop, "STRING", 8, b"", time=event.time)
+        if wininfo.startswith("'") and wininfo.endswith("'") and wininfo.strip("'") in BLACKLISTED_CLIPBOARD_CLIENTS:
+            if first_time("clipboard-blacklisted:%s" % wininfo.strip("'")):
+                log.warn("receiving clipboard requests from blacklisted client %s", wininfo)
+                log.warn(" all requests will be silently ignored")
+            nodata()
+            return
         if not self.owned:
             log.warn("Warning: clipboard selection request received,")
             log.warn(" but we don't own the selection,")

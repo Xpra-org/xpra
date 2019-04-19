@@ -74,16 +74,17 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
         log("send_clipboard_request id=%s", request_id)
-        timer = glib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id)
+        timer = glib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id, selection, target)
         self._clipboard_outstanding_requests[request_id] = (timer, selection, target)
         self.progress()
         self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
 
-    def timeout_request(self, request_id):
+    def timeout_request(self, request_id, selection, target):
         try:
             selection, target = self._clipboard_outstanding_requests.pop(request_id)[1:]
         except KeyError:
-            log.warn("Warning: request id %i not found", request_id)
+            log.warn("Warning: clipboard request id %i not found", request_id)
+            log.warn(" selection=%s, target=%s", selection, target)
             return
         finally:
             self.progress()
@@ -98,6 +99,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
             timer, selection, target = self._clipboard_outstanding_requests.pop(request_id)
         except KeyError:
             log.warn("Warning: request id %i not found", request_id)
+            log.warn(" timed out already?")
             return
         finally:
             self.progress()
