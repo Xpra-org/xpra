@@ -74,8 +74,8 @@ dbus-proxy = %(dbus_proxy)s
 # exec-wrapper = vglrun -d :1 --
 
 # Allows clients to start new commands in the server context:
-#start-new-commands = yes
-start-new-commands = no
+#start-new-commands = no
+start-new-commands = yes
 
 # Start a pulseaudio server with each session:
 pulseaudio = %(pulseaudio)s

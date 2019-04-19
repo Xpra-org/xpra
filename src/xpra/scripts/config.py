@@ -980,7 +980,7 @@ def get_defaults():
                     "terminate-children": False,
                     "exit-with-children": False,
                     "exit-with-client"  : False,
-                    "start-new-commands": False,
+                    "start-new-commands": True,
                     "proxy-start-sessions": True,
                     "av-sync"           : True,
                     "exit-ssh"          : True,
