@@ -428,7 +428,7 @@ Requires:			python3-xpra = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			python3-cups
-Recommends			dbus-x11
+Recommends:			dbus-x11
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
 %if %{with_cuda}
