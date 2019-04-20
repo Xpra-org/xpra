@@ -94,7 +94,9 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
         GDKClipboardProtocolHelper.__init__(self, *args, **kwargs)
 
     def make_proxy(self, clipboard):
-        return OSXClipboardProxy(clipboard)
+        proxy = OSXClipboardProxy(clipboard)
+        proxy.set_direction(self.can_send, self.can_receive)
+        return proxy
 
     def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         #override so we can catch weird OSX data:
