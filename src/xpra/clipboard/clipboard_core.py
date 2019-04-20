@@ -117,12 +117,37 @@ class ClipboardProtocolHelperCore(object):
                     log.error(" '%s': %s", x, e)
         self._clipboard_request_counter = 0
         self._clipboard_outstanding_requests = {}
+        self._local_to_remote = {}
+        self._remote_to_local = {}
+        self.init_translation(kwargs)
         self._want_targets = False
         self.init_packet_handlers()
         self.init_proxies(d.strlistget("clipboards.local", CLIPBOARDS))
         remote_loop_uuids = d.dictget("remote-loop-uuids", {})
         self.verify_remote_loop_uuids(remote_loop_uuids)
         self.remote_clipboards = d.strlistget("clipboards.remote", CLIPBOARDS)
+
+    def init_translation(self, kwargs):
+        def getselection(name):
+            v = kwargs.get("clipboard.%s" % name)           #ie: clipboard.remote
+            env_value = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_%s_SELECTION" % name.upper())
+            selections = kwargs.get("clipboards.%s" % name) #ie: clipboards.remote
+            assert selections, "no %s clipboards!" % name
+            for x in (env_value, v):
+                if x and x in selections:
+                    return x
+            return selections[0]
+        local = getselection("local")
+        remote = getselection("remote")
+        if local and remote:
+            self._local_to_remote[local] = remote
+            self._remote_to_local[remote] = local
+
+    def local_to_remote(self, selection):
+        return self._local_to_remote.get(selection, selection)
+
+    def remote_to_local(self, selection):
+        return self._remote_to_local.get(selection, selection)
 
     def __repr__(self):
         return "ClipboardProtocolHelperCore"
@@ -235,13 +260,6 @@ class ClipboardProtocolHelperCore(object):
         for proxy in self._clipboard_proxies.values():
             proxy.init_uuid()
 
-
-    def local_to_remote(self, selection):
-        #overriden in some subclasses (see: translated_clipboard)
-        return  selection
-    def remote_to_local(self, selection):
-        #overriden in some subclasses (see: translated_clipboard)
-        return  selection
 
     # Used by the client during startup:
     def send_tokens(self, selections=()):

@@ -1,9 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
+from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.clipboard.clipboard_base import ClipboardProxy
 from xpra.gtk_common.gobject_compat import import_glib, import_gobject
 from xpra.log import Logger
@@ -79,7 +79,7 @@ def setup_watcher(get_change_count):
     return True
 
 
-class OSXClipboardProtocolHelper(TranslatedClipboardProtocolHelper):
+class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
     """
         Full of OSX quirks!
         darwin/features.py should be set
@@ -91,7 +91,7 @@ class OSXClipboardProtocolHelper(TranslatedClipboardProtocolHelper):
         init_pasteboard()
         kwargs["clipboard.local"] = "CLIPBOARD"
         kwargs["clipboards.local"] = ["CLIPBOARD"]
-        TranslatedClipboardProtocolHelper.__init__(self, *args, **kwargs)
+        GDKClipboardProtocolHelper.__init__(self, *args, **kwargs)
 
     def make_proxy(self, clipboard):
         return OSXClipboardProxy(clipboard)
@@ -101,7 +101,7 @@ class OSXClipboardProtocolHelper(TranslatedClipboardProtocolHelper):
         if dformat == 0 and dtype=="NONE":
             log("got 'NONE' data from clipboard")
             return None, None
-        return TranslatedClipboardProtocolHelper._do_munge_raw_selection_to_wire(self, target, dtype, dformat, data)
+        return GDKClipboardProtocolHelper._do_munge_raw_selection_to_wire(self, target, dtype, dformat, data)
 
     def _get_clipboard_from_remote_handler(self, _proxy, _selection, _target):
         #cannot work on osx, the nested mainloop doesn't run :(

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import re
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
-from xpra.os_util import bytestostr, OSX
+from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.gtk_common.gtk_util import (
     ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem,
     get_pixbuf_from_data, scaled_image,
@@ -686,18 +686,16 @@ class GTKTrayMenuBase(object):
             clipboard_submenu = gtk.Menu()
             self.clipboard_menuitem.set_submenu(clipboard_submenu)
             self.popup_menu_workaround(clipboard_submenu)
-            #figure out if this is a translated clipboard (win32 or osx)
-            #and if so, add a submenu to change the selection we synchronize with:
-            try:
-                from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
-                assert TranslatedClipboardProtocolHelper
-                clipboardlog("set_clipboard_menu(%s) helper=%s, server=%s, client=%s",
-                             args, ch, c.server_clipboard, c.client_supports_clipboard)
-                if issubclass(type(ch), TranslatedClipboardProtocolHelper):
+            if WIN32 or OSX:
+                #add a submenu to change the selection we synchronize with
+                #since this platform only has a single clipboard
+                try:
+                    clipboardlog("set_clipboard_menu(%s) helper=%s, server=%s, client=%s",
+                                 args, ch, c.server_clipboard, c.client_supports_clipboard)
                     clipboard_submenu.append(self.make_translatedclipboard_optionsmenuitem())
                     clipboard_submenu.append(gtk.SeparatorMenuItem())
-            except ImportError:
-                clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
+                except ImportError:
+                    clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
             items = []
             for label in CLIPBOARD_DIRECTION_LABELS:
                 direction_item = CheckMenuItem(label)
