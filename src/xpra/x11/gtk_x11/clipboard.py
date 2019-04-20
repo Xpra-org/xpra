@@ -325,6 +325,9 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         target = str(event.target)
         def nodata():
             self.set_selection_response(requestor, target, prop, "STRING", 8, b"", time=event.time)
+        if not self._enabled:
+            nodata()
+            return
         if wininfo.startswith("'") and wininfo.endswith("'") and wininfo.strip("'") in BLACKLISTED_CLIPBOARD_CLIENTS:
             if first_time("clipboard-blacklisted:%s" % wininfo.strip("'")):
                 log.warn("receiving clipboard requests from blacklisted client %s", wininfo)
@@ -420,6 +423,8 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         owned = self.owned
         self.owned = event.owner and get_xwindow(event.owner)==self.xid
         log("do_selection_notify_event(%s) owned=%s, was %s", event, self.owned, owned)
+        if not self._enabled:
+            return
         if self.owned or not self._can_send:
             return
         self.schedule_emit_token()
@@ -465,11 +470,15 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
 
     def do_selection_clear_event(self, event):
         log("do_xpra_selection_clear(%s) was owned=%s", event, self.owned)
+        if not self._enabled:
+            return
         self.owned = False
         self.do_owner_changed()
 
     def do_owner_changed(self):
         log("do_owner_changed()")
+        if not self._enabled:
+            return
         self.target_data = {}
         self.targets = ()
 
@@ -523,6 +532,8 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
 
     def do_property_notify(self, event):
         log("do_property_notify(%s)", event)
+        if not self._enabled:
+            return
         #ie: atom="PRIMARY-TARGETS", atom="PRIMARY-STRING"
         parts = event.atom.split("-", 1)
         assert len(parts)==2
