@@ -132,7 +132,8 @@ class ClipboardProtocolHelperCore(object):
             v = kwargs.get("clipboard.%s" % name)           #ie: clipboard.remote
             env_value = os.environ.get("XPRA_TRANSLATEDCLIPBOARD_%s_SELECTION" % name.upper())
             selections = kwargs.get("clipboards.%s" % name) #ie: clipboards.remote
-            assert selections, "no %s clipboards!" % name
+            if not selections:
+                return None
             for x in (env_value, v):
                 if x and x in selections:
                     return x
