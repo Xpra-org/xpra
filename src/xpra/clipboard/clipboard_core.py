@@ -268,6 +268,8 @@ class ClipboardProtocolHelperCore(object):
             proxy = self._clipboard_proxies.get(selection)
             if proxy:
                 proxy._have_token = False
+                #after we remove the legacy gtk code, we can directly call:
+                #proxy.do_emit_token()
                 self._send_clipboard_token_handler(proxy)
 
     def send_all_tokens(self):

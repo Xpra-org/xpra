@@ -96,8 +96,8 @@ class Win32Clipboard(ClipboardTimeoutHelper):
             log("clipboard event: %s", CLIPBOARD_EVENTS.get(msg))
         if msg==WM_CLIPBOARDUPDATE:
             for proxy in self._clipboard_proxies.values():
-                #TODO: handle greedy clients
-                self._send_clipboard_token_handler(proxy, packet_data=())
+                if not proxy._block_owner_change:
+                    proxy.schedule_emit_token()
         return r
 
 
@@ -118,7 +118,8 @@ class Win32Clipboard(ClipboardTimeoutHelper):
             UnregisterClassA(wch, GetModuleHandleA(0))
 
     def make_proxy(self, selection):
-        proxy = Win32ClipboardProxy(self.window, selection, self._send_clipboard_request_handler)
+        proxy = Win32ClipboardProxy(self.window, selection,
+                                    self._send_clipboard_request_handler, self._send_clipboard_token_handler)
         proxy.set_want_targets(self._want_targets)
         proxy.set_direction(self.can_send, self.can_receive)
         return proxy
@@ -134,9 +135,10 @@ class Win32Clipboard(ClipboardTimeoutHelper):
 
 
 class Win32ClipboardProxy(ClipboardProxyCore):
-    def __init__(self, window, selection, send_clipboard_request_handler):
+    def __init__(self, window, selection, send_clipboard_request_handler, send_clipboard_token_handler):
         self.window = window
         self.send_clipboard_request_handler = send_clipboard_request_handler
+        self.send_clipboard_token_handler = send_clipboard_token_handler
         ClipboardProxyCore.__init__(self, selection)
 
     def set_want_targets(self, want_targets):
@@ -164,6 +166,17 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         def clear_error():
             log.error("Error: failed to clear the clipboard")
         self.with_clipboard_lock(EmptyClipboard, clear_error)
+
+    def do_emit_token(self):
+        #TODO: if contents are not text,
+        #send just the token
+        if self._greedy_client:
+            target = "UTF8_STRING"
+            def got_contents(dtype, dformat, data):
+                packet_data = ([target], (target, dtype, dformat, data))
+                self.send_clipboard_token_handler(self, packet_data)
+            self.get_contents(target, got_contents)
+        self.send_clipboard_token_handler(self)
 
     def get_contents(self, target, got_contents):
         def got_text(text):
@@ -275,12 +288,15 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         def do_set_data():
             try:
+                self._block_owner_change = True
+                log("SetClipboardData(..) block_owner_change=%s", self._block_owner_change)
                 EmptyClipboard()
                 if not SetClipboardData(win32con.CF_UNICODETEXT, buf):
                     return
                 #done!
             finally:
                 GlobalFree(buf)
+                glib.idle_add(self.remove_block)
         def set_error():
             GlobalFree(buf)
             log.error("Error: failed to set clipboard data")
