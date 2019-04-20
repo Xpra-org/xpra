@@ -6,7 +6,7 @@ Source: http://xpra.org/
 Files: *
 Copyright: 2008-2010 Nathaniel Smith <njs@pobox.com>
            2011-2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-           2009-2017 Antoine Martin <antoine@xpra.org>
+           2009-2019 Antoine Martin <antoine@xpra.org>
 License: GPL-2+
 
 Files: xpra/client/gl_colorspace_conversions.py
