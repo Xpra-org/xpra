@@ -215,7 +215,7 @@ class WindowVideoSource(WindowSource):
                 i = x.get_info()
                 i[""] = x.get_type()
                 info[prefix] = i
-            except:
+            except Exception:
                 log.error("Error collecting codec information from %s", x, exc_info=True)
         addcinfo("csc", self._csc_encoder)
         addcinfo("encoder", self._video_encoder)
@@ -257,7 +257,7 @@ class WindowVideoSource(WindowSource):
         def specinfo(x):
             try:
                 return x.codec_type
-            except:
+            except AttributeError:
                 return repr(x)
         pi  = {
                "score"             : score,
@@ -342,7 +342,7 @@ class WindowVideoSource(WindowSource):
             self.video_stream_file = None
             try:
                 vsf.close()
-            except:
+            except (OSError, IOError):
                 log.error("Error closing video stream file", exc_info=True)
 
     def ui_cleanup(self):
@@ -928,7 +928,7 @@ class WindowVideoSource(WindowSource):
         for item in eq:
             try:
                 self.free_image_wrapper(item[4])
-            except:
+            except Exception:
                 log.error("Error: cannot free image wrapper %s", item[4], exc_info=True)
 
     def schedule_encode_from_queue(self, av_delay):
@@ -1607,7 +1607,7 @@ class WindowVideoSource(WindowSource):
                 videolog.warn(" %s:", option)
                 videolog.warn(" %s", e)
                 del e
-            except:
+            except Exception:
                 if self.is_cancelled():
                     return False
                 videolog.warn("Warning: failed to setup video pipeline %s", option, exc_info=True)
