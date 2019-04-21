@@ -65,7 +65,7 @@ class WebcamServer(StubServerMixin):
             return
         try:
             from xpra.codecs.pillow.decoder import get_encodings
-            self.webcam_encodings = get_encodings()
+            self.webcam_encodings = tuple(x for x in ("png", "jpeg", "webp") if x in get_encodings())
         except Exception as e:
             log.error("Error: webcam forwarding disabled:")
             log.error(" %s", e)

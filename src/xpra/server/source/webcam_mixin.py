@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import POSIX, OSX
+from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.util import envint, csv
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.codecs.pillow.decoder import HEADERS, open_only
@@ -19,8 +19,9 @@ def valid_encodings(args):
     #ensure that the encodings specified can be validated using HEADERS
     encodings = []
     for x in args:
+        x = bytestostr(x)
         if x not in HEADERS.values():
-            log.warn("Warning: %s is not supported for webcam forwarding")
+            log.warn("Warning: %s is not supported for webcam forwarding", x)
         else:
             encodings.append(x)
     return encodings
