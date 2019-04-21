@@ -253,9 +253,11 @@ class WindowSource(WindowIconSource):
         self.image_depth = window.get_property("depth")
 
         # general encoding tunables (mostly used by video encoders):
-        self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
+        #keep track of the target encoding_quality: (event time, info, encoding speed):
+        self._encoding_quality = deque(maxlen=100)
         self._encoding_quality_info = {}
-        self._encoding_speed = deque(maxlen=100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
+        #keep track of the target encoding_speed: (event time, info, encoding speed):
+        self._encoding_speed = deque(maxlen=100)
         self._encoding_speed_info = {}
         # they may have fixed values:
         self._fixed_quality = default_encoding_options.get("quality", -1)
@@ -1400,7 +1402,8 @@ class WindowSource(WindowIconSource):
         #or too many pixels in those requests
         #for the last time_unit, and if so we force batching on
         event_min_time = now-self.batch_config.time_unit
-        all_pixels = tuple(pixels for _,event_time,pixels in self.global_statistics.damage_last_events if event_time>event_min_time)
+        all_pixels = tuple(pixels for _,event_time,pixels in self.global_statistics.damage_last_events
+                           if event_time>event_min_time)
         eratio = float(len(all_pixels)) / self.batch_config.max_events
         if eratio>1.0:
             return True
@@ -1420,7 +1423,8 @@ class WindowSource(WindowIconSource):
         gs = self.global_statistics
         if not s or not gs:
             return 0
-        latency_tolerance_pct = int(min(self._damage_packet_sequence, 10)*min(monotonic_time()-gs.last_congestion_time, 10))
+        latency_tolerance_pct = int(min(self._damage_packet_sequence, 10) *
+                                    min(monotonic_time()-gs.last_congestion_time, 10))
         return s.get_packets_backlog(latency_tolerance_pct)
 
     def expire_delayed_region(self, due=0):
@@ -1469,13 +1473,15 @@ class WindowSource(WindowIconSource):
                 if celapsed<10:
                     late_pct = 2*100*self.soft_expired
                     delay = now-due
-                    self.networksend_congestion_event("soft-expire limit: %ims, %i/%i" % (delay, self.soft_expired, self.max_soft_expired), late_pct)
+                    self.networksend_congestion_event("soft-expire limit: %ims, %i/%i" % (
+                        delay, self.soft_expired, self.max_soft_expired), late_pct)
             #NOTE: this should never happen...
             #the region should now get sent when we eventually receive the pending ACKs
             #but if somehow they go missing... clean it up from a timeout:
             if not self.timeout_timer:
                 delayed_region_time = delayed.damage_time
-                self.timeout_timer = self.timeout_add(self.batch_config.timeout_delay, self.delayed_region_timeout, delayed_region_time)
+                self.timeout_timer = self.timeout_add(self.batch_config.timeout_delay,
+                                                      self.delayed_region_timeout, delayed_region_time)
         return False
 
     def delayed_region_soft_timeout(self):
@@ -1813,6 +1819,7 @@ class WindowSource(WindowIconSource):
         self.do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
     def do_schedule_auto_refresh(self, encoding, data, region, client_options, options):
+        assert data
         if (encoding.startswith("png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith("rgb"):
             actual_quality = 100
             lossy = False
@@ -2027,14 +2034,17 @@ class WindowSource(WindowIconSource):
                 #if this packet completed late, record congestion send speed:
                 max_send_delay = 5 + self.estimate_send_delay(ldata)
                 if elapsed_ms>max_send_delay:
-                    self.networksend_congestion_event("slow send", (elapsed_ms*100/max_send_delay)-100, int(ldata*8*1000/elapsed_ms))
+                    late_pct = (elapsed_ms*100/max_send_delay)-100
+                    send_speed = int(ldata*8*1000/elapsed_ms)
+                    self.networksend_congestion_event("slow send", late_pct, send_speed)
             self.schedule_auto_refresh(packet, options)
         if process_damage_time>0:
             now = monotonic_time()
             damage_in_latency = now-process_damage_time
             statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
-        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent, self.get_fail_cb(packet), client_options.get("flush", 0))
+        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent,
+                          self.get_fail_cb(packet), client_options.get("flush", 0))
 
     def networksend_congestion_event(self, source, late_pct, cur_send_speed=0):
         gs = self.global_statistics
@@ -2162,7 +2172,9 @@ class WindowSource(WindowIconSource):
                         send_speed = bytecount*8*1000//actual_send_latency
                     #statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps",
                     #    latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
-                    self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, late_by, latency, (netlatency, sendlatency, decode_time, ack_tolerance)), late_pct, send_speed)
+                    self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" %
+                                                       (damage_packet_sequence, late_by, latency, (netlatency, sendlatency, decode_time, ack_tolerance)),
+                                                       late_pct, send_speed)
         damage_delayed = self._damage_delayed
         if not damage_delayed:
             self.soft_expired = 0
@@ -2326,7 +2338,8 @@ class WindowSource(WindowIconSource):
                                 t = dr[-1]
                                 bucket = i
                         deltalog("delta: using oldest bucket %i", bucket)
-                self.delta_pixel_data[bucket] = [w, h, pixel_format, coding, store, len(dpixels), dpixels, hits, monotonic_time()]
+                self.delta_pixel_data[bucket] = [w, h, pixel_format, coding, store,
+                                                 len(dpixels), dpixels, hits, monotonic_time()]
                 client_options["store"] = store
                 client_options["bucket"] = bucket
                 #record number of frames and pixels:
@@ -2383,7 +2396,8 @@ class WindowSource(WindowIconSource):
         client_rgb_formats = self.full_csc_modes.strlistget("webp", ("BGRA", "BGRX", ))
         if pixel_format not in client_rgb_formats:
             if not rgb_reformat(image, client_rgb_formats, self.supports_transparency):
-                raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, self.rgb_formats))
+                raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (
+                    pixel_format, self.rgb_formats))
         return webp_encode(image, self.supports_transparency, q, s, self.content_type)
 
     def rgb_encode(self, coding, image, options):
