@@ -6,7 +6,10 @@
 
 import sys
 
-from xpra.util import nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, disconnect_is_an_error, DONE
+from xpra.util import (
+    nonl, sorted_nicely, print_nested_dict, envint, flatten_dict,
+    disconnect_is_an_error, repr_ellipsized, DONE,
+    )
 from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (
@@ -146,7 +149,7 @@ class CommandConnectClient(GObjectXpraClient):
         #don't bother parsing the network caps:
         #* it could cause errors if the caps are missing
         #* we don't care about sending anything back after hello
-        log("server_capabilities: %s", self.server_capabilities)
+        log("server_capabilities: %s", repr_ellipsized(str(self.server_capabilities)))
         log("protocol state: %s", self._protocol.save_state())
         self.do_command()
         return True

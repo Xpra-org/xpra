@@ -964,7 +964,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return
         try:
             self.server_capabilities = typedict(packet[1])
-            netlog("processing hello from server: %s", self.server_capabilities)
+            netlog("processing hello from server: %s", repr_ellipsized(str(self.server_capabilities)))
             if not self.server_connection_established():
                 self.warn_and_quit(EXIT_FAILURE, "failed to establish connection")
         except Exception as e:
