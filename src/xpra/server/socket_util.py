@@ -40,7 +40,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
         listener.bind(sockpath)
     try:
         inode = os.stat(sockpath).st_ino
-    except:
+    except (OSError, IOError):
         inode = -1
     #set to the "xpra" group if we are a member of it, or if running as root:
     uid = getuid()
@@ -62,7 +62,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
         log = get_network_logger()
         try:
             cur_inode = os.stat(sockpath).st_ino
-        except:
+        except (OSError, IOError):
             log.info("socket '%s' already deleted", sockpath)
             return
         delpath = sockpath
@@ -71,7 +71,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
             log.info("removing socket %s", delpath)
             try:
                 os.unlink(delpath)
-            except:
+            except (OSError, IOError):
                 pass
     return listener, cleanup_socket
 
@@ -82,9 +82,7 @@ def has_dual_stack():
         If *sock* is provided the check is made against it.
     """
     try:
-        socket.AF_INET6
-        socket.IPPROTO_IPV6
-        socket.IPV6_V6ONLY
+        assert socket.AF_INET6 and socket.IPPROTO_IPV6 and socket.IPV6_V6ONLY
     except AttributeError:
         return False
     try:
@@ -125,7 +123,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         log.info("closing %s socket %s:%s", socktype.lower(), host, iport)
         try:
             tcp_socket.close()
-        except:
+        except (OSError, IOError):
             pass
     add_cleanup(cleanup_tcp_socket)
     if iport==0:
@@ -157,7 +155,7 @@ def setup_udp_socket(host, iport, socktype="udp"):
         log.info("closing %s socket %s:%s", socktype, host, iport)
         try:
             udp_socket.close()
-        except:
+        except (OSError, IOError):
             pass
     add_cleanup(cleanup_udp_socket)
     if iport==0:
@@ -200,7 +198,7 @@ def setup_vsock_socket(cid, iport):
         log.info("closing vsock socket %s:%s", cid, iport)
         try:
             vsock_socket.close()
-        except:
+        except (OSError, IOError):
             pass
     add_cleanup(cleanup_vsock_socket)
     return "vsock", vsock_socket, (cid, iport)
@@ -352,7 +350,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     try:
                         if os.path.exists(sockpath):
                             os.unlink(sockpath)
-                    except:
+                    except (OSError, IOError):
                         pass
                 #socket permissions:
                 if mmap_group:
@@ -361,14 +359,15 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 else:
                     #parse octal mode given as config option:
                     try:
-                        if type(socket_permissions)==int:
+                        if isinstance(socket_permissions, int):
                             sperms = socket_permissions
                         else:
                             #assume octal string:
                             sperms = int(socket_permissions, 8)
-                        assert sperms>=0 and sperms<=0o777, "invalid socket permission value %s" % oct(sperms)
+                        assert 0<=sperms<=0o777, "invalid socket permission value %s" % oct(sperms)
                     except ValueError:
-                        raise ValueError("invalid socket permissions (must be an octal number): '%s'" % socket_permissions)
+                        raise ValueError("invalid socket permissions "+
+                                         "(must be an octal number): '%s'" % socket_permissions)
                 #now try to create all the sockets:
                 for sockpath in sockpaths:
                     #create it:
@@ -427,7 +426,7 @@ def handle_socket_error(sockpath, sperms, e):
 
 #warn just once:
 MDNS_WARNING = False
-def mdns_publish(display_name, mode, listen_on, text_dict={}):
+def mdns_publish(display_name, mode, listen_on, text_dict=None):
     global MDNS_WARNING
     if MDNS_WARNING is True:
         return
@@ -451,13 +450,13 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         log.warn("Warning: failed to load the mdns publisher")
         try:
             einfo = str(e)
-        except:
+        except Exception:
             einfo = str(type(e))
         log.warn(" %s", einfo)
         log.warn(" either install the 'python-avahi' module")
         log.warn(" or use the 'mdns=no' option")
         return
-    d = text_dict.copy()
+    d = dict(text_dict or {})
     d["mode"] = mode
     #ensure we don't have duplicate interfaces:
     f_listen_on = {}
@@ -465,7 +464,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         f_listen_on[get_interface_index(host)] = (host, port)
     try:
         name = socket.gethostname()
-    except:
+    except (IOError, OSError):
         name = "Xpra"
     if display_name and not (OSX or WIN32):
         name += " %s" % display_name
@@ -473,6 +472,6 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
         name += " (%s)" % mode
     service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)
     ap = MDNSPublishers(f_listen_on.values(), name, service_type=service_type, text_dict=d)
-    from xpra.scripts.server import add_when_ready, add_cleanup
+    from xpra.scripts.server import add_when_ready
     add_when_ready(ap.start)
     add_cleanup(ap.stop)

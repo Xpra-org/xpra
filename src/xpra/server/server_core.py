@@ -602,7 +602,7 @@ class ServerCore(object):
         try:
             pinfo = get_platform_info()
             osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
-        except:
+        except Exception:
             log("platform name error:", exc_info=True)
             osinfo = ""
         if POSIX:
@@ -788,7 +788,8 @@ class ServerCore(object):
         conn = SocketConnection(sock, sockname, address, peername, socktype)
 
         #from here on, we run in a thread, so we can poll (peek does)
-        start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True, args=(conn, sock, address, socktype, peername, socket_info))
+        start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True,
+                     args=(conn, sock, address, socktype, peername, socket_info))
         return True
 
     def peek_connection(self, conn, timeout=1):
@@ -840,7 +841,7 @@ class ServerCore(object):
     def force_close_connection(self, conn):
         try:
             conn.close()
-        except:
+        except (OSError, IOError):
             log("close_connection()", exc_info=True)
 
     def handle_new_connection(self, conn, sock, address, socktype, peername, socket_info):
@@ -1265,7 +1266,8 @@ class ServerCore(object):
             sock.settimeout(10)
             sock.connect((host, int(port)))
             sock.settimeout(None)
-            tcp_server_connection = SocketConnection(sock, sock.getsockname(), sock.getpeername(), "tcp-proxy-for-%s" % frominfo, "tcp")
+            tcp_server_connection = SocketConnection(sock, sock.getsockname(), sock.getpeername(),
+                                                     "tcp-proxy-for-%s" % frominfo, "tcp")
         except Exception as e:
             proxylog("start_tcp_proxy(%s, %s)", conn, frominfo, exc_info=True)
             proxylog.error("Error: failed to connect to TCP proxy endpoint: %s:%s", host, port)
@@ -1347,8 +1349,8 @@ class ServerCore(object):
         if len(reasons)>1:
             i += " (%s)" % csv(reasons[1:])
         try:
-            proto_info = " %s" % protocol._conn.get_info().get("endpoint")
-        except:
+            proto_info = " %s" % protocol._conn.get_info()["endpoint"]
+        except (KeyError, AttributeError):
             proto_info = " %s" % protocol
         self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
         self._log_disconnect(protocol, " %s", i)
@@ -1678,8 +1680,7 @@ class ServerCore(object):
     def accept_client(self, proto, c):
         #max packet size from client (the biggest we can get are clipboard packets)
         netlog("accept_client(%s, %s)", proto, c)
-        #TODO: when we add the code to upload files,
-        #this will need to be increased up to file-size-limit
+        #note: when uploading files, we send them in chunks smaller than this size
         proto.max_packet_size = 1024*1024  #1MB
         proto.parse_remote_caps(c)
         self.accept_protocol(proto)

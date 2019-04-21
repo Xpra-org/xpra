@@ -13,8 +13,8 @@ from xpra.scripts.config import InitException
 
 
 def add_cleanup(fn):
-    from xpra.scripts.server import add_cleanup
-    add_cleanup(fn)
+    from xpra.scripts.server import add_cleanup as ac
+    ac(fn)
 
 def sh_quotemeta(s):
     return "'" + s.replace("'", "'\\''") + "'"
@@ -52,9 +52,9 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
     #XPRA_SOCKET_DIR is a special case, we want to honour it
     #when it is specified, but the client may override it:
     if socket_dir:
-        script.append('if [ -z "${XPRA_SOCKET_DIR}" ]; then\n');
+        script.append('if [ -z "${XPRA_SOCKET_DIR}" ]; then\n')
         script.append('    XPRA_SOCKET_DIR=%s; export XPRA_SOCKET_DIR\n' % sh_quotemeta(os.path.expanduser(socket_dir)))
-        script.append('fi\n');
+        script.append('fi\n')
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
     script.append("cd %s\n" % sh_quotemeta(starting_dir))
@@ -162,7 +162,7 @@ def open_log_file(logpath):
     if os.path.exists(logpath):
         try:
             os.rename(logpath, logpath + ".old")
-        except:
+        except (OSError, IOError):
             pass
     try:
         return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
@@ -231,12 +231,12 @@ def write_pidfile(pidfile, uid, gid):
             f.write("%s\n" % pidstr)
             try:
                 inode = os.fstat(f.fileno()).st_ino
-            except:
+            except (OSError, IOError):
                 inode = -1
             if POSIX and uid!=getuid() or gid!=getgid():
                 try:
                     os.fchown(f.fileno(), uid, gid)
-                except:
+                except (OSError, IOError):
                     pass
         log.info("wrote pid %s to '%s'", pidstr, pidfile)
         def cleanuppidfile():
@@ -248,11 +248,11 @@ def write_pidfile(pidfile, uid, gid):
                     log("cleanuppidfile: current inode=%i", i)
                     if i!=inode:
                         return
-                except:
+                except (OSError, IOError):
                     pass
             try:
                 os.unlink(pidfile)
-            except:
+            except (OSError, IOError):
                 pass
         add_cleanup(cleanuppidfile)
     except Exception as e:
@@ -270,10 +270,9 @@ def get_uinput_device_path(device):
         import ctypes
         l = 16
         buf = ctypes.create_string_buffer(l)
-        _IOC_READ = 2
         #this magic value was calculated using the C macros:
         l = fcntl.ioctl(fd, 2148554028, buf)
-        if l>0 and l<16:
+        if 0<l<16:
             virt_dev_path = buf.raw[:l].rstrip("\0")
             log("UI_GET_SYSNAME(%s)=%s", fd, virt_dev_path)
             uevent_path = b"/sys/devices/virtual/input/%s" % virt_dev_path
@@ -352,7 +351,7 @@ def create_uinput_device(uuid, uid, events, name):
 
 def create_uinput_pointer_device(uuid, uid):
     if not envbool("XPRA_UINPUT_POINTER", True):
-        return
+        return None
     from uinput import (
         REL_X, REL_Y, REL_WHEEL,                    #@UnresolvedImport
         BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE,  #@UnresolvedImport
@@ -370,7 +369,7 @@ def create_uinput_pointer_device(uuid, uid):
 
 def create_uinput_touchpad_device(uuid, uid):
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
-        return
+        return None
     from uinput import (
         BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,      #@UnresolvedImport
         )
