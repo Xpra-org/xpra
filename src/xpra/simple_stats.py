@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Simple statistical functions
 
-from math import sqrt, pow
+import math
 
 def to_std_unit(v, unit=1000):
     if v>=unit**3:
@@ -141,7 +141,7 @@ def get_list_stats(in_values, show_percentile=(5, 8, 9), show_dev=False):
                 counter += 1
             var += (x-avg)**2
         #standard deviation:
-        std = sqrt(var/len(values))
+        std = math.sqrt(var/len(values))
         lstats["std"] = int(std)
         if avg!=0:
             #coefficient of variation
@@ -149,7 +149,7 @@ def get_list_stats(in_values, show_percentile=(5, 8, 9), show_dev=False):
         if counter>0 and p<float('inf'):
             #geometric mean
             try:
-                v = int(pow(p, 1.0/counter))
+                v = int(math.pow(p, 1.0/counter))
             except OverflowError:
                 v = find_invpow(p, counter)
             lstats["gm"] = v
