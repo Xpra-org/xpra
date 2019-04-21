@@ -188,7 +188,13 @@ def close_gtk_display():
     # (if gtk has been loaded)
     gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
     if gdk_mod and envbool("XPRA_CLOSE_GTK_DISPLAY", False):
-        for d in gdk_mod.display_manager_get().list_displays():
+        from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
+        gdk = import_gdk()
+        if is_gtk3():
+            displays = gdk.DisplayManager.get().list_displays()
+        else:
+            displays = gdk.display_manager_get().list_displays()
+        for d in displays:
             d.close()
 
 def kill_xvfb(xvfb_pid):
