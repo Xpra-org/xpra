@@ -117,11 +117,11 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
     nid.dwInfoFlags = NIIF_INFO
     if icon:
         try:
+            from PIL import Image
+            from xpra.codecs.pillow.decoder import open_only
             w, h, data = icon[1:4]
-            buf = BytesIO(data)
-            from PIL import Image       #@UnresolvedImport
+            img = open_only(data)
             from xpra.platform.win32.win32_NotifyIcon import image_to_ICONINFO
-            img = Image.open(buf)
             iw = GetSystemMetrics(SM_CXSMICON)
             ih = GetSystemMetrics(SM_CYSMICON)
             if w!=iw or h!=ih:

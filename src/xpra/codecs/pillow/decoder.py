@@ -4,16 +4,66 @@
 # later version. See the file COPYING for details.
 
 import os
+import re
+import struct
 from io import BytesIO
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 
 from xpra.codecs.pillow import PIL_VERSION
+from xpra.util import csv
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
 
 DECODE_FORMATS = os.environ.get("XPRA_PILLOW_DECODE_FORMATS", "png,png/L,png/P,jpeg,webp,jpeg2000").split(",")
+
+PNG_HEADER = struct.pack("BBBBBBBB", 137, 80, 78, 71, 13, 10, 26, 10)
+def is_png(data):
+    return data.startswith(PNG_HEADER)
+RIFF_HEADER = b"RIFF"
+WEBP_HEADER = b"WEBP"
+def is_webp(data):
+    return len(data)>12 and data[:4]==RIFF_HEADER and data[8:12]==WEBP_HEADER
+JPEG_HEADER = struct.pack("B", 255)
+def is_jpeg(data):
+    if data[:1]!=JPEG_HEADER:
+        return False
+    return True
+def is_svg(data):
+    if data[:5]!="<?xml" and data[:4]!="<svg":
+        return False
+    return True
+XPM_HEADER = b"/* XPM */"
+def is_xpm(data):
+    return data[:9]==XPM_HEADER
+
+
+HEADERS = {
+    is_png  : "png",
+    is_webp : "webp",
+    is_jpeg : "jpeg",
+    is_svg  : "svg",
+    is_xpm  : "xpm",
+    }
+
+def get_image_type(data):
+    if not data:
+        return None
+    if len(data)<32:
+        return None
+    for fn, encoding in HEADERS.items():
+        if fn(data):
+            return encoding
+    return None
+
+
+def open_only(data, types=("png", "jpeg", "webp")):
+    itype = get_image_type(data)
+    if itype not in types:
+        raise Exception("invalid data, not recognized as %s" % csv(types))
+    buf = BytesIO(data)
+    return Image.open(buf)
 
 
 def get_version():

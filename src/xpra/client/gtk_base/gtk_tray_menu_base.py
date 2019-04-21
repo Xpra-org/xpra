@@ -1623,10 +1623,8 @@ class GTKTrayMenuBase(object):
         if not pixbuf and icondata:
             #let's try pillow:
             try:
-                from PIL import Image
-                from io import BytesIO
-                buf = BytesIO(icondata)
-                img = Image.open(buf)
+                from xpra.codecs.pillow.decoder import open_only
+                img = open_only(icondata)
                 has_alpha = img.mode=="RGBA"
                 width, height = img.size
                 rowstride = width * (3+int(has_alpha))

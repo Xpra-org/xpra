@@ -459,10 +459,8 @@ class WindowClient(StubClientMixin):
                     serial = new_cursor[7]
                     with open("raw-cursor-%#x.png" % serial, 'wb') as f:
                         f.write(pixels)
-                from PIL import Image
-                from io import BytesIO
-                buf = BytesIO(pixels)
-                img = Image.open(buf)
+                from xpra.codecs.pillow.decoder import open_only
+                img = open_only(pixels, ("png",))
                 new_cursor[8] = img.tobytes("raw", "BGRA")
                 cursorlog("used PIL to convert png cursor to raw")
                 new_cursor[0] = b"raw"
@@ -656,9 +654,8 @@ class WindowClient(StubClientMixin):
             img = Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data), "raw", "BGRA", rowstride, 1)
             has_alpha = True
         else:
-            from io import BytesIO
-            buf = BytesIO(data)
-            img = Image.open(buf)
+            from xpra.codecs.pillow.decoder import open_only
+            img = open_only(data, ("png", ))
             assert img.mode in ("RGB", "RGBA"), "invalid image mode: %s" % img.mode
             has_alpha = img.mode=="RGBA"
             rowstride = width * (3+int(has_alpha))

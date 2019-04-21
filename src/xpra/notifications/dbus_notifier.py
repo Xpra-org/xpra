@@ -108,11 +108,9 @@ class DBUS_Notifier(NotifierBase):
         image_data = h.get("image-data")
         if image_data and bytestostr(image_data[0])=="png":
             try:
+                from xpra.codecs.pillow.decoder import open_only
                 img_data = image_data[3]
-                from PIL import Image
-                from io import BytesIO
-                buf = BytesIO(img_data)
-                img = Image.open(buf)
+                img = open_only(img_data, ("png",))
                 w, h = img.size
                 channels = len(img.mode)
                 rowstride = w*channels
