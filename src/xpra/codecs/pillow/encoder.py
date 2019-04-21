@@ -1,14 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
+from io import BytesIO
 from PIL import Image, ImagePalette     #@UnresolvedImport
 
 from xpra.util import envbool
-from xpra.os_util import BytesIOClass, bytestostr
+from xpra.os_util import bytestostr
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 from xpra.codecs.pillow import PIL_VERSION
@@ -193,7 +194,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         #DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
         #kwargs["compress_type"] = Image.DEFAULT_STRATEGY
         pil_fmt = "PNG"
-    buf = BytesIOClass()
+    buf = BytesIO()
     im.save(buf, pil_fmt, **kwargs)
     if SAVE_TO_FILE:
         filename = "./%s.%s" % (time.time(), pil_fmt)

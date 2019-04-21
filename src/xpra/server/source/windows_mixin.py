@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from io import BytesIO
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.net.compression import Compressed
-from xpra.os_util import monotonic_time, BytesIOClass, strtobytes, bytestostr
+from xpra.os_util import monotonic_time, strtobytes, bytestostr
 from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID
 from xpra.log import Logger
 
@@ -259,7 +260,7 @@ class WindowsMixin(StubSourceMixin):
                 cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'",
                           len(cpixels), w, h, bytestostr(name))
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
-                buf = BytesIOClass()
+                buf = BytesIO()
                 img.save(buf, "PNG")
                 pngdata = buf.getvalue()
                 buf.close()

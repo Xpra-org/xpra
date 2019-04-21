@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -607,12 +607,12 @@ def get_CG_imagewrapper(rect=None):
 def take_screenshot():
     log("grabbing screenshot")
     from PIL import Image                       #@UnresolvedImport
-    from xpra.os_util import StringIOClass
+    from io import BytesIO
     image = get_CG_imagewrapper()
     w = image.get_width()
     h = image.get_height()
     img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", image.get_pixel_format(), image.get_rowstride())
-    buf = StringIOClass()
+    buf = BytesIO()
     img.save(buf, "PNG")
     data = buf.getvalue()
     buf.close()

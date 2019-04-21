@@ -20,7 +20,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.common import MAX_WINDOW_SIZE
-from xpra.os_util import StringIOClass, monotonic_time, strtobytes, bytestostr, PYTHON3
+from xpra.os_util import monotonic_time, strtobytes, bytestostr, PYTHON3
 from xpra.util import engs, csv, typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
@@ -1023,7 +1023,8 @@ class X11ServerCore(GTKServerBase):
             tx = x-minx
             ty = y-miny
             screenshot.paste(window_image, (tx, ty))
-        buf = StringIOClass()
+        from io import BytesIO
+        buf = BytesIO()
         screenshot.save(buf, "png")
         data = buf.getvalue()
         buf.close()

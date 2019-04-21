@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
 from xpra.util import repr_ellipsized, csv
-from xpra.os_util import bytestostr, BytesIOClass
+from xpra.os_util import bytestostr
 from xpra.dbus.helper import native_to_dbus
 from xpra.notifications.notifier_base import NotifierBase, log
 try:
@@ -110,7 +110,8 @@ class DBUS_Notifier(NotifierBase):
             try:
                 img_data = image_data[3]
                 from PIL import Image
-                buf = BytesIOClass(img_data)
+                from io import BytesIO
+                buf = BytesIO(img_data)
                 img = Image.open(buf)
                 w, h = img.size
                 channels = len(img.mode)

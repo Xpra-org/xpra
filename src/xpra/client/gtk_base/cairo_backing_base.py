@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks
 from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
 from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
-from xpra.os_util import BytesIOClass, memoryview_to_bytes, strtobytes
+from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.log import Logger
 
 log = Logger("paint", "cairo")
@@ -184,9 +184,10 @@ class CairoBackingBase(WindowBackingBase):
         # pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, rowstride)
         # success = self.cairo_paint_pixbuf(pixbuf, x, y)
         #So we still rountrip via PNG:
-        png = BytesIOClass()
+        from io import BytesIO
+        png = BytesIO()
         img.save(png, format="PNG")
-        reader = BytesIOClass(png.getvalue())
+        reader = BytesIO(png.getvalue())
         png.close()
         img = cairo.ImageSurface.create_from_png(reader)
         self.cairo_paint_surface(img, x, y)

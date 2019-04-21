@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import BytesIOClass, POSIX, OSX
+from xpra.os_util import POSIX, OSX
 from xpra.util import envint, csv
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -155,7 +155,8 @@ class WebcamMixin(StubSourceMixin):
             assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())
             rgb_pixel_format = "BGRX"       #BGRX
             from PIL import Image
-            buf = BytesIOClass(data)
+            from io import BytesIO
+            buf = BytesIO(data)
             img = Image.open(buf)
             pixels = img.tobytes('raw', rgb_pixel_format)
             from xpra.codecs.image_wrapper import ImageWrapper

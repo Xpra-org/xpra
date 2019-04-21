@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -141,16 +141,16 @@ class BugReport(object):
         try:
             from xpra.platform.gui import take_screenshot
             take_screenshot_fn = take_screenshot
-        except:
+        except ImportError:
             log("failed to load platfrom specific screenshot code", exc_info=True)
         if not take_screenshot_fn:
             #try with Pillow:
             try:
                 from PIL import ImageGrab           #@UnresolvedImport
-                from xpra.os_util import StringIOClass
+                from io import BytesIO
                 def pillow_imagegrab_screenshot():
                     img = ImageGrab.grab()
-                    out = StringIOClass()
+                    out = BytesIO()
                     img.save(out, format="PNG")
                     v = out.getvalue()
                     out.close()
@@ -164,7 +164,7 @@ class BugReport(object):
                 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
                 rwm = GTKImageCapture(get_default_root_window())
                 take_screenshot_fn = rwm.take_screenshot
-            except:
+            except Exception:
                 log.warn("Warning: failed to load gtk screenshot code", exc_info=True)
         log("take_screenshot_fn=%s", take_screenshot_fn)
         if take_screenshot_fn:

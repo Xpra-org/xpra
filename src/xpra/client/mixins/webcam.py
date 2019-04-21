@@ -10,7 +10,7 @@ from threading import RLock
 from xpra.log import Logger
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
-from xpra.os_util import BytesIOClass, OSEnvContext, monotonic_time, WIN32, BITS
+from xpra.os_util import OSEnvContext, monotonic_time, WIN32, BITS
 from xpra.util import envint, envbool, csv, XPRA_WEBCAM_NOTIFICATION_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
@@ -259,8 +259,9 @@ class WebcamForwarder(StubClientMixin):
             log("webcam frame capture took %ims", (end-start)*1000)
             start = monotonic_time()
             from PIL import Image
+            from io import BytesIO
             image = Image.fromarray(rgb)
-            buf = BytesIOClass()
+            buf = BytesIO()
             image.save(buf, format=encoding)
             data = buf.getvalue()
             buf.close()

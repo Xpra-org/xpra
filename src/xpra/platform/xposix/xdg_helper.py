@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,9 +11,10 @@ using python-xdg
 import os
 import sys
 import glob
+from io import BytesIO
 
 from xpra.util import envbool, print_nested_dict
-from xpra.os_util import load_binary_file, BytesIOClass, OSEnvContext, PYTHON3
+from xpra.os_util import load_binary_file, OSEnvContext, PYTHON3
 from xpra.log import Logger, add_debug_category
 
 log = Logger("exec", "menu")
@@ -95,7 +96,7 @@ def load_icon_from_file(filename):
             log.error("Error loading '%s':", filename)
             log.error(" %s", e)
             return None
-        buf = BytesIOClass()
+        buf = BytesIO()
         img.save(buf, "PNG")
         pngicondata = buf.getvalue()
         buf.close()

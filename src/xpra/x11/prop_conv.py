@@ -12,7 +12,7 @@ Functions for converting to and from X11 properties.
 
 import struct
 
-from xpra.os_util import hexstr, BytesIOClass, PYTHON3
+from xpra.os_util import hexstr, PYTHON3
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
@@ -229,7 +229,8 @@ def _read_image(_disp, stream):
 # a _NET_WM_ICON property.
 def NetWMIcons(disp, data):
     icons = []
-    stream = BytesIOClass(data)
+    from io import BytesIO
+    stream = BytesIO(data)
     while True:
         icon = _read_image(disp, stream)
         if icon is None:

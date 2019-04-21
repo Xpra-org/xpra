@@ -1624,8 +1624,8 @@ class GTKTrayMenuBase(object):
             #let's try pillow:
             try:
                 from PIL import Image
-                from xpra.os_util import BytesIOClass
-                buf = BytesIOClass(icondata)
+                from io import BytesIO
+                buf = BytesIO(icondata)
                 img = Image.open(buf)
                 has_alpha = img.mode=="RGBA"
                 width, height = img.size

@@ -40,25 +40,6 @@ for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.
     SIGNAMES[getattr(signal, signame)] = signame
 
 
-#use cStringIO, fallback to StringIO,
-#and python3 is making life more difficult yet again:
-try:
-    from io import BytesIO as BytesIOClass              #@UnusedImport
-except ImportError:
-    try:
-        from cStringIO import StringIO as BytesIOClass  #@Reimport @UnusedImport
-    except ImportError:
-        from StringIO import StringIO as BytesIOClass   #@Reimport @UnusedImport
-assert BytesIOClass
-try:
-    from StringIO import StringIO as StringIOClass      #@UnusedImport
-except ImportError:
-    try:
-        from cStringIO import StringIO as StringIOClass #@Reimport @UnusedImport
-    except ImportError:
-        from io import StringIO as StringIOClass        #@Reimport @UnusedImport
-assert StringIOClass
-
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 LINUX = sys.platform.startswith("linux")
@@ -678,7 +659,7 @@ def setbinarymode(fd):
         try:
             import msvcrt
             msvcrt.setmode(fd, os.O_BINARY)         #@UndefinedVariable
-        except:
+        except (OSError, IOError):
             get_util_logger().error("setting stdin to binary mode failed", exc_info=True)
 
 def find_lib_ldconfig(libname):

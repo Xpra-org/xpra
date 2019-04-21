@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 import struct
+from io import BytesIO
 from ctypes import windll
 
-from xpra.os_util import BytesIOClass, strtobytes
+from xpra.os_util import strtobytes
 from xpra.util import XPRA_GUID_BYTES
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
 from xpra.platform.win32.common import GetSystemMetrics
@@ -117,7 +118,7 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
     if icon:
         try:
             w, h, data = icon[1:4]
-            buf = BytesIOClass(data)
+            buf = BytesIO(data)
             from PIL import Image       #@UnresolvedImport
             from xpra.platform.win32.win32_NotifyIcon import image_to_ICONINFO
             img = Image.open(buf)

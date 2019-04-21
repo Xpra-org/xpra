@@ -178,7 +178,8 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
 
 def main(filename):
-    from xpra.os_util import StringIOClass, memoryview_to_bytes
+    from io import BytesIO
+    from xpra.os_util import memoryview_to_bytes
     from xpra.gtk_common.gtk_util import get_default_root_window, get_root_size
     root = get_default_root_window()
     capture = setup_capture(root)
@@ -196,7 +197,7 @@ def main(filename):
     pil_image = Image.frombuffer(target, (w, h), pixels, "raw", fmt, image.get_rowstride())
     if target!="RGB":
         pil_image = pil_image.convert("RGB")
-    buf = StringIOClass()
+    buf = BytesIO()
     pil_image.save(buf, "png")
     data = buf.getvalue()
     buf.close()

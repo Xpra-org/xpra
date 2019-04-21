@@ -498,11 +498,11 @@ def main():
     def command_callback(hwnd, cid):
         if cid == 1024:
             from xpra.platform.win32.win32_balloon import notify
-            from xpra.os_util import BytesIOClass
             try:
                 from PIL import Image   #@UnresolvedImport
+                from io import BytesIO
                 img = Image.open("icons\\printer.png")
-                buf = BytesIOClass()
+                buf = BytesIO()
                 img.save(buf, "PNG")
                 data = buf.getvalue()
                 buf.close()

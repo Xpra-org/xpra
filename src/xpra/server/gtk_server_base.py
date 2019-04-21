@@ -9,7 +9,7 @@
 import os.path
 
 from xpra.util import flatten_dict
-from xpra.os_util import monotonic_time, BytesIOClass
+from xpra.os_util import monotonic_time
 from xpra.gtk_common.gobject_compat import (
     import_gdk, import_glib, is_gtk3,
     register_os_signals,
@@ -269,7 +269,8 @@ class GTKServerBase(ServerBase):
             if w>256 or h>256:
                 img = img.resize((256, 256), Image.ANTIALIAS)
                 w = h = 256
-            buf = BytesIOClass()
+            from io import BytesIO
+            buf = BytesIO()
             img.save(buf, "PNG")
             cpixels = buf.getvalue()
             buf.close()

@@ -546,7 +546,7 @@ def dump_frames(frames, logger=None):
         if fid is not None:
             try:
                 fidstr = hex(fid)
-            except:
+            except TypeError:
                 fidstr = str(fid)
         logger("%i: %s %s:", i, fidstr, frame)
         for x in traceback.format_stack(frame):

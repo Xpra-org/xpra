@@ -8,9 +8,10 @@
 
 import os
 import threading
+from io import BytesIO
 from PIL import Image
 
-from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes, strtobytes, BytesIOClass
+from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes, strtobytes
 from xpra.net import compression
 from xpra.util import envbool, envint, csv
 from xpra.log import Logger
@@ -204,7 +205,7 @@ class WindowIconSource(object):
         if must_scale or must_convert or SAVE_WINDOW_ICONS:
             #we're going to need a PIL Image:
             if pixel_format=="png":
-                image = Image.open(BytesIOClass(pixel_data))
+                image = Image.open(BytesIO(pixel_data))
             else:
                 assert pixel_format in ("BGRA", "RGBA")
                 image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", pixel_format, 0, 1)
@@ -228,7 +229,7 @@ class WindowIconSource(object):
         if use_png:
             if image:
                 #image got converted or scaled, get the new pixel data:
-                output = BytesIOClass()
+                output = BytesIO()
                 image.save(output, "png")
                 pixel_data = output.getvalue()
                 output.close()

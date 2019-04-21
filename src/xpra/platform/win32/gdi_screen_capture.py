@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import time
 import ctypes
+from io import BytesIO
 from PIL import Image
 
 from xpra.log import Logger
 from xpra.util import envbool, roundup
-from xpra.os_util import BytesIOClass
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_virtualscreenmetrics
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -234,7 +234,7 @@ class GDICapture(object):
         assert image.get_width()==w and image.get_height()==h
         assert image.get_pixel_format()=="BGRX"
         img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", "BGRX", 0, 1)
-        out = BytesIOClass()
+        out = BytesIO()
         img.save(out, format="PNG")
         screenshot = (img.width, img.height, "png", img.width*3, out.getvalue())
         out.close()

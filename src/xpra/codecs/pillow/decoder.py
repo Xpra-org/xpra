@@ -4,11 +4,11 @@
 # later version. See the file COPYING for details.
 
 import os
+from io import BytesIO
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 
 from xpra.codecs.pillow import PIL_VERSION
-from xpra.os_util import BytesIOClass
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
@@ -46,7 +46,7 @@ def get_info():
 
 def decompress(coding, img_data, options):
     # can be called from any thread
-    buf = BytesIOClass(img_data)
+    buf = BytesIO(img_data)
     img = Image.open(buf)
     assert img.mode in ("L", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
     transparency = options.intget("transparency", -1)
@@ -133,14 +133,14 @@ def selftest(_full=False):
             continue
         try:
             cdata = binascii.unhexlify(hexdata)
-            buf = BytesIOClass(cdata)
+            buf = BytesIO(cdata)
             img = PIL.Image.open(buf)
             assert img, "failed to open image data"
             raw_data = img.tobytes("raw", img.mode)
             assert raw_data
             #now try with junk:
             cdata = binascii.unhexlify("ABCD"+hexdata)
-            buf = BytesIOClass(cdata)
+            buf = BytesIO(cdata)
             try:
                 img = PIL.Image.open(buf)
                 log.warn("Pillow failed to generate an error parsing invalid input")
