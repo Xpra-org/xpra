@@ -124,7 +124,8 @@ class ServerTestUtil(unittest.TestCase):
     def get_xpra_cmd(cls):
         xpra_cmd = get_xpra_command()
         if xpra_cmd==["xpra"]:
-            xpra_cmd = [cls.which("xpra")]
+            xpra_cmd = [bytestostr(cls.which("xpra"))]
+        log.error("xpra_cmd=%s", xpra_cmd)
         cmd = xpra_cmd + cls.default_xpra_args
         pyexename = "python%i" % sys.version_info[0]
         exe = bytestostr(xpra_cmd[0]).rstrip(".exe")
@@ -178,7 +179,7 @@ class ServerTestUtil(unittest.TestCase):
                     with fileobj as f:
                         f.seek(0)
                         for line in f:
-                            log.warn(" %s", line.rstrip(b"\n\r"))
+                            log.warn(" %s", bytestostr(line.rstrip(b"\n\r")))
                 except Exception as e:
                     log.error("Error: failed to read '%s': %s", fileobj.name, e)
             else:
