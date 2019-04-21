@@ -530,8 +530,6 @@ class WindowVideoSource(WindowSource):
                 return "rgb32"
         if "png" in options:
             return "png"
-        if "jpeg2000" in options and ww>=32 and wh>=32 and depth in (24, 32):
-            return "jpeg2000"
         #we failed to find a good match, default to the first of the options..
         if options:
             return options[0]
@@ -1870,11 +1868,9 @@ class WindowVideoSource(WindowSource):
                 order = FAST_ORDER
             else:
                 order = PREFERED_ENCODING_ORDER
-        #jpeg2000 errors out on images smaller than 32x32,
-        #and we don't know the size in this method, so discard it
-        #also, don't choose mmap!
+        #don't choose mmap!
         fallback_encodings = tuple(x for x in order if
-                                   (x in encodings and x in self._encoders and x not in ("mmap", "jpeg2000")))
+                                   (x in encodings and x in self._encoders and x!="mmap"))
         depth = self.image_depth
         if depth==8 and "png/P" in fallback_encodings:
             return "png/P"

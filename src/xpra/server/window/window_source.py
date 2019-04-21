@@ -90,7 +90,7 @@ def get_env_encodings(etype, valid_options=()):
     return encodings
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32"))
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", ("rgb", "png", "png/P", "png/L"))
-REFRESH_ENCODINGS = get_env_encodings("REFRESH", ("webp", "png", "rgb24", "rgb32", "jpeg2000"))
+REFRESH_ENCODINGS = get_env_encodings("REFRESH", ("webp", "png", "rgb24", "rgb32"))
 
 
 class DelayedRegions(object):
@@ -915,8 +915,6 @@ class WindowSource(WindowIconSource):
             return "png"
         if "jpeg" in co and w>=2 and h>=2:
             return "jpeg"
-        if "jpeg2000" in co and w>=32 and h>=32:
-            return "jpeg2000"
         return (x for x in co if x!="rgb").next()
 
     def get_current_or_rgb(self, pixel_count, *_args):

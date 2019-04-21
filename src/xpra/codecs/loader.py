@@ -264,7 +264,6 @@ def get_encoding_name(encoding):
           "png/P"   : "PNG (8bpp colour)",
           "png/L"   : "PNG (8bpp grayscale)",
           "jpeg"    : "JPEG",
-          "jpeg2000": "JPEG 2000",
           "rgb"     : " + ".join(get_rgb_compression_options()) + " (24/32bpp)",
         }
     return ENCODINGS_TO_NAME.get(encoding, encoding)
@@ -284,7 +283,6 @@ def get_encoding_help(encoding):
           "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
           "webp"    : "WebP compression (supports lossless and lossy modes)",
           "jpeg"    : "JPEG lossy compression",
-          "jpeg2000": "JPEG 2000 lossy compression (slow)",
           "rgb"     : "Raw RGB pixels, lossless,"
                       +" compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
           }.get(encoding)

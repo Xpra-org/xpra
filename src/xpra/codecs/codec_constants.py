@@ -14,7 +14,7 @@ PREFERED_ENCODING_ORDER = (
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp",
     "rgb", "rgb24", "rgb32", "jpeg",
-    "h265", "jpeg2000", "mpeg1", "mpeg2",
+    "h265", "mpeg1", "mpeg2",
     )
 #encoding order for edges (usually one pixel high or wide):
 EDGE_ENCODING_ORDER = (
@@ -26,7 +26,7 @@ EDGE_ENCODING_ORDER = (
 HELP_ORDER = (
     "auto", "h264", "h265", "vp8", "vp9", "mpeg4",
     "png", "png/P", "png/L", "webp",
-    "rgb", "jpeg", "jpeg2000",
+    "rgb", "jpeg",
     )
 
 #those are currently so useless that we don't want the user to select them by mistake
