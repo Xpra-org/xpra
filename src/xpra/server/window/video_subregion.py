@@ -569,7 +569,7 @@ class VideoSubregion(object):
             setnewregion(region, "high score: %s", highscore)
             return
 
-        #TODO:
+        #could do:
         # * re-add some scrolling detection: the region may have moved
         # * re-try with a higher "from_time" and a higher score threshold
 
