@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,8 +13,9 @@ from PIL import Image           #@UnresolvedImport
 from io import BytesIO
 
 
-def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg", "webp"], N=5, Q=[0, 50, 100], S=[0, 1, 50, 90, 100], has_alpha=False):
-    from xpra.codecs.pillow.encode import encode
+def do_test_encode(rgb_data, w, h, encodings=("png", "png/P", "png/L", "jpeg", "webp"),
+                   N=5, Q=(0, 50, 100), S=(0, 1, 50, 90, 100), has_alpha=False):
+    from xpra.codecs.pillow.encoder import encode
     from xpra.codecs.image_wrapper import ImageWrapper
     image = ImageWrapper(0, 0, w, h, rgb_data, "BGRA", 32, w*4, planes=ImageWrapper.PACKED, thread_safe=True)
     #buf = "\0" * (w*h*4)
@@ -26,7 +27,7 @@ def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg", "
         S_options = S
         if encoding=="webp":
             S_options = [-1]
-        if encoding in ("jpeg"):
+        if encoding=="jpeg":
             S_options = [0, -1]
         for q in Q_options:
             for s in S_options:
@@ -44,7 +45,7 @@ def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg", "
                       (coding.ljust(5), ("%.1f" % mps).rjust(5), ("%.1f" % ratio).rjust(5), str(w).rjust(4), str(h).ljust(4), str(len(cdata)/1024).rjust(6), str(q).rjust(3), str(s).rjust(3),
                        N, str(int((end-start)*1000.0/N)).rjust(5)))
 
-def test_files(filenames, extensions=[".png", ".jpg"], recurse=True):
+def test_files(filenames, extensions=(".png", ".jpg"), recurse=True):
     for x in filenames:
         if os.path.isdir(x):
             if recurse:
