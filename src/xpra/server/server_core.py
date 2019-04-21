@@ -1349,7 +1349,7 @@ class ServerCore(object):
         if len(reasons)>1:
             i += " (%s)" % csv(reasons[1:])
         try:
-            proto_info = " %s" % protocol._conn.get_info()["endpoint"]
+            proto_info = " %s" % (protocol._conn.get_info()["endpoint"],)
         except (KeyError, AttributeError):
             proto_info = " %s" % protocol
         self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
