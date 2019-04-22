@@ -79,11 +79,22 @@ class UI_thread_watcher(object):
     def add_alive_callback(self, cb):
         self.alive_callbacks.append(cb)
 
+
+    def remove_fail_callback(self, cb):
+        self.fail_callbacks.remove(cb)
+
+    def remove_resume_callback(self, cb):
+        self.resume_callbacks.remove(cb)
+
+    def remove_alive_callback(self, cb):
+        self.alive_callbacks.remove(cb)
+
+
     def run_callbacks(self, callbacks):
         for x in callbacks:
             try:
                 x()
-            except:
+            except Exception:
                 log.error("failed to run %s", x, exc_info=True)
 
     def UI_thread_wakeup(self):
