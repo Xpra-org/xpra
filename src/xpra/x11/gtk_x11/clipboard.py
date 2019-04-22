@@ -60,7 +60,7 @@ def xatoms_to_strings(data):
 def strings_to_xatoms(data):
     with xsync:
         atom_array = tuple(X11Window.get_xatom(atom) for atom in data if atom)
-    return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
+    return struct.pack(b"@"+b"L"*len(atom_array), *atom_array)
 
 
 class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
@@ -551,7 +551,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             return
         log("%s=%s (%s : %s)", event.atom, repr_ellipsized(bytestostr(data)), dtype, dformat)
         if target=="TARGETS":
-            self.targets = data or ()
+            self.targets = xatoms_to_strings(data or b"")
         self.got_local_contents(target, dtype, dformat, data)
 
     def got_local_contents(self, target, dtype=None, dformat=None, data=None):
