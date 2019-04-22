@@ -11,7 +11,7 @@ import re
 from xpra.net.compression import Compressible
 from xpra.os_util import POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid
 from xpra.util import csv, envint, envbool, repr_ellipsized, typedict
-from xpra.platform.features import CLIPBOARD_GREEDY, CLIPBOARDS as PLATFORM_CLIPBOARDS
+from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.log import Logger
 
@@ -268,9 +268,7 @@ class ClipboardProtocolHelperCore(object):
             proxy = self._clipboard_proxies.get(selection)
             if proxy:
                 proxy._have_token = False
-                #after we remove the legacy gtk code, we can directly call:
-                #proxy.do_emit_token()
-                self._send_clipboard_token_handler(proxy)
+                proxy.do_emit_token()
 
     def send_all_tokens(self):
         self.send_tokens(CLIPBOARDS)
@@ -317,58 +315,6 @@ class ClipboardProtocolHelperCore(object):
             proxy._greedy_client = bool(packet[9])
         synchronous_client = len(packet)>=11 and bool(packet[10])
         proxy.got_token(targets, target_data, claim, synchronous_client)
-
-    def _send_clipboard_token_handler(self, proxy):
-        selection = proxy._selection
-        log("send clipboard token: %s", selection)
-        rsel = self.local_to_remote(selection)
-        def send_token(*args):
-            self.send("clipboard-token", *args)
-        if not proxy._can_send:
-            #send the token without data,
-            #and with claim flag set to False, greedy set to True
-            send_token(rsel, [], "NOTARGET", "UTF8_STRING", 8, "bytes", "", False, True)
-            return
-        if self._want_targets:
-            log("client wants targets with the token, querying TARGETS")
-            #send the token with the target and data once we get them:
-            #first get the targets, then get the contents for targets we want to send (if any)
-            def got_targets(dtype, dformat, targets):
-                log("got_targets for selection %s: %s, %s, %s", selection, dtype, dformat, targets)
-                if targets is None:
-                    send_token(rsel)
-                    return
-                #if there is a text target, send that too (just the first one that matches for now..)
-                send_now = [x for x in targets if x in TEXT_TARGETS]
-                def send_targets_only():
-                    send_token(rsel, targets)
-                if not send_now:
-                    send_targets_only()
-                    return
-                target = send_now[0]
-                def got_contents(dtype, dformat, data):
-                    log("got_contents for selection %s: %s, %s, %s",
-                        selection, dtype, dformat, repr_ellipsized(str(data)))
-                    #code mostly duplicated from _process_clipboard_request
-                    #see there for details
-                    if dtype is None or data is None:
-                        send_targets_only()
-                        return
-                    wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
-                    if wire_encoding is None:
-                        send_targets_only()
-                        return
-                    wire_data = self._may_compress(dtype, dformat, wire_data)
-                    if not wire_data:
-                        send_targets_only()
-                        return
-                    target_data = (target, dtype, dformat, wire_encoding, wire_data, True, CLIPBOARD_GREEDY)
-                    log("sending token with target data: %s", target_data)
-                    send_token(rsel, targets, *target_data)
-                proxy.get_contents(target, got_contents)
-            proxy.get_contents("TARGETS", got_targets)
-            return
-        send_token(rsel)
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, repr_ellipsized(bytestostr(data))))
