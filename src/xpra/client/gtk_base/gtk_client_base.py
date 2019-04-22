@@ -1227,7 +1227,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if CLIPBOARD_NATIVE_CLASS:
             clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
         clipboard_options.append("xpra.clipboard.gdk_clipboard.GDKClipboardProtocolHelper")
-        clipboard_options.append("xpra.clipboard.clipboard_base.DefaultClipboardProtocolHelper")
         clipboardlog("get_clipboard_helper_classes() unfiltered list=%s", clipboard_options)
         if ct and ct.lower()!="auto" and ct.lower() not in TRUE_OPTIONS:
             #try to match the string specified:

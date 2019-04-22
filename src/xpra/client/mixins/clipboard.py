@@ -97,7 +97,7 @@ class ClipboardClient(StubClientMixin):
                          self.server_clipboard_direction, self.client_clipboard_direction)
         self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
         try:
-            from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
+            from xpra.clipboard.clipboard_core import ALL_CLIPBOARDS
         except ImportError:
             ALL_CLIPBOARDS = []
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
