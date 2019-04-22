@@ -210,9 +210,11 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
     def cleanup(self):
         log("%s.cleanup()", self)
         #give up selection:
-        if self.owned:
-            with xswallow:
-                X11Window.XSetSelectionOwner(0, self._selection)
+        #(disabled because this crashes GTK3 on exit)
+        #if self.owned:
+        #    self.owned = False
+        #    with xswallow:
+        #        X11Window.XSetSelectionOwner(0, self._selection)
         #empty replies for all pending requests,
         #this will also cancel any pending timers:
         rr = self.remote_requests
