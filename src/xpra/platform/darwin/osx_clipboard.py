@@ -70,25 +70,22 @@ class OSXClipboardProxy(ClipboardProxyCore):
         self.send_clipboard_token_handler = send_clipboard_token_handler
         ClipboardProxyCore.__init__(self, selection)
         self.update_change_count()
-        self.setup_watcher()
-
-    def cleanup(self):
-        ClipboardProxyCore.cleanup(self)
-        self.remove_watcher()
-
-    def setup_watcher(self):
+        #setup clipboard counter watcher:
         w = get_UI_watcher(glib.timeout_add)
         if w is None:
             log.warn("Warning: no UI watcher instance available")
             log.warn(" cannot detect clipboard change events")
         else:
-            log("UI watcher=%s", w)
             w.add_alive_callback(self.timer_clipboard_check)
 
-    def remove_watcher(self):
+    def cleanup(self):
+        ClipboardProxyCore.cleanup(self)
         w = get_UI_watcher(glib.timeout_add)
         if w:
-            w.remove_alive_callback(self.timer_clipboard_check)
+            try:
+                w.remove_alive_callback(self.timer_clipboard_check)
+            except KeyError:
+                pass
 
     def timer_clipboard_check(self):
         c = self.change_count
