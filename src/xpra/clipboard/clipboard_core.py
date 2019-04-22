@@ -77,14 +77,14 @@ assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
 
 
 def must_discard(target):
-    return any(x for x in DISCARD_TARGETS if x.match(bytestostr(target)))
+    return any(x for x in DISCARD_TARGETS if x.match(target))
 
 def must_discard_extra(target):
-    return any(x for x in DISCARD_EXTRA_TARGETS if x.match(bytestostr(target)))
+    return any(x for x in DISCARD_EXTRA_TARGETS if x.match(target))
 
 
 def _filter_targets(targets):
-    f = tuple(target for target in targets if not must_discard(target))
+    f = tuple(target for target in (bytestostr(x) for x in targets) if not must_discard(target))
     log("_filter_targets(%s)=%s", targets, f)
     return f
 
