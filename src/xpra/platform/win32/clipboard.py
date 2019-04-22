@@ -197,7 +197,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s",
             self._selection, targets, target_data, claim, self._can_receive)
         if self._can_receive:
-            self.targets = tuple(bytestostr(x) for x in (targets or ()))
+            self.targets = _filter_targets(targets or ())
             self.target_data = target_data or {}
             if targets:
                 self.got_contents("TARGETS", "ATOM", 32, targets)
@@ -221,7 +221,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
     def got_contents(self, target, dtype=None, dformat=None, data=None):
         #if this is the special target 'TARGETS', cache the result:
         if target=="TARGETS" and dtype=="ATOM" and dformat==32:
-            self.targets = tuple(data)
+            self.targets = _filter_targets(data)
             #TODO: tell system what targets we have
             log("got_contents: tell OS we have %s", csv(self.targets))
         if dformat==8 and dtype in TEXT_TARGETS:
@@ -258,7 +258,6 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))
             finally:
                 GlobalUnlock(data)
-                
         self.with_clipboard_lock(get_text, errback)
 
     def set_clipboard_text(self, text):
