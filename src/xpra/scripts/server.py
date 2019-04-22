@@ -187,7 +187,7 @@ def close_gtk_display():
     # Close our display(s) first, so the server dying won't kill us.
     # (if gtk has been loaded)
     gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
-    if gdk_mod and envbool("XPRA_CLOSE_GTK_DISPLAY", False):
+    if gdk_mod and envbool("XPRA_CLOSE_GTK_DISPLAY", True):
         from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
         gdk = import_gdk()
         if is_gtk3():
