@@ -1499,6 +1499,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             x, y = int(move[0]), int(move[1])
         if resize:
             w, h = int(resize[0]), int(resize[1])
+            if self._client.readonly:
+                #change size-constraints first,
+                #so the resize can be honoured:
+                sc = self._force_size_constraint(w, h)
+                self._metadata.update(sc)
+                self.set_metadata(sc)
         if move and resize:
             self.get_window().move_resize(x, y, w, h)
         elif move:

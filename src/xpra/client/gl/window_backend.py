@@ -79,6 +79,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         noclient.server_window_decorations = True
         noclient.mmap_enabled = False
         noclient.mmap = None
+        noclient.readonly = False
         noclient.encoding_defaults = {}
         noclient.get_window_frame_sizes = get_None
         noclient._set_window_menu = None
