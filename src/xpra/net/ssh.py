@@ -201,6 +201,7 @@ def ssh_paramiko_connect_to(display_desc):
     socket_dir = display_desc.get("socket_dir")
     display = display_desc.get("display")
     display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
+    keyfiles = None
     socket_info = {
             "host"  : host,
             "port"  : port,
@@ -220,6 +221,7 @@ def ssh_paramiko_connect_to(display_desc):
                 username = host_config.get("username", username)
                 port = host_config.get("port", port)
                 proxycommand = host_config.get("proxycommand")
+                keyfiles = host_config.get("identityfile")
                 if proxycommand:
                     sock = ProxyCommand(proxycommand)
                     from xpra.child_reaper import getChildReaper
@@ -233,7 +235,8 @@ def ssh_paramiko_connect_to(display_desc):
                     transport = ssh_client.get_transport()
                     do_ssh_paramiko_connect_to(transport, host,
                                                username, password,
-                                               host_config or ssh_config.lookup("*"))
+                                               host_config or ssh_config.lookup("*"),
+                                               keyfiles)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
                     conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
@@ -264,7 +267,8 @@ def ssh_paramiko_connect_to(display_desc):
             proxy_host_config = ssh_config.lookup(host)
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
-                                       proxy_host_config or ssh_config.lookup("*"))
+                                       proxy_host_config or ssh_config.lookup("*"),
+                                       keyfiles)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
 
@@ -275,7 +279,10 @@ def ssh_paramiko_connect_to(display_desc):
             except SSHException as e:
                 log("start_client()", exc_info=True)
                 raise InitException("SSH negotiation failed: %s" % e)
-            do_ssh_paramiko_connect_to(transport, host, username, password, host_config or ssh_config.lookup("*"))
+            do_ssh_paramiko_connect_to(transport, host,
+                                       username, password,
+                                       host_config or ssh_config.lookup("*"),
+                                       keyfiles)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
 
             peername = (host, port)
@@ -301,7 +308,9 @@ def ssh_paramiko_connect_to(display_desc):
         except SSHException as e:
             log("start_client()", exc_info=True)
             raise InitException("SSH negotiation failed: %s" % e)
-        do_ssh_paramiko_connect_to(transport, host, username, password, host_config or ssh_config.lookup("*"))
+        do_ssh_paramiko_connect_to(transport, host, username, password,
+                                   host_config or ssh_config.lookup("*"),
+                                   keyfiles)
         chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
         conn.target = host_target_string("ssh", username, host, port, display)
@@ -317,12 +326,14 @@ class nogssapi_context(nomodule_context):
         nomodule_context.__init__(self, "gssapi")
 
 
-def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None):
+def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None, keyfiles=None):
     from paramiko import SSHException, RSAKey, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
-    log("do_ssh_paramiko_connect_to%s", (transport, host, username, password, host_config))
+    log("do_ssh_paramiko_connect_to%s", (transport, host, username, password, host_config, keyfiles))
     log("SSH transport %s", transport)
+    if not keyfiles:
+        keyfiles = [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_rsa", "id_dsa")]
 
     host_key = transport.get_remote_server_key()
     assert host_key, "no remote server key"
@@ -469,9 +480,8 @@ keymd5(host_key),
                 log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
 
     def auth_publickey():
-        log("trying public key authentication")
-        for keyfile in ("id_rsa", "id_dsa"):
-            keyfile_path = osexpand(os.path.join("~/", ".ssh", keyfile))
+        log("trying public key authentication using %s", keyfiles)
+        for keyfile_path in keyfiles:
             if not os.path.exists(keyfile_path):
                 log("no keyfile at '%s'", keyfile_path)
                 continue
