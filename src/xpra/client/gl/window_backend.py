@@ -82,7 +82,6 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         noclient.readonly = False
         noclient.encoding_defaults = {}
         noclient.get_window_frame_sizes = get_None
-        noclient._set_window_menu = None
         noclient._focused = None
         noclient.request_frame_extents = noop
         #test with alpha, but not on win32
