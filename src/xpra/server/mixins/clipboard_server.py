@@ -103,10 +103,13 @@ class ClipboardServer(StubServerMixin):
                           self.clipboard_filter_file, exc_info=True)
                 return
         try:
-            if POSIX and not OSX:
-                from xpra.x11.gtk_x11.clipboard import X11Clipboard as ClipboardClass   #@UnusedImport
-            else:
-                from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper as ClipboardClass   #@Reimport
+            from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
+            assert CLIPBOARD_NATIVE_CLASS, "no native clipboard support"
+            parts = CLIPBOARD_NATIVE_CLASS.split(".")
+            mod = ".".join(parts[:-1])
+            module = __import__(mod, {}, {}, [parts[-1]])
+            ClipboardClass = getattr(module, parts[-1])
+            log("ClipboardClass for %s: %s", CLIPBOARD_NATIVE_CLASS, ClipboardClass)
             kwargs = {
                       "filters"     : clipboard_filter_res,
                       "can-send"    : self.clipboard_direction in ("to-client", "both"),
