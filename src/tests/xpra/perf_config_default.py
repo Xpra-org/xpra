@@ -108,7 +108,7 @@ class Config():
     TEST_XPRA = True
     TEST_VNC = False            #WARNING: VNC not tested recently, probably needs updating
     USE_IPTABLES = False        #this requires iptables to be setup so we can use it for accounting
-    USE_VIRTUALGL = True        #allows us to run GL games and benchmarks using the GPU
+    USE_VIRTUALGL = False       #allows us to run GL games and benchmarks using the GPU
     PREVENT_SLEEP = True
 
     STARTING_TEST = 0           #the index of the first test to run
