@@ -63,9 +63,7 @@ def fire_paint_callbacks(callbacks, success=True, message=""):
     for x in callbacks:
         try:
             x(success, message)
-        except KeyboardInterrupt:
-            raise
-        except:
+        except Exception:
             log.error("error calling %s(%s)", x, success, exc_info=True)
 
 
@@ -174,7 +172,7 @@ class WindowBackingBase(object):
             try:
                 unpremultiply_argb_in_place(img_data)
                 return img_data
-            except:
+            except Exception:
                 log.warn("failed to unpremultiply %s (len=%s)" % (type(img_data), len(img_data)))
         return unpremultiply_argb(img_data)
 
