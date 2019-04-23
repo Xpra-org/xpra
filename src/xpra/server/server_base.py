@@ -817,18 +817,17 @@ class ServerBase(ServerBaseClass):
     def last_client_exited(self):
         #must run from the UI thread (modifies focus and keys)
         netlog("last_client_exited() exit_with_client=%s", self.exit_with_client)
+        self.reset_server_timeout(True)
+        for c in SERVER_BASES:
+            if c!=ServerCore:
+                try:
+                    c.last_client_exited(self)
+                except Exception:
+                    log("last_client_exited calling %s", c.last_client_exited, exc_info=True)
         if self.exit_with_client:
             if not self._closing:
                 netlog.info("Last client has disconnected, terminating")
                 self.clean_quit(False)
-        else:
-            self.reset_server_timeout(True)
-            for c in SERVER_BASES:
-                if c!=ServerCore:
-                    try:
-                        c.last_client_exited(self)
-                    except:
-                        log("last_client_exited calling %s", c.last_client_exited, exc_info=True)
 
 
     def set_ui_driver(self, source):
