@@ -177,7 +177,8 @@ class Config():
 
     #XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
     #XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
-    XPRA_TEST_ENCODINGS = ["png", "rgb", "jpeg", "h264", "vp8", "vp9", "mmap"]
+    #XPRA_TEST_ENCODINGS = ["png", "rgb", "jpeg", "h264", "vp8", "vp9", "mmap"]
+    XPRA_TEST_ENCODINGS = ["webp", "jpeg", "auto"]
 
     #XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : XPRA_QUALITY_OPTIONS,
     #    "x264" : XPRA_QUALITY_OPTIONS+[-1]}
@@ -191,7 +192,7 @@ class Config():
     XPRA_OPENGL_OPTIONS = {}
 
     #XPRA_CLIENT_TYPES = ["python2", "html5"]
-    XPRA_CLIENT_TYPES = ["html5"]
+    XPRA_CLIENT_TYPES = ["python2", "html5"]
     XPRA_HTML5_BROWSERS = (
         ["firefox", "-P", "Test"],
         ["google-chrome", "--user-data-dir=~/Downloads/TEMP"],

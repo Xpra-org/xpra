@@ -419,7 +419,9 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
 
 def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb):
     tests = in_tests[config.STARTING_TEST:config.LIMIT_TESTS]
-    print("going to run %s tests: %s" % (len(tests), "\n* ".join(x[0] for x in tests)))
+    print("going to run %s tests:" % len(tests))
+    for test in tests:
+        print(" * %s" % test[0])
     print("*******************************************")
     print("ETA: %s minutes" % int((config.SERVER_SETTLE_TIME+config.DEFAULT_TEST_COMMAND_SETTLE_TIME+config.SETTLE_TIME+config.MEASURE_TIME+1)*len(tests)/60))
     print("*******************************************")
@@ -746,111 +748,109 @@ def test_xpra():
             shaping_options = [config.NO_SHAPING]
         for down,up,latency in shaping_options:
             for x11_test_command in config.X11_TEST_COMMANDS:
-                for encoding in config.XPRA_TEST_ENCODINGS:
-                    if XPRA_VERSION_NO>=[0, 10]:
-                        opengl_options = config.XPRA_OPENGL_OPTIONS.get(encoding, [True])
-                    elif XPRA_VERSION_NO>=[0, 9]:
-                        opengl_options = config.XPRA_OPENGL_OPTIONS.get(encoding, [False])
-                    else:
-                        opengl_options = [False]
-                    for opengl in opengl_options:
-                        quality_options = config.XPRA_ENCODING_QUALITY_OPTIONS.get(encoding, [-1])
-                        for quality in quality_options:
-                            speed_options = config.XPRA_ENCODING_SPEED_OPTIONS.get(encoding, [-1])
-                            for speed in speed_options:
-                                for speaker in XPRA_SPEAKER_OPTIONS:
-                                    for mic in XPRA_MICROPHONE_OPTIONS:
-                                        comp_options = [None]
-                                        if XPRA_VERSION_NO>=[0, 13]:
-                                            comp_options = config.XPRA_COMPRESSORS_OPTIONS
-                                        for comp in comp_options:
-                                            comp_level_options = config.XPRA_COMPRESSION_LEVEL_OPTIONS
-                                            for compression in comp_level_options:
-                                                packet_encoders_options = [None]
-                                                if XPRA_VERSION_NO>=[0, 14]:
-                                                    packet_encoders_options = config.XPRA_PACKET_ENCODERS_OPTIONS
-                                                for packet_encoders in packet_encoders_options:
-                                                    for client_type in config.XPRA_CLIENT_TYPES:
-                                                        command_name = get_command_name(x11_test_command)
+                command_name = get_command_name(x11_test_command)
+                for client_type in config.XPRA_CLIENT_TYPES:
+                    if client_type=="html5":
+                        assert not config.XPRA_USE_PASSWORD
+                        if connect_option=="unix-domain":
+                            continue
+                        for browser_cmd in config.XPRA_HTML5_BROWSERS:
+                            cmd = browser_cmd + ["http://localhost:%i/" % (config.PORT)]
+                            test_name = "%s : %s" % (browser_cmd[0], command_name)
+                            tests.append(
+                                (
+                                    test_name, "xpra", XPRA_VERSION, XPRA_VERSION,
+                                    "all", 0, 0,
+                                    "n/a", "n/a", encryption, connect_option,
+                                    (down,up,latency), x11_test_command, cmd,
+                                    )
+                                )
+                        continue
+
+                    #python client has more options:
+                    encodings = config.XPRA_TEST_ENCODINGS
+                    for encoding in encodings:
+                        for opengl in config.XPRA_OPENGL_OPTIONS.get(encoding, [True]):
+                            quality_options = config.XPRA_ENCODING_QUALITY_OPTIONS.get(encoding, [-1])
+                            for quality in quality_options:
+                                speed_options = config.XPRA_ENCODING_SPEED_OPTIONS.get(encoding, [-1])
+                                for speed in speed_options:
+                                    for speaker in XPRA_SPEAKER_OPTIONS:
+                                        for mic in XPRA_MICROPHONE_OPTIONS:
+                                            for comp in config.XPRA_COMPRESSORS_OPTIONS:
+                                                for compression in config.XPRA_COMPRESSION_LEVEL_OPTIONS:
+                                                    for packet_encoders in config.XPRA_PACKET_ENCODERS_OPTIONS:
                                                         test_name = "(%s - %s - %s - %s - via %s)" % \
                                                             (command_name, compression, encryption,
                                                              trickle_str(down, up, latency), connect_option)
-                                                        def add_client_test(name, cmd):
-                                                            full_test_name = "%s %s" % (name, test_name)
-                                                            tests.append(
-                                                                (
-                                                                    full_test_name, "xpra", XPRA_VERSION, XPRA_VERSION,
-                                                                    encoding, quality, speed,
-                                                                    opengl, compression, encryption, connect_option,
-                                                                    (down,up,latency), x11_test_command, cmd,
-                                                                    )
-                                                                )
                                                         cmd = trickle_command(down, up, latency)
-                                                        if client_type in ("python2", "python3"):
-                                                            cmd += [client_type, XPRA_BIN, "attach"]
-                                                            if connect_option=="ssh":
-                                                                cmd.append("ssh:%s:%s" % (config.IP, config.DISPLAY_NO))
-                                                            elif connect_option=="tcp":
-                                                                cmd.append("tcp:%s:%s" % (config.IP, config.PORT))
+                                                        cmd += [client_type, XPRA_BIN, "attach"]
+                                                        if connect_option=="ssh":
+                                                            cmd.append("ssh:%s:%s" % (config.IP, config.DISPLAY_NO))
+                                                        elif connect_option=="tcp":
+                                                            cmd.append("tcp:%s:%s" % (config.IP, config.PORT))
+                                                        else:
+                                                            cmd.append(":%s" % (config.DISPLAY_NO))
+                                                        if XPRA_VERSION_NO>=[0, 15]:
+                                                            cmd.append("--readonly=yes")
+                                                        else:
+                                                            cmd.append("--readonly")
+                                                        cmd += get_auth_args(False)
+                                                        if packet_encoders:
+                                                            cmd += ["--packet-encoders=%s" % packet_encoders]
+                                                        if comp:
+                                                            cmd += ["--compressors=%s" % comp]
+                                                        if compression is not None:
+                                                            cmd += ["-z", str(compression)]
+                                                        if XPRA_VERSION_NO>=[0, 3]:
+                                                            cmd.append("--enable-pings")
+                                                            cmd.append("--no-clipboard")
+                                                        if XPRA_VERSION_NO>=[0, 5]:
+                                                            cmd.append("--no-bell")
+                                                            cmd.append("--no-cursors")
+                                                            cmd.append("--no-notifications")
+                                                        if XPRA_VERSION_NO>=[0, 12]:
+                                                            if config.XPRA_MDNS:
+                                                                cmd.append("--mdns")
                                                             else:
-                                                                cmd.append(":%s" % (config.DISPLAY_NO))
-                                                            if XPRA_VERSION_NO>=[0, 15]:
-                                                                cmd.append("--readonly=yes")
+                                                                cmd.append("--no-mdns")
+                                                        if XPRA_VERSION_NO>=[0, 8] and encryption:
+                                                            cmd.append("--encryption=%s" % encryption)
+                                                        if speed>=0:
+                                                            cmd.append("--speed=%s" % speed)
+                                                        if quality>=0:
+                                                            if XPRA_VERSION_NO>=[0, 7]:
+                                                                cmd.append("--quality=%s" % quality)
                                                             else:
-                                                                cmd.append("--readonly")
-                                                            cmd += get_auth_args(False)
-                                                            if packet_encoders:
-                                                                cmd += ["--packet-encoders=%s" % packet_encoders]
-                                                            if comp:
-                                                                cmd += ["--compressors=%s" % comp]
-                                                            if compression is not None:
-                                                                cmd += ["-z", str(compression)]
-                                                            if XPRA_VERSION_NO>=[0, 3]:
-                                                                cmd.append("--enable-pings")
-                                                                cmd.append("--no-clipboard")
-                                                            if XPRA_VERSION_NO>=[0, 5]:
-                                                                cmd.append("--no-bell")
-                                                                cmd.append("--no-cursors")
-                                                                cmd.append("--no-notifications")
-                                                            if XPRA_VERSION_NO>=[0, 12]:
-                                                                if config.XPRA_MDNS:
-                                                                    cmd.append("--mdns")
-                                                                else:
-                                                                    cmd.append("--no-mdns")
-                                                            if XPRA_VERSION_NO>=[0, 8] and encryption:
-                                                                cmd.append("--encryption=%s" % encryption)
-                                                            if speed>=0:
-                                                                cmd.append("--speed=%s" % speed)
-                                                            if quality>=0:
-                                                                if XPRA_VERSION_NO>=[0, 7]:
-                                                                    cmd.append("--quality=%s" % quality)
-                                                                else:
-                                                                    cmd.append("--jpeg-quality=%s" % quality)
-                                                                name = "%s-%s" % (encoding, quality)
-                                                            else:
-                                                                name = encoding
-                                                            if speaker is None:
-                                                                if XPRA_VERSION_NO>=[0, 8]:
-                                                                    cmd.append("--no-speaker")
-                                                            else:
-                                                                cmd.append("--speaker-codec=%s" % speaker)
-                                                            if mic is None:
-                                                                if XPRA_VERSION_NO>=[0, 8]:
-                                                                    cmd.append("--no-microphone")
-                                                            else:
-                                                                cmd.append("--microphone-codec=%s" % mic)
-                                                            if encoding!="mmap":
-                                                                cmd.append("--no-mmap")
-                                                                cmd.append("--encoding=%s" % encoding)
-                                                            if XPRA_VERSION_NO>=[0, 9]:
-                                                                cmd.append("--opengl=%s" % opengl)
-                                                            add_client_test(name, cmd)
-                                                        elif client_type=="html5":
-                                                            assert not config.XPRA_USE_PASSWORD
-                                                            for browser_cmd in config.XPRA_HTML5_BROWSERS:
-                                                                bcmd = cmd + browser_cmd + ["http://localhost:%i/" % (config.PORT)]
-                                                                add_client_test(browser_cmd[0], bcmd)
-                                                            cmd += []
+                                                                cmd.append("--jpeg-quality=%s" % quality)
+                                                            name = "%s-%s" % (encoding, quality)
+                                                        else:
+                                                            name = encoding
+                                                        if speaker is None:
+                                                            if XPRA_VERSION_NO>=[0, 8]:
+                                                                cmd.append("--no-speaker")
+                                                        else:
+                                                            cmd.append("--speaker-codec=%s" % speaker)
+                                                        if mic is None:
+                                                            if XPRA_VERSION_NO>=[0, 8]:
+                                                                cmd.append("--no-microphone")
+                                                        else:
+                                                            cmd.append("--microphone-codec=%s" % mic)
+                                                        if encoding!="mmap":
+                                                            cmd.append("--no-mmap")
+                                                            cmd.append("--encoding=%s" % encoding)
+                                                        if XPRA_VERSION_NO>=[0, 9]:
+                                                            cmd.append("--opengl=%s" % opengl)
+
+                                                        full_test_name = "%6s %s" % (name, test_name)
+                                                        tests.append(
+                                                            (
+                                                                full_test_name, "xpra", XPRA_VERSION, XPRA_VERSION,
+                                                                encoding, quality, speed,
+                                                                opengl, compression, encryption, connect_option,
+                                                                (down,up,latency), x11_test_command, cmd,
+                                                                )
+                                                            )
     return with_server(get_xpra_start_server_command(), XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 def get_x11_client_window_info(display, *app_name_strings):
