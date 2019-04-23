@@ -355,6 +355,7 @@ def get_iptables_OUTPUT_count():
 
 def measure_client(server_pid, name, cmd, get_stats_cb):
     print("starting client: %s" % cmd)
+    client_process = None
     try:
         client_process = Popen(cmd)
         #give it time to settle down:
@@ -418,7 +419,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
 
 def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb):
     tests = in_tests[config.STARTING_TEST:config.LIMIT_TESTS]
-    print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
+    print("going to run %s tests: %s" % (len(tests), "\n* ".join(x[0] for x in tests)))
     print("*******************************************")
     print("ETA: %s minutes" % int((config.SERVER_SETTLE_TIME+config.DEFAULT_TEST_COMMAND_SETTLE_TIME+config.SETTLE_TIME+config.MEASURE_TIME+1)*len(tests)/60))
     print("*******************************************")
@@ -847,8 +848,8 @@ def test_xpra():
                                                         elif client_type=="html5":
                                                             assert not config.XPRA_USE_PASSWORD
                                                             for browser_cmd in config.XPRA_HTML5_BROWSERS:
-                                                                cmd += [browser_cmd, "http://localhost:%i/" % (config.PORT)]
-                                                                add_client_test(browser_cmd, cmd)
+                                                                bcmd = cmd + browser_cmd + ["http://localhost:%i/" % (config.PORT)]
+                                                                add_client_test(browser_cmd[0], bcmd)
                                                             cmd += []
     return with_server(get_xpra_start_server_command(), XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 

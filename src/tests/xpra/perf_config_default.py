@@ -192,7 +192,10 @@ class Config():
 
     #XPRA_CLIENT_TYPES = ["python2", "html5"]
     XPRA_CLIENT_TYPES = ["html5"]
-    XPRA_HTML5_BROWSERS = ["firefox", "google-chrome"]
+    XPRA_HTML5_BROWSERS = (
+        ["firefox", "-P", "Test"],
+        ["google-chrome", "--user-data-dir=~/Downloads/TEMP"],
+        )
 
     XPRA_MDNS = False
     TEST_SOUND = False
@@ -267,7 +270,7 @@ class Config():
         print("XPRA_OPENGL_OPTIONS: %s" % self.XPRA_OPENGL_OPTIONS)
         print("XPRA_MDNS: %s" % self.XPRA_MDNS)
         print("XPRA_CLIENT_TYPES: %s" % self.XPRA_CLIENT_TYPES)
-        print("XPRA_HTML5_BROWSERS: %s" % self.XPRA_HTML5_BROWSERS)
+        print("XPRA_HTML5_BROWSERS: %s" % (self.XPRA_HTML5_BROWSERS,))
         print("TEST_SOUND: %s" % self.TEST_SOUND)
         print("XVNC_BIN: %s" % self.XVNC_BIN)
         print("XVNC_SERVER_START_COMMAND: %s" % self.XVNC_SERVER_START_COMMAND)
