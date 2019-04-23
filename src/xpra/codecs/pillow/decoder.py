@@ -61,7 +61,7 @@ def get_image_type(data):
 def open_only(data, types=("png", "jpeg", "webp")):
     itype = get_image_type(data)
     if itype not in types:
-        raise Exception("invalid data, not recognized as %s" % csv(types))
+        raise Exception("invalid data: %s, not recognized as %s" % ((itype or "unknown"), csv(types)))
     buf = BytesIO(data)
     return Image.open(buf)
 
