@@ -1489,8 +1489,10 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 if r==0:
                     opts.opengl = "probe-success"
                 elif r==1:
-                    opts.opengl = "probe-warning"
+                    opts.opengl = "probe-crash"
                 elif r==2:
+                    opts.opengl = "probe-warning"
+                elif r==3:
                     opts.opengl = "probe-error"
                 else:
                     if r is None:
@@ -1799,9 +1801,9 @@ def no_gtk():
 def run_glprobe(opts):
     props = do_run_glcheck(opts)
     if not props.get("safe", False):
-        return 1
-    if not props.get("success", False):
         return 2
+    if not props.get("success", False):
+        return 3
     return 0
 
 def do_run_glcheck(opts):

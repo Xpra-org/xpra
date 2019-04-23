@@ -978,7 +978,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         parts = enable_opengl.split(":", 1)
         enable_option = parts[0]            #ie: "on"
         opengllog("init_opengl: enable_option=%s", enable_option)
-        if enable_option in ("probe-failed", "probe-error"):
+        if enable_option in ("probe-failed", "probe-error", "probe-crash"):
             msg = enable_option.replace("-", " ")
             if len(parts)>1:
                 msg += ": %s" % csv(parts[1:])
