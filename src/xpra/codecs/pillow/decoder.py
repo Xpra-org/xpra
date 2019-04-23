@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import re
 import struct
 from io import BytesIO
 import PIL                      #@UnresolvedImport
@@ -24,12 +23,13 @@ def is_png(data):
 RIFF_HEADER = b"RIFF"
 WEBP_HEADER = b"WEBP"
 def is_webp(data):
-    return len(data)>12 and data[:4]==RIFF_HEADER and data[8:12]==WEBP_HEADER
-JPEG_HEADER = struct.pack("B", 255)
+    return data[:4]==RIFF_HEADER and data[8:12]==WEBP_HEADER
+JPEG_HEADER = struct.pack("BBB", 0xFF, 0xD8, 0xFF)
 def is_jpeg(data):
-    if data[:1]!=JPEG_HEADER:
-        return False
-    return True
+    #the jpeg header is actually more complicated than this,
+    #but in practice all the data we receive from the server
+    #will have this type of header
+    return data[:3]==JPEG_HEADER
 def is_svg(data):
     if data[:5]!="<?xml" and data[:4]!="<svg":
         return False
@@ -96,6 +96,9 @@ def get_info():
 
 def decompress(coding, img_data, options):
     # can be called from any thread
+    actual = get_image_type(img_data)
+    if actual!=coding:
+        raise Exception("expected %s image data but received %s" % (coding, actual or "unknown"))
     buf = BytesIO(img_data)
     img = Image.open(buf)
     assert img.mode in ("L", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
