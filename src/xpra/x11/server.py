@@ -44,7 +44,6 @@ traylog = Logger("server", "tray")
 workspacelog = Logger("x11", "workspace")
 metadatalog = Logger("x11", "metadata")
 framelog = Logger("x11", "frame")
-menulog  = Logger("x11", "menu")
 eventlog = Logger("x11", "events")
 mouselog = Logger("x11", "mouse")
 
@@ -205,7 +204,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm = None
         self.last_raised = None
         self.system_tray = False
-        self.global_menus = False
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self)
         self.session_type = "seamless"
@@ -216,12 +214,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.system_tray = opts.system_tray
         X11ServerBase.init(self, opts)
         self.fake_xinerama = opts.fake_xinerama
-        #rpc_handlers are part of DBUS_RPC_Server, which is optional
-        rpc_handlers = getattr(self, "rpc_handlers", None)
-        if rpc_handlers:
-            self.global_menus = int(opts.global_menus)
-            if self.global_menus:
-                self.rpc_handlers["menu"] = self._handle_menu_rpc
         def log_server_event(_, event):
             eventlog("server-event: %s", event)
         self.connect("server-event", log_server_event)
@@ -1282,28 +1274,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 cr.fill()
         return False
 
-
-    def _handle_menu_rpc(self, ss, rpcid, action_type, wid, action, state, pdata, *extra):
-        if self.readonly:
-            return
-        menulog("_handle_menu_rpc%s", (ss, rpcid, action_type, wid, action, state, pdata, extra))
-        def native(args):
-            return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]
-        def ok_back(*args):
-            menulog("menu rpc: ok_back%s", args)
-            ss.rpc_reply("menu", rpcid, True, native(args))
-        def err_back(*args):
-            menulog("menu rpc: err_back%s", args)
-            ss.rpc_reply("menu", rpcid, False, native(args))
-        try:
-            window = self._lookup_window(wid)
-            assert window, "window %i not found" % wid
-            window.activate_menu(action_type, action, state, pdata)
-            ok_back("done")
-        except Exception as e:
-            menulog.error("Error: cannot handle menu action %s:", action)
-            menulog.error(" %s", e)
-            err_back(str(e))
 
     def do_make_screenshot_packet(self):
         log("grabbing screenshot")

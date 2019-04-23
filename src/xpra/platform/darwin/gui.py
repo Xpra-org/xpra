@@ -447,97 +447,10 @@ def get_info():
     return i
 
 
-#global menu handling:
-window_menus = {}
-
-def window_focused(window, event):
-    global window_menus
-    wid = window._id
-    menu_data = window_menus.get(wid)
-    log("window_focused(%s, %s) menu(%s)=%s", window, event, wid, menu_data)
-    application_actions, window_menu = None, None
-    if menu_data:
-        menus, application_action_callback, window_action_callback = menu_data
-        application_actions = menus.get("application-actions")
-        window_actions = menus.get("window-actions")
-        window_menu = menus.get("window-menu")
-    from xpra.platform.darwin.osx_menu import getOSXMenuHelper
-    mh = getOSXMenuHelper()
-    mh.rebuild()
-    mh.add_full_menu()
-    if not menu_data or (not application_actions and not window_actions) or not window_menu:
-        return
-    #add the application menus after that:
-    #ie: menu = {
-    #         'enabled': True,
-    #         'application-id':         'org.xpra.ExampleMenu',
-    #         'application-actions':    {'quit': (True, '', ()), 'about': (True, '', ()), 'help': (True, '', ()), 'custom': (True, '', ()), 'activate-tab': (True, 's', ()), 'preferences': (True, '', ())},
-    #         'window-actions':         {'edit-profile': (True, 's', ()), 'reset': (True, 'b', ()), 'about': (True, '', ()), 'help': (True, '', ()), 'fullscreen': (True, '', (0,)), 'detach-tab': (True, '', ()), 'save-contents': (True, '', ()), 'zoom': (True, 'i', ()), 'move-tab': (True, 'i', ()), 'new-terminal': (True, '(ss)', ()), 'switch-tab': (True, 'i', ()), 'new-profile': (True, '', ()), 'close': (True, 's', ()), 'show-menubar': (True, '', (1,)), 'select-all': (True, '', ()), 'copy': (True, '', ()), 'paste': (True, 's', ()), 'find': (True, 's', ()), 'preferences': (True, '', ())},
-    #         'window-menu':            {0:
-    #               {0: ({':section': (0, 1)}, {':section': (0, 2)}, {':section': (0, 3)}),
-    #                1: ({'action': 'win.new-terminal', 'target': ('default', 'default'), 'label': '_New Terminal'},),
-    #                2: ({'action': 'app.preferences', 'label': '_Preferences'},),
-    #                3: ({'action': 'app.help', 'label': '_Help'}, {'action': 'app.about', 'label': '_About'}, {'action': 'app.quit', 'label': '_Quit'}),
-    #                }
-    #             }
-    #           }
-    #go through all the groups (not sure how we would get more than one with gtk menus.. but still):
-    def cb(menu_item):
-        #find the action for this item:
-        action = getattr(menu_item, "_action", "undefined")
-        log("application menu cb %s, action=%s", menu_item, action)
-        if action.startswith("app."):
-            callback = application_action_callback
-            actions = application_actions
-            action = action[4:]
-        elif action.startswith("win."):
-            callback = window_action_callback
-            actions = window_actions
-            action = action[4:]
-        else:
-            log.warn("Warning: unknown action type '%s'", action)
-            return
-        action_def = actions.get(action)
-        if action_def is None:
-            log.warn("Warning: cannot find action '%s'", action)
-            return
-        enabled, state, pdata = action_def[:3]
-        if not enabled:
-            log("action %s: %s is not enabled", action, action_def)
-            return
-        if len(action_def)>=4:
-            callback = action_def[3]        #use action supplied callback
-        log("OSX application menu item %s, action=%s, action_def=%s, callback=%s", menu_item, action, action_def, callback)
-        if callback:
-            callback(menu_item, action, state, pdata)
-    for group_id in sorted(window_menu.keys()):
-        group = window_menu[group_id]
-        try:
-            title = str(window._metadata.get("title"))
-            assert title
-        except:
-            title = window.get_title() or "Application"
-        app_menu = mh.make_menu()
-        for menuid in sorted(group.keys()):
-            menu_entries = group[menuid]
-            for d in menu_entries:
-                action = d.get("action")
-                if not action:
-                    continue
-                label = d.get("label") or action
-                item = mh.menuitem(label, cb=cb)
-                item._action = action
-                item._target = d.get("target")
-                app_menu.add(item)
-                log("added %s to %s menu for %s", label, title, window)
-        mh.add_to_menu_bar(title, app_menu)
-
-
 #keep track of the window object for each view
 VIEW_TO_WINDOW = weakref.WeakValueDictionary()
 
 def add_window_hooks(window):
-    window.connect("focus-in-event", window_focused)
     if WHEEL and PYTHON2:
         global VIEW_TO_WINDOW
         try:
@@ -548,10 +461,6 @@ def add_window_hooks(window):
             log.error("Error: failed to associate window %s with its nsview", window, exc_info=True)
 
 def remove_window_hooks(window):
-    try:
-        del window_menus[window]
-    except:
-        pass
     if WHEEL and PYTHON2:
         global VIEW_TO_WINDOW
         #this should be redundant as we use weak references:
@@ -560,22 +469,6 @@ def remove_window_hooks(window):
             del VIEW_TO_WINDOW[gdkwin.nsview]
         except:
             pass
-
-
-def _set_osx_window_menu(add, wid, window, menus, application_action_callback=None, window_action_callback=None):
-    global window_menus
-    log("_set_osx_window_menu%s", (add, wid, window, menus, application_action_callback, window_action_callback))
-    if (not menus) or (menus.get("enabled") is not True) or (add is False):
-        try:
-            del window_menus[wid]
-        except:
-            pass
-    else:
-        window_menus[wid] = (menus, application_action_callback, window_action_callback)
-
-
-def get_menu_support_function():
-    return _set_osx_window_menu
 
 
 def get_CG_imagewrapper(rect=None):

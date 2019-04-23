@@ -45,7 +45,7 @@ from xpra.client.mixins.window_manager import WindowClient
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
-    system_bell, get_wm_name, get_fixed_cursor_size, get_menu_support_function,
+    system_bell, get_wm_name, get_fixed_cursor_size,
     )
 from xpra.log import Logger
 
@@ -113,7 +113,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #group leader bits:
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
-        self._set_window_menu = get_menu_support_function()
         try:
             self.connect("scaling-changed", self.reset_windows_cursors)
         except TypeError:
@@ -645,25 +644,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return True
 
 
-    def cook_metadata(self, new_window, metadata):
-        metadata = UIXpraClient.cook_metadata(self, new_window, metadata)
-        #ensures we will call set_window_menu for this window when we create it:
-        if new_window and self._set_window_menu:
-            menu = metadata.dictget("menu")
-            if menu is None:
-                metadata["menu"] = {}
-        return metadata
-
-
-    def set_window_menu(self, add, wid, menus, application_action_callback=None, window_action_callback=None):
-        assert self._set_window_menu
-        model = self._id_to_window.get(wid)
-        window = None
-        if model:
-            window = model.get_window()
-        self._set_window_menu(add, wid, window, menus, application_action_callback, window_action_callback)
-
-
     def get_root_window(self):
         return get_default_root_window()
 
@@ -728,8 +708,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
         if HAS_X11_BINDINGS and XSHAPE:
             ms += ["shape"]
-        if self._set_window_menu:
-            ms += ["menu"]
         #figure out if we can handle the "global menu" stuff:
         if POSIX and not OSX:
             try:

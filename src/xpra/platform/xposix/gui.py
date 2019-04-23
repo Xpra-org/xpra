@@ -19,7 +19,6 @@ eventlog = Logger("posix", "events")
 screenlog = Logger("posix", "screen")
 dbuslog = Logger("posix", "dbus")
 traylog = Logger("posix", "tray")
-menulog = Logger("posix", "menu")
 mouselog = Logger("posix", "mouse")
 xinputlog = Logger("posix", "xinput")
 
@@ -78,13 +77,6 @@ def get_native_tray_classes():
             c.append(AppindicatorTray)
         except (ImportError, ValueError):
             traylog("cannot load appindicator tray", exc_info=True)
-    if has_gtk_menu_support():  #and wm_name=="GNOME Shell":
-        try:
-            from xpra.platform.xposix.gtkmenu_tray import GTKMenuTray
-            traylog("using GTKMenuTray for '%s' window manager", get_wm_name() or "unknown")
-            c.append(GTKMenuTray)
-        except Exception as e:
-            traylog("cannot load gtk menu tray: %s", e)
     return c
 
 
@@ -134,56 +126,6 @@ def _get_X11_root_property(name, req_type):
         log("_get_X11_root_property(%s, %s)", name, req_type, exc_info=True)
         log.warn("Warning: failed to get X11 root property '%s'", name)
         log.warn(" %s", e)
-    return None
-
-
-def _set_gtk_x11_window_menu(add, wid, window, menus, application_action_callback=None, window_action_callback=None):
-    from xpra.x11.dbus.menu import setup_dbus_window_menu
-    from xpra.x11.gtk_x11.prop import prop_set, prop_del
-    window_props = setup_dbus_window_menu(add, wid, menus, application_action_callback, window_action_callback)
-    #window_props may contains X11 window properties we have to clear or set
-    if not window_props:
-        return
-    if not window:
-        #window has already been closed
-        #(but we still want to call setup_dbus_window_menu above to ensure we clear things up!)
-        return
-    menulog("will set/remove the following window properties for wid=%i: %s", wid, window_props)
-    try:
-        from xpra.gtk_common.error import xsync
-        with xsync:
-            for k,v in window_props.items():
-                if v is None:
-                    prop_del(window, k)
-                else:
-                    vtype, value = v
-                    prop_set(window, k, vtype, value)
-    except Exception as e:
-        menulog.error("Error setting menu window properties:")
-        menulog.error(" %s", e)
-
-
-_has_gtk_menu_support = None
-def has_gtk_menu_support():
-    global _has_gtk_menu_support
-    if not GTK_MENUS:
-        _has_gtk_menu_support = False
-    if _has_gtk_menu_support is not None:
-        return _has_gtk_menu_support
-    try:
-        from xpra.gtk_common.gtk_util import get_default_root_window
-        from xpra.x11.dbus.menu import has_gtk_menu_support as __has_gtk_menu_support
-        root = get_default_root_window()
-        _has_gtk_menu_support = __has_gtk_menu_support(root)
-        menulog("has_gtk_menu_support(%s)=%s", root, _has_gtk_menu_support)
-    except Exception as e:
-        menulog("cannot enable gtk-x11 menu support: %s", e)
-        _has_gtk_menu_support = False
-    return _has_gtk_menu_support
-
-def get_menu_support_function():
-    if has_gtk_menu_support():
-        return _set_gtk_x11_window_menu
     return None
 
 

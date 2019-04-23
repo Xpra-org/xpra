@@ -89,7 +89,7 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
         if wid:
             return {"transient-for" : wid}
         return {}
-    if propname in ("window-type", "shape", "menu", "children"):
+    if propname in ("window-type", "shape", "children"):
         v = raw()
         if not v and skip_defaults:
             return {}

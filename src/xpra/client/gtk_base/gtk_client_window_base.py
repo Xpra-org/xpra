@@ -54,7 +54,6 @@ eventslog = Logger("events")
 shapelog = Logger("shape")
 mouselog = Logger("mouse")
 geomlog = Logger("geometry")
-menulog = Logger("menu")
 grablog = Logger("grab")
 draglog = Logger("dragndrop")
 
@@ -1328,24 +1327,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.fullscreen()
 
 
-    def set_menu(self, menu):
-        menulog("set_menu(%s)", menu)
-        def do_set_menu():
-            self._client.set_window_menu(True, self._id, menu, self.application_action_callback, self.window_action_callback)
-        self.when_realized("menu", do_set_menu)
-
-    def application_action_callback(self, action_service, action, state, pdata):
-        self.call_action("application", action, state, pdata)
-
-    def window_action_callback(self, action_service, action, state, pdata):
-        self.call_action("window", action, state, pdata)
-
-    def call_action(self, action_type, action, state, pdata):
-        menulog("call_action%s", (action_type, action, state, pdata))
-        rpc_args = [action_type, self._id, action, state, pdata]
-        self._client.rpc_call("menu", rpc_args)
-
-
     ######################################################################
     # pointer overlay handling
     def cancel_remove_pointer_overlay_timer(self):
@@ -1922,8 +1903,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.cancel_show_pointer_overlay_timer()
         self.cancel_remove_pointer_overlay_timer()
         self.cancel_focus_timer()
-        if self._client._set_window_menu:
-            self._client.set_window_menu(False, self._id, {})
         mrt = self.moveresize_timer
         if mrt:
             self.moveresize_timer = None

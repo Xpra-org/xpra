@@ -379,12 +379,6 @@ class ClientWindowBase(ClientWidgetBase):
         if b"command" in metadata:
             self.set_command(metadata.strget("command"))
 
-        if b"menu" in metadata:
-            self.set_menu(metadata.dictget("menu"))
-
-
-    def set_menu(self, menu):
-        pass
 
     def set_command(self, command):
         pass
