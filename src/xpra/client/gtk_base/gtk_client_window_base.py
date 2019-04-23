@@ -226,7 +226,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.connect_after("realize", self.on_realize)
         self.connect('unrealize', self.on_unrealize)
         self.add_events(self.WINDOW_EVENT_MASK)
-        if DRAGNDROP:
+        if DRAGNDROP and not self._client.readonly:
             self.init_dragndrop()
         self.init_focus()
         ClientWindowBase.init_window(self, metadata)
@@ -781,6 +781,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.update_window_state(state_updates)
 
     def update_window_state(self, state_updates):
+        if self._client.readonly:
+            log("update_window_state(%s) ignored in readonly mode", state_updates)
+            return
         if state_updates.get("maximized") is False or state_updates.get("fullscreen") is False:
             #if we unfullscreen or unmaximize, re-calculate offsets if we have any:
             w, h = self._backing.render_size
@@ -842,6 +845,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def schedule_send_iconify(self):
         #calculate a good delay to prevent races causing minimize/unminimize loops:
+        if self._client.readonly:
+            return
         delay = 150
         spl = tuple(self._client.server_ping_latency)
         if spl:
