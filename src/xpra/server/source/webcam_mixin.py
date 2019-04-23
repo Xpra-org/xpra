@@ -166,7 +166,7 @@ class WebcamMixin(StubSourceMixin):
         try:
             assert encoding in self.webcam_encodings, "invalid encoding specified: %s (must be one of %s)" % (encoding, self.webcam_encodings)
             rgb_pixel_format = "BGRX"       #BGRX
-            img = open_only(data, self.webcam_encodings)
+            img = open_only(data, (encoding,))
             pixels = img.tobytes('raw', rgb_pixel_format)
             from xpra.codecs.image_wrapper import ImageWrapper
             bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w*4, planes=ImageWrapper.PACKED)
