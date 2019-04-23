@@ -953,7 +953,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #    self.set_ui_driver(ss)
         is_ui_driver = self.ui_driver==ss.uuid
         shown = self._desktop_manager.is_shown(window)
-        if window.is_OR() or window.is_tray() or skip_geometry:
+        if window.is_OR() or window.is_tray() or skip_geometry or self.readonly:
             size_changed = False
         else:
             oww, owh = self._desktop_manager.window_size(window)
@@ -970,7 +970,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                         self._update_modifiers(proto, wid, modifiers)
             if window.is_tray():
                 assert self._tray
-                if not skip_geometry:
+                if not skip_geometry and not self.readonly:
                     traylog("tray %s configured to: %s", window, (x, y, w, h))
                     self._tray.move_resize(window, x, y, w, h)
                     damage = True

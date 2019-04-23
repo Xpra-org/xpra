@@ -552,7 +552,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         damage = False
         if len(packet)>=9:
             damage = bool(self._set_window_state(proto, wid, window, packet[8]))
-        if not skip_geometry:
+        if not skip_geometry and not self.readonly:
             owx, owy, oww, owh = window.get_geometry()
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
             if oww!=w or owh!=h:

@@ -45,6 +45,7 @@ class WindowsMixin(StubSourceMixin):
         self.get_cursor_data_cb = None
         self.get_window_id = None
         self.window_filters = []
+        self.readonly = False
 
     def init_from(self, _protocol, server):
         self.get_transient_for  = server.get_transient_for
@@ -52,6 +53,7 @@ class WindowsMixin(StubSourceMixin):
         self.get_cursor_data_cb = server.get_cursor_data
         self.get_window_id      = server.get_window_id
         self.window_filters     = server.window_filters
+        self.readonly           = server.readonly
 
     def init_state(self):
         #WindowSource for each Window ID
@@ -370,10 +372,19 @@ class WindowsMixin(StubSourceMixin):
         if propname not in self.metadata_supported:
             metalog("make_metadata: client does not support '%s'", propname)
             return {}
-        return make_window_metadata(window, propname,
+        metadata = make_window_metadata(window, propname,
                                         get_transient_for=self.get_transient_for,
                                         get_window_id=self.get_window_id,
                                         skip_defaults=skip_defaults)
+        if self.readonly:
+            metalog("overriding size-constraints for readonly mode")
+            size = window.get_dimensions()
+            metadata["size-constraints"] = {
+                "maximum-size"  : size,
+                "minimum-size"  : size,
+                "base-size" : size,
+                }
+        return metadata
 
     def new_tray(self, wid, window, w, h):
         assert window.is_tray()
