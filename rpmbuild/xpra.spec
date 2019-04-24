@@ -195,6 +195,7 @@ Requires:			python2-numpy
 BuildRequires:		python2-numpy
 %endif
 Recommends:			python2-paramiko
+Recommends:			python2-dns
 #Recommends:			python2-lzo
 Recommends:         python2-kerberos
 Recommends:         python2-gssapi
@@ -346,6 +347,7 @@ Requires:			python3-gobject
 Recommends:			python3-netifaces
 Recommends:			python3-dbus
 Recommends:			python3-avahi
+Recommends:			python3-dns
 %if 0%{?fedora}
 Recommends:			python3-paramiko
 #Recommends:			python3-lzo
