@@ -601,7 +601,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if v:
                 try:
                     wm_name = get_wm_name()
-                except:
+                except Exception:
                     wm_name = None
                 try:
                     if len(v)==8:

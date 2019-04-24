@@ -92,7 +92,7 @@ class SessionsGUI(gtk.Window):
         try:
             from xpra.platform.info import get_username
             username = get_username()
-        except:
+        except Exception:
             username = ""
         #log.info("options=%s (%s)", options, type(options))
         self.local_info_cache = {}
