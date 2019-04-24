@@ -134,7 +134,7 @@ def make_graph_imagesurface(data, labels=None, width=320, height=200, title=None
         colour = colours[i % len(colours)]
         context.set_source_rgb(*colour)
         j = 0
-        last_v = (0, 0, 0)
+        last_v = (-1, -1, -1)
         for v in line_data:
             x = x_offset + w*(j - start_x_offset)/(max(1, max_x-2))
             if v is not None:
@@ -142,7 +142,7 @@ def make_graph_imagesurface(data, labels=None, width=320, height=200, title=None
                     y = height-y_offset - h*v/scale_y
                 else:
                     y = 0
-                if last_v is not None:
+                if last_v!=(-1, -1, -1):
                     lx, ly = last_v[1:3]
                     if curves:
                         x1 = (lx*2+x)/3
