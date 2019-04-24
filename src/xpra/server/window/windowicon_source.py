@@ -130,8 +130,12 @@ class WindowIconSource(object):
                     return
                 #try to load the icon for this class-instance from the theme:
                 icons = []
+                done = set()
                 for sizes in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
                     for size in sizes:
+                        if size in done:
+                            continue
+                        done.add(size)
                         icon = self.window.get_default_window_icon(size)
                         if icon:
                             icons.append(icon)
@@ -207,8 +211,9 @@ class WindowIconSource(object):
             if pixel_format=="png":
                 image = Image.open(BytesIO(pixel_data))
             else:
-                assert pixel_format in ("BGRA", "RGBA")
-                image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", pixel_format, 0, 1)
+                #note: little endian makes this confusing.. RGBA for pillow is BGRA in memory
+                assert pixel_format=="BGRA"
+                image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", "RGBA", 0, 1)
             if must_scale:
                 #scale the icon down to the size the client wants
                 #(we should scale + paste to preserve the aspect ratio, meh)
