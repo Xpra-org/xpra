@@ -160,7 +160,10 @@ class SessionInfo(gtk.Window):
             return "\n".join(s)
         distro = get_linux_distribution()
         LOCAL_PLATFORM_NAME = make_os_str(sys.platform, python_platform.release(), python_platform.platform(), distro)
-        SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform, self.client._remote_platform_release, self.client._remote_platform_platform, self.client._remote_platform_linux_distribution)
+        SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform,
+                                           self.client._remote_platform_release,
+                                           self.client._remote_platform_platform,
+                                           self.client._remote_platform_linux_distribution)
         tb.new_row("Operating System", slabel(LOCAL_PLATFORM_NAME), slabel(SERVER_PLATFORM_NAME))
         scaps = self.client.server_capabilities
         tb.new_row("Xpra", slabel(XPRA_VERSION), slabel(self.client._remote_version or "unknown"))
@@ -1070,7 +1073,7 @@ class SessionInfo(gtk.Window):
                     encoder_stats = v.get("encoder")
                     if encoder_stats:
                         window_encoder_stats[wid] = encoder_stats
-                except:
+                except Exception:
                     log.error("Error: cannot lookup window dict", exc_info=True)
         return window_encoder_stats
 

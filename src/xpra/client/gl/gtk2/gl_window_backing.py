@@ -4,12 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gtk import gdk
 from gtk import gtkgl         #@UnresolvedImport
 
 from xpra.client.gl.gtk_base.gtkgl_window_backing_base import GTKGLWindowBackingBase
 
-assert gdk and gtkgl
+assert gtkgl
 
 
 """

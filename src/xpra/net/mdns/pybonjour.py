@@ -869,7 +869,7 @@ def _string_to_length_and_void_p(string):
 
 def _length_and_void_p_to_string(length, void_p):
     char_p = ctypes.cast(void_p, ctypes.POINTER(ctypes.c_char))
-    return ''.join(char_p[i] for i in xrange(length))
+    return ''.join(char_p[i] for i in range(length))
 
 
 
