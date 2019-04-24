@@ -285,6 +285,9 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             raise
 
     def do_xpra_client_message_event(self, event):
+        if event.message_type=="_GTK_LOAD_ICONTHEMES":
+            #ignore this crap
+            return
         log.info("clipboard window %#x received an X11 message", get_xwindow(self.window))
         log.info(" %s", event)
 
