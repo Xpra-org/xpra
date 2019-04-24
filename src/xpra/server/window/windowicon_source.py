@@ -212,8 +212,11 @@ class WindowIconSource(object):
                 image = Image.open(BytesIO(pixel_data))
             else:
                 #note: little endian makes this confusing.. RGBA for pillow is BGRA in memory
-                assert pixel_format=="BGRA"
-                image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", "RGBA", 0, 1)
+                if pixel_format=="RGBA":
+                    src_format = "BGRA"
+                else:
+                    src_format = "RGBA"
+                image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", src_format, 0, 1)
             if must_scale:
                 #scale the icon down to the size the client wants
                 #(we should scale + paste to preserve the aspect ratio, meh)
