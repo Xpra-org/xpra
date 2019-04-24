@@ -52,7 +52,9 @@ def get_native_system_tray_classes():
 
 def get_wm_name():
     wm_name = os.environ.get("XDG_CURRENT_DESKTOP", "")
-    if is_X11():
+    if os.environ.get("XDG_SESSION_TYPE")=="wayland":
+        wm_name = "wayland"
+    elif is_X11():
         try:
             wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
             if wm_check:
