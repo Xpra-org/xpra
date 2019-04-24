@@ -44,10 +44,10 @@
 	</autotools>
 
 	<autotools id="lz4" skip-autogen="true">
-		<branch module="/lz4/lz4/tar.gz/v1.8.3"
-			version="1.8.3"
-			checkoutdir="lz4-1.8.3"
-			hash="sha256:33af5936ac06536805f9745e0b6d61da606a1f8b4cc5c04dd3cbaca3b9b4fc43"
+		<branch module="/lz4/lz4/archive/v1.9.1.tar.gz"
+			version="1.9.1"
+			checkoutdir="lz4-1.9.1"
+			hash="sha256:f8377c89dad5c9f266edc0be9b73595296ecafd5bfa1000de148096c50052dc4"
 			repo="github.com"/>
 	</autotools>
 
