@@ -105,7 +105,7 @@ def load_icon_from_file(filename):
     if not icondata:
         return None
     log("got icon data from '%s': %i bytes", filename, len(icondata))
-    return icondata, os.path.splitext(filename)[1].rstrip(".")
+    return icondata, os.path.splitext(filename)[1].lstrip(".")
 
 def load_icon_from_theme(icon_name, theme=None):
     if not EXPORT_ICONS or not icon_name:
