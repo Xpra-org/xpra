@@ -1731,6 +1731,69 @@ class WindowVideoSource(WindowSource):
         return packet
 
 
+    def may_use_scrolling(self, image, options):
+        if not self.supports_scrolling:
+            return False
+        if options.get("scroll") is True:
+            #we've already checked
+            return False
+        #don't download the pixels if we have a GPU buffer,
+        #since that means we're likely to be able to compress on the GPU too with NVENC:
+        if not image.has_pixels():
+            return False
+        if self.content_type=="video" or not self.non_video_encodings:
+            return False
+        scroll_data = self.scroll_data
+        if self.b_frame_flush_timer and scroll_data:
+            scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
+            self.scroll_data = None
+            return False
+        try:
+            start = monotonic_time()
+            if not scroll_data:
+                scroll_data = ScrollData()
+                self.scroll_data = scroll_data
+                scrolllog("new scroll data: %s", scroll_data)
+            if not image.is_thread_safe():
+                #what we really want is to check that the frame has been frozen,
+                #so it doesn't get modified whilst we checksum or encode it,
+                #the "thread_safe" flag gives us that for the X11 case in most cases,
+                #(the other servers already copy the pixels from the "real" screen buffer)
+                #TODO: use a separate flag? (ximage uses this flag to know if it is safe
+                # to call image.free from another thread - which is theoretically more restrictive)
+                newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
+                image.restride(newstride)
+                stride = image.get_rowstride()
+            bpp = image.get_bytesperpixel()
+            pixels = image.get_pixels()
+            if not pixels:
+                return False
+            x, y, w, h = image.get_geometry()[:4]
+            stride = image.get_rowstride()
+            scroll_data.update(pixels, x, y, w, h, stride, bpp)
+            max_distance = min(1000, (100-self.scroll_min_percent)*h//100)
+            scroll_data.calculate(max_distance)
+            #marker telling us not to invalidate the scroll data from here on:
+            options["scroll"] = True
+            scroll, count = scroll_data.get_best_match()
+            end = monotonic_time()
+            match_pct = int(100*count/h)
+            scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s",
+                      (end-start)*1000, match_pct, h, scroll)
+            #if enough scrolling is detected, use scroll encoding for this frame:
+            if match_pct>=self.scroll_min_percent:
+                self.encode_scrolling(scroll_data, image, options, match_pct)
+                return True
+        except Exception:
+            scrolllog("may_use_scrolling(%s, %s) detection", image, options, exc_info=True)
+            if not self.is_cancelled():
+                scrolllog.error("Error during scrolling detection")
+                scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
+            #make sure we start again from scratch next time:
+            scroll_data.free()
+            self.scroll_data = None
+            return False
+
     def encode_scrolling(self, scroll_data, image, options, match_pct):
         start = monotonic_time()
         try:
@@ -1828,7 +1891,6 @@ class WindowVideoSource(WindowSource):
         assert flush==0
         self.last_scroll_time = monotonic_time()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
-        return None
 
     def do_schedule_auto_refresh(self, encoding, data, region, client_options, options):
         #for scroll encoding, data is a LargeStructure wrapper:
@@ -1948,56 +2010,10 @@ class WindowVideoSource(WindowSource):
             videolog("do_video_encode: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
             img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
 
-        #don't download the pixels if we have a GPU buffer,
-        #since that means we're likely to be able to compress on the GPU too with NVENC:
-        if self.supports_scrolling and image.has_pixels() and self.content_type!="video" and self.non_video_encodings:
-            scroll_data = self.scroll_data
-            if self.b_frame_flush_timer and scroll_data:
-                scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
-                self.scroll_data = None
-            else:
-                try:
-                    start = monotonic_time()
-                    if not scroll_data:
-                        scroll_data = ScrollData()
-                        self.scroll_data = scroll_data
-                        scrolllog("new scroll data: %s", scroll_data)
-                    if not image.is_thread_safe():
-                        #what we really want is to check that the frame has been frozen,
-                        #so it doesn't get modified whilst we checksum or encode it,
-                        #the "thread_safe" flag gives us that for the X11 case in most cases,
-                        #(the other servers already copy the pixels from the "real" screen buffer)
-                        #TODO: use a separate flag? (ximage uses this flag to know if it is safe
-                        # to call image.free from another thread - which is theoretically more restrictive)
-                        newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
-                        image.restride(newstride)
-                        stride = image.get_rowstride()
-                    bpp = image.get_bytesperpixel()
-                    pixels = image.get_pixels()
-                    if not pixels:
-                        return None
-                    scroll_data.update(pixels, x, y, w, h, stride, bpp)
-                    max_distance = min(1000, (100-self.scroll_min_percent)*h//100)
-                    scroll_data.calculate(max_distance)
-                    #marker telling us not to invalidate the scroll data from here on:
-                    options["scroll"] = True
-                    scroll, count = scroll_data.get_best_match()
-                    end = monotonic_time()
-                    match_pct = int(100*count/h)
-                    scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s",
-                              (end-start)*1000, match_pct, h, scroll)
-                    #if enough scrolling is detected, use scroll encoding for this frame:
-                    if match_pct>=self.scroll_min_percent:
-                        return self.encode_scrolling(scroll_data, image, options, match_pct)
-                except Exception:
-                    scrolllog("do_video_encode%s scrolling detection", (encoding, image, options), exc_info=True)
-                    if not self.is_cancelled():
-                        scrolllog.error("Error during scrolling detection")
-                        scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
-                    #make sure we start again from scratch next time:
-                    scroll_data.free()
-                    self.scroll_data = None
-            del scroll_data
+        if self.may_use_scrolling(image, options):
+            #scroll encoding has dealt with this image
+            return None
+
         if not self.common_video_encodings or self.image_depth not in (24, 32):
             #we have to send using a non-video encoding as that's all we have!
             return self.video_fallback(image, options)
