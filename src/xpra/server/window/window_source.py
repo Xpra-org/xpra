@@ -77,6 +77,8 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 
+SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
+
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 INFINITY = float("inf")
@@ -2217,6 +2219,11 @@ class WindowSource(WindowIconSource):
             self.source_remove(dert)
 
 
+    def may_use_scrolling(self, _image, _options):
+        #overriden in video source
+        return False
+
+
     def make_data_packet(self, damage_time, process_damage_time, image, coding, sequence, options, flush):
         """
             Picture encoding - non-UI thread.
@@ -2232,7 +2239,10 @@ class WindowSource(WindowIconSource):
         """
         if self.is_cancelled(sequence) or self.suspended:
             log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
-            return  None
+            return None
+        if SCROLL_ALL and self.may_use_scrolling(image, options):
+            image.free()
+            return None
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()
