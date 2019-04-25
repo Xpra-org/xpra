@@ -86,6 +86,7 @@ B_FRAMES = envbool("XPRA_B_FRAMES", True)
 VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 50)))
+MIN_SCROLL_IMAGE_SIZE = envint("XPRA_MIN_SCROLL_IMAGE_SIZE", 384)
 
 SAVE_VIDEO_STREAMS = envbool("XPRA_SAVE_VIDEO_STREAMS", False)
 SAVE_VIDEO_FRAMES = os.environ.get("XPRA_SAVE_VIDEO_FRAMES")
@@ -1732,6 +1733,8 @@ class WindowVideoSource(WindowSource):
 
 
     def may_use_scrolling(self, image, options):
+        scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video encodings=%s",
+                  image, options, self.supports_scrolling, image.has_pixels, self.content_type, self.non_video_encodings)
         if not self.supports_scrolling:
             return False
         if options.get("scroll") is True:
@@ -1742,6 +1745,9 @@ class WindowVideoSource(WindowSource):
         if not image.has_pixels():
             return False
         if self.content_type=="video" or not self.non_video_encodings:
+            return False
+        x, y, w, h = image.get_geometry()[:4]
+        if w<MIN_SCROLL_IMAGE_SIZE or h<MIN_SCROLL_IMAGE_SIZE:
             return False
         scroll_data = self.scroll_data
         if self.b_frame_flush_timer and scroll_data:
@@ -1768,7 +1774,6 @@ class WindowVideoSource(WindowSource):
             pixels = image.get_pixels()
             if not pixels:
                 return False
-            x, y, w, h = image.get_geometry()[:4]
             stride = image.get_rowstride()
             scroll_data.update(pixels, x, y, w, h, stride, bpp)
             max_distance = min(1000, (100-self.scroll_min_percent)*h//100)
