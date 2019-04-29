@@ -81,6 +81,13 @@ var Utilities = {
 		}
 		return result;
 	},
+	
+	trimString: function(str, trimLength){
+		var trimString = str.length > trimLength ? 
+                    str.substring(0, trimLength - 3) + "..." : 
+                    str;
+		return trimString;
+	},
 
 	getPlatformProcessor: function() {
 		//mozilla property:

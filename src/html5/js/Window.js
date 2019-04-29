@@ -132,6 +132,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 				'<span class="windowicon"><img id="windowicon' + String(wid) + '" /></span> '+
 				'<span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> '+
 				'<span class="windowbuttons"> '+
+				'<span id="minimize' + String(wid) + '"><img src="icons/minimize.png" /></span> '+
 				'<span id="maximize' + String(wid) + '"><img src="icons/maximize.png" /></span> '+
 				'<span id="close' + String(wid) + '"><img src="icons/close.png" /></span> '+
 				'</span></div>');
@@ -161,6 +162,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		this.d_header = '#head' + String(wid);
 		this.d_closebtn = '#close' + String(wid);
 		this.d_maximizebtn = '#maximize' + String(wid);
+		this.d_minimizebtn = '#minimize' + String(wid);
 		if (this.resizable) {
 			jQuery(this.d_header).dblclick(function() {
 				me.toggle_maximized();
@@ -171,10 +173,15 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 			jQuery(this.d_maximizebtn).click(function() {
 				me.toggle_maximized();
 			});
+			jQuery(this.d_minimizebtn).click(function() {
+				me.toggle_minimized();
+			});
 		}
 		else {
 			jQuery(this.d_closebtn).hide();
 			jQuery(this.d_maximizebtn).hide();
+			jQuery('#windowlistitemmax' + String(wid)).hide();
+			jQuery(this.d_minimizebtn).hide();
 		}
 		// adjust top offset
 		this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
@@ -446,7 +453,10 @@ XpraWindow.prototype.update_metadata = function(metadata, safe) {
 XpraWindow.prototype.set_metadata_safe = function(metadata) {
 	if ("title" in metadata) {
 		this.title = metadata["title"];
-		jQuery('#title' + this.wid).html(decodeURIComponent(escape(this.title)));
+		var decodedTitle = decodeURIComponent(escape(this.title));
+		jQuery('#title' + this.wid).html(decodedTitle);
+        var trimmedTitle = Utilities.trimString(decodedTitle,30);
+		jQuery('#windowlistitemtitle'+this.wid).text(trimmedTitle);
 	}
 	if ("has-alpha" in metadata) {
 		this.has_alpha = metadata["has-alpha"];
@@ -545,6 +555,7 @@ XpraWindow.prototype.apply_size_constraints = function() {
 	}
 	if(minw>0 && minw==maxw && minh>0 && minh==maxh) {
 		jQuery(this.d_maximizebtn).hide();
+		jQuery('#windowlistitemmax' + String(this.wid)).hide();
 		jQuery(this.div).resizable('disable');
 	} else {
 		jQuery(this.d_maximizebtn).show();
@@ -613,6 +624,10 @@ XpraWindow.prototype.restore_geometry = function() {
  * Maximize / unmaximizes the window.
  */
 XpraWindow.prototype.set_maximized = function(maximized) {
+	if(jQuery(this.div).is(":hidden")){
+		jQuery(this.div).show();
+	}
+	
 	if (this.maximized==maximized) {
 		return;
 	}
@@ -629,6 +644,21 @@ XpraWindow.prototype.set_maximized = function(maximized) {
  */
 XpraWindow.prototype.toggle_maximized = function() {
 	this.set_maximized(!this.maximized);
+};
+
+/**
+ * Minimizes / unminimizes the window.
+ */
+XpraWindow.prototype.set_minimized = function(minimized) {
+	jQuery(this.div).toggle(200);
+};
+
+
+/**
+ * Toggle minimized state
+ */
+XpraWindow.prototype.toggle_minimized = function() {
+	this.set_minimized(!this.minimized);
 };
 
 /**
@@ -948,6 +978,7 @@ XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 		src = "data:image/"+encoding+";base64," + Utilities.ArrayBufferToBase64(img_data);
 	}
 	jQuery('#windowicon' + String(this.wid)).attr('src', src);
+	jQuery('#windowlistitemicon' + String(this.wid)).attr('src', src);
 	return src;
 };
 

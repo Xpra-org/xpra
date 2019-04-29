@@ -137,7 +137,7 @@ canvas {
 	padding-right: 5px;
 	cursor: pointer;
 	padding-top: 7px;
-	background-color: #c0c0c0;
+	background-color: transparent;
 }
 .above {
 	z-index: 10000;
@@ -189,6 +189,7 @@ div.windowinfocus {
 	width: 600px;
 	height: auto;
 	z-index: 10001;
+	background-color: white;
 	transition: height 0.5s, opacity 0.5s, top 0.5s, box-shadow 0.5s, bottom 0.5s;
 	box-shadow: 0 1rem 2rem rgba(21, 36, 48, 0.75);
 	overflow: hidden;

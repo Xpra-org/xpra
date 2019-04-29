@@ -46,6 +46,12 @@
 		<script type="text/javascript" src="js/Utilities.js"></script>
 		<script type="text/javascript" src="js/MediaSourceUtil.js"></script>
 		<script type="text/javascript" src="js/Client.js"></script>
+		
+		<link rel="stylesheet" type="text/css" href="css/menu.css"/>
+		<script type="application/javascript" src="js/Menu.js"></script>
+		<script type="application/javascript" src="js/Menu-custom.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/menu-skin.css"/>
+		<link rel="stylesheet" type="text/css" href="css/icon.css"/>
 	</head>
 
 	<body>
@@ -59,6 +65,58 @@
 		</div>
 
 		<div id="screen" style="width: 100%; height:100%;">
+			<div id="float_menu" onmouseOver="expand_float_menu()" onmouseOut="retract_float_menu()"> 
+				<ul class="Menu -horizontal">
+					<li class="-hasSubmenu -noChevron">
+						<a href="#" title="Xpra" class="noDrag" data-icon="menu"></a>
+						<ul id="menu_list">
+							<li  class="-hasSubmenu" >
+								<a data-icon="apps" href="#">Start</a>
+								<ul id="startmenu">
+								</ul>
+							</li>
+							<li class="-hasSubmenu">
+								<a href="#" data-icon="kitchen">Server</a>
+								<ul>
+									<li><a href="#" data-icon="access_time" onclick="return false" id="clock_menu_text"></a></li>
+									<li><a href="#" data-icon="cloud_upload" onclick="upload_file(event); return false">Upload file</a></li>
+									<li><a href="#" data-icon="exit_to_app" onclick="confirm_shutdown_server(event); return false">Shutdown Server</a></li>
+								</ul>
+							</li>
+							<!--
+							<li class="-hasSubmenu">
+								<a href="#" data-icon="list">Features</a>
+								<ul>
+									<li><a href="#" data-icon="message">Notifications</a></li>
+								</ul>
+							</li>
+							-->
+							<li class="-hasSubmenu">
+								<a href="#" data-icon="info">Information</a>
+								<ul>
+									<li><a href="#" data-icon="info" onclick="show_about(event); return false">About Xpra</a></li>
+									<li><a href="#" data-icon="trending_up" onclick="show_sessioninfo(event); return false">Session Info</a></li>
+									<li><a href="#" data-icon="bug_report" onclick="show_bugreport(event); return false">Bug Report</a></li>
+								</ul>
+							</li>
+							<li><a href="#" data-icon="exit_to_app" onclick="client.disconnect_reason='User request'; client.close(); return false">Disconnect</a></li>
+						</ul>
+					</li>
+					<li class="-hasSubmenu -noChevron">
+						<a href="#"   title="Open Windows" data-icon="filter"></a>
+						<ul id="open_windows_list">
+						</ul>
+					</li>
+					<li class="-hasSubmenu -noChevron">
+						<a href="#"   id="fullscreen_button" title="Fullscreen" data-icon="fullscreen"></a>
+					</li>
+					<li class="-hasSubmenu -noChevron">
+						<a href="#" id="sound_button"  title="Sound" data-icon="volume_off"></a>
+						</ul>
+					</li>
+					<div id="float_tray"  class="menu-divright"></div>
+				</ul>
+			</div>
 			<div id="top_bar">
 				<div class="menu-block">
 					<button onclick="show_menu('xpra_menu', event);" class="menu-button">Xpra &#9660;</button>
@@ -181,6 +239,9 @@
 		<script>
 			var getparam = Utilities.getparam;
 			var getboolparam = Utilities.getboolparam;
+			var float_menu_item_size = 30;
+			var float_menu_padding = 20;
+			var float_menu_width = (float_menu_item_size*4) + float_menu_padding;
 
 			// disable right click menu:
 			window.oncontextmenu = function(e) {
@@ -197,6 +258,10 @@
 
 			if (!getboolparam("top_bar", true)) {
 				$("#top_bar").hide();
+			}
+
+			if (!getboolparam("floating_menu", true)) {
+				$("#float_menu").hide();
 			}
 
 			function show_menu(menu_id, event) {
@@ -552,6 +617,7 @@
 			    	client.audio_mediasource_enabled = getboolparam("mediasource", true);
 			    	client.audio_aurora_enabled = getboolparam("aurora", true);
 			    	client.audio_httpstream_enabled = getboolparam("http-stream", true);
+			    	$('#sound_button').attr('data-icon', 'volume_up');
 			    }
 
 			    if(keyboard_layout) {
@@ -781,6 +847,8 @@
 					var clock_text = $("#clock_text");
 					var width = clock_text.width();
 					clock_text.text(date.toLocaleDateString()+" "+date.toLocaleTimeString());
+					var clock_menu_text = $("#clock_menu_text");
+					clock_menu_text.text(date.toLocaleDateString()+" "+date.toLocaleTimeString());
 					if (width != clock_text.width()) {
 						//trays have been shifted left or right:
 						client.reconfigure_all_trays();
@@ -805,6 +873,44 @@
 					}
 				}
 				wait_for_time();
+			}
+			
+			function toggle_fullscreen() {
+				var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
+					if (!f_el) {
+						var elem = document.getElementById("fullscreen");
+				        var req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
+						if (req) {
+							req.call(document.body);
+						}
+
+						$('#fullscreen').attr('src', './icons/unfullscreen.png');
+						$('#fullscreen_button').attr('data-icon', 'fullscreen_exit');
+
+					} else {
+						if (document.exitFullscreen) {
+				            document.exitFullscreen();
+				        } else if (document.webkitExitFullscreen) {
+				            document.webkitExitFullscreen();
+				        } else if (document.mozCancelFullScreen) {
+				            document.mozCancelFullScreen();
+				        } else if (document.msExitFullscreen) {
+				            document.msExitFullscreen();
+				        }
+					}
+			}
+			
+			function expand_float_menu(){
+				var expanded_width = (float_menu_item_size*4);
+				document.getElementById('float_menu').style.width= expanded_width +'px';
+				if(client){
+					client.reconfigure_all_trays();
+				}
+				$('#float_menu').children().show();
+			}
+			
+			function retract_float_menu(){
+				document.getElementById('float_menu').style.width ='0px'; $('#float_menu').children().hide();
 			}
 
 			var client = null;
@@ -871,34 +977,24 @@
 					}
 				});
 				$('#fullscreen').on('click', function (e) {
-					var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
-					if (!f_el) {
-						var elem = document.getElementById("fullscreen");
-				        var req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
-						if (req) {
-							req.call(document.getElementById("screen"));
-						}
-						//change icon to unfullscreen:
-						$('#fullscreen').attr('src', './icons/unfullscreen.png');
-					} else {
-						if (document.exitFullscreen) {
-				            document.exitFullscreen();
-				        } else if (document.webkitExitFullscreen) {
-				            document.webkitExitFullscreen();
-				        } else if (document.mozCancelFullScreen) {
-				            document.mozCancelFullScreen();
-				        } else if (document.msExitFullscreen) {
-				            document.msExitFullscreen();
-				        }
-					}
+					toggle_fullscreen();
 				});
+				
+				$('#fullscreen_button').on('click', function (e) {
+					toggle_fullscreen();
+				});
+
 				var screen_change_events = "webkitfullscreenchange mozfullscreenchange fullscreenchange MSFullscreenChange";
 				$(document).on(screen_change_events, function () {
 					var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
 					clog("fullscreenchange:", f_el);
 				    if (f_el == null) {
 				    	//we're not in fullscreen mode now, so show fullscreen icon again:
-						$('#fullscreen').attr('src', './icons/fullscreen.png');
+						if (getboolparam("top_bar", true)) {
+							$('#fullscreen').attr('src', './icons/fullscreen.png');
+						}else{	
+							$('#fullscreen_button').attr('data-icon', 'fullscreen');
+						}
 				    }
 				});
 			});
