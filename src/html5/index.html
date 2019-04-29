@@ -108,7 +108,7 @@
 						</ul>
 					</li>
 					<li class="-hasSubmenu -noChevron">
-						<a href="#"   id="fullscreen_button" title="Fullscreen" data-icon="fullscreen"></a>
+						<a href="#" id="fullscreen_button" title="Fullscreen" data-icon="fullscreen"></a>
 					</li>
 					<li class="-hasSubmenu -noChevron">
 						<a href="#" id="sound_button"  title="Sound" data-icon="volume_off"></a>
@@ -829,7 +829,7 @@
 			function toggle_fullscreen() {
 				var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
 					if (!f_el) {
-						var elem = document.getElementById("fullscreen");
+						var elem = document.getElementById("fullscreen_button");
 				        var req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
 						if (req) {
 							req.call(document.body);
