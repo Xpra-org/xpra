@@ -282,49 +282,6 @@ div.windowinfocus {
 	transform-origin: center center;
 }
 
-.menu-block {
-	position: relative;
-	display: inline-block;
-    float: left;
-}
-
-.menu-content {
-    display: none;
-    position: absolute;
-    background-color: #f1f1f1;
-    min-width: 140px;
-    overflow: auto;
-    font-size: 13px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 100000;
-}
-
-.menu-content a {
-    color: black;
-    padding: 8px 12px;
-    text-decoration: none;
-    display: block;
-}
-.menu-block a:hover {
-	background-color: #ddd;
-}
-
-.menu-button {
-    background-color: #3498DB;
-    color: white;
-    padding: 14px;
-    font-size: 16px;
-    border: none;
-    cursor: pointer;
-    display: inline-block;
-	white-space: nowrap;
-	margin: 0;
-}
-
-.menu-button:hover, .menu-button:focus {
-    background-color: #2980B9;
-}
-
 #about, #sessioninfo, #bugreport {
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	background-color: #eee;
