@@ -2008,29 +2008,20 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 
 	var x = 0;
 	var y = 0;
-	if (getboolparam("top_bar", true)) {
-	    var top_bar = document.getElementById("top_bar");
-	    top_bar.appendChild(mydiv);
-	    x = 100;
-	    y = 0;
-	    w = 48;
-	    h = 48;
-	} else {
-		var float_tray = document.getElementById("float_tray");
-		var float_menu = document.getElementById("float_menu");
-		$('#float_menu').children().show();
-		//increase size for tray icon
-		var new_width = float_menu_width + float_menu_item_size -float_menu_padding;
-		float_menu.style.width = new_width + "px";
-		float_menu_width=$('#float_menu').width() + 10;
-		mydiv.style.backgroundColor = "white";
+	var float_tray = document.getElementById("float_tray");
+	var float_menu = document.getElementById("float_menu");
+	$('#float_menu').children().show();
+	//increase size for tray icon
+	var new_width = float_menu_width + float_menu_item_size -float_menu_padding;
+	float_menu.style.width = new_width + "px";
+	float_menu_width=$('#float_menu').width() + 10;
+	mydiv.style.backgroundColor = "white";
 
-		float_tray.appendChild(mydiv);
-	    x = 0;
-	    y = 0;
-	    w = float_menu_item_size;
-	    h = float_menu_item_size;
-	}
+	float_tray.appendChild(mydiv);
+    x = 0;
+    y = 0;
+    w = float_menu_item_size;
+    h = float_menu_item_size;
 
 	mycanvas.width = w;
 	mycanvas.height = h;
