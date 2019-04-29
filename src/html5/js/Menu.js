@@ -85,7 +85,7 @@ SOFTWARE.
             }
         );
     }
-    
+
     function hideAllMenus(menu){
         var menu = this;
         forEach(
@@ -113,9 +113,7 @@ SOFTWARE.
         forEach($(".Menu > li.-hasSubmenu li.-hasSubmenu"), function(e){
             e.addEventListener("mouseenter", showMenu);
         });
-        
-        
-        
+
         forEach($("a"), function(e){
             e.addEventListener("click", hideAllMenus);
         });

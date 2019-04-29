@@ -81,10 +81,10 @@ var Utilities = {
 		}
 		return result;
 	},
-	
+
 	trimString: function(str, trimLength){
-		var trimString = str.length > trimLength ? 
-                    str.substring(0, trimLength - 3) + "..." : 
+		var trimString = str.length > trimLength ?
+                    str.substring(0, trimLength - 3) + "..." :
                     str;
 		return trimString;
 	},
@@ -237,7 +237,7 @@ var Utilities = {
 	},
 	isEdge : function() {
 		return navigator.userAgent.includes("Edge");
-	},	
+	},
 	isChrome : function () {
 		var isChromium = window.chrome,
 			winNav = window.navigator,

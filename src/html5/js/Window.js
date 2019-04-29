@@ -267,7 +267,7 @@ XpraWindow.prototype.swap_buffers = function() {
 	//the up to date canvas is what we'll draw on screen:
 	this.draw_canvas = this.offscreen_canvas;
 	this._init_2d_canvas();
-	this.offscreen_canvas_ctx.drawImage(this.draw_canvas, 0, 0);	
+	this.offscreen_canvas_ctx.drawImage(this.draw_canvas, 0, 0);
 }
 
 XpraWindow.prototype.set_spinner = function(state) {
@@ -627,7 +627,7 @@ XpraWindow.prototype.set_maximized = function(maximized) {
 	if(jQuery(this.div).is(":hidden")){
 		jQuery(this.div).show();
 	}
-	
+
 	if (this.maximized==maximized) {
 		return;
 	}

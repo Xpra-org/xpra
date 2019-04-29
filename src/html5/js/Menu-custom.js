@@ -27,11 +27,11 @@ function addWindowListItem(wid, title){
 	var li = document.createElement("li");
 	li.className="windowlist-li";
 	li.id = "windowlistitem"+wid;
-	
+
 	var a = document.createElement("a");
-	
+
 	a.id = "windowlistitemlink"+wid;
-	
+
 	a.onmouseover=function(e){
 		if (e.ctrlKey) {
 			client._window_set_focus(client.id_to_window[wid]);
@@ -44,7 +44,7 @@ function addWindowListItem(wid, title){
 		this.parentElement.parentElement.className="-hide";
 		client._window_set_focus(client.id_to_window[wid]);
 	};
-	
+
 	var divLeft = document.createElement("div");
 	divLeft.id="windowlistdivleft"+wid;
 	divLeft.className="menu-divleft";
@@ -53,7 +53,7 @@ function addWindowListItem(wid, title){
 	img.src="/favicon.png";
 	img.className="menu-content-left";
 	divLeft.appendChild(img);
-	
+
 	var titleDiv = document.createElement("div");
 	titleDiv.appendChild(document.createTextNode(title));
 	titleDiv.id = "windowlistitemtitle"+wid;
