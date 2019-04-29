@@ -39,10 +39,9 @@ class WindowIconSource(object):
         self.icons_encoding_options = icons_encoding_options    #icon caps
 
         self.has_png = PNG_ICONS and ("png" in self.window_icon_encodings)
-        self.has_premult = ARGB_ICONS and ("premult_argb32" in self.window_icon_encodings)
         self.has_default = DEFAULT_ICONS and ("default" in self.window_icon_encodings)
-        log("WindowIconSource(%s, %s) has_png=%s, has_premult=%s",
-            window_icon_encodings, icons_encoding_options, self.has_png, self.has_premult)
+        log("WindowIconSource(%s, %s) has_png=%s",
+            window_icon_encodings, icons_encoding_options, self.has_png)
 
         self.window_icon_data = None
         self.send_window_icon_timer = 0
@@ -182,7 +181,7 @@ class WindowIconSource(object):
         #this runs in the work queue
         self.send_window_icon_timer = 0
         idata = self.window_icon_data
-        if not idata:
+        if not idata or not self.has_png:
             return
         w, h, pixel_format, pixel_data = idata
         log("compress_and_send_window_icon() %ix%i in %s format, %i bytes for wid=%i",
@@ -199,10 +198,9 @@ class WindowIconSource(object):
         #or if we must downscale it (bigger than what the client is willing to deal with),
         #or if we want to save window icons
         must_scale = w>max_w or h>max_h
-        use_png = self.has_png and (must_scale or not self.has_premult or w*h>=MAX_ARGB_PIXELS)
-        log("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), sending as png=%s, pixel_format=%s",
-            w, h, self.window_icon_max_size, self.window_icon_size, use_png, pixel_format)
-        must_convert = (use_png and pixel_format!="png") or (pixel_format=="BGRA" and not self.has_premult)
+        log("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), pixel_format=%s",
+            w, h, self.window_icon_max_size, self.window_icon_size, pixel_format)
+        must_convert = pixel_format!="png"
         log(" must convert=%s, must scale=%s", must_convert, must_scale)
 
         image = None
@@ -211,12 +209,7 @@ class WindowIconSource(object):
             if pixel_format=="png":
                 image = Image.open(BytesIO(pixel_data))
             else:
-                #note: little endian makes this confusing.. RGBA for pillow is BGRA in memory
-                if pixel_format=="RGBA":
-                    src_format = "BGRA"
-                else:
-                    src_format = "RGBA"
-                image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", src_format, 0, 1)
+                image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", pixel_format, 0, 1)
             if must_scale:
                 #scale the icon down to the size the client wants
                 #(we should scale + paste to preserve the aspect ratio, meh)
@@ -234,19 +227,14 @@ class WindowIconSource(object):
                 image.save(filename, 'PNG')
                 log("server window icon saved to %s", filename)
 
-        if use_png:
-            if image:
-                #image got converted or scaled, get the new pixel data:
-                output = BytesIO()
-                image.save(output, "png")
-                pixel_data = output.getvalue()
-                output.close()
-                w, h = image.size
-            wrapper = compression.Compressed("png", pixel_data)
-        else:
-            if image:
-                pixel_data = image.tobytes("raw", "RGBA")
-            wrapper = self.compressed_wrapper("premult_argb32", strtobytes(pixel_data))
+        if image:
+            #image got converted or scaled, get the new pixel data:
+            output = BytesIO()
+            image.save(output, "png")
+            pixel_data = output.getvalue()
+            output.close()
+            w, h = image.size
+        wrapper = compression.Compressed("png", pixel_data)
         packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
         log("queuing window icon update: %s", packet)
         self.queue_packet(packet, wait_for_more=True)
