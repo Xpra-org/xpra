@@ -2503,7 +2503,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 	}
 	if (!win) {
 		ctx.debug("draw", 'cannot paint, window not found:', wid);
-		send_damage_sequence(-1, "window not found");
+		send_damage_sequence(-1, "window "+wid+" not found");
 		return;
 	}
 	try {
