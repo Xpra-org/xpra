@@ -65,7 +65,7 @@
 		</div>
 
 		<div id="screen" style="width: 100%; height:100%;">
-			<div id="float_menu" onmouseOver="expand_float_menu()" onmouseOut="retract_float_menu()"> 
+			<div id="float_menu"> 
 				<ul class="Menu -horizontal">
 					<li class="-hasSubmenu -noChevron">
 						<a href="#" title="Xpra" class="noDrag" data-icon="menu"></a>
@@ -911,6 +911,14 @@
 			
 			function retract_float_menu(){
 				document.getElementById('float_menu').style.width ='0px'; $('#float_menu').children().hide();
+			}
+
+			if (getboolparam("autohide", true)) {
+				$('#float_menu').on('mouseover', expand_float_menu);
+				$('#float_menu').on('mouseout', retract_float_menu);
+			}
+			else {
+				expand_float_menu();
 			}
 
 			var client = null;
