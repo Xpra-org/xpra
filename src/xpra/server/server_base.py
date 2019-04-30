@@ -6,6 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from threading import Thread
 
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -449,6 +450,7 @@ class ServerBase(ServerBaseClass):
         if source.wants_display:
             capabilities.update({
                  "max_desktop_size"             : self.get_max_screen_size(),
+                 "display"                      : os.environ.get("DISPLAY", "Main"),
                  })
         if source.wants_features:
             capabilities.update({

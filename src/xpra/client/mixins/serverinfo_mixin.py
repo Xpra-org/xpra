@@ -17,6 +17,8 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_uuid = None
         self._remote_version = None
         self._remote_revision = None
+        self._remote_hostname = None
+        self._remote_display = None
         self._remote_platform = None
         self._remote_platform_release = None
         self._remote_platform_platform = None
@@ -28,6 +30,8 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_uuid = c.strget("uuid")
         self._remote_version = c.strget("build.version", c.strget("version"))
         self._remote_revision = c.strget("build.revision", c.strget("revision"))
+        self._remote_hostname = c.strget("hostname")
+        self._remote_display = c.strget("display")
         self._remote_platform = c.strget("platform")
         self._remote_platform_release = c.strget("platform.release")
         self._remote_platform_platform = c.strget("platform.platform")

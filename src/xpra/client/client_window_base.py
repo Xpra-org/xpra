@@ -225,6 +225,8 @@ class ClientWindowBase(ClientWidgetBase):
                                       "title"           : "<untitled window>",
                                       "client-machine"  : "<unknown machine>",
                                       "windowid"        : str(self._id),
+                                      "server-machine"  : getattr(self._client, "_remote_hostname", "<unknown machine>"),
+                                      "server-display"  : getattr(self._client, "_remote_display", "<unknown display>"),
                                       }
                     def metadata_replace(match):
                         atvar = match.group(0)          #ie: '@title@'

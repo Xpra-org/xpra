@@ -1720,6 +1720,7 @@ class ServerCore(object):
                         "elapsed_time"          : int(now - self.start_time),
                         "server_type"           : "core",
                         "server.mode"           : self.get_server_mode(),
+                        "hostname"              : socket.gethostname(),
                         })
         if source is None or source.wants_features:
             capabilities.update({
