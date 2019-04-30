@@ -2006,8 +2006,6 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 	var mycanvas = document.createElement("canvas");
 	mydiv.appendChild(mycanvas);
 
-	var x = 0;
-	var y = 0;
 	var float_tray = document.getElementById("float_tray");
 	var float_menu = document.getElementById("float_menu");
 	$('#float_menu').children().show();
@@ -2018,8 +2016,8 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 	mydiv.style.backgroundColor = "white";
 
 	float_tray.appendChild(mydiv);
-    x = 0;
-    y = 0;
+	var x = 0;
+	var y = 0;
     w = float_menu_item_size;
     h = float_menu_item_size;
 
