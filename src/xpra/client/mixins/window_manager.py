@@ -989,6 +989,8 @@ class WindowClient(StubClientMixin):
             #so that the OR window can get the focus
             #(it will be re-enabled when the OR window disappears)
             for wid, window in self._id_to_window.items():
+                if window.is_OR() or window.is_tray():
+                    continue
                 if window.get_modal():
                     metalog("temporarily removing modal flag from %s", wid)
                     window.set_modal(False)
@@ -1119,6 +1121,8 @@ class WindowClient(StubClientMixin):
                 orwids = tuple(wid for wid, w in self._id_to_window.items() if w.is_OR() and w!=window)
                 if not orwids:
                     for wid, w in self._id_to_window.items():
+                        if w.is_OR() or w.is_tray():
+                            continue
                         if w._metadata.boolget("modal") and not w.get_modal():
                             metalog("re-enabling modal flag on %s", wid)
                             window.set_modal(True)
