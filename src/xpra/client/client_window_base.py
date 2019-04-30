@@ -222,12 +222,12 @@ class ClientWindowBase(ClientWidgetBase):
                     #perform metadata variable substitutions:
                     #full of py3k unicode headaches that don't need to be
                     default_values = {
-                                      "title"           : "<untitled window>",
-                                      "client-machine"  : "<unknown machine>",
-                                      "windowid"        : str(self._id),
-                                      "server-machine"  : getattr(self._client, "_remote_hostname", "<unknown machine>"),
-                                      "server-display"  : getattr(self._client, "_remote_display", "<unknown display>"),
-                                      }
+                        "title"           : "<untitled window>",
+                        "client-machine"  : "<unknown machine>",
+                        "windowid"        : str(self._id),
+                        "server-machine"  : getattr(self._client, "_remote_hostname", None) or "<unknown machine>",
+                        "server-display"  : getattr(self._client, "_remote_display", None) or "<unknown display>",
+                        }
                     def metadata_replace(match):
                         atvar = match.group(0)          #ie: '@title@'
                         var = atvar[1:len(atvar)-1]     #ie: 'title'
