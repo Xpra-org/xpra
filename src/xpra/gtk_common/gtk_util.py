@@ -111,9 +111,8 @@ if is_gtk3():
     def is_realized(widget):
         return widget.get_realized()
 
-    def x11_foreign_new(xid):
+    def x11_foreign_new(display, xid):
         from gi.repository import GdkX11
-        display = display_get_default()
         return GdkX11.X11Window.foreign_new_for_display(display, xid)
 
     def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL,
@@ -480,8 +479,8 @@ else:
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
 
-    def x11_foreign_new(xid):
-        return gdk.window_foreign_new_for_display(xid)
+    def x11_foreign_new(display, xid):
+        return gdk.window_foreign_new_for_display(display, xid)
 
     def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WINDOW_TOPLEVEL,
                   event_mask=0, wclass=gdk.INPUT_OUTPUT, title=None, x=-1, y=-1, **kwargs):

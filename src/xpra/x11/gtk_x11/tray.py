@@ -199,7 +199,7 @@ class SystemTray(gobject.GObject):
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
                 log("tray docking request from %#x", xid)
-                window = x11_foreign_new(xid)
+                window = x11_foreign_new(event.display, xid)
                 log("tray docking window %s", window)
                 if window:
                     glib.idle_add(self.dock_tray, xid)
@@ -232,7 +232,7 @@ class SystemTray(gobject.GObject):
 
     def do_dock_tray(self, xid):
         root = get_default_root_window()
-        window = x11_foreign_new(xid)
+        window = x11_foreign_new(root.get_display(), xid)
         if window is None:
             log.warn("could not find gdk window for tray window %#x", xid)
             return
