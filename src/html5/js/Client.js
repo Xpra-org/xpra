@@ -2012,7 +2012,7 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 	var float_menu = document.getElementById("float_menu");
 	$('#float_menu').children().show();
 	//increase size for tray icon
-	var new_width = float_menu_width + float_menu_item_size -float_menu_padding;
+	var new_width = float_menu_width + float_menu_item_size - float_menu_padding + 5;
 	float_menu.style.width = new_width + "px";
 	float_menu_width=$('#float_menu').width() + 10;
 	mydiv.style.backgroundColor = "white";
