@@ -111,6 +111,7 @@ $(function() {
 	});
 	$("#float_menu").on("dragstop",function(ev,ui){
 		client.mouse_grabbed = false;
+		client.reconfigure_all_trays();
 	});
 
 });

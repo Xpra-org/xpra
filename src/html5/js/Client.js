@@ -2045,22 +2045,19 @@ XpraClient.prototype.send_tray_configure = function(wid) {
 	var div = jQuery("#" + String(wid));
 	var x = Math.round(div.offset().left);
 	var y = Math.round(div.offset().top);
-	var w = 48, h = 48;
-	if (getboolparam("floating_menu", true)) {
-		w = float_menu_item_size;
+	var w = float_menu_item_size,
 		h = float_menu_item_size;
-	}
 	this.clog("tray", wid, "position:", x, y);
 	this.send(["configure-window", Number(wid), x, y, w, h, {}]);
 }
 XpraClient.prototype._tray_geometry_changed = function(win) {
-	ctx.debug("main", "tray geometry changed (ignored)");
+	ctx.debug("tray", "tray geometry changed (ignored)");
 }
 XpraClient.prototype._tray_set_focus = function(win) {
-	ctx.debug("main", "tray set focus (ignored)");
+	ctx.debug("tray", "tray set focus (ignored)");
 }
 XpraClient.prototype._tray_closed = function(win) {
-	ctx.debug("main", "tray closed (ignored)");
+	ctx.debug("tray", "tray closed (ignored)");
 }
 
 XpraClient.prototype.reconfigure_all_trays = function() {

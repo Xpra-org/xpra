@@ -853,11 +853,11 @@
 			
 			function expand_float_menu(){
 				var expanded_width = (float_menu_item_size*4);
-				document.getElementById('float_menu').style.width= expanded_width +'px';
+				document.getElementById('float_menu').style.width = expanded_width +'px';
+				$('#float_menu').children().show();
 				if(client){
 					client.reconfigure_all_trays();
 				}
-				$('#float_menu').children().show();
 			}
 			
 			function retract_float_menu(){
