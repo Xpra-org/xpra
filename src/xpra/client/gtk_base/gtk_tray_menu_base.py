@@ -619,8 +619,8 @@ class GTKTrayMenuBase(object):
     def set_new_remote_clipboard(self, remote_clipboard):
         clipboardlog("set_new_remote_clipboard(%s)", remote_clipboard)
         ch = self.client.clipboard_helper
-        ch.remote_clipboard = remote_clipboard
-        ch.remote_clipboards = [remote_clipboard]
+        ch._local_to_remote["CLIPBOARD"] = remote_clipboard
+        ch._remote_to_local[remote_clipboard] = "CLIPBOARD"
         selections = [remote_clipboard]
         clipboardlog.info("server clipboard synchronization changed to %s selection", remote_clipboard)
         #tell the server what to look for:
