@@ -287,7 +287,7 @@ class ProxyServer(ServerCore):
         proc = None
         socket_path = None
         display = None
-        sns = c.dictget("start-new-session")
+        sns = typedict(c.dictget("start-new-session"))
         authlog("proxy_session: displays=%s, start_sessions=%s, start-new-session=%s",
                 displays, self._start_sessions, sns)
         if not displays or sns:
@@ -331,7 +331,7 @@ class ProxyServer(ServerCore):
             if socket_path:
                 hello["socket-path"] = socket_path
             #echo mode if present:
-            mode = sns.get("mode")
+            mode = sns.strget("mode")
             if mode:
                 hello["mode"] = mode
             client_proto.send_now(("hello", hello))
