@@ -12,7 +12,7 @@ freeze_support()
 from xpra.gtk_common.gobject_compat import import_glib, import_gobject
 from xpra.util import (
     LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR,
-    repr_ellipsized, print_nested_dict, csv, envfloat, envbool, typedict,
+    repr_ellipsized, print_nested_dict, csv, envfloat, envbool, envint, typedict,
     )
 from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
@@ -41,8 +41,7 @@ assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
 CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", getuid()!=0)
 STOP_PROXY_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_SOCKET_TYPES", "unix-domain,named-pipe").split(",")
 
-
-MAX_CONCURRENT_CONNECTIONS = 200
+MAX_CONCURRENT_CONNECTIONS = envint("XPRA_PROXY_MAX_CONCURRENT_CONNECTIONS", 200)
 
 
 class ProxyServer(ServerCore):
