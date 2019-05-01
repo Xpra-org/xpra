@@ -172,16 +172,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.timeout_add(10*1000, print_leaks)
 
 
-    def timeout_add(self, *_args):
-        raise NotImplementedError("override me!")
-
-    def idle_add(self, *_args):
-        raise NotImplementedError("override me!")
-
-    def source_remove(self, *_args):
-        raise NotImplementedError("override me!")
-
-
     def may_notify(self, nid, summary, body, *args, **kwargs):
         notifylog = Logger("notify")
         notifylog("may_notify(%s, %s, %s, %s, %s)", nid, summary, body, args, kwargs)
@@ -789,8 +779,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if not is_debug_enabled("auth"):
             logging.getLogger("pyu2f.hardware").setLevel(logging.INFO)
             logging.getLogger("pyu2f.hidtransport").setLevel(logging.INFO)
-        from pyu2f import model
-        from pyu2f.u2f import GetLocalU2FInterface
+        from pyu2f import model                     #@UnresolvedImport
+        from pyu2f.u2f import GetLocalU2FInterface  #@UnresolvedImport
         dev = GetLocalU2FInterface()
         APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
         key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")
