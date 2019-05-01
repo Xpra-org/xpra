@@ -13,7 +13,7 @@ try:
     #new recommended way of using the glib main loop:
     from dbus.mainloop.glib import DBusGMainLoop
     DBusGMainLoop(set_as_default=True)
-except:
+except ImportError:
     #beware: this import has side-effects:
     import dbus.glib
     assert dbus.glib
@@ -76,7 +76,7 @@ class DBUS_Notifier(NotifierBase):
             log("get_icon_string%s=%s", (nid, app_icon, repr_ellipsized(str(icon))), icon_string)
             try:
                 app_str = self.app_name_format % app_name
-            except:
+            except TypeError:
                 app_str = app_name or "Xpra"
             self.last_notification = (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
             def NotifyReply(notification_id):
@@ -86,7 +86,7 @@ class DBUS_Notifier(NotifierBase):
             self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout,
                  reply_handler = NotifyReply,
                  error_handler = self.NotifyError)
-        except:
+        except Exception:
             log.error("Error: dbus notify failed", exc_info=True)
 
     def _find_nid(self, actual_id):
@@ -174,7 +174,7 @@ class DBUS_Notifier(NotifierBase):
                 self.setup_dbusnotify()
                 #and retry:
                 self.show_notify(*self.last_notification)
-        except:
+        except Exception:
             log("cannot filter error", exc_info=True)
         log.error("Error processing notification:")
         log.error(" %s", dbus_error)
