@@ -24,7 +24,7 @@ def import_netifaces():
             log("netifaces loaded sucessfully")
             _netifaces = netifaces
             netifaces_version = netifaces.version        #@UndefinedVariable
-        except:
+        except ImportError:
             _netifaces = False
             log.warn("Warning: the python netifaces package is missing")
     return _netifaces
@@ -90,7 +90,7 @@ def get_gateways():
                 continue
             gateways[AF_NAMES.get(family, family)] = gws
         return gateways
-    except:
+    except Exception:
         log("get_gateways() failed", exc_info=True)
         return {}
 
@@ -238,19 +238,22 @@ if not WIN32:
         _libc.if_indextoname.argtypes = [c_uint, c_char_p]
         _libc.if_nametoindex.restype = c_uint
         _libc.if_nametoindex.argtypes = [c_char_p]
-        def if_nametoindex(interfaceName):
+        def libc_if_nametoindex(interfaceName):
             return _libc.if_nametoindex(create_string_buffer(interfaceName.encode()))
-        def if_indextoname(index):
+        def libc_if_indextoname(index):
             s = create_string_buffer(b'\000' * 256)
             return _libc.if_indextoname(c_uint(index), s)
+        if_nametoindex = libc_if_nametoindex
+        if_indextoname = libc_if_indextoname
 else:
-    def if_nametoindex(iface):
+    def int_if_nametoindex(iface):
         #IPv6 addresses give us the interface as a string:
         #fe80:....%11, so try to convert "11" into 11
         try:
             return int(iface)
-        except:
+        except (TypeError, ValueError):
             return None
+    if_nametoindex = int_if_nametoindex
 
 
 net_sys_config = None
@@ -373,7 +376,7 @@ def get_ssl_info():
 def get_network_caps():
     try:
         from xpra.platform.features import MMAP_SUPPORTED
-    except:
+    except ImportError:
         MMAP_SUPPORTED = False
     from xpra.net.digest import get_digests
     from xpra.net.crypto import get_crypto_caps

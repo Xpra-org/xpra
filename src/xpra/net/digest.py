@@ -26,12 +26,12 @@ def get_digests():
     #python versions older than 2.7.9 may not have this attribute:
     #(in which case, your options will be more limited)
     if hasattr(hashlib, "algorithms_available"):
-         digests += ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))]
+        digests += ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))]
     try:
         from xpra.net import d3des
         assert d3des
         digests.append("des")
-    except:
+    except (ImportError, TypeError):
         pass
     return digests
 
@@ -41,7 +41,7 @@ def get_digest_module(digest):
         return None
     try:
         digest_module = digest.split("+")[1]        #ie: "hmac+sha512" -> "sha512"
-    except:
+    except IndexError:
         digest_module = "md5"
     try:
         return getattr(hashlib, digest_module)

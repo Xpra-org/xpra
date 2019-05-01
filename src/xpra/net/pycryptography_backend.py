@@ -37,9 +37,9 @@ def patch_crypto_be_discovery():
     except ImportError:
         log("failed to import openssl backend", exc_info=True)
         be_ossl = None
-    backends._available_backends_list = [
+    setattr(backends, "_available_backends_list", [
         be for be in (be_cc, be_ossl) if be is not None
-    ]
+    ])
 
 def init():
     import sys
@@ -71,7 +71,8 @@ def get_key(password, key_salt, block_size, iterations):
     global backend
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
     from cryptography.hazmat.primitives import hashes
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=block_size, salt=strtobytes(key_salt), iterations=iterations, backend=backend)
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=block_size,
+                     salt=strtobytes(key_salt), iterations=iterations, backend=backend)
     key = kdf.derive(strtobytes(password))
     return key
 
