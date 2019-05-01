@@ -425,7 +425,7 @@ def prettify_plug_name(s, default=""):
         return default
     try:
         s = s.decode("utf8")
-    except UnicodeDecodeError:
+    except (AttributeError, UnicodeDecodeError):
         pass
     #prettify strings on win32
     s = re.sub(r"[0-9\.]*\\", "-", s).lstrip("-")
