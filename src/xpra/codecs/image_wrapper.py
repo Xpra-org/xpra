@@ -45,7 +45,7 @@ class ImageWrapper(object):
     def _cn(self):
         try:
             return type(self).__name__
-        except:
+        except AttributeError:
             return type(self)
 
     def __repr__(self):

@@ -341,7 +341,7 @@ def main():
                         i = mod.get_info()
                         for k,v in sorted(i.items()):
                             print("                         %s = %s" % (k,v))
-                    except:
+                    except Exception:
                         pass
                 except Exception as e:
                     print("error getting extra information on %s: %s" % (name, e))

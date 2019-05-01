@@ -193,7 +193,7 @@ def make_instance(class_options, *args):
             log("make_instance(..) %s()=%s", c, v)
             if v:
                 return v
-        except:
+        except Exception:
             log.error("make_instance(%s, %s)", class_options, args, exc_info=True)
             log.error("Error: cannot instantiate %s:", c)
             log.error(" with arguments %s", tuple(args))
@@ -425,7 +425,7 @@ def prettify_plug_name(s, default=""):
         return default
     try:
         s = s.decode("utf8")
-    except:
+    except UnicodeDecodeError:
         pass
     #prettify strings on win32
     s = re.sub(r"[0-9\.]*\\", "-", s).lstrip("-")
@@ -769,7 +769,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
                 return nonl(pver(v)).lstrip("v")
             if any(k.find(x)>=0 for x in hex_keys):
                 return binascii.hexlify(v)
-        except:
+        except Exception:
             pass
         return nonl(pver(v, ", ", ", "))
     l = pad-len(prefix)-len(lchar)

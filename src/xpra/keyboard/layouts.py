@@ -178,15 +178,15 @@ for _, _, _, _, layout, variants in WIN32_LAYOUTS.values():
     if not l:
         l = []
         LAYOUT_VARIANTS[layout] = l
-    for v in variants:
-        if v not in l:
-            l.append(v)
+    for variant in variants:
+        if variant not in l:
+            l.append(variant)
 
 def parse_xkbmap_query(xkbmap_query):
     """ parses the output of "setxkbmap -query" into a dict """
     import re
     settings = {}
-    opt_re = re.compile("(\w*):\s*(.*)")
+    opt_re = re.compile(r"(\w*):\s*(.*)")
     for line in xkbmap_query.splitlines():
         m = opt_re.match(line)
         if m:
