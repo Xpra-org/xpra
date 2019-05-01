@@ -103,7 +103,7 @@ class UDPListener(object):
             try:
                 log("Protocol.close() calling %s", s.close)
                 s.close()
-            except:
+            except (OSError, IOError):
                 log.error("error closing %s", s, exc_info=True)
             self._socket = None
         log("UDPListener.close() done")
@@ -238,13 +238,13 @@ class UDPProtocol(Protocol):
             for x in done:
                 try:
                     del self.fail_cb[x]
-                except:
+                except KeyError:
                     pass
             done = [x for x in self.resend_cache.keys() if x<=last_seq]
             for x in done:
                 try:
                     del self.resend_cache[x]
-                except:
+                except KeyError:
                     pass
         #next we can forget about sequence numbers that have been cancelled:
         #we don't need to request a re-send, and we can skip over them:
@@ -254,7 +254,7 @@ class UDPProtocol(Protocol):
                     self.can_skip.add(seqno)
                 try:
                     del self.pending_packets[seqno]
-                except:
+                except KeyError:
                     pass
             #we may now be able to move forward a bit:
             if self.pending_packets and (self.last_sequence+1) in self.can_skip:
@@ -268,12 +268,13 @@ class UDPProtocol(Protocol):
                 #hope for the best, and tell the other end to stop asking:
                 self.cancel.add(seqno)
                 continue
-            if len(missing_chunks)==0:
+            if not missing_chunks:
                 #the other end only knows it is missing the seqno,
                 #not how many chunks are missing, so send them all
                 missing_chunks = resend_cache.keys()
             if fail_cb_seq:
-                log("fail_cb[%i]=%s, missing_chunks=%s, len(resend_cache)=%i", seqno, repr_ellipsized(str(fail_cb_seq)), missing_chunks, len(resend_cache))
+                log("fail_cb[%i]=%s, missing_chunks=%s, len(resend_cache)=%i",
+                    seqno, repr_ellipsized(str(fail_cb_seq)), missing_chunks, len(resend_cache))
                 #we have a fail callback for this packet,
                 #we have to decide if we send the missing chunks or use the callback,
                 #resend if the other end is missing less than 25% of the chunks:
@@ -357,13 +358,15 @@ class UDPProtocol(Protocol):
                     return
             if any(x is None for x in ip.chunks):
                 #one of the chunks is still missing
-                log("process_udp_data: sequence %i, got chunk %i but still missing: %s", seqno, chunk, [i for i,x in enumerate(ip.chunks) if x is None])
+                log("process_udp_data: sequence %i, got chunk %i but still missing: %s",
+                    seqno, chunk, [i for i,x in enumerate(ip.chunks) if x is None])
                 self.schedule_control(self.jitter)
                 return
             #all the data is here!
             del self.pending_packets[seqno]
             data = b"".join(ip.chunks)
-        log("process_udp_data: adding packet sequence %5i to read queue (got final chunk %i, synchronous=%s)", seqno, chunk, synchronous!=0)
+        log("process_udp_data: adding packet sequence %5i to read queue (got final chunk %i, synchronous=%s)",
+            seqno, chunk, synchronous!=0)
         if seqno==self.last_sequence+1:
             self.last_sequence = seqno
         else:
@@ -461,7 +464,8 @@ class UDPProtocol(Protocol):
         chunks = l // maxpayload
         if l % maxpayload > 0:
             chunks += 1
-        log("UDP.write_buf(%s, %i bytes, %s, %s) seq=%i, mtu=%s, maxpayload=%i, chunks=%i, data=%s", con, l, fail_cb, synchronous, seqno, mtu, maxpayload, chunks, repr_ellipsized(data))
+        log("UDP.write_buf(%s, %i bytes, %s, %s) seq=%i, mtu=%s, maxpayload=%i, chunks=%i, data=%s",
+            con, l, fail_cb, synchronous, seqno, mtu, maxpayload, chunks, repr_ellipsized(data))
         chunk = 0
         offset = 0
         if fail_cb:
@@ -558,7 +562,7 @@ class UDPSocketConnection(SocketConnection):
 
     def close(self):
         """
-            don't close the socket, we're don't own it
+            don't close the socket, we don't own it
         """
         pass
 

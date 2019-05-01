@@ -163,7 +163,7 @@ def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT):
 def enable_format(format_string):
     try:
         logging.root.handlers[0].formatter = logging.Formatter(format_string)
-    except:
+    except (AttributeError, IndexError):
         pass
 
 

@@ -70,16 +70,9 @@ PROTOCOL_STR = {}
 FAMILY_STR = {}
 for x in dir(socket):
     if x.startswith("AF_"):
-        try:
-            PROTOCOL_STR[getattr(socket, "AF_%s" % x)] = x
-        except:
-            pass
+        PROTOCOL_STR[getattr(socket, "AF_%s" % x)] = x
     if x.startswith("SOCK_"):
-        try:
-            FAMILY_STR[getattr(socket, "SOCK_%s" % x)] = x
-        except:
-            pass
-
+        FAMILY_STR[getattr(socket, "SOCK_%s" % x)] = x
 
 
 def set_continue_wait(v):
@@ -140,7 +133,7 @@ def pretty_socket(s):
             return "%s:%s" % (s[0], s[1])
         assert len(s)==4
         return csv(str(x) for x in s)
-    except:
+    except (ValueError, TypeError):
         return str(s)
 
 
