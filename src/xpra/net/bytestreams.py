@@ -70,9 +70,9 @@ PROTOCOL_STR = {}
 FAMILY_STR = {}
 for x in dir(socket):
     if x.startswith("AF_"):
-        PROTOCOL_STR[getattr(socket, "AF_%s" % x)] = x
+        PROTOCOL_STR[getattr(socket, x)] = x
     if x.startswith("SOCK_"):
-        FAMILY_STR[getattr(socket, "SOCK_%s" % x)] = x
+        FAMILY_STR[getattr(socket, x)] = x
 
 
 def set_continue_wait(v):
