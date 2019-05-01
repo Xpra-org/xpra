@@ -188,7 +188,7 @@ class ProxyServer(ServerCore):
             #verify socket type (only local connections by default):
             try:
                 socktype = proto._conn.get_info().get("type", "unknown")
-            except:
+            except Exception:
                 socktype = "unknown"
             if socktype not in STOP_PROXY_SOCKET_TYPES:
                 msg = "cannot stop proxy server from a '%s' connection" % socktype
@@ -227,7 +227,7 @@ class ProxyServer(ServerCore):
             log.error("Error: the proxy server requires an authentication mode,")
             try:
                 log.error(" client connection '%s' does not specify one", client_proto._conn.socktype)
-            except:
+            except Exception:
                 pass
             log.error(" use 'none' to disable authentication")
             disconnect(SESSION_NOT_FOUND, "no sessions found")
@@ -410,7 +410,8 @@ class ProxyServer(ServerCore):
                 popen = process._popen
                 assert popen
                 #when this process dies, run reap to update our list of proxy processes:
-                self.child_reaper.add_process(popen, "xpra-proxy-%s" % display, "xpra-proxy-instance", True, True, self.reap)
+                self.child_reaper.add_process(popen, "xpra-proxy-%s" % display,
+                                              "xpra-proxy-instance", True, True, self.reap)
             finally:
                 #now we can close our handle on the connection:
                 client_conn.close()
@@ -522,13 +523,14 @@ class ProxyServer(ServerCore):
             from subprocess import PIPE
             env = self.get_proxy_env()
             log("env=%s", env)
-            proc = Popen(command, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env, startupinfo=startupinfo, creationinfo=creation_info)
+            proc = Popen(command, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env,
+                         startupinfo=startupinfo, creationinfo=creation_info)
             log("Popen(%s)=%s", command, proc)
             log("poll()=%s", proc.poll())
             try:
                 log("stdout=%s", proc.stdout.read())
                 log("stderr=%s", proc.stderr.read())
-            except:
+            except (OSError, IOError, AttributeError):
                 pass
             if proc.poll() is not None:
                 return None

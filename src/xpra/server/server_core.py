@@ -373,7 +373,7 @@ class ServerCore(object):
     def do_run(self):
         raise NotImplementedError()
 
-    def cleanup(self, *_args):
+    def cleanup(self):
         netlog("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
         for p in tuple(self._tcp_proxy_clients):
             p.quit()
