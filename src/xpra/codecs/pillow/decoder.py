@@ -201,11 +201,11 @@ def selftest(_full=False):
             try:
                 #py2k:
                 datainfo = cdata.encode("string_escape")
-            except:
+            except Exception:
                 try:
                     datainfo = cdata.encode("unicode_escape").decode()
-                except:
+                except Exception:
                     datainfo = str(hexdata)
-            l("Pillow error decoding %s with data=%s..", encoding, datainfo[:16])
-            l(" %s", e, exc_info=True)
+            log.error("Pillow error decoding %s with data=%s..", encoding, datainfo[:16])
+            log.error(" %s", e, exc_info=True)
             ENCODINGS.remove(encoding)
