@@ -148,7 +148,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     if not os.path.exists(xauthority):
         log("creating XAUTHORITY=%s with data=%s", xauthority, xauth_data)
         try:
-            with open(xauthority, 'wa') as f:
+            with open(xauthority, "a") as f:
                 if getuid()==0 and (uid!=0 or gid!=0):
                     os.fchown(f.fileno(), uid, gid)
         except Exception as e:
