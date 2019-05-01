@@ -9,7 +9,7 @@ from __future__ import absolute_import
 
 from xpra.os_util import bytestostr
 from xpra.util import first_time
-from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf
+from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
 
 from libc.stdint cimport uint32_t, uint16_t, uint8_t

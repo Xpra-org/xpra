@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import numpy
-from pycuda import driver
+from pycuda import driver       #@UnresolvedImport
 
 from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -66,9 +66,9 @@ class CUDAImageWrapper(ImageWrapper):
         self.may_download()
         return ImageWrapper.clone_pixel_data(self)
 
-    def get_sub_image(self, *args):
+    def get_sub_image(self, x, y, w, h):
         self.may_download()
-        return ImageWrapper.get_sub_image(self, *args)
+        return ImageWrapper.get_sub_image(self, x, y, w, h)
 
     def free_cuda_device_buffer(self):
         cdb = self.cuda_device_buffer

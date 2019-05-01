@@ -7,8 +7,8 @@
 #@PydevCodeAnalysisIgnore
 
 import os
-import pycuda
-from pycuda import driver
+import pycuda               #@UnresolvedImport
+from pycuda import driver   #@UnresolvedImport
 
 from xpra.util import engs, print_nested_dict, envbool, envint
 from xpra.os_util import monotonic_time, bytestostr, PYTHON2
