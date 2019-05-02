@@ -5,9 +5,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import struct
 
+from xpra.os_util import PYTHON3
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
 
 
@@ -23,53 +23,23 @@ MAX_SIZE = 256*1024*1024
 python_lz4_version = None
 lz4_version = None
 has_lz4 = False
-def lz4_compress(packet, level):
+def no_lz4(packet, level):
     raise Exception("lz4 is not supported!")
+lz4_compress = no_lz4
 try:
-    import lz4
     from lz4 import VERSION as python_lz4_version   #@UnresolvedImport
-    try:
-        #using unicode for version numbers is dumb:
-        python_lz4_version = python_lz4_version.encode("latin1")
-    except AttributeError:
-        pass
-    #newer versions moved the version information to lz4.version.version
-    #breaking backwards compatibility!
-    try:
-        from lz4.version import version as lz4_version
-    except ImportError as e:
-        debug("outdated version of python-lz4", exc_info=True)
-        try:
-            from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
-        except Exception as e:
-            debug("really outdated version of python-lz4", exc_info=True)
-    try:
-        from lz4.block import compress, decompress
-        LZ4_uncompress = decompress
-        has_lz4 = True
-        def lz4_compress(packet, level):
-            flag = min(15, level) | LZ4_FLAG
-            if level>=7:
-                return flag, compress(packet, mode="high_compression", compression=level)
-            if level<=3:
-                return flag, compress(packet, mode="fast", acceleration=8-level*2)
-            return flag, compress(packet)
-    except ImportError as e:
-        debug("outdated version of python-lz4", exc_info=True)
-        #LZ4_compress_fast is 0.8 or later
-        from lz4 import LZ4_compress, LZ4_uncompress, compressHC        #@UnresolvedImport
-        if hasattr(lz4, "LZ4_compress_fast"):
-            from lz4 import LZ4_compress_fast     #@UnresolvedImport
-            has_lz4 = True
-            def lz4_compress(packet, level):
-                if level>=9:
-                    return level | LZ4_FLAG, compressHC(packet)
-                #clamp it: 0->17, 1->12, 2->7, 3->2, >=4->1
-                if level<=2:
-                    #clamp it: 0->17, 1->12, 2->7, 3->2, >=4->1
-                    accel = max(1, 17-level*5)
-                    return level | LZ4_FLAG, LZ4_compress_fast(packet, accel)
-                return level | LZ4_FLAG, LZ4_compress(packet)
+    from lz4.version import version as lz4_version
+    from lz4.block import compress, decompress as LZ4_uncompress
+    python_lz4_version = python_lz4_version.encode("latin1")
+    has_lz4 = True
+    def lz4_block_compress(packet, level):
+        flag = min(15, level) | LZ4_FLAG
+        if level>=7:
+            return flag, compress(packet, mode="high_compression", compression=level)
+        if level<=3:
+            return flag, compress(packet, mode="fast", acceleration=8-level*2)
+        return flag, compress(packet)
+    lz4_compress = lz4_block_compress
 except Exception as e:
     debug("lz4 not found", exc_info=True)
     del e
@@ -78,13 +48,13 @@ except Exception as e:
 python_lzo_version = None
 lzo_version = None
 try:
-    import lzo      #@UnresolvedImport
+    import lzo as python_lzo      #@UnresolvedImport
     has_lzo = True
-    python_lzo_version = lzo.__version__
-    lzo_version = lzo.LZO_VERSION_STRING
+    python_lzo_version = python_lzo.__version__
+    lzo_version = python_lzo.LZO_VERSION_STRING
     def lzo_compress(packet, level):
-        return level | LZO_FLAG, lzo.compress(packet)
-    LZO_decompress = lzo.decompress
+        return level | LZO_FLAG, python_lzo.compress(packet)
+    LZO_decompress = python_lzo.decompress
 except Exception as e:
     debug("lzo not found: %s", e)
     del e
@@ -95,24 +65,25 @@ except Exception as e:
 
 
 try:
-    import zlib
+    from zlib import compress as zlib_compress, decompress as zlib_decompress
+    from zlib import __version__ as zlib_version
     has_zlib = True
     #stupid python version breakage:
-    if sys.version > '3':
+    if PYTHON3:
         def zcompress(packet, level):
-            if type(packet)!=bytes:
+            if not isinstance(packet, bytes):
                 packet = bytes(packet, 'UTF-8')
-            return level + ZLIB_FLAG, zlib.compress(packet, level)
+            return level + ZLIB_FLAG, zlib_compress(packet, level)
     else:
         def zcompress(packet, level):
-            return level + ZLIB_FLAG, zlib.compress(str(packet), level)
+            return level + ZLIB_FLAG, zlib_compress(str(packet), level)
 except ImportError:
     has_zlib = False
     def zcompress(packet, level):
         raise Exception("zlib is not supported!")
 
 
-if sys.version > '3':
+if PYTHON3:
     def nocompress(packet, _level):
         if not isinstance(packet, bytes):
             packet = bytes(packet, 'UTF-8')
@@ -163,7 +134,7 @@ def get_compression_caps():
              ""             : use_zlib,
              }
     if has_zlib:
-        _zlib["version"] = zlib.__version__
+        _zlib["version"] = zlib_version
     caps.update({
                  "lz4"                   : _lz4,
                  "lzo"                   : _lzo,
@@ -288,7 +259,7 @@ def decompress(data, level):
         if not use_lz4:
             raise InvalidCompressionException("lz4 is not enabled")
         size = LZ4_HEADER.unpack_from(data[:4])[0]
-        #TODO: it would be better to use the max_size we have in protocol,
+        #it would be better to use the max_size we have in protocol,
         #but this hardcoded value will do for now
         if size>MAX_SIZE:
             sizemb = size//1024//1024
@@ -305,13 +276,13 @@ def decompress(data, level):
         raise InvalidCompressionException("zlib is not enabled")
     if isinstance(data, memoryview):
         data = data.tobytes()
-    return zlib.decompress(data)
+    return zlib_decompress(data)
 
 NAME_TO_FLAG = {
-                "lz4"   : LZ4_FLAG,
-                "zlib"  : 0,
-                "lzo"   : LZO_FLAG,
-                }
+    "lz4"   : LZ4_FLAG,
+    "zlib"  : 0,
+    "lzo"   : LZO_FLAG,
+    }
 
 def decompress_by_name(data, algo):
     assert algo in NAME_TO_FLAG, "invalid compression algorithm: %s" % algo
