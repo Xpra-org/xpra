@@ -701,7 +701,7 @@ class Protocol(object):
             return
         for buf in buf_data:
             while buf and not self._closed:
-                written = self.con_write(buf)
+                written = self.con_write(con, buf)
                 #example test code, for sending small chunks very slowly:
                 #written = con.write(buf[:1024])
                 #import time
