@@ -106,11 +106,11 @@ class XpraProxy(object):
             quit_cb(self)
         try:
             self._client_conn.close()
-        except:
+        except (OSError, IOError):
             pass
         try:
             self._server_conn.close()
-        except:
+        except (OSError, IOError):
             pass
 
     def do_quit(self, _proxy):

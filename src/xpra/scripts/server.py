@@ -949,7 +949,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             except (IOError, OSError):
                 log("os.close(%i)", displayfd, exc_info=True)
 
-    kill_display = None
     if not proxying:
         add_cleanup(close_gtk_display)
     if not proxying and not shadowing:
@@ -957,6 +956,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             if xvfb_pid:
                 kill_xvfb(xvfb_pid)
         add_cleanup(kill_display)
+    else:
+        kill_display = None
 
     if opts.daemon:
         def noerr(fn, *args):
@@ -1042,7 +1043,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         dbuslog("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", opts.dbus_launch, bus_address)
         if opts.dbus_launch and not bus_address:
             #start a dbus server:
-            def kill_dbus():
+            def _kill_dbus():
                 dbuslog("kill_dbus: dbus_pid=%s" % dbus_pid)
                 if dbus_pid<=0:
                     return
@@ -1052,6 +1053,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                     dbuslog("os.kill(%i, SIGINT)", dbus_pid, exc_info=True)
                     dbuslog.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
                     dbuslog.warn(" %s", e)
+            kill_dbus = _kill_dbus
             add_cleanup(kill_dbus)
             #this also updates os.environ with the dbus attributes:
             dbus_pid, dbus_env = start_dbus(opts.dbus_launch)

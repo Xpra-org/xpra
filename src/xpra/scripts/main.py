@@ -1120,7 +1120,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
     if dtype == "vsock":
         cid, iport = display_desc["vsock"]
-        from xpra.net.vsock import (
+        from xpra.net.vsock import (        #pylint: disable=no-name-in-module
             connect_vsocket,
             CID_TYPES, CID_ANY, PORT_ANY,    #@UnresolvedImport
             )
@@ -1497,8 +1497,10 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 else:
                     if r is None:
                         msg = "timeout"
+                    elif r>128:
+                        msg = SIGNAMES.get(r-128)
                     else:
-                        msg = SIGNAMES.get(-r) or SIGNAMES.get(r-128) or r
+                        msg = SIGNAMES.get(0-r, 0-r)
                     log.warn("Warning: OpenGL probe failed: %s", msg)
                     opts.opengl = "probe-failed:%s" % msg
         try:

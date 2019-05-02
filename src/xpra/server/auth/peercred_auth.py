@@ -90,7 +90,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self):
         return False
 
-    def authenticate(self, _challenge_response=None, _client_salt=None):
+    def authenticate(self, _challenge_response=None, _client_salt=None):    #pylint: disable=arguments-differ
         return self.peercred_check
 
     def __repr__(self):

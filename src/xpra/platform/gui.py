@@ -200,20 +200,20 @@ def get_window_frame_sizes():
     return {}
 
 
-def add_window_hooks(window):
+def add_window_hooks(_window):
     pass
 
-def remove_window_hooks(window):
+def remove_window_hooks(_window):
     pass
 
 
-def show_desktop(show):
+def show_desktop(_show):
     pass
 
-def set_fullscreen_monitors(window, fsm, source_indication=0):
+def set_fullscreen_monitors(_window, _fsm, _source_indication=0):
     pass
 
-def set_shaded(window, shaded):
+def set_shaded(_window, _shaded):
     pass
 
 

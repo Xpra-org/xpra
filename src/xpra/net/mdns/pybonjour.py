@@ -328,7 +328,7 @@ class _utf8_char_p(ctypes.c_char_p):
     def decode(self):
         if self.value is None:
             return None
-        return self.value.decode('utf-8')
+        return self.value.decode('utf-8')   #pylint: disable=no-member
 
 
 class _utf8_char_p_non_null(_utf8_char_p):

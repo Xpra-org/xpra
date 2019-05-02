@@ -5,7 +5,7 @@
 
 #cython: language_level=3
 
-from cpython.buffer cimport PyBuffer_FillInfo
+from cpython.buffer cimport PyBuffer_FillInfo   #pylint: disable=syntax-error
 
 cdef MemBuf getbuf(size_t l)
 cdef MemBuf padbuf(size_t l, size_t padding)

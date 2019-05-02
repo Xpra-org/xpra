@@ -38,7 +38,7 @@ class DBUS_Server_Base(dbus.service.Object):
 
     @dbus.service.signal(INTERFACE, signature='sas')
     def Event(self, event, args):
-        self.log(".Event(%s, %s)", event, args);
+        self.log(".Event(%s, %s)", event, args)
 
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='v')

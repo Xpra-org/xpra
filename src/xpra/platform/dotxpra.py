@@ -26,10 +26,11 @@ def debug(msg, *args, **kwargs):
 
 
 class DotXpra(object):
-    def __init__(self, sockdir=None, sockdirs=[], actual_username="", uid=0, gid=0):
+    def __init__(self, sockdir=None, sockdirs=None, actual_username="", uid=0, gid=0):
         self.uid = uid or os.getuid()
         self.gid = gid or os.getgid()
         self.username = actual_username
+        sockdirs = sockdirs or []
         if not sockdir:
             if sockdirs:
                 sockdir = sockdirs[0]

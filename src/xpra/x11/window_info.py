@@ -18,8 +18,8 @@ def window_info(window):
 def dump_windows():
     from xpra.log import Logger
     log = Logger("x11", "window")
-    from gtk import gdk
-    root = gdk.get_default_root_window()
+    from xpra.gtk_common.gtk_util import get_default_root_window
+    root = get_default_root_window()
     log("root window: %s" % root)
     try:
         from xpra.x11.gtk_x11.gdk_bindings import get_children #@UnresolvedImport

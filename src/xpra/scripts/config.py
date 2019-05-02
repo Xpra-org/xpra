@@ -53,7 +53,7 @@ def has_sound_support():
         try:
             import xpra.sound
             _has_sound_support = bool(xpra.sound)
-        except:
+        except ImportError:
             _has_sound_support = False
     return _has_sound_support
 
@@ -183,7 +183,7 @@ def OpenGL_safety_check():
         from ctypes import cdll
         if cdll.LoadLibrary("VBoxHook.dll"):
             return "VirtualBox is present (VBoxHook.dll)"
-    except:
+    except (ImportError, OSError):
         pass
     try:
         try:
@@ -252,10 +252,11 @@ def get_build_info():
 def name_to_field(name):
     return name.replace("-", "_")
 
-def save_config(conf_file, config, keys, extras_types={}):
+def save_config(conf_file, config, keys, extras_types=None):
     with open(conf_file, "w") as f:
         option_types = OPTION_TYPES.copy()
-        option_types.update(extras_types)
+        if extras_types:
+            option_types.update(extras_types)
         saved = {}
         for key in keys:
             assert key in option_types, "invalid configuration key: %s" % key
@@ -818,7 +819,7 @@ def get_defaults():
     try:
         from xpra.platform.info import get_username
         username = get_username()
-    except:
+    except Exception:
         username = ""
     conf_dirs = [os.environ.get("XPRA_CONF_DIR")]
     build_root = os.environ.get("RPM_BUILD_ROOT")
