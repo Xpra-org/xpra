@@ -214,6 +214,10 @@ class Protocol(object):
         self.enable_encoder(self.encoder)
 
 
+    def is_closed(self):
+        return self._closed
+
+
     def wait_for_io_threads_exit(self, timeout=None):
         io_threads = [x for x in (self._read_thread, self._write_thread) if x is not None]
         for t in io_threads:

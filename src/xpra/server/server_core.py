@@ -1002,7 +1002,7 @@ class ServerCore(object):
 
     def try_upgrade_to_rfb(self, proto):
         self.cancel_upgrade_to_rfb_timer(proto)
-        if proto._closed:
+        if proto.is_closed():
             return False
         conn = proto._conn
         netlog("may_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
@@ -1297,7 +1297,7 @@ class ServerCore(object):
 
     def is_timedout(self, protocol):
         #subclasses may override this method (ServerBase does)
-        v = not protocol._closed and protocol in self._potential_protocols and \
+        v = not protocol.is_closed() and protocol in self._potential_protocols and \
             protocol not in self._tcp_proxy_clients
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
@@ -1326,7 +1326,7 @@ class ServerCore(object):
         netlog("send_disconnect(%s, %s)", proto, reasons)
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
-        if proto._closed:
+        if proto.is_closed():
             return
         proto.send_disconnect(reasons)
         self.timeout_add(1000, self.force_disconnect, proto)
@@ -1340,7 +1340,7 @@ class ServerCore(object):
 
     def disconnect_client(self, protocol, reason, *extra):
         netlog("disconnect_client(%s, %s, %s)", protocol, reason, extra)
-        if protocol and not protocol._closed:
+        if protocol and not protocol.is_closed():
             self.disconnect_protocol(protocol, reason, *extra)
 
     def disconnect_protocol(self, protocol, *reasons):
@@ -1383,7 +1383,7 @@ class ServerCore(object):
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
         if proto in self._potential_protocols:
-            if not proto._closed:
+            if not proto.is_closed():
                 self._log_disconnect(proto, "Connection lost")
             self._potential_protocols.remove(proto)
         #remove from UDP protocol map:

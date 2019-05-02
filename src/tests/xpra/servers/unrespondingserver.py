@@ -47,7 +47,7 @@ class UnrespondingServer(ServerCore):
         pass
 
     def verify_client_has_timedout(self, protocol):
-        if protocol._closed:
+        if protocol.is_closed():
             return
         log.error("ERROR: client connection %s is still open, client has failed to time out!", protocol)
 

@@ -402,7 +402,7 @@ class ProxyInstanceProcess(Process):
         return True
 
     def verify_connection_accepted(self, protocol):
-        if not protocol._closed and protocol in self.potential_protocols:
+        if not protocol.is_closed() and protocol in self.potential_protocols:
             log.error("connection timedout: %s", protocol)
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
@@ -448,7 +448,7 @@ class ProxyInstanceProcess(Process):
 
     def send_disconnect(self, proto, *reasons):
         log("send_disconnect(%s, %s)", proto, reasons)
-        if proto._closed:
+        if proto.is_closed():
             return
         proto.send_disconnect(reasons)
         self.timeout_add(1000, self.force_disconnect, proto)
@@ -560,13 +560,13 @@ class ProxyInstanceProcess(Process):
         self.exit = True
         #wait for connections to close down cleanly before we exit
         for i in range(10):
-            if self.client_protocol._closed and self.server_protocol._closed:
+            if self.client_protocol.is_closed() and self.server_protocol.is_closed():
                 break
             if i==0:
                 log.info("waiting for network connections to close")
             else:
                 log("still waiting %i/10 - client.closed=%s, server.closed=%s",
-                    i+1, self.client_protocol._closed, self.server_protocol._closed)
+                    i+1, self.client_protocol.is_closed(), self.server_protocol.is_closed())
             sleep(0.1)
         log.info("proxy instance %s stopped", os.getpid())
 

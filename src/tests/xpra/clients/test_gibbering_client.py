@@ -20,7 +20,7 @@ class TestGiberringCommandClient(CommandConnectClient):
     def __init__(self, conn, opts):
         CommandConnectClient.__init__(self, conn, opts)
         def check_kicked_out(*args):
-            if not self._protocol._closed:
+            if not self._protocol.is_closed():
                 self.bug("illegal command did not get us kicked out: we are still connected!")
             else:
                 self.quit()

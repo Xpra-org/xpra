@@ -104,7 +104,7 @@ class ProtocolTest(unittest.TestCase):
         errs = []
         protocol = self.make_memory_protocol(data)
         def check_failed():
-            if not protocol._closed:
+            if not protocol.is_closed():
                 errs.append("protocol not closed")
             if protocol.input_packetcount>0:
                 errs.append("processed %i packets" % protocol.input_packetcount)
@@ -224,7 +224,7 @@ class ProtocolTest(unittest.TestCase):
         start = monotonic_time()
         loop.run()
         end = monotonic_time()
-        assert protocol._closed
+        assert protocol.is_closed()
         log("protocol: %s", protocol)
         log("%s write-data=%s", conn, len(conn.write_data))
         total_size = sum(len(packet) for packet in conn.write_data)

@@ -237,7 +237,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #try to tell the server we're going, then quit
         log("disconnect_and_quit(%s, %s)", exit_code, reason)
         p = self._protocol
-        if p is None or p._closed:
+        if p is None or p.is_closed():
             self.quit(exit_code)
             return
         def protocol_closed():

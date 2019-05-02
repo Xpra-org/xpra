@@ -929,7 +929,7 @@ class ServerBase(ServerBaseClass):
                 return
             def invalid_packet():
                 ss = self._server_sources.get(proto)
-                if not self._closing and not proto._closed and (ss is None or not ss.is_closed()):
+                if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
                     netlog("invalid packet: %s", packet)
                     netlog.error("Error: unknown or invalid packet type '%s'", packet_type)
                     netlog.error(" received from %s", proto)

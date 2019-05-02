@@ -7,7 +7,6 @@
 import os
 import sys
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
-freeze_support()
 
 from xpra.gtk_common.gobject_compat import import_glib, import_gobject
 from xpra.util import (
@@ -33,6 +32,8 @@ authlog = Logger("proxy", "auth")
 
 glib = import_glib()
 gobject = import_gobject()
+
+freeze_support()
 
 
 PROXY_SOCKET_TIMEOUT = envfloat("XPRA_PROXY_SOCKET_TIMEOUT", "0.1")
@@ -164,7 +165,7 @@ class ProxyServer(ServerCore):
     def verify_connection_accepted(self, protocol):
         #if we start a proxy, the protocol will be closed
         #(a new one is created in the proxy process)
-        if not protocol._closed:
+        if not protocol.is_closed():
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def hello_oked(self, proto, packet, c, auth_caps):
@@ -211,7 +212,7 @@ class ProxyServer(ServerCore):
                     self._requests.remove(proto)
                 except KeyError:
                     pass
-                if not proto._closed:
+                if not proto.is_closed():
                     self.send_disconnect(proto, "timeout")
             self.timeout_add(10*1000, force_exit_request_client)
             return
