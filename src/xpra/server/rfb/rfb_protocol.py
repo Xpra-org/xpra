@@ -53,6 +53,10 @@ class RFBProtocol(object):
         self._read_thread = make_thread(self._read_thread_loop, "read", daemon=True)
 
 
+    def is_closed(self):
+        return self._closed
+
+
     def send_protocol_handshake(self):
         self.send(b"RFB 003.008\n")
 
@@ -250,7 +254,7 @@ class RFBProtocol(object):
             log("io_thread_loop(%s, %s) loop starting", name, callback)
             while not self._closed and callback():
                 pass
-            log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self.is_closed())
+            log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
         except ConnectionClosedException as e:
             log("%s closed", self._conn, exc_info=True)
             if not self._closed:
