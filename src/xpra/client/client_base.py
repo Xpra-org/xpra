@@ -442,7 +442,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return capabilities
 
     def compressed_wrapper(self, datatype, data, level=5):
-        #FIXME: ugly assumptions here, should pass by name!
+        #ugly assumptions here, should pass by name
         zlib = "zlib" in self.server_compressors and compression.use_zlib
         lz4 = "lz4" in self.server_compressors and compression.use_lz4
         lzo = "lzo" in self.server_compressors and compression.use_lzo

@@ -151,7 +151,7 @@ class ApplicationWindow:
             import ssl
             assert ssl
             modes.append("ssl")
-        except:
+        except ImportError:
             pass
         #assume crypto is available
         modes.append("tcp + aes")
@@ -552,7 +552,7 @@ class ApplicationWindow:
         else:
             try:
                 port = int(port)
-            except:
+            except (ValueError, TypeError):
                 port = -1
         errs.append((self.port_entry, port<0 or port>=2**16, "invalid port number"))
         err_text = []

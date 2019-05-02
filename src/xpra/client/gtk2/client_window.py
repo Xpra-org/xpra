@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gobject
+import gobject  #@UnresolvedImport
 
 from xpra.util import envbool
 from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase

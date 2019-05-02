@@ -103,7 +103,7 @@ class BugReport(object):
             from xpra.sound.wrapper import query_sound
             def get_sound_info():
                 return query_sound()
-        except:
+        except ImportError:
             get_sound_info = None
         def get_gl_info():
             if self.opengl_info:
@@ -168,9 +168,10 @@ class BugReport(object):
                 log.warn("Warning: failed to load gtk screenshot code", exc_info=True)
         log("take_screenshot_fn=%s", take_screenshot_fn)
         if take_screenshot_fn:
-            def get_screenshot():
+            def _get_screenshot():
                 #take_screenshot() returns: w, h, "png", rowstride, data
                 return take_screenshot_fn()[4]
+            get_screenshot = _get_screenshot
         self.toggles = (
                    ("system",       "txt",  "System",           get_sys_info,
                     "Xpra version, platform and host information"),
