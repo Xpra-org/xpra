@@ -1055,7 +1055,7 @@ def init_nvencode_library():
     else:
         #assert os.name=="posix"
         load = ctypes.cdll.LoadLibrary
-        nvenc_libname = "libnvidia-encode.so"
+        nvenc_libname = "libnvidia-encode.so.1"
         cuda_libname = "libcuda.so"
     #CUDA:
     log("init_nvencode_library() will try to load %s", cuda_libname)
