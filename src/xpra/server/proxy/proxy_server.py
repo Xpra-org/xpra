@@ -474,7 +474,8 @@ class ProxyServer(ServerCore):
         log("env=%s", env)
         log("args=%s", args)
         log("cwd=%s", cwd)
-        proc, socket_path, display = start_server_subprocess(sys.argv[0], args, mode, opts, username, uid, gid, env, cwd)
+        proc, socket_path, display = start_server_subprocess(sys.argv[0], args,
+                                                             mode, opts, username, uid, gid, env, cwd)
         if proc:
             self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), "xpra %s" % mode, True, True)
         log("start_new_session(..) pid=%s, socket_path=%s, display=%s, ", proc.pid, socket_path, display)
@@ -550,7 +551,7 @@ class ProxyServer(ServerCore):
     def reap(self, *args):
         log("reap%s", args)
         dead = []
-        for p in self.processes.keys():
+        for p in tuple(self.processes):
             live = p.is_alive()
             if not live:
                 dead.append(p)
