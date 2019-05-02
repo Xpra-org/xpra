@@ -129,12 +129,15 @@ def untilConcludes(is_active_cb, can_retry_cb, f, *a, **kw):
 
 def pretty_socket(s):
     try:
+        if isinstance(s, str):
+            return s
         if len(s)==2:
             return "%s:%s" % (s[0], s[1])
-        assert len(s)==4
-        return csv(str(x) for x in s)
+        if len(s)==4:
+            return csv(str(x) for x in s)
     except (ValueError, TypeError):
-        return str(s)
+        pass
+    return str(s)
 
 
 class Connection(object):
