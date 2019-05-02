@@ -66,7 +66,7 @@ class TestAuth(unittest.TestCase):
         module.init(opts)
         try:
             c = module.Authenticator
-        except Exception as e:
+        except AttributeError:
             raise Exception("module %s does not contain an Authenticator class!")
         #some auth modules require this to function:
         if "connection" not in kwargs:
@@ -93,7 +93,7 @@ class TestAuth(unittest.TestCase):
                 assert challenge is None
 
 
-    def Xtest_all(self):
+    def test_all(self):
         test_modules = ["reject", "allow", "none", "file", "multifile", "env", "password"]
         try:
             self.a("pam")
@@ -108,14 +108,14 @@ class TestAuth(unittest.TestCase):
         for module in test_modules:
             self._test_module(module)
 
-    def Xtest_fail(self):
+    def test_fail(self):
         try:
             fa = self._init_auth("fail")
-        except:
+        except Exception:
             fa = None
         assert fa is None, "'fail_auth' did not fail!"
 
-    def Xtest_reject(self):
+    def test_reject(self):
         a = self._init_auth("reject")
         assert a.requires_challenge()
         c, mac = a.get_challenge(get_digests())
@@ -126,7 +126,7 @@ class TestAuth(unittest.TestCase):
             assert not a.authenticate(x, c)
             assert not a.authenticate(x, x)
 
-    def Xtest_none(self):
+    def test_none(self):
         a = self._init_auth("none")
         assert not a.requires_challenge()
         assert a.get_challenge(get_digests()) is None
@@ -135,7 +135,7 @@ class TestAuth(unittest.TestCase):
             assert a.authenticate(x, "")
             assert a.authenticate("", x)
 
-    def Xtest_allow(self):
+    def test_allow(self):
         a = self._init_auth("allow")
         assert a.requires_challenge()
         assert a.get_challenge(get_digests())
@@ -161,7 +161,7 @@ class TestAuth(unittest.TestCase):
             assert passed == (test_password==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][test_password==password], test_password, password)
             assert not a.authenticate(verify, client_salt), "should not be able to athenticate again with the same values"
 
-    def Xtest_env(self):
+    def test_env(self):
         for var_name in ("XPRA_PASSWORD", "SOME_OTHER_VAR_NAME"):
             password = strtobytes(uuid.uuid4().hex)
             os.environ[var_name] = bytestostr(password)
@@ -173,7 +173,7 @@ class TestAuth(unittest.TestCase):
             finally:
                 del os.environ[var_name]
 
-    def Xtest_password(self):
+    def test_password(self):
         password = strtobytes(uuid.uuid4().hex)
         self._test_hmac_auth("password", password, value=password)
 
@@ -232,8 +232,8 @@ class TestAuth(unittest.TestCase):
             return password, "%s|%s|||" % (a.username, password)
         self._test_file_auth("multifile", genfiledata)
 
-    def Xtest_sqlite(self):
-        from xpra.server.auth.sqlite_auth import main
+    def test_sqlite(self):
+        from xpra.server.auth.sqlite_auth import main as sqlite_main
         filename = temp_filename("sqlite")
         password = "hello"
         def t():
@@ -241,21 +241,21 @@ class TestAuth(unittest.TestCase):
         def vf(reason):
             try:
                 t()
-            except:
+            except Exception:
                 pass
             else:
                 raise Exception("sqlite auth should have failed: %s" % reason)
         vf("the database has not been created yet")
-        assert main(["main", filename, "create"])==0
+        assert sqlite_main(["main", filename, "create"])==0
         vf("the user has not been added yet")
-        assert main(["main", filename, "add", "foo", password])==0
+        assert sqlite_main(["main", filename, "add", "foo", password])==0
         t()
-        assert main(["main", filename, "remove", "foo"])==0
+        assert sqlite_main(["main", filename, "remove", "foo"])==0
         vf("the user has been removed")
-        assert main(["main", filename, "add", "foo", "wrongpassword"])==0
+        assert sqlite_main(["main", filename, "add", "foo", "wrongpassword"])==0
         vf("the password should not match")
 
-    def Xtest_peercred(self):
+    def test_peercred(self):
         if not POSIX or OSX:
             #can't be used!
             return
@@ -269,7 +269,7 @@ class TestAuth(unittest.TestCase):
         sockpath = "./socket-test"
         try:
             os.unlink(sockpath)
-        except:
+        except (OSError, IOError):
             pass
         from xpra.net.bytestreams import SocketConnection
         import socket
@@ -298,15 +298,15 @@ class TestAuth(unittest.TestCase):
         for x in to_close:
             try:
                 x.close()
-            except:
+            except (OSError, IOError):
                 pass
         assert verified
 
-    def Xtest_hosts(self):
+    def test_hosts(self):
         #cannot be tested (would require root to edit the hosts.deny file)
         pass
 
-    def Xtest_exec(self):
+    def test_exec(self):
         if not POSIX:
             return
         def exec_cmd(cmd, success=True):
