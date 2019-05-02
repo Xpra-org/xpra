@@ -131,7 +131,7 @@ def main():
                 needs_reset = True
         vscroll_events.append((now, value))
         if needs_reset:
-            def may_reset_quality(*args):
+            def may_reset_quality(*_args):
                 #if no new events since, reset quality:
                 t, _ = vscroll_events[-1]
                 if now==t:
@@ -141,7 +141,7 @@ def main():
                     app.send("command_request", "speed", -1, "*")       #means auto
             gobject.timeout_add(1000, may_reset_quality)
     def hscroll(scrollbar, scrolltype, value):
-        print("hscroll(%s)" % (scrollbar, scrolltype, value))
+        print("hscroll%s" % ((scrollbar, scrolltype, value),))
         hscroll_events.append((time.time(), value))
     window.vscroll.connect("change-value", vscroll)
     window.hscroll.connect("change-value", hscroll)

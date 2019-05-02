@@ -381,7 +381,7 @@ class CoreX11WindowModel(WindowModelStub):
                 except XError:
                     #these will be caught in call_setup()
                     raise
-                except:
+                except Exception:
                     #try to continue:
                     log.error("Error parsing initial property '%s':", mutable, exc_info=True)
 

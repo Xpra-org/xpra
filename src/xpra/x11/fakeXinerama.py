@@ -35,7 +35,7 @@ def find_libfakeXinerama():
 
 current_xinerama_config = None
 
-def save_fakeXinerama_config(supported=True, source="", ss=[]):
+def save_fakeXinerama_config(supported=True, source="", ss=()):
     """ returns True if the fakexinerama config was modified """
     global current_xinerama_config
     def delfile(msg):

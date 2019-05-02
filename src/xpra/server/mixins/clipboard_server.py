@@ -8,7 +8,6 @@
 import os.path
 
 from xpra.platform.features import CLIPBOARDS
-from xpra.os_util import OSX, POSIX
 from xpra.util import csv, nonl, XPRA_CLIPBOARD_NOTIFICATION_ID
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -41,9 +40,9 @@ class ClipboardServer(StubServerMixin):
             self._clipboard_helper = None
             ch.cleanup()
 
-    def cleanup_protocol(self, proto):
+    def cleanup_protocol(self, protocol):
         ch = self._clipboard_helper
-        if ch and self._clipboard_client and self._clipboard_client.protocol==proto:
+        if ch and self._clipboard_client and self._clipboard_client.protocol==protocol:
             self._clipboard_client = None
             ch.client_reset()
 

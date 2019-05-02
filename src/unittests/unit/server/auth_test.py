@@ -43,7 +43,7 @@ class TempFileContext(object):
 
 
 class FakeOpts(object):
-    def __init__(self, d={}):
+    def __init__(self, d):
         self._d = d
     def __getattr__(self, name):
         return self._d.get(name)

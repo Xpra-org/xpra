@@ -189,7 +189,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def handle_app_signal(self, signum, _frame=None):
         try:
             log.info("exiting")
-        except:
+        except Exception:
             pass
         signal.signal(signal.SIGINT, self.handle_deadly_signal)
         signal.signal(signal.SIGTERM, self.handle_deadly_signal)
@@ -203,7 +203,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 sys.stderr.write("\n")
                 sys.stderr.flush()
                 log.info("got signal %s", SIGNAMES.get(signum, signum))
-            except:
+            except Exception:
                 pass
             self.handle_app_signal(signum)
         signal.signal(signal.SIGINT, os_signal)
@@ -703,7 +703,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                         try:
                             log.error(" %s", csv(x))
                             continue
-                        except:
+                        except Exception:
                             pass
                     authlog.error(" %s", x)
             except Exception:
@@ -762,7 +762,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 #split on colon
                 for x in str(e).split(":", 2):
                     authlog.error(" %s", x.lstrip(" "))
-            except:
+            except Exception:
                 authlog.error(" %s", e)
             return False
         authlog("gss token=%s", repr(token))
@@ -852,16 +852,19 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             text += " for user '%s',\n connecting to %s server %s" % (
                 self.username, conn.socktype, pretty_socket(conn.remote),
                 )
-        except:
+        except Exception:
             pass
         return text
 
     def send_challenge_reply(self, packet, password):
         if not password:
             if self.password_file:
-                self.auth_error(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file%s %s" % (engs(self.password_file), csv(self.password_file)), "no password available")
+                self.auth_error(EXIT_PASSWORD_FILE_ERROR,
+                                "failed to load password from file%s %s" % (engs(self.password_file), csv(self.password_file)),
+                                "no password available")
             else:
-                self.auth_error(EXIT_PASSWORD_REQUIRED, "this server requires authentication and no password is available")
+                self.auth_error(EXIT_PASSWORD_REQUIRED,
+                                "this server requires authentication and no password is available")
             return
         server_salt = bytestostr(packet[1])
         if self.encryption:
@@ -1073,8 +1076,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 netlog.error("unknown packet type: %s", packet_type)
                 return
             self.idle_add(handler, packet)
-        except KeyboardInterrupt:
-            raise
-        except:
+        except Exception:
             netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
                          packet_type, handler, exc_info=True)

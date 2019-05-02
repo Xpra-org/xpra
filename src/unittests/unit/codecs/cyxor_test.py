@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2015-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
+import binascii
 
 from xpra.os_util import strtobytes, monotonic_time
 try:
     from xpra.codecs.xor.cyxor import xor_str       #@UnresolvedImport
-except:
+except ImportError:
     xor_str = None
-import binascii
 def h(v):
     return binascii.hexlify(v)
 
@@ -21,9 +21,10 @@ class TestHMAC(unittest.TestCase):
     def fail_xor(self, in1, in2):
         try:
             xor_str(in1, in2)
-        except:
-            return
-        raise Exception("xor_str did not fail on %s / %s", h(in1), h(in2))
+        except Exception:
+            pass
+        else:
+            raise Exception("xor_str did not fail on %s / %s" % (h(in1), h(in2)))
 
     def check_xor(self, in1, in2, expected):
         out = xor_str(in1, in2)

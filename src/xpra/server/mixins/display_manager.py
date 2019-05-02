@@ -116,7 +116,7 @@ class DisplayManager(StubServerMixin):
                     log.info(" client root window size is %sx%s with %s display%s:",
                              dw, dh, len(ss.screen_sizes), engs(ss.screen_sizes))
                     log_screen_sizes(dw, dh, ss.screen_sizes)
-            except:
+            except Exception:
                 dw, dh = None, None
         sw, sh = self.configure_best_screen_size()
         log("configure_best_screen_size()=%s", (sw, sh))
@@ -269,7 +269,7 @@ class DisplayManager(StubServerMixin):
     def make_screenshot_packet(self):
         try:
             return self.do_make_screenshot_packet()
-        except:
+        except Exception:
             log.error("make_screenshot_packet()", exc_info=True)
             return None
 

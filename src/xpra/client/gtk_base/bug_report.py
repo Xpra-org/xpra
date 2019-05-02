@@ -30,11 +30,11 @@ STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 
 class BugReport(object):
 
-    def init(self, show_about=True, get_server_info=None, opengl_info=None, includes={}):
+    def init(self, show_about=True, get_server_info=None, opengl_info=None, includes=None):
         self.show_about = show_about
         self.get_server_info = get_server_info
         self.opengl_info = opengl_info
-        self.includes = includes
+        self.includes = includes or {}
         self.setup_window()
 
     def setup_window(self):

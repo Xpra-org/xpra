@@ -150,7 +150,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 w, h = img.size
                 icon = (w, h, "png", icon_data)
                 icons = (icon,)
-        except:
+        except Exception:
             iconlog("failed to return window icon", exc_info=True)
         return self._updateprop("icons", icons)
 
@@ -635,7 +635,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
             try:
                 with xsync:
                     img = window.get_image(0, 0, w, h)
-            except:
+            except Exception:
                 log.warn("screenshot: window %s could not be captured", wid)
                 continue
             if img is None:

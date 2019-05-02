@@ -5,6 +5,9 @@
 # This subprocess.Popen code was found here:
 # https://stackoverflow.com/questions/29566330/
 
+#@PydevCodeAnalysisIgnore
+#pylint: disable=unused-argument
+
 import os
 import sys
 import types
@@ -397,7 +400,7 @@ class Popen(subprocess.Popen):
                            creationflags, shell, to_close, p2cread, p2cwrite,
                            c2pread, c2pwrite, errread, errwrite):
             """Execute program (MS Windows version)"""
-            commandline = (args if isinstance(args, types.StringTypes) else
+            commandline = (args if isinstance(args, types.StringTypes) else  #@UndefinedVariable, pylint: disable=no-member
                            subprocess.list2cmdline(args))
             self._common_execute_child(executable, commandline, shell,
                     close_fds, creationflags, env, cwd,
@@ -469,7 +472,7 @@ class Popen(subprocess.Popen):
                 if errwrite != -1:
                     errwrite.Close()
                 if hasattr(self, '_devnull'):
-                    os.close(self._devnull)
+                    os.close(self._devnull)  #pylint: disable=no-member
 
         if not ci.dwCreationFlags & CREATE_SUSPENDED:
             self._child_started = True

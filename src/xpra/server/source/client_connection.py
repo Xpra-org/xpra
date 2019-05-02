@@ -156,6 +156,7 @@ class ClientConnection(ClientConnectionClass):
         self.init()
 
         # ready for processing:
+        self.queue_encode = self.start_queue_encode
         protocol.set_packet_source(self.next_packet)
 
 
@@ -316,7 +317,7 @@ class ClientConnection(ClientConnectionClass):
     #
     # The encode thread loop management:
     #
-    def queue_encode(self, item):
+    def start_queue_encode(self, item):
         #start the encode work queue:
         #holds functions to call to compress data (pixels, clipboard)
         #items placed in this queue are picked off by the "encode" thread,
@@ -494,7 +495,7 @@ class ClientConnection(ClientConnectionClass):
     ######################################################################
     # notifications:
     # Utility functions for mixins (makes notifications optional)
-    def may_notify(self, nid, summary, body, actions=(), hints={}, expire_timeout=10*1000,
+    def may_notify(self, nid, summary, body, actions=(), hints=None, expire_timeout=10*1000,
                    icon_name=None, user_callback=None):
         try:
             from xpra.platform.paths import get_icon_filename
@@ -504,7 +505,7 @@ class ClientConnection(ClientConnectionClass):
         else:
             icon_filename = get_icon_filename(icon_name)
             icon = parse_image_path(icon_filename) or ""
-            self.notify("", nid, "Xpra", 0, "", summary, body, actions, hints, expire_timeout, icon, user_callback)
+            self.notify("", nid, "Xpra", 0, "", summary, body, actions, hints or {}, expire_timeout, icon, user_callback)
 
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon,
                summary, body, actions, hints, expire_timeout, icon, user_callback=None):

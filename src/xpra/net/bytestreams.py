@@ -141,17 +141,17 @@ def pretty_socket(s):
 
 
 class Connection(object):
-    def __init__(self, endpoint, socktype, info={}):
+    def __init__(self, endpoint, socktype, info=None):
         log("Connection%s", (endpoint, socktype, info))
         self.endpoint = endpoint
         try:
             assert isinstance(endpoint, (tuple, list))
             self.target = ":".join(str(x) for x in endpoint)
-        except:
+        except Exception:
             self.target = str(endpoint)
         self.socktype_wrapped = socktype
         self.socktype = socktype
-        self.info = info
+        self.info = info or {}
         self.input_bytecount = 0
         self.input_readcount = 0
         self.output_bytecount = 0
@@ -224,7 +224,7 @@ class Connection(object):
 # client.py relies on self.filename to locate the unix domain
 # socket (if it exists)
 class TwoFileConnection(Connection):
-    def __init__(self, writeable, readable, abort_test=None, target=None, socktype="", close_cb=None, info={}):
+    def __init__(self, writeable, readable, abort_test=None, target=None, socktype="", close_cb=None, info=None):
         Connection.__init__(self, target, socktype, info)
         self._writeable = writeable
         self._readable = readable
@@ -291,10 +291,10 @@ class TwoFileConnection(Connection):
 TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss")
 
 class SocketConnection(Connection):
-    def __init__(self, socket, local, remote, target, socktype, info={}):
-        log("SocketConnection%s", (socket, local, remote, target, socktype, info))
+    def __init__(self, sock, local, remote, target, socktype, info=None):
+        log("SocketConnection%s", (sock, local, remote, target, socktype, info))
         Connection.__init__(self, target, socktype, info)
-        self._socket = socket
+        self._socket = sock
         self.local = local
         self.remote = remote
         self.protocol_type = "socket"
