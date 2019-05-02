@@ -6,20 +6,21 @@
 import socket
 import struct
 import random
-try:
-    import errno
-    EMSGSIZE = errno.EMSGSIZE
-except ImportError:
-    EMSGSIZE = None
-
-from xpra.log import Logger
-log = Logger("network", "protocol", "udp")
 
 from xpra.os_util import LINUX, monotonic_time, memoryview_to_bytes
 from xpra.util import envint, repr_ellipsized
 from xpra.make_thread import start_thread
 from xpra.net.protocol import Protocol, READ_BUFFER_SIZE
 from xpra.net.bytestreams import SocketConnection, can_retry
+from xpra.log import Logger
+
+try:
+    import errno
+    EMSGSIZE = errno.EMSGSIZE
+except ImportError:
+    EMSGSIZE = None
+
+log = Logger("network", "protocol", "udp")
 
 DROP_PCT = envint("XPRA_UDP_DROP_PCT", 0)
 DROP_FIRST = envint("XPRA_UDP_DROP_FIRST", 0)
