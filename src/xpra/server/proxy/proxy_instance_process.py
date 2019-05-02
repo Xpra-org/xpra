@@ -135,7 +135,7 @@ class ProxyInstanceProcess(Process):
             else:
                 log.error("unexpected proxy server message: %s", m)
 
-    def signal_quit(self, signum, frame=None):
+    def signal_quit(self, signum, _frame=None):
         log.info("")
         log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
         self.exit = True
@@ -188,10 +188,10 @@ class ProxyInstanceProcess(Process):
         mqargs = [tid, timeout, fn, fn_args, fn_kwargs]
         self.main_queue.put((self.timeout_repeat_call, mqargs, {}))
 
-    def timeout_repeat_call(self, tid, timeout, fn, fn_args, fn_kwargs, **kwargs):
+    def timeout_repeat_call(self, tid, timeout, fn, fn_args, fn_kwargs):
         #executes the function then re-schedules it (if it returns True)
         if tid not in self.timers:
-            return      #cancelled
+            return False    #cancelled
         v = fn(*fn_args, **fn_kwargs)
         if bool(v):
             #create a new timer with the same tid:
@@ -385,7 +385,7 @@ class ProxyInstanceProcess(Process):
             return  True
         try:
             peername = sock.getpeername()
-        except:
+        except (OSError, IOError):
             peername = str(address)
         sockname = sock.getsockname()
         target = peername or sockname
@@ -443,7 +443,8 @@ class ProxyInstanceProcess(Process):
                 proto.send_now(("hello", {"version" : version}))
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "version sent")
                 return
-        self.send_disconnect(proto, CONTROL_COMMAND_ERROR, "this socket only handles 'info', 'version' and 'stop' requests")
+        self.send_disconnect(proto, CONTROL_COMMAND_ERROR,
+                             "this socket only handles 'info', 'version' and 'stop' requests")
 
     def send_disconnect(self, proto, *reasons):
         log("send_disconnect(%s, %s)", proto, reasons)
@@ -569,7 +570,7 @@ class ProxyInstanceProcess(Process):
             sleep(0.1)
         log.info("proxy instance %s stopped", os.getpid())
 
-    def stop(self, skip_proto=None, *reasons):
+    def stop(self, skip_proto, *reasons):
         log("stop(%s, %s)", skip_proto, reasons)
         if not self.exit:
             log.info("stopping proxy instance pid %i:", os.getpid())
@@ -578,7 +579,7 @@ class ProxyInstanceProcess(Process):
             self.exit = True
         try:
             self.control_socket.close()
-        except:
+        except (OSError, IOError):
             pass
         csc = self.control_socket_cleanup
         if csc:
@@ -671,7 +672,7 @@ class ProxyInstanceProcess(Process):
             if len(data)<512:
                 packet[index] = strtobytes(data)
                 return
-            #FIXME: this is ugly and not generic!
+            #this is ugly and not generic!
             zlib = compression.use_zlib and self.caps.boolget("zlib", True)
             lz4 = compression.use_lz4 and self.caps.boolget("lz4", False)
             lzo = compression.use_lzo and self.caps.boolget("lzo", False)
@@ -744,7 +745,7 @@ class ProxyInstanceProcess(Process):
                 try:
                     int(packet[1])
                     self._packet_recompress(packet, 8, "cursor")
-                except:
+                except (TypeError, ValueError):
                     self._packet_recompress(packet, 9, "cursor")
         elif packet_type=="window-icon":
             self._packet_recompress(packet, 5, "icon")
@@ -855,7 +856,7 @@ class ProxyInstanceProcess(Process):
             packet[7] = compressed_data
             packet[10] = updated_client_options
             enclog("returning %s bytes from %s, options=%s", len(compressed_data), len(pixels), updated_client_options)
-            return (wid not in self.lost_windows)
+            return wid not in self.lost_windows
 
         def passthrough(strip_alpha=True):
             enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)",
@@ -878,8 +879,7 @@ class ProxyInstanceProcess(Process):
                 cdata = pixels
                 new_client_options = client_options
             wrapped = Compressed("%s pixels" % encoding, cdata)
-            #FIXME: we should not assume that rgb32 is supported here...
-            #(we may have to convert to rgb24..)
+            #rgb32 is always supported by all clients:
             return send_updated("rgb32", wrapped, new_client_options)
 
         proxy_video = client_options.boolget("proxy", False)
@@ -949,7 +949,8 @@ class ProxyInstanceProcess(Process):
                 #so we can instantiate it again, even from a frame no>1
                 self.video_encoders_dst_formats = dst_formats
             else:
-                assert self.video_encoders_dst_formats, "BUG: dst_formats not specified for proxy and we don't have it either"
+                if not self.video_encoders_dst_formats:
+                    raise Exception("BUG: dst_formats not specified for proxy and we don't have it either")
                 dst_formats = self.video_encoders_dst_formats
             ve.init_context(width, height, rgb_format, dst_formats, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
