@@ -22,12 +22,12 @@ class TestCystats(unittest.TestCase):
         now = monotonic_time()
         sample_size = 1000
         data = []
-        t = now - sample_size
+        ts = now - sample_size
         for _ in range(sample_size):
             s = random.randint(1000, 10000)
             v = random.random()
-            data.append((t, s, v))
-            t += 1
+            data.append((ts, s, v))
+            ts += 1
         a, ra = cystats.calculate_timesize_weighted_average(data)
         assert 0<a and 0<ra
         #the calculations use the ratio of the size divided by the elapsed time,

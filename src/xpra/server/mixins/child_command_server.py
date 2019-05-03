@@ -46,6 +46,7 @@ class ChildCommandServer(StubServerMixin):
         self.terminate_children = False
         self.children_started = []
         self.child_reaper = None
+        self.reaper_exit = self.reaper_exit_check
 
     def init(self, opts):
         self.exit_with_children = opts.exit_with_children
@@ -196,8 +197,8 @@ class ChildCommandServer(StubServerMixin):
     def is_child_alive(self, proc):
         return proc is not None and proc.poll() is None
 
-    def reaper_exit(self):
-        log("reaper_exit() exit_with_children=%s", self.exit_with_children)
+    def reaper_exit_check(self):
+        log("reaper_exit_check() exit_with_children=%s", self.exit_with_children)
         if self.exit_with_children:
             log.info("all children have exited and --exit-with-children was specified, exiting")
             self.idle_add(self.clean_quit)

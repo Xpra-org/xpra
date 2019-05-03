@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -60,6 +60,9 @@ DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 
+
+def noop():
+    pass
 
 
 """ Base class for Xpra clients.
@@ -136,6 +139,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.completed_startup = False
         self.uuid = get_user_uuid()
         self.init_packet_handlers()
+        self.have_more = noop
         sanity_checks()
 
     def init(self, opts, _extra_args=()):
@@ -500,12 +504,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self._mouse_position_timer = 0
             self.source_remove(mpt)
 
-
-    def have_more(self):
-        #this function is overridden in setup_protocol()
-        p = self._protocol
-        if p and p.source:
-            p.source_has_more()
 
     def next_packet(self):
         netlog("next_packet() packets in queues: priority=%i, ordinary=%i, mouse=%s",

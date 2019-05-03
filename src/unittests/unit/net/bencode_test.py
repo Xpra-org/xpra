@@ -5,13 +5,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import unittest
+import binascii
+
 from xpra.os_util import strtobytes, bytestostr, PYTHON2
 from xpra.util import repr_ellipsized
 from xpra.net.bencode.bencode import bencode, bdecode
 from xpra.net.bencode import cython_bencode   #@UnresolvedImport
-
-import unittest
-import binascii
 
 
 #sample data to encode:
@@ -106,7 +106,7 @@ def _cmp(o, r):
             assert rv is not None, "restored dict is missing %s: %s" % (k, r)
             _cmp(ov, rv)
         return
-    if PYTHON2 and type(o)==unicode and type(r)==str:
+    if PYTHON2 and type(o)==unicode and type(r)==str:   #@UndefinedVariable
         o = o.encode("utf-8")
     elif type(o)==bytes and type(r)==str:
         o = o.decode("utf-8")
@@ -206,7 +206,11 @@ class TestBencoderFunctions(object):
         estr = binascii.unhexlify("6c32353a53636872c383c2b664696e676572c3a2c280c299735f436174646565")
         self.t([ustr, {}], estr)
         #from a real packet:
-        packet = ['draw', 2, 0, 820, 1280, 1, 'rgb32', b'\x00\x14\x00\x00OXY[\xff\x04\x00\xff\xd2\x0f\x01\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xcc\x0f\xb4\x11\xff\xd2\x0f\xe4\x01\x1d?\xd6\xd6\xd6\x04\x00\x19P\xff\xd6\xd6\xd6\xff', 94, 5120, {'lz4': 1, 'rgb_format': 'RGBX'}]
+        packet = [
+            'draw', 2, 0, 820, 1280, 1, 'rgb32',
+            b'\x00\x14\x00\x00OXY[\xff\x04\x00\xff\xd2\x0f\x01\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xcc\x0f\xb4\x11\xff\xd2\x0f\xe4\x01\x1d?\xd6\xd6\xd6\x04\x00\x19P\xff\xd6\xd6\xd6\xff',
+            94, 5120, {'lz4': 1, 'rgb_format': 'RGBX'}
+            ]
         self.t(packet)
 
     def test_encoding_hello(self):

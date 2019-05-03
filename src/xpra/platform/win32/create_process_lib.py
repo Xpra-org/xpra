@@ -11,9 +11,8 @@
 import os
 import sys
 import types
-import ctypes
 import subprocess
-
+import ctypes
 from ctypes import wintypes
 
 kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
