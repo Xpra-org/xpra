@@ -27,17 +27,36 @@ large_hello = ["hello",
                 'platform.release': '3.12.5-200.fc19.x86_64', 'lz4': True, 'clipboard.greedy': False,
                 'encoding.vpx.version': 'v1.2.0', 'xkbmap_print': u'xkb_keymap {\n\txkb_keycodes  { include "evdev+aliases(qwerty)"\t};\n\txkb_types     { include "complete"\t};\n\txkb_compat    { include "complete"\t};\n\txkb_symbols   { include "pc+gb+us:2+inet(evdev)"\t};\n\txkb_geometry  { include "pc(pc104)"\t};\n};\n',
                 'sound.receive': True, 'digest': ('hmac', 'xor'),
-                'aliases': {'lost-window': 6, 'bell': 7, 'desktop_size': 8, 'new-override-redirect': 9, 'ping_echo': 5, 'new-window': 10, 'connection-lost': 11, 'startup-complete': 12, 'info-response': 2, 'disconnect': 13, 'ping': 3, 'window-resized': 14, 'set_deflate': 15, 'rpc-reply': 16, 'window-icon': 17, 'draw': 18, 'notify_close': 19, 'sound-data': 1, 'raise-window': 20, 'window-metadata': 21, 'set-clipboard-enabled': 22, 'configure-override-redirect': 23, 'challenge': 24, 'cursor': 25, 'notify_show': 26, 'gibberish': 27, 'new-tray': 28, 'hello': 29},
+                'aliases':
+                {'lost-window': 6, 'bell': 7, 'desktop_size': 8, 'new-override-redirect': 9, 'ping_echo': 5, 'new-window': 10,
+                 'connection-lost': 11, 'startup-complete': 12, 'info-response': 2, 'disconnect': 13, 'ping': 3, 'window-resized': 14,
+                 'set_deflate': 15, 'rpc-reply': 16, 'window-icon': 17, 'draw': 18, 'notify_close': 19, 'sound-data': 1, 'raise-window': 20,
+                 'window-metadata': 21, 'set-clipboard-enabled': 22, 'configure-override-redirect': 23, 'challenge': 24, 'cursor': 25,
+                 'notify_show': 26, 'gibberish': 27, 'new-tray': 28, 'hello': 29,
+                 },
                 'platform.platform': 'Linux-3.12.5-200.fc19.x86_64-x86_64-with-fedora-20',
-                'mmap_file': '/tmp/xpra.AFrOuc.mmap', 'uuid': '8643124ce701ee68dbb6b7a8c4eb13a5f6409494', 'encoding.opencl.version': '2013.1', 'bencode.version': ('Cython', 0, 11), 'xkbmap_layout': '',
-                'xkbmap_mod_meanings': {'ISO_Level3_Shift': 'mod5', 'Meta_L': 'mod1', 'Control_R': 'control', 'Super_R': 'mod4', 'Mode_switch': 'mod5', 'Hyper_L': 'mod4', 'Caps_Lock': 'lock', 'Alt_L': 'mod1', 'Num_Lock': 'mod2', 'Super_L': 'mod4', 'Shift_R': 'shift', 'Shift_L': 'shift', 'Control_L': 'control'},
-                'encoding.PIL.version': '1.1.7', 'platform': 'linux2', 'sound.server_driven': True, 'clipboard': True, 'encodings.rgb_formats': ['RGB', 'RGBA'], 'chunked_compression': True, 'keyboard_sync': True, 'sound.pygst.version': (0, 10, 22), 'sound.send': True, 'screen_sizes': [(':0.0', 1920, 1080, 508, 286, [('DVI-I-1', 0, 0, 1920, 1080, 531, 299)], 0, 0, 1920, 1055)],
-                'username': 'antoine', 'auto_refresh_delay': 250, 'mmap_token': 215666214940457138203759294163634184205, 'encoding.h264.YUV420P.profile': 'high10', 'encoding.transparency': True, 'build.cpu': 'x86_64', 'pycrypto.fastmath': True,
+                'mmap_file': '/tmp/xpra.AFrOuc.mmap', 'uuid': '8643124ce701ee68dbb6b7a8c4eb13a5f6409494', 'encoding.opencl.version': '2013.1',
+                'bencode.version': ('Cython', 0, 11), 'xkbmap_layout': '',
+                'xkbmap_mod_meanings': {'ISO_Level3_Shift': 'mod5', 'Meta_L': 'mod1', 'Control_R': 'control', 'Super_R': 'mod4',
+                                        'Mode_switch': 'mod5', 'Hyper_L': 'mod4', 'Caps_Lock': 'lock', 'Alt_L': 'mod1', 'Num_Lock': 'mod2', 'Super_L': 'mod4', 'Shift_R': 'shift', 'Shift_L': 'shift', 'Control_L': 'control'},
+                'encoding.PIL.version': '1.1.7', 'platform': 'linux2', 'sound.server_driven': True, 'clipboard': True,
+                'encodings.rgb_formats': ['RGB', 'RGBA'], 'chunked_compression': True, 'keyboard_sync': True,
+                'sound.pygst.version': (0, 10, 22), 'sound.send': True, 'screen_sizes': [
+                    (':0.0', 1920, 1080, 508, 286, [('DVI-I-1', 0, 0, 1920, 1080, 531, 299)], 0, 0, 1920, 1055)],
+                'username': 'antoine', 'auto_refresh_delay': 250, 'mmap_token': 215666214940457138203759294163634184205,
+                'encoding.h264.YUV420P.profile': 'high10', 'encoding.transparency': True, 'build.cpu': 'x86_64', 'pycrypto.fastmath': True,
                 'xkbmap_query': u'rules:      evdev\nmodel:      pc104\nlayout:     gb,us\nvariant:    ,\n',
-                'encoding.rgb24zlib': True, 'platform.machine': 'x86_64', 'encoding.csc_atoms': True, 'encoding.x264.YUV420P.profile': 'high10', 'build.on': 'desktop', 'rencode': True, 'generic_window_types': True, 'gtk.version': (2, 24, 22), 'window.raise': True, 'modifiers': [],
-                'name': 'Antoine Martin', 'encoding.client_options': True, 'encoding.supports_delta': ['png', 'rgb24', 'rgb32'], 'platform.name': 'Linux', 'zlib': True, 'build.revision': '5071', 'client_type': 'Python/Gtk2', 'sound.pulseaudio.server': '{7725dfc225d14958a625ddaaaea5962b}unix:/run/user/1000/pulse/native', 'encoding_client_options': True,
-                'build.by': 'root', 'machine_id': '7725dfc225d14958a625ddaaaea5962b', 'display': ':10', 'python.version': (2, 7, 5), 'encoding.video_scaling': True, 'encoding.x264.version': 130, 'encoding.uses_swscale': True, 'server_uuid': '', 'desktop_size': [1920, 1080], 'encodings': ['h264', 'vp8', 'png', 'png/P', 'png/L', 'rgb', 'jpeg'], 'share': False, 'xkbmap_variant': '', 'sound.pulseaudio.id': '1000@7725dfc225d14958a625ddaaaea5962b/2073', 'cursors': True, 'randr_notify': True,
-                'sound.decoders': ['mp3', 'wavpack', 'wav', 'flac', 'speex'], 'rencode.version': '1.0.2', 'encoding.csc_modes': ('YUV420P', 'YUV422P', 'YUV444P', 'BGRA', 'BGRX'), 'generic-rgb-encodings': True,
+                'encoding.rgb24zlib': True, 'platform.machine': 'x86_64', 'encoding.csc_atoms': True, 'encoding.x264.YUV420P.profile': 'high10',
+                'build.on': 'desktop', 'rencode': True, 'generic_window_types': True, 'gtk.version': (2, 24, 22), 'window.raise': True, 'modifiers': [],
+                'name': 'Antoine Martin', 'encoding.client_options': True, 'encoding.supports_delta': ['png', 'rgb24', 'rgb32'],
+                'platform.name': 'Linux', 'zlib': True, 'build.revision': '5071', 'client_type': 'Python/Gtk2',
+                'sound.pulseaudio.server': '{7725dfc225d14958a625ddaaaea5962b}unix:/run/user/1000/pulse/native', 'encoding_client_options': True,
+                'build.by': 'root', 'machine_id': '7725dfc225d14958a625ddaaaea5962b', 'display': ':10', 'python.version': (2, 7, 5),
+                'encoding.video_scaling': True, 'encoding.x264.version': 130, 'encoding.uses_swscale': True, 'server_uuid': '',
+                'desktop_size': [1920, 1080], 'encodings': ['h264', 'vp8', 'png', 'png/P', 'png/L', 'rgb', 'jpeg'], 'share': False,
+                'xkbmap_variant': '', 'sound.pulseaudio.id': '1000@7725dfc225d14958a625ddaaaea5962b/2073', 'cursors': True, 'randr_notify': True,
+                'sound.decoders': ['mp3', 'wavpack', 'wav', 'flac', 'speex'], 'rencode.version': '1.0.2',
+                'encoding.csc_modes': ('YUV420P', 'YUV422P', 'YUV444P', 'BGRA', 'BGRX'), 'generic-rgb-encodings': True,
                 'xkbmap_keycodes': [(65307, 'Escape', 9, 0, 0), (49, '1', 10, 0, 0), (33, 'exclam', 10, 0, 1), (185, 'onesuperior', 10, 0, 2), (161, 'exclamdown', 10, 0, 3), (49, '1', 10, 1, 0), (33, 'exclam', 10, 1, 1), (50, '2', 11, 0, 0), (34, 'quotedbl', 11, 0, 1), (178, 'twosuperior', 11, 0, 2), (2755, 'oneeighth', 11, 0, 3), (50, '2', 11, 1, 0), (64, 'at', 11, 1, 1), (51, '3', 12, 0, 0), (163, 'sterling', 12, 0, 1), (179, 'threesuperior', 12, 0, 2), (163, 'sterling', 12, 0, 3), (51, '3', 12, 1, 0), (35, 'numbersign', 12, 1, 1), (52, '4', 13, 0, 0), (36, 'dollar', 13, 0, 1), (8364, 'EuroSign', 13, 0, 2), (188, 'onequarter', 13, 0, 3), (52, '4', 13, 1, 0), (36, 'dollar', 13, 1, 1), (53, '5', 14, 0, 0),
                                     (37, 'percent', 14, 0, 1), (189, 'onehalf', 14, 0, 2), (2756, 'threeeighths', 14, 0, 3), (53, '5', 14, 1, 0), (37, 'percent', 14, 1, 1), (54, '6', 15, 0, 0), (94, 'asciicircum', 15, 0, 1), (190, 'threequarters', 15, 0, 2), (2757, 'fiveeighths', 15, 0, 3), (54, '6', 15, 1, 0), (94, 'asciicircum', 15, 1, 1), (55, '7', 16, 0, 0), (38, 'ampersand', 16, 0, 1), (123, 'braceleft', 16, 0, 2), (2758, 'seveneighths', 16, 0, 3), (55, '7', 16, 1, 0), (38, 'ampersand', 16, 1, 1), (56, '8', 17, 0, 0), (42, 'asterisk', 17, 0, 1), (91, 'bracketleft', 17, 0, 2), (2761, 'trademark', 17, 0, 3), (56, '8', 17, 1, 0), (42, 'asterisk', 17, 1, 1), (57, '9', 18, 0, 0), (40, 'parenleft', 18, 0, 1),
                                     (93, 'bracketright', 18, 0, 2), (177, 'plusminus', 18, 0, 3), (57, '9', 18, 1, 0), (40, 'parenleft', 18, 1, 1), (48, '0', 19, 0, 0), (41, 'parenright', 19, 0, 1), (125, 'braceright', 19, 0, 2), (176, 'degree', 19, 0, 3), (48, '0', 19, 1, 0), (41, 'parenright', 19, 1, 1), (45, 'minus', 20, 0, 0), (95, 'underscore', 20, 0, 1), (92, 'backslash', 20, 0, 2), (191, 'questiondown', 20, 0, 3), (45, 'minus', 20, 1, 0), (95, 'underscore', 20, 1, 1), (61, 'equal', 21, 0, 0), (43, 'plus', 21, 0, 1), (65115, 'dead_cedilla', 21, 0, 2), (65116, 'dead_ogonek', 21, 0, 3), (61, 'equal', 21, 1, 0), (43, 'plus', 21, 1, 1), (65288, 'BackSpace', 22, 0, 0), (65288, 'BackSpace', 22, 0, 1),
@@ -94,38 +113,42 @@ def _cmp(o, r):
     #and gives us a clue about where the problem is
     if type(o)==type(r) and o==r:
         return
-    if type(r) in (tuple, list) and type(o) in (tuple, list):
+    if isinstance(r, (tuple, list)) and isinstance(o, (tuple, list)):
         assert len(r)==len(o), "list/tuple differs in length: expected %s but got %s" % (o, r)
-        for i in range(len(r)):
-            _cmp(o[i], r[i])
+        for i, ri in enumerate(r):
+            _cmp(o[i], ri)
         return
-    if type(r)==dict and type(o)==dict:
+    if isinstance(r, dict) and isinstance(o, dict):
         for k,ov in o.items():
             #with py3k, the key can end up being bytes instead of string...
             rv = r.get(k, r.get(bytestostr(k), r.get(strtobytes(k))))
             assert rv is not None, "restored dict is missing %s: %s" % (k, r)
             _cmp(ov, rv)
         return
-    if PYTHON2 and type(o)==unicode and type(r)==str:   #@UndefinedVariable
+    if PYTHON2 and isinstance(o, unicode) and isinstance(r, str):   #@UndefinedVariable
         o = o.encode("utf-8")
-    elif type(o)==bytes and type(r)==str:
+    elif isinstance(o, bytes) and isinstance(r, str):
         o = o.decode("utf-8")
-    elif type(o)==str and type(r)==bytes:
+    elif isinstance(o, str) and isinstance(r, bytes):
         r = r.decode("utf-8")
     if o==r:
         return
     print("")
     print("original %s:" % type(o))
     print("returned %s:" % type(r))
-    try:
-        print("original: %s" % binascii.hexlify(str(o)))
-        print("returned: %s" % binascii.hexlify(str(r)))
-    except:
-        pass
+    print("original: %s" % binascii.hexlify(str(o)))
+    print("returned: %s" % binascii.hexlify(str(r)))
     assert False, "value does not match: expected %s (%s) but got %s (%s)" % (o, type(o), r, type(r))
+
+def noop(_input):
+    raise NotImplementedError()
 
 
 class TestBencoderFunctions(object):
+
+    def setUp(self):
+        self.encode = noop
+        self.decode = noop
 
     def test_decoding(self):
 
@@ -208,7 +231,9 @@ class TestBencoderFunctions(object):
         #from a real packet:
         packet = [
             'draw', 2, 0, 820, 1280, 1, 'rgb32',
-            b'\x00\x14\x00\x00OXY[\xff\x04\x00\xff\xd2\x0f\x01\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xcc\x0f\xb4\x11\xff\xd2\x0f\xe4\x01\x1d?\xd6\xd6\xd6\x04\x00\x19P\xff\xd6\xd6\xd6\xff',
+            b'\x00\x14\x00\x00OXY[\xff\x04\x00\xff\xd2\x0f\x01\x00\xff\xff\xff\xff\xff\xff\xff'+
+            b'\xff\xff\xff\xff\xff\xff\xff\xff\xcc\x0f\xb4\x11\xff\xd2\x0f\xe4\x01\x1d?\xd6\xd6'+
+            b'\xd6\x04\x00\x19P\xff\xd6\xd6\xd6\xff',
             94, 5120, {'lz4': 1, 'rgb_format': 'RGBX'}
             ]
         self.t(packet)

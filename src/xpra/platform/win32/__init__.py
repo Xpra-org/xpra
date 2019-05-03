@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 # Platform-specific code for Win32.
+#pylint: disable=bare-except
 
 import errno
 import os.path

@@ -363,7 +363,7 @@ class BaseWindowModel(CoreX11WindowModel):
             xid = wm_hints.get("window_group")
             try:
                 group_leader = xid, get_pywindow(xid)
-            except:
+            except Exception:
                 group_leader = xid, None
         self._updateprop("group-leader", group_leader)
         self._updateprop("attention-requested", wm_hints.get("urgency", False))

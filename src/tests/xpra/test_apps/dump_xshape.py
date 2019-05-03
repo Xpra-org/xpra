@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
 import sys
-from xpra.x11.gtk2 import gdk_display_source
-assert gdk_display_source
-from xpra.x11.bindings.window_bindings import X11WindowBindings, SHAPE_KIND #@UnresolvedImport
-X11Window = X11WindowBindings()
+
 
 def dump_xshape(xid):
+    from xpra.x11.bindings.window_bindings import X11WindowBindings, SHAPE_KIND #@UnresolvedImport
+    X11Window = X11WindowBindings()
     extents = X11Window.XShapeQueryExtents(xid)
     if not extents:
         print("read_shape for window %#x: no extents" % xid)
@@ -24,8 +23,11 @@ def dump_xshape(xid):
         rectangles = X11Window.XShapeGetRectangles(xid, kind)
         v[kind_name+".rectangles"] = rectangles
     print("read_shape()=%s" % v)
+    return v
 
 def main(args):
+    from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+    init_gdk_display_source()
     for wid in args[1:]:
         print("looking for window %s" % wid)
         if wid.startswith("0x"):

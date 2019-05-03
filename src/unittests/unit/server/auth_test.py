@@ -44,7 +44,7 @@ class TempFileContext(object):
 
 class FakeOpts(object):
     def __init__(self, d):
-        self._d = d
+        self._d = d or {}
     def __getattr__(self, name):
         return self._d.get(name)
 
@@ -57,11 +57,11 @@ class TestAuth(unittest.TestCase):
         assert mod, "cannot load '%s_auth' from %s" % (name, pmod)
         return mod
 
-    def _init_auth(self, mod_name, options={}, username="foo", **kwargs):
+    def _init_auth(self, mod_name, options=None, username="foo", **kwargs):
         mod = self.a(mod_name)
         return self.do_init_auth(mod, options, username, **kwargs)
 
-    def do_init_auth(self, module, options={}, username="foo", **kwargs):
+    def do_init_auth(self, module, options=None, username="foo", **kwargs):
         opts = FakeOpts(options)
         module.init(opts)
         try:

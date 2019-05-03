@@ -34,7 +34,7 @@ from xpra.log import Logger
 
 log = Logger("encoder", "nvenc")
 
-from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t
+from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t  #pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
 from xpra.monotonic_time cimport monotonic_time
