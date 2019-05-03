@@ -482,9 +482,9 @@ class AudioClient(StubClientMixin):
                 packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_sound_data(sound_source, data, metadata, packet_metadata)
 
-    def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=None):
+    def send_sound_data(self, sound_source, data, metadata=None, packet_metadata=None):
         codec = sound_source.codec
-        packet_data = [codec, Compressed(codec, data), metadata]
+        packet_data = [codec, Compressed(codec, data), metadata or {}]
         if packet_metadata:
             assert self.server_sound_bundle_metadata
             packet_data.append(packet_metadata)
