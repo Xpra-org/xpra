@@ -90,7 +90,7 @@ class CairoBackingBase(WindowBackingBase):
         w, h = pixbuf.get_width(), pixbuf.get_height()
         self.cairo_paint_from_source(cairo_set_source_pixbuf, pixbuf, x, y, w, h, options)
 
-    def cairo_paint_surface(self, img_surface, x, y, options={}):
+    def cairo_paint_surface(self, img_surface, x, y, options):
         w, h = img_surface.get_width(), img_surface.get_height()
         log("source image surface: %s",
             (img_surface.get_format(), w, h, img_surface.get_stride(), img_surface.get_content(), ))
@@ -190,7 +190,7 @@ class CairoBackingBase(WindowBackingBase):
         reader = BytesIO(png.getvalue())
         png.close()
         img = cairo.ImageSurface.create_from_png(reader)
-        self.cairo_paint_surface(img, x, y)
+        self.cairo_paint_surface(img, x, y, {})
         return True
 
 
