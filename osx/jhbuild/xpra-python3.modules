@@ -672,9 +672,9 @@
 
 	<distutils id="python3-yaml" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/9e/a3/1d13970c3f36777c583f136c136f804d70f500168edc1edea6daa7200769/PyYAML-3.13.tar.gz"
-			hash="sha256:3ef3092145e9b70e3ddd2c7ad59bdd0252a94dfe3949721633e41344de00a6bf"
-			version="3.13"/>
+			module="/packages/9f/2c/9417b5c774792634834e730932745bc09a7d36754ca00acf1ccd1ac2594d/PyYAML-5.1.tar.gz"
+			hash="sha256:436bc774ecf7c103814098159fbb84c2715d25980175292c648f2da143909f95"
+			version="5.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
