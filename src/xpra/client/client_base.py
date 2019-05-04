@@ -266,9 +266,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def setup_connection(self, conn):
         netlog("setup_connection(%s) timeout=%s, socktype=%s", conn, conn.timeout, conn.socktype)
         if conn.socktype=="udp":
-            self.set_packet_handlers(self._packet_handlers, {
-                "udp-control"   : self._process_udp_control,
-                })
+            self.add_packet_handler("udp-control", self._process_udp_control, False)
         protocol_class = get_client_protocol_class(conn.socktype)
         self._protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         for x in (b"keymap-changed", b"server-settings", b"logging", b"input-devices"):
@@ -294,42 +292,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_udp_control(self, packet):
         #send it back to the protocol object:
         self._protocol.process_control(*packet[1:])
-
-
-    def remove_packet_handlers(self, *keys):
-        for k in keys:
-            for d in (self._packet_handlers, self._ui_packet_handlers):
-                try:
-                    del d[k]
-                except KeyError:
-                    pass
-
-    def set_packet_handlers(self, to, defs):
-        """ configures the given packet handlers,
-            and make sure we remove any existing ones with the same key
-            (which can be useful for subclasses, not here)
-        """
-        log("set_packet_handlers(%s, %s)", to, defs)
-        self.remove_packet_handlers(*defs.keys())
-        for k,v in defs.items():
-            to[k] = v
-
-    def init_packet_handlers(self):
-        self._packet_handlers = {}
-        self._ui_packet_handlers = {}
-        self.set_packet_handlers(self._packet_handlers, {"hello" : self._process_hello})
-        self.set_packet_handlers(self._ui_packet_handlers, {
-            "challenge":                self._process_challenge,
-            "disconnect":               self._process_disconnect,
-            "set_deflate":              self._process_set_deflate,
-            "startup-complete":         self._process_startup_complete,
-            Protocol.CONNECTION_LOST:   self._process_connection_lost,
-            Protocol.GIBBERISH:         self._process_gibberish,
-            Protocol.INVALID:           self._process_invalid,
-            })
-
-    def init_authenticated_packet_handlers(self):
-        FilePrintMixin.init_authenticated_packet_handlers(self)
 
 
     def init_aliases(self):
@@ -1058,6 +1020,46 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         netlog(" data: %s", repr_ellipsized(data))
         self.quit(EXIT_PACKET_FAILURE)
 
+
+    ######################################################################
+    # packets:
+    def remove_packet_handlers(self, *keys):
+        for k in keys:
+            for d in (self._packet_handlers, self._ui_packet_handlers):
+                try:
+                    del d[k]
+                except KeyError:
+                    pass
+
+    def init_packet_handlers(self):
+        self._packet_handlers = {}
+        self._ui_packet_handlers = {}
+        self.add_packet_handler("hello", self._process_hello, False)
+        self.add_packet_handlers({
+            "challenge":                self._process_challenge,
+            "disconnect":               self._process_disconnect,
+            "set_deflate":              self._process_set_deflate,
+            "startup-complete":         self._process_startup_complete,
+            Protocol.CONNECTION_LOST:   self._process_connection_lost,
+            Protocol.GIBBERISH:         self._process_gibberish,
+            Protocol.INVALID:           self._process_invalid,
+            })
+
+    def init_authenticated_packet_handlers(self):
+        FilePrintMixin.init_authenticated_packet_handlers(self)
+
+    def add_packet_handlers(self, defs, main_thread=True):
+        for packet_type, handler in defs.items():
+            self.add_packet_handler(packet_type, handler, main_thread)
+
+    def add_packet_handler(self, packet_type, handler, main_thread=True):
+        netlog("add_packet_handler%s", (packet_type, handler, main_thread))
+        self.remove_packet_handlers(packet_type)
+        if main_thread:
+            handlers = self._ui_packet_handlers
+        else:
+            handlers = self._packet_handlers
+        handlers[packet_type] = handler
 
     def process_packet(self, _proto, packet):
         try:

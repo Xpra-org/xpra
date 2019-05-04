@@ -103,3 +103,9 @@ class StubClientMixin(object):
     """
     def init_authenticated_packet_handlers(self):
         pass
+
+    def add_packet_handler(self, packet_type, handler, main_thread=True):
+        raise NotImplementedError()
+
+    def add_packet_handlers(self, defs, main_thread=True):
+        raise NotImplementedError()

@@ -271,8 +271,6 @@ class NetworkState(StubClientMixin):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self):
-        self.set_packet_handlers(self._packet_handlers, {
-            "ping":                 self._process_ping,
-            "ping_echo":            self._process_ping_echo,
-            "info-response":        self._process_info_response,
-            })
+        self.add_packet_handler("ping", self._process_ping, False)
+        self.add_packet_handler("ping_echo", self._process_ping_echo, False)
+        self.add_packet_handler("info-response", self._process_info_response, False)

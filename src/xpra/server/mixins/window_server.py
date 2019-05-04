@@ -396,7 +396,7 @@ class WindowServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        for packet_type, handler in {
+        self.add_packet_handlers({
             "map-window" :          self._process_map_window,
             "unmap-window" :        self._process_unmap_window,
             "configure-window" :    self._process_configure_window,
@@ -406,5 +406,4 @@ class WindowServer(StubServerMixin):
             "buffer-refresh" :      self._process_buffer_refresh,
             "suspend" :             self._process_suspend,
             "resume" :              self._process_resume,
-            }.items():
-            self.add_packet_handler(packet_type, handler)
+            })

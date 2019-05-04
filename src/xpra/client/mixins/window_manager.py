@@ -1488,7 +1488,7 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self):
-        self.set_packet_handlers(self._ui_packet_handlers, {
+        for packet_type, handler in {
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,
@@ -1507,4 +1507,5 @@ class WindowClient(StubClientMixin):
             "pointer-position":     self._process_pointer_position,
             "pointer-grab":         self._process_pointer_grab,
             "pointer-ungrab":       self._process_pointer_ungrab,
-            })
+            }.items():
+            self.add_packet_handler(packet_type, handler)

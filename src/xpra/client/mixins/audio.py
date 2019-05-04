@@ -576,6 +576,4 @@ class AudioClient(StubClientMixin):
     def init_authenticated_packet_handlers(self):
         log("init_authenticated_packet_handlers()")
         #these handlers can run directly from the network thread:
-        self.set_packet_handlers(self._packet_handlers, {
-            "sound-data":           self._process_sound_data,
-            })
+        self.add_packet_handler("sound-data", self._process_sound_data, False)

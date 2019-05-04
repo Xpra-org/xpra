@@ -61,7 +61,7 @@ def safe_open_download_file(basefilename, mimetype):
     flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
     try:
         flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
-    except:
+    except AttributeError:
         pass
     fd = os.open(filename, flags)
     filelog("using filename '%s'", filename)
@@ -78,7 +78,8 @@ class FileTransferAttributes(object):
         self.init_attributes(opts.file_transfer, opts.file_size_limit,
                              opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
-    def init_attributes(self, file_transfer="yes", file_size_limit=10, printing="yes", open_files="no", open_url="yes", open_command=None, can_ask=True):
+    def init_attributes(self, file_transfer="no", file_size_limit=10, printing="no",
+                        open_files="no", open_url="no", open_command=None, can_ask=True):
         filelog("file transfer: init_attributes%s",
                 (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
         def pbool(name, v):
@@ -180,7 +181,7 @@ class FileTransferHandler(FileTransferAttributes):
         for x in tuple(self.file_descriptors):
             try:
                 x.close()
-            except:
+            except (OSError, IOError):
                 pass
         self.file_descriptors = set()
         self.init_attributes()
@@ -212,18 +213,18 @@ class FileTransferHandler(FileTransferAttributes):
     def get_info(self):
         info = FileTransferAttributes.get_info(self)
         info["remote"] = {
-                          "file-transfer"   : self.remote_file_transfer,
-                          "file-transfer-ask" : self.remote_file_transfer_ask,
-                          "file-size-limit" : self.remote_file_size_limit,
-                          "file-chunks"     : self.remote_file_chunks,
-                          "open-files"      : self.remote_open_files,
-                          "open-files-ask"  : self.remote_open_files_ask,
-                          "open-url"        : self.remote_open_url,
-                          "open-url-ask"    : self.remote_open_url_ask,
-                          "printing"        : self.remote_printing,
-                          "printing-ask"    : self.remote_printing_ask,
-                          "file-ask-timeout" : self.remote_file_ask_timeout,
-                          }
+            "file-transfer"     : self.remote_file_transfer,
+            "file-transfer-ask" : self.remote_file_transfer_ask,
+            "file-size-limit"   : self.remote_file_size_limit,
+            "file-chunks"       : self.remote_file_chunks,
+            "open-files"        : self.remote_open_files,
+            "open-files-ask"    : self.remote_open_files_ask,
+            "open-url"          : self.remote_open_url,
+            "open-url-ask"      : self.remote_open_url_ask,
+            "printing"          : self.remote_printing,
+            "printing-ask"      : self.remote_printing_ask,
+            "file-ask-timeout"  : self.remote_file_ask_timeout,
+            }
         return info
 
     def check_digest(self, filename, digest, expected_digest, algo="sha1"):
@@ -424,7 +425,7 @@ class FileTransferHandler(FileTransferAttributes):
             if DELETE_PRINTER_FILE:
                 try:
                     os.unlink(filename)
-                except:
+                except (OSError, IOError):
                     printlog("failed to delete print job file '%s'", filename)
         if not printer:
             printlog.error("Error: the printer name is missing")
@@ -798,3 +799,9 @@ class FileTransferHandler(FileTransferAttributes):
         timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk)
         self.send_chunks_in_progress[chunk_id] = [start_time, data, chunk_size, timer, chunk]
         self.send("send-file-chunk", chunk_id, chunk, cdata, bool(data))
+
+    def send(self, *parts):
+        raise NotImplementedError()
+
+    def compressed_wrapper(self, datatype, data, level=5):
+        raise NotImplementedError()

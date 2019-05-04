@@ -114,6 +114,4 @@ class RPCClient(StubClientMixin):
 
     def init_authenticated_packet_handlers(self):
         log("init_authenticated_packet_handlers()")
-        self.set_packet_handlers(self._ui_packet_handlers, {
-            "rpc-reply":            self._process_rpc_reply,
-            })
+        self.add_packet_handler("rpc-reply", self._process_rpc_reply)

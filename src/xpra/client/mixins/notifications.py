@@ -74,10 +74,8 @@ class NotificationClient(StubClientMixin):
 
 
     def init_authenticated_packet_handlers(self):
-        self.set_packet_handlers(self._ui_packet_handlers, {
-            "notify_show":          self._process_notify_show,
-            "notify_close":         self._process_notify_close,
-            })
+        self.add_packet_handler("notify_show", self._process_notify_show)
+        self.add_packet_handler("notify_close", self._process_notify_close)
 
     def make_notifier(self):
         nc = self.get_notifier_classes()

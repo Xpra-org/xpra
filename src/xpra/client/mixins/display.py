@@ -573,7 +573,5 @@ class DisplayClient(StubClientMixin):
 
 
     def init_authenticated_packet_handlers(self):
-        self.set_packet_handlers(self._ui_packet_handlers, {
-            "show-desktop":         self._process_show_desktop,
-            "desktop_size":         self._process_desktop_size,
-            })
+        self.add_packet_handler("show-desktop", self._process_show_desktop)
+        self.add_packet_handler("desktop_size", self._process_desktop_size)

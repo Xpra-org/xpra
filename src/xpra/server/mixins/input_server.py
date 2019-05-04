@@ -404,13 +404,16 @@ class InputServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync_enabled_status)
-        self.add_packet_handler("key-action", self._process_key_action)
-        self.add_packet_handler("key-repeat", self._process_key_repeat)
-        self.add_packet_handler("layout-changed", self._process_layout)
-        self.add_packet_handler("keymap-changed", self._process_keymap)
-        #mouse:
-        self.add_packet_handler("button-action", self._process_button_action)
-        self.add_packet_handler("pointer-position", self._process_pointer_position)
-        #setup:
-        self.add_packet_handler("input-devices", self._process_input_devices)
+        self.add_packet_handlers({
+            #keyboard:
+            "set-keyboard-sync-enabled" : self._process_keyboard_sync_enabled_status,
+            "key-action"                : self._process_key_action,
+            "key-repeat"                : self._process_key_repeat,
+            "layout-changed"            : self._process_layout,
+            "keymap-changed"            : self._process_keymap,
+            #mouse:
+            "button-action"             : self._process_button_action,
+            "pointer-position"          : self._process_pointer_position,
+            #setup:
+            "input-devices"             : self._process_input_devices,
+            })

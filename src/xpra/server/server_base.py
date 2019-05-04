@@ -879,6 +879,10 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # packets:
+    def add_packet_handlers(self, defs, main_thread=True):
+        for packet_type, handler in defs.items():
+            self.add_packet_handler(packet_type, handler, main_thread)
+
     def add_packet_handler(self, packet_type, handler, main_thread=True):
         netlog("add_packet_handler%s", (packet_type, handler, main_thread))
         if main_thread:
@@ -891,15 +895,18 @@ class ServerBase(ServerBaseClass):
         for c in SERVER_BASES:
             c.init_packet_handlers(self)
         #no need for main thread:
-        self.add_packet_handler("sharing-toggle",   self._process_sharing_toggle, False)
-        self.add_packet_handler("lock-toggle",      self._process_lock_toggle, False)
+        self.add_packet_handlers({
+            "sharing-toggle"    : self._process_sharing_toggle,
+            "lock-toggle"       : self._process_lock_toggle,
+            }, False)
         #attributes / settings:
-        self.add_packet_handler("server-settings",  self._process_server_settings)
-        self.add_packet_handler("set_deflate",      self._process_set_deflate)
-        #requests:
-        self.add_packet_handler("shutdown-server",  self._process_shutdown_server)
-        self.add_packet_handler("exit-server",      self._process_exit_server)
-        self.add_packet_handler("info-request",     self._process_info_request)
+        self.add_packet_handlers({
+            "server-settings"   : self._process_server_settings,
+            "set_deflate"       : self._process_set_deflate,
+            "shutdown-server"   : self._process_shutdown_server,
+            "exit-server"       : self._process_exit_server,
+            "info-request"      : self._process_info_request,
+            })
 
     def init_aliases(self):
         packet_types = list(self._default_packet_handlers.keys())

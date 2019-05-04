@@ -134,15 +134,13 @@ class ClipboardClient(StubClientMixin):
 
 
     def init_authenticated_packet_handlers(self):
-        self.set_packet_handlers(self._ui_packet_handlers, {
-            "set-clipboard-enabled":        self._process_clipboard_enabled_status,
-            "clipboard-token":              self._process_clipboard_packet,
-            "clipboard-request":            self._process_clipboard_packet,
-            "clipboard-contents":           self._process_clipboard_packet,
-            "clipboard-contents-none":      self._process_clipboard_packet,
-            "clipboard-pending-requests":   self._process_clipboard_packet,
-            "clipboard-enable-selections":  self._process_clipboard_packet,
-            })
+        self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_enabled_status)
+        for x in (
+            "token", "request",
+            "contents", "contents-none",
+            "pending-requests", "enable-selections",
+            ):
+            self.add_packet_handler("clipboard-%s" % x, self._process_clipboard_packet)
 
     def get_clipboard_helper_classes(self):
         return ()

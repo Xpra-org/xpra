@@ -217,8 +217,10 @@ class EncodingServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self.add_packet_handler("quality",      self._process_quality)
-        self.add_packet_handler("min-quality",  self._process_min_quality)
-        self.add_packet_handler("speed",        self._process_speed)
-        self.add_packet_handler("min-speed",    self._process_min_speed)
-        self.add_packet_handler("encoding",     self._process_encoding)
+        self.add_packet_handlers{
+            "quality"       : self._process_quality,
+            "min-quality"   : self._process_min_quality,
+            "speed"         : self._process_speed,
+            "min-speed"     : self._process_min_speed,
+            "encoding"      : self._process_encoding,
+            })

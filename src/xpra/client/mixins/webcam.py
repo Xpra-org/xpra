@@ -310,7 +310,5 @@ class WebcamForwarder(StubClientMixin):
 
     def init_authenticated_packet_handlers(self):
         log("init_authenticated_packet_handlers()")
-        self.set_packet_handlers(self._ui_packet_handlers, {
-            "webcam-stop":          self._process_webcam_stop,
-            "webcam-ack":           self._process_webcam_ack,
-            })
+        self.add_packet_handler("webcam-stop", self._process_webcam_stop)
+        self.add_packet_handler("webcam-ack", self._process_webcam_ack)
