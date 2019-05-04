@@ -215,7 +215,7 @@ class X11ServerCore(GTKServerBase):
                         v = bytestostr(parts[1].strip())
                         self.opengl_props[k] = v
                     gllog("opengl props=%s", self.opengl_props)
-                    gllog.info(" OpenGL is supported on display '%s'", os.environ.get("DISPLAY"))
+                    gllog.info("OpenGL is supported on display '%s'", os.environ.get("DISPLAY"))
                     renderer = self.opengl_props.get("renderer")
                     if renderer:
                         gllog.info(" using '%s' renderer", renderer)
