@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,7 +22,9 @@ class Authenticator(SysAuthenticator):
             filename = os.path.join(exec_cwd, filename)
         self.filename = filename
         self.password_query = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(?)")
-        self.sessions_query = kwargs.pop("sessions_query", "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(?) AND password=(?)")
+        self.sessions_query = kwargs.pop("sessions_query",
+                                         "SELECT uid, gid, displays, env_options, session_options "+
+                                         "FROM users WHERE username=(?) AND password=(?)")
         SysAuthenticator.__init__(self, username, **kwargs)
         self.authenticate = self.authenticate_hmac
 
@@ -116,8 +118,10 @@ def create(filename):
     return exec_database_sql_script(None, filename, sql)
 
 def add_user(filename, username, password, uid=getuid(), gid=getgid(), displays="", env_options="", session_options=""):
-    sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) VALUES(?, ?, ?, ?, ?, ?, ?)"
-    return exec_database_sql_script(None, filename, sql, (username, password, uid, gid, displays, env_options, session_options))
+    sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) "+\
+          "VALUES(?, ?, ?, ?, ?, ?, ?)"
+    return exec_database_sql_script(None, filename, sql,
+                                    (username, password, uid, gid, displays, env_options, session_options))
 
 def remove_user(filename, username, password=None):
     sql = "DELETE FROM users WHERE username=?"
