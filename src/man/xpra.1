@@ -656,6 +656,8 @@ ie: \fB--auth=file:filename=./password.txt\fP.
 
 The contents of this file will be treated as binary data,
 there are no restrictions on character encodings or file size.
+Beware of trailing newline characters which will be included in the
+password data.
 
 .IP \fBmultifile\fP
 checks the username and password against the file specified using
@@ -667,15 +669,17 @@ The file must contain each user credentials on one line of the form:
 It is not possible to have usernames or password that contain
 the pipe character \fI|\fP which is used as delimiter, or newlines
 and carriage returns.
+This module is deprecated, \fIsqlite\fP should be used instead.
 
-.IP \fBsqlite\fP
+.IP \fBsqlite\fP and \fBmysql\fP
 checks the username and password against the sqlite database file
-specified using the filename option.
+specified using the \fIfilename\fP option, or the mysql database
+specified using the \fIuri\fP option.
 The authentication will be processed using the following query
-(which is configurable using the "password_query" option):
+(which is configurable using the \fIpassword_query\fP option):
 \fISELECT password FROM users WHERE username=(?)\fP
-The sessions available for each user will be querying using:
-(this is configurable using the "sessions_query" option):
+The sessions available for each user will be queried using:
+(this is configurable using the \fIsessions_query\fP option):
 \fISELECT uid, gid, displays, env_options, session_options
 FROM users WHERE username=(?)\fP
 Multiple displays may be specified as a comma separated list.
