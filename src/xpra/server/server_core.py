@@ -520,7 +520,13 @@ class ServerCore(object):
     def get_auth_module(self, socket_type, auth_str, opts):
         authlog("get_auth_module(%s, %s, {..})", socket_type, auth_str)
         #separate options from the auth module name
-        parts = auth_str.split(":", 1)
+        #either with ":" or "," as separator
+        scpos = auth_str.find(":")
+        cpos = auth_str.find(",")
+        if cpos<0 or scpos<cpos:
+            parts = auth_str.split(":", 1)
+        else:
+            parts = auth_str.split(",", 1)
         if len(parts)==1 and auth_str.find(",")>0:
             parts = auth_str.split(",", 1)
         auth = parts[0]
