@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import deque
 
-from xpra.net.compression import Compressible
+from xpra.net.compression import Compressible, compressed_wrapper
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
 from xpra.util import envint, XPRA_CLIPBOARD_NOTIFICATION_ID
@@ -132,5 +132,9 @@ class ClipboardConnection(StubSourceMixin):
         packet = list(packet)
         for i, item in enumerate(packet):
             if isinstance(item, Compressible):
-                packet[i] = self.compressed_wrapper(item.datatype, item.data)
+                if self.brotli:
+                    packet[i] = compressed_wrapper(item.datatype, item.data,
+                                                               level=9, brotli=True, can_inline=False)
+                else:
+                    packet[i] = self.compressed_wrapper(item.datatype, item.data)
         self.queue_packet(packet)
