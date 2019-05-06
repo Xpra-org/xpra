@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 Antoine Martin <antoine@xpra.org>
+ * Copyright (c) 2013-2019 Antoine Martin <antoine@xpra.org>
  * Copyright (c) 2016 David Brushinski <dbrushinski@spikes.com>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Copyright (c) 2015 Spikes, Inc.
@@ -14,6 +14,7 @@
  *	bencode.js
  *  inflate.js
  *  lz4.js
+ *  brotli_decode.js
  */
 
 
@@ -311,6 +312,8 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 				this.protocol_error("failed to decompress lz4 data, error code: "+uncompressedSize);
 				return false;
 			}
+		} else if (level & 0x40) {
+			inflated = BrotliDecode(packet_data);
 		} else {
 			// zlib
 			var inflated = new Zlib.Inflate(packet_data).decompress();
@@ -480,6 +483,7 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 		'lib/bencode.js',
 		'lib/zlib.js',
 		'lib/lz4.js',
+		'lib/brotli_decode.js',
 		'lib/forge.js');
 	// make protocol instance
 	var protocol = new XpraProtocol();

@@ -1078,6 +1078,13 @@ XpraClient.prototype._make_hello_base = function() {
 		});
 	}
 
+	if(BrotliDecode) {
+		console.log("BROTLI!", BrotliDecode);
+		this._update_capabilities({
+			"brotli"					: true,
+		});
+	}
+
 	if(this.encryption) {
 		this.cipher_in_caps = {
 			"cipher"					: this.encryption,
