@@ -199,13 +199,6 @@ def OpenGL_safety_check():
             return "VirtualBox is present (VBoxMiniRdrDN)"
     return None
 
-OPENGL_DEFAULT = "probe"       #will auto-detect by probing
-def get_opengl_default():
-    global OPENGL_DEFAULT
-    if OpenGL_safety_check() is not None:
-        OPENGL_DEFAULT = "no"
-    return OPENGL_DEFAULT
-
 
 def get_build_info():
     info = []
@@ -985,7 +978,7 @@ def get_defaults():
                     "av-sync"           : True,
                     "exit-ssh"          : True,
                     "dbus-control"      : not WIN32 and not OSX,
-                    "opengl"            : get_opengl_default(),
+                    "opengl"            : "probe",
                     "mdns"              : not WIN32,
                     "swap-keys"         : OSX,  #only used on osx
                     "desktop-fullscreen": False,
