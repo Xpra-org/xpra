@@ -86,8 +86,8 @@ class SqliteDatabaseUtil(DatabaseUtilBase):
         return Authenticator
 
 
-def main():
-    return run_dbutil(SqliteDatabaseUtil, "filename", sys.argv)
+def main(argv):
+    return run_dbutil(SqliteDatabaseUtil, "filename", argv)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))
