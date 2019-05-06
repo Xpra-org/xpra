@@ -384,7 +384,7 @@ def get_network_caps():
     from xpra.net.packet_encoding import get_enabled_encoders, get_packet_encoding_caps
     digests = get_digests()
     #"hmac" is the legacy name, "xor" and "des" should not be used for salt:
-    salt_digests = [x for x in digests if x not in ("hmac", "xor", "des")]
+    salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
     caps = {
                 "digest"                : digests,
                 "salt-digest"           : salt_digests,
