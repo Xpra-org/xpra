@@ -355,6 +355,7 @@ Recommends:         python3-kerberos
 Recommends:         python3-gssapi
 Recommends:         python3-ldap
 Recommends:         python3-ldap3
+Recommends:         python3-brotli
 Requires:			libwebp
 BuildRequires:		libwebp-devel
 %endif
