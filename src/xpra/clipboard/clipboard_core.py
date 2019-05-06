@@ -226,7 +226,7 @@ class ClipboardProtocolHelperCore(object):
         #(ie: OSX and win32 only use "CLIPBOARD" by default, and not "PRIMARY" or "SECONDARY")
         log("enabling selections: %s", csv(selections))
         for selection, proxy in self._clipboard_proxies.items():
-            proxy.set_enabled(strtobytes(selection) in selections)
+            proxy.set_enabled(bytestostr(selection) in selections)
 
     def set_greedy_client(self, greedy):
         for proxy in self._clipboard_proxies.values():
@@ -494,7 +494,7 @@ class ClipboardProtocolHelperCore(object):
             self.progress_cb(None, pending)
 
     def _process_clipboard_enable_selections(self, packet):
-        selections = packet[1]
+        selections = tuple(bytestostr(x) for x in packet[1])
         self.enable_selections(selections)
 
     def _process_clipboard_loop_uuids(self, packet):
