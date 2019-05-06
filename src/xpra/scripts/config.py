@@ -1324,10 +1324,10 @@ def fixup_compression(options):
         compressors = compression.PERFORMANCE_ORDER
     else:
         compressors = _nodupes(cstr)
-        unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS]
+        unknown = tuple(x for x in compressors if x and x not in compression.ALL_COMPRESSORS)
         if unknown:
             warn("warning: invalid compressor(s) specified: %s" % csv(unknown))
-    options.compressors = compressors
+    options.compressors = list(compressors)
 
 def fixup_packetencoding(options):
     #packet encoding
