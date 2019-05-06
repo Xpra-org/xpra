@@ -190,7 +190,7 @@ def get_enabled_compressors(order=ALL_COMPRESSORS):
         "brotli"                : use_brotli,
         }.items() if b)
     #order them:
-    return tuple(x for x in order if x in enabled)
+    return [x for x in order if x in enabled]
 
 def get_compressor(c):
     assert c=="none" or c in ALL_COMPRESSORS
