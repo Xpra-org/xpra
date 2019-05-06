@@ -427,7 +427,8 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
     def do_selection_notify_event(self, event):
         owned = self.owned
         self.owned = event.owner and get_xwindow(event.owner)==self.xid
-        log("do_selection_notify_event(%s) owned=%s, was %s", event, self.owned, owned)
+        log("do_selection_notify_event(%s) owned=%s, was %s, enabled=%s, can-send=%s",
+            event, self.owned, owned, self._enabled, self._can_send)
         if not self._enabled:
             return
         if self.owned or not self._can_send:
