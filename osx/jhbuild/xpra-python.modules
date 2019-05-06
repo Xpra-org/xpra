@@ -399,6 +399,17 @@
 		</after>
 	</distutils>
 
+	<distutils id="python-brotli">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/cd/9c/7955895f5672ecc85270244582c6b53ff95bb4c24bf77bd9271d42351635/Brotli-1.0.7.zip"
+			hash="sha256:0538dc1744fd17c314d2adc409ea7d1b779783b89fd95bcfb0c2acc93a6ea5a7"
+			version="1.0.7">
+		</branch>
+		<dependencies>
+			<dep package="python"/>
+		</dependencies>
+	</distutils>
+
 	<distutils id="python-pyasn1-modules">
 		<branch repo="pypi.python.org"
 			module="/packages/ab/76/36ab0e099e6bd27ed95b70c2c86c326d3affa59b9b535c63a2f892ac9f45/pyasn1-modules-0.2.1.tar.gz"
@@ -729,6 +740,7 @@
 		  <dep package="python-deprecation"/>
 		  <dep package="python-lz4"/>
 		  <dep package="python-lzo"/>
+		  <dep package="python-brotli"/>
 		  <dep package="python-ldap3"/>
 		  <dep package="python-ldap"/>
 		  <dep package="python-future"/>
