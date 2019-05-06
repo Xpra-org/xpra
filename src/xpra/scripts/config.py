@@ -13,7 +13,8 @@ import platform as python_platform
 assert python_platform
 from xpra.util import csv
 from xpra.os_util import (
-    WIN32, OSX, PYTHON2, osexpand, getuid, getgid, get_username_for_uid,
+    WIN32, OSX, PYTHON2, POSIX,
+    osexpand, getuid, getgid, get_username_for_uid,
     is_CentOS, is_RedHat, is_Fedora, is_Debian, is_Ubuntu, getUbuntuVersion,
     )
 
@@ -40,7 +41,10 @@ DEBUG_CONFIG_PROPERTIES = os.environ.get("XPRA_DEBUG_CONFIG_PROPERTIES", "").spl
 DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
 DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
-DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
+if POSIX:
+    DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
+else:
+    DEFAULT_POSTSCRIPT_PRINTER = ""
 DEFAULT_PULSEAUDIO = None   #auto
 if OSX or WIN32:
     DEFAULT_PULSEAUDIO = False
