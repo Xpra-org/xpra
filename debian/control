@@ -126,8 +126,6 @@ Recommends:
         ,openssh-client
 #for using SSH passwords from the GUI launcher:
         ,sshpass
-#the start-session GUI:
-        ,python-xdg
 # to make the system tray work again with gnome-shell:
 #buster:		,gnome-shell-extension-appindicator
 #bionic:		,gnome-shell-extension-appindicator
