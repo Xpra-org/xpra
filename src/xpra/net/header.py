@@ -5,6 +5,11 @@
 
 import struct
 
+#Note: since encoding flags and compression flags are all mutually exclusive,
+# (ie: only one encoder and at most one compressor can be used at a time) 
+# we could theoretically add many more values here,
+# not necessarily limitting ourselves to the ones that land on a bit.
+
 #packet encoding flags:
 FLAGS_BENCODE   = 0x0       #assume bencode if not other flag is set
 FLAGS_RENCODE   = 0x1
@@ -16,6 +21,7 @@ FLAGS_YAML      = 0x4
 ZLIB_FLAG       = 0x0       #assume zlib if no other compression flag is set
 LZ4_FLAG        = 0x10
 LZO_FLAG        = 0x20
+BROTLI_FLAG     = 0x40
 FLAGS_NOHEADER  = 0x10000   #never encoded, so we can use a value bigger than a byte
 
 

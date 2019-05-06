@@ -8,7 +8,7 @@
 import struct
 
 from xpra.os_util import PYTHON3
-from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG
+from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG, BROTLI_FLAG
 
 
 def debug(msg, *args, **kwargs):
@@ -66,6 +66,30 @@ except Exception as e:
         raise Exception("lzo is not supported!")
 
 
+brotli_compress = None
+brotli_decompress = None
+brotli_version = None
+try:
+    from brotli import (
+        compress as bcompress,
+        decompress as bdecompress,
+        __version__ as brotli_version,
+        )
+    has_brotli = True
+    def _brotli_compress(packet, level):
+        if len(packet)>1024*1024:
+            level = min(9, level)
+        else:
+            level = min(11, level)
+        if not isinstance(packet, bytes):
+            packet = bytes(packet, 'UTF-8')
+        return level | BROTLI_FLAG, bcompress(packet, quality=level)
+    brotli_compress = _brotli_compress
+    brotli_decompress = bdecompress
+except ImportError:
+    has_brotli = False
+
+
 try:
     from zlib import compress as zlib_compress, decompress as zlib_decompress
     from zlib import __version__ as zlib_version
@@ -105,18 +129,20 @@ else:
 use_zlib = has_zlib
 use_lzo = has_lzo
 use_lz4 = has_lz4
+use_brotli = has_brotli
 
 #all the compressors we know about, in best compatibility order:
-ALL_COMPRESSORS = ("zlib", "lz4", "lzo")
+ALL_COMPRESSORS = ("zlib", "lz4", "lzo", "brotli")
 
 #order for performance:
-PERFORMANCE_ORDER = ("lz4", "lzo", "zlib")
+PERFORMANCE_ORDER = ("lz4", "lzo", "zlib", "brotli")
 
 
 _COMPRESSORS = {
     "zlib"  : zcompress,
     "lz4"   : lz4_compress,
     "lzo"   : lzo_compress,
+    "brotli": brotli_compress,
     "none"  : nocompress,
     }
 
@@ -143,21 +169,28 @@ def get_compression_caps():
              }
     if has_zlib:
         _zlib["version"] = zlib_version
+    _brotli = {
+        ""                  : use_brotli
+        }
+    if has_brotli:
+        _brotli["version"] = brotli_version
     caps.update({
-                 "lz4"                   : _lz4,
-                 "lzo"                   : _lzo,
-                 "zlib"                  : _zlib,
-                 })
+        "lz4"                   : _lz4,
+        "lzo"                   : _lzo,
+        "zlib"                  : _zlib,
+        "brotli"                : _brotli,
+        })
     return caps
 
 def get_enabled_compressors(order=ALL_COMPRESSORS):
-    enabled = [x for x,b in {
-            "lz4"                   : use_lz4,
-            "lzo"                   : use_lzo,
-            "zlib"                  : use_zlib,
-            }.items() if b]
+    enabled = tuple(x for x,b in {
+        "lz4"                   : use_lz4,
+        "lzo"                   : use_lzo,
+        "zlib"                  : use_zlib,
+        "brotli"                : use_brotli,
+        }.items() if b)
     #order them:
-    return [x for x in order if x in enabled]
+    return tuple(x for x in order if x in enabled)
 
 def get_compressor(c):
     assert c=="none" or c in ALL_COMPRESSORS
@@ -223,7 +256,7 @@ class Compressible(LargeStructure):
         raise Exception("compress() not defined on %s" % self)
 
 
-def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
+def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, brotli=False, can_inline=True):
     size = len(data)
     if size>MAX_SIZE:
         sizemb = size//1024//1024
@@ -237,6 +270,10 @@ def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False
         assert use_lzo, "cannot use lzo"
         algo = "lzo"
         cl, cdata = lzo_compress(data, level)
+    elif brotli:
+        assert use_brotli, "cannot use brotli"
+        algo = "brotli"
+        cl, cdata = brotli_compress(data, level)
     else:
         assert zlib and use_zlib, "cannot use zlib"
         algo = "zlib"
@@ -253,6 +290,8 @@ def get_compression_type(level):
         return "lz4"
     if level & LZO_FLAG:
         return "lzo"
+    if level & BROTLI_FLAG:
+        return "brotli"
     return "zlib"
 
 
@@ -278,6 +317,12 @@ def decompress(data, level):
         if not use_lzo:
             raise InvalidCompressionException("lzo is not enabled")
         return LZO_decompress(data)
+    if level & BROTLI_FLAG:
+        if not has_brotli:
+            raise InvalidCompressionException("brotli is not available")
+        if not use_brotli:
+            raise InvalidCompressionException("brotli is not enabled")
+        return brotli_decompress(data)
     if not use_zlib:
         raise InvalidCompressionException("zlib is not enabled")
     if isinstance(data, memoryview):
@@ -288,6 +333,7 @@ NAME_TO_FLAG = {
     "lz4"   : LZ4_FLAG,
     "zlib"  : 0,
     "lzo"   : LZO_FLAG,
+    "brotli": BROTLI_FLAG,
     }
 
 def decompress_by_name(data, algo):

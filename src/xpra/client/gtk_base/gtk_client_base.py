@@ -1279,7 +1279,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         def register_clipboard_compress_cb(compressible):
             #register the compressor which will fire in protocol.encode:
             def compress_clipboard():
-                clipboardlog("compress_clipboard() compressing %s", compressible)
+                clipboardlog("compress_clipboard() compressing %s, server compressors=%s",
+                                  compressible, self.server_compressors)
+                from xpra.net import compression
+                if "brotli" in self.server_compressors and compression.use_brotli:
+                    return compression.compressed_wrapper(compressible.datatype, compressible.data,
+                                                        level=9, brotli=True, can_inline=False)
                 return self.compressed_wrapper(compressible.datatype, compressible.data)
             compressible.compress = compress_clipboard
         def clipboard_progress(local_requests, remote_requests):
