@@ -53,6 +53,8 @@ try:
     python_lzo_version = python_lzo.__version__
     lzo_version = python_lzo.LZO_VERSION_STRING
     def lzo_compress(packet, level):
+        if isinstance(packet, memoryview):
+            packet = packet.tobytes()
         return level | LZO_FLAG, python_lzo.compress(packet)
     LZO_decompress = python_lzo.decompress
 except Exception as e:
@@ -71,12 +73,18 @@ try:
     #stupid python version breakage:
     if PYTHON3:
         def zcompress(packet, level):
-            if not isinstance(packet, bytes):
+            if isinstance(packet, memoryview):
+                packet = packet.tobytes()
+            elif not isinstance(packet, bytes):
                 packet = bytes(packet, 'UTF-8')
             return level + ZLIB_FLAG, zlib_compress(packet, level)
     else:
         def zcompress(packet, level):
-            return level + ZLIB_FLAG, zlib_compress(str(packet), level)
+            if isinstance(packet, memoryview):
+                packet = packet.tobytes()
+            else:
+                packet = str(packet)
+            return level + ZLIB_FLAG, zlib_compress(packet, level)
 except ImportError:
     has_zlib = False
     def zcompress(packet, level):
@@ -216,8 +224,6 @@ class Compressible(LargeStructure):
 
 
 def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, can_inline=True):
-    if isinstance(data, memoryview):
-        data = data.tobytes()
     size = len(data)
     if size>MAX_SIZE:
         sizemb = size//1024//1024
