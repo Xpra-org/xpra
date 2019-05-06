@@ -1396,6 +1396,7 @@ if WIN32:
             add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
         if server_ENABLED:
             add_console_exe("xpra/server/auth/sqlite_auth.py",  "sqlite.ico",        "SQLite_auth_tool")
+            add_console_exe("xpra/server/auth/sql_auth.py",     "sql.ico",           "SQL_auth_tool")
             add_console_exe("xpra/server/auth/win32_auth.py",   "authentication.ico", "System-Auth-Test")
             add_console_exe("xpra/server/auth/ldap_auth.py",    "authentication.ico", "LDAP-Auth-Test")
             add_console_exe("xpra/server/auth/ldap3_auth.py",   "authentication.ico", "LDAP3-Auth-Test")
