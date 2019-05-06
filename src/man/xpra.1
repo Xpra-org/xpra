@@ -671,10 +671,11 @@ the pipe character \fI|\fP which is used as delimiter, or newlines
 and carriage returns.
 This module is deprecated, \fIsqlite\fP should be used instead.
 
-.IP \fBsqlite\fP and \fBmysql\fP
+.IP \fBsqlite\fP, \fBmysql\fP and \fBsql\fP
 checks the username and password against the sqlite database file
-specified using the \fIfilename\fP option, or the mysql database
-specified using the \fIuri\fP option.
+specified using the \fIfilename\fP option (for the \fIsqlite\fP backend),
+or the database specified using the \fIuri\fP option
+(\fImysql\fP and \fIsql\fP backends).
 The authentication will be processed using the following query
 (which is configurable using the \fIpassword_query\fP option):
 \fISELECT password FROM users WHERE username=(?)\fP
