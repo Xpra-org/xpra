@@ -273,7 +273,8 @@ class ServerBaseControlCommands(StubServerMixin):
         file_size = len(data)
         file_size_MB = file_size//1024//1024
         if file_size_MB>self.file_transfer.file_size_limit:
-            raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (filename, file_size_MB, self.file_transfer.file_size_limit))
+            raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (
+                filename, file_size_MB, self.file_transfer.file_size_limit))
         #send it to each client:
         for ss in sources:
             #ie: ServerSource.file_transfer (found in FileTransferAttributes)
@@ -334,7 +335,7 @@ class ServerBaseControlCommands(StubServerMixin):
     def all_send_client_command(self, *client_command):
         """ forwards the command to all clients """
         for source in tuple(self._server_sources.values()):
-            """ forwards to *the* client, if there is *one* """
+            # forwards to *the* client, if there is *one*
             if client_command[0] not in source.control_commands:
                 log.info("client command '%s' not forwarded to client %s (not supported)", client_command, source)
             else:
