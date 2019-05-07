@@ -1275,7 +1275,7 @@ XpraClient.prototype._window_mouse_move = function(ctx, e, window) {
 }
 XpraClient.prototype.do_window_mouse_move = function(e, window) {
 	this._check_browser_language();
-	if (this.server_readonly || this.mouse_grabbed) {
+	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
 	var mouse = this.getMouse(e, window),
@@ -1301,7 +1301,7 @@ XpraClient.prototype._window_mouse_up = function(ctx, e, window) {
 }
 
 XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
-	if (this.server_readonly || this.mouse_grabbed) {
+	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
 	var mouse = this.getMouse(e, window),
@@ -1336,7 +1336,7 @@ XpraClient.prototype._window_mouse_scroll = function(ctx, e, window) {
 }
 
 XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
-	if (this.server_readonly) {
+	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
 	var mouse = this.getMouse(e, window),
@@ -1408,7 +1408,7 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
  * Focus
  */
 XpraClient.prototype._window_set_focus = function(win) {
-	if (win==null || win.client.server_readonly) {
+	if (win==null || win.client.server_readonly || !this.connected) {
 		return;
 	}
 	// don't send focus packet for override_redirect windows!
