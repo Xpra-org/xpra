@@ -8,7 +8,7 @@
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()
 from xpra.x11.x11_server_core import X11ServerCore
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, is_Wayland
 from xpra.util import envbool, envint
 from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -41,6 +41,9 @@ class XImageCapture(object):
         self.xshm = None
         self.xwindow = xwindow
         assert USE_XSHM and XImage.has_XShm(), "no XShm support"
+        if is_Wayland():
+            log.warn("Warning: shadow servers do not support Wayland")
+            log.warn(" switch to X11")
 
     def __repr__(self):
         return "XImageCapture(%#x)" % self.xwindow

@@ -633,6 +633,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
 
 def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
+    assert mode in (
+        "start", "start-desktop",
+        "upgrade", "upgrade-desktop",
+        "shadow", "proxy",
+        )
+
     try:
         cwd = os.getcwd()
     except OSError:
@@ -642,11 +648,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if opts.encoding=="help" or "help" in opts.encodings:
         return show_encoding_help(opts)
 
-    assert mode in (
-        "start", "start-desktop",
-        "upgrade", "upgrade-desktop",
-        "shadow", "proxy",
-        )
     starting  = mode == "start"
     starting_desktop = mode == "start-desktop"
     upgrading = mode == "upgrade"
@@ -655,9 +656,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     proxying  = mode == "proxy"
     clobber   = upgrading or upgrading_desktop or opts.use_display
     start_vfb = not (shadowing or proxying or clobber)
-
-    if shadowing and is_Wayland():
-        warn("shadow servers do not support Wayland, switch to X11")
 
     if opts.bind_rfb and (proxying or starting):
         get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
