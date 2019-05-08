@@ -97,58 +97,12 @@ def save_xvfb_pid(pid):
 def get_xvfb_pid():
     return _get_int(b"_XPRA_SERVER_PID")
 
-def save_dbus_pid(pid):
-    _save_int(b"_XPRA_DBUS_PID", pid)
-
-def get_dbus_pid():
-    return _get_int(b"_XPRA_DBUS_PID")
 
 def save_uinput_id(uuid):
     _save_str(b"_XPRA_UINPUT_ID", (uuid or b"").decode())
 
 #def get_uinput_id():
 #    return _get_str("_XPRA_UINPUT_ID")
-
-def get_dbus_env():
-    env = {}
-    for n,load in (
-            ("ADDRESS",     _get_str),
-            ("PID",         _get_int),
-            ("WINDOW_ID",   _get_int)):
-        k = "DBUS_SESSION_BUS_%s" % n
-        try:
-            v = load(k)
-            if v:
-                env[k] = bytestostr(v)
-        except Exception as e:
-            error("failed to load dbus environment variable '%s':\n" % k)
-            error(" %s\n" % e)
-    return env
-
-def save_dbus_env(env):
-    #DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
-    #DBUS_SESSION_BUS_PID=11406
-    #DBUS_SESSION_BUS_WINDOWID=50331649
-    def u(s):
-        try:
-            return s.decode("latin1")
-        except:
-            return str(s)
-    for n,conv,save in (
-            ("ADDRESS",     u,    _save_str),
-            ("PID",         int,    _save_int),
-            ("WINDOW_ID",   int,    _save_int)):
-        k = "DBUS_SESSION_BUS_%s" % n
-        v = env.get(k)
-        if v is None:
-            continue
-        try:
-            tv = conv(v)
-            save(k, tv)
-        except Exception as e:
-            get_util_logger().debug("save_dbus_env(%s)", env, exc_info=True)
-            error("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
-            error(" %s\n" % e)
 
 
 def validate_pixel_depth(pixel_depth, starting_desktop=False):
@@ -333,60 +287,6 @@ def guess_xpra_display(socket_dir, socket_dirs):
     return live[0]
 
 
-def start_dbus(dbus_launch):
-    if not dbus_launch or dbus_launch.lower() in FALSE_OPTIONS:
-        return 0, {}
-    from xpra.log import Logger
-    dbuslog = Logger("dbus")
-    try:
-        def preexec():
-            assert POSIX
-            os.setsid()
-            close_fds()
-        env = dict((k,v) for k,v in os.environ.items() if k in (
-            "PATH",
-            "SSH_CLIENT", "SSH_CONNECTION",
-            "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR",
-            "SHELL", "LANG", "USER", "LOGNAME", "HOME",
-            "DISPLAY", "XAUTHORITY", "CKCON_X11_DISPLAY",
-            ))
-        import shlex
-        cmd = shlex.split(dbus_launch)
-        dbuslog("start_dbus(%s) env=%s", dbus_launch, env)
-        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, shell=False, env=env, preexec_fn=preexec)
-        out = proc.communicate()[0]
-        assert proc.poll()==0, "exit code is %s" % proc.poll()
-        #parse and add to global env:
-        dbus_env = {}
-        dbuslog("out(%s)=%s", cmd, nonl(out))
-        for l in bytestostr(out).splitlines():
-            if l.startswith("export "):
-                continue
-            sep = "="
-            if l.startswith("setenv "):
-                l = l[len("setenv "):]
-                sep = " "
-            if l.startswith("set "):
-                l = l[len("set "):]
-            parts = l.split(sep, 1)
-            if len(parts)!=2:
-                continue
-            k,v = parts
-            if v.startswith("'") and v.endswith("';"):
-                v = v[1:-2]
-            elif v.endswith(";"):
-                v = v[:-1]
-            dbus_env[k] = v
-        dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
-        dbuslog("dbus-env=%s", dbus_env)
-        return dbus_pid, dbus_env
-    except Exception as e:
-        dbuslog("start_dbus(%s)", dbus_launch, exc_info=True)
-        dbuslog.error("dbus-launch failed to start using command '%s':\n" % dbus_launch)
-        dbuslog.error(" %s\n" % e)
-        return 0, {}
-
-
 def show_encoding_help(opts):
     #avoid errors and warnings:
     opts.encoding = ""
@@ -451,7 +351,7 @@ def set_server_features(opts):
     server_features.rfb             = b(opts.rfb_upgrade) and impcheck("server.rfb")
 
 
-def make_desktop_server():
+def make_desktop_server(clobber):
     from xpra.x11.desktop_server import XpraDesktopServer
     return XpraDesktopServer()
 
@@ -1066,6 +966,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             kill_dbus = _kill_dbus
             add_cleanup(kill_dbus)
             #this also updates os.environ with the dbus attributes:
+            from xpra.server.dbus.dbus_start import start_dbus
             dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
             dbuslog("dbus attributes: pid=%s, env=%s", dbus_pid, dbus_env)
             if dbus_env:
@@ -1156,6 +1057,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #now we can save values on the display
         #(we cannot access gtk3 until dbus has started up)
         if not clobber:
+            from xpra.server.dbus.dbus_start import save_dbus_pid, save_dbus_env
             if xvfb_pid:
                 save_xvfb_pid(xvfb_pid)
             if dbus_pid:
