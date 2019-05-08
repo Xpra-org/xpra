@@ -18,7 +18,7 @@ from subprocess import Popen, PIPE
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.os_util import (
-    SIGNAMES, POSIX, PYTHON3, WIN32, OSX, is_Wayland,
+    SIGNAMES, POSIX, PYTHON3, WIN32, OSX,
     FDChangeCaptureContext, close_fds, get_ssh_port,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand,
