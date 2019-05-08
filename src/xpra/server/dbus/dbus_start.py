@@ -8,8 +8,8 @@ import os
 from subprocess import Popen, PIPE
 
 from xpra.util import nonl
-from xpra.os_util import POSIX, bytestostr
-from xpra.scripts.server import close_fds, _get_int, _get_str, _save_int, _save_str
+from xpra.os_util import POSIX, bytestostr, close_fds
+from xpra.scripts.server import _get_int, _get_str, _save_int, _save_str
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
 
