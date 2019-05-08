@@ -7,7 +7,7 @@
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get
-from xpra.gtk_common.gtk_util import get_xwindow
+from xpra.gtk_common.gtk_util import get_xwindow, display_get_default
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
@@ -17,8 +17,9 @@ X11Window = X11WindowBindings()
 
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
-def wm_check(display, wm_name, upgrading=False):
+def wm_check(wm_name, upgrading=False):
     with xsync:
+        display = display_get_default()
         #there should only be one screen... but let's check all of them
         for i in range(display.get_n_screens()):
             screen = display.get_screen(i)

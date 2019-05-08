@@ -657,6 +657,16 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     clobber   = upgrading or upgrading_desktop or opts.use_display
     start_vfb = not (shadowing or proxying or clobber)
 
+    if proxying or upgrading or upgrading_desktop:
+        #when proxying or upgrading, don't exec any plain start commands:
+        opts.start = opts.start_child = []
+    elif opts.exit_with_children:
+        assert opts.start_child, "exit-with-children was specified but start-child is missing!"
+    elif opts.start_child:
+        warn("Warning: the 'start-child' option is used,")
+        warn(" but 'exit-with-children' is not enabled,")
+        warn(" use 'start' instead")
+
     if opts.bind_rfb and (proxying or starting):
         get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
         opts.bind_rfb = ""
@@ -1177,16 +1187,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             assert starting_desktop or upgrading_desktop
             app = make_desktop_server()
         app.init_virtual_devices(devices)
-
-    if proxying or upgrading or upgrading_desktop:
-        #when proxying or upgrading, don't exec any plain start commands:
-        opts.start = opts.start_child = []
-    elif opts.exit_with_children:
-        assert opts.start_child, "exit-with-children was specified but start-child is missing!"
-    elif opts.start_child:
-        log.warn("Warning: the 'start-child' option is used,")
-        log.warn(" but 'exit-with-children' is not enabled,")
-        log.warn(" use 'start' instead")
 
     try:
         app._ssl_wrap_socket = wrap_socket_fn

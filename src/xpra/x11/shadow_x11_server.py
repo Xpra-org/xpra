@@ -140,7 +140,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         #don't call init on X11ServerCore,
         #this would call up to GTKServerBase.init(opts) again:
         X11ServerCore.do_init(self, opts)
-        X11ServerCore.features_init(self)
 
     def cleanup(self):
         GTKShadowServerBase.cleanup(self)

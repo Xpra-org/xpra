@@ -287,6 +287,12 @@ class ServerCore(object):
         self.init_html_proxy(opts)
         self.init_auth(opts)
 
+    def server_ready(self):
+        return True
+
+    def server_init(self):
+        pass
+
     def setup(self):
         self.init_packet_handlers()
         self.init_aliases()

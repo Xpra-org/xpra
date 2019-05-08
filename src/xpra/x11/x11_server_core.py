@@ -90,13 +90,13 @@ class X11ServerCore(GTKServerBase):
         self.keys_pressed = {}
         self.last_mouse_user = None
         GTKServerBase.__init__(self)
+        log("XShape=%s", X11Window.displayHasXShape())
 
     def init(self, opts):
         self.do_init(opts)
         GTKServerBase.init(self, opts)
-        self.features_init()
 
-    def features_init(self):
+    def server_init(self):
         with xsync:
             self.x11_init()
         from xpra.server import server_features
@@ -130,6 +130,7 @@ class X11ServerCore(GTKServerBase):
             self.init_randr()
         self.init_cursor()
         self.query_opengl()
+
 
     def init_randr(self):
         self.randr = RandR.has_randr()

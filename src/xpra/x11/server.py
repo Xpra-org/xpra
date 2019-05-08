@@ -218,6 +218,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
             eventlog("server-event: %s", event)
         self.connect("server-event", log_server_event)
 
+    def server_ready(self):
+        if not X11Window.displayHasXComposite():
+            log.error("Xpra 'start' subcommand runs as a compositing manager")
+            log.error(" it cannot use a display which lacks the XComposite extension!")
+            return False
+        #check for an existing window manager:
+        from xpra.x11.gtk_x11.wm_check import wm_check
+        if not wm_check(self.wm_name, self.clobber):
+            return False
+        return True
+
     def setup(self):
         X11ServerBase.setup(self)
         if self.system_tray:
