@@ -11,7 +11,6 @@
 import sys
 import os.path
 import atexit
-import signal
 import traceback
 
 from xpra.scripts.main import info, warn, no_gtk, validate_encryption, parse_env, configure_env
@@ -149,19 +148,6 @@ def close_gtk_display():
             displays = gdk.display_manager_get().list_displays()
         for d in displays:
             d.close()
-
-def kill_xvfb(xvfb_pid):
-    log = get_util_logger()
-    log.info("killing xvfb with pid %s", xvfb_pid)
-    try:
-        os.kill(xvfb_pid, signal.SIGTERM)
-    except OSError as e:
-        log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
-        log.info(" %s", e)
-    from xpra.x11.vfb_util import PRIVATE_XAUTH
-    xauthority = os.environ.get("XAUTHORITY")
-    if PRIVATE_XAUTH and xauthority and os.path.exists(xauthority):
-        os.unlink(xauthority)
 
 
 def print_DE_warnings():
@@ -867,13 +853,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     if not proxying:
         add_cleanup(close_gtk_display)
-    if not proxying and not shadowing:
-        def kill_display():
-            if xvfb_pid:
-                kill_xvfb(xvfb_pid)
-        add_cleanup(kill_display)
-    else:
-        kill_display = None
 
     if opts.daemon:
         def noerr(fn, *args):
@@ -1048,6 +1027,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     try:
         app._ssl_wrap_socket = wrap_socket_fn
         app.init_dbus(dbus_pid, dbus_env)
+        if xvfb_pid or clobber:
+            app.init_display_pid(xvfb_pid)
         app.original_desktop_display = desktop_display
         app.exec_cwd = opts.chdir or cwd
         app.init(opts)
@@ -1058,11 +1039,13 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     except InitException as e:
         log.error("xpra server initialization error:")
         log.error(" %s", e)
+        app.cleanup()
         return 1
     except Exception as e:
         log.error("Error: cannot start the %s server", app.session_type, exc_info=True)
         log.error(str(e))
         log.info("")
+        app.cleanup()
         return 1
 
     #publish mdns records:
@@ -1090,32 +1073,18 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     app.init_when_ready(_when_ready)
 
     try:
-        #from here on, we own the vfb, even if we inherited one:
-        if (starting or starting_desktop or upgrading or upgrading_desktop):
-            if clobber:
-                #and it will be killed if exit cleanly:
-                xvfb_pid = get_xvfb_pid()
-            elif xvfb_pid:
-                save_xvfb_pid(xvfb_pid)
-
         log("running %s", app.run)
         r = app.run()
         log("%s()=%s", app.run, r)
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
+        app.cleanup()
         return 0
     except Exception:
         log.error("server error", exc_info=True)
+        app.cleanup()
         return -128
     else:
         if r>0:
-            # Upgrading/exiting, so leave X and dbus servers running
-            if kill_display:
-                _cleanups.remove(kill_display)
-            from xpra.server import EXITING_CODE
-            if r==EXITING_CODE:
-                log.info("exiting: not cleaning up Xvfb")
-            else:
-                log.info("upgrading: not cleaning up Xvfb")
             r = 0
     return r

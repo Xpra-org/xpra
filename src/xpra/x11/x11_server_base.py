@@ -59,6 +59,7 @@ class X11ServerBase(X11ServerCore):
         self.default_dpi = 0
         self._xsettings_manager = None
         self._xsettings_enabled = False
+        self.display_pid = 0
 
     def do_init(self, opts):
         X11ServerCore.do_init(self, opts)
@@ -68,6 +69,34 @@ class X11ServerBase(X11ServerCore):
             self._default_xsettings = XSettingsHelper().get_settings()
             log("_default_xsettings=%s", self._default_xsettings)
             self.init_all_server_settings()
+
+
+    def init_display_pid(self, pid):
+        if pid:
+            from xpra.scripts.server import _save_int
+            _save_int(b"_XPRA_SERVER_PID", pid)
+        elif self.clobber:
+            from xpra.scripts.server import _get_int
+            pid = _get_int(b"_XPRA_SERVER_PID")
+            log.info("xvfb pid=%i", pid)
+        self.display_pid = pid
+
+    def kill_display(self):
+        if self.display_pid:
+            from xpra.server import EXITING_CODE
+            if self._upgrading==EXITING_CODE:
+                log.info("exiting: not cleaning up Xvfb")
+            elif self._upgrading:
+                log.info("upgrading: not cleaning up Xvfb")
+            else:
+                from xpra.x11.vfb_util import kill_xvfb
+                kill_xvfb(self.display_pid)
+
+
+    def do_cleanup(self):
+        X11ServerCore.do_cleanup(self)
+        self.kill_display()
+
 
     def configure_best_screen_size(self):
         root_w, root_h = X11ServerCore.configure_best_screen_size(self)

@@ -97,6 +97,7 @@ class ServerBase(ServerBaseClass):
         self._authenticated_packet_handlers = {}
         self._authenticated_ui_packet_handlers = {}
 
+        self.display_pid = 0
         self._server_sources = {}
         self.client_properties = {}
         self.ui_driver = None
@@ -143,7 +144,6 @@ class ServerBase(ServerBaseClass):
         self.idle_timeout = opts.idle_timeout
         self.av_sync = opts.av_sync
         self.bandwidth_detection = opts.bandwidth_detection
-
 
     def setup(self):
         log("starting component init")

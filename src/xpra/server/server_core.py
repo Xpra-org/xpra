@@ -371,8 +371,8 @@ class ServerCore(object):
         self.idle_add(self.reset_server_timeout)
         self.idle_add(self.server_is_ready)
         self.do_run()
-        log("run() returning %s", self._upgrading)
-        return self._upgrading
+        log("run()")
+        return 0
 
     def server_is_ready(self):
         log.info("xpra is ready.")

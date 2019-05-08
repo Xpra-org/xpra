@@ -298,6 +298,20 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     return xvfb, display_name, cleanups
 
 
+def kill_xvfb(xvfb_pid):
+    log = get_vfb_logger()
+    log.info("killing xvfb with pid %s", xvfb_pid)
+    import signal
+    try:
+        os.kill(xvfb_pid, signal.SIGTERM)
+    except OSError as e:
+        log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
+        log.info(" %s", e)
+    xauthority = os.environ.get("XAUTHORITY")
+    if PRIVATE_XAUTH and xauthority and os.path.exists(xauthority):
+        os.unlink(xauthority)
+
+
 def set_initial_resolution(res=DEFAULT_VFB_RESOLUTION):
     try:
         log = get_vfb_logger()
