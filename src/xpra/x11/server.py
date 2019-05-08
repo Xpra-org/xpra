@@ -196,7 +196,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         }
 
     def __init__(self, clobber):
-        self.clobber = clobber
         self.root_overlay = None
         self.repaint_root_overlay_timer = None
         self.configure_damage_timers = {}
@@ -205,7 +204,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.last_raised = None
         self.system_tray = False
         gobject.GObject.__init__(self)
-        X11ServerBase.__init__(self)
+        X11ServerBase.__init__(self, clobber)
         self.session_type = "seamless"
 
     def init(self, opts):

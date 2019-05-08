@@ -6,6 +6,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.os_util import bytestostr, strtobytes, hexstr
 from xpra.util import nonl, typedict, envbool, iround
 from xpra.gtk_common.error import xswallow, xsync, xlog
@@ -16,6 +18,7 @@ from xpra.log import Logger
 log = Logger("x11", "server")
 mouselog = Logger("x11", "server", "mouse")
 screenlog = Logger("server", "screen")
+dbuslog = Logger("dbus")
 
 X11Keyboard = X11KeyboardBindings()
 
@@ -45,7 +48,8 @@ class X11ServerBase(X11ServerCore):
         (see XpraServer or DesktopServer for actual implementations)
     """
 
-    def __init__(self):
+    def __init__(self, clobber):
+        self.clobber = clobber
         X11ServerCore.__init__(self)
         self._default_xsettings = {}
         self._settings = {}
@@ -71,6 +75,29 @@ class X11ServerBase(X11ServerCore):
             self.touchpad_device.root_w = root_w
             self.touchpad_device.root_h = root_h
         return root_w, root_h
+
+
+    def init_dbus(self, dbus_pid, dbus_env):
+        from xpra.server.dbus.dbus_start import (
+            get_saved_dbus_pid, get_saved_dbus_env,
+            save_dbus_pid, save_dbus_env,
+            )
+        super(X11ServerBase, self).init_dbus(dbus_pid, dbus_env)
+        if self.clobber:
+            #get the saved pids and env
+            self.dbus_pid = get_saved_dbus_pid()
+            self.dbus_env = get_saved_dbus_env()
+            dbuslog("retrieved existing dbus attributes: %s, %s", self.dbus_pid, self.dbus_env)
+            if self.dbus_env:
+                os.environ.update(self.dbus_env)
+        else:
+            #now we can save values on the display
+            #(we cannot access gtk3 until dbus has started up)
+            if self.dbus_pid:
+                save_dbus_pid(self.dbus_pid)
+            if self.dbus_env:
+                save_dbus_env(self.dbus_env)
+
 
     def last_client_exited(self):
         self.reset_settings()

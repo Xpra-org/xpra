@@ -219,6 +219,8 @@ class ServerCore(object):
         self._socket_timeout = SERVER_SOCKET_TIMEOUT
         self._ws_timeout = 5
         self._socket_dir = None
+        self.dbus_pid = 0
+        self.dbus_env = {}
         self.dbus_control = False
         self.dbus_server = None
         self.unix_socket_paths = []
@@ -396,6 +398,8 @@ class ServerCore(object):
         self._potential_protocols = []
         self.cleanup_udp_listeners()
         self.cleanup_dbus_server()
+        if not self._upgrading:
+            self.stop_dbus_server()
 
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
@@ -404,7 +408,26 @@ class ServerCore(object):
 
     ######################################################################
     # dbus:
+    def init_dbus(self, dbus_pid, dbus_env):
+        if not POSIX:
+            return
+        self.dbus_pid = dbus_pid
+        self.dbus_env = dbus_env
+
+    def stop_dbus_server(self):
+        dbuslog("stop_dbus_server() dbus_pid=%s", self.dbus_pid)
+        if self.dbus_pid<=0:
+            return
+        try:
+            os.kill(self.dbus_pid, signal.SIGINT)
+        except Exception as e:
+            dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
+            dbuslog.warn("Warning: error trying to stop dbus with pid %i:", self.dbus_pid)
+            dbuslog.warn(" %s", e)
+
     def init_dbus_server(self):
+        if not POSIX:
+            return
         dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
         dbuslog("init_dbus_server() env: %s", dict((k,v) for k,v in os.environ.items()
                                                if bytestostr(k).startswith("DBUS_")))
@@ -425,7 +448,7 @@ class ServerCore(object):
             ds.cleanup()
             self.dbus_server = None
 
-    def make_dbus_server(self):
+    def make_dbus_server(self):     #pylint: disable=useless-return
         dbuslog("make_dbus_server() no dbus server for %s", self)
         return None
 

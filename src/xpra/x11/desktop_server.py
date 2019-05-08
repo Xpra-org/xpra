@@ -291,9 +291,11 @@ class XpraDesktopServer(DesktopServerBaseClass):
         "xpra-motion-event"     : one_arg_signal,
         }
 
-    def __init__(self):
+    def __init__(self, clobber=False):
+        X11ServerBase.__init__(self, clobber)
         for c in DESKTOPSERVER_BASES:
-            c.__init__(self)
+            if c!=X11ServerBase:
+                c.__init__(self)
         self.session_type = "desktop"
         self.resize_timer = None
         self.resize_value = None

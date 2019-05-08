@@ -353,7 +353,7 @@ def set_server_features(opts):
 
 def make_desktop_server(clobber):
     from xpra.x11.desktop_server import XpraDesktopServer
-    return XpraDesktopServer()
+    return XpraDesktopServer(clobber)
 
 def make_server(clobber):
     from xpra.x11.server import XpraServer
@@ -942,36 +942,15 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if opts.chdir:
         os.chdir(opts.chdir)
 
-    dbus_pid = 0
-    dbus_env = {}
-    kill_dbus = None
+    dbus_pid, dbus_env = 0, {}
     if not shadowing and POSIX and not clobber:
         no_gtk()
-        dbuslog = Logger("dbus")
         assert starting or starting_desktop or proxying
-        bus_address = protected_env.get("DBUS_SESSION_BUS_ADDRESS")
-        dbuslog("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", opts.dbus_launch, bus_address)
-        if opts.dbus_launch and not bus_address:
-            #start a dbus server:
-            def _kill_dbus():
-                dbuslog("kill_dbus: dbus_pid=%s" % dbus_pid)
-                if dbus_pid<=0:
-                    return
-                try:
-                    os.kill(dbus_pid, signal.SIGINT)
-                except Exception as e:
-                    dbuslog("os.kill(%i, SIGINT)", dbus_pid, exc_info=True)
-                    dbuslog.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
-                    dbuslog.warn(" %s", e)
-            kill_dbus = _kill_dbus
-            add_cleanup(kill_dbus)
-            #this also updates os.environ with the dbus attributes:
-            from xpra.server.dbus.dbus_start import start_dbus
-            dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
-            dbuslog("dbus attributes: pid=%s, env=%s", dbus_pid, dbus_env)
-            if dbus_env:
-                os.environ.update(dbus_env)
-                os.environ.update(protected_env)
+        from xpra.server.dbus.dbus_start import start_dbus
+        dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
+        if dbus_env:
+            os.environ.update(dbus_env)
+            os.environ.update(protected_env)
 
     display = None
     if not proxying:
@@ -1054,24 +1033,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if not check_xvfb():
             return  1
 
-        #now we can save values on the display
-        #(we cannot access gtk3 until dbus has started up)
-        if not clobber:
-            from xpra.server.dbus.dbus_start import save_dbus_pid, save_dbus_env
-            if xvfb_pid:
-                save_xvfb_pid(xvfb_pid)
-            if dbus_pid:
-                save_dbus_pid(dbus_pid)
-            if dbus_env:
-                save_dbus_env(dbus_env)
-        else:
-            #get the saved pids and env
-            dbus_pid = get_dbus_pid()
-            dbus_env = get_dbus_env()
-            dbuslog = Logger("dbus")
-            dbuslog("retrieved existing dbus attributes: %s, %s", dbus_pid, dbus_env)
-            if dbus_env:
-                os.environ.update(dbus_env)
         save_uinput_id(uinput_uuid)
 
         log("env=%s", os.environ)
@@ -1079,11 +1040,12 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             app = make_server(clobber)
         else:
             assert starting_desktop or upgrading_desktop
-            app = make_desktop_server()
+            app = make_desktop_server(clobber)
         app.init_virtual_devices(devices)
 
     try:
         app._ssl_wrap_socket = wrap_socket_fn
+        app.init_dbus(dbus_pid, dbus_env)
         app.original_desktop_display = desktop_display
         app.exec_cwd = opts.chdir or cwd
         app.init(opts)
@@ -1127,9 +1089,12 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     try:
         #from here on, we own the vfb, even if we inherited one:
-        if (starting or starting_desktop or upgrading or upgrading_desktop) and clobber:
-            #and it will be killed if exit cleanly:
-            xvfb_pid = get_xvfb_pid()
+        if (starting or starting_desktop or upgrading or upgrading_desktop):
+            if clobber:
+                #and it will be killed if exit cleanly:
+                xvfb_pid = get_xvfb_pid()
+            elif xvfb_pid:
+                save_xvfb_pid(xvfb_pid)
 
         log("running %s", app.run)
         r = app.run()
@@ -1145,8 +1110,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             # Upgrading/exiting, so leave X and dbus servers running
             if kill_display:
                 _cleanups.remove(kill_display)
-            if kill_dbus:
-                _cleanups.remove(kill_dbus)
             from xpra.server import EXITING_CODE
             if r==EXITING_CODE:
                 log.info("exiting: not cleaning up Xvfb")
