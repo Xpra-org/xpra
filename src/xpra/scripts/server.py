@@ -1000,8 +1000,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if not proxying and POSIX:
         if not check_xvfb():
             return  1
-        assert starting or starting_desktop or upgrading or upgrading_desktop
-        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source, close_gdk_display_source
+        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
         #(now we can access the X11 server)
 
