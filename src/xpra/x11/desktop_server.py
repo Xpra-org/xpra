@@ -34,7 +34,7 @@ from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
-from xpra.gtk_common.error import xsync
+from xpra.gtk_common.error import xsync, xlog
 from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
@@ -302,6 +302,13 @@ class XpraDesktopServer(DesktopServerBaseClass):
         for c in DESKTOPSERVER_BASES:
             if c!=gobject.GObject:
                 c.init(self, opts)
+
+    def server_init(self):
+        X11ServerBase.server_init(self)
+        if self.randr:
+            from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_DESKTOP_VFB_RESOLUTION
+            with xlog:
+                set_initial_resolution(DEFAULT_DESKTOP_VFB_RESOLUTION)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)

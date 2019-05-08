@@ -298,23 +298,16 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     return xvfb, display_name, cleanups
 
 
-def set_initial_resolution(desktop=False):
+def set_initial_resolution(res=DEFAULT_VFB_RESOLUTION):
     try:
         log = get_vfb_logger()
-        log("set_initial_resolution")
-        if desktop:
-            res = DEFAULT_DESKTOP_VFB_RESOLUTION
-        else:
-            res = DEFAULT_VFB_RESOLUTION
+        log("set_initial_resolution(%s)", res)
         from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
         #try to set a reasonable display size:
         randr = RandRBindings()
         if not randr.has_randr():
-            l = log
-            if desktop:
-                l = log.warn
-            l("Warning: no RandR support,")
-            l(" default virtual display size unchanged")
+            log.warn("Warning: no RandR support,")
+            log.warn(" default virtual display size unchanged")
             return
         sizes = randr.get_xrr_screen_sizes()
         size = randr.get_screen_size()
@@ -323,7 +316,7 @@ def set_initial_resolution(desktop=False):
             log("RandR setting new screen size to %s", res)
             randr.set_screen_size(*res)
     except Exception as e:
-        log("set_initial_resolution(%s)", desktop, exc_info=True)
+        log("set_initial_resolution(%s)", res, exc_info=True)
         log.error("Error: failed to set the default screen size:")
         log.error(" %s", e)
 

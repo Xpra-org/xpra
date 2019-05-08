@@ -1116,6 +1116,23 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if opts.mdns and ssh_access:
             netlog("ssh %s:%s : %s", "", ssh_port, socket)
             add_mdns(mdns_recs, "ssh", "", ssh_port)
+    if POSIX and (starting or upgrading or starting_desktop or upgrading_desktop):
+        #all unix domain sockets:
+        ud_paths = [sockpath for (stype, _, sockpath), _ in local_sockets if stype=="unix-domain"]
+        if ud_paths:
+            #choose one so our xdg-open override script can use to talk back to us:
+            if opts.forward_xdg_open:
+                for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
+                    xdg_override = os.path.join(x, "xdg-open")
+                    if os.path.exists(xdg_override):
+                        os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
+                        os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
+                        break
+        else:
+            log.warn("Warning: no local server sockets,")
+            if opts.forward_xdg_open:
+                log.warn(" forward-xdg-open cannot be enabled")
+            log.warn(" non-embedded ssh connections will not be available")
 
     set_server_features(opts)
 
@@ -1155,32 +1172,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 os.environ.update(dbus_env)
         save_uinput_id(uinput_uuid)
 
-        if POSIX:
-            #all unix domain sockets:
-            ud_paths = [sockpath for (stype, _, sockpath), _ in local_sockets if stype=="unix-domain"]
-            if ud_paths:
-                #choose one so our xdg-open override script can use to talk back to us:
-                if opts.forward_xdg_open:
-                    for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
-                        xdg_override = os.path.join(x, "xdg-open")
-                        if os.path.exists(xdg_override):
-                            os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
-                            os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
-                            break
-            else:
-                log.warn("Warning: no local server sockets,")
-                if opts.forward_xdg_open:
-                    log.warn(" forward-xdg-open cannot be enabled")
-                log.warn(" ssh connections will not be available")
-
         log("env=%s", os.environ)
-        try:
-            if not clobber and opts.resize_display:
-                from xpra.x11.vfb_util import set_initial_resolution
-                set_initial_resolution(starting_desktop)
-        except ImportError as e:
-            log.error("Failed to load Xpra server components, check your installation: %s" % e)
-            return 1
         if starting or upgrading:
             app = make_server(clobber)
         else:
