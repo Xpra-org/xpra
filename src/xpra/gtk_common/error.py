@@ -219,6 +219,24 @@ class XSwallowContext(object):
 xswallow = XSwallowContext()
 
 
+class XLogContext(object):
+
+    def __enter__(self):
+        trap._enter()
+
+    def __exit__(self, e_typ, e_val, trcbak):
+        if e_typ:
+            log.error("XError: %s, %s", XErrorInfo(e_typ), e_val, exc_info=True)
+        try:
+            trap._exit()
+        except XError as ee:
+            log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
+        #don't raise exceptions:
+        return True
+
+xlog = XSwallowContext()
+
+
 def verify_sync():
     if trap.depth<=0:
         log.error("Error: unmanaged X11 context")

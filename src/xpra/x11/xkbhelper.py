@@ -144,7 +144,7 @@ def apply_xmodmap(instructions):
     try:
         with xsync:
             unset = X11Keyboard.set_xmodmap(instructions)
-    except:
+    except Exception:
         log.error("Error configuring modifier map", exc_info=True)
         unset = instructions
     if unset is None:

@@ -14,7 +14,7 @@ from xpra.x11.bindings.core_bindings import set_context_check, X11CoreBindings  
 from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-from xpra.gtk_common.error import XError, xswallow, xsync, trap, verify_sync
+from xpra.gtk_common.error import XError, xswallow, xsync, xlog, trap, verify_sync
 from xpra.gtk_common.gtk_util import get_xwindow, display_get_default, get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
@@ -180,7 +180,7 @@ class X11ServerCore(GTKServerBase):
         X11Keyboard.selectCursorChange(True)
 
     def get_display_bit_depth(self):
-        with xswallow:
+        with xlog:
             return X11Window.get_depth(X11Window.getDefaultRootWindow())
         return 0
 
@@ -369,7 +369,7 @@ class X11ServerCore(GTKServerBase):
         info = GTKServerBase.get_ui_info(self, proto, wids, *args)
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
         if not self.readonly:
-            with xsync:
+            with xlog:
                 info.setdefault("keyboard", {}).update({
                     "state"             : {
                         "keys_pressed"   : tuple(self.keys_pressed.keys())
@@ -392,17 +392,14 @@ class X11ServerCore(GTKServerBase):
                 "XTest"                 : X11Keyboard.hasXTest(),
                 })
         #randr:
-        try:
-            with xsync:
-                sizes = RandR.get_xrr_screen_sizes()
-                if self.randr and len(sizes)>=0:
-                    sinfo["randr"] = {
-                        ""          : True,
-                        "options"   : tuple(reversed(sorted(sizes))),
-                        "exact"     : self.randr_exact_size,
-                        }
-        except XError:
-            log("failed to query randr screen sizes", exc_info=True)
+        with xlog:
+            sizes = RandR.get_xrr_screen_sizes()
+            if self.randr and len(sizes)>=0:
+                sinfo["randr"] = {
+                    ""          : True,
+                    "options"   : tuple(reversed(sorted(sizes))),
+                    "exact"     : self.randr_exact_size,
+                    }
         return info
 
 
@@ -491,13 +488,8 @@ class X11ServerCore(GTKServerBase):
 
     def get_cursor_image(self):
         #must be called from the UI thread!
-        try:
-            with xsync:
-                return X11Keyboard.get_cursor_image()
-        except XError as e:
-            cursorlog.error("Error getting cursor data:")
-            cursorlog.error(" %s", e)
-            return None
+        with xlog:
+            return X11Keyboard.get_cursor_image()
 
     def get_cursor_data(self):
         #must be called from the UI thread!
@@ -977,13 +969,14 @@ class X11ServerCore(GTKServerBase):
         if self._process_mouse_common(proto, wid, pointer, deviceid):
             self.button_action(pointer, button, pressed, deviceid)
 
-    def button_action(self, _pointer, button, pressed, deviceid=-1, *args):
+    def button_action(self, pointer, button, pressed, deviceid=-1, *args):
         device = self.get_pointer_device(deviceid)
         assert device, "pointer device %s not found" % deviceid
         try:
             with xsync:
                 device.click(button, pressed, *args)
         except XError:
+            log("button_action(%s, %s, %s, %s, %s)", pointer, button, pressed, deviceid, args, exc_info=True)
             log.error("Error: failed (un)press mouse button %s", button)
             if button>=4:
                 log.error(" (perhaps your Xvfb does not support mousewheels?)")

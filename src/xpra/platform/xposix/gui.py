@@ -132,22 +132,19 @@ def _get_X11_root_property(name, req_type):
 
 
 def _get_xsettings():
-    from xpra.gtk_common.error import xsync
-    try:
-        X11Window = X11WindowBindings()
-        with xsync:
-            selection = "_XSETTINGS_S0"
-            owner = X11Window.XGetSelectionOwner(selection)
-            if not owner:
-                return None
-            XSETTINGS = "_XSETTINGS_SETTINGS"
-            data = X11Window.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
-            if not data:
-                return None
-            from xpra.x11.xsettings_prop import get_settings
-            return get_settings(X11Window.get_display_name(), data)
-    except Exception as e:
-        log("_get_xsettings()", exc_info=True)
+    from xpra.gtk_common.error import xlog
+    X11Window = X11WindowBindings()
+    with xlog:
+        selection = "_XSETTINGS_S0"
+        owner = X11Window.XGetSelectionOwner(selection)
+        if not owner:
+            return None
+        XSETTINGS = "_XSETTINGS_SETTINGS"
+        data = X11Window.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
+        if not data:
+            return None
+        from xpra.x11.xsettings_prop import get_settings
+        return get_settings(X11Window.get_display_name(), data)
     return None
 
 def _get_xsettings_dict():
@@ -180,19 +177,16 @@ def _get_xsettings_dpi():
 
 def _get_randr_dpi():
     if RANDR_DPI and not is_Wayland():
-        try:
-            from xpra.gtk_common.error import xsync
-            from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
-            with xsync:
-                randr_bindings = RandRBindings()
-                wmm, hmm = randr_bindings.get_screen_size_mm()
-                w, h =  randr_bindings.get_screen_size()
-                dpix = iround(w * 25.4 / wmm)
-                dpiy = iround(h * 25.4 / hmm)
-                screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
-                return dpix, dpiy
-        except Exception as e:
-            screenlog.warn("failed to get dpi: %s", e)
+        from xpra.gtk_common.error import xlog
+        from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
+        with xlog:
+            randr_bindings = RandRBindings()
+            wmm, hmm = randr_bindings.get_screen_size_mm()
+            w, h =  randr_bindings.get_screen_size()
+            dpix = iround(w * 25.4 / wmm)
+            dpiy = iround(h * 25.4 / hmm)
+            screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
+            return dpix, dpiy
     return -1, -1
 
 def get_xdpi():
@@ -433,8 +427,8 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
             device_bell = X11KeyboardBindings().device_bell
         device_bell(get_xwindow(window), device, bell_class, bell_id, percent, bell_name)
     try:
-        from xpra.gtk_common.error import xsync
-        with xsync:
+        from xpra.gtk_common.error import xlog
+        with xlog:
             x11_bell()
         return  True
     except XError as e:
@@ -547,10 +541,10 @@ class XI2_Window(object):
         self.window = None
 
     def configured(self, *_args):
-        from xpra.gtk_common.error import xsync
-        with xsync:
+        from xpra.gtk_common.error import xlog
+        with xlog:
             self.windows = self.get_parent_windows(self.xid)
-        for window in self.windows:
+        for window in (self.windows or ()):
             self.XI2.connect(window, "XI_Motion", self.do_xi_motion)
             self.XI2.connect(window, "XI_ButtonPress", self.do_xi_button)
             self.XI2.connect(window, "XI_ButtonRelease", self.do_xi_button)

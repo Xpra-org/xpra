@@ -8,7 +8,7 @@
 
 from xpra.os_util import bytestostr, strtobytes, hexstr
 from xpra.util import nonl, typedict, envbool, iround
-from xpra.gtk_common.error import xswallow, xsync
+from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.log import Logger
@@ -106,7 +106,7 @@ class X11ServerBase(X11ServerCore):
     def verify_uinput_pointer_device(self):
         xtest = XTestPointerDevice()
         ox, oy = 100, 100
-        with xsync:
+        with xlog:
             xtest.move_pointer(0, ox, oy)
         nx, ny = 200, 200
         self.pointer_device.move_pointer(0, nx, ny)

@@ -6,7 +6,7 @@
 
 from xpra.gtk_common.gtk_util import GetClipboard
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.error import xsync, XError
+from xpra.gtk_common.error import xlog, XError
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -67,16 +67,12 @@ class XSettingsHelper(object):
         self._clipboard = GetClipboard(self._selection)
 
     def xsettings_owner(self):
-        try:
-            with xsync:
-                owner_x = X11Window.XGetSelectionOwner(self._selection)
-                log("XGetSelectionOwner(%s)=%s", self._selection, owner_x)
-                if owner_x == XNone:
-                    return None
-                return get_pywindow(self._clipboard, owner_x)
-        except XError:
-            log("X error while fetching owner of XSettings data; ignored")
-            return None
+        with xlog:
+            owner_x = X11Window.XGetSelectionOwner(self._selection)
+            log("XGetSelectionOwner(%s)=%s", self._selection, owner_x)
+            if owner_x == XNone:
+                return None
+            return get_pywindow(self._clipboard, owner_x)
 
     def get_settings(self):
         owner = self.xsettings_owner()

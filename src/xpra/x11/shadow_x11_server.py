@@ -14,7 +14,7 @@ from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
-from xpra.gtk_common.error import xsync
+from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
 log = Logger("x11", "shadow")
@@ -55,7 +55,7 @@ class XImageCapture(object):
         xshm = self.xshm
         if self.xshm:
             self.xshm = None
-            with xsync:
+            with xlog:
                 xshm.cleanup()
 
     def _err(self, e, op="capture pixels"):

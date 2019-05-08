@@ -67,7 +67,7 @@ USE_X11_BINDINGS = POSIX and envbool("XPRA_USE_X11_BINDINGS", is_X11())
 prop_get, prop_set = None, None
 if USE_X11_BINDINGS:
     try:
-        from xpra.gtk_common.error import xsync, verify_sync
+        from xpra.gtk_common.error import xlog, verify_sync
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
         from xpra.x11.bindings.core_bindings import X11CoreBindings, set_context_check
@@ -894,7 +894,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.set_wmclass(wmclass_name, wmclass_class)
         elif HAS_X11_BINDINGS:
             xid = get_xwindow(self.get_window())
-            with xsync:
+            with xlog:
                 X11Window.setClassHint(xid, wmclass_class, wmclass_name)
                 log("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
 
@@ -915,7 +915,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     #too expensive to log with actual rectangles:
                     shapelog("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)",
                              xid, name, x_off, y_off, len(rectangles))
-                    with xsync:
+                    with xlog:
                         X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
         self.when_realized("shape", do_set_shape)
 
@@ -1237,7 +1237,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s",
                      get_xwindow(gdkwin), self.is_mapped(), gdkwin.is_visible())
         root = get_default_root_window()
-        with xsync:
+        with xlog:
             send_wm_workspace(root, gdkwin, workspace)
 
     def get_desktop_workspace(self):
@@ -1542,7 +1542,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         root = self.get_window().get_screen().get_root_window()
         root_xid = get_xwindow(root)
         xwin = get_xwindow(self.get_window())
-        with xsync:
+        with xlog:
             X11Core.UngrabPointer()
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
                   x_root, y_root, direction, button, source_indication)

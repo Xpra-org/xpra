@@ -21,13 +21,13 @@ if sys.version > '3':
 
 
 def get_x11_window_value(prop, window):
-    with xsync:
-        try:
+    try:
+        with xsync:
             xid = get_xwindow(window)
             x11type = window_bindings.GetWindowPropertyType(xid, prop)[0]
-        except:
-            log("get_x11_window_value(%s, %s)", prop, window, exc_info=True)
-            x11type = None
+    except:
+        log("get_x11_window_value(%s, %s)", prop, window, exc_info=True)
+        x11type = None
     if x11type:
         ptype = get_python_type(x11type)
         #log("%s: %s (%s)", filter_object.property_name, x11type, ptype)

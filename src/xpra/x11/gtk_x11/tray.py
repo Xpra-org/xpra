@@ -5,7 +5,7 @@
 
 from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.error import xswallow, xsync
+from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_glib, is_gtk3
 from xpra.gtk_common.gtk_util import (
@@ -120,7 +120,7 @@ class SystemTray(gobject.GObject):
             rxid = get_xwindow(root)
             X11Window.Unmap(wxid)
             X11Window.Reparent(wxid, rxid, 0, 0)
-        with xswallow:
+        with xlog:
             owner = X11Window.XGetSelectionOwner(SELECTION)
             if owner==get_xwindow(self.tray_window):
                 X11Window.XSetSelectionOwner(0, SELECTION)
