@@ -39,6 +39,16 @@ def write_displayfd(w_pipe, display, timeout=10):
         except (select.error, OSError, IOError) as e:
             if eerrno(e)!=errno.EINTR:
                 raise
+    if not buf:
+        try:
+            os.fsync(w_pipe)
+        except (IOError, OSError):
+            log("os.fsync(%i)", w_pipe, exc_info=True)
+        if w_pipe>2:
+            try:
+                os.close(w_pipe)
+            except (IOError, OSError):
+                log("os.close(%i)", w_pipe, exc_info=True)
     return len(buf)==0
 
 def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):

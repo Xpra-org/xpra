@@ -841,15 +841,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             log.error("Error: failed to write '%s' to fd=%s", display_name, displayfd)
             log.error(" %s", str(e) or type(e))
             del e
-        try:
-            os.fsync(displayfd)
-        except (IOError, OSError):
-            log("os.fsync(%i)", displayfd, exc_info=True)
-        if displayfd>2:
-            try:
-                os.close(displayfd)
-            except (IOError, OSError):
-                log("os.close(%i)", displayfd, exc_info=True)
 
     if not proxying:
         add_cleanup(close_gtk_display)
