@@ -19,6 +19,7 @@ from xpra.gtk_common.gtk_util import get_xwindow, display_get_default, get_defau
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
+from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.os_util import monotonic_time, strtobytes, bytestostr, PYTHON3
 from xpra.util import engs, csv, typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
@@ -307,6 +308,7 @@ class X11ServerCore(GTKServerBase):
             cleanup_fakeXinerama()
         with xswallow:
             clean_keyboard_state()
+        close_gdk_display_source()
 
 
     def get_uuid(self):

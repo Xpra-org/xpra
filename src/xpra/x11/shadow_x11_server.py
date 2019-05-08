@@ -5,8 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-init_gdk_display_source()
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time, is_Wayland
 from xpra.util import envbool, envint

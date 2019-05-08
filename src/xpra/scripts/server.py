@@ -997,26 +997,20 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     set_server_features(opts)
 
-    if shadowing:
-        app = make_shadow_server()
-    elif proxying:
-        app = make_proxy_server()
-    else:
+    if not proxying and POSIX:
         if not check_xvfb():
             return  1
         assert starting or starting_desktop or upgrading or upgrading_desktop
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source, close_gdk_display_source
         init_gdk_display_source()
-        insert_cleanup(close_gdk_display_source)
         #(now we can access the X11 server)
 
-        #make sure the pid we save is the real one:
-        if not check_xvfb():
-            return  1
-
+    if shadowing:
+        app = make_shadow_server()
+    elif proxying:
+        app = make_proxy_server()
+    else:
         save_uinput_id(uinput_uuid)
-
-        log("env=%s", os.environ)
         if starting or upgrading:
             app = make_server(clobber)
         else:
