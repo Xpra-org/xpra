@@ -929,9 +929,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if POSIX and not OSX and displayfd>0:
         from xpra.platform.displayfd import write_displayfd
         try:
-            display = display_name[1:]
-            log("writing display='%s' to displayfd=%i", display, displayfd)
-            assert write_displayfd(displayfd, display), "timeout"
+            display_no = display_name[1:]
+            #ensure it is a string containing the number:
+            display_no = str(int(display_no))
+            log("writing display_no='%s' to displayfd=%i", display_no, displayfd)
+            assert write_displayfd(displayfd, display_no), "timeout"
         except Exception as e:
             log.error("write_displayfd failed", exc_info=True)
             log.error("Error: failed to write '%s' to fd=%s", display_name, displayfd)
@@ -1163,26 +1165,13 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
         log("env=%s", os.environ)
         try:
-            # This import is delayed because the module depends on gtk:
-            from xpra.x11.bindings.window_bindings import X11WindowBindings
-            X11Window = X11WindowBindings()
-            if (starting or starting_desktop) and not clobber and opts.resize_display:
+            if not clobber and opts.resize_display:
                 from xpra.x11.vfb_util import set_initial_resolution
                 set_initial_resolution(starting_desktop)
         except ImportError as e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1
         if starting or upgrading:
-            if not X11Window.displayHasXComposite():
-                log.error("Xpra 'start' subcommand runs as a compositing manager")
-                log.error(" it cannot use a display which lacks the XComposite extension!")
-                return 1
-            if starting:
-                #check for an existing window manager:
-                from xpra.x11.gtk_x11.wm_check import wm_check
-                if not wm_check(display, opts.wm_name, upgrading):
-                    return 1
-            log("XShape=%s", X11Window.displayHasXShape())
             app = make_server(clobber)
         else:
             assert starting_desktop or upgrading_desktop
@@ -1204,6 +1193,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.original_desktop_display = desktop_display
         app.exec_cwd = opts.chdir or cwd
         app.init(opts)
+        if not app.server_ready():
+            return 1
+        app.server_init()
         app.setup()
     except InitException as e:
         log.error("xpra server initialization error:")
