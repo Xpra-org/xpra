@@ -548,6 +548,13 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if opts.encoding=="help" or "help" in opts.encodings:
         return show_encoding_help(opts)
 
+    #remove anything pointing to dbus from the current env
+    #(so we only detect a dbus instance started by pam,
+    # and override everything else)
+    for k in os.environ.keys():
+        if k.startswith("DBUS_"):
+            del os.environ[k]
+
     starting  = mode == "start"
     starting_desktop = mode == "start-desktop"
     upgrading = mode == "upgrade"
@@ -950,7 +957,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
         if dbus_env:
             os.environ.update(dbus_env)
-            os.environ.update(protected_env)
 
     display = None
     if not proxying:
