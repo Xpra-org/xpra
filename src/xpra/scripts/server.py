@@ -945,6 +945,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 from xpra.x11.vfb_util import verify_display_ready
                 if not verify_display_ready(xvfb, display_name, shadowing):
                     return 1
+                no_gtk()
                 from xpra.x11.gtk_x11.gdk_display_source import verify_gdk_display
                 display = verify_gdk_display(display_name)
                 if not display:
