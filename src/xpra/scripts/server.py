@@ -33,7 +33,7 @@ def run_cleanups():
     for c in cleanups:
         try:
             c()
-        except:
+        except Exception:
             print("error running cleanup %s" % c)
             traceback.print_exception(*sys.exc_info())
 
@@ -750,7 +750,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             if ROOT and (uid>0 or gid>0):
                 try:
                     os.fchown(logfd, uid, gid)
-                except:
+                except (OSError, IOError):
                     pass
             stdout, stderr = redirect_std_to_log(logfd, *protected_fds)
             try:
