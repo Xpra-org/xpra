@@ -450,7 +450,7 @@ def create_sockets(opts, error_cb):
     for host, iport in bind_ssl:
         add_tcp_socket("ssl", host, iport)
         if ws_upgrades:
-            add_tcp_socket("wss", host, iport)
+            add_mdns(mdns_recs, "wss", host, iport)
     log("setting up SSH sockets: %s", csv(bind_ssh))
     for host, iport in bind_ssh:
         add_tcp_socket("ssh", host, iport)
