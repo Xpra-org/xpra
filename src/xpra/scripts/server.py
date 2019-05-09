@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -134,20 +135,6 @@ def display_name_check(display_name):
             warn(" just to avoid any confusion and this warning message.")
     except IOError:
         pass
-
-def close_gtk_display():
-    # Close our display(s) first, so the server dying won't kill us.
-    # (if gtk has been loaded)
-    gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
-    if gdk_mod and envbool("XPRA_CLOSE_GTK_DISPLAY", True):
-        from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
-        gdk = import_gdk()
-        if is_gtk3():
-            displays = gdk.DisplayManager.get().list_displays()
-        else:
-            displays = gdk.display_manager_get().list_displays()
-        for d in displays:
-            d.close()
 
 
 def print_DE_warnings():
@@ -820,9 +807,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             log.error("Error: failed to write '%s' to fd=%s", display_name, displayfd)
             log.error(" %s", str(e) or type(e))
             del e
-
-    if not proxying:
-        add_cleanup(close_gtk_display)
 
     if opts.daemon:
         def noerr(fn, *args):

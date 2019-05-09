@@ -295,7 +295,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
             self.root_overlay = None
         self.cancel_all_configure_damage()
-        X11ServerBase.do_cleanup(self)
         cleanup_x11_filter()
         cleanup_all_event_receivers()
         if self._wm:
@@ -306,6 +305,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #but at this point in the cleanup, we probably won't, so force set it:
             self._has_grab = 0
             self.X11_ungrab()
+        X11ServerBase.do_cleanup(self)
 
 
     def last_client_exited(self):

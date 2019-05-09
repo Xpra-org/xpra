@@ -6,9 +6,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os.path
 
-from xpra.util import flatten_dict
+from xpra.util import flatten_dict, envbool
 from xpra.os_util import monotonic_time
 from xpra.gtk_common.gobject_compat import (
     import_gdk, import_glib, is_gtk3,
@@ -69,6 +70,23 @@ class GTKServerBase(ServerBase):
         gtk_main_quit_on_fatal_exceptions_disable()
         gtk_main_quit_really()
         log("do_quit: gtk_main_quit_really done")
+
+    def do_cleanup(self):
+        ServerBase.do_cleanup(self)
+        self.close_gtk_display()
+
+    def close_gtk_display(self):
+        # Close our display(s) first, so the server dying won't kill us.
+        # (if gtk has been loaded)
+        gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
+        if gdk_mod and envbool("XPRA_CLOSE_GTK_DISPLAY", True):
+            if is_gtk3():
+                displays = gdk.DisplayManager.get().list_displays()
+            else:
+                displays = gdk.display_manager_get().list_displays()
+            for d in displays:
+                d.close()
+
 
     def do_run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
