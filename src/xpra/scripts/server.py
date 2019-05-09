@@ -960,10 +960,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     netlog("setting up local sockets: %s", local_sockets)
     ssh_port = get_ssh_port()
     ssh_access = ssh_port>0 and opts.ssh.lower().strip() not in FALSE_OPTIONS
-    for rec, cleanup_socket in local_sockets:
-        socktype, socket, sockpath = rec
+    for socktype, socket, sockpath, cleanup_socket in local_sockets:
         #ie: ("unix-domain", sock, sockpath), cleanup_socket
-        sockets.append(rec)
+        sockets.append((socktype, socket, sockpath))
         netlog("%s %s : %s", socktype, sockpath, socket)
         add_cleanup(cleanup_socket)
         if opts.mdns and ssh_access:
@@ -971,7 +970,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             add_mdns(mdns_recs, "ssh", "", ssh_port)
     if POSIX and (starting or upgrading or starting_desktop or upgrading_desktop):
         #all unix domain sockets:
-        ud_paths = [sockpath for (stype, _, sockpath), _ in local_sockets if stype=="unix-domain"]
+        ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
         if ud_paths:
             #choose one so our xdg-open override script can use to talk back to us:
             if opts.forward_xdg_open:
@@ -995,13 +994,14 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
         #(now we can access the X11 server)
+        if uinput_uuid:
+            save_uinput_id(uinput_uuid)
 
     if shadowing:
         app = make_shadow_server()
     elif proxying:
         app = make_proxy_server()
     else:
-        save_uinput_id(uinput_uuid)
         if starting or upgrading:
             app = make_server(clobber)
         else:

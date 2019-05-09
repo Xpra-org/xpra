@@ -7,7 +7,10 @@ import os.path
 import socket
 
 from xpra.scripts.config import InitException
-from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX
+from xpra.os_util import (
+    getuid, get_username_for_uid, get_groups, get_group_id,
+    path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
+    )
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 
@@ -276,7 +279,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
             for sockpath in sockpaths:
                 npl = NamedPipeListener(sockpath)
                 log.info("created named pipe: %s", sockpath)
-                defs.append((("named-pipe", npl, sockpath), npl.stop))
+                defs.append(("named-pipe", npl, sockpath, npl.stop))
         else:
             def checkstate(sockpath, state):
                 if state not in (DotXpra.DEAD, DotXpra.UNKNOWN):
@@ -374,7 +377,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     try:
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
                         log.info("created unix domain socket: %s", sockpath)
-                        defs.append((("unix-domain", sock, sockpath), cleanup_socket))
+                        defs.append(("unix-domain", sock, sockpath, cleanup_socket))
                     except Exception as e:
                         handle_socket_error(sockpath, sperms, e)
                         del e
