@@ -453,7 +453,7 @@ class ServerCore(object):
 
     def stop_dbus_server(self):
         dbuslog("stop_dbus_server() dbus_pid=%s", self.dbus_pid)
-        if self.dbus_pid<=0:
+        if not self.dbus_pid:
             return
         try:
             os.kill(self.dbus_pid, signal.SIGINT)
