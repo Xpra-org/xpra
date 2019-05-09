@@ -1006,8 +1006,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     del opts
 
-    log("%s(%s)", app.init_sockets, sockets)
-    log("%s(%s)", app.init_when_ready, _when_ready)
     app.init_when_ready(_when_ready)
 
     try:

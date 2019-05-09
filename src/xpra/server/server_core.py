@@ -261,6 +261,7 @@ class ServerCore(object):
         raise NotImplementedError()
 
     def init_when_ready(self, callbacks):
+        log("init_when_ready(%s)", callbacks)
         self._when_ready = callbacks
 
 
