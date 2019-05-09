@@ -78,7 +78,10 @@ class X11ServerBase(X11ServerCore):
         elif self.clobber:
             from xpra.scripts.server import _get_int
             pid = _get_int(b"_XPRA_SERVER_PID")
-            log.info("xvfb pid=%i", pid)
+            if not pid:
+                log.info("xvfb pid not found")
+            else:
+                log.info("xvfb pid=%i", pid)
         self.display_pid = pid
 
     def kill_display(self):
