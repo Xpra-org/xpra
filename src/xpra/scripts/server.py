@@ -347,12 +347,6 @@ def hosts(host_str):
         return ["0.0.0.0", "::"]
     return [host_str]
 
-def add_mdns(mdns_recs, socktype, host_str, port):
-    recs = mdns_recs.setdefault(socktype.lower(), [])
-    for host in hosts(host_str):
-        rec = (host, port)
-        if rec not in recs:
-            recs.append(rec)
 
 def create_sockets(opts, error_cb):
     from xpra.server.socket_util import (
@@ -370,11 +364,8 @@ def create_sockets(opts, error_cb):
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
-    mdns_recs = {}
     sockets = []
 
-    rfb_upgrades = int(opts.rfb_upgrade)>0
-    ssl_opt = opts.ssl.lower()
     min_port = int(opts.min_port)
     def add_tcp_socket(socktype, host_str, iport):
         if iport!=0 and iport<min_port:
@@ -383,7 +374,6 @@ def create_sockets(opts, error_cb):
             socket = setup_tcp_socket(host, iport, socktype)
             host, iport = socket[2]
             sockets.append(socket)
-            add_mdns(mdns_recs, socktype, host, iport)
     def add_udp_socket(socktype, host_str, iport):
         if iport!=0 and iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
@@ -391,11 +381,9 @@ def create_sockets(opts, error_cb):
             socket = setup_udp_socket(host, iport, socktype)
             host, iport = socket[2]
             sockets.append(socket)
-            add_mdns(mdns_recs, socktype, host, iport)
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
-    ws_upgrades = opts.html and (os.path.isabs(opts.html) or opts.html.lower() in list(TRUE_OPTIONS)+["auto"])
     ssh_upgrades = opts.ssh_upgrade
     if ssh_upgrades:
         try:
@@ -412,45 +400,28 @@ def create_sockets(opts, error_cb):
     log("setting up SSL sockets: %s", csv(bind_ssl))
     for host, iport in bind_ssl:
         add_tcp_socket("ssl", host, iport)
-        if ws_upgrades:
-            add_mdns(mdns_recs, "wss", host, iport)
     log("setting up SSH sockets: %s", csv(bind_ssh))
     for host, iport in bind_ssh:
         add_tcp_socket("ssh", host, iport)
     log("setting up https / wss (secure websockets): %s", csv(bind_wss))
     for host, iport in bind_wss:
         add_tcp_socket("wss", host, iport)
-    tcp_ssl = ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert)
     log("setting up TCP sockets: %s", csv(bind_tcp))
     for host, iport in bind_tcp:
         add_tcp_socket("tcp", host, iport)
-        if tcp_ssl:
-            add_mdns(mdns_recs, "ssl", host, iport)
-        if ws_upgrades:
-            add_mdns(mdns_recs, "ws", host, iport)
-        if ws_upgrades and tcp_ssl:
-            add_mdns(mdns_recs, "wss", host, iport)
-        if ssh_upgrades:
-            add_mdns(mdns_recs, "ssh", host, iport)
-        if rfb_upgrades:
-            add_mdns(mdns_recs, "rfb", host, iport)
     log("setting up UDP sockets: %s", csv(bind_udp))
     for host, iport in bind_udp:
         add_udp_socket("udp", host, iport)
     log("setting up http / ws (websockets): %s", csv(bind_ws))
     for host, iport in bind_ws:
         add_tcp_socket("ws", host, iport)
-        if tcp_ssl:
-            add_mdns(mdns_recs, "wss", host, iport)
     log("setting up rfb sockets: %s", csv(bind_rfb))
     for host, iport in bind_rfb:
         add_tcp_socket("rfb", host, iport)
-        add_mdns(mdns_recs, "rfb", host, iport)
     log("setting up vsock sockets: %s", csv(bind_vsock))
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
         sockets.append(socket)
-        #add_mdns(mdns_recs, "vsock", str(cid), iport)
 
     # systemd socket activation:
     if POSIX:
@@ -464,10 +435,7 @@ def create_sockets(opts, error_cb):
             for stype, socket, addr in sd_sockets:
                 sockets.append(setup_sd_listen_socket(stype, socket, addr))
                 log("%s : %s", (stype, [addr]), socket)
-                if stype=="tcp":
-                    host, iport = addr
-                    add_mdns(mdns_recs, "tcp", host, iport)
-    return sockets, mdns_recs
+    return sockets
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     #add finally hook to ensure we will run the cleanups
@@ -723,9 +691,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
-    from xpra.log import Logger
-    log = Logger("server")
-    sockets, mdns_recs = create_sockets(opts, error_cb)
+    sockets = create_sockets(opts, error_cb)
 
     sanitize_env()
     if POSIX:
@@ -744,6 +710,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         except KeyError:
             pass
     os.environ.update(protected_env)
+    from xpra.log import Logger
+    log = Logger("server")
     log("env=%s", os.environ)
 
     UINPUT_UUID_LEN = 12
@@ -914,14 +882,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                                         opts.mmap_group, opts.socket_permissions,
                                         username, uid, gid)
     netlog("setting up local sockets: %s", local_sockets)
-    ssh_port = get_ssh_port()
-    ssh_access = ssh_port>0 and opts.ssh.lower().strip() not in FALSE_OPTIONS
     for socktype, socket, sockpath, cleanup_socket in local_sockets:
         sockets.append((socktype, socket, sockpath, cleanup_socket))
         netlog("%s %s : %s", socktype, sockpath, socket)
-        if opts.mdns and ssh_access:
-            netlog("ssh %s:%s : %s", "", ssh_port, socket)
-            add_mdns(mdns_recs, "ssh", "", ssh_port)
     if POSIX and (starting or upgrading or starting_desktop or upgrading_desktop):
         #all unix domain sockets:
         ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
@@ -964,17 +927,20 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.init_virtual_devices(devices)
 
     try:
+        app.display_name = display_name
+        app.init(opts)
         app.init_sockets(sockets)
         app.init_dbus(dbus_pid, dbus_env)
         if xvfb_pid or clobber:
             app.init_display_pid(xvfb_pid)
         app.original_desktop_display = desktop_display
         app.exec_cwd = opts.chdir or cwd
-        app.init(opts)
+        del opts
         if not app.server_ready():
             return 1
         app.server_init()
         app.setup()
+        app.init_when_ready(_when_ready)
     except InitException as e:
         log.error("xpra server initialization error:")
         log.error(" %s", e)
@@ -986,27 +952,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         log.info("")
         app.cleanup()
         return 1
-
-    #publish mdns records:
-    if opts.mdns:
-        from xpra.platform.info import get_username
-        from xpra.server.socket_util import mdns_publish
-        mdns_info = {
-                     "display"  : display_name,
-                     "username" : get_username(),
-                     "uuid"     : app.uuid,
-                     "platform" : sys.platform,
-                     "type"     : app.session_type,
-                     }
-        MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
-        if MDNS_EXPOSE_NAME and app.session_name:
-            mdns_info["name"] = app.session_name
-        for mdns_mode, listen_on in mdns_recs.items():
-            mdns_publish(display_name, mdns_mode, listen_on, mdns_info)
-
-    del opts
-
-    app.init_when_ready(_when_ready)
 
     try:
         log("running %s", app.run)

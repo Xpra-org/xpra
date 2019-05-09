@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,11 +17,6 @@ from xpra.platform.dotxpra import DotXpra, norm_makepath
 #what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 GROUP = os.environ.get("XPRA_GROUP", "xpra")
-
-
-def add_cleanup(f):
-    from xpra.scripts import server
-    server.add_cleanup(f)
 
 
 network_logger = None
@@ -481,7 +476,4 @@ def mdns_publish(display_name, mode, listen_on, text_dict=None):
     if mode not in ("tcp", "rfb"):
         name += " (%s)" % mode
     service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)
-    ap = MDNSPublishers(f_listen_on.values(), name, service_type=service_type, text_dict=d)
-    from xpra.scripts.server import add_when_ready
-    add_when_ready(ap.start)
-    add_cleanup(ap.stop)
+    return MDNSPublishers(f_listen_on.values(), name, service_type=service_type, text_dict=d)

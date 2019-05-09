@@ -33,7 +33,7 @@ from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name
 from xpra.platform.paths import get_app_dir
 from xpra.os_util import (
-    filedata_nocrlf, get_machine_id, get_user_uuid, platform_name,
+    filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
     getuid, monotonic_time, get_peercred, hexstr,
     WIN32, POSIX, PYTHON3, BITS,
@@ -58,6 +58,7 @@ commandlog = Logger("command")
 authlog = Logger("auth")
 timeoutlog = Logger("timeout")
 dbuslog = Logger("dbus")
+mdnslog = Logger("mdns")
 
 main_thread = threading.current_thread()
 
@@ -174,9 +175,6 @@ def get_thread_info(proto=None, protocols=()):
         log.error("failed to get frame info: %s", e)
     return info
 
-def notimplemented(*_args):
-    raise NotImplementedError()
-
 
 class ServerCore(object):
     """
@@ -193,6 +191,7 @@ class ServerCore(object):
         self.child_reaper = None
         self.original_desktop_display = None
         self.session_type = "unknown"
+        self.display_name = ""
 
         self._closing = False
         self._upgrading = False
@@ -204,7 +203,7 @@ class ServerCore(object):
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
         self._rfb_upgrade = 0
-        self._ssl_wrap_socket = notimplemented
+        self._ssl_wrap_socket = None
         self._accept_timeout = SOCKET_TIMEOUT + 1
         self.ssl_mode = None
         self._html = False
@@ -233,6 +232,7 @@ class ServerCore(object):
         self.session_name = u""
 
         #Features:
+        self.mdns = False
         self.encryption = None
         self.encryption_keyfile = None
         self.tcp_encryption = None
@@ -290,6 +290,7 @@ class ServerCore(object):
         self.ssh_upgrade = opts.ssh_upgrade
         self.dbus_control = opts.dbus_control
         self.pidfile = opts.pidfile
+        self.mdns = opts.mdns
         self.init_html_proxy(opts)
         self.init_auth(opts)
         self.init_ssl(opts)
@@ -326,6 +327,7 @@ class ServerCore(object):
         return True
 
     def server_init(self):
+        self.mdns_publish()
         self.start_listen_sockets()
 
     def setup(self):
@@ -420,6 +422,7 @@ class ServerCore(object):
             p.quit()
         netlog("cleanup will disconnect: %s", self._potential_protocols)
         self.cancel_touch_timer()
+        self.mdns_cleanup()
         if self._upgrading:
             reason = SERVER_UPGRADE
         else:
@@ -725,6 +728,84 @@ class ServerCore(object):
         self._socket_info = sockets
 
 
+    def mdns_publish(self):
+        from xpra.scripts.server import hosts
+        #find all the records we want to publish:
+        mdns_recs = {}
+        for socktype, _, info, _ in self._socket_info:
+            socktypes = self.get_mdns_socktypes(socktype)
+            mdnslog("mdns_publish() info=%s, socktypes(%s)=%s", info, socktype, socktypes)
+            for st in socktypes:
+                recs = mdns_recs.setdefault(st, [])
+                if socktype=="unix-domain":
+                    assert st=="ssh"
+                    host = "*"
+                    iport = get_ssh_port()
+                else:
+                    host, iport = info
+                for h in hosts(host):
+                    rec = (h, iport)
+                    if rec not in recs:
+                        recs.append(rec)
+                mdnslog("mdns_publish() recs[%s]=%s", st, recs)
+        from xpra.server.socket_util import mdns_publish
+        mdns_info = self.get_mdns_info()
+        MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
+        if MDNS_EXPOSE_NAME and self.session_name:
+            mdns_info["name"] = self.session_name
+        self.mdns_publishers = []
+        for mdns_mode, listen_on in mdns_recs.items():
+            ap = mdns_publish(self.display_name, mdns_mode, listen_on, mdns_info)
+            ap.start()
+            self.mdns_publishers.append(ap)
+
+    def get_mdns_socktypes(self, socktype):
+        #for a given socket type,
+        #what socket types we should expose via mdns
+        if socktype in ("vsock", "named-pipe"):
+            #cannot be accessed remotely
+            return ()
+        ssh_access = get_ssh_port()>0   #and opts.ssh.lower().strip() not in FALSE_OPTIONS
+        ssl = bool(self._ssl_wrap_socket)
+        #only available with the RFBServer
+        rfb_upgrades = getattr(self, "_rfb_upgrade", False)
+        socktypes = [socktype]
+        if socktype=="tcp":
+            if ssl:
+                socktypes.append("ssl")
+            if self._html:
+                socktypes.append("ws")
+            if self._html and ssl:
+                socktypes.append("wss")
+            if self.ssh_upgrade:
+                socktypes.append("ssh")
+            if rfb_upgrades:
+                socktypes.append("rfb")
+        elif socktype=="ws":
+            if ssl:
+                socktypes.append("wss")
+        elif socktype=="unix-domain":
+            if ssh_access:
+                socktypes = ["ssh"]
+        return socktypes
+
+    def get_mdns_info(self):
+        from xpra.platform.info import get_username
+        return {
+            "display"  : self.display_name,
+            "username" : get_username(),
+            "uuid"     : self.uuid,
+            "platform" : sys.platform,
+            "type"     : self.session_type,
+            }
+
+    def mdns_cleanup(self):
+        mp = self.mdns_publishers
+        self.mdns_publishers = []
+        for ap in mp:
+            ap.stop()
+
+
     def start_listen_sockets(self):
         ### All right, we're ready to accept customers:
         for socktype, sock, info, _ in self._socket_info:
@@ -948,6 +1029,8 @@ class ServerCore(object):
             peek_data, line1 = self.peek_connection(conn, PEEK_TIMEOUT)
 
         def ssl_wrap():
+            if not self._ssl_wrap_socket:
+                raise Exception("no ssl support")
             ssl_sock = self._ssl_wrap_socket(sock)
             ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:

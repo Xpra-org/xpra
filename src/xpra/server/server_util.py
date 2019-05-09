@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,10 +11,6 @@ from xpra.os_util import OSX, shellsub, getuid, get_util_logger, osexpand, umask
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
 
-
-def add_cleanup(fn):
-    from xpra.scripts.server import add_cleanup as ac
-    ac(fn)
 
 def sh_quotemeta(s):
     return "'" + s.replace("'", "'\\''") + "'"
