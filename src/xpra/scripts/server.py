@@ -390,29 +390,7 @@ def create_sockets(opts, error_cb):
     sockets = []
 
     rfb_upgrades = int(opts.rfb_upgrade)>0
-    #SSL sockets:
-    wrap_socket_fn = None
-    need_ssl = False
     ssl_opt = opts.ssl.lower()
-    if ssl_opt in TRUE_OPTIONS or bind_ssl or bind_wss:
-        need_ssl = True
-    if opts.bind_tcp or opts.bind_ws:
-        if ssl_opt=="auto" and opts.ssl_cert:
-            need_ssl = True
-        elif ssl_opt=="tcp" and opts.bind_tcp:
-            need_ssl = True
-        elif ssl_opt=="www":
-            need_ssl = True
-    if need_ssl:
-        from xpra.scripts.main import ssl_wrap_socket_fn
-        try:
-            wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
-            log("wrap_socket_fn=%s", wrap_socket_fn)
-        except Exception as e:
-            log("SSL error", exc_info=True)
-            cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
-            raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
-
     min_port = int(opts.min_port)
     def add_tcp_socket(socktype, host_str, iport):
         if iport!=0 and iport<min_port:
@@ -505,7 +483,7 @@ def create_sockets(opts, error_cb):
                 if stype=="tcp":
                     host, iport = addr
                     add_mdns(mdns_recs, "tcp", host, iport)
-    return sockets, mdns_recs, wrap_socket_fn
+    return sockets, mdns_recs
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     #add finally hook to ensure we will run the cleanups
@@ -767,7 +745,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     from xpra.log import Logger
     log = Logger("server")
-    sockets, mdns_recs, wrap_socket_fn = create_sockets(opts, error_cb)
+    sockets, mdns_recs = create_sockets(opts, error_cb)
 
     sanitize_env()
     if POSIX:
@@ -1010,7 +988,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     try:
         app.init_sockets(sockets)
-        app._ssl_wrap_socket = wrap_socket_fn
         app.init_dbus(dbus_pid, dbus_env)
         if xvfb_pid or clobber:
             app.init_display_pid(xvfb_pid)

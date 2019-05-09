@@ -283,11 +283,36 @@ class ServerCore(object):
         self.exit_with_client = opts.exit_with_client
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
-        self.ssl_mode = opts.ssl
         self.ssh_upgrade = opts.ssh_upgrade
         self.dbus_control = opts.dbus_control
         self.init_html_proxy(opts)
         self.init_auth(opts)
+        self.init_ssl(opts)
+
+    def init_ssl(self, opts):
+        self.ssl_mode = opts.ssl
+        if self.ssl_mode.lower() in FALSE_OPTIONS:
+            return
+        need_ssl = False
+        if self.ssl_mode in TRUE_OPTIONS or opts.bind_ssl or opts.bind_wss:
+            need_ssl = True
+        elif opts.bind_tcp or opts.bind_ws:
+            if self.ssl_mode=="auto" and opts.ssl_cert:
+                need_ssl = True
+            elif self.ssl_mode=="tcp" and opts.bind_tcp:
+                need_ssl = True
+            elif self.ssl_mode=="www":
+                need_ssl = True
+        if not need_ssl:
+            return
+        from xpra.scripts.main import ssl_wrap_socket_fn
+        try:
+            self._ssl_wrap_socket = ssl_wrap_socket_fn(opts, server_side=True)
+            log("init_ssl() wrap_socket_fn=%s", self._ssl_wrap_socket)
+        except Exception as e:
+            log("SSL error", exc_info=True)
+            cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
+            raise InitException("cannot create SSL sockets, check your certificate paths (%s): %s" % (cpaths, e))
 
     def server_ready(self):
         return True
@@ -688,6 +713,7 @@ class ServerCore(object):
     # sockets / connections / packets:
     def init_sockets(self, sockets):
         self._socket_info = sockets
+
 
     def start_listen_sockets(self):
         ### All right, we're ready to accept customers:
