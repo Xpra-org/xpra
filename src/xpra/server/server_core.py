@@ -21,6 +21,7 @@ from xpra.version_util import (
     get_platform_info, get_host_info,
     )
 from xpra.scripts.server import deadly_signal
+from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.bytestreams import (
     SocketConnection, SSLSocketConnection,
@@ -226,6 +227,8 @@ class ServerCore(object):
         self.unix_socket_paths = []
         self.touch_timer = None
         self.exec_cwd = os.getcwd()
+        self.pidfile = None
+        self.pidinode = 0
 
         self.session_name = u""
 
@@ -285,9 +288,13 @@ class ServerCore(object):
         self.readonly = opts.readonly
         self.ssh_upgrade = opts.ssh_upgrade
         self.dbus_control = opts.dbus_control
+        self.pidfile = opts.pidfile
         self.init_html_proxy(opts)
         self.init_auth(opts)
         self.init_ssl(opts)
+        if self.pidfile:
+            self.pidinode = write_pidfile(self.pidfile)
+
 
     def init_ssl(self, opts):
         self.ssl_mode = opts.ssl
@@ -426,6 +433,8 @@ class ServerCore(object):
         self.cleanup_dbus_server()
         if not self._upgrading:
             self.stop_dbus_server()
+        if self.pidfile:
+            self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
 
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
@@ -1897,6 +1906,11 @@ class ServerCore(object):
             "executable"        : sys.executable,
             "idle-timeout"      : int(self.server_idle_timeout),
             })
+        if self.pidfile:
+            si["pidfile"] = {
+                "path"  : self.pidfile,
+                "inode" : self.pidinode,
+                }
         if POSIX:
             si["load"] = tuple(int(x*1000) for x in os.getloadavg())
         if self.original_desktop_display:

@@ -585,7 +585,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     from xpra.server.server_util import (
         xpra_runner_shell_script,
         write_runner_shell_scripts,
-        write_pidfile,
         find_log_dir,
         create_input_devices,
         )
@@ -683,9 +682,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #this may override the value we get from pam
         #with the value supplied by the user:
         protected_env["XDG_RUNTIME_DIR"] = xrd
-
-    if opts.pidfile:
-        write_pidfile(opts.pidfile, uid, gid)
 
     if POSIX and not ROOT:
         # Write out a shell-script so that we can start our proxy in a clean

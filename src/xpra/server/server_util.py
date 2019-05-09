@@ -222,9 +222,10 @@ def daemonize():
         os._exit(0)
 
 
-def write_pidfile(pidfile, uid, gid):
+def write_pidfile(pidfile):
     log = get_util_logger()
     pidstr = str(os.getpid())
+    inode = 0
     try:
         with open(pidfile, "w") as f:
             os.fchmod(f.fileno(), 0o600)
@@ -232,32 +233,30 @@ def write_pidfile(pidfile, uid, gid):
             try:
                 inode = os.fstat(f.fileno()).st_ino
             except (OSError, IOError):
-                inode = -1
-            if POSIX and uid!=getuid() or gid!=getgid():
-                try:
-                    os.fchown(f.fileno(), uid, gid)
-                except (OSError, IOError):
-                    pass
+                inode = 0
         log.info("wrote pid %s to '%s'", pidstr, pidfile)
-        def cleanuppidfile():
-            #verify this is the right file!
-            log("cleanuppidfile: inode=%i", inode)
-            if inode>0:
-                try:
-                    i = os.stat(pidfile).st_ino
-                    log("cleanuppidfile: current inode=%i", i)
-                    if i!=inode:
-                        return
-                except (OSError, IOError):
-                    pass
-            try:
-                os.unlink(pidfile)
-            except (OSError, IOError):
-                pass
-        add_cleanup(cleanuppidfile)
     except Exception as e:
         log.error("Error: failed to write pid %i to pidfile '%s':", os.getpid(), pidfile)
         log.error(" %s", e)
+    return inode
+
+def rm_pidfile(pidfile, inode):
+    #verify this is the right file!
+    log = get_util_logger()
+    log("cleanuppidfile(%s, %s)", pidfile, inode)
+    if inode>0:
+        try:
+            i = os.stat(pidfile).st_ino
+            log("cleanuppidfile: current inode=%i", i)
+            if i!=inode:
+                return 0
+        except (OSError, IOError):
+            pass
+    try:
+        os.unlink(pidfile)
+    except (OSError, IOError):
+        log("rm_pidfile(%s, %s)", pidfile, inode, exc_info=True)
+    return 0
 
 
 def get_uinput_device_path(device):
