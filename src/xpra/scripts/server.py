@@ -46,9 +46,6 @@ def add_when_ready(f):
 def add_cleanup(f):
     _cleanups.append(f)
 
-def insert_cleanup(f):
-    _cleanups.insert(0, f)
-
 
 def deadly_signal(signum):
     info("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
