@@ -372,7 +372,8 @@ def add_mdns(mdns_recs, socktype, host_str, port):
 
 def create_sockets(opts, error_cb):
     from xpra.server.socket_util import (
-        parse_bind_ip, parse_bind_vsock, get_network_logger, setup_tcp_socket, setup_udp_socket, setup_vsock_socket,
+        parse_bind_ip, parse_bind_vsock, get_network_logger,
+        setup_tcp_socket, setup_udp_socket, setup_vsock_socket, setup_sd_listen_socket,
         )
     log = get_network_logger()
 
@@ -493,13 +494,13 @@ def create_sockets(opts, error_cb):
     if POSIX:
         try:
             from xpra.platform.xposix.sd_listen import get_sd_listen_sockets
-        except ImportError:
-            pass
+        except ImportError as e:
+            log("no systemd socket activation: %s", e)
         else:
             sd_sockets = get_sd_listen_sockets()
             log("systemd sockets: %s", sd_sockets)
             for stype, socket, addr in sd_sockets:
-                sockets.append((stype, socket, addr))
+                sockets.append(setup_sd_listen_socket(stype, socket, addr))
                 log("%s : %s", (stype, [addr]), socket)
                 if stype=="tcp":
                     host, iport = addr
@@ -961,10 +962,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     ssh_port = get_ssh_port()
     ssh_access = ssh_port>0 and opts.ssh.lower().strip() not in FALSE_OPTIONS
     for socktype, socket, sockpath, cleanup_socket in local_sockets:
-        #ie: ("unix-domain", sock, sockpath), cleanup_socket
-        sockets.append((socktype, socket, sockpath))
+        sockets.append((socktype, socket, sockpath, cleanup_socket))
         netlog("%s %s : %s", socktype, sockpath, socket)
-        add_cleanup(cleanup_socket)
         if opts.mdns and ssh_access:
             netlog("ssh %s:%s : %s", "", ssh_port, socket)
             add_mdns(mdns_recs, "ssh", "", ssh_port)
@@ -1010,6 +1009,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.init_virtual_devices(devices)
 
     try:
+        app.init_sockets(sockets)
         app._ssl_wrap_socket = wrap_socket_fn
         app.init_dbus(dbus_pid, dbus_env)
         if xvfb_pid or clobber:
@@ -1053,7 +1053,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     del opts
 
     log("%s(%s)", app.init_sockets, sockets)
-    app.init_sockets(sockets)
     log("%s(%s)", app.init_when_ready, _when_ready)
     app.init_when_ready(_when_ready)
 

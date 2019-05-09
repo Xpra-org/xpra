@@ -293,7 +293,7 @@ class ServerCore(object):
         return True
 
     def server_init(self):
-        pass
+        self.start_listen_sockets()
 
     def setup(self):
         self.init_packet_handlers()
@@ -397,6 +397,7 @@ class ServerCore(object):
         self.cleanup_protocols(protocols, reason, True)
         self._potential_protocols = []
         self.cleanup_udp_listeners()
+        self.cleanup_sockets()
         self.cleanup_dbus_server()
         if not self._upgrading:
             self.stop_dbus_server()
@@ -404,6 +405,17 @@ class ServerCore(object):
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
         sleep(0.1)
+
+
+    def cleanup_sockets(self):
+        si = self._socket_info
+        self._socket_info = ()
+        for socktype, _, info, cleanup in si:
+            log("cleanup_sockets() calling %s for %s %s", cleanup, socktype, info)
+            try:
+                cleanup()
+            except Exception:
+                log("cleanup error on %s", cleanup, exc_info=True)
 
 
     ######################################################################
@@ -676,9 +688,11 @@ class ServerCore(object):
     # sockets / connections / packets:
     def init_sockets(self, sockets):
         self._socket_info = sockets
+
+    def start_listen_sockets(self):
         ### All right, we're ready to accept customers:
-        for socktype, sock, info in sockets:
-            netlog("init_sockets(%s) will add %s socket %s (%s)", sockets, socktype, sock, info)
+        for socktype, sock, info, _ in self._socket_info:
+            netlog("init_sockets(%s) will add %s socket %s (%s)", self._socket_info, socktype, sock, info)
             self.socket_info[sock] = info
             self.idle_add(self.add_listen_socket, socktype, sock)
             if socktype=="unix-domain" and info:
@@ -1909,7 +1923,7 @@ class ServerCore(object):
 
     def get_socket_info(self):
         si = {}
-        for socktype, _, info in self._socket_info:
+        for socktype, _, info, _ in self._socket_info:
             if info:
                 si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
         for socktype, auth_classes in self.auth_classes.items():

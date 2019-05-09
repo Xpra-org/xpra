@@ -104,6 +104,7 @@ class X11ServerCore(GTKServerBase):
         if server_features.windows:
             from xpra.x11.x11_window_filters import init_x11_window_filters
             init_x11_window_filters()
+        super(X11ServerCore, self).server_init()
 
     def do_init(self, opts):
         self.randr = opts.resize_display

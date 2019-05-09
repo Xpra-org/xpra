@@ -49,7 +49,7 @@ class FilePrintServer(StubServerMixin):
 
     def init_sockets(self, sockets):
         #verify we have a local socket for printing:
-        unixsockets = [info for socktype, _, info in sockets if socktype=="unix-domain"]
+        unixsockets = [info for socktype, _, info, _ in sockets if socktype=="unix-domain"]
         printlog("local unix domain sockets we can use for printing: %s", unixsockets)
         if not unixsockets and self.file_transfer.printing:
             if not WIN32:

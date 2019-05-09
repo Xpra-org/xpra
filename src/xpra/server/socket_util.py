@@ -128,12 +128,11 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
             tcp_socket.close()
         except (OSError, IOError):
             pass
-    add_cleanup(cleanup_tcp_socket)
     if iport==0:
         iport = tcp_socket.getsockname()[1]
         log.info("allocated %s port %i on %s", socktype, iport, host)
     log("%s: %s:%s : %s", socktype, host, iport, socket)
-    return socktype, tcp_socket, (host, iport)
+    return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
 
 def create_udp_socket(host, iport):
     if host.find(":")<0:
@@ -160,12 +159,11 @@ def setup_udp_socket(host, iport, socktype="udp"):
             udp_socket.close()
         except (OSError, IOError):
             pass
-    add_cleanup(cleanup_udp_socket)
     if iport==0:
         iport = udp_socket.getsockname()[1]
         log.info("allocated UDP port %i for %s", iport, host)
     log("%s: %s:%s : %s", socktype, host, iport, socket)
-    return socktype, udp_socket, (host, iport)
+    return socktype, udp_socket, (host, iport), cleanup_udp_socket
 
 
 def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
@@ -203,8 +201,7 @@ def setup_vsock_socket(cid, iport):
             vsock_socket.close()
         except (OSError, IOError):
             pass
-    add_cleanup(cleanup_vsock_socket)
-    return "vsock", vsock_socket, (cid, iport)
+    return "vsock", vsock_socket, (cid, iport), cleanup_vsock_socket
 
 def parse_bind_vsock(bind_vsock):
     vsock_sockets = set()
@@ -213,6 +210,16 @@ def parse_bind_vsock(bind_vsock):
         for spec in bind_vsock:
             vsock_sockets.add(parse_vsock(spec))
     return vsock_sockets
+
+def setup_sd_listen_socket(stype, sock, addr):
+    log = get_network_logger()
+    def cleanup_sd_listen_socket():
+        log.info("closing sd listen socket %s", addr)
+        try:
+            sock.close()
+        except (OSError, IOError):
+            pass
+    return stype, sock, addr, cleanup_sd_listen_socket
 
 
 def normalize_local_display_name(local_display_name):
