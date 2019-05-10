@@ -6,7 +6,7 @@
 
 import cairo
 from PIL import Image
-from gtk import gdk
+from gtk import gdk     #@UnresolvedImport
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
@@ -188,7 +188,7 @@ class PixmapBacking(GTK2WindowBacking):
         context.set_source_pixmap(drawable, 0, 0)
         context.paint()
         if self.pointer_overlay and self.cursor_data:
-            px, py, _size, start_time = self.pointer_overlay[2:]
+            px, py, _size, start_time = self.pointer_overlay[2:]    #pylint: disable=unsubscriptable-object
             spx = round(w*px/ww)
             spy = round(h*py/wh)
             cairo_paint_pointer_overlay(context, self.cursor_data, spx, spy, start_time)

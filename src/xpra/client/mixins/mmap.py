@@ -38,7 +38,7 @@ class MmapClient(StubClientMixin):
         self.supports_mmap = MMAP_SUPPORTED
 
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts, _extra_args=()):
         if MMAP_SUPPORTED:
             self.mmap_group = opts.mmap_group
             if os.path.isabs(opts.mmap):

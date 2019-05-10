@@ -27,9 +27,9 @@ if is_gtk3():
 
     def get_info():
         return {
-                "gdkgl"     : {"version"    : GdkGLExt._version},
-                "gtkgl"     : {"version"    : GtkGLExt._version},
-                }
+            "gdkgl"     : {"version"    : GdkGLExt._version},   #pylint: disable=protected-access
+            "gtkgl"     : {"version"    : GtkGLExt._version},   #pylint: disable=protected-access
+            }
     gdkgl = GdkGLExt
     gtkgl = GtkGLExt
     def Config_new_by_mode(display_mode):
@@ -55,8 +55,8 @@ if is_gtk3():
             return "gtk3.GtkGLExtContext(%s)" % self.widget
 
 else:
-    import gtk
-    from gtk import gdkgl, gtkgl
+    import gtk                      #@UnresolvedImport
+    from gtk import gdkgl, gtkgl    #@UnresolvedImport
     MODE_DEPTH  = gdkgl.MODE_DEPTH
     MODE_RGBA   = gdkgl.MODE_RGBA
     MODE_ALPHA  = gdkgl.MODE_ALPHA

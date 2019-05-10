@@ -6,8 +6,8 @@
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
-import gtk
-from gtk import gdk
+import gtk          #@UnresolvedImport
+from gtk import gdk #@UnresolvedImport
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK

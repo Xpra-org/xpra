@@ -32,7 +32,7 @@ class NotificationClient(StubClientMixin):
         #override the default handler in client base:
         self.may_notify = self.do_notify
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts, _extra_args=()):
         if opts.notifications:
             try:
                 from xpra import notifications
@@ -100,7 +100,7 @@ class NotificationClient(StubClientMixin):
             return []
         return get_native_notifier_classes()
 
-    def do_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
+    def do_notify(self, nid, summary, body, actions=(), hints=None, expire_timeout=10*1000, icon_name=None):
         log("do_notify%s client_supports_notifications=%s, notifier=%s",
             (nid, summary, body, actions, hints, expire_timeout, icon_name),
             self.client_supports_notifications, self.notifier)
@@ -116,7 +116,8 @@ class NotificationClient(StubClientMixin):
             from xpra.notifications.common import parse_image_path
             icon_filename = get_icon_filename(icon_name)
             icon = parse_image_path(icon_filename)
-            n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
+            n.show_notify("", self.tray, nid, "Xpra", nid, "",
+                          summary, body, actions, hints or {}, expire_timeout, icon)
         except Exception as e:
             log("failed to show notification", exc_info=True)
             log.error("Error: cannot show notification")

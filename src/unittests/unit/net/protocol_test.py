@@ -64,8 +64,8 @@ def make_profiling_protocol_class(protocol_class):
 
     class ProfileProtocol(protocol_class):
         def profiling_context(self, basename):
-            from pycallgraph import PyCallGraph, Config
-            from pycallgraph.output import GraphvizOutput
+            from pycallgraph import PyCallGraph, Config     #@UnresolvedImport
+            from pycallgraph.output import GraphvizOutput   #@UnresolvedImport
             config = Config()
             graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, monotonic_time()))
             return PyCallGraph(output=graphviz, config=config)

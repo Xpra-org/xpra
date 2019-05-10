@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-import cairo
 import os
+import cairo
+
 GTK3 = os.environ.get("GTK3", "1")=="1"
 if GTK3:
     from gi.repository import Gtk as gtk, GLib as glib   #@UnresolvedImport @UnusedImport
 else:
-    import gtk, glib            #@Reimport
-    from gtk import gdk
+    import gtk, glib            #@Reimport @UnresolvedImport
+    from gtk import gdk         #@UnresolvedImport
 
 
 WIDTH, HEIGHT = 640, 640

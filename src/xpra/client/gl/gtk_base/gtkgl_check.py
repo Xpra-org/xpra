@@ -9,7 +9,10 @@ import sys
 
 from xpra.gtk_common.gtk_util import VISUAL_NAMES, BYTE_ORDER_NAMES
 from xpra.client.gl.gtk_base.gtk_compat import get_DISPLAY_MODE, get_MODE_names
-from xpra.client.gl.gl_check import check_PyOpenGL_support, gl_check_error, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, OpenGLFatalError
+from xpra.client.gl.gl_check import (
+    check_PyOpenGL_support, gl_check_error, OpenGLFatalError,
+    GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER,
+    )
 from xpra.util import envbool
 from xpra.log import Logger
 
@@ -49,7 +52,7 @@ def check_GL_support(widget, force_enable=False):
 def check_support(force_enable=False, check_colormap=False):
     #platform checks:
     from xpra.platform.gui import gl_check
-    warning = gl_check()
+    warning = gl_check()        #pylint: disable=assignment-from-none
     if warning:
         if force_enable:
             log.warn("Warning: trying to continue despite '%s'" % warning)
@@ -103,7 +106,7 @@ def check_support(force_enable=False, check_colormap=False):
         try:
             v = glconfig.get_attrib(prop)[0]
             props[x.lower().replace("_", "-")] = v
-        except:
+        except Exception:
             pass
     log("GL props=%s", props)
 
@@ -127,7 +130,7 @@ def test_gtkgl_rendering(glconfig, force_enable=False, check_colormap=False):
         with paint_context_manager:
             from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
             gtk = import_gtk()
-            assert gdkgl.query_extension()
+            assert gdkgl.query_extension()  #@UndefinedVariable
             glext, w = None, None
             try:
                 #ugly code for win32 and others (virtualbox broken GL drivers)
@@ -159,7 +162,7 @@ def test_gtkgl_rendering(glconfig, force_enable=False, check_colormap=False):
                         try:
                             visual = getattr(s, "get_%s" % x)()
                             gl_props[x] = visual_to_str(visual)
-                        except:
+                        except Exception:
                             pass
                     #i = 0
                     #for v in s.list_visuals():
@@ -202,7 +205,7 @@ def main(force_enable=False):
         gl_check_error = log_error
         props = check_support(force_enable, verbose)
         log.info("")
-        if len(errors)>0:
+        if errors:
             log.info("OpenGL errors:")
             for e in errors:
                 log.info("  %s", e)

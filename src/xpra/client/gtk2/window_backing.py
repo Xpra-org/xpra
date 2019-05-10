@@ -4,17 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gtk import gdk
-import glib
-
-from xpra.log import Logger
-log = Logger("paint")
+from gtk import gdk #@UnresolvedImport
+import glib         #@UnresolvedImport
 
 from xpra.util import envbool
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
 from xpra.codecs.loader import has_codec
+from xpra.log import Logger
+
+log = Logger("paint")
 
 USE_PIL = envbool("XPRA_USE_PIL", True)
 
@@ -44,7 +44,7 @@ class GTK2WindowBacking(WindowBackingBase):
         self.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
         return  False
 
-    def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+    def do_draw_region(self, x, y, width, height, coding, img_data, _rowstride, options, callbacks): #pylint: disable=arguments-differ
         """ called as last resort when PIL is not available"""
         self.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
 
@@ -69,8 +69,15 @@ class GTK2WindowBacking(WindowBackingBase):
         img_data = self.process_delta(raw_data, width, height, rowstride, options)
         n = pixbuf.get_n_channels()
         if n==3:
-            self.do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+            self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options)
         else:
             assert n==4, "invalid number of channels: %s" % n
-            self.do_paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
+            self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options)
+        fire_paint_callbacks(callbacks, True)
         return False
+
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
+        raise NotImplementedError()
+
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
+        raise NotImplementedError()

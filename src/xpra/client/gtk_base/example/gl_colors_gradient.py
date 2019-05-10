@@ -3,12 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import pango
-import pygtk
+import pango            #@UnresolvedImport
+import pygtk            #@UnresolvedImport
 pygtk.require('2.0')
-import gtk
-from gtk import gtkgl
-from gtk import gdkgl
+import gtk              #@UnresolvedImport
+from gtk import gtkgl   #@UnresolvedImport
+from gtk import gdkgl   #@UnresolvedImport
 
 from xpra.gtk_common.gtk_util import add_close_accel
 from OpenGL.GL import (
@@ -105,7 +105,7 @@ class ColorTest(object):
         blocks = 12
         M = 2**16-1
         mask = 0
-        for i in range(16-self.bpc):
+        for _ in range(16-self.bpc):
             mask = mask*2+1
         mask = 0xffff ^ mask
         def normv(v):

@@ -1262,7 +1262,7 @@ class GTKTrayMenuBase(object):
             webcamlog("populate_webcam_menu()")
             for x in menu.get_children():
                 menu.remove(x)
-            all_video_devices = get_all_video_devices()
+            all_video_devices = get_all_video_devices()     #pylint: disable=assignment-from-none
             off_label = "Off"
             if all_video_devices is None:
                 #None means that this platform cannot give us the device names,

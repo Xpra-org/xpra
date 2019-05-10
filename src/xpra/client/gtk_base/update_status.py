@@ -7,7 +7,6 @@
 
 import os.path
 import sys
-import signal
 
 from xpra.platform.gui import init as gui_init
 from xpra.gtk_common.gtk_util import (
@@ -166,6 +165,7 @@ def main():
         from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
         gtk_main_quit_on_fatal_exceptions_enable()
 
+        from xpra.gtk_common.gobject_compat import register_os_signals
         app = UpdateStatusWindow()
         app.close = app.quit
         register_os_signals(app.quit)

@@ -490,11 +490,11 @@ class GLWindowBackingBase(WindowBackingBase):
             b.destroy()
 
 
-    def paint_scroll(self, scroll_data, options, callbacks):
+    def paint_scroll(self, scroll_data, options, callbacks):    #pylint: disable=arguments-differ
         flush = options.intget("flush", 0)
         self.idle_add(self.do_scroll_paints, scroll_data, flush, callbacks)
 
-    def do_scroll_paints(self, scrolls, flush=0, callbacks=[]):
+    def do_scroll_paints(self, scrolls, flush=0, callbacks=()):
         log("do_scroll_paints%s", (scrolls, flush))
         context = self.gl_context()
         if not context:
@@ -889,7 +889,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if isinstance(img_data, bytes) and zerocopy_upload:
             #we can zerocopy if we wrap it:
             return "zerocopy:bytes-as-memoryview", memoryview(img_data)
-        if PYTHON2 and isinstance(img_data, buffer) and zerocopy_upload:
+        if PYTHON2 and isinstance(img_data, buffer) and zerocopy_upload:    #@UndefinedVariable
             #we can zerocopy if we wrap it:
             return "zerocopy:buffer-as-memoryview", memoryview(img_data)
         if isinstance(img_data, bytes):

@@ -1908,7 +1908,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def noop_destroy(self):
         log.warn("Warning: window destroy called twice!")
 
-    def destroy(self):
+    def destroy(self):      #pylint: disable=method-hidden
         self.cancel_window_state_timer()
         self.cancel_send_iconifiy_timer()
         self.cancel_show_pointer_overlay_timer()

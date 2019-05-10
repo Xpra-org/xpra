@@ -142,7 +142,6 @@ class Encodings(StubClientMixin):
             "video_b_frames"            : video_b_frames,
             "video_max_size"            : self.video_max_size,
             "webp_leaks"                : False,
-            "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,
             "max-soft-expired"          : MAX_SOFT_EXPIRED,
             "send-timestamps"           : SEND_TIMESTAMPS,

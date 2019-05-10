@@ -6,6 +6,8 @@
 import sys
 import time
 
+from xpra.util import typedict
+
 
 class StubClientMixin(object):
 
@@ -13,6 +15,7 @@ class StubClientMixin(object):
     def __init__(self):
         self.exit_code = None
         self.start_time = int(time.time())
+        self.server_capabilities = typedict()
 
     """
     Initialize this instance with the options given.

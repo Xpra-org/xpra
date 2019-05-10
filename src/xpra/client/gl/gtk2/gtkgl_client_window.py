@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gobject
+import gobject  #@UnresolvedImport
 
 from xpra.client.gl.gtk2.gl_client_window import GLClientWindowBase
 from xpra.client.gl.gtk2.gl_window_backing import GLPixmapBacking

@@ -34,7 +34,7 @@ class NotificationForwarder(StubServerMixin):
         nf = self.notifications_forwarder
         if nf:
             self.notifications_forwarder = None
-            thread.start_new_thread(nf.release, ())
+            thread.start_new_thread(nf.release, ())     #@UndefinedVariable
 
     def get_info(self, _source=None):
         if not self.notifications_forwarder:

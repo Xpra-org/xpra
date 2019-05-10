@@ -80,7 +80,7 @@ class InputServer(StubServerMixin):
     def parse_hello_ui_keyboard(self, ss, c):
         other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
         #parse client config:
-        ss.keyboard_config = self.get_keyboard_config(c)
+        ss.keyboard_config = self.get_keyboard_config(c)    #pylint: disable=assignment-from-none
 
         if not other_ui_clients:
             #so only activate this feature afterwards:

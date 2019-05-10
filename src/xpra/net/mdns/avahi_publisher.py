@@ -111,7 +111,7 @@ class AvahiPublishers(object):
 
 class AvahiPublisher(object):
 
-    def __init__(self, bus, name, port, stype=XPRA_MDNS_TYPE, domain="", host="", text=[], interface=avahi.IF_UNSPEC):
+    def __init__(self, bus, name, port, stype=XPRA_MDNS_TYPE, domain="", host="", text=(), interface=avahi.IF_UNSPEC):
         log("AvahiPublisher%s", (bus, name, port, stype, domain, host, text, interface))
         self.bus = bus
         self.name = name
