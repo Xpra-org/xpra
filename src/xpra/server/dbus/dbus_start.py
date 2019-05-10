@@ -101,7 +101,7 @@ def save_dbus_env(env):
     def u(s):
         try:
             return s.decode("latin1")
-        except:
+        except Exception:
             return str(s)
     for n,conv,save in (
             ("ADDRESS",     u,    _save_str),

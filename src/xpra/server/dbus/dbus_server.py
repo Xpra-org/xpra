@@ -1,17 +1,21 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2015-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
+import dbus.service
+
 from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
 from xpra.server.dbus.dbus_server_base import DBUS_Server_Base, INTERFACE, BUS_NAME
 from xpra.util import parse_scaling_value, from0to100, DETACH_REQUEST
-import dbus.service
-
-from xpra.log import Logger, add_debug_category, remove_debug_category, disable_debug_for, enable_debug_for
+from xpra.log import (
+    Logger,
+    add_debug_category, remove_debug_category,
+    disable_debug_for, enable_debug_for,
+    )
 log = Logger("dbus", "server")
 
 
@@ -188,7 +192,7 @@ class DBUS_Server(DBUS_Server_Base):
         for wid, window in self.server._id_to_window.items():
             try:
                 d[wid] = window.get_property("title")
-            except:
+            except Exception:
                 d[wid] = str(window)
         self.log(".ListWindows()=%s", d)
         return d
@@ -318,7 +322,7 @@ class DBUS_Server(DBUS_Server_Base):
         for p, source in self.server._server_sources.items():
             try:
                 d[source.uuid] = str(p)
-            except:
+            except KeyError:
                 d[str(source)] = str(p)
         self.log(".ListClients()=%s", d)
         return d
