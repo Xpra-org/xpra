@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2015-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+import dbus.service
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.dbus.common import init_session_bus
 from xpra.util import AtomicInteger, DETACH_REQUEST
-import dbus.service
-
 from xpra.log import Logger
+
 log = Logger("dbus", "server")
 
 BUS_NAME = "org.xpra.Server"
@@ -69,7 +70,7 @@ class DBUS_Source(dbus.service.Object):
         if conv is None:
             raise dbus.exceptions.DBusException("invalid property")
         server_property_name, _ = conv
-        v = getattr(self.server, server_property_name)
+        v = getattr(self.source, server_property_name)
         self.log(".Get(%s)=%s", property_name, v)
         return v
 
@@ -89,8 +90,8 @@ class DBUS_Source(dbus.service.Object):
         if conv is None:
             raise dbus.exceptions.DBusException("invalid property")
         server_property_name, validator = conv
-        assert hasattr(self.server, server_property_name)
-        setattr(self.server, server_property_name, validator(new_value))
+        assert hasattr(self.source, server_property_name)
+        setattr(self.source, server_property_name, validator(new_value))
 
     @dbus.service.signal(dbus.PROPERTIES_IFACE, signature='sa{sv}as')
     def PropertiesChanged(self, interface_name, changed_properties, invalidated_properties):
