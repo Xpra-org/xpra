@@ -17,7 +17,7 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "window")
 
 
-from libc.stdlib cimport free, malloc
+from libc.stdlib cimport free, malloc       #pylint: disable=syntax-error
 
 ###################################
 # Headers, python magic

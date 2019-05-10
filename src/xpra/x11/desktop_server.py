@@ -128,7 +128,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
 
     def update_wm_name(self):
         try:
-            wm_name = get_wm_name()
+            wm_name = get_wm_name()     #pylint: disable=assignment-from-none
         except Exception:
             wm_name = ""
         iconlog("update_wm_name() wm-name=%s", wm_name)
@@ -137,7 +137,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def update_icon(self):
         icons = None
         try:
-            wm_name = get_wm_name()
+            wm_name = get_wm_name()     #pylint: disable=assignment-from-none
             if not wm_name:
                 return
             icon_name = get_icon_filename(wm_name.lower()+".png")

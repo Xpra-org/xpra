@@ -1357,7 +1357,7 @@ class WindowVideoSource(WindowSource):
                     continue
                 if width*num/den<=max_w and height*num/den<=max_h:
                     return (num, den)
-            raise Exception("BUG: failed to find a scaling value for window size %sx%s", width, height)
+            raise Exception("BUG: failed to find a scaling value for window size %sx%s" % (width, height))
         if not SCALING or not self.supports_video_scaling:
             #not supported by client or disabled by env
             if (width>max_w or height>max_h) and first_time("scaling-required"):

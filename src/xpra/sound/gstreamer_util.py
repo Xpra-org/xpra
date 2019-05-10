@@ -221,14 +221,14 @@ def get_gst_version():
     return gst.version()
 
 
-def import_gst():
+def do_import_gst():
     global gst
     if gst is not None:
         return gst
 
     #hacks to locate gstreamer plugins on win32 and osx:
     if WIN32:
-        frozen = hasattr(sys, "frozen") and sys.frozen in ("windows_exe", "console_exe", True)
+        frozen = getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True)
         log("gstreamer_util: frozen=%s", frozen)
         if frozen:
             #on win32, we keep separate trees
@@ -280,6 +280,7 @@ def import_gst():
         log.warn(" %s", e)
         return None
     return gst
+import_gst = do_import_gst
 
 def prevent_import():
     global gst

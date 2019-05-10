@@ -9,7 +9,7 @@ from __future__ import absolute_import
 
 import os
 import time
-from libc.stdlib cimport malloc, free
+from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 
 from xpra.util import dump_exc, envbool

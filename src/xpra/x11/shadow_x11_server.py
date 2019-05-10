@@ -141,7 +141,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def cleanup(self):
         GTKShadowServerBase.cleanup(self)
-        X11ServerCore.cleanup(self)
+        X11ServerCore.cleanup(self)     #@UndefinedVariable
 
 
     def setup_capture(self):

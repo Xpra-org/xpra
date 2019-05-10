@@ -511,7 +511,7 @@ def main():
             qtime = ss.queue.get_property("current-level-time")//MS_TO_NS
             if qtime<=0:
                 log.info("underrun (end of stream)")
-                thread.start_new_thread(ss.stop, ())
+                thread.start_new_thread(ss.stop, ())        #@UndefinedVariable
                 glib.timeout_add(500, glib_mainloop.quit)
                 return False
             return True
