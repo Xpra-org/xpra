@@ -75,10 +75,10 @@ def force_flush_queue(q):
         try:
             while q.qsize()>0:
                 q.read(False)
-        except:
+        except Exception:
             pass
         q.put_nowait(None)
-    except:
+    except Exception:
         pass
 
 
@@ -281,7 +281,7 @@ class Protocol(object):
             info["compressor"] = compression.get_compressor_name(self._compress)
         e = self._encoder
         if e:
-            if self._encoder==self.noencode:
+            if self._encoder==self.noencode:        #pylint: disable=comparison-with-callable
                 info["encoder"] = "noencode"
             else:
                 info["encoder"] = packet_encoding.get_encoder_name(self._encoder)
@@ -292,7 +292,7 @@ class Protocol(object):
         if c:
             try:
                 info.update(self._conn.get_info())
-            except:
+            except Exception:
                 log.error("error collecting connection information on %s", self._conn, exc_info=True)
         #add stats to connection info:
         info.setdefault("input", {}).update({
@@ -342,7 +342,8 @@ class Protocol(object):
             log("send_now(%s ...) connection is closed already, not sending", packet[0])
             return
         log("send_now(%s ...)", packet[0])
-        assert self._get_packet_cb is None, "cannot use send_now when a packet source exists! (set to %s)" % self._get_packet_cb
+        if self._get_packet_cb:
+            raise Exception("cannot use send_now when a packet source exists! (set to %s)" % self._get_packet_cb)
         tmp_queue = [packet]
         def packet_cb():
             self._get_packet_cb = None
@@ -353,7 +354,7 @@ class Protocol(object):
         self._get_packet_cb = packet_cb
         self.source_has_more()
 
-    def source_has_more(self):
+    def source_has_more(self):      #pylint: disable=method-hidden
         shm = self._source_has_more
         if not shm or self._closed:
             return
@@ -437,7 +438,7 @@ class Protocol(object):
                     items.append(header)
                     items.append(data)
         #WebSocket header may be added here:
-        frame_header = self.make_frame_header(packet_type, items)
+        frame_header = self.make_frame_header(packet_type, items)       #pylint: disable=assignment-from-none
         if frame_header:
             item0 = items[0]
             if len(item0)<PACKET_JOIN_SIZE:
@@ -679,7 +680,7 @@ class Protocol(object):
         if start_cb:
             try:
                 start_cb(conn.output_bytecount)
-            except:
+            except Exception:
                 if not self._closed:
                     log.error("Error on write start callback %s", start_cb, exc_info=True)
         self.write_buffers(buf_data, fail_cb, synchronous)
@@ -690,7 +691,7 @@ class Protocol(object):
         if end_cb:
             try:
                 end_cb(self._conn.output_bytecount)
-            except:
+            except Exception:
                 if not self._closed:
                     log.error("Error on write end callback %s", end_cb, exc_info=True)
         return True
@@ -938,7 +939,8 @@ class Protocol(object):
                         else:
                             actual_padding = data[-padding_size:]
                             cryptolog.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
-                            cryptolog(" data does not end with %s padding bytes %s", self.cipher_in_padding, debug_str(padtext))
+                            cryptolog(" data does not end with %s padding bytes %s",
+                                      self.cipher_in_padding, debug_str(padtext))
                             cryptolog(" but with %s (%s)", debug_str(actual_padding), type(data))
                             cryptolog(" decrypted data: %s", debug_str(data[:128]))
                             self._internal_error("%s encryption padding error - wrong key?" % self.cipher_in_name)
@@ -1021,7 +1023,7 @@ class Protocol(object):
                 self._process_packet_cb(self, packet)
                 packet = None
 
-    def flush_then_close(self, last_packet, done_callback=None):
+    def flush_then_close(self, last_packet, done_callback=None):    #pylint: disable=method-hidden
         """ Note: this is best effort only
             the packet may not get sent.
 
@@ -1052,7 +1054,7 @@ class Protocol(object):
                     log("flush_then_close: queue still busy, closing without sending the last packet")
                     try:
                         self._write_lock.release()
-                    except:
+                    except Exception:
                         pass
                     self.close()
                     done()
@@ -1067,7 +1069,7 @@ class Protocol(object):
                     self.close()
                     try:
                         self._write_lock.release()
-                    except:
+                    except Exception:
                         pass
                     done()
                 def wait_for_packet_sent():
@@ -1084,7 +1086,9 @@ class Protocol(object):
                     if wait_for_packet_sent():
                         #check again every 100ms
                         self.timeout_add(100, wait_for_packet_sent)
-                self._add_chunks_to_queue(last_packet[0], chunks, start_send_cb=None, end_send_cb=packet_queued, synchronous=False, more=False)
+                self._add_chunks_to_queue(last_packet[0], chunks,
+                                          start_send_cb=None, end_send_cb=packet_queued,
+                                          synchronous=False, more=False)
                 #just in case wait_for_packet_sent never fires:
                 self.timeout_add(5*1000, close_and_release)
 
@@ -1136,7 +1140,7 @@ class Protocol(object):
                          std_unit(self.input_packetcount), std_unit_dec(c.input_bytecount),
                          std_unit(self.output_packetcount), std_unit_dec(c.output_bytecount)
                          )
-            except:
+            except Exception:
                 log.error("error closing %s", c, exc_info=True)
         self.terminate_queue_threads()
         self.idle_add(self.clean)

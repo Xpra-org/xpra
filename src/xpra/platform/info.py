@@ -5,31 +5,37 @@
 
 import os
 
+from xpra.platform import platform_import
+
+
 def get_posix_sys_info():
     info = {}
     try:
         import resource
         for k, constant in {
-                            "server"    : "RUSAGE_SELF",
-                            "children"  : "RUSAGE_CHILDREN",
-                            "total"     : "RUSAGE_BOTH"}.items():
+            "server"    : "RUSAGE_SELF",
+            "children"  : "RUSAGE_CHILDREN",
+            "total"     : "RUSAGE_BOTH",
+            }.items():
             try:
                 v = getattr(resource, constant)
             except (NameError, AttributeError):
                 continue
             stats = resource.getrusage(v)
             minfo = info.setdefault("memory", {}).setdefault(k, {})
-            for var in ("utime", "stime", "maxrss",
-                        "ixrss", "idrss", "isrss",
-                        "minflt", "majflt", "nswap",
-                        "inblock", "oublock",
-                        "msgsnd", "msgrcv",
-                        "nsignals", "nvcsw", "nivcsw"):
+            for var in (
+                "utime", "stime", "maxrss",
+                "ixrss", "idrss", "isrss",
+                "minflt", "majflt", "nswap",
+                "inblock", "oublock",
+                "msgsnd", "msgrcv",
+                "nsignals", "nvcsw", "nivcsw",
+                ):
                 value = getattr(stats, "ru_%s" % var)
-                if type(value)==float:
+                if isinstance(value, float):
                     value = int(value)
                 minfo[var] = value
-    except:
+    except Exception:
         from xpra.os_util import get_util_logger
         get_util_logger().error("Error getting memory usage info", exc_info=True)
     return info
@@ -47,7 +53,7 @@ def _get_pwd():
         import pwd
         USER_ID = os.getuid()
         return pwd.getpwuid(USER_ID)
-    except:
+    except Exception:
         return None
 
 def get_username():
@@ -68,7 +74,6 @@ def get_user_info():
             "name"      : get_name()
             }
 
-from xpra.platform import platform_import
 platform_import(globals(), "info", False,
                 "get_sys_info",
                 "get_version_info",

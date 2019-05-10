@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
 from xpra.os_util import bytestostr, strtobytes
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t      #pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 
 

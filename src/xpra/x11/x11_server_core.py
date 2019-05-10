@@ -899,7 +899,7 @@ class X11ServerCore(GTKServerBase):
         with xsync:
             if self.do_process_mouse_common(proto, wid, pointer):
                 self._update_modifiers(proto, wid, modifiers)
-                self.pointer_device.wheel_motion(button, distance/1000.0)
+                self.pointer_device.wheel_motion(button, distance/1000.0)   #pylint: disable=no-member
 
     def get_pointer_device(self, deviceid):
         #mouselog("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)

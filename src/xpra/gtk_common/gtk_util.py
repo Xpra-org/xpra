@@ -91,10 +91,6 @@ def get_gtk_version_info():
     return GTK_VERSION_INFO.copy()
 
 
-def popup_menu_workaround(*args):
-    #only implemented with GTK2 on win32 below
-    pass
-
 def pixbuf_save_to_memory(pixbuf, fmt="png"):
     buf = []
     def save_to_memory(data, *_args, **_kwargs):
@@ -449,6 +445,10 @@ if is_gtk3():
     gdk_window_process_all_updates = gdk.Window.process_all_updates
     gtk_main = gtk.main
 
+    def popup_menu_workaround(*args):
+        #only implemented with GTK2 on win32 below
+        pass
+
     def gio_File(path):
         from gi.repository import Gio   #@UnresolvedImport
         return Gio.File.new_for_path(path)
@@ -760,7 +760,7 @@ else:
         menu.connect("leave-notify-event", leave_menu)
 
     def gio_File(path):
-        import gio
+        import gio      #@UnresolvedImport
         return gio.File(path=path)
 
     def query_info_async(gfile, attributes, callback, flags=0, cancellable=None):
@@ -956,9 +956,9 @@ def get_screen_sizes(xscale=1, yscale=1):
         screen = display.get_default_screen()
         sw, sh = screen.get_width(), screen.get_height()
         work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
-        workarea = get_workarea()
+        workarea = get_workarea()   #pylint: disable=assignment-from-none
         if workarea:
-            work_x, work_y, work_width, work_height = swork(*workarea)
+            work_x, work_y, work_width, work_height = swork(*workarea)  #pylint: disable=not-an-iterable
         screenlog(" workarea=%s", workarea)
         item = (screen.make_display_name(), xs(sw), ys(sh),
                     screen.get_width_mm(), screen.get_height_mm(),
@@ -1006,9 +1006,9 @@ def get_screen_sizes(xscale=1, yscale=1):
                 monitors.append(tuple(monitor))
                 j += 1
             work_x, work_y, work_width, work_height = swork(0, 0, screen.get_width(), screen.get_height())
-            workarea = get_workarea()
+            workarea = get_workarea()   #pylint: disable=assignment-from-none
             if workarea:
-                work_x, work_y, work_width, work_height = swork(*workarea)
+                work_x, work_y, work_width, work_height = swork(*workarea)  #pylint: disable=not-an-iterable
             screenlog(" workarea=%s", workarea)
             item = (screen.make_display_name(), xs(screen.get_width()), ys(screen.get_height()),
                         screen.get_width_mm(), screen.get_height_mm(),

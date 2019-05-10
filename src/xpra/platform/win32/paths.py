@@ -159,7 +159,7 @@ if getattr(sys, 'frozen', False) is True:
     if PYTHON3:
         APP_DIR = os.path.dirname(sys.executable)
     else:
-        APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
+        APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding())) #@UndefinedVariable
     if len(APP_DIR)>3 and APP_DIR[1]==":" and APP_DIR[2]=="/":
         #it seems that mingw builds can get confused about the correct value for os.pathsep:
         APP_DIR = APP_DIR.replace("/", "\\")

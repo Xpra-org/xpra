@@ -38,7 +38,7 @@ def print_files(printer, filenames, title, options):
 def printing_finished(_printpid):
     return True
 
-def init_printing(printers_modified_callback=None):
+def init_printing(printers_modified_callback=None):     #pylint: disable=unused-argument
     pass
 
 def cleanup_printing():
@@ -182,7 +182,7 @@ def main():
             if not os.path.exists(filename):
                 print("Cannot print file '%s': file does not exist" % filename)
                 return 1
-            printer = get_default_printer()
+            printer = get_default_printer()     #pylint: disable=assignment-from-none
             if not printer:
                 printer = printers.keys()[0]
                 if len(printers)>1:

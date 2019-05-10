@@ -402,7 +402,7 @@ class ServerBase(ServerBaseClass):
     def client_startup_complete(self, ss):
         ss.startup_complete()
         self.server_event("startup-complete", ss.uuid)
-        if not self.start_after_connect_done:
+        if not self.start_after_connect_done:   #pylint: disable=access-member-before-definition
             self.start_after_connect_done = True
             self.exec_after_connect_commands()
         self.exec_on_connect_commands()

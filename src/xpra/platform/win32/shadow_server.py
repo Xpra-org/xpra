@@ -364,7 +364,7 @@ class ShadowServer(GTKShadowServerBase):
         #non-blocking server sockets (TCP and named pipes):
         from xpra.net.bytestreams import CONTINUE_ERRNO
         import errno
-        CONTINUE_ERRNO[errno.WSAEWOULDBLOCK] = "WSAEWOULDBLOCK"     #@UndefinedVariable
+        CONTINUE_ERRNO[errno.WSAEWOULDBLOCK] = "WSAEWOULDBLOCK"     #@UndefinedVariable pylint: disable=no-member
 
     def init(self, opts):
         self.pixel_depth = int(opts.pixel_depth) or 32

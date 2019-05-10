@@ -103,7 +103,7 @@ class _ErrorManager(object):
     def __init__(self):
         self.depth = 0
 
-    def _enter(self):
+    def Xenter(self):
         assert self.depth >= 0
         verify_main_thread()
         gdk.error_trap_push()
@@ -111,7 +111,7 @@ class _ErrorManager(object):
             log("X11trap.enter at level %i", self.depth)
         self.depth += 1
 
-    def _exit(self, need_sync=True):
+    def Xexit(self, need_sync=True):
         assert self.depth >= 0
         self.depth -= 1
         if XPRA_LOG_SYNC:
@@ -130,17 +130,17 @@ class _ErrorManager(object):
         # that might also be raised, so suppress the XError in that case.
         value = None
         try:
-            self._enter()
+            self.Xenter()
             value = fun(*args, **kwargs)
         except Exception as e:
             elog("_call%s", (need_sync, fun, args, kwargs), exc_info=True)
             log("_call%s %s", (need_sync, fun, args, kwargs), e)
             try:
-                self._exit(need_sync)
+                self.Xexit(need_sync)
             except XError as ee:
                 log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
             raise
-        self._exit(need_sync)
+        self.Xexit(need_sync)
         return value
 
     def call_unsynced(self, fun, *args, **kwargs):
@@ -184,12 +184,12 @@ trap = _ErrorManager()
 class XSyncContext(object):
 
     def __enter__(self):
-        trap._enter()
+        trap.Xenter()
 
     def __exit__(self, e_typ, _e_val, _trcbak):
         #log("xsync.exit%s", (e_typ, e_val, trcbak))
         try:
-            trap._exit()
+            trap.Xexit()
         except XError as ee:
             if e_typ is None:
                 #we are not handling an exception yet, so raise this one:
@@ -204,13 +204,13 @@ xsync = XSyncContext()
 class XSwallowContext(object):
 
     def __enter__(self):
-        trap._enter()
+        trap.Xenter()
 
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
             log("xswallow.exit%s", (e_typ, e_val, trcbak), exc_info=True)
         try:
-            trap._exit()
+            trap.Xexit()
         except XError as ee:
             log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
         #don't raise exceptions:
@@ -222,13 +222,13 @@ xswallow = XSwallowContext()
 class XLogContext(object):
 
     def __enter__(self):
-        trap._enter()
+        trap.Xenter()
 
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
             log.error("XError: %s, %s", XErrorInfo(e_typ), e_val, exc_info=True)
         try:
-            trap._exit()
+            trap.Xexit()
         except XError as ee:
             log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
         #don't raise exceptions:

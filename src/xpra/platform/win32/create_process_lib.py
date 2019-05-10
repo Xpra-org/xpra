@@ -508,4 +508,4 @@ class Popen(subprocess.Popen):
             finally:
                 if hasattr(self, '_handle'):
                     self.terminate()
-        super(Popen, self).__del__()
+        super(Popen, self).__del__()        #pylint: disable=no-member

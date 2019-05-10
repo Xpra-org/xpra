@@ -25,7 +25,7 @@ def get_x11_window_value(prop, window):
         with xsync:
             xid = get_xwindow(window)
             x11type = window_bindings.GetWindowPropertyType(xid, prop)[0]
-    except:
+    except Exception:
         log("get_x11_window_value(%s, %s)", prop, window, exc_info=True)
         x11type = None
     if x11type:
@@ -55,7 +55,7 @@ def get_window(filter_object, window):
             prop = "WM_TRANSIENT_FOR"
             p = prop_get(gdkwin, prop, "window", ignore_errors=True)
             log("prop_get(%s, %s)=%s", gdkwin, prop, p)
-        except:
+        except Exception:
             log("prop_get(%s, %s)", gdkwin, prop, exc_info=True)
             break
     return gdkwin
