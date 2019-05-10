@@ -7,7 +7,7 @@
 from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_cairo, import_glib
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.client.paint_colors import get_paint_box_color
-from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks
+from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
 from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
 from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
 from xpra.os_util import memoryview_to_bytes, strtobytes
@@ -143,8 +143,14 @@ class CairoBackingBase(WindowBackingBase):
         raise NotImplementedError()
 
 
+    def get_encoding_properties(self):
+        props = WindowBackingBase.get_encoding_properties(self)
+        if SCROLL_ENCODING:
+            props["encoding.scrolling"] = True
+        return props
+
+
     def paint_scroll(self, img_data, _options, callbacks):
-        #Warning: unused as this causes strange visual corruption
         self.idle_add(self.do_paint_scroll, img_data, callbacks)
 
     def do_paint_scroll(self, scrolls, callbacks):

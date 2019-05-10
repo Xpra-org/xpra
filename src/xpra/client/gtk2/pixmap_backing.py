@@ -8,6 +8,7 @@ import cairo
 from PIL import Image
 from gtk import gdk     #@UnresolvedImport
 
+from xpra.client.window_backing_base import SCROLL_ENCODING
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.client.paint_colors import get_paint_box_color
@@ -41,6 +42,14 @@ class PixmapBacking(GTK2WindowBacking):
         old_backing = self._backing
         self.do_init_new_backing_instance()
         self.copy_backing(old_backing)
+
+
+    def get_encoding_properties(self):
+        props = GTK2WindowBacking.get_encoding_properties(self)
+        if SCROLL_ENCODING:
+            props["encoding.scrolling"] = True
+        return props
+
 
     def do_init_new_backing_instance(self):
         w, h = self.size
@@ -107,9 +116,12 @@ class PixmapBacking(GTK2WindowBacking):
         self.idle_add(self.do_paint_scroll, img_data, callbacks)
 
     def do_paint_scroll(self, scrolls, callbacks):
+        old_backing = self._backing
+        self.do_init_new_backing_instance()
+        self.copy_backing(old_backing)
         gc = self._backing.new_gc()
         for sx,sy,sw,sh,xdelta,ydelta in scrolls:
-            self._backing.draw_drawable(gc, self._backing, sx, sy, sx+xdelta, sy+ydelta, sw, sh)
+            self._backing.draw_drawable(gc, old_backing, sx, sy, sx+xdelta, sy+ydelta, sw, sh)
         fire_paint_callbacks(callbacks)
 
     def bgr_to_rgb(self, img_data, width, height, rowstride, rgb_format, target_format):
@@ -126,7 +138,8 @@ class PixmapBacking(GTK2WindowBacking):
         if isinstance(img_data, (memoryview, _buffer, bytearray)):
             img_data = memoryview_to_bytes(img_data)
         if INDIRECT_BGR:
-            img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGB")
+            rgb_format = options.strget("rgb_format", "")
+            img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, rgb_format, "RGB")
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         if self.paint_box_line_width>0:
@@ -140,7 +153,8 @@ class PixmapBacking(GTK2WindowBacking):
         if isinstance(img_data, (memoryview, _buffer, bytearray)):
             img_data = memoryview_to_bytes(img_data)
         if INDIRECT_BGR:
-            img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGBA")
+            rgb_format = options.strget("rgb_format", "")
+            img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, rgb_format, "RGBA")
         if has_alpha:
             #draw_rgb_32_image does not honour alpha, we have to use pixbuf:
             pixbuf = gdk.pixbuf_new_from_data(img_data, gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)

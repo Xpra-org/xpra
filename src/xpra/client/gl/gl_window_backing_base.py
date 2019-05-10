@@ -55,8 +55,10 @@ from xpra.os_util import monotonic_time, strtobytes, hexstr, POSIX, PYTHON2, Dum
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.client.window_backing_base import fire_paint_callbacks, WEBP_PILLOW
-from xpra.client.window_backing_base import WindowBackingBase
+from xpra.client.window_backing_base import (
+    fire_paint_callbacks, WindowBackingBase,
+    WEBP_PILLOW, SCROLL_ENCODING,
+    ) 
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe, get_max_texture_size
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, YUV2RGB_FULL_shader, RGBP2RGB_shader
 from xpra.client.gl.gl_spinner import draw_spinner
@@ -66,7 +68,6 @@ log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
-SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
@@ -80,7 +81,7 @@ if SAVE_BUFFERS not in ("png", "jpeg", None):
     log.warn("invalid value for XPRA_OPENGL_SAVE_BUFFERS: must be 'png' or 'jpeg'")
     SAVE_BUFFERS = None
 if SAVE_BUFFERS:
-    from OpenGL.GL import glGetTexImage
+    from OpenGL.GL import glGetTexImage     #pylint: disable=ungrouped-imports
     import numpy
     from PIL import Image, ImageOps
 
