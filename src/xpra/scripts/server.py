@@ -927,6 +927,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.init_virtual_devices(devices)
 
     try:
+        app.exec_cwd = opts.chdir or cwd
         app.display_name = display_name
         app.init(opts)
         app.init_sockets(sockets)
@@ -934,7 +935,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if xvfb_pid or clobber:
             app.init_display_pid(xvfb_pid)
         app.original_desktop_display = desktop_display
-        app.exec_cwd = opts.chdir or cwd
         del opts
         if not app.server_ready():
             return 1
