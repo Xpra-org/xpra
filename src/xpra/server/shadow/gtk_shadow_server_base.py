@@ -51,7 +51,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def cleanup(self):
         self.cleanup_tray()
         ShadowServerBase.cleanup(self)
-        GTKServerBase.cleanup(self)
+        GTKServerBase.cleanup(self)     #@UndefinedVariable
 
 
     def client_startup_complete(self, ss):

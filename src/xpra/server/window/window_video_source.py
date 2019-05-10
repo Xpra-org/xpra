@@ -391,7 +391,7 @@ class WindowVideoSource(WindowSource):
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
         try:
             self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
-        except:
+        except IndexError:
             self.edge_encoding = None
         log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
             properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
@@ -496,7 +496,7 @@ class WindowVideoSource(WindowSource):
                 return nonvideo(quality+30, "not enough pixels")
         return current_encoding
 
-    def get_best_nonvideo_encoding(self, ww, wh, speed, quality, current_encoding=None, options=[]):
+    def get_best_nonvideo_encoding(self, ww, wh, speed, quality, current_encoding=None, options=()):
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         options = options or self.non_video_encodings

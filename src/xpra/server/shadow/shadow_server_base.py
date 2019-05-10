@@ -79,7 +79,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
 
     def guess_session_name(self, _procs=None):
-        self.session_name = get_wm_name()
+        self.session_name = get_wm_name()       # pylint: disable=assignment-from-none
 
     def get_server_mode(self):
         if PYTHON3:
@@ -172,7 +172,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         #directly on the screen we shadow
         notifylog("notify_new_user(%s) notifier=%s", ss, self.notifier)
         if self.notifier:
-            tray = self.get_notification_tray()
+            tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
             nid = 0
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
@@ -284,7 +284,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def poll_cursor(self):
         prev = self.last_cursor_data
-        curr = self.do_get_cursor_data()
+        curr = self.do_get_cursor_data()        #pylint: disable=assignment-from-none
         self.last_cursor_data = curr
         def cmpv(lcd):
             if not lcd:
@@ -297,8 +297,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             fields = ("x", "y", "width", "height", "xhot", "yhot", "serial", "pixels", "name")
             if len(prev or [])==len(curr or []) and len(prev or [])==len(fields):
                 diff = []
-                for i in range(len(prev)):
-                    if prev[i]!=curr[i]:
+                for i, prev_value in enumerate(prev):
+                    if prev_value!=curr[i]:
                         diff.append(fields[i])
                 cursorlog("poll_cursor() attributes changed: %s", diff)
             if SAVE_CURSORS and curr:
@@ -342,7 +342,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def parse_screen_info(self, ss):
         try:
             log.info(" client root window size is %sx%s", *ss.desktop_size)
-        except:
+        except Exception:
             log.info(" unknown client desktop size")
         return self.get_root_window_size()
 
@@ -355,7 +355,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def set_keyboard_repeat(self, key_repeat):
         """ don't override the existing desktop """
-        pass
+        pass    #pylint: disable=unnecessary-pass
 
     def set_keymap(self, server_source, force=False):
         log("set_keymap%s", (server_source, force))

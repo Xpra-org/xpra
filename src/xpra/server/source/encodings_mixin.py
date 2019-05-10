@@ -149,7 +149,7 @@ class EncodingsMixin(StubSourceMixin):
             self.calculate_window_ids.remove(wid)
             try:
                 del self.calculate_window_pixels[wid]
-            except:
+            except KeyError:
                 pass
             ws = self.window_sources.get(wid)
             if ws is None:
@@ -160,7 +160,7 @@ class EncodingsMixin(StubSourceMixin):
                                          len(fullscreen_wids)>0 and wid not in fullscreen_wids,
                                          len(maximized_wids)>0 and wid not in maximized_wids)
                 ws.reconfigure()
-            except:
+            except Exception:
                 log.error("error on window %s", wid, exc_info=True)
             if self.is_closed():
                 return
@@ -330,7 +330,7 @@ class EncodingsMixin(StubSourceMixin):
             #enabling video proxy:
             try:
                 self.parse_proxy_video()
-            except:
+            except Exception:
                 proxylog.error("failed to parse proxy video", exc_info=True)
 
         sc = self.encoding_options.get("scaling.control", self.scaling_control)

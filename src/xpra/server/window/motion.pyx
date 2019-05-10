@@ -18,7 +18,7 @@ from xpra.util import envbool, repr_ellipsized, csv
 from xpra.log import Logger
 log = Logger("encoding", "scroll")
 
-from xpra.buffers.membuf cimport memalign, object_as_buffer, xxh64
+from xpra.buffers.membuf cimport memalign, object_as_buffer, xxh64      #pylint: disable=syntax-error
 from xpra.rectangle import rectangle
 
 

@@ -7,7 +7,7 @@
 import os
 
 from xpra.util import envbool, envint, CLIENT_PING_TIMEOUT
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, POSIX
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -46,7 +46,8 @@ class NetworkStateMixin(StubSourceMixin):
         import time
         self.send_async("ping", now_ms, int(time.time()*1000), will_have_more=False)
         timeout = PING_TIMEOUT
-        self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000, self.check_ping_echo_timeout, now_ms, timeout)
+        self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000,
+                                                               self.check_ping_echo_timeout, now_ms, timeout)
 
     def check_ping_echo_timeout(self, now_ms, timeout):
         try:
@@ -67,11 +68,9 @@ class NetworkStateMixin(StubSourceMixin):
         cl = -1
         if PING_DETAILS:
             #send back the load average:
-            try:
-                (fl1, fl2, fl3) = os.getloadavg()
+            if POSIX:
+                fl1, fl2, fl3 = os.getloadavg()
                 l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
-            except:
-                l1,l2,l3 = 0,0,0
             #and the last client ping latency we measured (if any):
             if self.statistics.client_ping_latency:
                 _, cl = self.statistics.client_ping_latency[-1]

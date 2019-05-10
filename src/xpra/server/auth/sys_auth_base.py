@@ -30,7 +30,7 @@ def parse_uid(v):
     if v:
         try:
             return int(v)
-        except:
+        except TypeError:
             log("uid '%s' is not an int", v)
     if POSIX:
         try:
@@ -46,7 +46,7 @@ def parse_gid(v):
     if v:
         try:
             return int(v)
-        except:
+        except TypeError:
             log("gid '%s' is not an int", v)
     if POSIX:
         try:
@@ -96,7 +96,7 @@ class SysAuthenticatorBase(object):
         return self.salt, self.digest
 
     def get_passwords(self):
-        p = self.get_password()
+        p = self.get_password()     #pylint: disable=assignment-from-none
         if p is not None:
             return (p,)
         return ()
