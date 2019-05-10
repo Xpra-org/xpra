@@ -106,7 +106,7 @@ Requires:			xpra-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 #without this, the system tray is unusable!
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
@@ -133,7 +133,7 @@ Requires(postun):	systemd-units
 %{Recommends}:		libfakeXinerama
 %{Recommends}:		gtk2-immodule-xim
 %{Recommends}:		mesa-dri-drivers
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 #allows the server to use software opengl:
 %{Recommends}:		mesa-libOSMesa
 %endif
@@ -155,14 +155,14 @@ Summary:			Xpra HTML5 client
 Group:				Networking
 BuildArch:			noarch
 Conflicts:			xpra < 2.1
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 BuildRequires:		uglify-js
 BuildRequires:		js-jquery
 BuildRequires:		desktop-backgrounds-compat
 Requires:			js-jquery
 %{Recommends}:		desktop-backgrounds-compat
 %endif
-%if 0%{?el7}
+%if 0%{?el7}%{?el8}
 #don't depend on this package,
 #so we can also install on a pure RHEL distro:
 BuildRequires:		centos-logos
@@ -189,7 +189,7 @@ Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			turbojpeg
 Requires:			libyuv
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 Requires:			python2-numpy
 %if 0%{?run_tests}
 BuildRequires:		python2-numpy
@@ -214,7 +214,7 @@ BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python2-Cython
 BuildRequires:		python2
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 Requires:			libwebp
 BuildRequires:		libwebp-devel
 BuildRequires:		python2-setuptools
@@ -277,7 +277,7 @@ Requires:			pygtk2
 Requires:			python2-pyopengl
 Requires:			pygtkglext
 %{Recommends}:		python2-pyu2f
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 Recommends:         python2-xdg
 Recommends:			python2-xpra-audio
 Recommends:			python2-cups
@@ -304,16 +304,15 @@ Requires:			pygtk2
 %{Recommends}:		python2-pycuda
 %{Recommends}:		python2-pynvml
 %endif
-%if 0%{?fedora}
+%if 0%{?el7}
+Requires:			python-cups
+Requires:			python-setproctitle
+%else
 Recommends:			python2-xpra-audio
 Recommends:			cups-pdf
 Recommends:			python2-cups
 Recommends:			python2-uinput
 Recommends:			python2-setproctitle
-%endif
-%if 0%{?el7}
-Requires:			python-cups
-Requires:			python-setproctitle
 %endif
 BuildRequires:		pam-devel
 BuildRequires:		gcc
@@ -333,13 +332,9 @@ Requires:			python3-pillow
 Requires:			python3-rencode
 Requires:			python3-numpy
 Requires:			libyuv
-%if 0%{?el7}
-Requires:			libvpx-xpra
-%else
 Requires:			libvpx
 Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra
-%endif
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			python3-cryptography
@@ -348,7 +343,6 @@ Recommends:			python3-netifaces
 Recommends:			python3-dbus
 Recommends:			python3-avahi
 Recommends:			python3-dns
-%if 0%{?fedora}
 Recommends:			python3-paramiko
 #Recommends:			python3-lzo
 Recommends:         python3-kerberos
@@ -358,11 +352,6 @@ Recommends:         python3-ldap3
 Recommends:         python3-brotli
 Requires:			libwebp
 BuildRequires:		libwebp-devel
-%endif
-%if 0%{?el7}
-Requires:			libwebp-xpra
-BuildRequires:		libwebp-xpra-devel
-%endif
 BuildRequires:		libyuv-devel
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
@@ -411,10 +400,8 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:			python3-xdg
-%if 0%{?fedora}
 #without this, the system tray is unusable!
 Recommends:			gnome-shell-extension-topicons-plus
-%endif
 Recommends:			libappindicator-gtk3
 Suggests:			sshpass
 %if 0%{?run_tests}
