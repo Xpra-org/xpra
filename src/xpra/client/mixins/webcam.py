@@ -233,7 +233,7 @@ class WebcamForwarder(StubClientMixin):
         try:
             assert self.webcam_device_no>=0, "device number is not set"
             assert self.webcam_device, "no webcam device to capture from"
-            from xpra.codecs.pillow.encode import get_encodings
+            from xpra.codecs.pillow.encoder import get_encodings
             client_webcam_encodings = get_encodings()
             common_encodings = list(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
             log("common encodings (server=%s, client=%s): %s",
