@@ -1736,8 +1736,10 @@ class WindowVideoSource(WindowSource):
         scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video encodings=%s",
                   image, options, self.supports_scrolling, image.has_pixels, self.content_type, self.non_video_encodings)
         if not self.supports_scrolling:
+            scrolllog("no scrolling: not supported")
             return False
         if options.get("scroll") is True:
+            scrolllog("no scrolling: detection has already been used on this image")
             #we've already checked
             return False
         #don't download the pixels if we have a GPU buffer,
@@ -1745,13 +1747,16 @@ class WindowVideoSource(WindowSource):
         if not image.has_pixels():
             return False
         if self.content_type=="video" or not self.non_video_encodings:
+            scrolllog("no scrolling: content is video")
             return False
         x, y, w, h = image.get_geometry()[:4]
         if w<MIN_SCROLL_IMAGE_SIZE or h<MIN_SCROLL_IMAGE_SIZE:
+            scrolllog("no scrolling: image size %ix%i is too small, minimum is %ix%i",
+                      w, h, MIN_SCROLL_IMAGE_SIZE, MIN_SCROLL_IMAGE_SIZE)
             return False
         scroll_data = self.scroll_data
         if self.b_frame_flush_timer and scroll_data:
-            scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
+            scrolllog("no scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
             self.scroll_data = None
             return False
         try:
