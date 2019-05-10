@@ -104,7 +104,7 @@ class UIXpraClient(ClientBaseClass):
             log.info(" running on %s", osinfo)
         except:
             log("platform name error:", exc_info=True)
-        wm = get_wm_name()
+        wm = get_wm_name()      #pylint: disable=assignment-from-none
         if wm:
             log.info(" window manager is '%s'", wm)
 
@@ -194,7 +194,7 @@ class UIXpraClient(ClientBaseClass):
             self.init_opengl(opts.opengl)
 
         if ClientExtras is not None:
-            self.client_extras = ClientExtras(self, opts)
+            self.client_extras = ClientExtras(self, opts)   #pylint: disable=not-callable
 
         if opts.start or opts.start_child:
             from xpra.scripts.main import strip_defaults_start_child

@@ -31,7 +31,7 @@ def errwrite(msg):
     try:
         sys.stderr.write(msg)
         sys.stderr.flush()
-    except:
+    except (IOError, OSError, AttributeError):
         pass
 
 
