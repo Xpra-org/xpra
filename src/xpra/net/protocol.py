@@ -146,7 +146,7 @@ class Protocol(object):
         self._conn = conn
         if FAKE_JITTER>0:
             from xpra.net.fake_jitter import FakeJitter
-            fj = FakeJitter(self.timeout_add, process_packet_cb)
+            fj = FakeJitter(self.timeout_add, process_packet_cb, FAKE_JITTER)
             self._process_packet_cb =  fj.process_packet_cb
         else:
             self._process_packet_cb = process_packet_cb
