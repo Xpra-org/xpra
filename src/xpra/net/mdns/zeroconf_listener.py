@@ -38,7 +38,7 @@ class ZeroconfListener(object):
         log("add_service%s", (zeroconf, stype, name))
         info = zeroconf.get_service_info(stype, name)
         log("service info: %s", info)
-        if self.mdns_add:
+        if self.mdns_add and info:
             interface = 0
             protocol = 0
             name = info.name
