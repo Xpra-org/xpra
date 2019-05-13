@@ -250,7 +250,10 @@ class ChildCommandServer(StubServerMixin):
                 cmd_names.append(bcmd)
         log("guess_session_name() commands=%s", cmd_names)
         if cmd_names:
-            self.session_name = csv(cmd_names)
+            new_name = csv(cmd_names)
+            if self.session_name!=new_name:
+                self.session_name = new_name
+                self.mdns_update()
 
 
     def _process_start_command(self, proto, packet):

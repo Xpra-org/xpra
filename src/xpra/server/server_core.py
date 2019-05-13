@@ -729,6 +729,8 @@ class ServerCore(object):
 
 
     def mdns_publish(self):
+        if not self.mdns:
+            return
         from xpra.scripts.server import hosts
         #find all the records we want to publish:
         mdns_recs = {}
@@ -750,9 +752,6 @@ class ServerCore(object):
                 mdnslog("mdns_publish() recs[%s]=%s", st, recs)
         from xpra.server.socket_util import mdns_publish
         mdns_info = self.get_mdns_info()
-        MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
-        if MDNS_EXPOSE_NAME and self.session_name:
-            mdns_info["name"] = self.session_name
         self.mdns_publishers = []
         for mdns_mode, listen_on in mdns_recs.items():
             ap = mdns_publish(self.display_name, mdns_mode, listen_on, mdns_info)
@@ -791,19 +790,30 @@ class ServerCore(object):
 
     def get_mdns_info(self):
         from xpra.platform.info import get_username
-        return {
+        mdns_info = {
             "display"  : self.display_name,
             "username" : get_username(),
             "uuid"     : self.uuid,
             "platform" : sys.platform,
             "type"     : self.session_type,
             }
+        MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
+        if MDNS_EXPOSE_NAME and self.session_name:
+            mdns_info["name"] = self.session_name
+        return mdns_info
 
     def mdns_cleanup(self):
         mp = self.mdns_publishers
         self.mdns_publishers = []
         for ap in mp:
             ap.stop()
+
+    def mdns_update(self):
+        if not self.mdns:
+            return
+        txt = self.get_mdns_info()
+        for mdns_publisher in self.mdns_publishers:
+            mdns_publisher.update_txt(txt)
 
 
     def start_listen_sockets(self):

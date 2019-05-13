@@ -38,9 +38,9 @@ class ZeroconfPublishers(object):
         all_listen_on = []
         for host_str, port in listen_on:
             if host_str=="":
-                hosts = ["127.0.0.1", "::"]
+                hosts = ("127.0.0.1", "::")
             else:
-                hosts = [host_str]
+                hosts = (host_str,)
             for host in hosts:
                 if host in ("0.0.0.0", "::", ""):
                     #annoying: we have to enumerate all interfaces
@@ -110,6 +110,11 @@ class ZeroconfPublishers(object):
         self.zeroconf = None
 
 
+    def update_txt(self, txt):
+        #TODO: use stop / start to update?
+        pass
+
+
 def main():
     import random
     port = int(20000*random.random())+10000
@@ -122,6 +127,22 @@ def main():
     glib = import_glib()
     glib.idle_add(publisher.start)
     loop = glib.MainLoop()
+    def update_rec():
+        log("update_rec()")
+        from zeroconf import DNSText, _CLASS_ANY, _DNS_OTHER_TTL, current_time_millis
+        import time
+        import struct
+        int2byte = struct.Struct(">B").pack
+        item = b"key=value"
+        txt_data = b"".join((int2byte(len(item)), item))
+        for service in publisher.services:
+            rec = DNSText(service.name, service.type, _CLASS_ANY, _DNS_OTHER_TTL, txt_data)
+            #service.update_record(time.time(), rec)
+            #service._set_properties({"hello" : "world"})
+            publisher.zeroconf.update_record(current_time_millis(), rec)
+        #publisher.zeroconf.notify_all()
+        return False
+    glib.timeout_add(10*1000, update_rec)
     try:
         loop.run()
     except KeyboardInterrupt:
