@@ -78,6 +78,7 @@ log("ServerBaseClass%s", SERVER_BASES)
 
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
+MDNS_CLIENT_COUNT = envbool("XPRA_MDNS_CLIENT_COUNT", True)
 
 
 """
@@ -198,6 +199,13 @@ class ServerBase(ServerBaseClass):
         log.info("Shutting down in response to client request")
         self.cleanup_all_protocols(SERVER_SHUTDOWN)
         self.timeout_add(500, self.clean_quit)
+
+
+    def get_mdns_info(self):
+        mdns_info = ServerCore.get_mdns_info(self)
+        if MDNS_CLIENT_COUNT:
+            mdns_info["clients"] = len(self._server_sources)
+        return mdns_info
 
 
     ######################################################################
@@ -350,6 +358,7 @@ class ServerBase(ServerBaseClass):
             raise
         self.notify_new_user(ss)
         self._server_sources[proto] = ss
+        self.mdns_update()
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
@@ -797,6 +806,7 @@ class ServerBase(ServerBaseClass):
         source = self._server_sources.pop(protocol, None)
         if source:
             self.cleanup_source(source)
+            self.mdns_update()
         for c in SERVER_BASES:
             c.cleanup_protocol(self, protocol)
         return source
