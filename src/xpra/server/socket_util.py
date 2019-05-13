@@ -439,11 +439,8 @@ def mdns_publish(display_name, mode, listen_on, text_dict=None):
         from xpra.net import mdns
         assert mdns
         from xpra.net.mdns import XPRA_MDNS_TYPE, RFB_MDNS_TYPE
-        PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or WIN32 or OSX
-        PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", False)
-        if PREFER_PYBONJOUR:
-            from xpra.net.mdns.pybonjour_publisher import BonjourPublishers as MDNSPublishers, get_interface_index
-        elif PREFER_ZEROCONF:
+        PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", False) or WIN32 or OSX
+        if PREFER_ZEROCONF:
             from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers as MDNSPublishers, get_interface_index
         else:
             from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
