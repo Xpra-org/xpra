@@ -209,7 +209,6 @@ class AvahiPublisher(object):
 
     def update_txt(self, txt):
         assert self.group
-        txt = avahi.dict_to_txt_array({b"hello" : b"world"})
         def reply_handler(*args):
             log("reply_handler%s", args)
             log("update_txt(%s) done", txt)
