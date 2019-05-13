@@ -28,7 +28,7 @@ class ZeroconfPublishers(object):
     Expose services via python zeroconf
     """
 
-    def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict={}):
+    def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.zeroconf = None
         self.services = []
@@ -72,7 +72,7 @@ class ZeroconfPublishers(object):
                 all_listen_on.append((host, port, address))
         log("will listen on: %s", all_listen_on)
         for host, port, address in all_listen_on:
-            td = text_dict
+            td = text_dict or {}
             iface = get_iface(host)
             if iface is not None and SHOW_INTERFACE:
                 td = text_dict.copy()

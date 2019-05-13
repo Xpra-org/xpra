@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import avahi
 import dbus
 try:
     from dbus.exceptions import DBusException
-except:
+except ImportError:
     #not available in all versions of the bindings?
     DBusException = Exception
 
@@ -52,7 +52,7 @@ class AvahiPublishers(object):
     and to convert the text dict into a TXT string.
     """
 
-    def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict={}):
+    def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict=None):
         log("AvahiPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.publishers = []
         try:
@@ -64,7 +64,7 @@ class AvahiPublishers(object):
         for host, port in listen_on:
             iface_index = get_interface_index(host)
             log("iface_index(%s)=%s", host, iface_index)
-            td = text_dict
+            td = text_dict or {}
             if SHOW_INTERFACE and if_indextoname and iface_index is not None:
                 td = text_dict.copy()
                 td["iface"] = if_indextoname(iface_index)
@@ -87,8 +87,8 @@ class AvahiPublishers(object):
                         if fqdn:
                             fqdn += ".local"
                         log("cannot find a fully qualified domain name for '%s', using: %s", host, fqdn)
-                except:
-                    pass
+                except (OSError, IOError, IndexError):
+                    log("failed to get hostbyaddr", exc_info=True)
             self.publishers.append(AvahiPublisher(bus, service_name, port, service_type, domain="", host=fqdn, text=txt, interface=iface_index))
 
     def start(self):
