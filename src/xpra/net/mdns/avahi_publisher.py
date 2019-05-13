@@ -212,9 +212,11 @@ def main():
     host = ""
     name = "test service"
     bus = init_system_bus()
-    publisher = AvahiPublisher(bus, name, port, stype=XPRA_MDNS_TYPE, host=host, text=["somename:somevalue"])
+    publisher = AvahiPublisher(bus, name, port, stype=XPRA_MDNS_TYPE, host=host, text=("somename=somevalue",))
     assert publisher
-    glib.idle_add(publisher.start)
+    def start():
+        publisher.start()
+    glib.idle_add(start)
     signal.signal(signal.SIGTERM, exit)
     glib.MainLoop().run()
 
