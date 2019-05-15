@@ -998,10 +998,10 @@ def do_parse_cmdline(cmdline, defaults):
                       +" can be specified multiple times."
                       +" Default: %s." % csv(
                           ("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")))
-    group.add_option("--challenge-handlers", action="store",
-                      dest="challenge_handlers", default=defaults.challenge_handlers,
+    group.add_option("--challenge-handlers", action="append",
+                      dest="challenge_handlers", default=[],
                       help="Which handlers to use for processing server authentication challenges."
-                      +" Default: %default.")
+                      +" Default: %s." % csv(defaults.challenge_handlers))
     group.add_option("--password-file", action="append",
                       dest="password_file", default=defaults.password_file,
                       help="The file containing the password required to connect"
@@ -1216,6 +1216,10 @@ def do_parse_cmdline(cmdline, defaults):
     if not options.bind:
         #use the default:
         options.bind = defaults_bind
+
+    #only use the default challenge-handlers if the user hasn't specified any:
+    if not options.challenge_handlers:
+        options.challenge_handlers = defaults.challenge_handlers
 
     #only use the default key-shortcut list if the user hasn't specified one:
     if not options.key_shortcut:

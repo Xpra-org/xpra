@@ -516,7 +516,7 @@ OPTION_TYPES = {
                     "open-url"          : str,
                     "file-transfer"     : str,
                     "printing"          : str,
-                    "challenge-handlers": str,
+                    "challenge-handlers": list,
                     #ssl options:
                     "ssl"               : str,
                     "ssl-key"           : str,
@@ -916,7 +916,7 @@ def get_defaults():
                     "open-url"          : "auto",
                     "file-transfer"     : "auto",
                     "printing"          : "yes",
-                    "challenge-handlers": "all",
+                    "challenge-handlers": ["all"],
                     #ssl options:
                     "ssl"               : "auto",
                     "ssl-key"           : "",

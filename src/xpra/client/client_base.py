@@ -9,9 +9,8 @@ import sys
 import signal
 import socket
 import string
-from collections import OrderedDict
 
-from xpra.log import Logger, is_debug_enabled
+from xpra.log import Logger
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
@@ -29,13 +28,13 @@ from xpra.platform.info import get_name
 from xpra.os_util import (
     get_machine_id, get_user_uuid,
     load_binary_file,
-    SIGNAMES, PYTHON3, BITS, WIN32, OSX,
-    strtobytes, bytestostr, hexstr, monotonic_time, osexpand, use_tty,
+    SIGNAMES, PYTHON3, BITS,
+    strtobytes, bytestostr, hexstr, monotonic_time, use_tty,
     )
 from xpra.util import (
-    flatten_dict, typedict, updict,
-    repr_ellipsized,nonl, std,
-    envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc, first_time,
+    flatten_dict, typedict, updict, parse_simple_dict,
+    repr_ellipsized,nonl,
+    envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc,
     )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
@@ -52,8 +51,6 @@ cryptolog = Logger("crypto")
 bandwidthlog = Logger("bandwidth")
 
 EXTRA_TIMEOUT = 10
-KERBEROS_SERVICES = os.environ.get("XPRA_KERBEROS_SERVICES", "*").split(",")
-GSS_SERVICES = os.environ.get("XPRA_GSS_SERVICES", "*").split(",")
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
@@ -84,17 +81,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         ServerInfoMixin.__init__(self)
         FilePrintMixin.__init__(self)
         self._init_done = False
-        #insert in order:
-        dcm = OrderedDict()
-        dcm["uri"]      = self.process_challenge_uri
-        dcm["file"]     = self.process_challenge_file
-        dcm["env"]      = self.process_challenge_env
-        dcm["kerberos"] = self.process_challenge_kerberos
-        dcm["gss"]      = self.process_challenge_gss
-        dcm["u2f"]      = self.process_challenge_u2f
-        dcm["prompt"]   = self.process_challenge_prompt
-        self.default_challenge_methods = dcm
-
 
     def defaults_init(self):
         #skip warning when running the client
@@ -112,7 +98,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.hello_extra = {}
         self.compression_level = 0
         self.display = None
-        self.challenge_handlers = OrderedDict()
+        self.challenge_handlers = []
         self.username = None
         self.password = None
         self.password_file = ()
@@ -159,21 +145,54 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if self.encryption:
             crypto_backend_init()
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
+        self.init_challenge_handlers(opts.challenge_handlers)
+
+    def init_challenge_handlers(self, challenge_handlers):
         #register the authentication challenge handlers:
-        ch = tuple(x.strip().lower() for x in (opts.challenge_handlers or "").split(","))
+        authlog("init_challenge_handlers(%s)", challenge_handlers)
+        ch = tuple(x.strip() for x in (challenge_handlers or "".split(",")))
+        ALL_AUTH_HANDLERS = ("uri", "file", "env", "kerberos", "gss", "u2f", "prompt")
         for ch_name in ch:
-            if ch_name=="all":
-                self.challenge_handlers.update(self.default_challenge_methods)
-                break
-            method = self.default_challenge_methods.get(ch_name)
-            if method:
-                self.challenge_handlers[ch_name] = method
+            if ch_name=="none":
                 continue
-            log.warn("Warning: unknown challenge handler '%s'", ch_name)
+            elif ch_name=="all":
+                items = ALL_AUTH_HANDLERS
+                ierror = authlog
+            else:
+                items = (ch_name, )
+                ierror = authlog.warn
+            for auth in items:
+                instance = self.get_challenge_handler(auth, ierror)
+                if instance:
+                    self.challenge_handlers.append(instance)
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
             print_leaks = detect_leaks()
             self.timeout_add(10*1000, print_leaks)
+
+    def get_challenge_handler(self, auth, import_error_logger):
+        #the module may have attributes,
+        #ie: file:filename=password.txt
+        parts = auth.split(":", 1)
+        mod_name = parts[0]
+        kwargs = {}
+        if len(parts)==2:
+            kwargs = parse_simple_dict(parts[1])
+        auth_mod_name = "xpra.client.auth.%s_handler" % mod_name
+        authlog("auth module name for '%s': '%s'", auth, auth_mod_name)
+        try:
+            auth_module = __import__(auth_mod_name, {}, {}, ["Handler"])
+            auth_class = auth_module.Handler
+            instance = auth_class(self, **kwargs)
+            return instance
+        except ImportError as e:
+            import_error_logger("Error: authentication handler %s not available", mod_name)
+            import_error_logger(" %s", e)
+        except Exception as e:
+            authlog("get_challenge_handler(%s)", auth, exc_info=True)
+            authlog.error("Error: cannot instantiate authentication handler")
+            authlog.error(" '%s': %s", mod_name, e)
+        return None
 
 
     def may_notify(self, nid, summary, body, *args, **kwargs):
@@ -342,11 +361,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def make_hello_base(self):
         capabilities = flatten_dict(get_network_caps())
-        #add "kerberos" and "gss" if enabled:
-        default_on = "all" in self.challenge_handlers or "auto" in self.challenge_handlers
-        for auth in ("kerberos", "gss", "u2f"):
-            if default_on or auth in self.challenge_handlers:
-                capabilities["digest"].append(auth)
+        #add "kerberos", "gss" and "u2f" digests if enabled:
+        for handler in self.challenge_handlers:
+            digest = handler.get_digest()
+            if digest:
+                capabilities["digest"].append(digest)
         capabilities.update(FilePrintMixin.get_caps(self))
         capabilities.update({
                 "version"               : XPRA_VERSION,
@@ -577,55 +596,25 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if not self.validate_challenge_packet(packet):
             return
         authlog("challenge handlers: %s", self.challenge_handlers)
-        for name, method in self.challenge_handlers.items():
+        while self.challenge_handlers:
+            handler = self.challenge_handlers.pop(0)
             try:
-                authlog("calling challenge handler %s", name)
-                if method(packet):
+                authlog("calling challenge handler %s", handler)
+                r = handler.handle(packet)
+                authlog("%s(%s)=%s", handler.handle, packet, r)
+                if r:
+                    #the challenge handler claims to have done it
                     return
             except Exception as e:
-                authlog("%s(%s)", method, packet, exc_info=True)
-                authlog.error("Error in %s challenge handler:", name)
+                authlog("%s(%s)", handler.handle, packet, exc_info=True)
+                authlog.error("Error in %r challenge handler:", handler)
                 authlog.error(" %s", str(e) or type(e))
                 continue
+        authlog.warn("Warning: failed to connect, authentication required")
         self.quit(EXIT_PASSWORD_REQUIRED)
 
-    def process_challenge_uri(self, packet):
-        if self.password:
-            self.send_challenge_reply(packet, self.password)
-            #clearing it to allow other modules to process further challenges:
-            self.password = None
-            return True
-        return False
-
-    def process_challenge_env(self, packet):
-        k = "XPRA_PASSWORD"
-        password = os.environ.get(k)
-        authlog("process_challenge_env() %s=%s", k, obsc(password))
-        if password:
-            self.send_challenge_reply(packet, password)
-            return True
-        return False
-
-    def process_challenge_file(self, packet):
-        if self.password_index<len(self.password_file):
-            password_file = self.password_file[self.password_index]
-            self.password_index += 1
-            filename = os.path.expanduser(password_file)
-            password = load_binary_file(filename)
-            authlog("password read from file %i '%s': %s", self.password_index, password_file, obsc(password))
-            self.send_challenge_reply(packet, password)
-            return True
-        return False
-
-    def process_challenge_prompt(self, packet):
-        prompt = "password"
-        digest = packet[3]
-        if digest.startswith(b"gss:") or digest.startswith(b"kerberos:"):
-            prompt = "%s token" % (digest.split(b":", 1)[0])
-        if len(packet)>=6:
-            prompt = std(packet[5])
-        return self.do_process_challenge_prompt(packet, prompt)
-
+    #utility method used by some authentication handlers,
+    #and overriden in UI client to provide a GUI dialog
     def do_process_challenge_prompt(self, packet, prompt="password"):
         authlog("do_process_challenge_prompt() use_tty=%s", use_tty())
         if use_tty():
@@ -636,150 +625,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.send_challenge_reply(packet, password)
             return True
         return False
-
-    def process_challenge_kerberos(self, packet):
-        digest = packet[3]
-        if not digest.startswith(b"kerberos:"):
-            authlog("%s is not a kerberos challenge", digest)
-            #not a kerberos challenge
-            return False
-        try:
-            if WIN32:
-                import winkerberos as kerberos
-            else:
-                import kerberos
-        except ImportError as e:
-            authlog("import (win)kerberos", exc_info=True)
-            if first_time("no-kerberos"):
-                authlog.warn("Warning: kerberos challenge handler is not supported:")
-                authlog.warn(" %s", e)
-            return False
-        service = bytestostr(digest.split(b":", 1)[1])
-        if service not in KERBEROS_SERVICES and "*" not in KERBEROS_SERVICES:
-            authlog.warn("Warning: invalid kerberos request for service '%s'", service)
-            authlog.warn(" services supported: %s", csv(KERBEROS_SERVICES))
-            return False
-        authlog("kerberos service=%s", service)
-        def log_kerberos_exception(e):
-            try:
-                for x in e.args:
-                    if isinstance(x, (list, tuple)):
-                        try:
-                            log.error(" %s", csv(x))
-                            continue
-                        except Exception:
-                            pass
-                    authlog.error(" %s", x)
-            except Exception:
-                authlog.error(" %s", e)
-        try:
-            r, ctx = kerberos.authGSSClientInit(service)
-            assert r==1, "return code %s" % r
-        except Exception as e:
-            authlog("kerberos.authGSSClientInit(%s)", service, exc_info=True)
-            authlog.error("Error: cannot initialize kerberos client:")
-            log_kerberos_exception(e)
-            return False
-        try:
-            kerberos.authGSSClientStep(ctx, "")
-        except Exception as e:
-            authlog("kerberos.authGSSClientStep", exc_info=True)
-            authlog.error("Error: kerberos client authentication failure:")
-            log_kerberos_exception(e)
-            return False
-        token = kerberos.authGSSClientResponse(ctx)
-        authlog("kerberos token=%s", token)
-        self.send_challenge_reply(packet, token)
-        return True
-
-    def process_challenge_gss(self, packet):
-        digest = packet[3]
-        if not digest.startswith(b"gss:"):
-            #not a gss challenge
-            authlog("%s is not a gss challenge", digest)
-            return False
-        try:
-            import gssapi
-            if OSX and False:
-                from gssapi.raw import (cython_converters, cython_types, oids)
-                assert cython_converters and cython_types and oids
-        except ImportError as e:
-            authlog("import gssapi", exc_info=True)
-            if first_time("no-kerberos"):
-                authlog.warn("Warning: gss authentication not supported:")
-                authlog.warn(" %s", e)
-            return False
-        service = bytestostr(digest.split(b":", 1)[1])
-        if service not in GSS_SERVICES and "*" not in GSS_SERVICES:
-            authlog.warn("Warning: invalid GSS request for service '%s'", service)
-            authlog.warn(" services supported: %s", csv(GSS_SERVICES))
-            return False
-        authlog("gss service=%s", service)
-        service_name = gssapi.Name(service)
-        try:
-            ctx = gssapi.SecurityContext(name=service_name, usage="initiate")
-            token = ctx.step()
-        except Exception as e:
-            authlog("gssapi failure", exc_info=True)
-            authlog.error("Error: gssapi client authentication failure:")
-            try:
-                #split on colon
-                for x in str(e).split(":", 2):
-                    authlog.error(" %s", x.lstrip(" "))
-            except Exception:
-                authlog.error(" %s", e)
-            return False
-        authlog("gss token=%s", repr(token))
-        self.send_challenge_reply(packet, token)
-        return True
-
-    def process_challenge_u2f(self, packet):
-        digest = packet[3]
-        if not digest.startswith(b"u2f:"):
-            authlog("%s is not a u2f challenge", digest)
-            return False
-        import binascii
-        import logging
-        if not is_debug_enabled("auth"):
-            logging.getLogger("pyu2f.hardware").setLevel(logging.INFO)
-            logging.getLogger("pyu2f.hidtransport").setLevel(logging.INFO)
-        from pyu2f import model                     #@UnresolvedImport
-        from pyu2f.u2f import GetLocalU2FInterface  #@UnresolvedImport
-        dev = GetLocalU2FInterface()
-        APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
-        key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")
-        authlog("process_challenge_u2f XPRA_U2F_KEY_HANDLE=%s", key_handle_str)
-        if not key_handle_str:
-            #try to load the key handle from the user conf dir(s):
-            from xpra.platform.paths import get_user_conf_dirs
-            info = self._protocol.get_info(False)
-            key_handle_filenames = []
-            for hostinfo in ("-%s" % info.get("host", ""), ""):
-                for d in get_user_conf_dirs():
-                    key_handle_filenames.append(os.path.join(d, "u2f-keyhandle%s.hex" % hostinfo))
-            for filename in key_handle_filenames:
-                p = osexpand(filename)
-                key_handle_str = load_binary_file(p)
-                authlog("key_handle_str(%s)=%s", p, key_handle_str)
-                if key_handle_str:
-                    key_handle_str = key_handle_str.rstrip(b" \n\r")
-                    break
-            if not key_handle_str:
-                authlog.warn("Warning: no U2F key handle found")
-                return False
-        authlog("process_challenge_u2f key_handle=%s", key_handle_str)
-        key_handle = binascii.unhexlify(key_handle_str)
-        key = model.RegisteredKey(key_handle)
-        #use server salt as challenge directly
-        challenge = packet[1]
-        authlog.info("activate your U2F device for authentication")
-        response = dev.Authenticate(APP_ID, challenge, [key])
-        sig = response.signature_data
-        client_data = response.client_data
-        authlog("process_challenge_u2f client data=%s, signature=%s", client_data, binascii.hexlify(sig))
-        self.do_send_challenge_reply(bytes(sig), client_data.origin)
-        return True
-
 
     def auth_error(self, code, message, server_message="authentication failed"):
         authlog.error("Error: authentication failed:")
