@@ -228,7 +228,7 @@ class ProxyServer(ServerCore):
             log.error("Error: the proxy server requires an authentication mode,")
             try:
                 log.error(" client connection '%s' does not specify one", client_proto._conn.socktype)
-            except Exception:
+            except AttributeError:
                 pass
             log.error(" use 'none' to disable authentication")
             disconnect(SESSION_NOT_FOUND, "no sessions found")
