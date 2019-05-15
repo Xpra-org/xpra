@@ -596,14 +596,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if not self.validate_challenge_packet(packet):
             return
         authlog("challenge handlers: %s", self.challenge_handlers)
+        digest = bytestostr(packet[3])
         while self.challenge_handlers:
-            handler = self.challenge_handlers.pop(0)
+            handler = self.pop_challenge_handler(digest)
             try:
                 authlog("calling challenge handler %s", handler)
                 r = handler.handle(packet)
                 authlog("%s(%s)=%s", handler.handle, packet, r)
                 if r:
-                    #the challenge handler claims to have done it
+                    #the challenge handler claims to have handled authentication
                     return
             except Exception as e:
                 authlog("%s(%s)", handler.handle, packet, exc_info=True)
@@ -612,6 +613,18 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 continue
         authlog.warn("Warning: failed to connect, authentication required")
         self.quit(EXIT_PASSWORD_REQUIRED)
+
+    def pop_challenge_handler(self, digest):
+        #find the challenge handler most suitable for this digest type,
+        #otherwise take the first one
+        digest_type = digest.split(":")[0]  #ie: "kerberos:value" -> "kerberos"
+        index = 0
+        for i, handler in enumerate(self.challenge_handlers):
+            if handler.get_digest()==digest_type:
+                index = i
+                break
+        return self.challenge_handlers.pop(index)
+
 
     #utility method used by some authentication handlers,
     #and overriden in UI client to provide a GUI dialog

@@ -30,7 +30,8 @@ class Handler(object):
             log("%s is not a u2f challenge", digest)
             return False
         try:
-            import pyu2f    #@UnresolvedImport @UnusedImport
+            from pyu2f import model                     #@UnresolvedImport
+            from pyu2f.u2f import GetLocalU2FInterface  #@UnresolvedImport
         except ImportError as e:
             log.warn("Warning: cannot use u2f authentication handler")
             log.warn(" %s", e)
@@ -38,10 +39,23 @@ class Handler(object):
         if not is_debug_enabled("auth"):
             logging.getLogger("pyu2f.hardware").setLevel(logging.INFO)
             logging.getLogger("pyu2f.hidtransport").setLevel(logging.INFO)
-        from pyu2f import model                     #@UnresolvedImport
-        from pyu2f.u2f import GetLocalU2FInterface  #@UnresolvedImport
         dev = GetLocalU2FInterface()
         APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
+        key_handle = self.get_key_handle()
+        if not key_handle:
+            return False
+        key = model.RegisteredKey(key_handle)
+        #use server salt as challenge directly
+        challenge = packet[1]
+        log.info("activate your U2F device for authentication")
+        response = dev.Authenticate(APP_ID, challenge, [key])
+        sig = response.signature_data
+        client_data = response.client_data
+        log("process_challenge_u2f client data=%s, signature=%s", client_data, binascii.hexlify(sig))
+        self.client.do_send_challenge_reply(bytes(sig), client_data.origin)
+        return True
+
+    def get_key_handle(self):
         key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")
         log("process_challenge_u2f XPRA_U2F_KEY_HANDLE=%s", key_handle_str)
         if not key_handle_str:
@@ -61,16 +75,6 @@ class Handler(object):
                     break
             if not key_handle_str:
                 log.warn("Warning: no U2F key handle found")
-                return False
+                return None
         log("process_challenge_u2f key_handle=%s", key_handle_str)
-        key_handle = binascii.unhexlify(key_handle_str)
-        key = model.RegisteredKey(key_handle)
-        #use server salt as challenge directly
-        challenge = packet[1]
-        log.info("activate your U2F device for authentication")
-        response = dev.Authenticate(APP_ID, challenge, [key])
-        sig = response.signature_data
-        client_data = response.client_data
-        log("process_challenge_u2f client data=%s, signature=%s", client_data, binascii.hexlify(sig))
-        self.client.do_send_challenge_reply(bytes(sig), client_data.origin)
-        return True
+        return binascii.unhexlify(key_handle_str)
