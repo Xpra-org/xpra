@@ -17,11 +17,6 @@ class Handler(object):
     def __init__(self, client, **_kwargs):
         self.client = client
         self.services = os.environ.get("XPRA_GSS_SERVICES", "*").split(",")
-        import gssapi       #@UnresolvedImport
-        self.gssapi = gssapi
-        if OSX and False:
-            from gssapi.raw import (cython_converters, cython_types, oids)  # @UnresolvedImport
-            assert cython_converters and cython_types and oids
 
     def __repr__(self):
         return "gss"
@@ -34,6 +29,16 @@ class Handler(object):
         if not digest.startswith("gss:"):
             #not a gss challenge
             log("%s is not a gss challenge", digest)
+            return False
+        try:
+            import gssapi       #@UnresolvedImport
+            self.gssapi = gssapi
+            if OSX and False:
+                from gssapi.raw import (cython_converters, cython_types, oids)  # @UnresolvedImport
+                assert cython_converters and cython_types and oids
+        except ImportError as e:
+            log.warn("Warning: cannot use gss authentication handler")
+            log.warn(" %s", e)
             return False
         service = bytestostr(digest.split(b":", 1)[1])
         if service not in self.services and "*" not in self.services:

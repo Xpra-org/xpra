@@ -30,12 +30,6 @@ class Handler(object):
     def __init__(self, client, **_kwargs):
         self.client = client
         self.services = os.environ.get("XPRA_KERBEROS_SERVICES", "*").split(",")
-        if WIN32:
-            import winkerberos      #@UnresolvedImport
-            self.kerberos = winkerberos
-        else:
-            import kerberos         #@UnresolvedImport
-            self.kerberos = kerberos
 
     def __repr__(self):
         return "kerberos"
@@ -44,6 +38,15 @@ class Handler(object):
         return "kerberos"
 
     def handle(self, packet):
+        try:
+            if WIN32:
+                import winkerberos as kerberos
+            else:
+                import kerberos         #@UnresolvedImport
+        except ImportError as e:
+            log.warn("Warning: cannot use kerberos authentication handler")
+            log.warn(" %s", e)
+            return False
         digest = bytestostr(packet[3])
         if not digest.startswith("kerberos:"):
             log("%s is not a kerberos challenge", digest)
@@ -56,7 +59,7 @@ class Handler(object):
             return False
         log("kerberos service=%s", service)
         try:
-            r, ctx = self.kerberos.authGSSClientInit(service)
+            r, ctx = kerberos.authGSSClientInit(service)
             assert r==1, "return code %s" % r
         except Exception as e:
             log("kerberos.authGSSClientInit(%s)", service, exc_info=True)
@@ -64,13 +67,13 @@ class Handler(object):
             log_kerberos_exception(e)
             return False
         try:
-            self.kerberos.authGSSClientStep(ctx, "")
+            kerberos.authGSSClientStep(ctx, "")
         except Exception as e:
             log("kerberos.authGSSClientStep", exc_info=True)
             log.error("Error: kerberos client authentication failure:")
             log_kerberos_exception(e)
             return False
-        token = self.kerberos.authGSSClientResponse(ctx)
+        token = kerberos.authGSSClientResponse(ctx)
         log("kerberos token=%s", token)
         self.client.send_challenge_reply(packet, token)
         return True

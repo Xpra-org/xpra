@@ -17,7 +17,6 @@ class Handler(object):
 
     def __init__(self, client, **_kwargs):
         self.client = client
-        import pyu2f    #@UnresolvedImport @UnusedImport
 
     def __repr__(self):
         return "u2f"
@@ -29,6 +28,12 @@ class Handler(object):
         digest = bytestostr(packet[3])
         if not digest.startswith("u2f:"):
             log("%s is not a u2f challenge", digest)
+            return False
+        try:
+            import pyu2f    #@UnresolvedImport @UnusedImport
+        except ImportError as e:
+            log.warn("Warning: cannot use u2f authentication handler")
+            log.warn(" %s", e)
             return False
         if not is_debug_enabled("auth"):
             logging.getLogger("pyu2f.hardware").setLevel(logging.INFO)
