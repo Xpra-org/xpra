@@ -1987,7 +1987,7 @@ if crypto_ENABLED and (OSX or WIN32):
 
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
-    add_modules("xpra.client", "xpra.client.mixins")
+    add_modules("xpra.client", "xpra.client.mixins", "xpra.client.auth")
     add_modules("xpra.scripts.gtk_info")
     add_modules("xpra.scripts.show_webcam")
 if gtk2_ENABLED or gtk3_ENABLED:
