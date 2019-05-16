@@ -1203,10 +1203,14 @@ def dict_to_validated_config(d={}, extras_defaults={}, extras_types={}, extras_v
     for k,v in CLONES.items():
         if k in options:
             options[v] = options[k]
+    return dict_to_config(options)
+
+def dict_to_config(options):
     config = XpraConfig()
     for k,v in options.items():
         setattr(config, name_to_field(k), v)
     return config
+
 
 class XpraConfig(object):
     def __repr__(self):
@@ -1304,7 +1308,7 @@ def fixup_encodings(options):
     estr = _csvstr(options.encodings)
     if estr=="all":
         #replace with an actual list
-        options.encodings = PREFERED_ENCODING_ORDER
+        options.encodings = list(PREFERED_ENCODING_ORDER)
         return
     encodings = [RENAME.get(x, x) for x in _nodupes(estr)]
     if "rgb" in encodings:

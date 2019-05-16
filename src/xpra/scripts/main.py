@@ -1626,10 +1626,14 @@ def get_start_new_session_dict(opts, mode, extra_args):
            }
     if len(extra_args)==1:
         sns["display"] = extra_args[0]
+    from xpra.scripts.config import get_defaults, dict_to_config
+    defaults = dict_to_config(get_defaults())
+    fixup_options(defaults)
     for x in PROXY_START_OVERRIDABLE_OPTIONS:
         fn = x.replace("-", "_")
         v = getattr(opts, fn)
-        if v:
+        dv = getattr(defaults, fn, None)
+        if v and v!=dv:
             sns[x] = v
     #make sure the server will start in the same path we were called from:
     #(despite being started by a root owned process from a different directory)
