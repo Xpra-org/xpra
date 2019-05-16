@@ -38,6 +38,11 @@ class Handler(object):
         return "kerberos"
 
     def handle(self, packet):
+        digest = bytestostr(packet[3])
+        if not digest.startswith("kerberos:"):
+            log("%s is not a kerberos challenge", digest)
+            #not a kerberos challenge
+            return False
         try:
             if WIN32:
                 import winkerberos as kerberos
@@ -46,11 +51,6 @@ class Handler(object):
         except ImportError as e:
             log.warn("Warning: cannot use kerberos authentication handler")
             log.warn(" %s", e)
-            return False
-        digest = bytestostr(packet[3])
-        if not digest.startswith("kerberos:"):
-            log("%s is not a kerberos challenge", digest)
-            #not a kerberos challenge
             return False
         service = digest.split(":", 1)[1]
         if service not in self.services and "*" not in self.services:
