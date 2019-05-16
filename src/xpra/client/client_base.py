@@ -564,7 +564,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         log.warn(" %s", reason)
         for x in extra_info:
             log.warn(" %s", x)
-        self.warn_and_quit(EXIT_FAILURE, "server requested disconnect: %s" % reason)
+        self.quit(EXIT_FAILURE)
 
     def server_disconnect(self, reason, *extra_info):
         log.info("server requested disconnect:")

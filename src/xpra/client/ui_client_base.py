@@ -20,7 +20,7 @@ from xpra.util import (
     std, envbool, envint, typedict, updict, repr_ellipsized,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
-from xpra.exit_codes import EXIT_FAILURE, EXIT_OK
+from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_OK, EXIT_CONNECTION_LOST
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client import mixin_features
 from xpra.log import Logger
@@ -306,16 +306,19 @@ class UIXpraClient(ClientBaseClass):
     # trigger notifications on disconnection,
     # and wait before actually exiting so the notification has a chance of being seen
     def server_disconnect_warning(self, reason, *info):
-        body = "\n".join(info)
-        if self.server_capabilities:
-            title = "Xpra Session Disconnected: %s" % reason
-        else:
-            title = "Connection Failed: %s" % reason
-        self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
-                        title, body, icon_name="disconnected")
-        self.exit_code = EXIT_FAILURE
-        delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
-        self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, reason, *info)
+        if self.exit_code is None:
+            body = "\n".join(info)
+            if self.server_capabilities:
+                title = "Xpra Session Disconnected: %s" % reason
+                self.exit_code = EXIT_CONNECTION_LOST
+            else:
+                title = "Connection Failed: %s" % reason
+                self.exit_code = EXIT_CONNECTION_FAILED
+            self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
+                            title, body, icon_name="disconnected")
+            #show text notification then quit:
+            delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
+            self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, reason, *info)
         self.cleanup()
 
     def server_disconnect(self, reason, *info):
