@@ -307,8 +307,12 @@ class UIXpraClient(ClientBaseClass):
     # and wait before actually exiting so the notification has a chance of being seen
     def server_disconnect_warning(self, reason, *info):
         body = "\n".join(info)
+        if self.server_capabilities:
+            title = "Xpra Session Disconnected: %s" % reason
+        else:
+            title = "Connection Failed: %s" % reason
         self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
-                        "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
+                        title, body, icon_name="disconnected")
         self.exit_code = EXIT_FAILURE
         delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
         self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, reason, *info)
