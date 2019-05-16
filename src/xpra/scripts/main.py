@@ -352,7 +352,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                         r = do_run_client(app)
                         from xpra.exit_codes import EXIT_OK, EXIT_FAILURE
                         #OK or got a signal:
-                        NO_RETRY = [EXIT_OK] + range(128, 128+16)
+                        NO_RETRY = [EXIT_OK] + list(range(128, 128+16))
                         if app.completed_startup:
                             #if we had connected to the session,
                             #we can ignore more error codes:
