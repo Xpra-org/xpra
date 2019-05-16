@@ -373,9 +373,11 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                         else:
                             err = EXIT_STR.get(r, r)
                     except Exception as e:
+                        log = Logger("proxy")
+                        log("failed to start via proxy", exc_info=True)
                         err = str(e)
                     if start_via_proxy is True:
-                        raise InitException("failed to start-via-proxy: %s" % err)
+                        raise InitException("failed to start-via-proxy: %s" % (err,))
                     #warn and fall through to regular server start:
                     warn("Warning: cannot use the system proxy for '%s' subcommand," % (mode, ))
                     warn(" %s" % (err,))
