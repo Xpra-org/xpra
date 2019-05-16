@@ -6,7 +6,7 @@
 import os.path
 import socket
 
-from xpra.scripts.config import InitException
+from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
@@ -231,7 +231,7 @@ def normalize_local_display_name(local_display_name):
     return local_display_name
 
 
-def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group=False, socket_permissions="600", username="", uid=0, gid=0):
+def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
     if not bind:
         return []
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
@@ -358,7 +358,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     except (OSError, IOError):
                         pass
                 #socket permissions:
-                if mmap_group:
+                if mmap_group.lower() in TRUE_OPTIONS:
                     #when using the mmap group option, use '660'
                     sperms = 0o660
                 else:
