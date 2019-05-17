@@ -265,6 +265,7 @@ class VideoHelper(object):
                     log.warn(" %s", e)
                     del e
             except Exception as e:
+                log("error on %s", x, exc_info=True)
                 log.warn("Warning: cannot add %s encoder: %s", x, e)
                 del e
         log("found %i video encoder%s: %s",
