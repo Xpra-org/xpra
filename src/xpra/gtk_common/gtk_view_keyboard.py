@@ -6,10 +6,6 @@ import sys
 from collections import deque
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_glib
-from xpra.gtk_common.gtk_util import (
-    SHIFT_MASK, LOCK_MASK, CONTROL_MASK,
-    MOD1_MASK, MOD2_MASK, MOD3_MASK, MOD4_MASK, MOD5_MASK,
-    )
 from xpra.platform.paths import get_icon
 
 gtk = import_gtk()
@@ -17,30 +13,11 @@ gdk = import_gdk()
 pango = import_pango()
 glib = import_glib()
 
-modifier_names = {
-                  SHIFT_MASK        : "Shift",
-                  LOCK_MASK         : "Lock",
-                  CONTROL_MASK      : "Control",
-                  MOD1_MASK         : "mod1",
-                  MOD2_MASK         : "mod2",
-                  MOD3_MASK         : "mod3",
-                  MOD4_MASK         : "mod4",
-                  MOD5_MASK         : "mod5"
-                  }
-short_modifier_names = {
-                  SHIFT_MASK        : "S",
-                  LOCK_MASK         : "L",
-                  CONTROL_MASK      : "C",
-                  MOD1_MASK         : "1",
-                  MOD2_MASK         : "2",
-                  MOD3_MASK         : "3",
-                  MOD4_MASK         : "4",
-                  MOD5_MASK         : "5"
-                  }
 
 class KeyboardStateInfoWindow:
 
     def    __init__(self):
+        self.init_constants()
         self.window = gtk.Window()
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(540, 800)
@@ -79,10 +56,36 @@ class KeyboardStateInfoWindow:
         if icon:
             self.window.set_icon(icon)
 
+    def init_constants(self):
+        from xpra.gtk_common.gtk_util import (
+            SHIFT_MASK, LOCK_MASK, CONTROL_MASK,
+            MOD1_MASK, MOD2_MASK, MOD3_MASK, MOD4_MASK, MOD5_MASK,
+            )
+        self.modifier_names = {
+                          SHIFT_MASK        : "Shift",
+                          LOCK_MASK         : "Lock",
+                          CONTROL_MASK      : "Control",
+                          MOD1_MASK         : "mod1",
+                          MOD2_MASK         : "mod2",
+                          MOD3_MASK         : "mod3",
+                          MOD4_MASK         : "mod4",
+                          MOD5_MASK         : "mod5"
+                          }
+        self.short_modifier_names = {
+                          SHIFT_MASK        : "S",
+                          LOCK_MASK         : "L",
+                          CONTROL_MASK      : "C",
+                          MOD1_MASK         : "1",
+                          MOD2_MASK         : "2",
+                          MOD3_MASK         : "3",
+                          MOD4_MASK         : "4",
+                          MOD5_MASK         : "5"
+                          }
+
     def populate_modifiers(self, *_args):
         (x, y, current_mask) = self.window.get_root_window().get_pointer()[-3:]
         self.mouse.set_text("%s %s" % (x, y))
-        modifiers = self.mask_to_names(current_mask, modifier_names)
+        modifiers = self.mask_to_names(current_mask, self.modifier_names)
         self.modifiers.set_text(str(modifiers))
         return    True
 
@@ -100,7 +103,7 @@ class KeyboardStateInfoWindow:
         self.add_key_event("up", event)
 
     def add_key_event(self, etype, event):
-        modifiers = self.mask_to_names(event.state, short_modifier_names)
+        modifiers = self.mask_to_names(event.state, self.short_modifier_names)
         name = gdk.keyval_name(event.keyval)
         text = ""
         for v,l in ((etype, 5), (name, 24), (event.string, 4),
