@@ -15,13 +15,14 @@ from collections import OrderedDict
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
 from xpra.util import envint, csv, iround, first_time
+from xpra.os_util import strtobytes
 
 
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
 assert MAX_NEW_MODES>=2
 
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 ctypedef unsigned long CARD32
 
 cdef extern from "X11/X.h":
@@ -367,7 +368,8 @@ cdef class _RandRBindings(_X11CoreBindings):
         from xpra.util import roundup
         w = roundup(w, 4)
         name = self.get_mode_name(w, h)
-        new_mode = XRRAllocModeInfo(name, len(name))
+        bname = strtobytes(name)
+        new_mode = XRRAllocModeInfo(bname, len(bname))
         try:
             window = XDefaultRootWindow(self.display)
 
