@@ -69,7 +69,7 @@ class XSettingsHelper(object):
     def xsettings_owner(self):
         with xlog:
             owner_x = X11Window.XGetSelectionOwner(self._selection)
-            log("XGetSelectionOwner(%s)=%s", self._selection, owner_x)
+            log("XGetSelectionOwner(%s)=%#x", self._selection, owner_x)
             if owner_x == XNone:
                 return None
             return get_pywindow(self._clipboard, owner_x)
