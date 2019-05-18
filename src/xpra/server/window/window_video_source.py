@@ -2069,7 +2069,7 @@ class WindowVideoSource(WindowSource):
             return self.video_fallback(image, options, warn=True)
         if not ve.is_ready():
             log("video encoder %s is not ready yet, using temporary fallback", ve)
-            return self.video_fallback(image, options, warn=False)
+            return self.video_fallback(image, options, order=FAST_ORDER, warn=False)
 
         #we're going to use the video encoder,
         #so make sure we don't time it out:
