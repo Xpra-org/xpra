@@ -245,17 +245,14 @@ class ServerTestUtil(unittest.TestCase):
         assert POSIX
         if display is None:
             display = self.find_free_display()
+        env = {}
         for x in list(os.environ.keys()):
             if x in (
 				"LOGNAME", "USER", "PATH", "LANG", "TERM",
 				"HOME", "USERNAME", "PYTHONPATH", "HOSTNAME",
 				):    #DBUS_SESSION_BUS_ADDRESS
                 #keep it
-                continue
-            try:
-                del os.environ[x]
-            except KeyError:
-                pass
+                env[x] = os.environ.get(x)
         if len(screens)>1:
             cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
                     "-auth", self.default_env["XAUTHORITY"]]
@@ -286,7 +283,7 @@ class ServerTestUtil(unittest.TestCase):
             log("stdout=%s for %s", stdout.name, cmd)
             stderr = self._temp_file(prefix="Xorg-stderr-")
             log("stderr=%s for %s", stderr.name, cmd)
-        xvfb = self.run_command(cmd_expanded, stdout=stdout, stderr=stderr)
+        xvfb = self.run_command(cmd_expanded, env=env, stdout=stdout, stderr=stderr)
         time.sleep(1)
         log("xvfb(%s)=%s" % (cmdstr, xvfb))
         if pollwait(xvfb, XVFB_TIMEOUT) is not None:
