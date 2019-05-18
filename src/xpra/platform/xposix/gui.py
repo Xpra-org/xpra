@@ -358,11 +358,10 @@ def _get_xresources():
             from xpra.x11.gtk_x11.prop import prop_get
             from xpra.gtk_common.gtk_util import get_default_root_window
             root = get_default_root_window()
-            v = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
+            value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
             log("RESOURCE_MANAGER=%s", v)
-            if v is None:
+            if value is None:
                 return None
-            value = v.decode("utf-8")
             #parse the resources into a dict:
             values={}
             options = value.split("\n")
