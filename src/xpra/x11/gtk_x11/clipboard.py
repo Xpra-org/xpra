@@ -138,6 +138,10 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
             proxy.do_selection_notify_event(event)
 
     def do_xpra_client_message_event(self, event):
+        message_type = event.message_type
+        if message_type=="_GTK_LOAD_ICONTHEMES":
+            log("ignored clipboard client message: %s", message_type)
+            return
         log.info("clipboard X11 window %#x received a client message", get_xwindow(self.window))
         log.info(" %s", event)
 
