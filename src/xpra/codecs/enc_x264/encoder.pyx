@@ -15,7 +15,7 @@ from xpra.util import nonl, envint, envbool, typedict, csv, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes, get_cpu_count
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
-from xpra.buffers.membuf cimport object_as_buffer
+from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
 from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
@@ -483,6 +483,7 @@ cdef class Encoder:
     cdef object frame_types
     cdef object blank_buffer
     cdef uint64_t first_frame_timestamp
+    cdef uint8_t ready
 
     cdef object __weakref__
 
@@ -528,6 +529,10 @@ cdef class Encoder:
             log.info("saving %s stream to %s", encoding, filename)
         if BLANK_VIDEO:
             self.blank_buffer = b"\0" * (self.width * self.height * 4)
+        self.ready = 1
+
+    def is_ready(self):
+        return bool(self.ready)
 
     def get_tune(self):
         log("x264: get_tune() TUNE=%s, fast_decode=%s, content_type=%s", TUNE, self.fast_decode, self.content_type)

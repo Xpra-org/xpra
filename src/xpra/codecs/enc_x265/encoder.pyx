@@ -13,7 +13,7 @@ log = Logger("encoder", "x265")
 
 from xpra.util import envbool
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
-from xpra.buffers.membuf cimport object_as_buffer
+from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t
 from xpra.monotonic_time cimport monotonic_time
@@ -329,6 +329,7 @@ cdef class Encoder:
     cdef double time
     cdef unsigned long frames
     cdef int64_t first_frame_timestamp
+    cdef uint8_t ready
 
     cdef object __weakref__
 
@@ -346,6 +347,10 @@ cdef class Encoder:
         self.preset = b"ultrafast"
         self.profile = PROFILE_MAIN
         self.init_encoder()
+        self.ready = 1
+
+    def is_ready(self):
+        return bool(self.ready)
 
     cdef init_encoder(self):
         global log_level

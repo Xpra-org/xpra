@@ -14,10 +14,11 @@ import numpy
 from collections import deque, OrderedDict
 import ctypes
 from ctypes import cdll as loader, POINTER
-
+from threading import Lock
 from pycuda import driver
 
 from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr, strtobytes
+from xpra.make_thread import start_thread
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time
 from xpra.codecs.cuda_common.cuda_context import (
     init_all_devices, get_devices, select_device, get_device_info, get_device_name,
@@ -57,6 +58,10 @@ cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
 cdef int DEBUG_API = envbool("XPRA_NVENC_DEBUG_API", False)
 cdef int GPU_MEMCOPY = envbool("XPRA_NVENC_GPU_MEMCOPY", True)
 cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
+cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", True)
+
+
+device_lock = Lock()
 
 
 cdef int QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
@@ -1479,6 +1484,9 @@ cdef class Encoder:
     cdef object last_frame_times
     cdef uint64_t bytes_in
     cdef uint64_t bytes_out
+    cdef uint8_t ready
+    cdef uint8_t closed
+    cdef uint8_t threaded_init
 
     cdef object __weakref__
 
@@ -1551,14 +1559,34 @@ cdef class Encoder:
         self.pixel_format = ""
         self.last_frame_times = deque(maxlen=200)
         self.update_bitrate()
-        cdef double start = monotonic_time()
 
         #the pixel format we feed into the encoder
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
+        log("using %s %s compression at %s%% quality with pixel format %s",
+            ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format)
 
+        self.threaded_init = options.get("threaded-init", THREADED_INIT)
+        if self.threaded_init:
+            start_thread(self.threaded_init_device, "threaded-init-device", daemon=True, args=(options,))
+        else:
+            self.init_device(options)
+
+
+    def threaded_init_device(self, options):
+        global device_lock
+        with device_lock:
+            try:
+                self.init_device(options)
+            except Exception as e:
+                log("threaded_init_device(%s)", options, exc_info=True)
+                log.warn("Warning: failed to initialize device:")
+                log.warn(" %s", e)
+                self.clean()
+
+    def init_device(self, options):
+        cdef double start = monotonic_time()
         self.select_cuda_device(options)
-        log("using %s %s compression at %s%% quality with pixel format %s", ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format)
         try:
             self.init_cuda()
             try:
@@ -1575,9 +1603,13 @@ cdef class Encoder:
             log("init_cuda failed", exc_info=True)
             record_device_failure(self.cuda_device_id)
             raise
-
         cdef double end = monotonic_time()
-        log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
+        self.ready = 1
+        log("init_device(%s) took %1.fms", options, (end-start)*1000.0)
+
+    def is_ready(self):
+        return bool(self.ready)
+
 
     def select_cuda_device(self, options={}):
         self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
@@ -1992,12 +2024,27 @@ cdef class Encoder:
         return "nvenc(%s/%s/%s - %s - %4ix%-4i)" % (self.src_format, self.pixel_format, self.codec_name, self.preset_name, self.width, self.height)
 
     def is_closed(self):
-        return self.context==NULL
+        return bool(self.closed)
 
     def __dealloc__(self):
-        self.clean()
+        if not self.closed:
+            self.clean()
 
-    def clean(self):                        #@DuplicatedSignature
+
+    def clean(self):                          #@DuplicatedSignature
+        if not self.closed:
+            self.closed = 1
+            if self.threaded_init:
+                start_thread(self.threaded_clean, "threaded-clean", daemon=True)
+            else:
+                self.do_clean()
+
+    def threaded_clean(self):
+        global device_lock
+        with device_lock:
+            self.do_clean()
+
+    def do_clean(self):                        #@DuplicatedSignature
         log("clean() cuda_context=%s, encoder context=%#x", self.cuda_context, <uintptr_t> self.context)
         if self.cuda_context:
             self.cuda_context.push()
@@ -2797,7 +2844,10 @@ def init_module():
 
         for device_id in devices:
             log("testing encoder with device %s", device_id)
-            options = {"cuda_device" : device_id}
+            options = {
+                "cuda_device"   : device_id,
+                "threaded-init" : False,
+                }
             try:
                 test_encoder = Encoder()
                 test_encoder.select_cuda_device(options)

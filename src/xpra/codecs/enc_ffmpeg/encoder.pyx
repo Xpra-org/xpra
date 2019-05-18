@@ -15,7 +15,7 @@ log = Logger("encoder", "ffmpeg")
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
-from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport
+from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
 from xpra.os_util import bytestostr, strtobytes
@@ -762,6 +762,7 @@ cdef class Encoder(object):
     cdef AVCodec *audio_codec
     cdef AVStream *audio_stream
     cdef AVCodecContext *audio_ctx
+    cdef uint8_t ready
 
     cdef object __weakref__
 
@@ -817,6 +818,10 @@ cdef class Encoder(object):
             raise
         else:
             log("enc_ffmpeg.Encoder.init_context(%s, %s, %s) self=%s", self.width, self.height, self.src_format, self.get_info())
+        self.ready = 1
+
+    def is_ready(self):
+        return bool(self.ready)
 
 
     def init_muxer(self, uintptr_t gen):

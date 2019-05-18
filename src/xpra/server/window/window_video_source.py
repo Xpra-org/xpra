@@ -95,7 +95,7 @@ if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
     log.warn(" only 'png' or 'jpeg' are allowed")
     SAVE_VIDEO_FRAMES = None
 
-FAST_ORDER = tuple(["jpeg", "rgb32", "rgb24", "png"] + list(PREFERED_ENCODING_ORDER))
+FAST_ORDER = tuple(["jpeg", "rgb32", "rgb24", "webp", "png"] + list(PREFERED_ENCODING_ORDER))
 
 
 class WindowVideoSource(WindowSource):
@@ -1525,7 +1525,14 @@ class WindowVideoSource(WindowSource):
         #but to make the code less dense:
         ve = self._video_encoder
         csce = self._csc_encoder
-        if ve is None or ve.is_closed() or (csce and csce.is_closed()):
+        if ve is None:
+            videolog("do_check_pipeline: no current video encoder")
+            return False
+        if ve.is_closed():
+            videolog("do_check_pipeline: current video encoder %s is closed", ve)
+            return False
+        if csce and csce.is_closed():
+            videolog("do_check_pipeline: csc %s is closed", csce)
             return False
 
         if csce:
@@ -1957,7 +1964,7 @@ class WindowVideoSource(WindowSource):
             return None
         return fallback_encodings[0]
 
-    def get_video_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
+    def get_video_fallback_encoding(self, order=FAST_ORDER):
         return self.get_fallback_encoding(self.non_video_encodings, order)
 
     def video_fallback(self, image, options, order=None, warn=False):
@@ -2060,6 +2067,9 @@ class WindowVideoSource(WindowSource):
         ve = self._video_encoder
         if not ve:
             return self.video_fallback(image, options, warn=True)
+        if not ve.is_ready():
+            log("video encoder %s is not ready yet, using temporary fallback", ve)
+            return self.video_fallback(image, options, warn=False)
 
         #we're going to use the video encoder,
         #so make sure we don't time it out:

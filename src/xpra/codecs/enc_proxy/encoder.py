@@ -51,6 +51,9 @@ class Encoder(object):
         self.time = 0
         self.first_frame_timestamp = 0
 
+    def is_ready(self):
+        return True
+
     def get_info(self):             #@DuplicatedSignature
         info = get_info()
         if self.src_format is None:
