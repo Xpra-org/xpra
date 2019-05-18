@@ -59,6 +59,7 @@ cdef int DEBUG_API = envbool("XPRA_NVENC_DEBUG_API", False)
 cdef int GPU_MEMCOPY = envbool("XPRA_NVENC_GPU_MEMCOPY", True)
 cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
 cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", True)
+cdef int SLOW_DOWN_INIT = envint("XPRA_NVENC_SLOW_DOWN_INIT", 0)
 
 
 device_lock = Lock()
@@ -1576,6 +1577,9 @@ cdef class Encoder:
     def threaded_init_device(self, options):
         global device_lock
         with device_lock:
+            if SLOW_DOWN_INIT:
+                import time
+                time.sleep(SLOW_DOWN_INIT)
             try:
                 self.init_device(options)
             except Exception as e:
