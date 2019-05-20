@@ -327,11 +327,11 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def do_cleanup(self):
         self.cancel_resize_timer()
-        X11ServerBase.do_cleanup(self)
         remove_catchall_receiver("xpra-motion-event", self)
         cleanup_x11_filter()
         with xswallow:
             cleanup_all_event_receivers()
+        X11ServerBase.do_cleanup(self)
 
 
     def notify_dpi_warning(self, body):
