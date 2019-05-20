@@ -15,15 +15,14 @@
 %global debug_package %{nil}
 
 Name:           python2-pycuda
-Version:        2018.1.1
-Release:        3
+Version:        2019.1
+Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
 Source:        	https://files.pythonhosted.org/packages/09/69/333ff751d1012f7add7488c91352e08a364b1534a5a33b278c9590415d27/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Patch0:         python-pycuda-threading.patch
 Provides:       python-pycuda
 Obsoletes:      python-pycuda
 Conflicts:      python-pycuda
@@ -72,7 +71,6 @@ Python3 version.
 
 %prep
 %setup -q -n pycuda-%{version}
-%patch0 -p1
 %if 0%{?fedora}
 rm -fr %{py3dir}
 cp -a . %{py3dir}
@@ -132,6 +130,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon May 20 2019 Antoine Martin <antoine@xpra.org> - 2019.1-1
+- new upstream release
+- remove patch which has been merged
+
 * Sun Jan 13 2019 Antoine Martin <antoine@xpra.org> - 2018.1.1-3
 - add patch for releasing the GIL during init and make_context
 
