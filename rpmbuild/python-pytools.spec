@@ -2,14 +2,14 @@
 %{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python2-pytools
-Version:        2018.5.2
+Version:        2019.1.1
 Release:        1%{?dist}
 Summary:        A collection of tools for python
 
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
-Source0:        https://files.pythonhosted.org/packages/90/6a/7b706e4730db0ee5724c677cceafcac1bc9710c61612442a689e7b0aa5c4/pytools-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/00/96/00416762a3eda8876a17d007df4a946f46b2e4ee1057e0b9714926472ef8/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python-pytools = %{version}-%{release}
 Obsoletes:		python-pytools < %{version}-%{release}
@@ -60,6 +60,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon May 20 2018 Antoine Martin <antoine@xpra.org> - 2019.1.1-1
+- new upstream release
+
 * Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 2018.5.2-1
 - new upstream release
 - try harder to prevent rpm db conflicts
