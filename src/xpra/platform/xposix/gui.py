@@ -248,7 +248,7 @@ def get_antialias_info():
             return {"hintnone"      : 0,
                     "hintslight"    : 1000,
                     "hintmedium"    : 1600,
-                    "hintfull"      : 2200}.get(value)
+                    "hintfull"      : 2200}.get(bytestostr(value))
         for prop_name, name, convert in (
                                          ("Xft/HintStyle",  "hintstyle",    bytestostr),
                                          ("Xft/HintStyle",  "contrast",     get_contrast),
