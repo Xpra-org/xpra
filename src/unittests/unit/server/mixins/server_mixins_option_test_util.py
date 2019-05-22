@@ -125,7 +125,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
 
             client_kwargs = {}
             if not (WIN32 or OSX):
-                env = os.environ.copy()
+                env = self.get_run_env()
                 env["DISPLAY"] = self.client_display
                 client_kwargs = {"env" : env}
 
