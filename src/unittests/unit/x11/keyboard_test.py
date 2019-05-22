@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import unittest
 
 from unit.server_test_util import ServerTestUtil, log
@@ -16,6 +17,7 @@ class TestX11Keyboard(ServerTestUtil):
         display = self.find_free_display()
         xvfb = self.start_Xvfb(display)
         from xpra.x11.bindings.posix_display_source import X11DisplayContext    #@UnresolvedImport
+        os.environ["DISPLAY"] = display
         with X11DisplayContext(display):
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings        #@UnresolvedImport
             keyboard_bindings = X11KeyboardBindings()
