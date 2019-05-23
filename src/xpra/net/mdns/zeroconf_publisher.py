@@ -23,6 +23,16 @@ def get_interface_index(host):
     return get_iface(host)
 
 
+def inet_ton(af, addr):
+    if af==socket.AF_INET:
+        return socket.inet_aton(addr)
+    inet_pton = getattr(socket, "inet_pton", None)
+    if not inet_pton:
+        #no ipv6 support with python2 on win32:
+        return None
+    return inet_pton(af, addr)   #@UndefinedVariable
+        
+
 class ZeroconfPublishers(object):
     """
     Expose services via python zeroconf
@@ -51,25 +61,28 @@ class ZeroconfPublishers(object):
                                 if addr:
                                     try:
                                         addr_str = addr.split("%", 1)[0]
-                                        address = socket.inet_pton(af, addr_str)
+                                        address = inet_ton(af, addr_str)
+                                        if address:
+                                            all_listen_on.append((addr_str, port, address))
                                     except OSError as e:
                                         log("socket.inet_pton '%s'", addr_str, exc_info=True)
                                         log.error("Error: cannot parse IP address '%s'", addr_str)
                                         log.error(" %s", e)
                                         continue
-                                    all_listen_on.append((addr_str, port, address))
                     continue
                 try:
                     if host.find(":")>=0:
-                        address = socket.inet_pton(socket.AF_INET6, host)
+                        af = socket.AF_INET6
                     else:
-                        address = socket.inet_pton(socket.AF_INET, host)
+                        af = socket.AF_INET
+                    address = inet_ton(af, host)
+                    if address:
+                        all_listen_on.append((host, port, address))
                 except OSError as e:
                     log("socket.inet_pton '%s'", host, exc_info=True)
                     log.error("Error: cannot parse IP address '%s'", host)
                     log.error(" %s", e)
                     continue
-                all_listen_on.append((host, port, address))
         log("will listen on: %s", all_listen_on)
         for host, port, address in all_listen_on:
             td = text_dict or {}
