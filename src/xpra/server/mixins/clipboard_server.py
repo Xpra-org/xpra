@@ -25,6 +25,7 @@ class ClipboardServer(StubServerMixin):
         self.clipboard = False
         self.clipboard_direction = "none"
         self.clipboard_filter_file = None
+        self._clipboard_helper = None
 
     def init(self, opts):
         self.clipboard = not (opts.clipboard or "").lower() in FALSE_OPTIONS
