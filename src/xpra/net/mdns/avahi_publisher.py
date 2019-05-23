@@ -213,7 +213,10 @@ class AvahiPublisher(object):
 
 
     def update_txt(self, txt):
-        assert self.group
+        if not self.group:
+            log.warn("Warning: cannot update mdns record")
+            log.warn(" publisher has already been stopped")
+            return
         def reply_handler(*args):
             log("reply_handler%s", args)
             log("update_txt(%s) done", txt)
