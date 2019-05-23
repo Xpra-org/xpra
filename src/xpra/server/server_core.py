@@ -755,8 +755,9 @@ class ServerCore(object):
         self.mdns_publishers = []
         for mdns_mode, listen_on in mdns_recs.items():
             ap = mdns_publish(self.display_name, mdns_mode, listen_on, mdns_info)
-            ap.start()
-            self.mdns_publishers.append(ap)
+            if ap:
+                ap.start()
+                self.mdns_publishers.append(ap)
 
     def get_mdns_socktypes(self, socktype):
         #for a given socket type,
