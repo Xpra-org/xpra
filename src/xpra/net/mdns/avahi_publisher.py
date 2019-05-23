@@ -160,12 +160,17 @@ class AvahiPublisher(object):
                 log.error(" %s", error)
             self.stop()
             return False
-        elif state == avahi.SERVER_RUNNING:
+        if state == avahi.SERVER_RUNNING:
             self.add_service()
             return True
-        else:
-            log.warn("Warning: unknown avahi server state '%s'", state)
-            return False
+        state_str = "unknown"
+        for const in ("INVALID", "REGISTERING", "COLLISION", "FAILURE"):
+            val = getattr(avahi, "SERVER_%s" % const, None)
+            if val is not None and val==state:
+                state_str = const
+                break
+        log.warn("Warning: server state changed to '%s'", state_str)
+        return False
 
     def add_service(self):
         if not self.group:
