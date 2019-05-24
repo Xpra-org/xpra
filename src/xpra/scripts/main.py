@@ -531,7 +531,7 @@ def find_session_by_name(opts, session_name):
 
 def parse_ssh_string(ssh_setting):
     if is_debug_enabled("ssh"):
-        get_util_logger().info("parse_ssh_string(%s)" % ssh_setting)
+        get_util_logger().debug("parse_ssh_string(%s)" % ssh_setting)
     ssh_cmd = ssh_setting
     from xpra.platform.features import DEFAULT_SSH_COMMAND
     if ssh_setting=="auto":
