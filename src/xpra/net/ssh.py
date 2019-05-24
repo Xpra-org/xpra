@@ -498,6 +498,11 @@ keymd5(host_key),
                         log("from_private_key_file", exc_info=True)
                         log.info("cannot load key from file '%s':", keyfile_path)
                         log.info(" %s", e)
+            except Exception as e:
+                log("auth_publickey()", exc_info=True)
+                log.error("Error: cannot load private key '%s'", keyfile_path)
+                log.error(" %s", e)
+                key = None
             if key:
                 log("auth_publickey using %s: %s", keyfile_path, keymd5(key))
                 try:
