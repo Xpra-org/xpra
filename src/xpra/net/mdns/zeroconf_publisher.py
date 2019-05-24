@@ -143,7 +143,6 @@ def main():
     def update_rec():
         log("update_rec()")
         from zeroconf import DNSText, _CLASS_ANY, _DNS_OTHER_TTL, current_time_millis
-        import time
         import struct
         int2byte = struct.Struct(">B").pack
         item = b"key=value"

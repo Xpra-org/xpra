@@ -147,7 +147,7 @@ def encode_dict(x,r):
 
 encode_func = {}
 if sys.version_info[0] < 3:
-    from types import (
+    from types import (     #pylint: disable=no-name-in-module
         StringType, UnicodeType, IntType, LongType, DictType, ListType, #@UnresolvedImport
         TupleType, BooleanType,                                         #@UnresolvedImport
         )

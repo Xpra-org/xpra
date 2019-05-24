@@ -22,7 +22,7 @@ from xpra.os_util import strtobytes, bytestostr
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.error import trap, XError
 from xpra.x11.common import X11Event
-from xpra.monotonic_time cimport monotonic_time
+from xpra.monotonic_time cimport monotonic_time     #pylint: disable=syntax-error
 from xpra.util import csv
 
 from xpra.log import Logger

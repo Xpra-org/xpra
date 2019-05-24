@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-def get_interface_info(*args):
+def get_interface_info(*_args):
     return {}
 
 

@@ -343,7 +343,7 @@ class Logger(object):
         global default_level, debug_disabled_categories, KNOWN_FILTERS
         self.categories = list(categories)
         try:
-            caller = sys._getframe(1).f_globals["__name__"]
+            caller = sys._getframe(1).f_globals["__name__"] #pylint: disable=protected-access
         except AttributeError:
             caller = None
         if caller not in ("__main__", None):

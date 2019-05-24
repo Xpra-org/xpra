@@ -369,8 +369,7 @@ def desfunc(block, keys):
     return pack('>II', right, leftt)
 
 
-# test
-if __name__ == '__main__':
+def main():
     key = bytearray.fromhex('0123456789abcdef')
     plain = bytearray.fromhex('0123456789abcdef')
     cipher = bytearray.fromhex('6e09a37726dd560c')
@@ -380,3 +379,8 @@ if __name__ == '__main__':
     assert desfunc(desfunc(plain, ek), dk) == plain
     assert desfunc(desfunc(plain, dk), ek) == plain
     print('test succeeded.')
+
+
+# test
+if __name__ == '__main__':
+    main()

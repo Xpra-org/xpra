@@ -60,14 +60,14 @@ class ZeroconfListener(object):
             self.browser = None
             try:
                 b.cancel()
-            except:
+            except Exception:
                 pass
         zc = self.zeroconf
         if zc:
             self.zeroconf = None
             try:
                 zc.close()
-            except:
+            except Exception:
                 pass
 
 

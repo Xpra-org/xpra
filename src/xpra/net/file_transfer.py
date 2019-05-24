@@ -276,7 +276,7 @@ class FileTransferHandler(FileTransferAttributes):
             del self.receive_chunks_in_progress[chunk_id]
             try:
                 os.close(fd)
-            except:
+            except (OSError, IOError):
                 pass
             return
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
