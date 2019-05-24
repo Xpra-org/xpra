@@ -16,7 +16,7 @@ from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
 from xpra.os_util import (
-    bytestostr, osexpand, monotonic_time,
+    bytestostr, osexpand, monotonic_time, load_binary_file,
     setsid, nomodule_context, umask_context,
     is_WSL, WIN32, OSX, POSIX,
     )
@@ -486,6 +486,13 @@ keymd5(host_key),
                 log("no keyfile at '%s'", keyfile_path)
                 continue
             log("trying '%s'", keyfile_path)
+            key_data = load_binary_file(keyfile_path)
+            if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0:
+                log.warn("Warning: private key '%s'", keyfile_path)
+                log.warn(" this file seems to be using OpenSSH's own format")
+                log.warn(" please convert it to something more standard (ie: PEM)")
+                log.warn(" so it can be used with the paramiko backend")
+                log.warn(" or switch to the OpenSSH backend with '--ssh=ssh'")
             key = None
             try:
                 key = RSAKey.from_private_key_file(keyfile_path)
