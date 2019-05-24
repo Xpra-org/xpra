@@ -19,7 +19,7 @@ import struct
 
 from xpra.log import Logger
 from xpra.util import envbool
-from xpra.os_util import PYTHON3
+from xpra.os_util import PYTHON3, strtobytes, bytestostr
 
 
 log = Logger("x11", "xsettings")
@@ -119,10 +119,10 @@ def set_settings(disp, d):
     all_bin_settings = []
     for setting in settings:
         setting_type, prop_name, value, last_change_serial = setting
-        prop_name = str(prop_name).encode()
+        prop_name = strtobytes(prop_name)
         try:
             log("set_settings(..) processing property %s of type %s",
-                prop_name, XSettingsNames.get(setting_type, "INVALID!"))
+                bytestostr(prop_name), XSettingsNames.get(setting_type, "INVALID!"))
             x = struct.pack(b"=BBH", setting_type, 0, len(prop_name))
             x += prop_name
             pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
@@ -132,10 +132,7 @@ def set_settings(disp, d):
                 assert isinstance(value, (int, long)), "invalid value type (int or long wanted): %s" % type(value)
                 x += struct.pack(b"=I", int(value))
             elif setting_type==XSettingsTypeString:
-                if isinstance(value, (str, unicode)):
-                    value = str(value).encode()
-                else:
-                    assert isinstance(value, bytes), "invalid value type, wanted byte string, not %s" % type(value)
+                value = strtobytes(value)
                 x += struct.pack(b"=I", len(value))
                 x += value
                 pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
@@ -144,7 +141,7 @@ def set_settings(disp, d):
                 red, blue, green, alpha = value
                 x = struct.pack(b"=HHHH", red, blue, green, alpha)
             else:
-                log.error("invalid xsetting type: %s, skipped %s", setting_type, prop_name)
+                log.error("Error: invalid type %i for xsetting property '%s'", setting_type, prop_name)
                 continue
             log("set_settings(..) %s -> %s", setting, tuple(x))
             all_bin_settings.append(x)
