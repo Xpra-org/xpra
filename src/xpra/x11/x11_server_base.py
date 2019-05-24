@@ -284,7 +284,7 @@ class X11ServerBase(X11ServerCore):
         self._settings.update(settings)
         for k, v in settings.items():
             #cook the "resource-manager" value to add the DPI and/or antialias values:
-            if k=="resource-manager" and (dpi>0 or antialias or cursor_size>0):
+            if k==b"resource-manager" and (dpi>0 or antialias or cursor_size>0):
                 value = bytestostr(v)
                 #parse the resources into a dict:
                 values={}
@@ -326,12 +326,12 @@ class X11ServerBase(X11ServerCore):
                 for vk, vv in values.items():
                     value += "%s:\t%s\n" % (vk, vv)
                 #record the actual value used
-                self._settings["resource-manager"] = value
+                self._settings[b"resource-manager"] = value
                 v = value.encode("utf-8")
 
             #cook xsettings to add various settings:
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
-            if k=="xsettings-blob" and \
+            if k==b"xsettings-blob" and \
             (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
                 from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
                 def set_xsettings_value(name, value_type, value):
@@ -371,7 +371,9 @@ class X11ServerBase(X11ServerCore):
                     from xpra.x11.gtk_x11.prop import prop_set
                     log("server_settings: setting %s to %s", nonl(p), nonl(v))
                     prop_set(self.root_window, p, "latin1", strtobytes(v).decode("latin1"))
-                if k == "xsettings-blob":
+                if k == b"xsettings-blob":
                     self.set_xsettings(v)
-                elif k == "resource-manager":
+                elif k == b"resource-manager":
                     root_set("RESOURCE_MANAGER")
+                else:
+                    log.warn("Warning: unexpected setting '%s'", bytestostr(k))
