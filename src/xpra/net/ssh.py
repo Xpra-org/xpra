@@ -327,7 +327,7 @@ class nogssapi_context(nomodule_context):
 
 
 def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None, keyfiles=None):
-    from paramiko import SSHException, RSAKey, PasswordRequiredException
+    from paramiko import SSHException, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
     log("do_ssh_paramiko_connect_to%s", (transport, host, username, password, host_config, keyfiles))
@@ -494,25 +494,35 @@ keymd5(host_key),
                 log.warn(" so it can be used with the paramiko backend")
                 log.warn(" or switch to the OpenSSH backend with '--ssh=ssh'")
             key = None
-            try:
-                key = RSAKey.from_private_key_file(keyfile_path)
-            except PasswordRequiredException:
-                log("%s keyfile requires a passphrase", keyfile_path)
-                passphrase = input_pass("please enter the passphrase for %s:" % (keyfile_path,))
-                if passphrase:
-                    try:
-                        key = RSAKey.from_private_key_file(keyfile_path, passphrase)
-                    except SSHException as e:
-                        log("from_private_key_file", exc_info=True)
-                        log.info("cannot load key from file '%s':", keyfile_path)
-                        log.info(" %s", e)
-            except Exception as e:
-                log("auth_publickey()", exc_info=True)
-                log.error("Error: cannot load private key '%s'", keyfile_path)
-                log.error(" %s", e)
-                key = None
+            pkey_classname = None
+            from paramiko import RSAKey, DSSKey, ECDSAKey, Ed25519Key
+            for pkey_class, pkey_classname in {
+                RSAKey      : "RSA",
+                DSSKey      : "DSS",
+                ECDSAKey    : "ECDSA",
+                Ed25519Key  : "Ed25519",
+                }.items():
+                log("trying to load as %s", pkey_classname)
+                try:
+                    key = pkey_class.from_private_key_file(keyfile_path)
+                    log.info("loaded %s private key from '%s'", pkey_classname, keyfile_path)
+                    break
+                except PasswordRequiredException as e:
+                    log("%s keyfile requires a passphrase; %s", keyfile_path, e)
+                    passphrase = input_pass("please enter the passphrase for %s:" % (keyfile_path,))
+                    if passphrase:
+                        try:
+                            key = pkey_class.from_private_key_file(keyfile_path, passphrase)
+                            log.info("loaded %s private key from '%s'", pkey_classname, keyfile_path)
+                        except SSHException as e:
+                            log("from_private_key_file", exc_info=True)
+                            log.info("cannot load key from file '%s':", keyfile_path)
+                            log.info(" %s", e)
+                    break
+                except Exception as e:
+                    log("auth_publickey() loading as %s", pkey_classname, exc_info=True)
             if key:
-                log("auth_publickey using %s: %s", keyfile_path, keymd5(key))
+                log("auth_publickey using %s as %s: %s", keyfile_path, pkey_classname, keymd5(key))
                 try:
                     transport.auth_publickey(username, key)
                 except SSHException as e:
@@ -522,6 +532,8 @@ keymd5(host_key),
                 else:
                     if transport.is_authenticated():
                         break
+            else:
+                log.error("Error: cannot load private key '%s'", keyfile_path)
 
     def auth_none():
         log("trying none authentication")
