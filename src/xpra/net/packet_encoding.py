@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
-log = Logger("network", "protocol")
 from xpra.os_util import PYTHON3
 from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
-
 from xpra.util import envbool
+
+log = Logger("network", "protocol")
+
 #those are also modified from the command line switch:
 use_rencode = envbool("XPRA_USE_RENCODER", True)
 use_bencode = envbool("XPRA_USE_BENCODER", True)
@@ -22,7 +23,10 @@ rencode_dumps, rencode_loads, rencode_version = None, None, None
 def init_rencode():
     global use_rencode, has_rencode, rencode_dumps, rencode_loads, rencode_version
     try:
-        from rencode import dumps as rencode_dumps, loads as rencode_loads, __version__ as rencode_version
+        from rencode import dumps, loads, __version__
+        rencode_dumps = dumps
+        rencode_loads = loads
+        rencode_version = __version__
     except ImportError as e:
         log("init_rencode()", exc_info=True)
         if use_rencode:
@@ -34,7 +38,8 @@ def init_rencode():
         del e
     has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
     use_rencode = has_rencode and use_rencode
-    log("packet_encoding.init_rencode() has_rencode=%s, use_rencode=%s, version=%s", has_rencode, use_rencode, rencode_version)
+    log("packet_encoding.init_rencode() has_rencode=%s, use_rencode=%s, version=%s",
+        has_rencode, use_rencode, rencode_version)
 
 
 has_bencode = None
@@ -42,7 +47,10 @@ bencode, bdecode, bencode_version = None, None, None
 def init_bencode():
     global use_bencode, has_bencode, bencode, bdecode, bencode_version
     try:
-        from xpra.net.bencode import bencode, bdecode, __version__ as bencode_version
+        from xpra.net.bencode import bencode as _bencode, bdecode as _bdecode, __version__
+        bencode = _bencode
+        bdecode = _bdecode
+        bencode_version = __version__
     except ImportError as e:
         log("init_bencode()", exc_info=True)
         if use_bencode:
@@ -54,7 +62,8 @@ def init_bencode():
         del e
     has_bencode = bencode is not None and bdecode is not None
     use_bencode = has_bencode and use_bencode
-    log("packet_encoding.init_bencode() has_bencode=%s, use_bencode=%s, version=%s", has_bencode, use_bencode, bencode_version)
+    log("packet_encoding.init_bencode() has_bencode=%s, use_bencode=%s, version=%s",
+        has_bencode, use_bencode, bencode_version)
 
 has_yaml = None
 yaml_encode, yaml_decode, yaml_version = None, None, None
@@ -64,8 +73,9 @@ def init_yaml():
         #json messes with strings and unicode (makes it unusable for us)
         import yaml
         if PYTHON3:
-            def yaml_encode(v):
+            def yaml_encode_py3(v):
                 return yaml.dump(v).encode("latin1")
+            yaml_encode = yaml_encode_py3
         else:
             yaml_encode = yaml.dump
         yaml_decode = yaml.load
@@ -113,7 +123,7 @@ def get_packet_encoding_caps():
 
 
 #all the encoders we know about, in best compatibility order:
-ALL_ENCODERS = ["rencode", "bencode", "yaml"]
+ALL_ENCODERS = ("rencode", "bencode", "yaml")
 
 #order for performance:
 PERFORMANCE_ORDER = ["rencode", "bencode", "yaml"]
@@ -151,10 +161,9 @@ def get_encoder_name(e):
 def get_packet_encoding_type(protocol_flags):
     if protocol_flags & FLAGS_RENCODE:
         return "rencode"
-    elif protocol_flags & FLAGS_YAML:
+    if protocol_flags & FLAGS_YAML:
         return "yaml"
-    else:
-        return "bencode"
+    return "bencode"
 
 
 def sanity_checks():
@@ -176,20 +185,19 @@ def decode(data, protocol_flags):
         if not use_rencode:
             raise InvalidPacketEncodingException("rencode is disabled")
         return list(rencode_loads(data))
-    elif protocol_flags & FLAGS_YAML:
+    if protocol_flags & FLAGS_YAML:
         if not has_yaml:
             raise InvalidPacketEncodingException("yaml is not available")
         if not use_yaml:
             raise InvalidPacketEncodingException("yaml is disabled")
         return list(yaml_decode(data))
-    else:
-        if not has_bencode:
-            raise InvalidPacketEncodingException("bencode is not available")
-        if not use_bencode:
-            raise InvalidPacketEncodingException("bencode is disabled")
-        packet, l = bdecode(data)
-        assert l==len(data)
-        return packet
+    if not has_bencode:
+        raise InvalidPacketEncodingException("bencode is not available")
+    if not use_bencode:
+        raise InvalidPacketEncodingException("bencode is disabled")
+    packet, l = bdecode(data)
+    assert l==len(data)
+    return packet
 
 
 def main():
