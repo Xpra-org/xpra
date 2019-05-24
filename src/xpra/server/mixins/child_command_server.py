@@ -94,7 +94,9 @@ class ChildCommandServer(StubServerMixin):
         caps = {}
         if self.start_new_commands and POSIX and not OSX:
             from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-            caps["xdg-menu"] = load_xdg_menu_data()
+            xdg_menu = load_xdg_menu_data()
+            if xdg_menu:
+                caps["xdg-menu"] = xdg_menu
         return caps
 
 
