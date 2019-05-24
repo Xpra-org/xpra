@@ -485,6 +485,7 @@ keymd5(host_key),
             if not os.path.exists(keyfile_path):
                 log("no keyfile at '%s'", keyfile_path)
                 continue
+            log("trying '%s'", keyfile_path)
             key = None
             try:
                 key = RSAKey.from_private_key_file(keyfile_path)
