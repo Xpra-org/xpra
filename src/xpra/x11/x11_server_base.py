@@ -244,14 +244,14 @@ class X11ServerBase(X11ServerCore):
         #almost like update_all, except we use the default_dpi,
         #since this is called before the first client connects
         self.do_update_server_settings({
-            "resource-manager"  : "",
-            "xsettings-blob"    : (0, [])
+            b"resource-manager"  : b"",
+            b"xsettings-blob"    : (0, [])
             }, reset = True, dpi = self.default_dpi, cursor_size=24)
 
     def update_all_server_settings(self, reset=False):
         self.update_server_settings({
-            "resource-manager"  : "",
-            "xsettings-blob"    : (0, []),
+            b"resource-manager"  : b"",
+            b"xsettings-blob"    : (0, []),
             }, reset=reset)
 
     def update_server_settings(self, settings=None, reset=False):
