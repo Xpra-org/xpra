@@ -2920,7 +2920,7 @@ XpraClient.prototype.send_clipboard_token = function(data) {
 		return;
 	}
 	this.debug("keyboard", "sending clipboard token with data:", data);
-	var packet = ["clipboard-token", "CLIPBOARD", [], "UTF8_STRING", "UTF8_STRING", data.length, "bytes", data, false, true, true];
+	var packet = ["clipboard-token", "CLIPBOARD", [], "UTF8_STRING", "UTF8_STRING", 8, "bytes", data, false, true, true];
 	this.send(packet);
 }
 
