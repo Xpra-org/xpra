@@ -155,6 +155,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if GetLastError()!=ERROR_ACCESS_DENIED:
             failure_callback()
             return
+        log("clipboard lock: access denied")
         if retries<=0:
             failure_callback()
             return
@@ -261,26 +262,34 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.with_clipboard_lock(get_text, errback)
 
     def set_clipboard_text(self, text):
+        def err(msg):
+            log.warn("Warning: cannot set clipboard value")
+            log.warn(" %s", msg)
         #convert to wide char
         #get the length in wide chars:
         log("set_clipboard_text(%s)", text)
         wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), None, 0)
         if not wlen:
+            err("failed to prepare to convert to wide char")
             return
         log("MultiByteToWideChar wlen=%i", wlen)
         #allocate some memory for it:
-        buf = GlobalAlloc(GMEM_MOVEABLE, (wlen+1)*2)
+        l = (wlen+1)*2
+        buf = GlobalAlloc(GMEM_MOVEABLE, l)
         if not buf:
+            err("failed to allocate %i bytes of global memory" % l)
             return
         log("GlobalAlloc buf=%#x", buf)
         locked = GlobalLock(buf)
         if not locked:
+            err("failed to lock buffer %#x" % buf)
             GlobalFree(buf)
             return
         try:
             locked_buf = cast(locked, LPWSTR)
             r = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), locked_buf, wlen)
             if not r:
+                err("failed to convert to wide char")
                 return
         finally:
             GlobalUnlock(locked)
@@ -291,6 +300,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 log("SetClipboardData(..) block_owner_change=%s", self._block_owner_change)
                 EmptyClipboard()
                 if not SetClipboardData(win32con.CF_UNICODETEXT, buf):
+                    err("SetClipboardData() failed: %s" % GetLastError())
                     return
                 #done!
             finally:
