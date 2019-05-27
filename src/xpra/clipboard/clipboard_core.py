@@ -426,35 +426,41 @@ class ClipboardProtocolHelperCore(object):
             log.warn("clipboard request %s dropped for testing!", request_id)
             return
         def got_contents(dtype, dformat, data):
-            dtype = bytestostr(dtype)
-            log("got_contents(%s, %s, %s:%s) data=0x%s..",
-                  dtype, dformat, type(data), len(data or ""), hexstr((data or "")[:200]))
-            if dtype is None or data is None or (dformat==0 and data==b""):
-                no_contents()
-                return
-            log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
-            truncated = 0
-            if self.max_clipboard_send_size > 0:
-                max_send_datalen = self.max_clipboard_send_size * 8 // get_format_size(dformat)
-                if len(data) > max_send_datalen:
-                    truncated = len(data) - max_send_datalen
-                    data = data[:max_send_datalen]
-            munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
-            wire_encoding, wire_data = munged
-            log("clipboard raw -> wire: %r -> %r",
-                (dtype, dformat, repr_ellipsized(str(data))), repr_ellipsized(str(munged)))
-            if wire_encoding is None:
-                no_contents()
-                return
-            wire_data = self._may_compress(dtype, dformat, wire_data)
-            if wire_data is not None:
-                packet = ["clipboard-contents", request_id, selection,
-                        dtype, dformat, wire_encoding, wire_data]
-                if self.clipboard_contents_slice_fix:
-                    #sending the extra argument requires the fix
-                    packet.append(truncated)
-                self.send(*packet)
+            self.proxy_got_contents(request_id, selection, target, dtype, dformat, data)
         proxy.get_contents(target, got_contents)
+
+    def proxy_got_contents(self, request_id, selection, target, dtype, dformat, data):
+        def no_contents():
+            self.send("clipboard-contents-none", request_id, selection)
+        dtype = bytestostr(dtype)
+        log("proxy_got_contents(%s, %s, %s, %s, %s, %s:%s) data=0x%s..",
+              request_id, selection, target,
+              dtype, dformat, type(data), len(data or ""), hexstr((data or "")[:200]))
+        if dtype is None or data is None or (dformat==0 and data==b""):
+            no_contents()
+            return
+        log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
+        truncated = 0
+        if self.max_clipboard_send_size > 0:
+            max_send_datalen = self.max_clipboard_send_size * 8 // get_format_size(dformat)
+            if len(data) > max_send_datalen:
+                truncated = len(data) - max_send_datalen
+                data = data[:max_send_datalen]
+        munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+        log("clipboard raw -> wire: %r -> %r",
+            (dtype, dformat, repr_ellipsized(str(data))), repr_ellipsized(str(munged)))
+        wire_encoding, wire_data = munged
+        if wire_encoding is None:
+            no_contents()
+            return
+        wire_data = self._may_compress(dtype, dformat, wire_data)
+        if wire_data is not None:
+            packet = ["clipboard-contents", request_id, selection,
+                    dtype, dformat, wire_encoding, wire_data]
+            if self.clipboard_contents_slice_fix:
+                #sending the extra argument requires the fix
+                packet.append(truncated)
+            self.send(*packet)
 
     def _may_compress(self, dtype, dformat, wire_data):
         if len(wire_data)>self.max_clipboard_packet_size:
