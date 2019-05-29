@@ -19,6 +19,7 @@ from xpra.log import Logger
 log = Logger("exec")
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
+MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
 
 
 """
@@ -47,6 +48,9 @@ class ChildCommandServer(StubServerMixin):
         self.children_started = []
         self.child_reaper = None
         self.reaper_exit = self.reaper_exit_check
+        self.watch_manager = None
+        self.notifier = None
+        self.xdg_menu_reload_timer = None
 
     def init(self, opts):
         self.exit_with_children = opts.exit_with_children
@@ -72,6 +76,36 @@ class ChildCommandServer(StubServerMixin):
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
         self.idle_add(set_reaper_callback)
+        if not POSIX or OSX:
+            return
+        try:
+            import pyinotify
+        except ImportError as e:
+            log.warn("Warning: cannot watch for application menu changes without pyinotify:")
+            log.warn(" %s", e)
+        self.watch_manager = pyinotify.WatchManager()
+        def menu_data_updated(create, pathname):
+            log("menu_data_updated(%s, %s)", create, pathname)
+            self.schedule_xdg_menu_reload()
+        class EventHandler(pyinotify.ProcessEvent):
+            def process_IN_CREATE(self, event):
+                menu_data_updated(True, event.pathname)
+            def process_IN_DELETE(self, event):
+                menu_data_updated(False, event.pathname)
+        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable pylint: disable=no-member
+        handler = EventHandler()
+        self.notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
+        self.notifier.setDaemon(True)
+        data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share/applications:/usr/local/share/applications").split(":")
+        for data_dir in data_dirs:
+            menu_dir = os.path.join(data_dir, "applications")
+            if not os.path.exists(menu_dir):
+                continue
+            wdd = self.watch_manager.add_watch(menu_dir, mask)
+            log.info("watching for applications menu changes in '%s'", menu_dir)
+            log("notifier=%s, watch=%s", self.notifier, wdd)
+        self.notifier.start()
+
 
     def cleanup(self):
         if self.terminate_children and self._upgrading!=EXITING_CODE:
@@ -80,6 +114,21 @@ class ChildCommandServer(StubServerMixin):
             pass
         self.reaper_exit = noop
         reaper_cleanup()
+        xmrt = self.xdg_menu_reload_timer
+        if xmrt:
+            self.xdg_menu_reload_timer = None
+            self.source_remove(xmrt)
+        notifier = self.notifier
+        if notifier:
+            self.notifier = None
+            notifier.stop()
+        watch_manager = self.watch_manager
+        if watch_manager:
+            self.watch_manager = None
+            try:
+                watch_manager.close()
+            except (OSError, IOError):
+                log("error closing watch manager %s", watch_manager, exc_info=True)
 
 
     def get_server_features(self, _source):
@@ -92,11 +141,11 @@ class ChildCommandServer(StubServerMixin):
             }
 
 
-    def _get_xdg_menu_data(self):
+    def _get_xdg_menu_data(self, force_reload=False):
         if not self.start_new_commands or not POSIX or OSX:
             return None
         from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-        return load_xdg_menu_data()
+        return load_xdg_menu_data(force_reload)
 
     def get_caps(self, source):
         caps = {}
@@ -113,6 +162,18 @@ class ChildCommandServer(StubServerMixin):
         if ss.xdg_menu_update:
             ss.send_setting_change("xdg-menu", xdg_menu or {})
 
+    def schedule_xdg_menu_reload(self):
+        if self.xdg_menu_reload_timer:
+            return
+        self.xdg_menu_reload_timer = self.timeout_add(MENU_RELOAD_DELAY*1000, self.xdg_menu_reload)
+
+    def xdg_menu_reload(self):
+        self.xdg_menu_reload_timer = None
+        log("xdg_menu_reload()")
+        xdg_menu = self._get_xdg_menu_data(True)
+        for source in tuple(self._server_sources.values()):
+            if source.xdg_menu_update:
+                source.send_setting_change("xdg-menu", xdg_menu or {})
 
     def get_info(self, _proto):
         info = {

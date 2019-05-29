@@ -217,9 +217,9 @@ def load_xdg_menu(submenu):
 
 
 xdg_menu_data = None
-def load_xdg_menu_data():
+def load_xdg_menu_data(force_reload=False):
     global xdg_menu_data
-    if not xdg_menu_data:
+    if not xdg_menu_data or force_reload:
         xdg_menu_data = do_load_xdg_menu_data()
     return xdg_menu_data
 
