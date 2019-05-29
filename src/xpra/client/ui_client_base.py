@@ -121,7 +121,7 @@ class UIXpraClient(ClientBaseClass):
         self.readonly = False
         self.xsettings_enabled = False
         self.server_start_new_commands = False
-        self.xdg_menu = {}
+        self.server_xdg_menu = None
         self.start_new_commands  = []
         self.start_child_new_commands  = []
 
@@ -347,6 +347,7 @@ class UIXpraClient(ClientBaseClass):
                 pass
         for x in (#generic feature flags:
             "notify-startup-complete", "wants_events", "setting-change",
+            "xdg-menu-update",
             ):
             caps[x] = True
         #FIXME: the messy bits without proper namespace:
@@ -398,7 +399,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_pointer = c.boolget("pointer", True)
         self.server_start_new_commands = c.boolget("start-new-commands")
         if self.server_start_new_commands:
-            self.xdg_menu = c.dictget("xdg-menu")
+            self.server_xdg_menu = c.dictget("xdg-menu", None)
         if self.start_new_commands or self.start_child_new_commands:
             if self.server_start_new_commands:
                 self.after_handshake(self.send_start_new_commands)
@@ -506,12 +507,16 @@ class UIXpraClient(ClientBaseClass):
             "sharing", "sharing-toggle", "lock", "lock-toggle",
             "start-new-commands", "client-shutdown", "webcam",
             "bandwidth-limit", "clipboard-limits",
+            "xdg-menu",
             ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:
-            log.info("unknown server setting changed: %s=%s", setting, value)
+            log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(str(value)))
             return
-        log.info("server setting changed: %s=%s", setting, value)
+        log("_process_setting_change: %s=%s", setting, value)
+        #xdg-menu is too big to log
+        if setting not in ("xdg-menu", ):
+            log.info("server setting changed: %s=%s", setting, repr_ellipsized(str(value)))
         self.server_setting_changed(setting, value)
 
     def server_setting_changed(self, setting, value):

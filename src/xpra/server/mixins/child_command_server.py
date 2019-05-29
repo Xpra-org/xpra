@@ -88,16 +88,31 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "server-commands-signals"   : COMMAND_SIGNALS,
             "server-commands-info"      : not WIN32 and not OSX,
+            "xdg-menu-update"           : POSIX and not OSX,
             }
 
-    def get_caps(self, _source):
+
+    def _get_xdg_menu_data(self):
+        if not self.start_new_commands or not POSIX or OSX:
+            return None
+        from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
+        return load_xdg_menu_data()
+
+    def get_caps(self, source):
         caps = {}
-        if self.start_new_commands and POSIX and not OSX:
-            from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-            xdg_menu = load_xdg_menu_data()
-            if xdg_menu:
+        xdg_menu = self._get_xdg_menu_data()
+        log.error("get_caps() xdg_menu_update=%s", source.xdg_menu_update)
+        if xdg_menu:
+            if source.xdg_menu_update:
+                caps["xdg-menu"] = {}
+            else:
                 caps["xdg-menu"] = xdg_menu
         return caps
+
+    def send_initial_data(self, ss, caps, send_ui, share_count):
+        xdg_menu = self._get_xdg_menu_data()
+        if ss.xdg_menu_update:
+            ss.send_setting_change("xdg-menu", xdg_menu or {})
 
 
     def get_info(self, _proto):

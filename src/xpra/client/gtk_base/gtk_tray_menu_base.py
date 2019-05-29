@@ -1565,24 +1565,32 @@ class GTKTrayMenuBase(object):
     def make_startmenuitem(self):
         start_menu_item = self.handshake_menuitem("Start", "start.png")
         start_menu_item.show()
-        def start_menu_init():
+        def update_menu_data():
             if not self.client.server_start_new_commands:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("This server does not support starting new commands")
                 return
-            if not self.client.xdg_menu:
+            if not self.client.server_xdg_menu:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("This server does not provide start menu data")
                 return
+            set_sensitive(start_menu_item, True)
             menu = self.build_start_menu()
             start_menu_item.set_submenu(menu)
+        def start_menu_init():
+            update_menu_data()
+            def on_xdg_menu_changed(setting, value):
+                log("on_xdg_menu_changed(%s, %s)", setting, repr_ellipsized(str(value)))
+                update_menu_data()
+            self.client.on_server_setting_changed("xdg-menu", on_xdg_menu_changed)
         self.client.after_handshake(start_menu_init)
         return start_menu_item
 
     def build_start_menu(self):
         menu = gtk.Menu()
         self.popup_menu_workaround(menu)
-        for category, category_props in sorted(self.client.xdg_menu.items()):
+        log("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
+        for category, category_props in sorted(self.client.server_xdg_menu.items()):
             log("build_start_menu() category: %s", category)
             #log("category_props(%s)=%s", category, category_props)
             if not isinstance(category_props, dict):

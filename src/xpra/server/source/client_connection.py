@@ -172,6 +172,7 @@ class ClientConnection(ClientConnectionClass):
         self.share = False
         self.lock = False
         self.control_commands = ()
+        self.xdg_menu_update = False
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit
         self.bandwidth_warnings = True
@@ -265,6 +266,7 @@ class ClientConnection(ClientConnectionClass):
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strlistget("control_commands")
+        self.xdg_menu_update = c.boolget("xdg-menu-update")
         bandwidth_limit = c.intget("bandwidth-limit", 0)
         server_bandwidth_limit = self.server_bandwidth_limit
         if self.server_bandwidth_limit is None:
