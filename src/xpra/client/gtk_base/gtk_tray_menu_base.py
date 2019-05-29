@@ -1583,7 +1583,7 @@ class GTKTrayMenuBase(object):
         menu = gtk.Menu()
         self.popup_menu_workaround(menu)
         for category, category_props in sorted(self.client.xdg_menu.items()):
-            log("start_menu_init() category: %s", category)
+            log("build_start_menu() category: %s", category)
             #log("category_props(%s)=%s", category, category_props)
             if not isinstance(category_props, dict):
                 continue
@@ -1597,7 +1597,7 @@ class GTKTrayMenuBase(object):
             self.popup_menu_workaround(cat_menu)
             menu.append(category_menu_item)
             for app_name, command_props in sorted(entries.items()):
-                log("start_menu_init() app_name=%s", app_name)
+                log("build_start_menu() app_name=%s", app_name)
                 app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
                 cat_menu.append(app_menu_item)
         menu.show_all()
