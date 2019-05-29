@@ -1564,8 +1564,8 @@ class GTKTrayMenuBase(object):
 
     def make_startmenuitem(self):
         start_menu_item = self.handshake_menuitem("Start", "start.png")
-
-        def start_menu_init(*args):
+        start_menu_item.show()
+        def start_menu_init():
             if not self.client.server_start_new_commands:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("This server does not support starting new commands")
@@ -1574,31 +1574,34 @@ class GTKTrayMenuBase(object):
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("This server does not provide start menu data")
                 return
-            menu = gtk.Menu()
+            menu = self.build_start_menu()
             start_menu_item.set_submenu(menu)
-            self.popup_menu_workaround(menu)
-            for category, category_props in sorted(self.client.xdg_menu.items()):
-                log("start_menu_init() category: %s", category)
-                #log("category_props(%s)=%s", category, category_props)
-                if not isinstance(category_props, dict):
-                    continue
-                entries = category_props.get(b"Entries", {})
-                if not entries:
-                    continue
-                icondata = category_props.get(b"IconData")
-                category_menu_item = self.start_menuitem(category.decode("utf-8"), icondata)
-                cat_menu = gtk.Menu()
-                category_menu_item.set_submenu(cat_menu)
-                self.popup_menu_workaround(cat_menu)
-                menu.append(category_menu_item)
-                for app_name, command_props in sorted(entries.items()):
-                    log("start_menu_init() app_name=%s", app_name)
-                    app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
-                    cat_menu.append(app_menu_item)
-            menu.show_all()
-        start_menu_item.show()
         self.client.after_handshake(start_menu_init)
         return start_menu_item
+
+    def build_start_menu(self):
+        menu = gtk.Menu()
+        self.popup_menu_workaround(menu)
+        for category, category_props in sorted(self.client.xdg_menu.items()):
+            log("start_menu_init() category: %s", category)
+            #log("category_props(%s)=%s", category, category_props)
+            if not isinstance(category_props, dict):
+                continue
+            entries = category_props.get(b"Entries", {})
+            if not entries:
+                continue
+            icondata = category_props.get(b"IconData")
+            category_menu_item = self.start_menuitem(category.decode("utf-8"), icondata)
+            cat_menu = gtk.Menu()
+            category_menu_item.set_submenu(cat_menu)
+            self.popup_menu_workaround(cat_menu)
+            menu.append(category_menu_item)
+            for app_name, command_props in sorted(entries.items()):
+                log("start_menu_init() app_name=%s", app_name)
+                app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
+                cat_menu.append(app_menu_item)
+        menu.show_all()
+        return menu
 
     def get_appimage(self, app_name, icondata=None):
         pixbuf = None
