@@ -277,7 +277,7 @@ class ChildCommandServer(StubServerMixin):
 
     def _process_command_signal(self, _proto, packet):
         pid = packet[1]
-        signame = packet[2]
+        signame = bytestostr(packet[2])
         if signame not in COMMAND_SIGNALS:
             log.warn("Warning: invalid signal received: '%s'", signame)
             return
