@@ -163,8 +163,9 @@ class ChildCommandServer(StubServerMixin):
             ss.send_setting_change("xdg-menu", xdg_menu or {})
 
     def schedule_xdg_menu_reload(self):
-        if self.xdg_menu_reload_timer:
-            return
+        xmrt = self.xdg_menu_reload_timer
+        if xmrt:
+            self.source_remove(xmrt)
         self.xdg_menu_reload_timer = self.timeout_add(MENU_RELOAD_DELAY*1000, self.xdg_menu_reload)
 
     def xdg_menu_reload(self):
