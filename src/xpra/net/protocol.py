@@ -617,7 +617,7 @@ class Protocol(object):
             log.warn(" '%s' packet is %s bytes: ", packet_type, len(main_packet))
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
             log.warn(" sizes: %s", csv(len(strtobytes(x)) for x in packet[1:]))
-            log.warn(" packet head=%s", repr_ellipsized(packet))
+            log.warn(" packet: %s", repr_ellipsized(str(packet)))
         #compress, but don't bother for small packets:
         if level>0 and len(main_packet)>min_comp_size:
             try:
