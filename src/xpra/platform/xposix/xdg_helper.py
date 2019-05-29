@@ -278,5 +278,5 @@ def main():
     return 0
 
 if __name__ == "__main__":
-    v = main()
-    sys.exit(v)
+    r = main()
+    sys.exit(r)
