@@ -101,7 +101,6 @@ class ChildCommandServer(StubServerMixin):
     def get_caps(self, source):
         caps = {}
         xdg_menu = self._get_xdg_menu_data()
-        log.error("get_caps() xdg_menu_update=%s", source.xdg_menu_update)
         if xdg_menu:
             if source.xdg_menu_update:
                 caps["xdg-menu"] = {}
