@@ -1580,12 +1580,9 @@ class GTKTrayMenuBase(object):
             for category, category_props in sorted(self.client.xdg_menu.items()):
                 log("start_menu_init() category: %s", category)
                 #log("category_props(%s)=%s", category, category_props)
-                if isinstance(category_props, dict):
-                    entries = category_props.get(b"Entries", {})
-                else:
-                    #TODO: remove this,
-                    #only useful for compatibility with early 2.5 beta:
-                    entries = category_props
+                if not isinstance(category_props, dict):
+                    continue
+                entries = category_props.get(b"Entries", {})
                 if not entries:
                     continue
                 icondata = category_props.get(b"IconData")
