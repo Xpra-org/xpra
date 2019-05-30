@@ -2026,6 +2026,10 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
         fn = x.replace("-", "_")
         ov = getattr(opts, fn)
         dv = getattr(defaults, fn)
+        if ftype==list:
+            #compare lists using their csv representation:
+            if csv(ov)==csv(dv):
+                continue
         if ov==dv:
             continue    #same as the default
         argname = "--%s=" % x
