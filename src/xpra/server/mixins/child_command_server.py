@@ -149,12 +149,13 @@ class ChildCommandServer(StubServerMixin):
 
     def get_caps(self, source):
         caps = {}
-        xdg_menu = self._get_xdg_menu_data()
-        if xdg_menu:
-            if source.xdg_menu_update:
-                caps["xdg-menu"] = {}
-            else:
-                caps["xdg-menu"] = xdg_menu
+        if source.wants_features:
+            xdg_menu = self._get_xdg_menu_data()
+            if xdg_menu:
+                if source.xdg_menu_update:
+                    caps["xdg-menu"] = {}
+                else:
+                    caps["xdg-menu"] = xdg_menu
         return caps
 
     def send_initial_data(self, ss, caps, send_ui, share_count):
