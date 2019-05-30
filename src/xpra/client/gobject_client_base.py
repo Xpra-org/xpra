@@ -8,7 +8,7 @@ import sys
 
 from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict,
-    disconnect_is_an_error, repr_ellipsized, DONE,
+    disconnect_is_an_error, repr_ellipsized, DONE, first_time,
     )
 from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
@@ -545,9 +545,10 @@ class RequestStartClient(HelloRequestClient):
         return self.server_capabilities is None
 
     def hello_request(self):
-        import traceback
-        traceback.print_stack()
-        errwrite("requesting new session, please wait")
+        if first_time("hello-request"):
+            #this can be called again if we receive a challenge,
+            #but only print this message once:
+            errwrite("requesting new session, please wait")
         self.timeout_add(5*1000, self.dots)
         return {
             "start-new-session" : self.start_new_session,
