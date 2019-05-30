@@ -97,14 +97,19 @@ class ChildCommandServer(StubServerMixin):
         self.notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
         self.notifier.setDaemon(True)
         data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share/applications:/usr/local/share/applications").split(":")
+        watched = []
         for data_dir in data_dirs:
             menu_dir = os.path.join(data_dir, "applications")
             if not os.path.exists(menu_dir):
                 continue
             wdd = self.watch_manager.add_watch(menu_dir, mask)
-            log.info("watching for applications menu changes in '%s'", menu_dir)
+            watched.append(menu_dir)
             log("notifier=%s, watch=%s", self.notifier, wdd)
         self.notifier.start()
+        if watched:
+            log.info("watching for applications menu changes in:")
+            for wd in watched:
+                log.info(" '%s'", wd)
 
 
     def cleanup(self):
