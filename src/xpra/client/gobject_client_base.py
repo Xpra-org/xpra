@@ -544,12 +544,16 @@ class RequestStartClient(HelloRequestClient):
         errwrite(".")
         return self.server_capabilities is None
 
+    def _process_connection_lost(self, packet):
+        errwrite("\n")
+        HelloRequestClient._process_connection_lost(self, packet)
+
     def hello_request(self):
         if first_time("hello-request"):
             #this can be called again if we receive a challenge,
             #but only print this message once:
             errwrite("requesting new session, please wait")
-        self.timeout_add(5*1000, self.dots)
+        self.timeout_add(1*1000, self.dots)
         return {
             "start-new-session" : self.start_new_session,
             #tells proxy servers we don't want to connect to the real / new instance:
