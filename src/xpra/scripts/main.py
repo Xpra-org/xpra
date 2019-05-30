@@ -2016,7 +2016,8 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
 
 def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
     defaults = make_defaults_struct(uid=uid, gid=gid)
-    fixup_options(defaults)
+    fdefaults = defaults.clone()
+    fixup_options(fdefaults)
     args = []
     for x, ftype in OPTION_TYPES.items():
         if x in NON_COMMAND_LINE_OPTIONS or x in CLIENT_ONLY_OPTIONS:
@@ -2026,11 +2027,12 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
         fn = x.replace("-", "_")
         ov = getattr(opts, fn)
         dv = getattr(defaults, fn)
+        fv = getattr(fdefaults, fn)
         if ftype==list:
             #compare lists using their csv representation:
-            if csv(ov)==csv(dv):
+            if csv(ov)==csv(dv) or csv(ov)==csv(fv):
                 continue
-        if ov==dv:
+        if ov in (dv, fv):
             continue    #same as the default
         argname = "--%s=" % x
         if compat:

@@ -1226,6 +1226,11 @@ class XpraConfig(object):
     def __repr__(self):
         return "XpraConfig(%s)" % self.__dict__
 
+    def clone(self):
+        c = XpraConfig()
+        c.__dict__ = dict(self.__dict__)
+        return c
+
 
 def fixup_debug_option(value):
     """ backwards compatible parsing of the debug option, which used to be a boolean """
