@@ -155,6 +155,14 @@ class ChildCommandServer(StubServerMixin):
                 if source.xdg_menu_update:
                     caps["xdg-menu"] = {}
                 else:
+                    l = len(str(xdg_menu))
+                    #arbitrary: don't use more than half
+                    #of the maximum size of the hello packet:
+                    if l>2*1024*1024:
+                        from xpra.platform.xposix.xdg_helper import remove_icons
+                        xdg_menu = remove_icons(xdg_menu)
+                        log.info("removed icons to reduce the size of the xdg menu data")
+                        log.info("size reduced from %i to %i", l, len(str(xdg_menu)))
                     caps["xdg-menu"] = xdg_menu
         return caps
 
