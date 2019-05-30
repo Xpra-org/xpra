@@ -802,7 +802,11 @@ def get_default_pulseaudio_command():
         "--load=module-x11-publish",
         "--log-level=2", "--log-target=stderr",
         ]
-    if not is_Ubuntu() or getUbuntuVersion()>(16, 4):
+    #we don't enable memfd on Ubuntu 16.04,
+    #we just don't disable it (because the option does not exist!):
+    from xpra.util import envbool
+    MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", is_Ubuntu() and getUbuntuVersion()<=(16, 4))
+    if not MEMFD:
         cmd.append("--enable-memfd=no")
     return cmd
 
