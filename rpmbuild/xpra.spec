@@ -13,16 +13,19 @@
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
 
-%define update_firewall 1
-%define run_tests 1
-%define with_python3 1
-%define with_selinux 1
+%{!?update_firewall: %define update_firewall 1}
+%{!?run_tests: %define run_tests 1}
+%{!?with_python3: %define with_python3 1}
+%{!?with_selinux: %define with_selinux 1}
 #we only enable CUDA / NVENC with 64-bit builds:
 %ifarch x86_64
-%define with_cuda 1
-%define build_args %{DEFAULT_BUILD_ARGS}
+%{!?with_cuda: %define with_cuda 1}
 %else
 %define with_cuda 0
+%endif
+%if 0%{?with_cuda}
+%define build_args %{DEFAULT_BUILD_ARGS}
+%else
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc
 %endif
 %global selinux_variants mls targeted
