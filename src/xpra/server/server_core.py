@@ -1527,10 +1527,17 @@ class ServerCore(object):
         i = str(reasons[0])
         if len(reasons)>1:
             i += " (%s)" % csv(reasons[1:])
+        proto_info = " %s" % protocol
         try:
-            proto_info = " %s" % (protocol._conn.get_info()["endpoint"],)
+            conn = protocol._conn
+            info = conn.get_info()
+            endpoint = info.get("endpoint")
+            if endpoint:
+                proto_info = " %s" % (endpoint,)
+            else:
+                proto_info = " %s" % (conn.local,)
         except (KeyError, AttributeError):
-            proto_info = " %s" % protocol
+            pass
         self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
         self._log_disconnect(protocol, " %s", i)
         self.cancel_verify_connection_accepted(protocol)
