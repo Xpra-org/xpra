@@ -272,7 +272,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                 log("claim_selection: set selection owner returned %s, owner=%#x",
                     setsel, X11Window.XGetSelectionOwner(self._selection))
                 event_mask = StructureNotifyMask
-                log("claim_selection: sending client message")
+                log("claim_selection: sending message to root window")
                 owner = X11Window.XGetSelectionOwner(self._selection)
                 self.owned = owner==self.xid
                 if not self.owned:
