@@ -584,6 +584,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                         return
                     self.cancel_incr_data_timer()
                     data = b"".join(self.incr_data_chunks)
+                    self.reset_incr_data()
                     log("got incremental data termination, total size=%i bytes", len(data))
                     self.got_local_contents(target, dtype, dformat, data)
                     return
