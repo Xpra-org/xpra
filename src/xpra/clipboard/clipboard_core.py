@@ -478,7 +478,10 @@ class ClipboardProtocolHelperCore(object):
         dtype = bytestostr(dtype)
         log("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
-        log("clipboard wire -> raw: %r -> %r", (dtype, dformat, wire_encoding, wire_data), raw_data)
+        if log.is_debug_enabled():
+            def r(x):
+                return repr_ellipsized(str(x))
+            log("clipboard wire -> raw: %s -> %s", (dtype, dformat, wire_encoding, r(wire_data)), r(raw_data))
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
     def _process_clipboard_contents_none(self, packet):
