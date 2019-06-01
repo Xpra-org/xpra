@@ -207,6 +207,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         self.local_request_counter = 0
         self.targets = ()
         self.target_data = {}
+        self.reset_incr_data()
 
     def __repr__(self):
         return  "X11ClipboardProxy(%s)" % self._selection
@@ -420,8 +421,9 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         log("got_contents%s pending=%s",
             (target, dtype, dformat, repr_ellipsized(str(data))), csv(pending))
         for requestor, prop, time in pending:
-            log("setting response %s to property %s of window %s as %s",
-                     repr_ellipsized(data), prop, self.get_wininfo(get_xwindow(requestor)), dtype)
+            if log.is_debug_enabled():
+                log("setting response %s to property %s of window %s as %s",
+                     repr_ellipsized(str(data)), prop, self.get_wininfo(get_xwindow(requestor)), dtype)
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, time)
 
 
@@ -551,11 +553,40 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         target = parts[1]           #ie: VALUE
         try:
             with xsync:
-                dtype, dformat = X11Window.GetWindowPropertyType(self.xid, event.atom)
+                dtype, dformat = X11Window.GetWindowPropertyType(self.xid, event.atom, self.incr_data_size>0)
                 dtype = bytestostr(dtype)
                 MAX_DATA_SIZE = 4*1024*1024
-                data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype, None, MAX_DATA_SIZE)
-                X11Window.XDeleteProperty(self.xid, event.atom)
+                data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype, None, MAX_DATA_SIZE, True)
+                #all the code below deals with INCRemental transfers:
+                if dtype=="INCR" and not self.incr_data_size:
+                    #start of an incremental transfer, extract the size
+                    assert dformat==32
+                    self.incr_data_size = struct.unpack("@L", data)[0]
+                    self.incr_data_chunks = []
+                    self.incr_data_type = None
+                    log("incremental clipboard data of size %s", self.incr_data_size)
+                    self.reschedule_incr_data_timer()
+                    return
+                if self.incr_data_size>0:
+                    #incremental is now in progress:
+                    if not self.incr_data_type:
+                        self.incr_data_type = dtype
+                    elif self.incr_data_type!=dtype:
+                        log.error("Error: invalid change of data type")
+                        log.error(" from %s to %s", self.incr_data_type, dtype)
+                        self.reset_incr_data()
+                        self.cancel_incr_data_timer()
+                        return
+                    if data:
+                        log("got incremental data: %i bytes", len(data))
+                        self.incr_data_chunks.append(data)
+                        self.reschedule_incr_data_timer()
+                        return
+                    self.cancel_incr_data_timer()
+                    data = b"".join(self.incr_data_chunks)
+                    log("got incremental data termination, total size=%i bytes", len(data))
+                    self.got_local_contents(target, dtype, dformat, data)
+                    return
         except PropertyError:
             log("do_property_notify() property '%s' is gone?", event.atom, exc_info=True)
             return
@@ -567,8 +598,32 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
     def got_local_contents(self, target, dtype=None, dformat=None, data=None):
         target_requests = self.local_requests.pop(target, {})
         for timer, got_contents, time in target_requests.values():
-            log("got_local_contents: calling %s%s, time=%i", got_contents, (dtype, dformat, data), time)
+            if log.is_debug_enabled():
+                log("got_local_contents: calling %s%s, time=%i",
+                    got_contents, (dtype, dformat, repr_ellipsized(str(data))), time)
             glib.source_remove(timer)
             got_contents(dtype, dformat, data)
+
+
+    def reschedule_incr_data_timer(self):
+        self.cancel_incr_data_timer()
+        self.incr_data_timer = glib.timeout_add(1*1000, self.incr_data_timeout)
+
+    def cancel_incr_data_timer(self):
+        idt = self.incr_data_timer
+        if idt:
+            self.incr_data_timer = None
+            glib.source_remove(idt)
+
+    def incr_data_timeout(self):
+        self.incr_data_timer = None
+        log.warn("Warning: incremental data timeout")
+        self.incr_data = None
+
+    def reset_incr_data(self):
+        self.incr_data_size = 0
+        self.incr_data_type = None
+        self.incr_data_chunks = None
+        self.incr_data_timer = None
 
 gobject.type_register(ClipboardProxy)

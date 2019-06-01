@@ -940,7 +940,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         self.addXSelectInput(xwindow, FocusChangeMask)
 
 
-    def XGetWindowProperty(self, Window xwindow, property, req_type=None, etype=None, int buffer_size=64*1024):
+    def XGetWindowProperty(self, Window xwindow, property, req_type=None, etype=None, int buffer_size=64*1024, delete=False, incr=False):
         # NB: Accepts req_type == 0 for AnyPropertyType
         # "64k is enough for anybody"
         # (Except, I've found window icons that are strictly larger)
@@ -963,7 +963,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
                                      # This argument has to be divided by 4.  Thus
                                      # speaks the spec.
                                      buffer_size // 4,
-                                     False,
+                                     delete,
                                      xreq_type, &xactual_type,
                                      &actual_format, &nitems, &bytes_after, &prop)
         if status != Success:
@@ -974,7 +974,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
             raise BadPropertyType("expected %s but got %s" % (req_type, self.XGetAtomName(xactual_type)))
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
-        if bytes_after:
+        if bytes_after and not incr:
             raise PropertyOverflow("reserved %i bytes for %s buffer, but data is bigger by %i bytes!" % (buffer_size, etype, bytes_after))
         # actual_format is in (8, 16, 32), and is the number of bits in a logical
         # element.  However, this doesn't mean that each element is stored in that
@@ -996,7 +996,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         return data
 
 
-    def GetWindowPropertyType(self, Window xwindow, property):
+    def GetWindowPropertyType(self, Window xwindow, property, incr=False):
         #as above, but for any property type
         #and returns the type found
         self.context_check()
@@ -1023,7 +1023,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
             raise BadPropertyType("None type")
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
-        if bytes_after:
+        if bytes_after and not incr:
             raise BadPropertyType("incomplete data: %i bytes after" % bytes_after)
         assert actual_format in (8, 16, 32)
         XFree(prop)
