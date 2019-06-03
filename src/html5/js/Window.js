@@ -140,7 +140,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		jQuery(this.div).draggable({ cancel: "canvas" });
 		jQuery(this.div).on("dragstart",function(ev,ui){
 			client.mouse_grabbed = true;
-			set_focus_cb(me);
+			me.set_focus_cb(me);
 		});
 		jQuery(this.div).on("dragstop",function(ev,ui){
 			client.mouse_grabbed = false;
@@ -156,7 +156,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		});
 		jQuery(this.div).on("resizestop",function(ev,ui){
 		  	me.handle_resized(ui);
-		  	set_focus_cb(me);
+		  	me.set_focus_cb(me);
 			client.mouse_grabbed = false;
 		});
 		this.d_header = '#head' + String(wid);
@@ -187,7 +187,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
 		// assign some interesting callbacks
 		jQuery(this.d_header).click(function() {
-			set_focus_cb(me);
+			me.set_focus_cb(me);
 		});
 	}
 
