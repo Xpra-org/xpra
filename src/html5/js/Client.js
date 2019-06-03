@@ -1105,9 +1105,13 @@ XpraClient.prototype._make_hello_base = function() {
 
 XpraClient.prototype._make_hello = function() {
 	var selections = ["CLIPBOARD"];
-	if (!navigator.clipboard) {
+	if (!navigator.clipboard || !navigator.clipboard.readText || !navigator.clipboard.writeText) {
 		//we'll need the primary contents to try to stay up to date
 		selections = ["CLIPBOARD", "PRIMARY"];
+		this.log("legacy clipboard");
+	}
+	else {
+		this.log("using new navigator.clipboard");
 	}
 	this.desktop_width = this.container.clientWidth;
 	this.desktop_height = this.container.clientHeight;
@@ -2930,7 +2934,7 @@ XpraClient.prototype.send_clipboard_token = function(data) {
 		return;
 	}
 	this.debug("clipboard", "sending clipboard token with data:", data);
-	var claim = Boolean(navigator.clipboard);
+	var claim = Boolean(navigator.clipboard && navigator.clipboard.readText && navigator.clipboard.writeText);
 	var greedy = true;
 	var synchronous = true;
 	var packet;
@@ -2976,7 +2980,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 			ctx.clipboard_datatype = packet[4];
 			ctx.clipboard_buffer = data;
 			ctx.clipboard_pending = true;
-			if (navigator.clipboard) {
+			if (navigator.clipboard && navigator.clipboard.writeText) {
 				if (is_text) {
 					navigator.clipboard.writeText(data).then(function() {
 						ctx.debug("clipboard", "writeText succeeded")
@@ -2990,7 +2994,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 		//keep track of the latest server buffer
 		ctx.clipboard_server_buffers[selection] = data;
 	}
-	if (navigator.clipboard && selection=="CLIPBOARD") {
+	if (navigator.clipboard && navigator.clipboard.writeText && selection=="CLIPBOARD") {
 		//always claim the CLIPBOARD again,
 		//so we will be asked for contents
 		//and we can decide if we have the most up-to-date or not
@@ -3013,7 +3017,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 		selection = packet[2];
 		//target = packet[3];
 
-	if (navigator.clipboard) {
+	if (navigator.clipboard && navigator.clipboard.readText) {
 		navigator.clipboard.readText().then(text => {
 			ctx.cdebug("clipboard", "clipboard request via readText() text=", text);
 			if (selection=="CLIPBOARD" && text==ctx.clipboard_server_buffers["PRIMARY"]) {

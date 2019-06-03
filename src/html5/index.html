@@ -706,7 +706,7 @@
 				//clipboard hooks:
 				pasteboard.on('paste', function (e) {
 					var paste_data;
-					if (navigator.clipboard) {
+					if (navigator.clipboard && navigator.clipboard.readText) {
 						navigator.clipboard.readText().then(text => {
 							cdebug("clipboard", "paste event, text=", text);
 							client.send_clipboard_token(unescape(encodeURIComponent(text)));
