@@ -1104,6 +1104,11 @@ XpraClient.prototype._make_hello_base = function() {
 }
 
 XpraClient.prototype._make_hello = function() {
+	var selections = ["CLIPBOARD"];
+	if (!navigator.clipboard) {
+		//we'll need the primary contents to try to stay up to date
+		selections = ["CLIPBOARD", "PRIMARY"];
+	}
 	this.desktop_width = this.container.clientWidth;
 	this.desktop_height = this.container.clientHeight;
 	this._update_capabilities({
@@ -1190,7 +1195,7 @@ XpraClient.prototype._make_hello = function() {
 		"clipboard"					: this.clipboard_enabled,
 		"clipboard.want_targets"	: true,
 		"clipboard.greedy"			: true,
-		"clipboard.selections"		: ["CLIPBOARD", "PRIMARY"],
+		"clipboard.selections"		: selections,
 		"notifications"				: true,
 		"notifications.close"		: true,
 		"notifications.actions"		: true,
