@@ -330,10 +330,10 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         requestor = event.requestor
         assert requestor
         wininfo = self.get_wininfo(get_xwindow(requestor))
-        log("clipboard request for %s from window %#x: %s",
-            self._selection, get_xwindow(requestor), wininfo)
         prop = event.property
         target = str(event.target)
+        log("clipboard request for %s from window %#x: %s, target=%s, prop=%s",
+            self._selection, get_xwindow(requestor), wininfo, target, prop)
         def nodata():
             self.set_selection_response(requestor, target, prop, "STRING", 8, b"", time=event.time)
         if not self._enabled:
@@ -384,7 +384,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                 return
 
         target_data = self.target_data.get(target)
-        if target_data:
+        if target_data and not self._have_token:
             #we have it already
             dtype, dformat, data = target_data
             dtype = bytestostr(dtype)
