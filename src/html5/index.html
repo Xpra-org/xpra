@@ -706,9 +706,21 @@
 			    var pasteboard = $('#pasteboard');
 			    //clipboard hooks:
 				pasteboard.on('paste', function (e) {
-					var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
-					cdebug("clipboard", "paste event, data=", paste_data);
-			        client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
+					var paste_data;
+					if (navigator.clipboard) {
+						navigator.clipboard.readText().then(text => {
+							cdebug("clipboard", "paste event, text=", text);
+					        client.send_clipboard_token(unescape(encodeURIComponent(text)));
+						})
+						.catch(err => {
+							cdebug("clipboard", "paste event failed:", err);
+						});
+					}
+					else {
+						paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
+						cdebug("clipboard", "paste event, data=", paste_data);
+				        client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
+					}
 			        return false;
 				});
 				pasteboard.on('copy', function (e) {
@@ -728,21 +740,31 @@
 			        return true;
 				});
 				$('#screen').on('click', function (e) {
-					//clog("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
+					clog("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
 					if (client.clipboard_pending) {
 				        var clipboard_buffer = client.get_clipboard_buffer();
-				        pasteboard.text(clipboard_buffer);
-				        pasteboard.select();
-						cdebug("clipboard", "click event, with pending clipboard buffer=", clipboard_buffer);
+				        var clipboard_datatype = (client.get_clipboard_datatype() || "").toLowerCase();
+						var is_text = clipboard_datatype.indexOf("text")>=0 || clipboard_datatype.indexOf("string")>=0;
+				        if (is_text) {
+					        pasteboard.text(clipboard_buffer);
+				        }
+				        else {
+					        pasteboard.text("");
+				        }
+			        	pasteboard.select();
+						cdebug("clipboard", "click event, with pending clipboard datatype=", clipboard_datatype, ", buffer=", clipboard_buffer);
 						//for IE:
 						var success = true;
 						if (window.clipboardData && window.clipboardData.setData) {
-					        clipboardData.setData("Text", this.clipboard_buffer);
+					        clipboardData.setData(clipboard_datatype, clipboard_buffer);
 						}
-					    else {
+					    else if (is_text) {
 							success = document.execCommand('copy');
 							//clog("copy success=", success);
 						}
+					    else {
+					    	//probably no point in trying again?
+					    }
 						if (success) {
 					        client.clipboard_pending = false;
 						}

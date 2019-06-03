@@ -121,6 +121,7 @@ XpraClient.prototype.init_state = function(container) {
 	this.wheel_delta_y = 0;
 	this.mouse_grabbed = false;
 	// clipboard
+	this.clipboard_datatype = null;
 	this.clipboard_buffer = "";
 	this.clipboard_pending = false;
 	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
@@ -2914,6 +2915,9 @@ XpraClient.prototype.push_audio_buffer = function(buf) {
 XpraClient.prototype.get_clipboard_buffer = function() {
 	return this.clipboard_buffer;
 }
+XpraClient.prototype.get_clipboard_datatype = function() {
+	return this.clipboard_datatype;
+}
 
 XpraClient.prototype.send_clipboard_token = function(data) {
 	if (!this.clipboard_enabled) {
@@ -2928,20 +2932,38 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 	if (!ctx.clipboard_enabled) {
 		return;
 	}
+	var target = packet[3];
+	var is_valid_target = ctx.clipboard_targets.includes(target);
 	ctx.debug("clipboard", "clipboard token:", packet);
+	ctx.debug("target=", target, "is valid:", is_valid_target);
 	// we don't actually set the clipboard here,
 	// because we can't (the browser security won't let us)
 	// we just record the contents and actually set the clipboard
 	// when we get a click, control-C or control-X event
-	if(ctx.clipboard_targets.includes(packet[3])) {
+	if (is_valid_target) {
 		var data = packet[7];
-		try {
-			data = Utilities.Uint8ToString(data);
+		var datatype = packet[4].toLowerCase();
+		var is_text = datatype.indexOf("text")>=0 || datatype.indexOf("string")>=0;
+		if (is_text) {
+			try {
+				data = Utilities.Uint8ToString(data);
+			}
+			catch (e) { }
 		}
-		catch (e) { }
 		if (ctx.clipboard_buffer!=data) {
+			ctx.clipboard_datatype = packet[4];
 			ctx.clipboard_buffer = data;
 			ctx.clipboard_pending = true;
+			if (navigator.clipboard) {
+				if (is_text) {
+					navigator.clipboard.writeText(data).then(function() {
+						ctx.debug("clipboard", "writeText succeeded")
+						ctx.clipboard_pending = false;
+					}, function() {
+						ctx.debug("clipboard", "writeText failed")
+					});
+				}
+			}
 		}
 	}
 }
