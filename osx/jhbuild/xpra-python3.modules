@@ -66,9 +66,9 @@
 
 	<distutils id="python3-zeroconf" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/bf/e3/acc6e2c2938428afa2450143fc4d3953ec60cb4d859db3a58f03d149ef04/zeroconf-0.19.1.tar.gz"
-			hash="sha256:434eab8da9525ae725d6842aae7e59d9ec6580bdc5ae84f3c225240bc6797f7a"
-			version="0.19.1"/>
+			module="/packages/1c/90/551d561824e0bb53ca190debe71b74a1034a3ad23471f2e47553e0730e8c/zeroconf-0.22.0.tar.gz"
+			hash="sha256:fe66582c7b3ecc229ea4555b6d9da9bc26fc70134811e980b4fbd033e472b825"
+			version="0.22"/>
 		<dependencies>
 			<dep package="python3-enum-compat"/>
 		</dependencies>
