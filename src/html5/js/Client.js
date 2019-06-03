@@ -86,8 +86,8 @@ XpraClient.prototype.init_state = function(container) {
 	this.desktop_width = 0;
 	this.desktop_height = 0;
 	this.server_remote_logging = false;
-    this.server_start_time = -1;
-    this.client_start_time = new Date();
+	this.server_start_time = -1;
+	this.client_start_time = new Date();
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
@@ -146,21 +146,21 @@ XpraClient.prototype.init_state = function(container) {
 	this.client_ping_latency = 0;
 	this.server_load = null;
 	this.server_ok = false;
-    //packet handling
-    this.queue_draw_packets = false;
-    this.dQ = [];
-    this.dQ_interval_id = null;
-    this.process_interval = 4;
+	//packet handling
+	this.queue_draw_packets = false;
+	this.dQ = [];
+	this.dQ_interval_id = null;
+	this.process_interval = 4;
 
-    this.server_display = "";
-    this.server_platform = "";
-    this.server_resize_exact = false;
-    this.server_screen_sizes = [];
-    this.server_is_desktop = false;
-    this.server_is_shadow = false;
-    this.server_readonly = false;
+	this.server_display = "";
+	this.server_platform = "";
+	this.server_resize_exact = false;
+	this.server_screen_sizes = [];
+	this.server_is_desktop = false;
+	this.server_is_shadow = false;
+	this.server_readonly = false;
 
-    this.server_connection_data = false;
+	this.server_connection_data = false;
 
 	this.xdg_menu = null;
 	// a list of our windows
@@ -324,6 +324,7 @@ XpraClient.prototype.init_packet_handlers = function() {
 		'clipboard-request': this._process_clipboard_request,
 		'send-file': this._process_send_file,
 		'open-url': this._process_open_url,
+		'setting-change': this._process_setting_change,
 	};
 }
 
@@ -423,8 +424,8 @@ XpraClient.prototype.request_refresh = function(wid) {
 	this.send([
 		"buffer-refresh", wid, 0, 100,
 		{
-			"refresh-now"    : true,
-			"batch"          : {"reset" : true},
+			"refresh-now"	: true,
+			"batch"		  : {"reset" : true},
 		},
 		{},	//no client_properties
 		])
@@ -999,13 +1000,13 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	this.clog("hello capabilities", this.capabilities);
 	// verify:
 	for (var key in this.capabilities) {
-	    var value = this.capabilities[key];
-	    if(key==null) {
-	    	throw new Error("invalid null key in hello packet data");
-	    }
-	    else if(value==null) {
-	    	throw new Error("invalid null value for key "+key+" in hello packet data");
-	    }
+		var value = this.capabilities[key];
+		if(key==null) {
+			throw new Error("invalid null key in hello packet data");
+		}
+		else if(value==null) {
+			throw new Error("invalid null value for key "+key+" in hello packet data");
+		}
 	}
 	// send the packet
 	this.send(["hello", this.capabilities]);
@@ -1044,7 +1045,9 @@ XpraClient.prototype._make_hello_base = function() {
 		"steal"						: this.steal,
 		"client_type"				: "HTML5",
 		"encoding.generic" 			: true,
-		"websocket.multi-packet"    : true,
+		"websocket.multi-packet"	: true,
+		"xdg-menu-update"			: true,
+		"setting-change"			: true,
 		"username" 					: this.username,
 		"uuid"						: this.uuid,
 		"argv" 						: [window.location.href],
@@ -1105,6 +1108,9 @@ XpraClient.prototype._make_hello_base = function() {
 
 XpraClient.prototype._make_hello = function() {
 	var selections = ["CLIPBOARD"];
+	this.log("navigator.clipboard=", navigator.clipboard);
+	this.log("navigator.clipboard.readText=", navigator.clipboard.readText);
+	this.log("navigator.clipboard.writeText=", navigator.clipboard.writeText);
 	if (!navigator.clipboard || !navigator.clipboard.readText || !navigator.clipboard.writeText) {
 		//we'll need the primary contents to try to stay up to date
 		selections = ["CLIPBOARD", "PRIMARY"];
@@ -1123,15 +1129,15 @@ XpraClient.prototype._make_hello = function() {
 		"notify-startup-complete"	: true,
 		"generic-rgb-encodings"		: true,
 		"window.raise"				: true,
-        "window.initiate-moveresize": true,
-        "screen-resize-bigger"		: false,
-        "metadata.supported"		: [
-        								"fullscreen", "maximized", "above", "below",
-        								//"set-initial-position", "group-leader",
-        								"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
-        								"decorations", "override-redirect", "tray", "modal", "opacity",
-        								//"shadow", "desktop",
-        								],
+		"window.initiate-moveresize": true,
+		"screen-resize-bigger"		: false,
+		"metadata.supported"		: [
+										"fullscreen", "maximized", "above", "below",
+										//"set-initial-position", "group-leader",
+										"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
+										"decorations", "override-redirect", "tray", "modal", "opacity",
+										//"shadow", "desktop",
+										],
 		"encodings"					: this._get_encodings(),
 		"raw_window_icons"			: true,
 		"encoding.icons.max_size"	: [30, 30],
@@ -1367,19 +1373,19 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	var apx = Math.abs(px);
 	var apy = Math.abs(py);
 	if (this.server_precise_wheel) {
-        if (apx>0) {
-    		var btn_x = (px>=0) ? 6 : 7;
-            var xdist = Math.round(px*1000/120);
-            this.send(["wheel-motion", wid, btn_x, -xdist,
-            	[x, y], modifiers, buttons]);
-        }
-        if (apy>0) {
-    		var btn_y = (py>=0) ? 5 : 4;
-            var ydist = Math.round(py*1000/120);
-            this.send(["wheel-motion", wid, btn_y, -ydist,
-                [x, y], modifiers, buttons]);
-        }
-        return;
+		if (apx>0) {
+			var btn_x = (px>=0) ? 6 : 7;
+			var xdist = Math.round(px*1000/120);
+			this.send(["wheel-motion", wid, btn_x, -xdist,
+				[x, y], modifiers, buttons]);
+		}
+		if (apy>0) {
+			var btn_y = (py>=0) ? 5 : 4;
+			var ydist = Math.round(py*1000/120);
+			this.send(["wheel-motion", wid, btn_y, -ydist,
+				[x, y], modifiers, buttons]);
+		}
+		return;
 	}
 	//generate a single event if we can, or add to accumulators:
 	if (apx>=40 && apx<=160) {
@@ -1580,8 +1586,8 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx.hello_timer = null;
 	}
 	var hello = packet[1];
-    ctx.server_display = hello["display"] || "";
-    ctx.server_platform = hello["platform"] || "";
+	ctx.server_display = hello["display"] || "";
+	ctx.server_platform = hello["platform"] || "";
 	ctx.server_remote_logging = hello["remote-logging.multi-line"];
 	if(ctx.server_remote_logging && ctx.remote_logging) {
 		//hook remote logging:
@@ -1708,22 +1714,22 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		}
 	}
 	ctx.xdg_menu = hello["xdg-menu"];
-	if (ctx.xdg_menu) {
+	if (ctx.xdg_menu && ctx.xdg_menu.length>0) {
 		ctx.process_xdg_menu();
 	}
 
 
-    ctx.server_is_desktop = Boolean(hello["desktop"]);
-    ctx.server_is_shadow = Boolean(hello["shadow"]);
-    ctx.server_readonly = Boolean(hello["readonly"]);
-    if (ctx.server_is_desktop || ctx.server_is_shadow) {
-    	jQuery("body").addClass("desktop");
-    }
-    ctx.server_resize_exact = hello["resize_exact"] || false;
-    ctx.server_screen_sizes = hello["screen-sizes"] || [];
-    ctx.clog("server screen sizes:", ctx.server_screen_sizes)
+	ctx.server_is_desktop = Boolean(hello["desktop"]);
+	ctx.server_is_shadow = Boolean(hello["shadow"]);
+	ctx.server_readonly = Boolean(hello["readonly"]);
+	if (ctx.server_is_desktop || ctx.server_is_shadow) {
+		jQuery("body").addClass("desktop");
+	}
+	ctx.server_resize_exact = hello["resize_exact"] || false;
+	ctx.server_screen_sizes = hello["screen-sizes"] || [];
+	ctx.clog("server screen sizes:", ctx.server_screen_sizes)
 
-    ctx.server_precise_wheel = hello["wheel.precise"] || false;
+	ctx.server_precise_wheel = hello["wheel.precise"] || false;
 
 	ctx.remote_open_files = Boolean(hello["open-files"]);
 	ctx.remote_file_transfer = Boolean(hello["file-transfer"]);
@@ -1760,7 +1766,11 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 }
 
 XpraClient.prototype.process_xdg_menu = function() {
+	this.log("process_xdg_menu()");
 	var key;
+	//remove current menu:
+	$('#startmenu li').remove();
+	var startmenu = document.getElementById("startmenu");
 	for(key in this.xdg_menu){
 		var category = this.xdg_menu[key];
 		var li = document.createElement("li");
@@ -1793,7 +1803,7 @@ XpraClient.prototype.process_xdg_menu = function() {
 			var a2 = document.createElement("a");
 
 			var name = entry.Name;
-    	    name = Utilities.trimString(name,15);
+			name = Utilities.trimString(name,15);
 			var command = entry.Exec.replace(/%[uUfF]/g,"");
 
 			var divLeft = document.createElement("div");
@@ -1825,10 +1835,21 @@ XpraClient.prototype.process_xdg_menu = function() {
 			ul.appendChild(li2);
 		}
 		li.appendChild(ul);
-		document.getElementById("startmenu").appendChild(li);
+		startmenu.appendChild(li);
 	}
 }
 
+
+XpraClient.prototype._process_setting_change = function(packet, ctx) {
+	var setting = packet[1],
+		value = packet[2];
+	if (setting=="xdg-menu") {
+		ctx.xdg_menu = value;
+		if (ctx.xdg_menu) {
+			ctx.process_xdg_menu();
+		}
+	}
+}
 
 XpraClient.prototype.xdg_image = function(icon_data, icon_type) {
 	var img = new Image();
@@ -1873,25 +1894,25 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 	var digest = packet[3];
 	var server_salt = packet[1];
 	var client_salt = null;
-    var salt_digest = packet[4] || "xor";
-    var l = server_salt.length;
-    if (salt_digest=="xor") {
-    	//don't use xor over unencrypted connections unless explicitly allowed:
-    	if (digest == "xor") {
-    		if((!ctx.ssl) && (!ctx.encryption) && (!ctx.insecure) && (ctx.host!="localhost") && (ctx.host!="127.0.0.1")) {
-    			ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption with "+ctx.host);
-    			return;
-    		}
-    	}
-    	if (l<16 || l>256) {
-    		ctx.callback_close("invalid server salt length for xor digest:"+l);
-    		return;
-    	}
-    }
-    else {
-        //other digest, 32 random bytes is enough:
-    	l = 32;
-    }
+	var salt_digest = packet[4] || "xor";
+	var l = server_salt.length;
+	if (salt_digest=="xor") {
+		//don't use xor over unencrypted connections unless explicitly allowed:
+		if (digest == "xor") {
+			if((!ctx.ssl) && (!ctx.encryption) && (!ctx.insecure) && (ctx.host!="localhost") && (ctx.host!="127.0.0.1")) {
+				ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption with "+ctx.host);
+				return;
+			}
+		}
+		if (l<16 || l>256) {
+			ctx.callback_close("invalid server salt length for xor digest:"+l);
+			return;
+		}
+	}
+	else {
+		//other digest, 32 random bytes is enough:
+		l = 32;
+	}
 	client_salt = Utilities.getSalt(l);
 	ctx.clog("challenge using salt digest", salt_digest);
 	var salt = ctx._gendigest(salt_digest, client_salt, server_salt);
@@ -1965,7 +1986,7 @@ XpraClient.prototype._process_ping_echo = function(packet, ctx) {
 		l2 = packet[3],
 		l3 = packet[4];
 	ctx.client_ping_latency = packet[5];
-    ctx.server_ping_latency = Math.ceil(Utilities.monotonicTime())-ctx.last_ping_echoed_time;
+	ctx.server_ping_latency = Math.ceil(Utilities.monotonicTime())-ctx.last_ping_echoed_time;
 	ctx.server_load = [l1/1000.0, l2/1000.0, l3/1000.0];
 	// make sure server goes OK immediately instead of waiting for next timeout
 	ctx._check_server_echo(0);
@@ -1988,8 +2009,8 @@ XpraClient.prototype.start_info_timer = function() {
 }
 XpraClient.prototype.send_info_request = function() {
 	if (!this.info_request_pending) {
-        this.send(["info-request", [this.uuid], [], []]);
-        this.info_request_pending = true;
+		this.send(["info-request", [this.uuid], [], []]);
+		this.info_request_pending = true;
 	}
 }
 XpraClient.prototype._process_info_response = function(packet, ctx) {
@@ -2014,10 +2035,10 @@ XpraClient.prototype.stop_info_timer = function() {
  * System Tray forwarding
  */
 XpraClient.prototype._process_new_tray = function(packet, ctx) {
-    var wid = packet[1],
-    	w = packet[2],
-    	h = packet[3],
-        metadata = packet[4];
+	var wid = packet[1],
+		w = packet[2],
+		h = packet[3],
+		metadata = packet[4];
 	var mydiv = document.createElement("div");
 	mydiv.id = String(wid);
 	var mycanvas = document.createElement("canvas");
@@ -2035,8 +2056,8 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 	float_tray.appendChild(mydiv);
 	var x = 0;
 	var y = 0;
-    w = float_menu_item_size;
-    h = float_menu_item_size;
+	w = float_menu_item_size;
+	h = float_menu_item_size;
 
 	mycanvas.width = w;
 	mycanvas.height = h;
@@ -2081,7 +2102,7 @@ XpraClient.prototype.reconfigure_all_trays = function() {
 	for (var twid in this.id_to_window) {
 		var twin = this.id_to_window[twid];
 		if (twin && twin.tray) {
-		    float_menu_width = float_menu_width + float_menu_item_size;
+			float_menu_width = float_menu_width + float_menu_item_size;
 			this.send_tray_configure(twid);
 		}
 	}
@@ -2206,15 +2227,15 @@ XpraClient.prototype._process_window_metadata = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_initiate_moveresize = function(packet, ctx) {
-    var wid = packet[1],
-    	win = ctx.id_to_window[wid];
+	var wid = packet[1],
+		win = ctx.id_to_window[wid];
 	if (win!=null) {
 		var x_root = packet[2],
 			y_root = packet[3],
 			direction = packet[4],
 			button = packet[5],
 			source_indication = packet[6];
-        win.initiate_moveresize(ctx.mousedown_event, x_root, y_root, direction, button, source_indication)
+		win.initiate_moveresize(ctx.mousedown_event, x_root, y_root, direction, button, source_indication)
 	}
 }
 
@@ -2416,16 +2437,16 @@ XpraClient.prototype._process_window_icon = function(packet, ctx) {
  * Window Painting
  */
 XpraClient.prototype._process_draw = function(packet, ctx) {
-    if(ctx.queue_draw_packets){
-        if (ctx.dQ_interval_id === null) {
-            ctx.dQ_interval_id = setInterval(function(){
-                ctx._process_draw_queue(null, ctx);
-            }, ctx.process_interval);
-        }
-        ctx.dQ[ctx.dQ.length] = packet;
-    } else {
-        ctx._process_draw_queue(packet, ctx);
-    }
+	if(ctx.queue_draw_packets){
+		if (ctx.dQ_interval_id === null) {
+			ctx.dQ_interval_id = setInterval(function(){
+				ctx._process_draw_queue(null, ctx);
+			}, ctx.process_interval);
+		}
+		ctx.dQ[ctx.dQ.length] = packet;
+	} else {
+		ctx._process_draw_queue(packet, ctx);
+	}
 }
 
 XpraClient.prototype._process_eos = function(packet, ctx) {
@@ -2467,25 +2488,25 @@ XpraClient.prototype.request_redraw = function(win) {
 }
 
 XpraClient.prototype._process_draw_queue = function(packet, ctx){
-    if(!packet && ctx.queue_draw_packets){
-        packet = ctx.dQ.shift();
-    }
-    if(!packet){
-        //no valid draw packet, likely handle errors for that here
-        return;
-    }
-    var ptype = packet[0],
-    	wid = packet[1];
+	if(!packet && ctx.queue_draw_packets){
+		packet = ctx.dQ.shift();
+	}
+	if(!packet){
+		//no valid draw packet, likely handle errors for that here
+		return;
+	}
+	var ptype = packet[0],
+		wid = packet[1];
 	var win = ctx.id_to_window[wid];
-    if (ptype=="eos") {
+	if (ptype=="eos") {
 		ctx.debug("draw", "eos for window", wid);
-    	if (win) {
-    		win.eos();
-    	}
-    	return;
-    }
+		if (win) {
+			win.eos();
+		}
+		return;
+	}
 
-    var start = Utilities.monotonicTime(),
+	var start = Utilities.monotonicTime(),
 		x = packet[2],
 		y = packet[3],
 		width = packet[4],
@@ -3120,21 +3141,21 @@ XpraClient.prototype.start_command = function(name, command, ignore) {
 }
 
 XpraClient.prototype._process_open_url = function(packet, ctx) {
-    var url = packet[1];
-    //var send_id = packet[2];
-    if (!ctx.open_url) {
-    	ctx.cwarn("Warning: received a request to open URL '%s'", url);
-    	ctx.clog(" but opening of URLs is disabled");
-        return
-    }
-    ctx.clog("opening url:", url);
-    var new_window = window.open(url, '_blank');
-    if(!new_window || new_window.closed || typeof new_window.closed=='undefined')
-    {
+	var url = packet[1];
+	//var send_id = packet[2];
+	if (!ctx.open_url) {
+		ctx.cwarn("Warning: received a request to open URL '%s'", url);
+		ctx.clog(" but opening of URLs is disabled");
+		return
+	}
+	ctx.clog("opening url:", url);
+	var new_window = window.open(url, '_blank');
+	if(!new_window || new_window.closed || typeof new_window.closed=='undefined')
+	{
 		//Popup blocked, display link in notification
 		var summary = "Open URL";
 		var body = "<a href=\""+url+"\" target=\"_blank\">"+url+"</a>";
 		var timeout = 10;
 		window.doNotification("", 0, summary, body, timeout, null, null, null, null, null);
-    }
+	}
 }
