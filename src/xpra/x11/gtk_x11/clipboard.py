@@ -455,21 +455,21 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             if not self._greedy_client:
                 send_token_with_targets()
                 return
-            #find the preferred text target:
-            text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
-            if not text_targets:
+            #find the preferred targets:
+            targets = self.choose_targets(targets)
+            if not targets:
                 send_token_with_targets()
                 return
-            text_target = text_targets[0]
+            target = targets[0]
             def got_text_target(dtype, dformat, data):
                 log("got_text_target(%s, %s, %s)", dtype, dformat, repr_ellipsized(str(data)))
                 if not (dtype and dformat and data):
                     send_token_with_targets()
                     return
-                token_data = (targets, (text_target, dtype, dformat, data))
+                token_data = (targets, (target, dtype, dformat, data))
                 self._have_token = False
                 self.emit("send-clipboard-token", token_data)
-            self.get_contents(text_target, got_text_target)
+            self.get_contents(target, got_text_target)
         if self.targets:
             with_targets(self.targets)
             return
@@ -480,6 +480,10 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             with_targets(self.targets)
         self.get_contents("TARGETS", got_targets)
 
+    def choose_targets(self, targets):
+        #if "image/png" in targets:
+        #    return ("image/png",)
+        return tuple(x for x in targets if x in TEXT_TARGETS)
 
     def do_selection_clear_event(self, event):
         log("do_xpra_selection_clear(%s) was owned=%s", event, self.owned)
@@ -620,18 +624,19 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             if not has_alpha and IMAGE_OVERLAY:
                 img = img.convert("RGBA")
             w, h = img.size
-            from PIL import Image   #@UnresolvedImport
-            overlay = Image.open(IMAGE_OVERLAY)
-            if overlay.mode!="RGBA":
-                log.warn("Warning: cannot use overlay image '%s'", IMAGE_OVERLAY)
-                log.warn(" invalid mode '%s'", overlay.mode)
-            else:
-                log("adding clipboard image overlay to %s", dtype)
-                overlay_resized = overlay.resize((w, h), Image.ANTIALIAS)
-                composite = Image.alpha_composite(img, overlay_resized)
-                if not has_alpha and img.mode=="RGBA":
-                    composite = composite.convert("RGB")
-                img = composite
+            if IMAGE_OVERLAY:
+                from PIL import Image   #@UnresolvedImport
+                overlay = Image.open(IMAGE_OVERLAY)
+                if overlay.mode!="RGBA":
+                    log.warn("Warning: cannot use overlay image '%s'", IMAGE_OVERLAY)
+                    log.warn(" invalid mode '%s'", overlay.mode)
+                else:
+                    log("adding clipboard image overlay to %s", dtype)
+                    overlay_resized = overlay.resize((w, h), Image.ANTIALIAS)
+                    composite = Image.alpha_composite(img, overlay_resized)
+                    if not has_alpha and img.mode=="RGBA":
+                        composite = composite.convert("RGB")
+                    img = composite
             if IMAGE_STAMP:
                 log("adding clipboard image stamp to %s", dtype)
                 from datetime import datetime
