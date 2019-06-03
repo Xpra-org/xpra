@@ -123,6 +123,7 @@ XpraClient.prototype.init_state = function(container) {
 	// clipboard
 	this.clipboard_datatype = null;
 	this.clipboard_buffer = "";
+	this.clipboard_server_buffers = {};
 	this.clipboard_pending = false;
 	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
 	// printing / file-transfer:
@@ -2923,8 +2924,21 @@ XpraClient.prototype.send_clipboard_token = function(data) {
 	if (!this.clipboard_enabled) {
 		return;
 	}
-	this.debug("keyboard", "sending clipboard token with data:", data);
-	var packet = ["clipboard-token", "CLIPBOARD", [], "UTF8_STRING", "UTF8_STRING", 8, "bytes", data, false, true, true];
+	this.debug("clipboard", "sending clipboard token with data:", data);
+	var claim = Boolean(navigator.clipboard);
+	var greedy = true;
+	var synchronous = true;
+	var packet;
+	if (data) {
+		packet = ["clipboard-token", "CLIPBOARD", [],
+			"UTF8_STRING", "UTF8_STRING", 8, "bytes", data,
+			claim, greedy, synchronous];
+	}
+	else {
+		packet = ["clipboard-token", "CLIPBOARD", [],
+			"", "", 8, "bytes", "",
+			claim, greedy, synchronous];
+	}
 	this.send(packet);
 }
 
@@ -2932,14 +2946,17 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 	if (!ctx.clipboard_enabled) {
 		return;
 	}
+	var selection = packet[1];
 	var target = packet[3];
 	var is_valid_target = ctx.clipboard_targets.includes(target);
 	ctx.debug("clipboard", "clipboard token:", packet);
 	ctx.debug("target=", target, "is valid:", is_valid_target);
-	// we don't actually set the clipboard here,
+	// if we have navigator.clipboard, we just set the clipboard value,
+	// otherwise we don't actually set anything here,
 	// because we can't (the browser security won't let us)
-	// we just record the contents and actually set the clipboard
+	// we just record the value and actually set the clipboard
 	// when we get a click, control-C or control-X event
+	// (when access to the clipboard is allowed)
 	if (is_valid_target) {
 		var data = packet[7];
 		var datatype = packet[4].toLowerCase();
@@ -2965,6 +2982,14 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 				}
 			}
 		}
+		//keep track of the latest server buffer
+		ctx.clipboard_server_buffers[selection] = data;
+	}
+	if (navigator.clipboard && selection=="CLIPBOARD") {
+		//always claim the CLIPBOARD again,
+		//so we will be asked for contents
+		//and we can decide if we have the most up-to-date or not
+		ctx.send_clipboard_token();
 	}
 }
 
@@ -2977,21 +3002,42 @@ XpraClient.prototype._process_set_clipboard_enabled = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
-	// we shouldn't be handling clipboard requests,
-	// since we use a synchronous clipboard,
-	// but older servers may still request it..
+	// we shouldn't be handling clipboard requests
+	// unless we have support for navigator.clipboard:
 	var request_id = packet[1],
 		selection = packet[2];
 		//target = packet[3];
 
-	var packet;
+	if (navigator.clipboard) {
+		navigator.clipboard.readText().then(text => {
+			ctx.cdebug("clipboard", "clipboard request via readText() text=", text);
+			if (selection=="CLIPBOARD" && text==ctx.clipboard_server_buffers["PRIMARY"]) {
+				//we set the clipboard contents to the PRIMARY selection
+				//and the server is asking for the CLIPBOARD selection
+				ctx.cdebug("clipboard request: using backup value");
+				text = ctx.clipboard_server_buffers["CLIPBOARD"] || "";
+			}
+			ctx.send_clipboard_contents(request_id, selection, text);
+		})
+		.catch(err => {
+			ctx.cdebug("clipboard", "readText() failed:", err);
+			//send last server buffer instead:
+			ctx.send_clipboard_contents(request_id, selection, ctx.clipboard_server_buffer);
+		});
+		return;
+	}
 	var clipboard_buffer = ctx.get_clipboard_buffer();
-	if(clipboard_buffer == "") {
+	ctx.send_clipboard_contents(request_id, selection, clipboard_buffer);
+}
+
+XpraClient.prototype.send_clipboard_contents = function(request_id, selection, clipboard_buffer) {
+	var packet;
+	if (clipboard_buffer == "") {
 		packet = ["clipboard-contents-none", request_id, selection];
 	} else {
 		packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", clipboard_buffer];
 	}
-	ctx.send(packet);
+	this.send(packet);
 }
 
 /**

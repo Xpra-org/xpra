@@ -739,7 +739,7 @@
 					return true;
 				});
 				$('#screen').on('click', function (e) {
-					clog("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
+					cdebug("clipboard", "click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
 					if (client.clipboard_pending) {
 						var clipboard_buffer = client.get_clipboard_buffer();
 						var clipboard_datatype = (client.get_clipboard_datatype() || "").toLowerCase();
