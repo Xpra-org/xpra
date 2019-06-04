@@ -342,6 +342,7 @@ Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			python3-cryptography
 Requires:			python3-gobject
+Recommends:			python3-inotify
 Recommends:			python3-netifaces
 Recommends:			python3-dbus
 Recommends:			python3-avahi
