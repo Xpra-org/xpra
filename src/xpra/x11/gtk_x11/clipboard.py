@@ -446,6 +446,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         if not (self._want_targets or self._greedy_client):
             self._have_token = False
             self.emit("send-clipboard-token", ())
+            return
         #we need the targets, and the target data for greedy clients:
         def send_token_with_targets():
             token_data = (self.targets, )
