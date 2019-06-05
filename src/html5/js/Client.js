@@ -1107,16 +1107,15 @@ XpraClient.prototype._make_hello_base = function() {
 }
 
 XpraClient.prototype._make_hello = function() {
-	var selections = ["CLIPBOARD"];
-	this.log("navigator.clipboard=", navigator.clipboard);
-	this.log("navigator.clipboard.readText=", navigator.clipboard.readText);
-	this.log("navigator.clipboard.writeText=", navigator.clipboard.writeText);
-	if (!navigator.clipboard || !navigator.clipboard.readText || !navigator.clipboard.writeText) {
-		//we'll need the primary contents to try to stay up to date
-		selections = ["CLIPBOARD", "PRIMARY"];
+	var selections = null;
+	if (navigator.clipboard && navigator.clipboard.readText && navigator.clipboard.writeText) {
+		//we don't need the primary contents,
+		//we can use the async clipboard
+		selections = ["CLIPBOARD"];
 		this.log("legacy clipboard");
 	}
 	else {
+		selections = ["CLIPBOARD", "PRIMARY"];
 		this.log("using new navigator.clipboard");
 	}
 	this.desktop_width = this.container.clientWidth;
