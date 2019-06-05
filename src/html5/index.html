@@ -79,7 +79,7 @@
 							<li class="-hasSubmenu">
 								<a href="#" data-icon="kitchen">Server</a>
 								<ul>
-									<li><a href="#" data-icon="access_time" onclick="return false" id="clock_menu_text"></a></li>
+									<li id="clock_menu_entry"><a href="#" data-icon="access_time" onclick="return false" id="clock_menu_text"></a></li>
 									<li><a href="#" data-icon="cloud_upload" onclick="upload_file(event); return false">Upload file</a></li>
 									<li><a href="#" data-icon="exit_to_app" onclick="confirm_shutdown_server(event); return false">Shutdown Server</a></li>
 								</ul>
@@ -812,7 +812,11 @@
 				});
 			}
 
-			function init_clock(client) {
+			function init_clock(client, enabled) {
+				if (!enabled) {
+					$("#clock_menu_entry").hide();
+					return;
+				}
 				function update_clock() {
 					var now = new Date().getTime();
 					var server_time = client.last_ping_server_time + (now - client.last_ping_local_time);
@@ -921,9 +925,7 @@
 			   	else {
 			   		$('upload_link').removeAttr('href');
 			   	}
-				if (getboolparam("clock")) {
-					init_clock(client);
-				}
+				init_clock(client, getboolparam("clock", true));
 				client.on_audio_state_change = function(newstate, details) {
 					var tooltip = "";
 					var image_name = "";
