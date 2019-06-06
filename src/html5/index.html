@@ -890,7 +890,7 @@
 				document.getElementById('float_menu').style.width ='0px'; $('#float_menu').children().hide();
 			}
 
-			if (getboolparam("autohide", true)) {
+			if (getboolparam("autohide", false)) {
 				$('#float_menu').on('mouseover', expand_float_menu);
 				$('#float_menu').on('mouseout', retract_float_menu);
 			}
