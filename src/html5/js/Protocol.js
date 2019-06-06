@@ -483,6 +483,7 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 		'lib/bencode.js',
 		'lib/zlib.js',
 		'lib/lz4.js',
+		'lib/es6-shim.js',
 		'lib/brotli_decode.js',
 		'lib/forge.js');
 	// make protocol instance

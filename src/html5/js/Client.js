@@ -1087,7 +1087,7 @@ XpraClient.prototype._make_hello_base = function() {
 		});
 	}
 
-	if(BrotliDecode) {
+	if(typeof BrotliDecode != "undefined") {
 		this._update_capabilities({
 			"brotli"					: true,
 		});
@@ -2912,10 +2912,11 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 XpraClient.prototype._audio_start_stream = function() {
 	this.debug("audio", "audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
 	if (this.audio_framework=="mediasource") {
-		this.audio.play().then( result => {
-			this.debug("audio", "stream playing", result);
-		}, err => {
-			this.debug("audio", "stream failed:", err);
+		var me = this;
+		this.audio.play().then(function(result) {
+			me.debug("audio", "stream playing", result);
+		}, function(err) {
+			me.debug("audio", "stream failed:", err);
 		});
 	}
 	else {
@@ -3090,7 +3091,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 	if (navigator.clipboard) {
 		if (navigator.clipboard.read) {
 			ctx.debug("clipboard", "request using read()");
-			navigator.clipboard.read().then(data => {
+			navigator.clipboard.read().then(function(data) {
 				var item = null;
 				var itemtype = null;
 				ctx.debug("clipboard", "request via read() data=", data);
@@ -3100,14 +3101,13 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 					for (var j = 0; j < item.types.length; j++) {
 						itemtype = item.types[j];
 						if (itemtype == "text/plain") {
-							item.getType(itemtype).then(blob => {
+							item.getType(itemtype).then(function(blob) {
 								var fileReader = new FileReader();
 								fileReader.onload = function(event) {
 									ctx.send_clipboard_string(request_id, selection, event.target.result);
 								};
 								fileReader.readAsText(blob);
-							})
-							.catch(err => {
+							}, function(err) {
 								ctx.debug("clipboard", "getType('"+itemtype+"') failed", err);
 								//send last server buffer instead:
 								ctx.resend_clipboard_server_buffer();
@@ -3115,14 +3115,13 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 							return;
 						}
 						else if (itemtype == "image/png") {
-							item.getType(itemtype).then(blob => {
+							item.getType(itemtype).then(function(blob) {
 								var fileReader = new FileReader();
 								fileReader.onload = function(event) {
 									ctx.send_clipboard_contents(request_id, selection, itemtype, 8, "bytes", event.target.result);
 								};
 								fileReader.readAsText(blob);
-							})
-							.catch(err => {
+							}, function(err) {
 								ctx.debug("clipboard", "getType('"+itemtype+"') failed", err);
 								//send last server buffer instead:
 								ctx.resend_clipboard_server_buffer();
@@ -3131,8 +3130,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 						}
 					}
 				}
-			})
-			.catch(err => {
+			}, function(err) {
 				ctx.debug("clipboard", "read() failed:", err);
 				//send last server buffer instead:
 				ctx.resend_clipboard_server_buffer();
@@ -3141,7 +3139,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 		}
 		else if (navigator.clipboard.readText) {
 			ctx.debug("clipboard", "clipboard request using readText()");
-			navigator.clipboard.readText().then(text => {
+			navigator.clipboard.readText().then(function(text) {
 				ctx.debug("clipboard", "clipboard request via readText() text=", text);
 				var primary_server_buffer = ctx.clipboard_server_buffers["PRIMARY"];
 				if (primary_server_buffer && primary_server_buffer[2]==8 && primary_server_buffer[3]=="bytes" && text==primary_server_buffer[4]) {
@@ -3153,8 +3151,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 					return;
 				}
 				ctx.send_clipboard_string(request_id, selection, text);
-			})
-			.catch(err => {
+			}, function(err) {
 				ctx.debug("clipboard", "readText() failed:", err);
 				//send last server buffer instead:
 				ctx.resend_clipboard_server_buffer();
