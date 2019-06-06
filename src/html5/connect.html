@@ -478,42 +478,13 @@ $(document).ready(function() {
 		$('input#ignore_audio_blacklist').prop("value", true);
 	}
 
-	var codecs_supported = [];
-	if(getboolparam("mediasource", true)) {
-		mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
-		for (var codec_option in mediasource_codecs) {
-			codecs_supported["mediasource:"+codec_option] = MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
-		}
-	}
-	if(getboolparam("aurora", true)) {
-		var aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
-		for (var codec_option in aurora_codecs) {
-			if(codec_option in codecs_supported) {
-				//we already have native MediaSource support!
-				continue;
-			}
-			codecs_supported["aurora:"+codec_option] = "legacy: "+MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
-		}
-	}
-	if(getboolparam("http-stream", true)) {
-		var stream_codecs = ["mp3"];
-		for (var i in stream_codecs) {
-			var codec_option = stream_codecs[i];
-			console.log("stream codecs=", stream_codecs, "codec=", codec_option);
-			codecs_supported["http-stream:"+codec_option] = "http stream: "+MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
-		}
-	}
+	var codecs_supported = MediaSourceUtil.get_supported_codecs(getboolparam("mediasource", true),
+			getboolparam("aurora", true),
+			getboolparam("http-stream", true),
+			ignore_audio_blacklist);
 	var best_codec = audio_codec;
 	if(!best_codec) {
-		var best_distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.length;
-		for (var codec_option in codecs_supported) {
-			var cs = codec_option.split(":")[1];
-			var distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.indexOf(cs);
-			if(distance>=0 && distance<best_distance) {
-				best_codec = codec_option;
-				best_distance = distance;
-			}
-		}
+		best_codec = MediaSourceUtil.get_best_codec(codecs_supported);
 	}
 	for (var codec_option in codecs_supported) {
 	    var option = document.createElement("option");
