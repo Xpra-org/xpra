@@ -3028,7 +3028,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 				ctx.clipboard_pending = true;
 				if (navigator.clipboard && navigator.clipboard.writeText) {
 					if (is_text) {
-						navigator.clipboard.writeText(data).then(function() {
+						navigator.clipboard.writeText(wire_data).then(function() {
 							ctx.debug("clipboard", "writeText succeeded")
 							ctx.clipboard_pending = false;
 						}, function() {
