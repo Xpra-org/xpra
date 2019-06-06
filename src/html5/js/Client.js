@@ -2848,13 +2848,14 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 		ctx.add_sound_data(codec, buf, metadata);
 	}
 	catch(e) {
-		this.on_audio_state_change("error", ""+e);
-		this.exc(e, "sound data error");
-		this.close_audio();
+		ctx.on_audio_state_change("error", ""+e);
+		ctx.exc(e, "sound data error");
+		ctx.close_audio();
 	}
 }
 
 XpraClient.prototype.on_audio_state_change = function(newstate, details) {
+	this.debug("on_audio_state_change:", newstate, details);
 	//can be overriden
 }
 
