@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 Antoine Martin <antoine@xpra.org>
+ * Copyright (c) 2013-2019 Antoine Martin <antoine@xpra.org>
  * Copyright (c) 2016 David Brushinski <dbrushinski@spikes.com>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Copyright (c) 2015-2016 Spikes, Inc.
@@ -16,6 +16,7 @@
 "use strict";
 
 var XPRA_CLIENT_FORCE_NO_WORKER = false;
+var CLIPBOARD_IMAGES = false;
 
 function XpraClient(container) {
 	// the container div is the "screen" on the HTML page where we
@@ -126,6 +127,9 @@ XpraClient.prototype.init_state = function(container) {
 	this.clipboard_server_buffers = {};
 	this.clipboard_pending = false;
 	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
+	if (CLIPBOARD_IMAGES && navigator.clipboard && navigator.clipboard.write) {
+		this.clipboard_targets.push("image/png");
+	}
 	// printing / file-transfer:
 	this.remote_printing = false;
 	this.remote_file_transfer = false;
@@ -1765,7 +1769,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 }
 
 XpraClient.prototype.process_xdg_menu = function() {
-	this.log("process_xdg_menu()");
+	this.log("received xdg start menu data");
 	var key;
 	//remove current menu:
 	$('#startmenu li').remove();
@@ -2908,7 +2912,11 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 XpraClient.prototype._audio_start_stream = function() {
 	this.debug("audio", "audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
 	if (this.audio_framework=="mediasource") {
-		this.audio.play();
+		this.audio.play().then( result => {
+			this.debug("audio", "stream playing", result);
+		}, err => {
+			this.debug("audio", "stream failed:", err);
+		});
 	}
 	else {
 		this.audio_aurora_ctx.play();
@@ -2976,44 +2984,77 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 		return;
 	}
 	var selection = packet[1];
-	var target = packet[3];
-	var is_valid_target = ctx.clipboard_targets.includes(target);
-	ctx.debug("clipboard", "clipboard token:", packet);
-	ctx.debug("target=", target, "is valid:", is_valid_target);
-	// if we have navigator.clipboard, we just set the clipboard value,
-	// otherwise we don't actually set anything here,
+	var targets = [];
+	var target = null;
+	var dtype = null;
+	var dformat = null;
+	var wire_encoding = null;
+	var wire_data = null;
+	if (packet.length>=3) {
+		targets = packet[2];
+	}
+	if (packet.length>=8) {
+		target = packet[3];
+		dtype = packet[4];
+		dformat = packet[5];
+		wire_encoding = packet[6];
+		wire_data = packet[7];
+		//always keep track of the latest server buffer
+		ctx.clipboard_server_buffers[selection] = [target, dtype, dformat, wire_encoding, wire_data];
+	}
+
+	var is_valid_target = target && ctx.clipboard_targets.includes(target);
+	ctx.debug("clipboard", "clipboard token received");
+	ctx.debug("clipboard", "targets=", targets);
+	ctx.debug("clipboard", "target=", target, "is valid:", is_valid_target);
+	ctx.debug("clipboard", "dtype=", dtype, "dformat=", dformat, "wire-encoding=", wire_encoding);
+	// if we have navigator.clipboard support in the browser,
+	// we can just set the clipboard value here,
+	// otherwise we don't actually set anything
 	// because we can't (the browser security won't let us)
 	// we just record the value and actually set the clipboard
 	// when we get a click, control-C or control-X event
 	// (when access to the clipboard is allowed)
 	if (is_valid_target) {
-		var data = packet[7];
-		var datatype = packet[4].toLowerCase();
-		var is_text = datatype.indexOf("text")>=0 || datatype.indexOf("string")>=0;
+		var is_text = dtype.toLowerCase().indexOf("text")>=0 || dtype.toLowerCase().indexOf("string")>=0;
 		if (is_text) {
 			try {
-				data = Utilities.Uint8ToString(data);
+				wire_data = Utilities.Uint8ToString(wire_data);
 			}
 			catch (e) { }
-		}
-		if (ctx.clipboard_buffer!=data) {
-			ctx.clipboard_datatype = packet[4];
-			ctx.clipboard_buffer = data;
-			ctx.clipboard_pending = true;
-			if (navigator.clipboard && navigator.clipboard.writeText) {
-				if (is_text) {
-					navigator.clipboard.writeText(data).then(function() {
-						ctx.debug("clipboard", "writeText succeeded")
-						ctx.clipboard_pending = false;
-					}, function() {
-						ctx.debug("clipboard", "writeText failed")
-					});
+			if (ctx.clipboard_buffer!=wire_data) {
+				ctx.clipboard_datatype = dtype;
+				ctx.clipboard_buffer = wire_data;
+				ctx.clipboard_pending = true;
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					if (is_text) {
+						navigator.clipboard.writeText(data).then(function() {
+							ctx.debug("clipboard", "writeText succeeded")
+							ctx.clipboard_pending = false;
+						}, function() {
+							ctx.debug("clipboard", "writeText failed")
+						});
+					}
 				}
 			}
 		}
-		//keep track of the latest server buffer
-		ctx.clipboard_server_buffers[selection] = data;
+		else if (CLIPBOARD_IMAGES && dtype=="image/png" && dformat==8 && wire_encoding=="bytes" && navigator.clipboard && navigator.clipboard.write) {
+			ctx.debug("clipboard", "png image received");
+			var blob = new Blob(wire_data, {type: dtype});
+			ctx.debug("clipboard", "created blob", blob);
+			var item = new ClipboardItem({"image/png": blob});
+			ctx.debug("clipboard", "created ClipboardItem", item);
+			var items = [item];
+			ctx.debug("clipboard", "created ClipboardItem list", items);
+			navigator.clipboard.write(items).then(function() {
+				ctx.debug("clipboard", "copied png image to clipboard");
+			})
+			.catch(function(err) {
+				ctx.debug("clipboard", "failed to set png image", err);
+			});
+		}
 	}
+
 	if (navigator.clipboard && navigator.clipboard.writeText && selection=="CLIPBOARD") {
 		//always claim the CLIPBOARD again,
 		//so we will be asked for contents
@@ -3037,34 +3078,124 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 		selection = packet[2];
 		//target = packet[3];
 
-	if (navigator.clipboard && navigator.clipboard.readText) {
-		navigator.clipboard.readText().then(text => {
-			ctx.cdebug("clipboard", "clipboard request via readText() text=", text);
-			if (selection=="CLIPBOARD" && text==ctx.clipboard_server_buffers["PRIMARY"]) {
-				//we set the clipboard contents to the PRIMARY selection
-				//and the server is asking for the CLIPBOARD selection
-				ctx.cdebug("clipboard request: using backup value");
-				text = ctx.clipboard_server_buffers["CLIPBOARD"] || "";
-			}
-			ctx.send_clipboard_contents(request_id, selection, text);
-		})
-		.catch(err => {
-			ctx.cdebug("clipboard", "readText() failed:", err);
-			//send last server buffer instead:
-			ctx.send_clipboard_contents(request_id, selection, ctx.clipboard_server_buffer);
-		});
+	ctx.debug("clipboard", selection+" request");
+
+	//we only handle CLIPBOARD requests,
+	//PRIMARY is used read-only
+	if (selection!="CLIPBOARD") {
+		ctx.send_clipboard_string(request_id, selection, "");
 		return;
 	}
-	var clipboard_buffer = ctx.get_clipboard_buffer();
-	ctx.send_clipboard_contents(request_id, selection, clipboard_buffer);
+
+	if (navigator.clipboard) {
+		if (navigator.clipboard.read) {
+			ctx.debug("clipboard", "request using read()");
+			navigator.clipboard.read().then(data => {
+				var item = null;
+				var itemtype = null;
+				ctx.debug("clipboard", "request via read() data=", data);
+				for (var i = 0; i < data.length; i++) {
+					item = data[i];
+					ctx.debug("clipboard", "item", i, "types:", item.types);
+					for (var j = 0; j < item.types.length; j++) {
+						itemtype = item.types[j];
+						if (itemtype == "text/plain") {
+							item.getType(itemtype).then(blob => {
+								var fileReader = new FileReader();
+								fileReader.onload = function(event) {
+									ctx.send_clipboard_string(request_id, selection, event.target.result);
+								};
+								fileReader.readAsText(blob);
+							})
+							.catch(err => {
+								ctx.debug("clipboard", "getType('"+itemtype+"') failed", err);
+								//send last server buffer instead:
+								ctx.resend_clipboard_server_buffer();
+							});
+							return;
+						}
+						else if (itemtype == "image/png") {
+							item.getType(itemtype).then(blob => {
+								var fileReader = new FileReader();
+								fileReader.onload = function(event) {
+									ctx.send_clipboard_contents(request_id, selection, itemtype, 8, "bytes", event.target.result);
+								};
+								fileReader.readAsText(blob);
+							})
+							.catch(err => {
+								ctx.debug("clipboard", "getType('"+itemtype+"') failed", err);
+								//send last server buffer instead:
+								ctx.resend_clipboard_server_buffer();
+							});
+							return;
+						}
+					}
+				}
+			})
+			.catch(err => {
+				ctx.debug("clipboard", "read() failed:", err);
+				//send last server buffer instead:
+				ctx.resend_clipboard_server_buffer();
+			});
+			return;
+		}
+		else if (navigator.clipboard.readText) {
+			ctx.debug("clipboard", "clipboard request using readText()");
+			navigator.clipboard.readText().then(text => {
+				ctx.debug("clipboard", "clipboard request via readText() text=", text);
+				var primary_server_buffer = ctx.clipboard_server_buffers["PRIMARY"];
+				if (primary_server_buffer && primary_server_buffer[2]==8 && primary_server_buffer[3]=="bytes" && text==primary_server_buffer[4]) {
+					//we have set the clipboard contents to the PRIMARY selection
+					//and the server is asking for the CLIPBOARD selection
+					//send it back the last value it gave us
+					ctx.debug("clipboard request: using backup value");
+					ctx.resend_clipboard_server_buffer();
+					return;
+				}
+				ctx.send_clipboard_string(request_id, selection, text);
+			})
+			.catch(err => {
+				ctx.debug("clipboard", "readText() failed:", err);
+				//send last server buffer instead:
+				ctx.resend_clipboard_server_buffer();
+			});
+			return;
+		}
+	}
+	var clipboard_buffer = ctx.get_clipboard_buffer() || "";
+	ctx.send_clipboard_string(request_id, selection, clipboard_buffer, "UTF8_STRING");
 }
 
-XpraClient.prototype.send_clipboard_contents = function(request_id, selection, clipboard_buffer) {
+XpraClient.prototype.resend_clipboard_server_buffer = function(request_id, selection) {
+	var server_buffer = this.clipboard_server_buffers["CLIPBOARD"];
+	if (!server_buffer) {
+		this.send_clipboard_string(request_id, selection, "", "UTF8_STRING");
+	}
+	var target = server_buffer[0];
+	var dtype = server_buffer[1];
+	var dformat = server_buffer[2];
+	var wire_encoding = server_buffer[3];
+	var wire_data = server_buffer[4];
+	this.send_clipboard_contents(request_id, selection, dtype, dformat, wire_encoding, wire_data);
+}
+
+XpraClient.prototype.send_clipboard_string = function(request_id, selection, clipboard_buffer, datatype) {
 	var packet;
 	if (clipboard_buffer == "") {
 		packet = ["clipboard-contents-none", request_id, selection];
 	} else {
-		packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", clipboard_buffer];
+		packet = ["clipboard-contents", request_id, selection, datatype || "UTF8_STRING", 8, "bytes", clipboard_buffer];
+	}
+	this.log("send_clipboard_string: packet=", packet);
+	this.send(packet);
+}
+
+XpraClient.prototype.send_clipboard_contents = function(request_id, selection, datatype, dformat, encoding, clipboard_buffer) {
+	var packet;
+	if (clipboard_buffer == "") {
+		packet = ["clipboard-contents-none", request_id, selection];
+	} else {
+		packet = ["clipboard-contents", request_id, selection, datatype, dformat || 8, encoding || "bytes", clipboard_buffer];
 	}
 	this.send(packet);
 }
