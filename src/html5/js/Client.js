@@ -103,6 +103,7 @@ XpraClient.prototype.init_state = function(container) {
 	this.audio_aurora_ctx = null;
 	this.audio_codec = null;
 	this.audio_context = Utilities.getAudioContext();
+	this.audio_state = null;
 	this.aurora_codecs = {};
 	this.mediasource_codecs = {};
 	// encryption
@@ -2570,9 +2571,6 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
  */
 XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 	this.debug("audio", "init_audio() enabled=", this.audio_enabled, ", mediasource enabled=", this.audio_mediasource_enabled, ", aurora enabled=", this.audio_aurora_enabled, ", http-stream enabled=", this.audio_httpstream_enabled);
-	if(!this.audio_enabled) {
-		return;
-	}
 	if(this.audio_mediasource_enabled) {
 		this.mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
 		for (var codec_option in this.mediasource_codecs) {
@@ -2641,6 +2639,21 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 }
 
 XpraClient.prototype._sound_start_receiving = function() {
+	if (!this.audio_framework || !this.audio_codec) {
+		//choose a codec + framework to use
+		var codecs_supported = MediaSourceUtil.get_supported_codecs(this.audio_mediasource_enabled,
+				this.audio_aurora_enabled,
+				this.audio_httpstream_enabled,
+				false);
+		var audio_codec = MediaSourceUtil.get_best_codec(codecs_supported);
+		if (!audio_codec) {
+			this.log("no codec found");
+			return;
+		}
+		var acparts = audio_codec.split(":");
+		this.audio_framework = acparts[0];
+		this.audio_codec = acparts[1];
+	}
 	try {
 		this.audio_buffers = [];
 		this.audio_buffers_count = 0;
@@ -2856,6 +2869,7 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 
 XpraClient.prototype.on_audio_state_change = function(newstate, details) {
 	this.debug("on_audio_state_change:", newstate, details);
+	this.audio_state = newstate;
 	//can be overriden
 }
 
@@ -2912,6 +2926,10 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 
 XpraClient.prototype._audio_start_stream = function() {
 	this.debug("audio", "audio start of "+this.audio_framework+" "+this.audio_codec+" stream");
+	if (this.audio_state=="playing" || this.audio_state=="waiting") {
+		//nothing to do: ready to play
+		return;
+	}
 	if (this.audio_framework=="mediasource") {
 		var me = this;
 		this.audio.play().then(function(result) {
@@ -2929,8 +2947,10 @@ XpraClient.prototype._audio_start_stream = function() {
 XpraClient.prototype._audio_ready = function() {
 	if (this.audio_framework=="mediasource") {
 		//check media source buffer state:
-		this.debug("audio", "mediasource state=", MediaSourceConstants.READY_STATE[this.audio.readyState], ", network state=", MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
-		this.debug("audio", "audio paused=", this.audio.paused, ", queue size=", this.audio_buffers.length, ", source ready=", this.audio_source_ready, ", source buffer updating=", this.audio_source_buffer.updating);
+		if (this.audio) {
+			this.debug("audio", "mediasource state=", MediaSourceConstants.READY_STATE[this.audio.readyState], ", network state=", MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
+			this.debug("audio", "audio paused=", this.audio.paused, ", queue size=", this.audio_buffers.length, ", source ready=", this.audio_source_ready, ", source buffer updating=", this.audio_source_buffer.updating);
+		}
 		var asb = this.audio_source_buffer;
 		return (asb!=null) && (!asb.updating);
 	}

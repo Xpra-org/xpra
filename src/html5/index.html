@@ -104,7 +104,7 @@
 						</ul>
 					</li>
 					<li class="-hasSubmenu -noChevron">
-						<a href="#"   title="Open Windows" data-icon="filter"></a>
+						<a href="#" title="Open Windows" data-icon="filter"></a>
 						<ul id="open_windows_list">
 						</ul>
 					</li>
@@ -112,7 +112,7 @@
 						<a href="#" id="fullscreen_button" title="Fullscreen" data-icon="fullscreen"></a>
 					</li>
 					<li class="-hasSubmenu -noChevron">
-						<a href="#" id="sound_button"  title="Sound" data-icon="volume_off"></a>
+						<a href="#" id="sound_button" title="Sound" data-icon="volume_off"></a>
 					</li>
 				</ul>
 				<div id="float_tray"  class="menu-divright"></div>
@@ -568,7 +568,6 @@
 					client.audio_mediasource_enabled = getboolparam("mediasource", true);
 					client.audio_aurora_enabled = getboolparam("aurora", true);
 					client.audio_httpstream_enabled = getboolparam("http-stream", true);
-					$('#sound_button').attr('data-icon', 'volume_up');
 				}
 
 				if(keyboard_layout) {
@@ -926,24 +925,37 @@
 			   	}
 				init_clock(client, getboolparam("clock", true));
 				client.on_audio_state_change = function(newstate, details) {
+					client.audio_state = newstate;
 					var tooltip = "";
-					var image_name = "";
+					var data_icon = "";
 					if (newstate=="playing") {
-						image_name = "speaker.png";
+						data_icon = "volume_up";
 						tooltip = details || "playing";
 					}
 					else if (newstate=="waiting") {
-						image_name = "speaker-buffering.png";
+						data_icon = "volume_up";
 						tooltip = details || "buffering";
 					}
 					else {
-						image_name = "speaker-off.png";
+						data_icon = "volume_off";
 						tooltip = details || "off";
 					}
 					clog("audio-state:", newstate);
-					$("#speaker_icon").attr("src", "./icons/"+image_name);
-					$("#speaker_icon").attr("title", tooltip);
+					$("#sound_button").attr("data-icon", data_icon);
+					$("#sound_button").attr("title", tooltip);
 				};
+				$("#sound_button").click(function() {
+					clog("speaker icon clicked");
+					if (client.audio_state=="playing" || client.audio_state=="waiting") {
+						client.on_audio_state_change("stopped", "user action");
+						client.close_audio();
+					}
+					else {
+						client.on_audio_state_change("waiting", "user action");
+						client._audio_start_stream();
+						client._sound_start_receiving();
+					}
+				})
 				document.addEventListener("visibilitychange", function (e) {
 					window_ids = Object.keys(client.id_to_window).map(Number);
 					clog("visibilitychange hidden=", document.hidden, "connected=", client.connected);
