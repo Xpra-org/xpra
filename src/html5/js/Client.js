@@ -2475,7 +2475,7 @@ XpraClient.prototype.request_redraw = function(win) {
 			this.draw_pending = now;
 			var me = this;
 			window.requestAnimationFrame(function() {
-				me.debug("draw", "animation frame:", me.pending_redraw.length, "windows to paint");
+				me.debug("draw", "animation frame:", me.pending_redraw.length, "windows to paint, processing delay", Utilities.monotonicTime()-me.draw_pending, "ms");
 				me.draw_pending = 0;
 				// draw all the windows in the list:
 				while (me.pending_redraw.length>0) {

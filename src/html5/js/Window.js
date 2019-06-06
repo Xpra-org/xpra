@@ -265,6 +265,7 @@ XpraWindow.prototype._init_2d_canvas = function() {
 
 XpraWindow.prototype.swap_buffers = function() {
 	//the up to date canvas is what we'll draw on screen:
+	this.debug("draw", "swap_buffers");
 	this.draw_canvas = this.offscreen_canvas;
 	this._init_2d_canvas();
 	this.offscreen_canvas_ctx.drawImage(this.draw_canvas, 0, 0);
