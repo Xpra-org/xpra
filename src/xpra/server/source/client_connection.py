@@ -13,6 +13,7 @@ from collections import deque
 from xpra.make_thread import start_thread
 from xpra.os_util import Queue, monotonic_time
 from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, typedict, AtomicInteger
+from xpra.net.compression import compressed_wrapper, Compressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.clientinfo_mixin import ClientInfoMixin
 from xpra.server import server_features
@@ -199,6 +200,17 @@ class ClientConnection(ClientConnectionClass):
             c.cleanup(self)
         self.close_event.set()
         self.protocol = None
+
+
+    def compressed_wrapper(self, datatype, data, min_saving=128):
+        if self.zlib or self.lz4 or self.lzo:
+            cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
+            if len(cw)+min_saving<=len(data):
+                #the compressed version is smaller, use it:
+                return cw
+            #skip compressed version: fall through
+        #we can't compress, so at least avoid warnings in the protocol layer:
+        return Compressed(datatype, data, can_inline=True)
 
 
     def update_bandwidth_limits(self):

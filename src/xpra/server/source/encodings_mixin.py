@@ -14,7 +14,7 @@ from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.server_core import ClientException
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
-from xpra.net.compression import compressed_wrapper, Compressed, use_lz4, use_lzo, use_brotli
+from xpra.net.compression import use_lz4, use_lzo, use_brotli
 from xpra.os_util import monotonic_time, strtobytes
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, typedict, envint
@@ -105,17 +105,6 @@ class EncodingsMixin(StubSourceMixin):
                 "auto_refresh_delay"   : self.auto_refresh_delay,
                 })
         return caps
-
-
-    def compressed_wrapper(self, datatype, data, min_saving=128):
-        if self.zlib or self.lz4 or self.lzo:
-            cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
-            if len(cw)+min_saving<=len(data):
-                #the compressed version is smaller, use it:
-                return cw
-            #skip compressed version: fall through
-        #we can't compress, so at least avoid warnings in the protocol layer:
-        return Compressed(datatype, data, can_inline=True)
 
 
     def recalculate_delays(self):
