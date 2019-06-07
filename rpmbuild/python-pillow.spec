@@ -14,6 +14,7 @@
 	%global with_filter 1
 	%global with_webp 0
 	%global lcms lcms2
+    %global libjpeg libjpeg-turbo
 %endif
 %if 0%{?fedora}
 	%global with_python3 1
@@ -33,14 +34,14 @@
 
 
 Name:           python2-pillow
-Version:        6.0
+Version:        6.0.0
 Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
-Source:         https://pypi.python.org/packages/0f/57/25be1a4c2d487942c3ed360f6eee7f41c5b9196a09ca71c54d1a33c968d9/Pillow-%{version}.tar.gz
+Source:         https://files.pythonhosted.org/packages/81/1a/6b2971adc1bca55b9a53ed1efa372acff7e8b9913982a396f3fa046efaf8/Pillow-%{version}.tar.gz
 Provides:       python-pillow = %{version}-%{release}
 Obsoletes:      python-pillow < %{version}-%{release}
 Conflicts:      python-pillow < %{version}-%{release}
