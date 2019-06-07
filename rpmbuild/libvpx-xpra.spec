@@ -30,7 +30,7 @@ This package contains the development files for %{name}.
 
 
 %prep
-%setup -q -n libvpx-%{version}
+%setup -q -c -n libvpx-%{version}
 
 
 %build
