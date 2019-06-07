@@ -69,7 +69,7 @@ cp src/patches/* /home/builder/rpmbuild/SOURCES
 #build and turn cuda off for now
 rpmbuild -bb \
 --define "with_cuda 0" \
---define "revision_no \"${svnrevision}\"" \
+--define "revision_no ${svnrevision}" \
 rpmbuild/xpra.spec
 
 #copy rpms to mounted dir so we get them outside the container
