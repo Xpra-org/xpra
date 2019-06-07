@@ -5,14 +5,14 @@
 %define with_python3 0%{?fedora}
 
 Name:		python2-Cython
-Version:	0.29.7
+Version:	0.29.10
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source:		https://files.pythonhosted.org/packages/e0/31/4a166556f92c469d8291d4b03a187f325c773c330fffc1e798bf83d947f2/Cython-${version}.tar.gz
+Source:     https://files.pythonhosted.org/packages/e7/2e/aee8dfff93c7f5d20461ddcefd1da3d43bab18e1666a7777f4d9dbe94065/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python
 Conflicts:	Cython < %{version}-%{release}
