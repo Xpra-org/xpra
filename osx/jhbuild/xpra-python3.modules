@@ -65,10 +65,11 @@
 	</distutils>
 
 	<distutils id="python3-zeroconf" python3="1">
-		<branch repo="pypi.python.org"
-			module="/packages/d7/25/8bbdd4857820e0cdc380c7e0c3543dc01a55247a1d831c712571783e74ec/zeroconf-0.23.0.tar.gz"
-			hash="sha256:e0c333b967c48f8b2e5cc94a1d4d28893023fb06dfd797ee384a94cdd1d0eef5"
-			version="0.23"/>
+		<branch repo="github.com"
+			module="/jstasiak/python-zeroconf/archive/0.23.0.tar.gz"
+			hash="sha256:e194df93ae5d5158fd62434e395fe73ef9eb9580e5d326aad06d02c56031b31a"
+			checkoutdir="python-zeroconf-0.23.0"
+			version="0.23.0"/>
 		<dependencies>
 			<dep package="python3-enum-compat"/>
 		</dependencies>
