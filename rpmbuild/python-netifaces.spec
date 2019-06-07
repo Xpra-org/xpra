@@ -18,7 +18,7 @@ Requires: python
 Group: Networking
 Packager: Antoine Martin <antoine@xpra.org>
 URL: http://winswitch.org/
-Source: netifaces-%{version}.tar.gz
+Source: https://files.pythonhosted.org/packages/0d/18/fd6e9c71a35b67a73160ec80a49da63d1eed2d2055054cc2995714949132/netifaces-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: python-devel, python-setuptools
 Provides: netifaces = %{version}-%{release}
