@@ -84,7 +84,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if w:
             try:
                 w.remove_alive_callback(self.timer_clipboard_check)
-            except KeyError:
+            except (KeyError, ValueError):
                 pass
 
     def timer_clipboard_check(self):
