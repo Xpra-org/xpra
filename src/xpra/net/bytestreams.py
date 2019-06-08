@@ -315,7 +315,7 @@ class SocketConnection(Connection):
         log("changed %s socket to nodelay=%s", self.socktype, nodelay)
 
     def set_cork(self, cork):
-        if SOCKET_CORK and self.socktype in TCP_SOCKTYPES and self.cork!=cork:
+        if SOCKET_CORK and self.socktype_wrapped in TCP_SOCKTYPES and self.cork!=cork:
             self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)
             self.cork = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
