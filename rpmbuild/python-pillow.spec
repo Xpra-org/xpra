@@ -14,22 +14,13 @@
 	%global with_filter 1
 	%global with_webp 0
 	%global lcms lcms2
-    %global libjpeg libjpeg-turbo
+	%global libjpeg libjpeg-turbo
 %endif
 %if 0%{?fedora}
 	%global with_python3 1
 	%global lcms lcms2
 	%global with_filter 1
 	%global with_webp 1
-%endif
-%if 0%{?suse_version}
-	%global with_python3 0
-	%global with_filter 0
-	%global with_webp 1
-	%global lcms liblcms
-	%global libjpeg libjpeg8
-	%global tkinter python-tk
-	%global PyQt4 python-qt4
 %endif
 
 
