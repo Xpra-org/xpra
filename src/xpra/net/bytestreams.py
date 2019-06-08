@@ -306,7 +306,7 @@ class SocketConnection(Connection):
             self.do_set_nodelay(SOCKET_NODELAY)
 
     def set_nodelay(self, nodelay):
-        if SOCKET_NODELAY is None and self.socktype in TCP_SOCKTYPES and self.nodelay!=nodelay:
+        if SOCKET_NODELAY is None and self.socktype_wrapped in TCP_SOCKTYPES and self.nodelay!=nodelay:
             self.do_set_nodelay(nodelay)
 
     def do_set_nodelay(self, nodelay):
