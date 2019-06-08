@@ -424,9 +424,9 @@ class SocketConnection(Connection):
             opts = {
                     "SOCKET" : get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),
                     }
-            if self.socktype in ("tcp", "udp", "ws", "wss", "ssl"):
+            if self.socktype_wrapped in ("tcp", "udp", "ws", "wss", "ssl"):
                 opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
-            if self.socktype in ("tcp", "ws", "wss", "ssl"):
+            if self.socktype_wrapped in ("tcp", "ws", "wss", "ssl"):
                 opts["TCP"] = get_socket_options(s, socket.IPPROTO_TCP, TCP_OPTIONS)
             #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
             # IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP, IPV6_PATHMTU,
