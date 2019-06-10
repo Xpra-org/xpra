@@ -52,6 +52,7 @@ def codec_import_check(name, description, top_module, class_module, *classnames)
         log.warn(" cannot load %s (%s):", name, description, exc_info=True)
         codec_errors[name] = e
         return None
+    classname = None
     try:
         #module is present
         classname = "?"
