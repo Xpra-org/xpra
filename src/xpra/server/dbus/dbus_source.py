@@ -69,7 +69,7 @@ class DBUS_Source(dbus.service.Object):
         if conv is None:
             raise dbus.exceptions.DBusException("invalid property")
         server_property_name, _ = conv
-        v = getattr(self.server, server_property_name)
+        v = getattr(self.source, server_property_name)
         self.log(".Get(%s)=%s", property_name, v)
         return v
 
@@ -89,8 +89,8 @@ class DBUS_Source(dbus.service.Object):
         if conv is None:
             raise dbus.exceptions.DBusException("invalid property")
         server_property_name, validator = conv
-        assert hasattr(self.server, server_property_name)
-        setattr(self.server, server_property_name, validator(new_value))
+        assert hasattr(self.source, server_property_name)
+        setattr(self.source, server_property_name, validator(new_value))
 
     @dbus.service.signal(dbus.PROPERTIES_IFACE, signature='sa{sv}as')
     def PropertiesChanged(self, interface_name, changed_properties, invalidated_properties):
