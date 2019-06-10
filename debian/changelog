@@ -13,6 +13,15 @@ xpra (1.0.14-1) UNRELEASED; urgency=low
   * fix missing network statistics
   * fix window model cleanup code
   * fix error in packet failure handler logging
+  * fix some window control commands that trigger a refresh
+  * fix server dbus service attribute accessor methods
+  * fix network jitter injector
+  * fix avahi mdns publisher test tool
+  * fix error in the codec loader if the first codec attempted fails
+  * fix mmap leak which can cause the client to stop painting
+  * fix HTML5 client authentication issue when going through a proxy server
+  * support newer nvidia encode shared libraries
+  * prevent hash collisions in motion search
   * warn that Python optimized code will crash
   * avoid using jpeg for video edges
   * add missing exec-wrapper section to man page
@@ -20,8 +29,10 @@ xpra (1.0.14-1) UNRELEASED; urgency=low
   * packaging fixes for Ubuntu cosmic, appindicator
   * disable xvid and ffmpeg
   * disable avcodec decoder on MS Windows
+  * avoid keyboard warnings
+  * fix sdist
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 21 Mar 2019 13:11:30 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 10 Jun 2019 17:36:07 +0700
 
 xpra (1.0.13-1) UNRELEASED; urgency=low
   * fix server crash with application setting invalid X11 atoms

@@ -259,8 +259,8 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python2} setup.py build \
 	%{build_args} \
-	--pkg-config-path=%{_libdir}/xpra/pkgconfig \
-	--rpath=%{_libdir}/xpra
+-pkg-config-path=%{_libdir}/xpra/pkgconfig \
+-rpath=%{_libdir}/xpra
 %if 0%{?with_selinux}
 pushd selinux/cups_xpra
 for selinuxvariant in %{selinux_variants}
@@ -476,6 +476,15 @@ fi
 - fix missing network statistics
 - fix window model cleanup code
 - fix error in packet failure handler logging
+- fix some window control commands that trigger a refresh
+- fix server dbus service attribute accessor methods
+- fix network jitter injector
+- fix avahi mdns publisher test tool
+- fix error in the codec loader if the first codec attempted fails
+- fix mmap leak which can cause the client to stop painting
+- fix HTML5 client authentication issue when going through a proxy server
+- support newer nvidia encode shared libraries
+- prevent hash collisions in motion search
 - warn that Python optimized code will crash
 - avoid using jpeg for video edges
 - add missing exec-wrapper section to man page
