@@ -858,7 +858,6 @@ class ApplicationWindow:
             self.handle_exception(e)
             return
         log("connect_to(..)=%s, hiding launcher window, starting client", conn)
-        glib.idle_add(self.window.hide)
         glib.idle_add(self.start_XpraClient, conn, display_desc)
 
 
@@ -875,6 +874,7 @@ class ApplicationWindow:
         self.client.display_desc = display_desc
         self.client.init_ui(self.config)
         self.client.setup_connection(conn)
+        self.set_info_text("Connection established")
         log("start_XpraClient() client initialized")
 
         if self.config.password:
@@ -920,6 +920,13 @@ class ApplicationWindow:
 
         self.client.warn_and_quit = warn_and_quit_override
         self.client.quit = quit_override
+        def after_handshake():
+            self.set_info_text("Handshake complete")
+        self.client.after_handshake(after_handshake)
+        def first_ui_received(*_args):
+            self.set_info_text("Running")
+            self.window.hide()
+        self.client.connect("first-ui-received", first_ui_received)
         try:
             self.client.run()
             log("client.run() returned")
