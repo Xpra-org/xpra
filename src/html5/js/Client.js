@@ -627,9 +627,7 @@ XpraClient.prototype.translate_modifiers = function(modifiers) {
 
 XpraClient.prototype._check_browser_language = function(key_layout) {
 	/**
-	 * Use the "key_language" if we have it,
-	 * otherwise use the browser's language.
-	 * This function may ssend the new detected keyboard layout.
+	 * This function may send the new detected keyboard layout.
 	 * (ignoring the keyboard_layout preference)
 	 */
 	var now = Utilities.monotonicTime();
@@ -637,24 +635,34 @@ XpraClient.prototype._check_browser_language = function(key_layout) {
 		return;
 	}
 	var new_layout = null;
-	if (key_layout && this.key_layout!=key_layout) {
-		this.clog("input language changed from", this.key_layout, "to", key_layout);
+	if (key_layout) {
 		new_layout = key_layout;
-		this.key_layout = key_layout;
 	}
 	else {
+		//we may have used a different layout for a specific key,
+		//and now this new key doesn't need it anymore,
+		//so we may want to switch back to the original layout:
 		var l = Utilities.getFirstBrowserLanguage();
 		if (l && this.browser_language != l) {
-			new_layout = Utilities.getKeyboardLayout();
-			this.clog("browser language changed from", this.browser_language, "to", l, ", sending new keyboard layout:", layout);
+			//if the browser language has changed,
+			//this takes precedence over the configuration
+			this.clog("browser language changed from", this.browser_language, "to", l);
 			this.browser_language = l;
+			new_layout = Utilities.getKeyboardLayout();
+		}
+		else {
+			//this will honour the setting supplied by the user on the connect page
+			//or default to Utilities.getKeyboardLayout()
+			new_layout = this._get_keyboard_layout() || "us";
 		}
 	}
-	if (new_layout!=null) {
+	if (new_layout!=null && this.key_layout!=new_layout) {
+		this.key_layout = new_layout;
+		this.clog("keyboard layout changed from", this.key_layout, "to", key_layout);
 		this.send(["layout-changed", new_layout, ""]);
 		//changing the language too quickly can cause problems server side,
-		//wait at least 2 seconds before checking again:
-		this.browser_language_change_embargo_time = now + 2000;
+		//wait a bit before checking again:
+		this.browser_language_change_embargo_time = now + 1000;
 	}
 	else {
 		//check again after 100ms minimum
@@ -1125,6 +1133,7 @@ XpraClient.prototype._make_hello = function() {
 	}
 	this.desktop_width = this.container.clientWidth;
 	this.desktop_height = this.container.clientHeight;
+	this.key_layout = this._get_keyboard_layout();
 	this._update_capabilities({
 		"auto_refresh_delay"		: 500,
 		"randr_notify"				: true,
@@ -1197,7 +1206,7 @@ XpraClient.prototype._make_hello = function() {
 		"windows"					: true,
 		//partial support:
 		"keyboard"					: true,
-		"xkbmap_layout"				: this._get_keyboard_layout(),
+		"xkbmap_layout"				: this.key_layout,
 		"xkbmap_keycodes"			: this._get_keycodes(),
 		"xkbmap_print"				: "",
 		"xkbmap_query"				: "",
@@ -1295,7 +1304,6 @@ XpraClient.prototype._window_mouse_move = function(ctx, e, window) {
 	ctx.do_window_mouse_move(e, window);
 }
 XpraClient.prototype.do_window_mouse_move = function(e, window) {
-	this._check_browser_language();
 	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
