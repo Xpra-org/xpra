@@ -112,7 +112,7 @@
 						<a href="#" id="fullscreen_button" title="Fullscreen" data-icon="fullscreen"></a>
 					</li>
 					<li class="-hasSubmenu -noChevron">
-						<a href="#" id="sound_button" title="Sound" data-icon="volume_off"></a>
+						<a href="#" id="sound_button" title="Audio" data-icon="volume_off"></a>
 					</li>
 				</ul>
 				<div id="float_tray"  class="menu-divright"></div>
@@ -930,15 +930,15 @@
 					var data_icon = "";
 					if (newstate=="playing") {
 						data_icon = "volume_up";
-						tooltip = details || "playing";
+						tooltip = "audio playing";
 					}
 					else if (newstate=="waiting") {
 						data_icon = "volume_up";
-						tooltip = details || "buffering";
+						tooltip = "audio buffering";
 					}
 					else {
 						data_icon = "volume_off";
-						tooltip = details || "off";
+						tooltip = "audio off";
 					}
 					clog("audio-state:", newstate);
 					$("#sound_button").attr("data-icon", data_icon);
