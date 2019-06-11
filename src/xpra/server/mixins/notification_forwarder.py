@@ -141,7 +141,7 @@ class NotificationForwarder(StubServerMixin):
         nid, reason, text = packet[1:4]
         ss = self._server_sources.get(proto)
         assert ss
-        log("closing notification %i: %s, %s", nid, reason, text)
+        log("closing notification %s: %s, %s", nid, reason, text)
         try:
             #remove client callback if we have one:
             ss.notification_callbacks.pop(nid)
@@ -149,8 +149,11 @@ class NotificationForwarder(StubServerMixin):
             if self.notifications_forwarder:
                 #regular notification forwarding:
                 active = self.notifications_forwarder.is_notification_active(nid)
-                log("notification-close nid=%i, reason=%i, text=%s, active=%s", nid, reason, text, active)
+                log("notification-close nid=%s, reason=%s, text=%s, active=%s", nid, reason, text, active)
                 if active:
+                    #an invalid type of the arguments can crash dbus!
+                    assert int(nid)>=0
+                    assert int(reason)>=0
                     self.notifications_forwarder.NotificationClosed(nid, reason)
 
     def _process_notification_action(self, proto, packet):
