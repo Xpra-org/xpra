@@ -49,7 +49,7 @@ class ChildCommandServer(StubServerMixin):
         self.child_reaper = None
         self.reaper_exit = self.reaper_exit_check
         self.watch_manager = None
-        self.notifier = None
+        self.watch_notifier = None
         self.xdg_menu_reload_timer = None
 
     def init(self, opts):
@@ -95,8 +95,8 @@ class ChildCommandServer(StubServerMixin):
                 menu_data_updated(False, event.pathname)
         mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable pylint: disable=no-member
         handler = EventHandler()
-        self.notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
-        self.notifier.setDaemon(True)
+        self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
+        self.watch_notifier.setDaemon(True)
         data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share/applications:/usr/local/share/applications").split(":")
         watched = []
         for data_dir in data_dirs:
@@ -105,8 +105,8 @@ class ChildCommandServer(StubServerMixin):
                 continue
             wdd = self.watch_manager.add_watch(menu_dir, mask)
             watched.append(menu_dir)
-            log("notifier=%s, watch=%s", self.notifier, wdd)
-        self.notifier.start()
+            log("watch_notifier=%s, watch=%s", self.watch_notifier, wdd)
+        self.watch_notifier.start()
         if watched:
             log.info("watching for applications menu changes in:")
             for wd in watched:
@@ -124,10 +124,10 @@ class ChildCommandServer(StubServerMixin):
         if xmrt:
             self.xdg_menu_reload_timer = None
             self.source_remove(xmrt)
-        notifier = self.notifier
-        if notifier:
-            self.notifier = None
-            notifier.stop()
+        wn = self.watch_notifier
+        if wn:
+            self.watch_notifier = None
+            wn.stop()
         watch_manager = self.watch_manager
         if watch_manager:
             self.watch_manager = None
