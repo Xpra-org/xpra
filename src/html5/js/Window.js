@@ -158,6 +158,11 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		  	me.handle_resized(ui);
 		  	me.set_focus_cb(me);
 			client.mouse_grabbed = false;
+			//workaround for the window going blank,
+			//just force a refresh:
+			setTimeout(function() {
+				me.client.request_refresh(me.wid);
+			}, 200);
 		});
 		this.d_header = '#head' + String(wid);
 		this.d_closebtn = '#close' + String(wid);
