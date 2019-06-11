@@ -109,7 +109,7 @@ Requires:			xpra-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
-%if 0%{?fedora}%{?el8}
+%if 0%{?fedora}<=28
 #without this, the system tray is unusable!
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
@@ -405,8 +405,12 @@ Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:			python3-xdg
 #without this, the system tray is unusable!
+%if 0%{?fedora}<=28
 Recommends:			gnome-shell-extension-topicons-plus
+%endif
+%if 0%{?fedora}>=29
 Recommends:			libappindicator-gtk3
+%endif
 Suggests:			sshpass
 %if 0%{?run_tests}
 BuildRequires:		xclip
