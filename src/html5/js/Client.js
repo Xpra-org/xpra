@@ -2371,6 +2371,41 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 		}
 		window.closeNotification(nid);
 	}
+
+	if ("Notification" in window && actions.length==0) {
+		function notify() {
+			var icon_url = "";
+			if (icon) {
+				icon_url = "data:image/png;base64," + Utilities.ArrayBufferToBase64(icon);
+			}
+			/*
+			var nactions = [];
+			if (actions) {
+				ctx.log("actions=", actions);
+				for (var i=0; i<actions.length/2;++i) {
+					nactions.push({
+						"action"	: actions[i*2],
+						"title"		: actions[i*2+1],
+					});
+				}
+			}*/
+		    var notification = new Notification(summary, { body: body, icon: icon_url });
+		}
+		//we have notification support in the browser
+		if (Notification.permission === "granted") {
+			notify();
+			return;
+		}
+		else if (Notification.permission !== "denied") {
+			Notification.requestPermission(function (permission) {
+				if (permission === "granted") {
+					notify();
+				}
+		    });
+			return;
+		}
+	}
+	
 	if(window.doNotification) {
 		window.doNotification("info", nid, summary, body, expire_timeout, icon, actions, hints,
 				function(nid, action_id) {
