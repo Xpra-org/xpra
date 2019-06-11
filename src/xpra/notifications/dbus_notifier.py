@@ -209,8 +209,10 @@ def main():
     gtk = import_gtk()
     def show():
         n = DBUS_Notifier_factory()
+        actions = ["0", "Hello", "1", "Bye"]
+        actions = []
         n.show_notify("", None, 0, "Test", 0, "", "Summary", "Body line1\nline2...",
-                      ["0", "Hello", "1", "Bye"], {}, 0, "")
+                      actions, {}, 0, "")
         return False
     glib.idle_add(show)
     glib.timeout_add(20000, gtk.main_quit)
