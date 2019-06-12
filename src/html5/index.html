@@ -362,6 +362,17 @@
 				var zip = new JSZip();
 				zip.file("Summary.txt", ""+$("#bugreport_summary").val()+"\n\n"+$("#bugreport_description").val());
 				zip.file("Server-Info.txt", ""+JSON.stringify(client.server_last_info));
+				//screenshot:
+				var canvas = document.createElement('canvas')
+				canvas.width = client.desktop_width;
+				canvas.height = client.desktop_height;
+				var ctx = canvas.getContext('2d')
+				for (var i in client.id_to_window) {
+					var iwin = client.id_to_window[i];
+					ctx.drawImage(iwin.draw_canvas, iwin.x, iwin.y);
+				}
+				var png_base64 = canvas.toDataURL("image/png");
+				zip.file("screenshot.png", Utilities.convertDataURIToBinary(png_base64));
 				zip.generateAsync({type:"blob"})
 				.then(function(content) {
 					saveAs(content, "bugreport.zip");
