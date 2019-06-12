@@ -3001,12 +3001,12 @@ XpraClient.prototype.send_clipboard_token = function(data) {
 		return;
 	}
 	this.debug("clipboard", "sending clipboard token with data:", data);
-	var claim = Boolean(navigator.clipboard && navigator.clipboard.readText && navigator.clipboard.writeText);
+	var claim = true;	//Boolean(navigator.clipboard && navigator.clipboard.readText && navigator.clipboard.writeText);
 	var greedy = true;
 	var synchronous = true;
 	var packet;
 	if (data) {
-		packet = ["clipboard-token", "CLIPBOARD", [],
+		packet = ["clipboard-token", "CLIPBOARD", ["UTF8_STRING", "text/plain"],
 			"UTF8_STRING", "UTF8_STRING", 8, "bytes", data,
 			claim, greedy, synchronous];
 	}
