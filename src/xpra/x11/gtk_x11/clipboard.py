@@ -515,10 +515,6 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                 got_contents(dtype, dformat, value)
                 return
         prop = "%s-%s" % (self._selection, target)
-        request_id = self.local_request_counter
-        self.local_request_counter += 1
-        timer = glib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
-        self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents, time)
         with xsync:
             owner = X11Window.XGetSelectionOwner(self._selection)
             self.owned = owner==self.xid
@@ -527,6 +523,10 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                 log("we are the %s selection owner, using empty reply", self._selection)
                 got_contents(None, None, None)
                 return
+            request_id = self.local_request_counter
+            self.local_request_counter += 1
+            timer = glib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
+            self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents, time)
             log("requesting local XConvertSelection from %s for '%s' into '%s'", self.get_wininfo(owner), target, prop)
             X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=time)
 
