@@ -533,9 +533,7 @@ XpraClient.prototype._screen_resized = function(event, ctx) {
 XpraClient.prototype.init_keyboard = function() {
 	var me = this;
 	// modifier keys:
-	this.caps_lock = null;
-	this.num_lock = true;
-	this.num_lock_mod = null;
+	this.num_lock_modifier = null;
 	this.alt_modifier = null;
 	this.control_modifier = "control";
 	this.meta_modifier = null;
@@ -543,9 +541,7 @@ XpraClient.prototype.init_keyboard = function() {
 	this.altgr_state = false;
 
 	this.capture_keyboard = true;
-	// assign the keypress callbacks
-	// if we detect jQuery, use that to assign them instead
-	// to allow multiple clients on the same page
+	// assign the key callbacks
 	document.addEventListener('keydown', function(e) {
 		var r = me._keyb_onkeydown(e, me);
 		if (!r) {
@@ -554,12 +550,6 @@ XpraClient.prototype.init_keyboard = function() {
 	});
 	document.addEventListener('keyup', function (e) {
 		var r = me._keyb_onkeyup(e, me);
-		if (!r) {
-			e.preventDefault();
-		}
-	});
-	document.addEventListener('keypress', function (e) {
-		var r = me._keyb_onkeypress(e, me);
 		if (!r) {
 			e.preventDefault();
 		}
@@ -575,10 +565,6 @@ XpraClient.prototype._keyb_get_modifiers = function(event) {
 	 */
 	//convert generic modifiers "meta" and "alt" into their x11 name:
 	var modifiers = get_event_modifiers(event);
-	if (this.caps_lock)
-		modifiers.push("lock");
-	if (this.num_lock && this.num_lock_mod)
-		modifiers.push(this.num_lock_mod);
 	return this.translate_modifiers(modifiers);
 }
 
@@ -608,7 +594,20 @@ XpraClient.prototype.translate_modifiers = function(modifiers) {
 	index = modifiers.indexOf("alt");
 	if (index>=0 && alt)
 		new_modifiers[index] = alt;
-
+	index = modifiers.indexOf("numlock");
+	if (index>=0) {
+		if (this.num_lock_modifier) {
+			new_modifiers[index] = this.num_lock_modifier;
+		}
+		else {
+			new_modifiers.splice(index, 1);
+		}
+	}
+	index = modifiers.indexOf("capslock");
+	if (index>=0) {
+		new_modifiers[index] = "lock";
+	}
+	
 	//add altgr?
 	if (this.altgr_state && altgr && !new_modifiers.includes(altgr)) {
 		new_modifiers.push(altgr);
@@ -750,8 +749,10 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	var group = 0;
 
 	var shift = modifiers.includes("shift");
-	if ((this.caps_lock && shift) || (!this.caps_lock && !shift))
+	var capslock = modifiers.includes("capslock");
+	if ((capslock && shift) || (!capslock && !shift)) {
 		str = str.toLowerCase();
+	}
 
 	var ostr = str;
 	if (this.swap_keys) {
@@ -780,7 +781,8 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		var me = this;
 		setTimeout(function () {
 			me.send(packet);
-			me.debug("keyboard", packet);
+			me.log("keyboard", packet);
+			me.log("keyboard", "modifiers", modifiers);
 			if (pressed && me.swap_keys && raw_modifiers.includes("meta") && ostr!="meta") {
 				//macos will swallow the key release event if the meta modifier is pressed,
 				//so simulate one immediately:
@@ -828,39 +830,6 @@ XpraClient.prototype._keyb_onkeydown = function(event, ctx) {
 };
 XpraClient.prototype._keyb_onkeyup = function(event, ctx) {
 	return ctx._keyb_process(false, event);
-};
-
-XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
-	if (!ctx.capture_keyboard) {
-		return true;
-	}
-	/**
-	 * This function is only used for figuring out the caps_lock state!
-	 * onkeyup and onkeydown give us the raw keycode,
-	 * whereas here we get the keycode in lowercase/uppercase depending
-	 * on the caps_lock and shift state, which allows us to figure
-	 * out caps_lock state since we have shift state.
-	 */
-	var keycode = 0;
-	if (event.which)
-		keycode = event.which;
-	else
-		keycode = event.keyCode;
-	var modifiers = ctx._keyb_get_modifiers(event);
-
-	/* PITA: this only works for keypress event... */
-	var shift = modifiers.includes("shift");
-	if (keycode>=97 && keycode<=122 && shift) {
-		ctx.caps_lock = true;
-	}
-	else if (keycode>=65 && keycode<=90 && !shift) {
-		ctx.caps_lock = true;
-	}
-	else {
-		ctx.caps_lock = false;
-	}
-	//show("caps_lock="+caps_lock);
-	return false;
 };
 
 XpraClient.prototype._get_keyboard_layout = function() {
@@ -1630,7 +1599,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 					for (var index in keys) {
 						var key=keys[index];
 						if (key=="Num_Lock") {
-							ctx.num_lock_mod = modifier;
+							ctx.num_lock_modifier = modifier;
 						}
 					}
 				}

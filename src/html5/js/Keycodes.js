@@ -1756,8 +1756,9 @@ function get_event_modifiers(event) {
 		if (event.getModifierState("Shift"))
 			modifiers.push("shift");
 		if (event.getModifierState("CapsLock"))
-			modifiers.push("lock");
-		//NumLock
+			modifiers.push("capslock");
+		if (event.getModifierState("NumLock"))
+			modifiers.push("numlock");
 		//ScrollLock
 		//Fn
 		//AltGraph
