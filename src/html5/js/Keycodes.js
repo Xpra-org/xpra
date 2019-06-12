@@ -1755,7 +1755,12 @@ function get_event_modifiers(event) {
 			modifiers.push("meta");
 		if (event.getModifierState("Shift"))
 			modifiers.push("shift");
-		//event.getModifierState("ScrollLock") || event.getModifierState("Scroll")
+		if (event.getModifierState("CapsLock"))
+			modifiers.push("lock");
+		//NumLock
+		//ScrollLock
+		//Fn
+		//AltGraph
 	}
 	else if (event.modifiers) {
 		if (event.modifiers & Event.ALT_MASK)
