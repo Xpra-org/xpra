@@ -364,7 +364,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
 
         if target=="TARGETS":
             if self.targets:
-                log("using existing TARGETS value as response")
+                log("using existing TARGETS value as response: %s", self.targets)
                 xatoms = strings_to_xatoms(self.targets)
                 self.set_selection_response(requestor, target, prop, "ATOM", 32, xatoms, event.time)
                 return
