@@ -119,6 +119,10 @@ class OSXClipboardProxy(ClipboardProxyCore):
         return str(text)
 
     def get_contents(self, target, got_contents):
+        if target=="TARGETS":
+            #we only support text at the moment:
+            got_contents("ATOM", 32, ["text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
+            return
         text = self.get_clipboard_text()
         got_contents("bytes", 8, text)
 
