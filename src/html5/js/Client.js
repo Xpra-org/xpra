@@ -1094,11 +1094,11 @@ XpraClient.prototype._make_hello = function() {
 		//we don't need the primary contents,
 		//we can use the async clipboard
 		selections = ["CLIPBOARD"];
-		this.log("legacy clipboard");
+		this.log("using new navigator.clipboard");
 	}
 	else {
 		selections = ["CLIPBOARD", "PRIMARY"];
-		this.log("using new navigator.clipboard");
+		this.log("legacy clipboard");
 	}
 	this.desktop_width = this.container.clientWidth;
 	this.desktop_height = this.container.clientHeight;
