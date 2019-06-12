@@ -133,6 +133,12 @@ class Win32Clipboard(ClipboardTimeoutHelper):
             return _filter_targets(data)
         return ClipboardTimeoutHelper._munge_wire_selection_to_raw(self, encoding, dtype, dformat, data)
 
+    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
+        if dtype=="ATOM":
+            assert isinstance(data, (tuple, list))
+            return "atoms", _filter_targets(data)
+        return ClipboardTimeoutHelper._munge_raw_selection_to_wire(self, target, dtype, dformat, data)
+
 
 class Win32ClipboardProxy(ClipboardProxyCore):
     def __init__(self, window, selection, send_clipboard_request_handler, send_clipboard_token_handler):
@@ -181,6 +187,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.send_clipboard_token_handler(self)
 
     def get_contents(self, target, got_contents):
+        if target=="TARGETS":
+            #we only support text at the moment:
+            got_contents("ATOM", 32, ["text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
+            return
         def got_text(text):
             log("got_text(%s)", repr_ellipsized(bytestostr(text)))
             got_contents("text/plain", 8, text)
@@ -189,6 +199,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log.error(" %s", error_text)
             got_contents("text/plain", 8, b"")
         self.get_clipboard_text(got_text, errback)
+
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False):
         # the remote end now owns the clipboard
