@@ -725,7 +725,16 @@
 						});
 					}
 					else {
-						paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
+						var datatype = "text/plain";
+						var clipboardData = (e.originalEvent || e).clipboardData;
+						//IE: must use window.clipboardData because the event clipboardData is null!
+						if (!clipboardData) {
+							clipboardData = window.clipboardData;
+						}
+						if (Utilities.isIE()) {
+							datatype = "Text";
+						}
+						paste_data = clipboardData.getData(datatype);
 						cdebug("clipboard", "paste event, data=", paste_data);
 						client.clipboard_buffer = paste_data;
 						client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
@@ -763,13 +772,23 @@
 						pasteboard.select();
 						cdebug("clipboard", "click event, with pending clipboard datatype=", clipboard_datatype, ", buffer=", clipboard_buffer);
 						//for IE:
-						var success = true;
+						var success = false;
 						if (window.clipboardData && window.clipboardData.setData) {
-							clipboardData.setData(clipboard_datatype, clipboard_buffer);
+							try {
+								if (Utilities.isIE()) {
+									clipboardData.setData("Text", clipboard_buffer);
+								}
+								else {
+									clipboardData.setData(clipboard_datatype, clipboard_buffer);
+								}
+								success = true;
+							}
+							catch (e) {
+								success = false;
+							}
 						}
-						else if (is_text) {
+						if (!success && is_text) {
 							success = document.execCommand('copy');
-							//clog("copy success=", success);
 						}
 						else {
 							//probably no point in trying again?
