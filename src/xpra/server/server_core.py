@@ -233,6 +233,7 @@ class ServerCore(object):
 
         #Features:
         self.mdns = False
+        self.mdns_publishers = []
         self.encryption = None
         self.encryption_keyfile = None
         self.tcp_encryption = None
