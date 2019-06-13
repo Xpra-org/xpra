@@ -79,7 +79,11 @@ class GTKServerBase(ServerBase):
         # Close our display(s) first, so the server dying won't kill us.
         # (if gtk has been loaded)
         gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
-        if gdk_mod and envbool("XPRA_CLOSE_GTK_DISPLAY", True):
+        #bug 2328: python3 shadow server segfault on Ubuntu 16.04
+        from xpra.os_util import getUbuntuVersion, is_Ubuntu, PYTHON2
+        safe_close = PYTHON2 or self.session_type!="shadow" or not is_Ubuntu() or getUbuntuVersion()>(16,)
+        close = envbool("XPRA_CLOSE_GTK_DISPLAY", safe_close)
+        if close and gdk_mod:
             if is_gtk3():
                 displays = gdk.DisplayManager.get().list_displays()
             else:
