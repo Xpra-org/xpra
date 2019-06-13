@@ -11,7 +11,7 @@ from threading import Event
 import paramiko
 
 from xpra.net.ssh import SSHSocketConnection
-from xpra.util import csv, envint
+from xpra.util import csv, envint, first_time
 from xpra.os_util import osexpand, getuid, bytestostr, WIN32, POSIX, monotonic_time
 from xpra.platform.paths import get_ssh_conf_dirs
 from xpra.log import Logger
@@ -20,6 +20,7 @@ log = Logger("network", "ssh")
 
 SERVER_WAIT = envint("XPRA_SSH_SERVER_WAIT", 20)
 AUTHORIZED_KEYS = "~/.ssh/authorized_keys"
+AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES", "md5,sha1,sha224,sha256,sha384,sha512").split(",")
 
 
 class SSHServer(paramiko.ServerInterface):
@@ -93,10 +94,21 @@ class SSHServer(paramiko.ServerInterface):
                     log("ignoring line '%s': %s", line, e)
                     continue
                 import hashlib
-                fp_plain = hashlib.md5(key).hexdigest()
-                log("key(%s)=%s", line, fp_plain)
-                if fp_plain==hex_fingerprint:
-                    return paramiko.OPEN_SUCCEEDED
+                for hash_algo in AUTHORIZED_KEYS_HASHES:
+                    hash_instance = None
+                    try:
+                        hash_class = getattr(hashlib, hash_algo) #ie: hashlib.md5
+                        hash_instance = hash_class(key)     #can raise ValueError (ie: on FIPS compliant systems)
+                    except ValueError:
+                        hash_instance = None
+                    if not hash_instance:
+                        if first_time("hash-%s-missing" % hash_algo):
+                            log.warn("Warning: unsupported hash '%s'", hash_algo)
+                        continue
+                    fp_plain = hash_instance.hexdigest()
+                    log("%s(%s)=%s", hash_algo, line, fp_plain)
+                    if fp_plain==hex_fingerprint:
+                        return paramiko.OPEN_SUCCEEDED
                 count += 1
         log("no match in %i keys from '%s'", count, authorized_keys_filename)
         return paramiko.AUTH_FAILED
