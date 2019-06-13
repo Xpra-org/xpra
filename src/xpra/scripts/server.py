@@ -467,7 +467,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     #remove anything pointing to dbus from the current env
     #(so we only detect a dbus instance started by pam,
     # and override everything else)
-    for k in os.environ.keys():
+    for k in tuple(os.environ.keys()):
         if k.startswith("DBUS_"):
             del os.environ[k]
 
