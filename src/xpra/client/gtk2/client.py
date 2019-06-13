@@ -74,7 +74,11 @@ class XpraClient(GTKXpraClient):
                     from hashlib import md5
                 except ImportError:
                     from md5 import md5
-                m = md5()
+                try:
+                    m = md5()
+                except ValueError:
+                    from hashlib import sha1
+                    m = sha1()
                 for x in extra_args:
                     m.update(str(x))
                 color_str = "#%s" % m.hexdigest()[:6]
