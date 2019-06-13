@@ -267,6 +267,8 @@ def is_distribution_variant(variant=b"Debian", os_file="/etc/os-release"):
     if not POSIX:
         return False
     try:
+        if b"RedHat"==variant and get_linux_distribution()[0].startswith(variant):
+            return True
         if get_linux_distribution()[0]==variant:
             return True
     except:

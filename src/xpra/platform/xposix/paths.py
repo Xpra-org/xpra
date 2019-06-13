@@ -70,8 +70,8 @@ def do_get_icon_dir():
     return os.path.join(get_app_dir(), "icons")
 
 def do_get_libexec_dir():
-    from xpra.os_util import is_Fedora, is_CentOS
-    if is_Fedora() or is_CentOS():
+    from xpra.os_util import is_Fedora, is_CentOS, is_RedHat
+    if is_Fedora() or is_CentOS() or is_RedHat():
         return "/usr/libexec/"
     return "/usr/lib"
 
