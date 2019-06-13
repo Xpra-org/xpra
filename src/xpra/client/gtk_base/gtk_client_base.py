@@ -311,7 +311,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         color_str = color_str.replace(":off", "")
         if color_str in ("auto", ""):
             from hashlib import md5
-            m = md5()
+            try:
+                m = md5()
+            except ValueError:
+                from hashlib import sha1
+                m = sha1()
             for x in extra_args:
                 m.update(strtobytes(x))
             color_str = "#%s" % m.hexdigest()[:6]
