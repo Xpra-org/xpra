@@ -304,11 +304,11 @@ class X11ServerCore(GTKServerBase):
         return env
 
     def do_cleanup(self):
-        GTKServerBase.do_cleanup(self)
         if self.fake_xinerama:
             cleanup_fakeXinerama()
         with xswallow:
             clean_keyboard_state()
+        GTKServerBase.do_cleanup(self)
         close_gdk_display_source()
 
 
