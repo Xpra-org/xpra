@@ -100,7 +100,7 @@ cdef class rectangle:
 
     def substract(self, const int x, const int y, const int w, const int h):
         """ returns the rectangle(s) remaining when
-            one substracts the given rectangle from it, or None if nothing remains
+            one subtracts the given rectangle from it, or None if nothing remains
         """
         if w==0 or h==0 or self.width==0 or self.height==0:
             #no rectangle, no change:
