@@ -477,6 +477,9 @@ cdef class Encoder:
         self.cfg.rc_min_quantizer = MAX(0, MIN(63, int((80-self.quality) * 0.63)))
         self.cfg.rc_max_quantizer = MAX(self.cfg.rc_min_quantizer, MIN(63, int((100-self.quality) * 0.63)))
 
+    def is_ready(self):
+        return True
+
 
     def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
