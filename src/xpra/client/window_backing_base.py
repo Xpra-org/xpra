@@ -468,11 +468,17 @@ class WindowBackingBase(object):
                 l = options.get("z.len")
                 if l:
                     assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (l, len(img_data))
-                md5 = options.get("z.md5")
-                if md5:
-                    h = hashlib.md5(img_data)
+                try:
+                    chksum = options.get("z.md5")
+                    if chksum:
+                        h = hashlib.md5(img_data)
+                except ValueError:
+                    chksum = options.get("z.sha1")
+                    if chksum:
+                        h = hashlib.sha1(img_data)
+                if h:
                     hd = h.hexdigest()
-                    assert md5==hd, "pixel data failed compressed md5 integrity check: expected %s but got %s" % (md5, hd)
+                    assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
                 deltalog("passed compressed data integrity checks: len=%s, md5=%s (type=%s)", l, md5, type(img_data))
             if coding == "mmap":
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
