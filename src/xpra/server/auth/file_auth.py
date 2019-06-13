@@ -29,13 +29,7 @@ class Authenticator(FileAuthenticatorBase):
             log.error("Error: authentication failed")
             log.error(" no password for '%s' in '%s'", self.username, self.password_filename)
             return False
-        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
-        log("authenticate(%s) password='%s', hex(salt)=%s, hash=%s", challenge_response, nonl(password), binascii.hexlify(strtobytes(salt)), verify)
-        if hasattr(hmac, "compare_digest"):
-            eq = hmac.compare_digest(verify, challenge_response)
-        else:
-            eq = verify==challenge_response
-        if not eq:
+        if not self.verify_hmac_md5(password, salt):
             log("expected '%s' but got '%s'", verify, challenge_response)
             log.error("Error: hmac password challenge for '%s' does not match", self.username)
             return False

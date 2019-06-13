@@ -652,7 +652,11 @@ class ProxyInstanceProcess(Process):
             import hmac, hashlib
             password = strtobytes(password)
             salt = strtobytes(salt)
-            challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
+            try:
+                challenge_response = hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
+            except ValueError:
+                log("cannot generate hmac", exc_info=True)
+                challenge_response = ""
             log.info("sending %s challenge response", digest)
             self.send_hello(challenge_response, client_salt)
             return

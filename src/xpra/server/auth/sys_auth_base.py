@@ -115,17 +115,30 @@ class SysAuthenticator(object):
             log.error("Error: %s authentication failed", self)
             log.error(" no password defined for '%s'", self.username)
             return False
-        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=hashlib.md5).hexdigest()
-        log("authenticate(%s) password=%s, hex(salt)=%s, hash=%s", challenge_response, password, hexstr(strtobytes(salt)), verify)
-        if hasattr(hmac, "compare_digest"):
-            eq = hmac.compare_digest(verify, challenge_response)
-        else:
-            eq = verify==challenge_response
-        if not eq:
+        if not self.verify_hmac_md5(password, salt):
             log("expected '%s' but got '%s'", verify, challenge_response)
             log.error("Error: hmac password challenge for '%s' does not match", self.username)
             return False
         return True
+
+    def verify_hmac_md5(self, password, salt):
+        verify = self.hmac_md5_hex(strtobytes(password), strtobytes(salt))
+        log("verify_hmac_md5: hash=%s", verify)
+        if not verify:
+            return False
+        if hasattr(hmac, "compare_digest"):
+            return hmac.compare_digest(verify, challenge_response)
+        return verify==challenge_response
+
+    def hmac_md5_hex(self, password, salt):
+        try:
+            return hmac.HMAC(password, salt, digestmod=hashlib.md5).hexdigest()
+        except ValueError as e:
+            log("hmac_md5_hex(..)", exc_info=True)
+            log.warn("Warning: hmac+md5 failure")
+            log.warn(" %s", e)
+            return ""
+
 
     def get_sessions(self):
         uid = self.get_uid()
