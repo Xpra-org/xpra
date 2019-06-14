@@ -1367,11 +1367,12 @@ class ServerCore(object):
         #we start a new thread,
         #only so that the websocket handler thread is named correctly:
         start_thread(self.start_http, "%s-for-%s" % (tname, frominfo),
-                     daemon=True, args=(socktype, conn, is_ssl, req_info, conn.remote))
+                     daemon=True, args=(socktype, conn, is_ssl, req_info, line1, conn.remote))
 
-    def start_http(self, socktype, conn, is_ssl, req_info, frominfo):
-        httplog("start_http(%s, %s, %s, %s, %s) www dir=%s, headers dir=%s",
-                socktype, conn, is_ssl, req_info, frominfo, self._www_dir, self._http_headers_dir)
+    def start_http(self, socktype, conn, is_ssl, req_info, line1, frominfo):
+        httplog("start_http(%s, %s, %s, %s, %s, %s) www dir=%s, headers dir=%s",
+                socktype, conn, is_ssl, req_info, line1, frominfo,
+                self._www_dir, self._http_headers_dir)
         try:
             from xpra.net.websockets.handler import WebSocketRequestHandler
             sock = conn._socket
@@ -1395,6 +1396,7 @@ class ServerCore(object):
                 l = httplog.error
             l("Error: %s request failure", req_info)
             l(" for client %s:", pretty_socket(frominfo))
+            l(" request: '%s'", nonl(bytestostr(line1)))
             l(" %s", e)
         except Exception as e:
             wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)
