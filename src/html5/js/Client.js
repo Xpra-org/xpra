@@ -2706,7 +2706,10 @@ XpraClient.prototype._sound_start_httpstream = function() {
 		url = "https";
 	}
 	url += "://"+this.host+":"+this.port+this.path;
-	url += "/audio.mp3?uuid="+this.uuid;
+	if (!url.endsWith("/")) {
+		url += "/";
+	}
+	url += "audio.mp3?uuid="+this.uuid;
 	this.log("starting http stream from", url);
 	this.audio.src = url;
 }
