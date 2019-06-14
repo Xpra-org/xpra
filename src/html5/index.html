@@ -956,6 +956,9 @@
 			   	}
 				init_clock(client, getboolparam("clock", true));
 				client.on_audio_state_change = function(newstate, details) {
+					if (client.audio_state == newstate) {
+						return;
+					}
 					client.audio_state = newstate;
 					var tooltip = "";
 					var data_icon = "";
