@@ -2706,6 +2706,9 @@ XpraClient.prototype._sound_start_httpstream = function() {
 		url = "https";
 	}
 	url += "://"+this.host+":"+this.port+this.path;
+	if (url.endsWith("index.html")) {
+		url = url.substring(0, url.lastIndexOf("index.html"));
+	}
 	if (!url.endsWith("/")) {
 		url += "/";
 	}
