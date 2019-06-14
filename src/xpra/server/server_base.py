@@ -741,12 +741,26 @@ class ServerBase(ServerBaseClass):
         if not source:
             httplog.warn("Warning: no client matching uuid '%s'", uuid)
             return err()
+        #don't close the connection when handler.finish() is called,
+        #we will continue to write to this socket as we process more buffers:
+        finish = handler.finish
+        def do_finish():
+            try:
+                finish()
+            except:
+                log("error calling %s", finish, exc_info=True)
+        def noop():
+            pass
+        handler.finish = noop
         state = {}
         def new_buffer(_sound_source, data, _metadata, packet_metadata=()):
+            if state.get("failed"):
+                return
             if not state.get("started"):
                 httplog.warn("buffer received but stream is not started yet")
-                err()
                 source.stop_sending_sound()
+                err()
+                do_finish()
                 return
             count = state.get("buffers", 0)
             httplog("new_buffer [%i] for %s sound stream: %i bytes", count, state.get("codec", "?"), len(data))
@@ -756,11 +770,14 @@ class ServerBase(ServerBaseClass):
                 for x in packet_metadata:
                     handler.wfile.write(x)
                 handler.wfile.write(data)
+                handler.wfile.flush()
             except Exception as e:
+                state["failed"] = True
+                httplog("failed to send new audio buffer", exc_info=True)
                 httplog.warn("Error: failed to send audio packet:")
                 httplog.warn(" %s", e)
                 source.stop_sending_sound()
-                return
+                do_finish()
         def new_stream(sound_source, codec):
             codec = bytestostr(codec)
             httplog("new_stream: %s", codec)
@@ -775,7 +792,9 @@ class ServerBase(ServerBaseClass):
                 handler.end_headers()
             except ValueError:
                 httplog("new_stream error writing headers", exc_info=True)
+                state["failed"] = True
                 source.stop_sending_sound()
+                do_finish()
             else:
                 state["started"] = True
                 state["buffers"] = 0
@@ -783,7 +802,7 @@ class ServerBase(ServerBaseClass):
         def timeout_check():
             if not state.get("started"):
                 err()
-            source.stop_sending_sound()
+                source.stop_sending_sound()
         if source.sound_source:
             source.stop_sending_sound()
         def start_sending_sound():
