@@ -2811,6 +2811,7 @@ XpraClient.prototype.close_audio = function() {
 	else {
 		this._close_audio_aurora();
 	}
+	this.on_audio_state_change("stopped", "closed");
 }
 
 XpraClient.prototype._close_audio_httpstream = function() {
@@ -2878,12 +2879,15 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 			ctx._audio_start_stream();
 			return;
 		}
+
+		if (buf && buf.length>0) {
+			ctx.add_sound_data(codec, buf, metadata);
+		}
+
 		if (options["end-of-stream"] == 1) {
 			ctx.log("received end-of-stream from server");
 			ctx.close_audio();
 		}
-
-		ctx.add_sound_data(codec, buf, metadata);
 	}
 	catch(e) {
 		ctx.on_audio_state_change("error", ""+e);
@@ -2972,7 +2976,7 @@ XpraClient.prototype._audio_start_stream = function() {
 	else {
 		me.log("invalid start-of-stream data for unknown framework:", this.audio_framework);
 	}
-	this.on_audio_state_change("playing", ""+this.audio_framework+" playing "+this.audio_codec+" stream");
+	this.on_audio_state_change("waiting", ""+this.audio_framework+" playing "+this.audio_codec+" stream");
 }
 
 XpraClient.prototype._audio_ready = function() {
@@ -2997,6 +3001,7 @@ XpraClient.prototype.push_audio_buffer = function(buf) {
 	else {
 		this.audio_aurora_ctx.asset.source._on_data(buf);
 	}
+	ctx.on_audio_state_change("playing", "");
 }
 
 
