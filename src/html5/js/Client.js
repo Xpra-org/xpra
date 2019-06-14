@@ -2714,8 +2714,11 @@ XpraClient.prototype._sound_start_httpstream = function() {
 		url += "/";
 	}
 	url += "audio.mp3?uuid="+this.uuid;
+	var source = document.createElement("source");
+	source.type = "audio/mpeg";
+	source.src = url;
+	this.audio.appendChild(source);
 	this.log("starting http stream from", url);
-	this.audio.src = url;
 	document.body.appendChild(this.audio);
 }
 
