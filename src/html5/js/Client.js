@@ -3001,7 +3001,7 @@ XpraClient.prototype.push_audio_buffer = function(buf) {
 	else {
 		this.audio_aurora_ctx.asset.source._on_data(buf);
 	}
-	ctx.on_audio_state_change("playing", "");
+	this.on_audio_state_change("playing", "");
 }
 
 
