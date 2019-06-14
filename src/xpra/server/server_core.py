@@ -67,6 +67,7 @@ SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
+PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 
@@ -970,11 +971,11 @@ class ServerCore(object):
                      args=(conn, sock, address, socktype, peername, socket_info))
         return True
 
-    def peek_connection(self, conn, timeout=1):
+    def peek_connection(self, conn, timeout=PEEK_TIMEOUT_MS):
         PEEK_SIZE = 8192
         start = monotonic_time()
         peek_data = b""
-        while not peek_data and monotonic_time()-start<timeout:
+        while not peek_data and int(1000*(monotonic_time()-start))<timeout:
             try:
                 peek_data = conn.peek(PEEK_SIZE)
             except (OSError, IOError):
@@ -982,7 +983,7 @@ class ServerCore(object):
             except ValueError:
                 log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
                 break
-            sleep(timeout/4.0)
+            sleep(timeout/4000.0)
         line1 = b""
         netlog("socket %s peek: got %i bytes", conn, len(peek_data))
         if peek_data:
@@ -1038,7 +1039,7 @@ class ServerCore(object):
         peek_data, line1 = None, None
         #rfb does not send any data, waits for a server packet
         if socktype!="rfb":
-            peek_data, line1 = self.peek_connection(conn, PEEK_TIMEOUT)
+            peek_data, line1 = self.peek_connection(conn)
 
         def ssl_wrap():
             if not self._ssl_wrap_socket:
@@ -1079,7 +1080,7 @@ class ServerCore(object):
                     http = True
                 else:
                     ssl_conn.enable_peek()
-                    peek_data, line1 = self.peek_connection(ssl_conn, PEEK_TIMEOUT)
+                    peek_data, line1 = self.peek_connection(ssl_conn)
                     http = line1.find("HTTP/")>0
             if http and self._html:
                 self.start_http_socket(socktype, ssl_conn, True, peek_data)
@@ -1298,7 +1299,7 @@ class ServerCore(object):
                     http = True
                 else:
                     conn.enable_peek()
-                    peek_data, line1 = self.peek_connection(conn, PEEK_TIMEOUT)
+                    peek_data, line1 = self.peek_connection(conn)
                     http = line1.find(b"HTTP/")>0
             is_ssl = True
         else:
