@@ -761,25 +761,34 @@ class ServerBase(ServerBaseClass):
                 httplog.warn(" %s", e)
                 source.stop_sending_sound()
                 return
-        def new_stream(_sound_source, codec):
+        def new_stream(sound_source, codec):
             httplog("new_stream: %s", codec)
-            state["started"] = True
-            state["buffers"] = 0
-            state["codec"] = codec
-            handler.send_response(200)
+            sound_source.codec = codec
             headers = {
                 "Content-type"      : "audio/mpeg",
                 }
-            for k,v in headers.items():
-                handler.send_header(k, v)
-            handler.end_headers()
+            try:
+                handler.send_response(200)
+                for k,v in headers.items():
+                    handler.send_header(k, v)
+                handler.end_headers()
+            except ValueError:
+                httplog("new_stream error writing headers", exc_info=True)
+                source.stop_sending_sound()
+            else:
+                state["started"] = True
+                state["buffers"] = 0
+                state["codec"] = bytestostr(codec)
         def timeout_check():
             if not state.get("started"):
                 err()
+            source.stop_sending_sound()
         if source.sound_source:
             source.stop_sending_sound()
-        source.start_sending_sound("mp3", volume=1.0, new_stream=new_stream,
-                                   new_buffer=new_buffer, skip_client_codec_check=True)
+        def start_sending_sound():
+            source.start_sending_sound("mp3", volume=1.0, new_stream=new_stream,
+                                       new_buffer=new_buffer, skip_client_codec_check=True)
+        self.idle_add(start_sending_sound)
         self.mp3_stream_check_timer = self.timeout_add(1000*5, timeout_check)
 
     def cancel_mp3_stream_check_timer(self):
