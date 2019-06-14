@@ -762,6 +762,7 @@ class ServerBase(ServerBaseClass):
                 source.stop_sending_sound()
                 return
         def new_stream(sound_source, codec):
+            codec = bytestostr(codec)
             httplog("new_stream: %s", codec)
             sound_source.codec = codec
             headers = {
@@ -778,7 +779,7 @@ class ServerBase(ServerBaseClass):
             else:
                 state["started"] = True
                 state["buffers"] = 0
-                state["codec"] = bytestostr(codec)
+                state["codec"] = codec
         def timeout_check():
             if not state.get("started"):
                 err()
