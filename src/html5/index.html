@@ -964,7 +964,7 @@
 					var data_icon = "";
 					if (newstate=="playing") {
 						data_icon = "volume_up";
-						tooltip = "audio playing";
+						tooltip = "audio playing,\nclick to stop";
 					}
 					else if (newstate=="waiting") {
 						data_icon = "volume_up";
@@ -972,7 +972,7 @@
 					}
 					else {
 						data_icon = "volume_off";
-						tooltip = "audio off";
+						tooltip = "audio off,\nclick to start";
 					}
 					clog("audio-state:", newstate);
 					$("#sound_button").attr("data-icon", data_icon);
