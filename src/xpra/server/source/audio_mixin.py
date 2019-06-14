@@ -211,6 +211,7 @@ class AudioMixin(StubSourceMixin):
             ss.cleanup()
 
     def send_eos(self, codec, sequence=0):
+        log("send_eos(%s, %s)", codec, sequence)
         #tell the client this is the end:
         self.send_more("sound-data", codec, "",
                        {
@@ -359,6 +360,7 @@ class AudioMixin(StubSourceMixin):
 
     def do_sound_control_start(self, volume, codec):
         codec = bytestostr(codec)
+        log("do_sound_control_start(%s, %s)", volume, codec)
         if not self.start_sending_sound(codec, volume):
             return "failed to start sound"
         msg = "sound started"
