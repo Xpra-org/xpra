@@ -713,8 +713,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             #this is only really supported on X11, but posix is easier to check for..
             #"strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
-        if HAS_X11_BINDINGS and XSHAPE:
-            ms += ["shape"]
+        if HAS_X11_BINDINGS:
+            ms += ["x11-property"]
+            if XSHAPE:
+                ms += ["shape"]
         #figure out if we can handle the "global menu" stuff:
         if POSIX and not OSX:
             try:

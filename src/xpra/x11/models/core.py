@@ -8,6 +8,7 @@ import os
 import signal
 
 from xpra.util import envbool
+from xpra.os_util import bytestostr
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import (
@@ -19,7 +20,7 @@ from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.composite import CompositeHelper
-from xpra.x11.gtk_x11.prop import prop_get, prop_set
+from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_type_get, PYTHON_TYPES
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
 from xpra.gtk_common.gobject_compat import import_gobject, import_glib
@@ -74,6 +75,9 @@ PROPERTIES_IGNORED = os.environ.get("XPRA_X11_PROPERTIES_IGNORED", "_NET_WM_OPAQ
 X11_PROPERTIES_DEBUG = {}
 PROPERTIES_DEBUG = [prop_debug.strip()
                     for prop_debug in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
+X11PROPERTY_SYNC = envbool("XPRA_X11PROPERTY_SYNC", True)
+X11PROPERTY_SYNC_BLACKLIST = os.environ.get("XPRA_X11PROPERTY_SYNC_BLACKLIST",
+                                            "_GTK,WM_,_NET,Xdnd").split(",")
 
 
 def sanestr(s):
@@ -176,6 +180,7 @@ class CoreX11WindowModel(WindowModelStub):
         "xpra-focus-in-event"           : one_arg_signal,
         "xpra-focus-out-event"          : one_arg_signal,
         "xpra-motion-event"             : one_arg_signal,
+        "x11-property-changed"          : one_arg_signal,
         }
 
     #things that we expose:
@@ -502,6 +507,22 @@ class CoreX11WindowModel(WindowModelStub):
             metalog.info("%s=%s", name, self.prop_get(name, x11proptype, True, False))
         if name in PROPERTIES_IGNORED:
             return
+        if X11PROPERTY_SYNC and not any (name.startswith(x) for x in X11PROPERTY_SYNC_BLACKLIST):
+            try:
+                with xsync:
+                    prop_type = prop_type_get(self.client_window, name)
+                    metalog("_handle_property_change(%s) property type=%s", name, prop_type)
+                    if prop_type:
+                        dtype, dformat = prop_type
+                        ptype = PYTHON_TYPES.get(bytestostr(dtype))
+                        if ptype:
+                            value = self.prop_get(name, ptype)
+                            metalog("_handle_property_change(%s) value=%s", name, value)
+                            self.emit("x11-property-changed", (name, ptype, dformat, value))
+                            return
+            except Exception:
+                metalog("_handle_property_change(%s)", name, exc_info=True)
+            self.emit("x11-property-changed", (name, "", 0, ""))
         handler = self._x11_property_handlers.get(name)
         if handler:
             try:

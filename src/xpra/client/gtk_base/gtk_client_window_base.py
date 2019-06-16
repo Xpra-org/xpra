@@ -64,11 +64,11 @@ cairo   = import_cairo()
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
 USE_X11_BINDINGS = POSIX and envbool("XPRA_USE_X11_BINDINGS", is_X11())
-prop_get, prop_set = None, None
+prop_get, prop_set, prop_del = None, None, None
 if USE_X11_BINDINGS:
     try:
         from xpra.gtk_common.error import xlog, verify_sync
-        from xpra.x11.gtk_x11.prop import prop_get, prop_set
+        from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
         from xpra.x11.bindings.core_bindings import X11CoreBindings, set_context_check
         from xpra.x11.gtk_x11.send_wm import send_wm_workspace
@@ -885,6 +885,18 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
         self.when_realized("command", do_set_command)
 
+
+    def set_x11_property(self, prop_name, dtype, dformat, value):
+        metalog("set_x11_property%s", (prop_name, dtype, dformat, value))
+        gdk_window = self.get_window()
+        if not dtype and not dformat:
+            #remove prop
+            prop_del(gdk_window, prop_name)
+            return
+        dtype = bytestostr(dtype)
+        if dtype=="latin1":
+            value = bytestostr(value)
+        prop_set(gdk_window, prop_name, dtype, value)
 
     def set_class_instance(self, wmclass_name, wmclass_class):
         if not self.is_realized():

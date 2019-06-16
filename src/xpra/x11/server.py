@@ -559,6 +559,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         window.managed_connect("ungrab", self._window_ungrab)
         window.managed_connect("bell", self._bell_signaled)
         window.managed_connect("motion", self._motion_signaled)
+        window.managed_connect("x11-property-changed", self._x11_property_changed)
         if not window.is_tray():
             window.managed_connect("raised", self._raised_window)
             window.managed_connect("initiate-moveresize", self._initiate_moveresize)
@@ -570,6 +571,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 pass    #this can fail if the window disappears
                 #but we don't really care, it will get cleaned up soon enough
         return wid
+
+
+    def _x11_property_changed(self, window, event):
+        #name, dtype, dformat, value = event
+        metadata = {"x11-property" : event}
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            ms = getattr(ss, "metadata_supported", ())
+            if "x11-property" in ms:
+                ss.send("window-metadata", wid, metadata)
+
 
     def _add_new_window(self, window):
         self._add_new_window_common(window)

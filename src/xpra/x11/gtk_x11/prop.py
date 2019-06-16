@@ -131,6 +131,13 @@ def prop_set(target, key, etype, value):
         X11Window.XChangeProperty(get_xwindow(target), key, dtype, dformat, data)
 
 
+def prop_type_get(target, key):
+    try:
+        return X11Window.GetWindowPropertyType(get_xwindow(target), key)
+    except XError:
+        return None
+
+
 # May return None.
 def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     if isinstance(etype, (list, tuple)):
