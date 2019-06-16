@@ -166,7 +166,7 @@ class WebSocketProtocol(Protocol):
 
     def _process_ws_ping(self, payload):
         log("_process_ws_ping(%r)", payload)
-        item = encode_hybi_header(OPCODE_PONG, len(payload)) + payload
+        item = encode_hybi_header(OPCODE_PONG, len(payload)) + memoryview_to_bytes(payload)
         items = (item, )
         with self._write_lock:
             self.raw_write(items)
