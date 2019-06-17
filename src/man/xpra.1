@@ -44,6 +44,8 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBshowconfig\fP [\fBOPTIONS..\fP]
 .HP
+\fBxpra\fP \fBshowsetting\fP [\fBSETTING1..\fP]
+.HP
 \fBxpra\fP \fBlist-mdns\fP
 .HP
 \fBxpra\fP \fBupgrade\fP \fI:[DISPLAY]\fP [...any options accepted by
@@ -146,6 +148,10 @@ Show a list of xpra servers found via mDNS. (local network)
 \fBxpra showconfig\fP
 Shows the configuration that would be used with other sub-commands,
 taking into account the command line arguments.
+.TP
+\fBxpra\fP \fBshowsetting\fP [\fBSETTING1..\fP]
+Shows the value of a specific configuration setting and which
+configuration directory set this value.
 .TP
 \fBxpra attach\fP \fI:7\fP
 Attach to the xpra server that is using local display number \fI:7\fP.
