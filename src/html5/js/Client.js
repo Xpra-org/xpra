@@ -1694,7 +1694,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		}
 	}
 	ctx.xdg_menu = hello["xdg-menu"];
-	if (ctx.xdg_menu && ctx.xdg_menu.length>0) {
+	if (ctx.xdg_menu) {
 		ctx.process_xdg_menu();
 	}
 
