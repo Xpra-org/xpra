@@ -2482,6 +2482,8 @@ def run_showconfig(options, args):
 
 def vstr(v):
     #just used to quote all string values
+    if v is None:
+        return ""
     if isinstance(v, str):
         return "'%s'" % nonl(v)
     if isinstance(v, (tuple, list)):
@@ -2498,7 +2500,7 @@ def run_showsetting(options, args):
     for arg in args:
         otype = OPTION_TYPES.get(arg)
         if not otype:
-            log.warn("'%s' is not a valid setting")
+            log.warn("'%s' is not a valid setting", arg)
         else:
             settings.append(arg)
 
@@ -2509,13 +2511,13 @@ def run_showsetting(options, args):
     config = get_defaults()
     def show_settings():
         for setting in settings:
-            otype = OPTION_TYPES[setting]
             value = config.get(setting)
-            log.info("%-20s: %-40s (%s)", setting, value, type(value))
+            log.info("%-20s: %-40s (%s)", setting, vstr(value), type(value))
 
     log.info("* default config:")
     show_settings()
     for d in dirs:
+        config.clear()
         config.update(read_xpra_conf(d))
         log.info("* '%s':", d)
         show_settings()
