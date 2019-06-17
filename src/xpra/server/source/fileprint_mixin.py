@@ -145,7 +145,8 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 self.printers_added.add(name)
             add_printer(printer, props, info, location, attrs, success_cb=printer_added)
         except Exception as e:
-            log.warn("Warning: failed to add printer %s: %s", bytestostr(name), e)
+            log.warn("Warning: failed to add virtual printer '%s'", bytestostr(name))
+            log.warn(" %s", e)
             log("setup_printer(%s, %s, %s)", name, props, attributes, exc_info=True)
 
     def remove_printers(self):
