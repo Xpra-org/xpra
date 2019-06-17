@@ -225,8 +225,10 @@ class OSXMenuHelper(GTKTrayMenuBase):
             menus.append(("Encoding", encodings_menu))
         if mixin_features.windows and SHOW_ACTIONS_MENU:
             actions_menu = self.make_menu()
-            actions_menu.add(self.make_refreshmenuitem())
             actions_menu.add(self.make_raisewindowsmenuitem())
+            actions_menu.add(self.make_minimizewindowsmenuitem())
+            actions_menu.add(self.make_refreshmenuitem())
+            actions_menu.add(self.make_reinitmenuitem())
             menus.append(("Actions", actions_menu))
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
             server_menu = self.make_menu()
