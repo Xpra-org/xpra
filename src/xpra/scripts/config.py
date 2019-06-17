@@ -376,6 +376,15 @@ def read_xpra_defaults(username=None, uid=None, gid=None):
         returns a dict with values as strings and arrays of strings.
         If the <conf_dir> is not specified, we figure out its location.
     """
+    dirs = get_xpra_defaults_dirs(username, uid, gid)
+    defaults = {}
+    for d in dirs:
+        defaults.update(read_xpra_conf(d))
+        debug("read_xpra_defaults: updated defaults with %s", d)
+    may_create_user_config()
+    return defaults
+
+def get_xpra_defaults_dirs(username=None, uid=None, gid=None):
     from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
     # load config files in this order (the later ones override earlier ones):
     # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
@@ -389,7 +398,7 @@ def read_xpra_defaults(username=None, uid=None, gid=None):
     #                          (ie: "C:\Documents and Settings\Username\Application Data\Xpra" with XP)
     #                          (ie: "C:\Users\<user name>\AppData\Roaming" with Visa onwards)
     dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs(uid)
-    defaults = {}
+    defaults_dirs = []
     for d in dirs:
         if not d:
             continue
@@ -397,10 +406,8 @@ def read_xpra_defaults(username=None, uid=None, gid=None):
         if not os.path.exists(ad):
             debug("read_xpra_defaults: skipping %s", ad)
             continue
-        defaults.update(read_xpra_conf(ad))
-        debug("read_xpra_defaults: updated defaults with %s", ad)
-    may_create_user_config()
-    return defaults
+        defaults_dirs.append(ad)
+    return defaults_dirs
 
 def may_create_user_config(xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
     from xpra.platform.paths import get_user_conf_dirs
