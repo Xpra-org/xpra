@@ -814,13 +814,13 @@ XpraWindow.prototype.screen_resized = function() {
 	this.ensure_visible();
 };
 
-XpraWindow.prototype.recenter = function() {
+XpraWindow.prototype.recenter = function(force_update_geometry) {
 	var x = this.x,
 		y = this.y;
 	this.debug("geometry", "recenter() x=", x, ", y=", y, ", desktop size: ", this.client.desktop_width, this.client.desktop_height);
 	x = Math.round((this.client.desktop_width-this.w)/2);
 	y = Math.round((this.client.desktop_height-this.h)/2);
-	if (this.x!=x || this.y!=y) {
+	if (this.x!=x || this.y!=y || force_update_geometry) {
 		this.debug("geometry", "window re-centered to:", x, y);
 		this.x = x;
 		this.y = y;
@@ -882,7 +882,9 @@ XpraWindow.prototype.match_screen_size = function() {
 		}
 		this.log("best screen size:", neww, newh);
 	}
-	this.recenter();
+	this.w = neww;
+	this.h = newh;
+	this.recenter(true);
 };
 
 
