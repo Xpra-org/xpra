@@ -37,6 +37,7 @@ SHOW_SERVER_MENU = True
 SHOW_ABOUT_XPRA = True
 
 SINGLE_MENU = envbool("XPRA_OSX_SINGLE_MENU", False)
+USE_WINDOW_MENU = envbool("XPRA_OSX_USE_WINDOW_MENU", True)
 
 
 SEPARATOR = "SEPARATOR"
@@ -67,6 +68,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self.hidden_window = None
         self.menus = {}             #all the "top-level" menu items we manage
         self.app_menus = {}         #the ones added to the app_menu via insert_app_menu_item (which cannot be removed!)
+        self.window_menu_item = None
         self.full = False
         self.set_client(client)
         self._clipboard_change_pending = False
@@ -175,6 +177,11 @@ class OSXMenuHelper(GTKTrayMenuBase):
         for label, submenu in reversed(menus):
             self.add_top_level_menu(label, submenu)
         self.menu_bar.show_all()
+        if USE_WINDOW_MENU:
+            self.window_menu_item = self.get_menu("Windows")
+            if self.window_menu_item:
+                macapp = get_OSXApplication()
+                macapp.set_window_menu(self.window_menu_item)
 
     def get_extra_menus(self):
         menus = []
@@ -229,7 +236,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
             actions_menu.add(self.make_minimizewindowsmenuitem())
             actions_menu.add(self.make_refreshmenuitem())
             actions_menu.add(self.make_reinitmenuitem())
-            menus.append(("Actions", actions_menu))
+            self.window_menu = actions_menu
+            menus.append(("Windows", actions_menu))
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
             server_menu = self.make_menu()
             if SHOW_SHUTDOWN:
