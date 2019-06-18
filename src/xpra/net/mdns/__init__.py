@@ -6,7 +6,7 @@
 from xpra.util import envbool
 
 XPRA_MDNS_TYPE = "_xpra._tcp."
-RFB_MDNS_TYPE = "_rfb._tcp"
+RFB_MDNS_TYPE = "_rfb._tcp."
 
 AVAHI = envbool("XPRA_AVAHI", True)
 ZEROCONF = envbool("XPRA_ZEROCONF", True)
