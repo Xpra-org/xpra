@@ -200,6 +200,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.repaint_root_overlay_timer = None
         self.configure_damage_timers = {}
         self._tray = None
+        self._has_grab = 0
+        self._has_focus = 0
         self._wm = None
         self.last_raised = None
         self.system_tray = False
@@ -244,8 +246,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         X11ServerBase.x11_init(self)
         assert init_x11_filter() is True
 
-        self._has_grab = 0
-        self._has_focus = 0
         self._focus_history = deque(maxlen=100)
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
