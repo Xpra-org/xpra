@@ -247,6 +247,7 @@ ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECO
 def get_rgb_compression_options():
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
+    compressors = [x for x in compressors if x!="brotli"]
     RGB_COMP_OPTIONS  = ["Raw RGB"]
     if compressors:
         RGB_COMP_OPTIONS  += ["/".join(compressors)]
@@ -272,6 +273,7 @@ def get_encoding_name(encoding):
 def get_encoding_help(encoding):
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
+    compressors = [x for x in compressors if x!="brotli"]
     return {
           "auto"    : "automatic mode (recommended)",
           "h264"    : "H.264 video codec",
