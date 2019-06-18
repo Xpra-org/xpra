@@ -27,6 +27,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.username = ""
         self.name = ""
         self.argv = ()
+        self.sharing = False
         # client capabilities/options:
         self.client_setting_change = False
         self.client_type = None
@@ -56,6 +57,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.username = c.strget("username")
         self.name = c.strget("name")
         self.argv = c.strlistget("argv")
+        self.sharing = c.boolget("share")
         self.client_type = c.strget("client_type", "PyGTK")
         self.client_platform = c.strget("platform")
         self.client_machine = c.strget("platform.machine")
@@ -123,6 +125,7 @@ class ClientInfoMixin(StubSourceMixin):
                 "uuid"              : self.uuid,
                 "hostname"          : self.hostname or "",
                 "argv"              : self.argv,
+                "sharing"           : self.sharing,
                 }
 
         def addattr(k, name):
