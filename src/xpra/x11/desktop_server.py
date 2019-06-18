@@ -170,7 +170,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         icon = get_icon(icon_name)
         if not icon:
             return None
-        return icon.get_width(), icon.get_height(), "BGRA", icon.get_pixels()
+        return icon.get_width(), icon.get_height(), "RGBA", icon.get_pixels()
 
 
     def get_property(self, prop):
