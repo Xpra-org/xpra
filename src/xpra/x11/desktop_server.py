@@ -602,7 +602,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
                 #TODO: just like shadow server, adjust for window position
                 pass
         with xsync:
-            super(XpraDesktopServer, self)._move_pointer(self, wid, pos, -1, *args)
+            X11ServerBase._move_pointer(self, wid, pos, -1, *args)
 
 
     def _process_close_window(self, proto, packet):
