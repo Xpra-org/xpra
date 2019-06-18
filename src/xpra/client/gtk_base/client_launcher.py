@@ -134,7 +134,7 @@ class ApplicationWindow:
         self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=self.get_launcher_validation())
         ssh_cmd = parse_ssh_string(self.config.ssh)[0].strip().lower()
         self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-        self.is_paramiko = ssh_cmd=="paramiko"
+        self.is_paramiko = ssh_cmd.startswith("paramiko")
         #TODO: the fixup does not belong here?
         from xpra.scripts.main import fixup_options
         fixup_options(self.config)
