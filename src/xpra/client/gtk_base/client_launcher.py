@@ -1161,7 +1161,9 @@ def do_main(argv):
         app = ApplicationWindow()
         def handle_signal(signum):
             app.show()
-            app.client.cleanup()
+            client = app.client
+            if client:
+                client.cleanup()
             glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
             glib.timeout_add(1000, app.set_info_color, True)
         register_os_signals(handle_signal)
