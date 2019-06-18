@@ -48,6 +48,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if self.tray:
             self.setup_tray()
 
+    def do_run(self):
+        screen = self.root.get_screen()
+        screen.connect("monitors-changed", self.monitors_changed)
+        GTKServerBase.do_run(self)
+
+
     def cleanup(self):
         self.cleanup_tray()
         ShadowServerBase.cleanup(self)
@@ -146,6 +152,18 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             models.append(model)
         log("makeRootWindowModels()=%s", models)
         return models
+
+
+    def monitors_changed(self, screen):
+        screenlog("monitors_changed(%s)", screen)
+        screenlog.info("monitor geometry changed, re-initializing windows")
+        self.reinitialize_root_window_models()
+        return True
+
+    def reinitialize_root_window_models(self):
+        for window in tuple(self._window_to_id.keys()):
+            self._remove_window(window)
+        self.load_existing_windows()
 
 
     def _adjust_pointer(self, proto, wid, opointer):
