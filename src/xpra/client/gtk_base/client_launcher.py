@@ -397,42 +397,35 @@ class ApplicationWindow:
         self.info.modify_fg(STATE_NORMAL, red)
         vbox.pack_start(self.info)
 
-        #hide encoding options by default
-        self.encoding_combo = None
-        self.encoding_options_check = None
-        self.encoding_box = None
+        hbox = gtk.HBox(False, 0)
+        hbox.set_spacing(20)
+        self.advanced_options_check = gtk.CheckButton("Advanced Options")
+        self.advanced_options_check.connect("toggled", self.advanced_options_toggled)
+        self.advanced_options_check.set_active(False)
+        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+        al.add(self.advanced_options_check)
+        hbox.pack_start(al)
+        vbox.pack_start(hbox)
+        self.advanced_box = gtk.VBox()
+        vbox.pack_start(self.advanced_box)
+
+        # Encoding:
+        hbox = gtk.HBox(False, 20)
+        hbox.set_spacing(20)
+        hbox.pack_start(gtk.Label("Encoding: "))
+        self.encoding_combo = OptionMenu()
+        encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER]
+        server_encodings = encodings
+        es = make_encodingsmenu(self.get_current_encoding, self.set_new_encoding, encodings, server_encodings)
+        self.encoding_combo.set_menu(es)
+        hbox.pack_start(self.encoding_combo)
+        self.advanced_box.pack_start(hbox)
+        self.set_new_encoding(self.config.encoding)
         if not PYTHON3:
-            #not implemented for gtk3, where we can't use set_menu()...
-            hbox = gtk.HBox(False, 0)
-            hbox.set_spacing(20)
-            self.encoding_options_check = gtk.CheckButton("Advanced Encoding Options")
-            self.encoding_options_check.connect("toggled", self.encoding_options_toggled)
-            self.encoding_options_check.set_active(False)
-            al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
-            al.add(self.encoding_options_check)
-            hbox.pack_start(al)
-            vbox.pack_start(hbox)
-            self.encoding_box = gtk.VBox()
-            vbox.pack_start(self.encoding_box)
-
-            # Encoding:
-            hbox = gtk.HBox(False, 20)
-            hbox.set_spacing(20)
-            hbox.pack_start(gtk.Label("Encoding: "))
-            self.encoding_combo = OptionMenu()
-            def get_current_encoding():
-                return self.config.encoding
-            def set_new_encoding(e):
-                self.config.encoding = e
-            encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER]
-            server_encodings = encodings
-            es = make_encodingsmenu(get_current_encoding, set_new_encoding, encodings, server_encodings)
-            self.encoding_combo.set_menu(es)
-            set_history_from_active(self.encoding_combo)
-            hbox.pack_start(self.encoding_combo)
-            self.encoding_box.pack_start(hbox)
             self.encoding_combo.connect("changed", self.encoding_changed)
-
+        #quality and speed options are not implemented for gtk3,
+        #where we can't use set_menu()...
+        if not PYTHON3:
             # Quality
             hbox = gtk.HBox(False, 20)
             hbox.set_spacing(20)
@@ -452,7 +445,7 @@ class ApplicationWindow:
             self.quality_combo.set_menu(sq)
             set_history_from_active(self.quality_combo)
             hbox.pack_start(self.quality_combo)
-            self.encoding_box.pack_start(hbox)
+            self.advanced_box.pack_start(hbox)
 
             # Speed
             hbox = gtk.HBox(False, 20)
@@ -473,8 +466,8 @@ class ApplicationWindow:
             self.speed_combo.set_menu(ss)
             set_history_from_active(self.speed_combo)
             hbox.pack_start(self.speed_combo)
-            self.encoding_box.pack_start(hbox)
-            self.encoding_box.hide()
+            self.advanced_box.pack_start(hbox)
+            self.advanced_box.hide()
 
         # Buttons:
         hbox = gtk.HBox(False, 20)
@@ -499,7 +492,7 @@ class ApplicationWindow:
 
         add_close_accel(self.window, self.accel_close)
         vbox.show_all()
-        self.encoding_options_toggled()
+        self.advanced_options_toggled()
         self.window.vbox = vbox
         self.window.add(vbox)
 
@@ -651,6 +644,16 @@ class ApplicationWindow:
         else:
             self.nostrict_host_check.hide()
 
+    def get_current_encoding(self):
+        return self.config.encoding
+
+    def set_new_encoding(self, e):
+        if PYTHON3:
+            self.encoding_combo.set_label(e)
+        else:
+            set_history_from_active(self.encoding_combo)
+        self.config.encoding = e
+
     def get_selected_encoding(self, *_args):
         if not self.encoding_combo:
             return ""
@@ -668,14 +671,14 @@ class ApplicationWindow:
             self.quality_combo.hide()
             self.quality_label.hide()
 
-    def encoding_options_toggled(self, *_args):
-        if not self.encoding_box:
+    def advanced_options_toggled(self, *_args):
+        if not self.advanced_box:
             return
-        show_opts = self.encoding_options_check.get_active()
+        show_opts = self.advanced_options_check.get_active()
         if show_opts:
-            self.encoding_box.show()
+            self.advanced_box.show()
         else:
-            self.encoding_box.hide()
+            self.advanced_box.hide()
 
     def reset_errors(self):
         self.set_sensitive(True)
@@ -1006,14 +1009,17 @@ class ApplicationWindow:
                 break
         self.mode_combo.set_active(active)
         if self.config.encoding and self.encoding_combo:
-            index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
-            log("setting encoding combo to %s / %s", self.config.encoding, index)
-            #make sure the right one is the only one selected:
-            for i,item in enumerate(self.encoding_combo.get_menu().get_children()):
-                item.set_active(i==index)
-            #then select it in the combo:
-            if index>=0:
-                self.encoding_combo.set_history(index)
+            if PYTHON3:
+                self.set_new_encoding(self.config.encoding)
+            else:
+                index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
+                log("setting encoding combo to %s / %s", self.config.encoding, index)
+                #make sure the right one is the only one selected:
+                for i,item in enumerate(self.encoding_combo.get_menu().get_children()):
+                    item.set_active(i==index)
+                #then select it in the combo:
+                if index>=0:
+                    self.encoding_combo.set_history(index)
         self.username_entry.set_text(self.config.username)
         self.password_entry.set_text(self.config.password)
         self.host_entry.set_text(self.config.host)
