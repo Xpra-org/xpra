@@ -468,6 +468,13 @@ class ApplicationWindow:
             hbox.pack_start(self.speed_combo)
             self.advanced_box.pack_start(hbox)
             self.advanced_box.hide()
+        # Sharing:
+        self.sharing = gtk.CheckButton("Sharing")
+        self.sharing.set_active(self.config.sharing)
+        self.sharing.set_tooltip_text("allow multiple concurrent users to connect")
+        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+        al.add(self.sharing)
+        self.advanced_box.pack_start(al)
 
         # Buttons:
         hbox = gtk.HBox(False, 20)
@@ -761,6 +768,7 @@ class ApplicationWindow:
     def connect_builtin(self):
         #cooked vars used by connect_to
         params = {"type"    : self.config.mode}
+        self.config.sharing = self.sharing.get_active()
         username = self.config.username
         if self.config.mode=="ssh" or self.config.mode=="ssh -> ssh":
             if self.config.socket_dir:
@@ -1044,6 +1052,7 @@ class ApplicationWindow:
         self.proxy_password_entry.set_text(self.config.proxy_password)
         if self.is_putty:
             self.proxy_key_entry.set_text(self.config.proxy_key)
+        self.sharing.set_active(bool(self.config.sharing))
 
     def close_window(self, *_args):
         w = self.window
