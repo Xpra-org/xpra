@@ -646,7 +646,7 @@ class ApplicationWindow:
                 self.check_boxes_hbox.hide()
                 self.proxy_password_hbox.hide()
         self.validate()
-        if mode=="ssl" or (mode=="ssh" and not WIN32):
+        if mode in ("ssl", "wss") or (mode=="ssh" and not WIN32):
             self.nostrict_host_check.show()
         else:
             self.nostrict_host_check.hide()
@@ -821,7 +821,7 @@ class ApplicationWindow:
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
             params["display_name"] = "%s:%s:%s" % (self.config.mode, self.config.host, self.config.port)
-            if self.config.mode=="ssl" and self.nostrict_host_check.get_active():
+            if self.config.mode in ("ssl", "wss") and self.nostrict_host_check.get_active():
                 params["strict-host-check"] = False
 
         #print("connect_to(%s)" % params)
