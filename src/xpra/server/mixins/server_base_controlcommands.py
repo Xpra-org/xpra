@@ -456,7 +456,7 @@ class ServerBaseControlCommands(StubServerMixin):
         ch.set_direction(can_send, can_receive)
         msg = "clipboard direction set to '%s'" % direction
         log(msg)
-        self.setting_changed("clipboard_direction", direction)
+        self.setting_changed("clipboard-direction", direction)
         return msg
 
     def control_command_clipboard_limits(self, max_send, max_recv, *_args):
