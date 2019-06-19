@@ -511,7 +511,7 @@ class UIXpraClient(ClientBaseClass):
             ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:
-            log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(str(value)))
+            log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(bytestostr(value)))
             return
         log("_process_setting_change: %s=%s", setting, value)
         #xdg-menu is too big to log
