@@ -155,18 +155,9 @@ class X11ServerCore(GTKServerBase):
                 self.randr = False
                 self.randr_exact_size = False
         screenlog("randr=%s, exact size=%s", self.randr, self.randr_exact_size)
-        display = display_get_default()
-        i=0
-        while i<display.get_n_screens():
-            screen = display.get_screen(i)
-            screen.connect("size-changed", self._screen_size_changed)
-            i += 1
         screenlog("randr enabled: %s", self.randr)
         if not self.randr:
             screenlog.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
-
-    def _screen_size_changed(self, screen):
-        pass
 
 
     def init_cursor(self):

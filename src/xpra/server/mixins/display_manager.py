@@ -141,8 +141,15 @@ class DisplayManager(StubServerMixin):
     def reset_icc_profile(self):
         log("reset_icc_profile() not implemented")
 
+
+    def _monitors_changed(self, screen):
+        self.do_screen_changed(screen)
+
     def _screen_size_changed(self, screen):
-        log("_screen_size_changed(%s)", screen)
+        self.do_screen_changed(screen)
+
+    def do_screen_changed(self, screen):
+        log("do_screen_changed(%s)", screen)
         #randr has resized the screen, tell the client (if it supports it)
         w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)

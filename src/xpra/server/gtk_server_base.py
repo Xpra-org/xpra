@@ -20,6 +20,7 @@ from xpra.gtk_common.quit import (
     gtk_main_quit_on_fatal_exceptions_enable,
     gtk_main_quit_on_fatal_exceptions_disable,
     )
+from xpra.server import server_features
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import (
     get_gtk_version_info, gtk_main, display_get_default, get_root_size,
@@ -93,6 +94,14 @@ class GTKServerBase(ServerBase):
 
 
     def do_run(self):
+        if server_features.windows:
+            display = display_get_default()
+            i=0
+            while i<display.get_n_screens():
+                screen = display.get_screen(i)
+                screen.connect("size-changed", self._screen_size_changed)
+                screen.connect("monitors-changed", self._monitors_changed)
+                i += 1
         gtk_main_quit_on_fatal_exceptions_enable()
         log("do_run() calling %s", gtk_main)
         gtk_main()

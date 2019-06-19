@@ -346,7 +346,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def parse_screen_info(self, ss):
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
 
-    def _screen_size_changed(self, screen):
+    def do_screen_changed(self, screen):
         #this is not relevant.. don't send it
         pass
 
