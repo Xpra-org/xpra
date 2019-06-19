@@ -648,7 +648,7 @@ class ClientWindowBase(ClientWidgetBase):
             if success<=0:
                 return
             backing = self._backing
-            if backing and backing.draw_needs_refresh:
+            if backing and (backing.draw_needs_refresh or REPAINT_ALL):
                 if REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1:
                     rw, rh = self.get_size()
                     rx, ry = 0, 0
