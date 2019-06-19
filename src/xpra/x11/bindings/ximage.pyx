@@ -398,8 +398,11 @@ cdef class XImageWrapper(object):
             raise Exception("source image does not have pixels!")
         cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
-        return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
+        image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
                              self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True, self.palette)
+        image.set_target_x(self.target_x+x)
+        image.set_target_y(self.target_y+y)
+        return image
 
     cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:

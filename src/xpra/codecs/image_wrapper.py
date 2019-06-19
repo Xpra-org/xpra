@@ -221,8 +221,11 @@ class ImageWrapper(object):
         for _ in range(h):
             lines.append(memoryview_to_bytes(pixels[pos:pos+newstride]))
             pos += oldstride
-        return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
+        image = ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
                             planes=self.planes, thread_safe=True, palette=self.palette)
+        image.set_target_x(self.target_x+x)
+        image.set_target_y(self.target_y+y)
+        return image
 
     def __del__(self):
         #print("ImageWrapper.__del__() calling %s" % self.free)
