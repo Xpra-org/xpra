@@ -932,7 +932,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.init(opts)
         app.init_sockets(sockets)
         app.init_dbus(dbus_pid, dbus_env)
-        if xvfb_pid or clobber:
+        if not shadowing and (xvfb_pid or clobber):
             app.init_display_pid(xvfb_pid)
         app.original_desktop_display = desktop_display
         del opts
