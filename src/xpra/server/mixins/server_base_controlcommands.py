@@ -449,7 +449,8 @@ class ServerBaseControlCommands(StubServerMixin):
         assert self.clipboard and ch
         direction = direction.lower()
         DIRECTIONS = ("to-server", "to-client", "both", "disabled")
-        assert direction in DIRECTIONS, "invalid direction '%s', must be one of %s" % (direction, csv(DIRECTIONS))
+        if direction not in DIRECTIONS:
+            return "supported directions: %s" % csv(DIRECTIONS)
         self.clipboard_direction = direction
         can_send = direction in ("to-server", "both")
         can_receive = direction in ("to-client", "both")
