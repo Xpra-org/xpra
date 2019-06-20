@@ -13,7 +13,7 @@ from xpra.os_util import POSIX, monotonic_time, strtobytes, bytestostr, hexstr, 
 from xpra.util import csv, envint, envbool, repr_ellipsized, typedict
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.gtk_common.gobject_compat import import_glib
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 
 log = Logger("clipboard")
 
@@ -434,9 +434,10 @@ class ClipboardProtocolHelperCore(object):
         def no_contents():
             self.send("clipboard-contents-none", request_id, selection)
         dtype = bytestostr(dtype)
-        log("proxy_got_contents(%s, %s, %s, %s, %s, %s:%s) data=0x%s..",
-              request_id, selection, target,
-              dtype, dformat, type(data), len(data or ""), hexstr((data or "")[:200]))
+        if is_debug_enabled("clipboard"):
+            log("proxy_got_contents(%s, %s, %s, %s, %s, %s:%s) data=0x%s..",
+                  request_id, selection, target,
+                  dtype, dformat, type(data), len(data or ""), hexstr((data or "")[:200]))
         if dtype is None or data is None or (dformat==0 and data==b""):
             no_contents()
             return
@@ -448,8 +449,9 @@ class ClipboardProtocolHelperCore(object):
                 truncated = len(data) - max_send_datalen
                 data = data[:max_send_datalen]
         munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
-        log("clipboard raw -> wire: %r -> %r",
-            (dtype, dformat, repr_ellipsized(str(data))), repr_ellipsized(str(munged)))
+        if is_debug_enabled("clipboard"):
+            log("clipboard raw -> wire: %r -> %r",
+                (dtype, dformat, repr_ellipsized(str(data))), repr_ellipsized(str(munged)))
         wire_encoding, wire_data = munged
         if wire_encoding is None:
             no_contents()
