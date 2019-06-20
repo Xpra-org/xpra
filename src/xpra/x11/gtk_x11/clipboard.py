@@ -339,7 +339,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         if not self._enabled:
             nodata()
             return
-        if wininfo.startswith("'") and wininfo.endswith("'") and wininfo.strip("'") in BLACKLISTED_CLIPBOARD_CLIENTS:
+        if wininfo and wininfo.strip("'") in BLACKLISTED_CLIPBOARD_CLIENTS:
             if first_time("clipboard-blacklisted:%s" % wininfo.strip("'")):
                 log.warn("receiving clipboard requests from blacklisted client %s", wininfo)
                 log.warn(" all requests will be silently ignored")
