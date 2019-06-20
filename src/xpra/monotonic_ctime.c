@@ -22,9 +22,24 @@
 #endif
 #endif
 
+#ifdef _WIN32
+LARGE_INTEGER freq;
+#endif
+
 // Use clock_gettime in linux, clock_get_time in OS X.
 double get_monotonic_time(void){
 #ifdef _WIN32
+	LARGE_INTEGER t;
+	if (freq.QuadPart==0) {
+		if (!QueryPerformanceFrequency(&freq)) {
+			freq.QuadPart = 0;
+		}
+	}
+	if (freq.QuadPart>0) {
+		if (QueryPerformanceCounter(&t)) {
+			return (((double) t.QuadPart) * 1000 / freq.QuadPart);
+		}
+	}
 	ULONGLONG ticks = GetTickCount64();
 	return ((double) ticks) / 1000;
 #else
