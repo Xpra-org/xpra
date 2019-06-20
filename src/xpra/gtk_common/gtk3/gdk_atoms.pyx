@@ -11,6 +11,7 @@ from __future__ import absolute_import
 
 from gi.repository import Gdk
 
+from xpra.os_util import bytestostr
 from libc.stdint cimport uintptr_t
 
 
@@ -47,7 +48,8 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
         #inefficient but what other constructor is there?
         name = gdk_atom_name(atom)
         if name:
-            gdk_atom = Gdk.Atom.intern(name, False)
+            str_name = bytestostr(name)
+            gdk_atom = Gdk.Atom.intern(str_name, False)
             objects.append(gdk_atom)
     return objects
 
