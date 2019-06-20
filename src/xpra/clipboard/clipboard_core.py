@@ -321,7 +321,7 @@ class ClipboardProtocolHelperCore(object):
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, repr_ellipsized(bytestostr(data))))
         # Some types just cannot be marshalled:
-        if type in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
+        if dtype in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
                     "PIXEL", "COLORMAP"):
             log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data or b""))
             return None, None
