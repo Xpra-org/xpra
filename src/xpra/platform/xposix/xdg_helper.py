@@ -242,8 +242,9 @@ def do_load_xdg_menu_data():
         from xdg.Menu import parse, Menu, ParsingError
     except ImportError:
         log("do_load_xdg_menu_data()", exc_info=True)
-        log.warn("Warning: cannot use application menu data:")
-        log.warn(" no python-xdg module")
+        if first_time("no-python-xdg"):
+            log.warn("Warning: cannot use application menu data:")
+            log.warn(" no python-xdg module")
         return None
     menu = None
     error = None
