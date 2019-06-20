@@ -24,9 +24,8 @@ from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.gdk_bindings import (
-   add_event_receiver, cleanup_all_event_receivers,
+   add_event_receiver,
    get_children,
-   init_x11_filter, cleanup_x11_filter,
    )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -244,7 +243,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
-        assert init_x11_filter() is True
 
         self._focus_history = deque(maxlen=100)
         # Do this before creating the Wm object, to avoid clobbering its
@@ -295,8 +293,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
             self.root_overlay = None
         self.cancel_all_configure_damage()
-        cleanup_x11_filter()
-        cleanup_all_event_receivers()
         if self._wm:
             self._wm.cleanup()
             self._wm = None

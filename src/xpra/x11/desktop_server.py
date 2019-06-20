@@ -25,8 +25,6 @@ from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_catchall_receiver, remove_catchall_receiver,
     add_event_receiver,          #@UnresolvedImport
-    init_x11_filter, cleanup_x11_filter,          #@UnresolvedImport
-    cleanup_all_event_receivers  #@UnresolvedImport
    )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.xroot_props import XRootPropWatcher
@@ -314,7 +312,6 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
-        assert init_x11_filter() is True
         display = display_get_default()
         screens = display.get_n_screens()
         for n in range(screens):
@@ -328,9 +325,6 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def do_cleanup(self):
         self.cancel_resize_timer()
         remove_catchall_receiver("xpra-motion-event", self)
-        cleanup_x11_filter()
-        with xswallow:
-            cleanup_all_event_receivers()
         X11ServerBase.do_cleanup(self)
 
 

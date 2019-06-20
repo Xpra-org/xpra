@@ -20,6 +20,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
+from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.os_util import monotonic_time, strtobytes, bytestostr, PYTHON3
 from xpra.util import engs, csv, typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
@@ -90,6 +91,7 @@ class X11ServerCore(GTKServerBase):
         self.pointer_device_map = {}
         self.keys_pressed = {}
         self.last_mouse_user = None
+        self.x11_filter = False
         GTKServerBase.__init__(self)
         log("XShape=%s", X11Window.displayHasXShape())
 
@@ -132,6 +134,8 @@ class X11ServerCore(GTKServerBase):
             self.init_randr()
         self.init_cursor()
         self.query_opengl()
+        self.x11_filter = init_x11_filter()
+        assert self.x11_filter
 
 
     def init_randr(self):
@@ -295,6 +299,10 @@ class X11ServerCore(GTKServerBase):
         return env
 
     def do_cleanup(self):
+        if self.x11_filter:
+            self.x11_filter = False
+            cleanup_x11_filter()
+            cleanup_all_event_receivers()
         if self.fake_xinerama:
             cleanup_fakeXinerama()
         with xswallow:
