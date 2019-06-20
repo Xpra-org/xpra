@@ -345,7 +345,7 @@ class ClipboardProtocolHelperCore(object):
         log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s)", target, dtype, dformat, type(data), len(data or ""))
         if dformat == 32:
             #you should be using gdk_clipboard for atom support!
-            if dtype in (b"ATOM", b"ATOM_PAIR") and POSIX:
+            if dtype in ("ATOM", "ATOM_PAIR") and POSIX:
                 #we cannot handle gdk atoms here (but gdk_clipboard does)
                 return None, None
             #important note: on 64 bits, format=32 means 8 bytes, not 4
@@ -438,7 +438,7 @@ class ClipboardProtocolHelperCore(object):
             log("proxy_got_contents(%s, %s, %s, %s, %s, %s:%s) data=0x%s..",
                   request_id, selection, target,
                   dtype, dformat, type(data), len(data or ""), hexstr((data or "")[:200]))
-        if dtype is None or data is None or (dformat==0 and data==b""):
+        if dtype is None or data is None or (dformat==0 and not data):
             no_contents()
             return
         log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
