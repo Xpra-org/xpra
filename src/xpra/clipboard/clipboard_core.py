@@ -325,9 +325,9 @@ class ClipboardProtocolHelperCore(object):
                     "PIXEL", "COLORMAP"):
             log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data or b""))
             return None, None
-        if target=="TARGETS" and dtype=="ATOM":
+        if target=="TARGETS" and dtype=="ATOM" and isinstance(data, (tuple, list)):
             #targets is special cased here
-            #because we get the values in wire format already (not atoms)
+            #because we can get the values in wire format already (not atoms)
             #thanks to the request_targets() function (required on win32)
             return "atoms", _filter_targets(data)
         try:
