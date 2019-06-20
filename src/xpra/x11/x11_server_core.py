@@ -302,7 +302,18 @@ class X11ServerCore(GTKServerBase):
         if self.x11_filter:
             self.x11_filter = False
             cleanup_x11_filter()
-            cleanup_all_event_receivers()
+            #try a few times:
+            #errors happen because windows are being destroyed
+            #(even more so when we cleanup)
+            #and we don't really care too much about this
+            for l in (log, log, log, log, log.warn):
+                try:
+                    with xsync:
+                        cleanup_all_event_receivers()
+                        #all went well, we're done
+                        return
+                except Exception as e:
+                    l("failed to remove event receivers: %s", e)
         if self.fake_xinerama:
             cleanup_fakeXinerama()
         with xswallow:

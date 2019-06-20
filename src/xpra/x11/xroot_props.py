@@ -1,13 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
-    cleanup_all_event_receivers,
     )
 from xpra.gtk_common.gtk_util import PROPERTY_CHANGE_MASK
 from xpra.gtk_common.error import xsync
@@ -36,18 +35,6 @@ class XRootPropWatcher(gobject.GObject):
         #this must be called from the UI thread!
         remove_event_receiver(self._root, self)
         self._root.set_events(self._saved_event_mask)
-        #try a few times:
-        #errors happen because windows are being destroyed
-        #(even more so when we cleanup)
-        #and we don't really care too much about this
-        for l in (log, log, log, log, log.warn):
-            try:
-                with xsync:
-                    cleanup_all_event_receivers()
-                    #all went well, we're done
-                    return
-            except Exception as e:
-                l("failed to remove event receivers: %s", e)
 
     def do_xpra_property_notify_event(self, event):
         log("XRootPropWatcher.do_xpra_property_notify_event(%s)", event)
