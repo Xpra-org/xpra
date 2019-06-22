@@ -172,7 +172,9 @@ class WindowServer(StubServerMixin):
 
     def _update_metadata(self, window, pspec):
         metalog("updating metadata on %s: %s", window, pspec)
-        wid = self._window_to_id[window]
+        wid = self._window_to_id.get(window)
+        if not wid:
+            return  #window is already gone
         for ss in self._server_sources.values():
             ss.window_metadata(wid, window, pspec.name)
 
