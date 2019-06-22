@@ -41,7 +41,7 @@ class StartNewCommand(object):
 
     def __init__(self, run_callback=None, can_share=False, xdg_menu=None):
         self.run_callback = run_callback
-        self.xdg_menu = typedict(xdg_menu)
+        self.xdg_menu = typedict(xdg_menu or {})
         self.window = gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.close)
