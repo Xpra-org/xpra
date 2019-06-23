@@ -1133,6 +1133,13 @@ heuristics or specified using the dbus interface.
 
 .SS Options for attach
 .TP
+\fB--modal-windows\fP=\fIyes\fP|\fIno\fP
+Honour modal windows.
+This may have undesirable side effects when multiple applications are
+forwarded through the same xpra server: modal windows will be made modal
+for all the applications forwarded by xpra rather than just the one
+application which owns that window.
+.TP
 \fB--password-file\fP=\fIFILENAME\fP
 Supply the password to be used for connecting to a server that
 uses authentication. See \fIauth\fP, \fItcp-auth\fP, \fIssl-auth\fP
