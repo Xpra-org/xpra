@@ -972,6 +972,7 @@ class ServerCore(object):
         return True
 
     def peek_connection(self, conn, timeout=PEEK_TIMEOUT_MS):
+        log("peek_connection(%s, %i)", conn, timeout)
         PEEK_SIZE = 8192
         start = monotonic_time()
         peek_data = b""
@@ -983,7 +984,8 @@ class ServerCore(object):
             except ValueError:
                 log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
                 break
-            sleep(timeout/4000.0)
+            if not peek_data:
+                sleep(timeout/4000.0)
         line1 = b""
         netlog("socket %s peek: got %i bytes", conn, len(peek_data))
         if peek_data:
