@@ -70,6 +70,11 @@ def get_wm_name():
             traylog.error(" %s", e)
     return wm_name
 
+def get_clipboard_native_class():
+    if is_Wayland():
+        return None
+    return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
+
 def get_native_tray_classes():
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
     c = []

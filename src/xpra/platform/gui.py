@@ -41,6 +41,9 @@ def use_stdin():
     stdin = sys.stdin
     return stdin and stdin.isatty()
 
+def get_clipboard_native_class():
+    return None
+
 #defaults:
 def get_native_tray_menu_helper_class():
     #classes that generate menus for xpra's system tray
@@ -237,6 +240,7 @@ def get_info_base():
     def fnames(l):
         return [fname(x) for x in l]
     return {
+            "native-clipboard"              : fname(get_clipboard_native_class()),
             "native_tray_menu_helper"       : fname(get_native_tray_menu_helper_class()),
             "native_trays"                  : fnames(get_native_tray_classes()),
             "native_system_trays"           : fnames(get_native_system_tray_classes()),
@@ -279,6 +283,7 @@ platform_import(globals(), "gui", False,
                 "show_desktop", "set_fullscreen_monitors", "set_shaded",
                 "ClientExtras",
                 "take_screenshot",
+                "get_clipboard_native_class",
                 "get_native_tray_menu_helper_class",
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",

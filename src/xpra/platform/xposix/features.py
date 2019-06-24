@@ -32,11 +32,6 @@ DEFAULT_ENV = [
 
 DEFAULT_SSH_CMD = "ssh"
 
-if is_Wayland():
-    CLIPBOARD_NATIVE_CLASS = None
-else:
-    CLIPBOARD_NATIVE_CLASS = "xpra.x11.gtk_x11.clipboard.X11Clipboard"
-
 CLIPBOARDS=["CLIPBOARD", "PRIMARY"]
 if not is_Wayland():
     CLIPBOARDS.append("SECONDARY")

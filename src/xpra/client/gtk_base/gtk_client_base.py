@@ -46,6 +46,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
     system_bell, get_wm_name, get_fixed_cursor_size,
+    get_clipboard_native_class,
     )
 from xpra.log import Logger
 
@@ -1205,19 +1206,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         ct = self.client_clipboard_type
         if ct and ct.lower() in FALSE_OPTIONS:
             return []
-        from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
         from xpra.scripts.main import CLIPBOARD_CLASS
         #first add the platform specific one, (may be None):
-        clipboard_options = []
-        if CLIPBOARD_CLASS:
-            clipboard_options.append(CLIPBOARD_CLASS)
-        if CLIPBOARD_NATIVE_CLASS:
-            clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
-        clipboard_options.append("xpra.clipboard.gdk_clipboard.GDKClipboardProtocolHelper")
+        clipboard_options = [
+            CLIPBOARD_CLASS,
+            get_clipboard_native_class(),
+            ]
         clipboardlog("get_clipboard_helper_classes() unfiltered list=%s", clipboard_options)
         if ct and ct.lower()!="auto" and ct.lower() not in TRUE_OPTIONS:
             #try to match the string specified:
-            filtered = [x for x in clipboard_options if x.lower().find(self.client_clipboard_type)>=0]
+            filtered = [x for x in clipboard_options if x and x.lower().find(self.client_clipboard_type)>=0]
             if not filtered:
                 clipboardlog.warn("Warning: no clipboard types matching '%s'", self.client_clipboard_type)
                 clipboardlog.warn(" clipboard synchronization is disabled")
@@ -1228,6 +1226,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         clipboardlog("get_clipboard_helper_classes() options=%s", clipboard_options)
         loadable = []
         for co in clipboard_options:
+            if not co:
+                continue
             try:
                 parts = co.split(".")
                 mod = ".".join(parts[:-1])

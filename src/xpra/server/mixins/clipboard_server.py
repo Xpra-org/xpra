@@ -103,13 +103,14 @@ class ClipboardServer(StubServerMixin):
                           self.clipboard_filter_file, exc_info=True)
                 return
         try:
-            from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
-            assert CLIPBOARD_NATIVE_CLASS, "no native clipboard support"
-            parts = CLIPBOARD_NATIVE_CLASS.split(".")
+            from xpra.platform.gui import get_clipboard_native_class
+            clipboard_class = get_clipboard_native_class()
+            assert clipboard_class, "no native clipboard support"
+            parts = clipboard_class.split(".")
             mod = ".".join(parts[:-1])
             module = __import__(mod, {}, {}, [parts[-1]])
             ClipboardClass = getattr(module, parts[-1])
-            log("ClipboardClass for %s: %s", CLIPBOARD_NATIVE_CLASS, ClipboardClass)
+            log("ClipboardClass for %s: %s", clipboard_class, ClipboardClass)
             kwargs = {
                       "filters"     : clipboard_filter_res,
                       "can-send"    : self.clipboard_direction in ("to-client", "both"),

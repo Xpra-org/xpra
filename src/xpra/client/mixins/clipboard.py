@@ -116,6 +116,9 @@ class ClipboardClient(StubClientMixin):
         log("process_ui_capabilities() clipboard_enabled=%s", self.clipboard_enabled)
         if self.clipboard_enabled:
             ch = self.make_clipboard_helper()
+            if not ch:
+                log.warn("Warning: no clipboard support")
+                return
             ch.set_clipboard_contents_slice_fix(self.server_clipboard_contents_slice_fix)
             self.clipboard_helper = ch
             self.clipboard_enabled = ch is not None

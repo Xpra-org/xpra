@@ -176,6 +176,10 @@ class OSX_Subprocess_Notifier(NotifierBase):
         pass
 
 
+def get_clipboard_native_class():
+    return "xpra.platform.darwin.osx_clipboard.OSXClipboardProtocolHelper"
+
+
 def get_native_notifier_classes():
     v = []
     if NATIVE_NOTIFIER and NSUserNotificationCenter.defaultUserNotificationCenter():

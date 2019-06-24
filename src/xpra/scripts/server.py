@@ -174,6 +174,7 @@ def sanitize_env():
              "CKCON_TTY",
              "CKCON_X11_DISPLAY",
              "CKCON_X11_DISPLAY_DEVICE",
+             "WAYLAND_DISPLAY",
              )
 
 def configure_imsettings_env(input_method):

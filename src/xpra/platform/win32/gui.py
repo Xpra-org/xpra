@@ -164,6 +164,11 @@ def use_stdin():
     return True
 
 
+def get_clipboard_native_class():
+    #"xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper"
+    return "xpra.platform.win32.clipboard.Win32Clipboard"
+
+
 def get_native_notifier_classes():
     try:
         from xpra.platform.win32.win32_notifier import Win32_Notifier

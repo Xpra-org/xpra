@@ -12,7 +12,6 @@ CAN_DAEMONIZE = False
 CLIPBOARDS=["CLIPBOARD"]
 CLIPBOARD_WANT_TARGETS = True
 CLIPBOARD_GREEDY = True
-CLIPBOARD_NATIVE_CLASS = "xpra.platform.darwin.osx_clipboard.OSXClipboardProtocolHelper"
 
 OPEN_COMMAND = ["open"]
 UI_THREAD_POLLING = 500    #poll every 500 ms

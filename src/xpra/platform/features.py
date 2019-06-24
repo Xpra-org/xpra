@@ -25,7 +25,6 @@ SYSTEM_PROXY_SOCKET = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/syst
 CLIPBOARDS = []
 CLIPBOARD_WANT_TARGETS = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
 CLIPBOARD_GREEDY = envbool("XPRA_CLIPBOARD_GREEDY")
-CLIPBOARD_NATIVE_CLASS = None
 
 EXECUTABLE_EXTENSION = ""
 
@@ -79,7 +78,6 @@ _features_list_ = [
                    "CLIPBOARDS",
                    "CLIPBOARD_WANT_TARGETS",
                    "CLIPBOARD_GREEDY",
-                   "CLIPBOARD_NATIVE_CLASS",
                    "EXECUTABLE_EXTENSION",
                    "UI_THREAD_POLLING",
                    "CLIENT_MODULES",
