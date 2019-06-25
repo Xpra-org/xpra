@@ -137,9 +137,10 @@ class ServerBase(ServerBaseClass):
         from xpra.scripts import config
         config.warn = log.warn
         for c in SERVER_BASES:
+            start = monotonic_time()
             c.init(self, opts)
-        log("ServerBase.init(%s)", opts)
-
+            end = monotonic_time()
+            log("%3ims in %s.init", 1000*(end-start), c)
         self.sharing = opts.sharing
         self.lock = opts.lock
         self.idle_timeout = opts.idle_timeout
@@ -149,7 +150,10 @@ class ServerBase(ServerBaseClass):
     def setup(self):
         log("starting component init")
         for c in SERVER_BASES:
+            start = monotonic_time()
             c.setup(self)
+            end = monotonic_time()
+            log("%3ims in %s.setup", 1000*(end-start), c)
         self.init_thread = Thread(target=self.threaded_init)
         self.init_thread.start()
 
@@ -160,13 +164,16 @@ class ServerBase(ServerBaseClass):
         for c in SERVER_BASES:
             if c!=ServerCore:
                 c.threaded_setup(self)
+        #populate the platform info cache:
+        from xpra.version_util import get_platform_info
+        get_platform_info()
         log("threaded_init() end")
 
     def wait_for_threaded_init(self):
         assert self.init_thread
         log("wait_for_threaded_init() %s.is_alive()=%s", self.init_thread, self.init_thread.is_alive())
         if self.init_thread.is_alive():
-            log.info("waiting for video encoders initialization")
+            log.info("waiting for initialization thread to complete")
             self.init_thread.join(INIT_THREAD_TIMEOUT)
             if self.init_thread.is_alive():
                 log.warn("Warning: initialization thread is still active")
