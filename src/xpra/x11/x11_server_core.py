@@ -109,6 +109,7 @@ class X11ServerCore(GTKServerBase):
         super(X11ServerCore, self).server_init()
 
     def do_init(self, opts):
+        self.opengl = opts.opengl
         self.randr = opts.resize_display
         self.randr_exact_size = False
         self.fake_xinerama = False      #only enabled in seamless server
@@ -183,6 +184,9 @@ class X11ServerCore(GTKServerBase):
 
     def query_opengl(self):
         self.opengl_props = {}
+        if self.opengl.lower()=="noprobe":
+            gllog("query_opengl() skipped: %s", self.opengl)
+            return
         blacklisted_kernel_modules = []
         for mod in ("vboxguest", "vboxvideo"):
             if os.path.exists("/sys/module/%s" % mod):
