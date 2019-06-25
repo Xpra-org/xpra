@@ -34,7 +34,7 @@ class WebcamServer(StubServerMixin):
         if os.path.isabs(opts.webcam):
             self.webcam_device = opts.webcam
 
-    def setup(self):
+    def threaded_setup(self):
         self.init_webcam()
 
 
