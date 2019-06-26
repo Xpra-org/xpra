@@ -543,6 +543,13 @@ i.e. 'daemonizes', and redirects its output to a log file.
 This can be used to prevent that behavior (useful mostly for debugging).
 .TP
 
+\fB--resize-display\fP=\fIyes\fP|\fIno\fP
+Resize the virtual display to match the resolution of
+the client currently connected.
+This only applies to the \fIstart\fP and \fIstart-desktop\fP
+subcommands.
+.TP
+
 \fB--fake-xinerama\fP=\fIPATH\fP|\fIauto\fP|\fIno\fP
 Specify the path to the \fBlibfakeXinerama.so\fP library which
 will be injected into all the child processes the server starts
