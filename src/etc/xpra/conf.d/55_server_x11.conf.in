@@ -25,6 +25,12 @@ input-method=none
 # sync-xvfb = 50
 sync-xvfb = 0
 
+# Fake Xinerama:
+#fake-xinerama=no
+#fake-xinerama=auto
+#fake-xinerama=/path/to/libfakeXinerama.so
+fake-xinerama = %(fake_xinerama)s
+
 # Virtual display command:
 # - Old Xvfb option (required on Ubuntu where Xorg is broken):
 # xvfb = Xvfb -nolisten tcp -noreset \

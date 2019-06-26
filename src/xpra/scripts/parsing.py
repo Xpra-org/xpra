@@ -484,10 +484,10 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="displayfd", default=defaults.displayfd,
                           help="The xpra server will write the display number back on this file descriptor"
                           +" as a newline-terminated string.")
-        group.add_option("--fake-xinerama", action="store", metavar="yes|no",
+        group.add_option("--fake-xinerama", action="store", metavar="path|auto|no",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
-                          help="Setup fake xinerama support for the session."
+                          help="Setup fake xinerama support for the session. You can specify the path to the libfakeXinerama.so library or a boolean."
                           +" Default: %s." % enabled_str(defaults.fake_xinerama))
     else:
         ignore({

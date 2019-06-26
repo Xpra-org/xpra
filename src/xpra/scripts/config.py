@@ -563,7 +563,7 @@ OPTION_TYPES = {
                     "start-via-proxy"   : bool,
                     "attach"            : bool,
                     "use-display"       : bool,
-                    "fake-xinerama"     : bool,
+                    "fake-xinerama"     : str,
                     "resize_display"    : bool,
                     "tray"              : bool,
                     "pulseaudio"        : bool,
@@ -866,6 +866,12 @@ def get_defaults():
     if sys.version_info<(2, 7, 9):
         ssl_protocol = "SSLv23"
 
+    if POSIX and not OSX:
+        from xpra.x11.fakeXinerama import find_libfakeXinerama
+        fake_xinerama = find_libfakeXinerama()
+    else:
+        fake_xinerama = "no"
+
     GLOBAL_DEFAULTS = {
                     "encoding"          : "auto",
                     "title"             : "@title@ on @client-machine@",
@@ -968,7 +974,7 @@ def get_defaults():
                     "start-via-proxy"   : False,
                     "attach"            : None,
                     "use-display"       : False,
-                    "fake-xinerama"     : not OSX and not WIN32,
+                    "fake-xinerama"     : fake_xinerama,
                     "resize-display"    : not OSX and not WIN32,
                     "tray"              : True,
                     "pulseaudio"        : DEFAULT_PULSEAUDIO,

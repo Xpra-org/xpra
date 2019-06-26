@@ -27,6 +27,7 @@ from xpra.util import engs, csv, typedict, iround, envbool, XPRA_DPI_NOTIFICATIO
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
+from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
 
 gdk = import_gdk()
@@ -112,7 +113,7 @@ class X11ServerCore(GTKServerBase):
         self.opengl = opts.opengl
         self.randr = opts.resize_display
         self.randr_exact_size = False
-        self.fake_xinerama = False      #only enabled in seamless server
+        self.fake_xinerama = "no"      #only enabled in seamless server
         self.current_xinerama_config = None
         #x11 keyboard bits:
         self.current_keyboard_group = None
@@ -120,10 +121,12 @@ class X11ServerCore(GTKServerBase):
 
     def x11_init(self):
         clean_keyboard_state()
-        if self.fake_xinerama:
-            self.libfakeXinerama_so = find_libfakeXinerama()
-        else:
+        if self.fake_xinerama in FALSE_OPTIONS:
             self.libfakeXinerama_so = None
+        elif os.path.isabs(self.fake_xinerama):
+            self.libfakeXinerama_so = self.fake_xinerama
+        else:
+            self.libfakeXinerama_so = find_libfakeXinerama()
         if not X11Keyboard.hasXFixes() and self.cursors:
             log.error("Error: cursor forwarding support disabled")
         if not X11Keyboard.hasXTest():
@@ -375,7 +378,7 @@ class X11ServerCore(GTKServerBase):
         sinfo = info.setdefault("server", {})
         sinfo.update({
             "type"                  : "Python/gtk/x11",
-            "fakeXinerama"          : self.fake_xinerama and bool(self.libfakeXinerama_so),
+            "fakeXinerama"          : bool(self.libfakeXinerama_so),
             "libfakeXinerama"       : self.libfakeXinerama_so or "",
             })
         log("X11ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
