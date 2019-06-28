@@ -211,8 +211,24 @@ def get_iface(ip):
 # http://code.activestate.com/recipes/442490/
 if_nametoindex = None
 if_indextoname = None
-from xpra.os_util import WIN32, OSX
-if not WIN32:
+
+from xpra.os_util import WIN32, OSX, PYTHON3
+if WIN32:
+    def int_if_nametoindex(iface):
+        #IPv6 addresses give us the interface as a string:
+        #fe80:....%11, so try to convert "11" into 11
+        try:
+            return int(iface)
+        except (TypeError, ValueError):
+            return None
+    if_nametoindex = int_if_nametoindex
+elif PYTHON3:
+    if_nametoindex = socket.if_nametoindex
+    def if_indextoname(index):
+        if index<0:
+            return None
+        return socket.if_indextoname(index)
+else:
     library = "libc.so.6"
     if OSX:
         library = "/usr/lib/libc.dylib"
@@ -245,15 +261,6 @@ if not WIN32:
             return _libc.if_indextoname(c_uint(index), s)
         if_nametoindex = libc_if_nametoindex
         if_indextoname = libc_if_indextoname
-else:
-    def int_if_nametoindex(iface):
-        #IPv6 addresses give us the interface as a string:
-        #fe80:....%11, so try to convert "11" into 11
-        try:
-            return int(iface)
-        except (TypeError, ValueError):
-            return None
-    if_nametoindex = int_if_nametoindex
 
 
 net_sys_config = None
