@@ -22,6 +22,13 @@ fakeXinerama_config_files = [
            ]
 
 def find_libfakeXinerama():
+    try:
+        from ctypes.util import find_library
+        libpath = find_library("fakeXinerama")
+        if libpath:
+            return libpath
+    except Exception:
+        pass
     if LINUX:
         try:
             libpath = find_lib_ldconfig("fakeXinerama")
