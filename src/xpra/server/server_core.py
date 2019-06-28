@@ -329,7 +329,8 @@ class ServerCore(object):
         return True
 
     def server_init(self):
-        self.mdns_publish()
+        if self.mdns:
+            add_work_item(self.mdns_publish)
         self.start_listen_sockets()
 
     def setup(self):
