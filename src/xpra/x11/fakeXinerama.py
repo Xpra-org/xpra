@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
 from xpra.util import prettify_plug_name
-from xpra.os_util import find_lib, find_lib_ldconfig, strtobytes, LINUX
+from xpra.os_util import find_lib, find_lib_ldconfig, strtobytes, LINUX, POSIX
 from xpra.version_util import XPRA_VERSION
 from xpra.log import Logger
 
@@ -22,13 +22,21 @@ fakeXinerama_config_files = [
            ]
 
 def find_libfakeXinerama():
+    libname = "fakeXinerama"
     try:
         from ctypes.util import find_library
-        libpath = find_library("fakeXinerama")
-        if libpath:
-            return libpath
+        flibname = find_library("fakeXinerama")
+        if flibname:
+            libname = flibname
     except Exception:
         pass
+    if POSIX:
+        for lib_dir in os.environ.get("LD_LIBRARY_PATH", "/usr/lib").split(os.pathsep):
+            lib_path = os.path.join(lib_dir, libname)
+            if not os.path.exists(lib_dir):
+                continue
+            if os.path.exists(lib_path) and os.path.isfile(lib_path):
+                return lib_path
     if LINUX:
         try:
             libpath = find_lib_ldconfig("fakeXinerama")
@@ -38,7 +46,7 @@ def find_libfakeXinerama():
             log("find_libfakeXinerama()", exc_info=True)
             log.error("Error: cannot launch ldconfig -p to locate libfakeXinerama:")
             log.error(" %s", e)
-    return find_lib("libfakeXinerama.so.1")
+    return find_lib(libname)
 
 current_xinerama_config = None
 
