@@ -76,7 +76,7 @@ class ChildCommandServer(StubServerMixin):
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
         self.idle_add(set_reaper_callback)
-        if POSIX and not OSX:
+        if POSIX and not OSX and self.start_new_commands:
             try:
                 self.setup_menu_watcher()
             except Exception as e:
