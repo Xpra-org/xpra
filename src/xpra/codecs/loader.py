@@ -181,6 +181,10 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True):
     global loaded
     if loaded:
         return
+    reload_codecs(encoders, decoders, csc, video)
+
+def reload_codecs(encoders=True, decoders=True, csc=True, video=True):
+    global loaded
     loaded = True
     show = []
     log("loading codecs")
