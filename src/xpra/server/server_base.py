@@ -163,7 +163,12 @@ class ServerBase(ServerBaseClass):
         threaded_server_init()
         for c in SERVER_BASES:
             if c!=ServerCore:
-                c.threaded_setup(self)
+                try:
+                    c.threaded_setup(self)
+                except Exception as e:
+                    log("threaded_init() error on %s", c, exc_info=True)
+                    log.error("Error during threaded setup of %s", c)
+                    log.error(" %s", e)
         #populate the platform info cache:
         from xpra.version_util import get_platform_info
         get_platform_info()
