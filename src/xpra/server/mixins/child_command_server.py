@@ -76,8 +76,15 @@ class ChildCommandServer(StubServerMixin):
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
         self.idle_add(set_reaper_callback)
-        if not POSIX or OSX:
-            return
+        if POSIX and not OSX:
+            try:
+                self.setup_menu_watcher()
+            except Exception as e:
+                log("threaded_setup()", exc_info=True)
+                log.error("Error setting up menu watcher:")
+                log.error(" %s", e)
+
+    def setup_menu_watcher(self):
         try:
             import pyinotify
         except ImportError as e:
