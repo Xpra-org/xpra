@@ -841,6 +841,10 @@ def detect_xorg_setup(install_dir=None):
 def build_xpra_conf(install_dir):
     #generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
+    fake_xinerama = "no"
+    if POSIX and not OSX:
+        from xpra.x11.fakeXinerama import find_libfakeXinerama
+        fake_xinerama = find_libfakeXinerama() or "auto"
     from xpra.platform.features import DEFAULT_ENV
     def bstr(b):
         if b is None:
@@ -888,6 +892,7 @@ def build_xpra_conf(install_dir):
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
             'xvfb_command'          : pretty_cmd(xvfb_command),
+            'fake_xinerama'         : fake_xinerama,
             'ssh_command'           : "auto",
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
             'remote_logging'        : "both",
