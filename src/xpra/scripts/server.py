@@ -797,7 +797,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     #create devices for vfb if needed:
     devices = {}
-    if not start_vfb and not proxying and not shadowing:
+    if not start_vfb and not proxying and not shadowing and envbool("XPRA_UINPUT", True):
         #try to find the existing uinput uuid:
         #use a subprocess to avoid polluting our current process
         #with X11 connections before we get a chance to change uid
