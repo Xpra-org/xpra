@@ -7,19 +7,19 @@
 #stretch:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 #buster:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
-PY2BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
-PY3BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ --without-html5 --without-printing
+PY2BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ --without-html5 --without-printing
+PY3BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
 %:
 	dh $@ --with python2,python3 --with systemd
 
 override_dh_auto_build:
-	python3 setup.py build $(PY3BUILDOPTS)
 	python2 setup.py build $(PY2BUILDOPTS)
+	python3 setup.py build $(PY3BUILDOPTS)
 
 override_dh_auto_install:
-	python3 setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb $(PY3BUILDOPTS)
 	python2 setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb $(PY2BUILDOPTS)
+	python3 setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb $(PY3BUILDOPTS)
 
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
