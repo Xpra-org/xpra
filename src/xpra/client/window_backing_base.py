@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from threading import Lock
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
 from xpra.util import typedict, csv, envint, envbool, repr_ellipsized
-from xpra.codecs.loader import get_codec, is_loaded
+from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import bytestostr, _buffer
 try:
@@ -97,12 +97,11 @@ class WindowBackingBase(object):
         self.jpeg_decoder = None
         self.webp_decoder = None
         self.pil_decoder = None
-        if is_loaded():
-            self.pil_decoder = get_codec("dec_pillow")
-            if self.pil_decoder:
-                self._PIL_encodings = self.pil_decoder.get_encodings()
-            self.jpeg_decoder = get_codec("dec_jpeg")
-            self.webp_decoder = get_codec("dec_webp")
+        self.pil_decoder = get_codec("dec_pillow")
+        if self.pil_decoder:
+            self._PIL_encodings = self.pil_decoder.get_encodings()
+        self.jpeg_decoder = get_codec("dec_jpeg")
+        self.webp_decoder = get_codec("dec_webp")
         self.draw_needs_refresh = True
         self.mmap = None
         self.mmap_enabled = False

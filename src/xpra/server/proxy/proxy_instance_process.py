@@ -18,7 +18,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol_classes import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol import Protocol
-from xpra.codecs.loader import load_codecs, get_codec
+from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import (
@@ -294,7 +294,8 @@ class ProxyInstanceProcess(Process):
 
     def video_init(self):
         enclog("video_init() loading codecs")
-        load_codecs(decoders=False)
+        enclog("video_init() loading pillow encoder")
+        load_codec("enc_pillow")
         enclog("video_init() will try video encoders: %s", csv(self.video_encoder_modules) or "none")
         self.video_helper = getVideoHelper()
         #only use video encoders (no CSC supported in proxy)

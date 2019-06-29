@@ -7,7 +7,7 @@
 import os
 
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
-from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec
+from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.config import parse_bool_or_int
 from xpra.net import compression
@@ -15,7 +15,7 @@ from xpra.util import envint, envbool, updict, csv
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
-log = Logger("client")
+log = Logger("client", "encoding")
 
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
@@ -64,9 +64,14 @@ class Encodings(StubClientMixin):
         self.min_quality = opts.min_quality
         self.speed = opts.speed
         self.min_speed = opts.min_speed
-        #until we add the ability to choose decoders, use all of them:
-        #(and default to non grahics card csc modules if not specified)
-        load_codecs(encoders=False, video=False)
+        load_codec("enc_pillow")
+        ae = self.allowed_encodings
+        if "jpeg" in ae:
+            #try to load the fast jpeg encoder:
+            load_codec("dec_jpeg")
+        if "webp" in ae:
+            #try to load the fast webp encoder:
+            load_codec("dec_webp")
         vh = getVideoHelper()
         vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
         vh.init()
@@ -241,7 +246,7 @@ class Encodings(StubClientMixin):
         """
         #we always support rgb:
         core_encodings = ["rgb24", "rgb32"]
-        for codec in ("dec_pillow", "dec_webp"):
+        for codec in ("dec_pillow", "dec_webp", "dec_jpeg"):
             if has_codec(codec):
                 c = get_codec(codec)
                 for e in c.get_encodings():

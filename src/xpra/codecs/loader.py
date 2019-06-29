@@ -176,16 +176,7 @@ def load_codec(name):
         xpra_codec_import(name, description, top_module, class_module, classnames)
 
 
-loaded = None
 def load_codecs(encoders=True, decoders=True, csc=True, video=True):
-    global loaded
-    if loaded:
-        return
-    reload_codecs(encoders, decoders, csc, video)
-
-def reload_codecs(encoders=True, decoders=True, csc=True, video=True):
-    global loaded
-    loaded = True
     show = []
     log("loading codecs")
 
@@ -219,23 +210,16 @@ def reload_codecs(encoders=True, decoders=True, csc=True, video=True):
         log("* %s : %s" % (name.ljust(20), version))
 
 
-def is_loaded():
-    return loaded
-
 def get_codec_error(name):
-    assert loaded
     return codec_errors.get(name)
 
 def get_codec(name):
-    assert loaded
     return codecs.get(name)
 
 def get_codec_version(name):
-    assert loaded
     return codec_versions.get(name)
 
 def has_codec(name):
-    assert loaded
     return name in codecs
 
 
