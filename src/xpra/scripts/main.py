@@ -1478,6 +1478,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 cmd += ["-d", "opengl"]
             else:
                 env["NOTTY"] = "1"
+            start = monotonic_time()
             try:
                 kwargs = {}
                 if POSIX:
@@ -1494,6 +1495,8 @@ def get_client_app(error_cb, opts, extra_args, mode):
             else:
                 r = pollwait(proc)
                 log("OpenGL probe command returned %s for command=%s", r, cmd)
+                end = monotonic_time()
+                log("probe took %ims", 1000*(end-start))
                 if r==0:
                     opts.opengl = "probe-success"
                 elif r==1:
