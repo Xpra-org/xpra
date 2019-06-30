@@ -97,6 +97,7 @@ class UIXpraClient(ClientBaseClass):
         #same for tray:
         self.tray = None
         for c in CLIENT_BASES:
+            log("calling %s.__init__()", c)
             c.__init__(self)
         try:
             pinfo = get_platform_info()
