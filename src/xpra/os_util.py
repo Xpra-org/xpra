@@ -263,7 +263,7 @@ def is_Wayland():
     return os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE")=="wayland"
 
 
-def is_distribution_variant(variant=b"Debian", os_file="/etc/os-release"):
+def is_distribution_variant(variant=b"Debian"):
     if not POSIX:
         return False
     try:
@@ -274,10 +274,20 @@ def is_distribution_variant(variant=b"Debian", os_file="/etc/os-release"):
     except:
         pass
     try:
-        v = load_binary_file(os_file)
+        v = load_os_release_file()
         return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith(b"NAME="))
     except:
         return False
+
+os_release_file_data = False
+def load_os_release_file():
+    global os_release_file_data
+    if os_release_file_data is False:
+        try:
+            os_release_file_data = load_binary_file("/etc/os-release")
+        except:
+            os_release_file_data = None
+    return os_release_file_data
 
 def is_Ubuntu():
     return is_distribution_variant(b"Ubuntu")
