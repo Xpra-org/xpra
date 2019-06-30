@@ -44,6 +44,7 @@ assert info and warn and error, "used by modules importing those from here"
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 90)
+CONNECT_TIMEOUT = envint("XPRA_CONNECT_TIMEOUT", 20)
 SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
 LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
 VERIFY_X11_SOCKET_TIMEOUT = envint("XPRA_VERIFY_X11_SOCKET_TIMEOUT", 1)
@@ -1357,7 +1358,27 @@ def get_sockpath(display_desc, error_cb):
             display_desc.get("gid", 0),
             )
         display = display_desc["display"]
-        dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE, matching_display=display)
+        def socket_details(state=DotXpra.LIVE):
+            return dotxpra.socket_details(matching_state=state, matching_display=display)
+        dir_servers = socket_details()
+        if display and not dir_servers and socket_details(DotXpra.UNKNOWN):
+            #found the socket for this specific display in UNKNOWN state,
+            #this could be a server starting up,
+            #so give it a bit of time:
+            get_util_logger().info("display %s is in %s state", display, DotXpra.UNKNOWN)
+            get_util_logger().info(" waiting up to %i seconds", CONNECT_TIMEOUT)
+            start = monotonic_time()
+            while monotonic_time()-start<CONNECT_TIMEOUT:
+                unknown = socket_details(DotXpra.UNKNOWN)
+                dir_servers = socket_details()
+                if dir_servers:
+                    #found it!
+                    break
+                if not unknown:
+                    #not even in unknown state any more!?
+                    break
+                import time
+                time.sleep(0.1)
         sockpath = single_display_match(dir_servers, error_cb,
                                         nomatch="cannot find live server for display %s" % display)[-1]
     return sockpath
