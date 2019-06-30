@@ -31,7 +31,11 @@ class XpraClient(GTKXpraClient):
 
 
     def install_signal_handlers(self):
-        register_os_signals(self.handle_app_signal)
+        #only register the glib signal handler
+        #once the main loop is running,
+        #before that we just trigger a KeyboardInterrupt
+        from xpra.gtk_common.gobject_compat import import_glib
+        import_glib().idle_add(register_os_signals, self.handle_app_signal)
 
     def get_notifier_classes(self):
         ncs = GTKXpraClient.get_notifier_classes(self)
