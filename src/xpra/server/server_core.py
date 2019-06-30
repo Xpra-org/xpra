@@ -424,7 +424,8 @@ class ServerCore(object):
             p.quit()
         netlog("cleanup will disconnect: %s", self._potential_protocols)
         self.cancel_touch_timer()
-        self.mdns_cleanup()
+        if self.mdns:
+            add_work_item(self.mdns_cleanup)
         if self._upgrading:
             reason = SERVER_UPGRADE
         else:
