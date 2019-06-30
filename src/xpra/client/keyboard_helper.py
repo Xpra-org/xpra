@@ -345,19 +345,26 @@ class KeyboardHelper(object):
         return _print, query, query_struct
 
     def query_xkbmap(self):
+        log("query_xkbmap()")
         (
             self.xkbmap_layout, self.xkbmap_layouts,
             self.xkbmap_variant, self.xkbmap_variants,
             self.xkbmap_options,
             ) = self.get_layout_spec()
-        self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct = self.get_keymap_spec()
+        spec = self.get_keymap_spec()
+        self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct = spec
+        log("query_xkbmap() get_keymap_spec()=%s", spec)
         self.xkbmap_keycodes = self.get_full_keymap()
+        log("query_xkbmap() get_full_keymap()=%s", self.xkbmap_keycodes)
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
+        log("query_xkbmap() %s.get_x11_keymap()=%s", self.keyboard, self.xkbmap_x11_keycodes)
+        mods = self.keyboard.get_keymap_modifiers()
         (
             self.xkbmap_mod_meanings,
             self.xkbmap_mod_managed,
             self.xkbmap_mod_pointermissing,
-            ) = self.keyboard.get_keymap_modifiers()
+            ) = mods
+        log("query_xkbmap() %s.get_keymap_modifiers()=%s", self.keyboard, mods)
         self.update_hash()
         log("layout=%s, layouts=%s, variant=%s, variants=%s",
             self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants)
