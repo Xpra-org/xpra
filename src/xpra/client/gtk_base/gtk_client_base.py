@@ -976,16 +976,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if enable_option in FALSE_OPTIONS:
             self.opengl_props["info"] = "disabled by configuration"
             return
-        from xpra.scripts.config import OpenGL_safety_check
-        from xpra.platform.gui import gl_check as platform_gl_check
         warnings = []
-        for check in (OpenGL_safety_check, platform_gl_check):
-            opengllog("checking with %s", check)
-            warning = check()
-            opengllog("%s()=%s", check, warning)
-            if warning:
-                warnings.append(warning)
         self.opengl_props["info"] = ""
+        if enable_option!="probe-success":
+            from xpra.scripts.config import OpenGL_safety_check
+            from xpra.platform.gui import gl_check as platform_gl_check
+            for check in (OpenGL_safety_check, platform_gl_check):
+                opengllog("checking with %s", check)
+                warning = check()
+                opengllog("%s()=%s", check, warning)
+                if warning:
+                    warnings.append(warning)
 
         def err(msg, e):
             opengllog("OpenGL initialization error", exc_info=True)
