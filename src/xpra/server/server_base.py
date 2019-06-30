@@ -191,6 +191,7 @@ class ServerBase(ServerBaseClass):
 
     def do_cleanup(self):
         self.server_event("exit")
+        self.wait_for_threaded_init()
         self.cancel_mp3_stream_check_timer()
         for c in SERVER_BASES:
             if c!=ServerCore:
