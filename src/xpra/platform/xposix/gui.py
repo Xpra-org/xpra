@@ -154,6 +154,8 @@ def _get_xsettings():
 
 def _get_xsettings_dict():
     d = {}
+    if is_Wayland():
+        return d
     v = _get_xsettings()
     if v:
         _, values = v
