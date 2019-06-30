@@ -12,7 +12,7 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.simple_stats import std_unit
 from xpra.os_util import livefds, POSIX
-from xpra.util import envbool, detect_leaks
+from xpra.util import envbool, detect_leaks, typedict
 from xpra.log import Logger
 
 log = Logger("network")
@@ -107,6 +107,20 @@ class NetworkStateServer(StubServerMixin):
                     log.info("%.1fGB of system memory", self.mem_bytes/(1024.0**3))
             except:
                 pass
+        self.idle_add(self.init_cpuinfo)
+
+    def init_cpuinfo(self):
+        try:
+            from cpuinfo import get_cpu_info
+        except ImportError as e:
+            log("no cpuinfo: %s", e)
+        else:
+            c = typedict(get_cpu_info())
+            if c:
+                count = c.intget("count", 0)
+                brand = c.strget("brand")
+                if count>0 and brand:
+                    log.info("%ix %s", count, brand)
 
 
     def _process_connection_data(self, proto, packet):
