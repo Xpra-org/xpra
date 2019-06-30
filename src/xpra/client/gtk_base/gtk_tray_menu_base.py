@@ -283,6 +283,7 @@ class GTKTrayMenuBase(object):
         return self.client.get_image(*args)
 
     def setup_menu(self, show_close=True):
+        log("setup_menu(%s)", show_close)
         self.menu_shown = False
         self.menu_icon_size = get_icon_size()
         menu = gtk.Menu()
@@ -325,6 +326,7 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(menu)
         menu.connect("deactivate", self.menu_deactivated)
         menu.show_all()
+        log("setup_menu(%s) done", show_close)
         return menu
 
     def cleanup(self):
