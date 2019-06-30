@@ -21,7 +21,7 @@ log = Logger("exec", "menu")
 
 LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", True)
 EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
-MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 32768)
+MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 65536)
 DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 if PYTHON3:
     unicode = str           #@ReservedAssignment
