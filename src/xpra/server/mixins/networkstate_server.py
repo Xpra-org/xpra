@@ -110,17 +110,18 @@ class NetworkStateServer(StubServerMixin):
         self.idle_add(self.init_cpuinfo)
 
     def init_cpuinfo(self):
+        #this crashes if not run from the UI thread!
         try:
             from cpuinfo import get_cpu_info
         except ImportError as e:
             log("no cpuinfo: %s", e)
-        else:
-            c = typedict(get_cpu_info())
-            if c:
-                count = c.intget("count", 0)
-                brand = c.strget("brand")
-                if count>0 and brand:
-                    log.info("%ix %s", count, brand)
+            return
+        c = typedict(get_cpu_info())
+        if c:
+            count = c.intget("count", 0)
+            brand = c.strget("brand")
+            if count>0 and brand:
+                log.info("%ix %s", count, brand)
 
 
     def _process_connection_data(self, proto, packet):
