@@ -1028,20 +1028,32 @@ def socket_connect(dtype, host, port):
             socket.AF_INET6 : " IPv6",
             socket.AF_INET  : " IPv4",
             }.get(family, ""), (host, port), e))
-    #try each one:
-    for addr in addrinfo:
-        sockaddr = addr[-1]
-        family = addr[0]
-        sock = socket.socket(family, socktype)
-        if dtype!="udp":
-            from xpra.net.bytestreams import SOCKET_TIMEOUT
-            sock.settimeout(SOCKET_TIMEOUT)
-        try:
-            sock.connect(sockaddr)
-            sock.settimeout(None)
-            return sock
-        except Exception as e:
-            get_util_logger().debug("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
+    retry = 0
+    start = monotonic_time()
+    while True:
+        #try each one:
+        for addr in addrinfo:
+            sockaddr = addr[-1]
+            family = addr[0]
+            sock = socket.socket(family, socktype)
+            if dtype!="udp":
+                from xpra.net.bytestreams import SOCKET_TIMEOUT
+                sock.settimeout(SOCKET_TIMEOUT)
+            try:
+                sock.connect(sockaddr)
+                sock.settimeout(None)
+                return sock
+            except Exception as e:
+                log = Logger("network")
+                log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
+        if monotonic_time()-start>=CONNECT_TIMEOUT:
+            break
+        if retry==0:
+            log = Logger("network")
+            log.info("failed to connect to %s:%s, retrying for %i seconds", host, port, CONNECT_TIMEOUT)
+        retry += 1
+        import time
+        time.sleep(1)
     raise InitException("failed to connect to %s:%s" % (host, port))
 
 
