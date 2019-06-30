@@ -355,14 +355,24 @@ class ServerCore(object):
         self._closing = True
         self.cleanup()
         def quit_timer():
-            log.debug("quit_timer()")
-            stop_worker(True)
+            w = get_worker()
+            log("quit_timer() worker=%s", w)
+            if w and w.is_alive():
+                #wait up to 1 second for the worker thread to exit
+                try:
+                    w.wait(1)
+                except:
+                    pass
+                if w.is_alive():
+                    #still alive, force stop:
+                    stop_worker(True)
+                    try:
+                        w.wait(1)
+                    except:
+                        pass
             self.quit(upgrading)
-        #if from a signal, just force quit:
         stop_worker()
-        #not from signal: use force stop worker after delay
-        self.timeout_add(250, stop_worker, True)
-        self.timeout_add(500, quit_timer)
+        self.timeout_add(250, quit_timer)
         def force_quit():
             log.debug("force_quit()")
             from xpra import os_util
