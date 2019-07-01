@@ -208,8 +208,11 @@ Recommends: python-dbus
 #bionic:        ,python-appindicator
 #cosmic:        ,python-appindicator
 #disco:        ,python-appindicator
+#better debug output:
+        ,python3-cpuinfo
+Suggests:
 # for webcam support:
-Suggests: python-pyinotify
+        python-pyinotify
         ,python-opencv
 # only useful when connecting using a JSON / YAML only client:
         ,python-yaml
@@ -272,8 +275,10 @@ Recommends: python3-dbus
         ,python3-xdg
 #hope that this will allow our status icon to be shown:
         ,gir1.2-appindicator3-0.1
-# for webcam support:
+#better debug output:
+        ,python3-cpuinfo
 Suggests:
+# for webcam support:
         ,python3-pyinotify
         ,python3-opencv
 # for publishing servers via mdns:

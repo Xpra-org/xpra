@@ -34,6 +34,7 @@ class NetworkStateServer(StubServerMixin):
         self.pings = False
         self.ping_timer = None
         self.mem_bytes = 0
+        self.cpu_info = None
 
     def init(self, opts):
         self.pings = opts.pings
@@ -62,6 +63,8 @@ class NetworkStateServer(StubServerMixin):
             }
         if self.mem_bytes:
             info["total-memory"] = self.mem_bytes
+        if self.cpu_info:
+            info["cpuinfo"] = dict((k,v) for k,v in self.cpu_info.items() if k!="python_version")
         return info
 
     def get_server_features(self, _source):
@@ -116,8 +119,9 @@ class NetworkStateServer(StubServerMixin):
         except ImportError as e:
             log("no cpuinfo: %s", e)
             return
-        c = typedict(get_cpu_info())
-        if c:
+        self.cpu_info = get_cpu_info()
+        if self.cpu_info:
+            c = typedict(self.cpu_info)
             count = c.intget("count", 0)
             brand = c.strget("brand")
             if count>0 and brand:
