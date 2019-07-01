@@ -267,17 +267,18 @@ def is_distribution_variant(variant=b"Debian"):
     if not POSIX:
         return False
     try:
+        v = load_os_release_file()
+        return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith(b"NAME="))
+    except:
+        pass
+    try:
         if b"RedHat"==variant and get_linux_distribution()[0].startswith(variant):
             return True
         if get_linux_distribution()[0]==variant:
             return True
     except:
         pass
-    try:
-        v = load_os_release_file()
-        return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith(b"NAME="))
-    except:
-        return False
+    return False
 
 os_release_file_data = False
 def load_os_release_file():
