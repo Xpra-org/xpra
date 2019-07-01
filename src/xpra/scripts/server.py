@@ -752,6 +752,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             from xpra.x11.vfb_util import get_xauthority_path
             xauthority = get_xauthority_path(display_name, username, uid, gid)
             if os.path.exists(xauthority):
+                log("found XAUTHORITY=%s", xauthority)
                 os.environ["XAUTHORITY"] = xauthority
         def check_xvfb():
             return True
@@ -841,6 +842,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         os.environ.update(protected_env)
 
     if opts.chdir:
+        log("chdir(%s)", opts.chdir)
         os.chdir(opts.chdir)
 
     dbus_pid, dbus_env = 0, {}
@@ -861,13 +863,16 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 from xpra.x11.vfb_util import verify_display_ready
                 if not verify_display_ready(xvfb, display_name, shadowing):
                     return 1
+                log("X11 display is ready")
                 no_gtk()
                 from xpra.x11.gtk_x11.gdk_display_source import verify_gdk_display
                 display = verify_gdk_display(display_name)
                 if not display:
                     return 1
+                log("GDK can access the display")
         #on win32, this ensures that we get the correct screen size to shadow:
         from xpra.platform.gui import init as gui_init
+        log("gui_init()")
         gui_init()
 
     #setup unix domain socket:
