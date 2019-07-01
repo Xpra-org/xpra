@@ -8,7 +8,3 @@ def do_init():
 
 def do_clean():
     pass
-
-def threaded_server_init():
-    from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-    load_xdg_menu_data()

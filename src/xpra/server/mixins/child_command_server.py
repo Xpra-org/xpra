@@ -83,6 +83,8 @@ class ChildCommandServer(StubServerMixin):
                 log("threaded_setup()", exc_info=True)
                 log.error("Error setting up menu watcher:")
                 log.error(" %s", e)
+            from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
+            load_xdg_menu_data()
 
     def setup_menu_watcher(self):
         try:
