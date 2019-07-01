@@ -10,7 +10,6 @@ import struct
 
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv, repr_ellipsized
-from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.os_util import is_unity, is_gnome, is_kde, is_Fedora, is_X11, is_Wayland
 from xpra.log import Logger
 
@@ -22,15 +21,32 @@ traylog = Logger("posix", "tray")
 mouselog = Logger("posix", "mouse")
 xinputlog = Logger("posix", "xinput")
 
-X11WindowBindings = None
-X11XI2Bindings = None
-if is_X11():
-    try:
-        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-        from xpra.x11.bindings.xi2_bindings import X11XI2Bindings       #@UnresolvedImport
-    except Exception as e:
-        log.error("no X11 bindings", exc_info=True)
-        del e
+X11Window = False
+def X11WindowBindings():
+    global X11Window
+    if X11Window is False:
+        X11Window = None
+        if is_X11():
+            try:
+                from xpra.x11.bindings.window_bindings import X11WindowBindings as _X11WindowBindings #@UnresolvedImport
+                X11Window = _X11WindowBindings()
+            except Exception:
+                log.error("no X11 bindings", exc_info=True)
+    return X11Window
+
+X11XI2 = None
+def X11XI2Bindings():
+    global X11XI2
+    if X11XI2 is False:
+        X11XI2 = None
+        if is_X11():
+            try:
+                from xpra.x11.bindings.xi2_bindings import X11XI2Bindings as _X11XI2Bindings       #@UnresolvedImport
+                X11XI2 = _X11XI2Bindings()
+            except Exception:
+                log.error("no XI2 bindings", exc_info=True)
+    return X11XI2
+
 
 device_bell = None
 GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
@@ -40,6 +56,10 @@ USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", is_unity() or (is_gnome() and 
 XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
 DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
+
+def get_xwindow(win):
+    from xpra.gtk_common.gtk_util import get_xwindow as _get_xwindow
+    return _get_xwindow(win)
 
 def gl_check():
     if not is_X11() and is_Wayland():
