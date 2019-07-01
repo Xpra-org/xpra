@@ -203,6 +203,7 @@ class WindowClient(StubClientMixin):
                 else:
                     self.wheel_map[btn+1] = btn
                     self.wheel_map[btn] = btn+1
+        mouselog("wheel_map(%s)=%s", mw, self.wheel_map)
 
         if 0<ICON_OVERLAY<=100:
             icon_filename = get_icon_filename("xpra")
@@ -216,6 +217,7 @@ class WindowClient(StubClientMixin):
                 except Exception as e:
                     log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
                     log.error(" %s", e)
+        traylog("overlay_image=%s", self.overlay_image)
         self._draw_queue = Queue()
         self._draw_thread = make_thread(self._draw_thread_loop, "draw")
 
