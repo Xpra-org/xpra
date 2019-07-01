@@ -88,14 +88,14 @@ def _get_str(prop_name):
 
 
 def save_xvfb_pid(pid):
-    _save_int(b"_XPRA_SERVER_PID", pid)
+    _save_int("_XPRA_SERVER_PID", pid)
 
 def get_xvfb_pid():
-    return _get_int(b"_XPRA_SERVER_PID")
+    return _get_int("_XPRA_SERVER_PID")
 
 
 def save_uinput_id(uuid):
-    _save_str(b"_XPRA_UINPUT_ID", (uuid or b"").decode())
+    _save_str("_XPRA_UINPUT_ID", (uuid or b"").decode())
 
 #def get_uinput_id():
 #    return _get_str("_XPRA_UINPUT_ID")
