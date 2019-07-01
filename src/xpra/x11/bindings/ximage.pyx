@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from __future__ import absolute_import
 
 import errno as pyerrno
 
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, bytestostr
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
 from xpra.monotonic_time cimport monotonic_time
 from xpra.x11.bindings.display_source import get_display_name
@@ -904,9 +904,10 @@ cdef class _XImageBindings(_X11CoreBindings):
 
     def __cinit__(self):
         self.has_xshm = XShmQueryExtension(self.display)
-        xshmlog("XShmQueryExtension()=%s", bool(self.has_xshm))
+        dn = get_display_name()
+        xshmlog("XShmQueryExtension()=%s on display %s", bool(self.has_xshm), bytestostr(dn))
         if not self.has_xshm:
-            xshmlog.warn("Warning: no XShm support on display %s", get_display_name())
+            xshmlog.warn("Warning: no XShm support on display %s", bytestostr(dn))
 
     def has_XShm(self):
         return bool(self.has_xshm)
