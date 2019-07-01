@@ -260,7 +260,7 @@ def is_X11():
     return is_X11_Display()
 
 def is_Wayland():
-    return os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE")=="wayland"
+    return os.environ.get("GDK_BACKEND", "")!="x11" and (os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE")=="wayland")
 
 
 def is_distribution_variant(variant=b"Debian"):
