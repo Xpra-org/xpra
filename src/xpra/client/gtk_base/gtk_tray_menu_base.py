@@ -49,6 +49,8 @@ SHOW_CLOSE = envbool("XPRA_SHOW_CLOSE", True)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
+MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
+
 
 def get_bandwidth_menu_options():
     options = []
@@ -368,10 +370,12 @@ class GTKTrayMenuBase(object):
 
     def menuitem(self, title, icon_name=None, tooltip=None, cb=None, **kwargs):
         """ Utility method for easily creating an ImageMenuItem """
-        image = kwargs.get("image")
-        if icon_name and not image:
-            icon_size = self.menu_icon_size or get_icon_size()
-            image = self.get_image(icon_name, icon_size)
+        image = None
+        if MENU_ICONS:
+            image = kwargs.get("image")
+            if icon_name and not image:
+                icon_size = self.menu_icon_size or get_icon_size()
+                image = self.get_image(icon_name, icon_size)
         return menuitem(title, image, tooltip, cb)
 
     def checkitem(self, title, cb=None, active=False):
