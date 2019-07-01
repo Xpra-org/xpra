@@ -9,7 +9,7 @@ import os.path
 
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, reaper_cleanup
-from xpra.os_util import monotonic_time, OSX, WIN32, POSIX
+from xpra.os_util import monotonic_time, bytestostr, OSX, WIN32, POSIX
 from xpra.util import envint, csv
 from xpra.scripts.parsing import parse_env
 from xpra.server import EXITING_CODE
