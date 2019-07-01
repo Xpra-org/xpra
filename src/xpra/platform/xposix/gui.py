@@ -386,7 +386,7 @@ def _get_xresources():
             from xpra.gtk_common.gtk_util import get_default_root_window
             root = get_default_root_window()
             value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
-            log("RESOURCE_MANAGER=%s", v)
+            log("RESOURCE_MANAGER=%s", value)
             if value is None:
                 return None
             #parse the resources into a dict:
@@ -736,7 +736,7 @@ class ClientExtras(object):
             from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter  #@UnresolvedImport, @UnusedImport
             self.x11_filter = init_x11_filter()
             log("x11_filter=%s", self.x11_filter)
-        except Exception:
+        except Exception as e:
             log.error("Error: failed to initialize X11 GDK filter:")
             log.error(" %s", e)
             self.x11_filter = None
