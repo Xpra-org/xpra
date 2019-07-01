@@ -737,6 +737,7 @@ class ClientExtras(object):
             self.x11_filter = init_x11_filter()
             log("x11_filter=%s", self.x11_filter)
         except Exception as e:
+            log("init_x11_filter()", exc_info=True)
             log.error("Error: failed to initialize X11 GDK filter:")
             log.error(" %s", e)
             self.x11_filter = None
