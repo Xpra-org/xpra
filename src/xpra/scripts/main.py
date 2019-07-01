@@ -1373,29 +1373,29 @@ def get_sockpath(display_desc, error_cb):
         def socket_details(state=DotXpra.LIVE):
             return dotxpra.socket_details(matching_state=state, matching_display=display)
         dir_servers = socket_details()
-        if display and not dir_servers and (socket_details(DotXpra.UNKNOWN) or not socket_details(None)):
-            #found the socket for this specific display in UNKNOWN state,
-            #or not found any sockets at all,
-            #this could be a server starting up,
-            #so give it a bit of time:
-            if socket_details(DotXpra.UNKNOWN):
-                get_util_logger().info("server socket for display %s is in %s state", display, DotXpra.UNKNOWN)
-            else:
-                get_util_logger().info("server socket for display %s not found", display)
-            get_util_logger().info(" waiting up to %i seconds", CONNECT_TIMEOUT)
-            start = monotonic_time()
-            while monotonic_time()-start<CONNECT_TIMEOUT:
-                unknown = socket_details(DotXpra.UNKNOWN)
-                none = socket_details(None)
+        if display and not dir_servers:
+            state = dotxpra.get_display_state(display)
+            if state in (DotXpra.UNKNOWN, DotXpra.DEAD):
+                #found the socket for this specific display in UNKNOWN state,
+                #or not found any sockets at all (DEAD),
+                #this could be a server starting up,
+                #so give it a bit of time:
+                log = Logger("network")
+                if state==DotXpra.UNKNOWN:
+                    log.info("server socket for display %s is in %s state", display, DotXpra.UNKNOWN)
+                else:
+                    log.info("server socket for display %s not found", display)
+                log.info(" waiting up to %i seconds", CONNECT_TIMEOUT)
+                start = monotonic_time()
+                while monotonic_time()-start<CONNECT_TIMEOUT:
+                    state = dotxpra.get_display_state(display)
+                    log("get_display_state(%s)=%s", display, state)
+                    if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
+                        #found a final state
+                        break
+                    import time
+                    time.sleep(0.1)
                 dir_servers = socket_details()
-                if dir_servers:
-                    #found it!
-                    break
-                if not unknown and none:
-                    #not even in unknown state any more!?
-                    break
-                import time
-                time.sleep(0.1)
         sockpath = single_display_match(dir_servers, error_cb,
                                         nomatch="cannot find live server for display %s" % display)[-1]
     return sockpath

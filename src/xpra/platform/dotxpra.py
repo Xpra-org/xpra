@@ -113,6 +113,44 @@ class DotXpra(object):
                 paths.append(socket_path)
         return paths
 
+    def get_display_state(self, display):
+        dirs = []
+        if self._sockdir!="undefined":
+            dirs.append(self._sockdir)
+        dirs += [x for x in self._sockdirs if x not in dirs]
+        debug("get_display_state(%s) sockdir=%s, sockdirs=%s, testing=%s",
+              display, self._sockdir, self._sockdirs, dirs)
+        seen = set()
+        state = None
+        for d in dirs:
+            if not d or not os.path.exists(d):
+                debug("get_display_state: '%s' path does not exist", d)
+                continue
+            real_dir = os.path.realpath(d)
+            if real_dir in seen:
+                continue
+            seen.add(real_dir)
+            #ie: "~/.xpra/HOSTNAME-"
+            base = os.path.join(d, PREFIX)
+            potential_sockets = glob.glob(base + display.lstrip(":"))
+            for sockpath in sorted(potential_sockets):
+                try:
+                    s = os.stat(sockpath)
+                except OSError as e:
+                    debug("get_display_state: '%s' path cannot be accessed: %s", sockpath, e)
+                    #socket cannot be accessed
+                    continue
+                if stat.S_ISSOCK(s.st_mode):
+                    local_display = ":"+sockpath[len(base):]
+                    if local_display!=display:
+                        debug("get_display_state: '%s' display does not match (%s vs %s)",
+                              sockpath, local_display, display)
+                        continue
+                    state = self.get_server_state(sockpath)
+                    if state not in (self.DEAD, self.INACCESSIBLE):
+                        return state
+        return state or self.DEAD
+
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe
     def socket_details(self, check_uid=0, matching_state=None, matching_display=None):
@@ -135,7 +173,10 @@ class DotXpra(object):
             seen.add(real_dir)
             #ie: "~/.xpra/HOSTNAME-"
             base = os.path.join(d, PREFIX)
-            potential_sockets = glob.glob(base + "*")
+            if matching_display:
+                potential_sockets = glob.glob(base + matching_display.lstrip(":"))
+            else:
+                potential_sockets = glob.glob(base + "*")
             results = []
             for sockpath in sorted(potential_sockets):
                 try:
@@ -150,15 +191,11 @@ class DotXpra(object):
                             #socket uid does not match
                             debug("socket_details: '%s' uid does not match (%s vs %s)", sockpath, s.st_uid, check_uid)
                             continue
-                    local_display = ":"+sockpath[len(base):]
-                    if matching_display and local_display!=matching_display:
-                        debug("socket_details: '%s' display does not match (%s vs %s)",
-                              sockpath, local_display, matching_display)
-                        continue
                     state = self.get_server_state(sockpath)
                     if matching_state and state!=matching_state:
                         debug("socket_details: '%s' state does not match (%s vs %s)", sockpath, state, matching_state)
                         continue
+                    local_display = ":"+sockpath[len(base):]
                     results.append((state, local_display, sockpath))
             if results:
                 sd[d] = results
