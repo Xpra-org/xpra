@@ -245,7 +245,7 @@ class ServerBase(ServerBaseClass):
             if detach_request and p!=proto:
                 self.disconnect_client(p, DETACH_REQUEST)
                 disconnected += 1
-            elif uuid and ss.uuid==uuid:
+            elif uuid and ss.uuid==uuid and ui_client and ss.ui_client:
                 self.disconnect_client(p, NEW_CLIENT, "new connection from the same uuid")
                 disconnected += 1
             elif ui_client and ss.ui_client:
