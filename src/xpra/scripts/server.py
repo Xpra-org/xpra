@@ -481,6 +481,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     clobber   = upgrading or upgrading_desktop or opts.use_display
     start_vfb = not (shadowing or proxying or clobber)
 
+    if not proxying:
+        #we don't support wayland servers,
+        #so make sure GDK will use the X11 backend:
+        os.environ["GDK_BACKEND"] = "x11"
+
     if proxying or upgrading or upgrading_desktop:
         #when proxying or upgrading, don't exec any plain start commands:
         opts.start = opts.start_child = []
