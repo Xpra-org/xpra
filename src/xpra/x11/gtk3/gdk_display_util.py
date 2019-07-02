@@ -8,7 +8,9 @@ def verify_gdk_display(display_name):
     from xpra.gtk_common.gobject_compat import import_gdk3
     gdk = import_gdk3()
     display = gdk.Display.open(display_name)
-    assert display, "failed to open display %s" % display_name
+    if not display:
+        from xpra.scripts.config import InitException
+        raise InitException("failed to open display %s" % display_name)
     manager = gdk.DisplayManager.get()
     default_display = manager.get_default_display()
     if default_display is not None and default_display!=display:
