@@ -435,7 +435,7 @@ class UIXpraClient(ClientBaseClass):
             proxy_release = c.strget("proxy.platform.release")
             proxy_version = c.strget("proxy.version")
             proxy_version = c.strget("proxy.build.version", proxy_version)
-            proxy_distro = c.strget("linux_distribution")
+            proxy_distro = c.strget("proxy.linux_distribution")
             msg = "via: %s proxy version %s" % (
                 platform_name(proxy_platform, proxy_distro or proxy_release),
                 std(proxy_version or "unknown")
