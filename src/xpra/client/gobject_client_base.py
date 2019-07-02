@@ -347,7 +347,7 @@ class MonitorXpraClient(SendCommandConnectClient):
         log.info("waiting for server events")
 
     def _process_server_event(self, packet):
-        log.info(": ".join(packet[1:]))
+        log.info(": ".join(bytestostr(x) for x in packet[1:]))
 
     def init_packet_handlers(self):
         SendCommandConnectClient.init_packet_handlers(self)
