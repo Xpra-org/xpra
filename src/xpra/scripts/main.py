@@ -434,7 +434,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode in (
             "attach", "detach",
             "screenshot", "version", "info", "id",
-            "control", "_monitor", "print",
+            "control", "_monitor", "top", "print",
             "connect-test", "request-start", "request-start-desktop", "request-shadow",
             ):
             return run_client(error_cb, options, args, mode)
@@ -1474,6 +1474,9 @@ def get_client_app(error_cb, opts, extra_args, mode):
     elif mode=="_monitor":
         from xpra.client.gobject_client_base import MonitorXpraClient
         app = MonitorXpraClient(connect(), opts)
+    elif mode == "top":
+        from xpra.client.top_client import TopClient
+        app = TopClient(connect(), opts)
     elif mode=="control":
         from xpra.client.gobject_client_base import ControlXpraClient
         if len(extra_args)<=1:

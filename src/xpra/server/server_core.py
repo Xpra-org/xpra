@@ -2008,12 +2008,15 @@ class ServerCore(object):
         return get_thread_info(proto)
 
     def get_minimal_server_info(self):
+        now = time()
         info = {
             "mode"              : self.get_server_mode(),
             "session-type"      : self.session_type,
             "type"              : "Python",
             "python"            : {"version" : python_platform.python_version()},
             "start_time"        : int(self.start_time),
+            "current_time"      : int(now),
+            "elapsed_time"      : int(now - self.start_time),
             "uuid"              : self.uuid,
             }
         return info

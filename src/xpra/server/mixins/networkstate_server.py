@@ -61,6 +61,8 @@ class NetworkStateServer(StubServerMixin):
             "pings"             : self.pings,
             "bandwidth-limit"   : self.bandwidth_limit or 0,
             }
+        if POSIX:
+            info["load"] = tuple(int(x*1000) for x in os.getloadavg())
         if self.mem_bytes:
             info["total-memory"] = self.mem_bytes
         if self.cpu_info:

@@ -30,6 +30,7 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBstop\fP | \fBxpra\fP \fBexit\fP | \fBxpra\fP \fBdetach\fP |
 \fBxpra\fP \fBscreenshot\fP \fIfilename\fP | \fBxpra\fP \fBversion\fP |
 \fBxpra\fP \fBinfo\fP [CONNECTIONSTRING]
+\fBxpra\fP \fBtop\fP [CONNECTIONSTRING]
 [\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBcontrol\fP [CONNECTIONSTRING] \fIcommand\fP [\fIarguments..\fP]
@@ -262,7 +263,8 @@ Queries the server version and prints it out.
 Note: older servers may not support this feature.
 .SS xpra info
 Queries the server for version, status and statistics.
-Note: older servers may not support this feature.
+.SS xpra top
+Shows the server's key health attributes.
 .SS xpra control
 Modify the server at runtime by issuing commands.
 The list of commands can be obtained by specifying "help" as command.
