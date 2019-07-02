@@ -354,7 +354,7 @@ class ServerBase(ServerBaseClass):
 
         def drop_client(reason="unknown", *args):
             self.disconnect_client(proto, reason, *args)
-        cc_class = self.get_client_connection_class()
+        cc_class = self.get_client_connection_class(c)
         ss = cc_class(proto, drop_client,
                       self.session_name, self,
                       self.idle_add, self.timeout_add, self.source_remove,
@@ -376,7 +376,7 @@ class ServerBase(ServerBaseClass):
         send_ui = ui_client and not is_request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
-    def get_client_connection_class(self):
+    def get_client_connection_class(self, _caps):
         from xpra.server.source.client_connection import ClientConnection
         return ClientConnection
 
