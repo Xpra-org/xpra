@@ -226,9 +226,9 @@
 
 	<distutils id="python-cython">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/e7/2e/aee8dfff93c7f5d20461ddcefd1da3d43bab18e1666a7777f4d9dbe94065/Cython-0.29.10.tar.gz"
-			hash="sha256:26229570d6787ff3caa932fe9d802960f51a89239b990d275ae845405ce43857"
-			version="0.29.10"/>
+			module="/packages/87/26/6f8a63fda4743d9e405c17c2872ac3242b63b5eba79c475ddf1777f17b9e/Cython-0.29.11.tar.gz"
+			hash="sha256:763a522cc5d1673ba7a4092c0914790f11704b1d4c41e2671e50d0f702a8c6a0"
+			version="0.29.11"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
