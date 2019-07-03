@@ -135,6 +135,13 @@ def main(script_file, cmdline):
         log = Logger("util")
         log(msg, exc_info=True)
 
+    if envbool("XPRA_NOMD5", False):
+        import hashlib
+        def nomd5(*_args):
+            raise ValueError("md5 support is disabled")
+        hashlib.algorithms_available.remove("md5")
+        hashlib.md5 = nomd5
+
     try:
         try:
             defaults = make_defaults_struct()

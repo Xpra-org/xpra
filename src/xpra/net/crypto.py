@@ -112,8 +112,15 @@ def validate_backend(try_backend):
 
 
 def get_digests():
-    algos = getattr(hashlib, "algorithms_available", getattr(hashlib, "algorithms", ["md5", "sha1", "sha224", "sha256", "sha384", "sha512"]))
-    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(algos)))]
+    digests = ["xor"]
+    algorithms_available = getattr(hashlib, "algorithms_available", ("md5",))
+    #this is the legacy name for "hmac+md5":
+    if "md5" in algorithms_available:
+        digests.append("hmac")
+    #python versions older than 2.7.9 may not have this attribute:
+    #(in which case, your options will be more limited)
+    if algorithms_available:
+        digests += ["hmac+%s" % x for x in tuple(reversed(sorted(algorithms_available)))]
     return digests
 
 def get_digest_module(digest):
