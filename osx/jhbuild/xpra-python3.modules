@@ -294,9 +294,9 @@
 
 	<distutils id="python3-paramiko" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/0e/29/aa6647f283796ff1c46747ee8e69092390116cd86c7c660247ef0d56a146/paramiko-2.5.0.tar.gz"
-			hash="sha256:9f081281064b5180dc0ef60e256224a280ff16f603a99f3dd4ba6334ebb65f7e"
-			version="2.5"/>
+			module="/packages/54/68/dde7919279d4ecdd1607a7eb425a2874ccd49a73a5a71f8aa4f0102d3eb8/paramiko-2.6.0.tar.gz"
+			hash="sha256:f4b2edfa0d226b70bd4ca31ea7e389325990283da23465d572ed1f70a7583041"
+			version="2.6.0"/>
 		<dependencies>
 			<dep package="python3"/>
 			<dep package="python3-bcrypt"/>
