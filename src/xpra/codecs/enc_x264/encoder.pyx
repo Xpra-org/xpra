@@ -973,7 +973,7 @@ cdef class Encoder:
         if speed > 99:
             #only allow "ultrafast" if pct > 99
             return 0
-        return 7 - max(0, min(6, speed / 15))
+        return 5 - max(0, min(4, speed // 20))
 
 
     def reconfig_tune(self):
