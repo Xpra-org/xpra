@@ -23,7 +23,7 @@ except Exception:
 
 def get_digests():
     digests = ["xor"]
-    algorithms_available = getattr(hashlib, "algorithms_available", "md5")
+    algorithms_available = getattr(hashlib, "algorithms_available", ("md5",))
     #this is the legacy name for "hmac+md5":
     if "md5" in algorithms_available:
         digests.append("hmac")
