@@ -248,10 +248,11 @@ class DisplayManager(StubServerMixin):
                     #newer clients send bytes...
                     try :
                         v = strtobytes(dn).decode("utf8")
-                    except UnicodeDecodeError:
-                        v = dn
-                    if v!="0" or i!=0:
-                        name = v
+                    except (UnicodeEncodeError, UnicodeDecodeError):
+                        pass
+                    else:
+                        if v!="0" or i!=0:
+                            name = v
             names.append(name)
         self.set_desktops(names)
 
