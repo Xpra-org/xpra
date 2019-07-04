@@ -28,6 +28,8 @@ DEFAULT_ENV = [
              "GTK_OVERLAY_SCROLLING=0",
              "#some versions of GTK3 honour this option, sadly not all:",
              "GTK_CSD=0",
+             "#silence some AT-SPI and atk-bridge warnings:",
+             "NO_AT_BRIDGE=1",
              ]
 
 DEFAULT_SSH_CMD = "ssh"
