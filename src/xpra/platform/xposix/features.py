@@ -19,6 +19,8 @@ DEFAULT_ENV = [
              "GDK_BACKEND=x11",
              "#force Qt applications to use X11 so we can intercept them:",
              "QT_QPA_PLATFORM=xcb",
+             "#silence some AT-SPI and atk-bridge warnings:",
+             "NO_AT_BRIDGE=1",
              ]
 
 DEFAULT_SSH_CMD = "ssh"
