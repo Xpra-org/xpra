@@ -920,7 +920,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if not check_xvfb():
             return  1
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-        init_gdk_display_source()
+        from xpra.os_util import OSEnvContext
+        with OSEnvContext():
+            if os.environ.get("NO_AT_BRIDGE") is None:
+                os.environ["NO_AT_BRIDGE"] = "1"
+            init_gdk_display_source()
         #(now we can access the X11 server)
         if uinput_uuid:
             save_uinput_id(uinput_uuid)
