@@ -1301,7 +1301,7 @@ class WindowClient(StubClientMixin):
             elapsed = max(0, time()-self._suspended_at)
             self._suspended_at = 0
         delta = datetime.timedelta(seconds=int(elapsed))
-        log.info("system resumed, was suspended for %s", delta)
+        log.info("system resumed, was suspended for %s", str(delta).lstrip("0:"))
         #this will reset the refresh rate too:
         self.send_refresh_all()
         if self.opengl_enabled:
