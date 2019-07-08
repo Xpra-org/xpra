@@ -338,6 +338,7 @@ class MonitorXpraClient(SendCommandConnectClient):
         for x in ("wants_features", "wants_events", "event_request"):
             self.hello_extra[x] = True
         self.hello_extra["request"] = "event"
+        self.hello_extra["info-namespace"] = True
 
     def timeout(self, *args):
         pass

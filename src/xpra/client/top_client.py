@@ -7,12 +7,14 @@ import curses
 from datetime import datetime, timedelta
 
 from xpra import __version__
-from xpra.util import typedict, std
-from xpra.os_util import platform_name
+from xpra.util import typedict, std, envint, csv
+from xpra.os_util import platform_name, bytestostr
 from xpra.client.gobject_client_base import MonitorXpraClient
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
+
+REFRESH_RATE = envint("XPRA_REFRESH_RATE", 1)
 
 WHITE = 0
 GREEN = 1
@@ -66,21 +68,24 @@ class TopClient(MonitorXpraClient):
         sli = self.server_last_info
         try:
             self.stdscr.addstr(0, x, title, curses.A_BOLD)
-            #server info:
-            #self.stdscr.addstr(3, 0, str(sli.get("build")))
-            v = sli.strget("server.build.version")
-            revision = sli.strget("server.build.revision")
+            server_info = self.dictget("server")
+            build = self.dictget("build")
+            v = build.strget("version")
+            revision = build.strget("revision")
             if v and revision:
                 v = " version %s-r%s" % (v, revision)
-            mode = sli.strget("server.mode", "server")
-            bits = sli.intget("server.python.bits", 32)
+            mode = server_info.strget("mode", "server")
+            python_info = typedict(server_info.dictget("python"))
+            bits = python_info.intget("bits", 32)
             server_str = "Xpra %s server%s %i-bit" % (mode, std(v), bits)
-            if sli.boolget("proxy"):
-                proxy_platform = sli.strget("proxy.platform")
-                proxy_release = sli.strget("proxy.platform.release")
-                proxy_version = sli.strget("proxy.version")
-                proxy_version = sli.strget("proxy.build.version", proxy_version)
-                proxy_distro = sli.strget("proxy.linux_distribution")
+            proxy_info = self.dictget("proxy")
+            if proxy_info:
+                proxy_platform_info = typedict(proxy_info.dictget("platform"))
+                proxy_platform = proxy_platform_info.strget("")
+                proxy_release = proxy_platform_info.strget("release")
+                proxy_build_info = typedict(proxy_info.dictget("build"))
+                proxy_version = proxy_build_info.strget("version")
+                proxy_distro = proxy_info.strget("linux_distribution")
                 server_str += " via: %s proxy version %s" % (
                     platform_name(proxy_platform, proxy_distro or proxy_release),
                     std(proxy_version or "unknown")
@@ -89,11 +94,12 @@ class TopClient(MonitorXpraClient):
             #load and uptime:
             now = datetime.now()
             uptime = ""
-            elapsed_time = sli.intget("server.elapsed_time")
+            elapsed_time = server_info.intget("elapsed_time")
             if elapsed_time:
                 td = timedelta(seconds=elapsed_time)
                 uptime = " up %s" % str(td).lstrip("0:")
-            nclients = sli.intget("clients")
+            clients_info = self.dictget("clients")
+            nclients = clients_info.intget("")
             load_average = ""
             load = sli.intlistget("load")
             if load and len(load)==3:
@@ -101,19 +107,17 @@ class TopClient(MonitorXpraClient):
                 load_average = ", load average: %1.2f, %1.2f, %1.2f" % float_load
             self.stdscr.addstr(2, 0, "xpra top - %s%s, %2i users%s" % (
                                now.strftime("%H:%M:%S"), uptime, nclients, load_average))
-            self.stdscr.addstr(3, 0, "%i threads" % sli.intget("threads.count"))
+            thread_info = self.dictget("threads")
+            self.stdscr.addstr(3, 0, "%i threads" % thread_info.intget("count"))
             #cursor:
-            cx, cy = sli.intlistget("cursor.position", (0, 0))
+            cursor_info = self.dictget("cursor")
+            cx, cy = cursor_info.intlistget("position", (0, 0))
             self.stdscr.addstr(4, 0, "cursor at %ix%i" % (cx, cy))
             #todo: show clipboard state
 
             hpos = 6
             for client_no in range(nclients):
-                if nclients>1:
-                    prefix = ".%s" % client_no
-                else:
-                    prefix = ""
-                ci = self.get_client_info(prefix)
+                ci = self.get_client_info(client_no)
                 l = len(ci)
                 self.box(self.stdscr, 1, hpos, width-2, 2+l)
                 for i, info in enumerate(ci):
@@ -121,20 +125,43 @@ class TopClient(MonitorXpraClient):
                     cpair = curses.color_pair(color)
                     self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
+
+            hpos += 1
+            windows = self.dictget("windows")
+            self.stdscr.addstr(hpos, 0, "%i windows" % len(windows))
+            hpos += 1
+            for win in windows.values():
+                wi = self.get_window_info(typedict(win))
+                l = len(wi)
+                self.box(self.stdscr, 1, hpos, width-2, 2+l)
+                for i, info in enumerate(wi):
+                    info_text, color = info
+                    cpair = curses.color_pair(color)
+                    self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
+                hpos += 2+l
         except Exception:
             log.error("update_screen()", exc_info=True)
-        self.stdscr.refresh()
+        else:
+            self.stdscr.refresh()
 
-    def get_client_info(self, prefix):
-        cp = "client%s." % prefix
-        sli = self.server_last_info
+    def dictget(self, *parts):
+        d = self.server_last_info
+        while parts:
+            d = typedict(d.dictget(parts[0]))
+            parts = parts[1:]
+        return d
+
+    def get_client_info(self, client_no):
+        client_info = self.dictget("client")
+        ci = typedict(client_info.dictget(client_no))
         #version info:
-        ctype = sli.strget(cp+"type", "unknown")
-        title = "%s client version %s-r%s" % (ctype, sli.strget(cp+"version"), sli.intget(cp+"revision"))
+        ctype = ci.strget("type", "unknown")
+        title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.intget("revision"))
         #batch delay:
-        bprefix = cp+"batch.delay."
-        bcur = sli.intget(bprefix+"cur")
-        bavg = sli.intget(bprefix+"avg")
+        b_info = typedict(ci.dictget("batch"))
+        bi_info = typedict(b_info.dictget("delay"))
+        bcur = bi_info.intget("cur")
+        bavg = bi_info.intget("avg")
         batch_info = "batch delay: %i (%i)" %(
             bcur,
             bavg,
@@ -145,10 +172,10 @@ class TopClient(MonitorXpraClient):
         elif bcur>100:
             bcolor = RED
         #client latency:
-        lprefix = cp+"connection.client.ping_latency."
-        lcur = sli.intget(lprefix+"cur")
-        lavg = sli.intget(lprefix+"avg")
-        lmin = sli.intget(lprefix+"min")
+        pl = self.dictget("connection", "client", "ping_latency")
+        lcur = pl.intget("cur")
+        lavg = pl.intget("avg")
+        lmin = pl.intget("min")
         latency_info = "latency: %i (%i)" % (lcur, lavg)
         lcolor = GREEN
         if lcur>20:
@@ -156,11 +183,33 @@ class TopClient(MonitorXpraClient):
                 lcolor = YELLOW
             elif lcur>3*lmin:
                 lcolor = RED
-        return [
+        return (
             (title, WHITE),
             (batch_info, bcolor),
             (latency_info, lcolor),
+            )
+
+    def get_window_info(self, wi):
+        #version info:
+        geom = tuple(wi.intlistget("geometry"))
+        g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
+        sc = wi.dictget("size-constraints")
+        if sc:
+            g_str += " - %s" % csv("%s=%s" % (bytestostr(k), v) for k,v in sc.items())
+        title = wi.strget("title", "")
+        attrs = [
+            x for x in (
+                "above", "below", "bypass-compositor",
+                "focused", "fullscreen",
+                "grabbed", "iconic", "maximized", "modal",
+                "override-redirect", "shaded", "skip-pager",
+                "skip-taskbar", "sticky", "tray",
+                ) if wi.boolget(x)
             ]
+        if not wi.boolget("shown"):
+            attrs.insert(0, "hidden")
+        info = (title, g_str, csv(attrs), csv(wi.strlistget("window-type", ("NORMAL",))))
+        return tuple((x, WHITE) for x in info if x)
 
     def box(self, window, x, y, w, h):
         window.hline(y, x, curses.ACS_HLINE, w-1)
@@ -175,7 +224,7 @@ class TopClient(MonitorXpraClient):
 
     def do_command(self):
         self.send_info_request()
-        self.timeout_add(1000, self.send_info_request)
+        self.timeout_add(REFRESH_RATE*1000, self.send_info_request)
 
     def send_info_request(self):
         categories = ()
