@@ -8,12 +8,14 @@ import unittest
 
 from xpra.util import AdHocStruct, typedict
 from xpra.client.mixins.mmap import MmapClient
+from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class MixinsTest(unittest.TestCase):
+class MixinsTest(ClientMixinTest):
 
 	def test_mmap(self):
 		x = MmapClient()
+		self.mixin = x
 		opts = AdHocStruct()
 		opts.mmap = "on"
 		opts.mmap_group = False

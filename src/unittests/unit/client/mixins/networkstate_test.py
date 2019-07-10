@@ -10,9 +10,10 @@ import unittest
 from xpra.util import AdHocStruct, typedict
 from xpra.os_util import get_hex_uuid
 from xpra.client.mixins.network_state import NetworkState
+from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class MixinsTest(unittest.TestCase):
+class MixinsTest(ClientMixinTest):
 
 	def test_networkstate(self):
 		x = NetworkState()

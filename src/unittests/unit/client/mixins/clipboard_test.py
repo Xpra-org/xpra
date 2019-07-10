@@ -16,6 +16,7 @@ class ClipboardClientTest(ClientMixinTest):
 
 	def test_clipboard(self):
 		x = ClipboardClient()
+		self.mixin = x
 		opts = AdHocStruct()
 		opts.clipboard = "yes"
 		opts.clipboard_direction = "both"

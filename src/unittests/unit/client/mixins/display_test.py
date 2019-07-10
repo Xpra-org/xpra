@@ -20,6 +20,7 @@ class DisplayClientTest(ClientMixinTest):
 			init_gdk_display_source()
 		from xpra.client.mixins.display import DisplayClient
 		x = DisplayClient()
+		self.mixin = x
 		def get_root_size():
 			return 1024, 768
 		x.get_root_size = get_root_size

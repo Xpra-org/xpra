@@ -16,6 +16,7 @@ class AudioClientTest(ClientMixinTest):
 
 	def test_audio(self):
 		x = AudioClient()
+		self.mixin = x
 		opts = AdHocStruct()
 		opts.av_sync = True
 		opts.speaker = "on"

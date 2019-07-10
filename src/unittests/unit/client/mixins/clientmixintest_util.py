@@ -20,6 +20,13 @@ class ClientMixinTest(unittest.TestCase):
 
 	def setUp(self):
 		self.packets = []
+		self.mixin = None
+
+	def tearDown(self):
+		unittest.TestCase.tearDown(self)
+		if self.mixin:
+			self.mixin.cleanup()
+			self.mixin = None
 
 	def stop(self):
 		self.glib.timeout_add(1000, self.main_loop.quit)

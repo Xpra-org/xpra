@@ -8,9 +8,10 @@ import unittest
 
 from xpra.util import AdHocStruct, typedict
 from xpra.client.mixins.remote_logging import RemoteLogging
+from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class MixinsTest(unittest.TestCase):
+class MixinsTest(ClientMixinTest):
 
 	def test_remotelogging(self):
 		from xpra.log import is_debug_enabled

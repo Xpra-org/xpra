@@ -6,35 +6,24 @@
 
 import unittest
 
+from xpra.os_util import PYTHON3
 from xpra.util import AdHocStruct, typedict
-from xpra.client.mixins.encodings import Encodings
+from xpra.client.mixins.notifications import NotificationClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class DisplayClientTest(ClientMixinTest):
+class AudioClientTest(NotificationClient):
 
-	def test_display(self):
-		x = Encodings()
+	def test_audio(self):
+		x = NotificationClient()
 		self.mixin = x
 		opts = AdHocStruct()
-		opts.encoding = ""
-		opts.encodings = ["rgb", "png"]
-		opts.quality = 0
-		opts.min_quality = 20
-		opts.speed = 0
-		opts.min_speed = 20
-		opts.video_scaling = "no"
-		opts.video_decoders = []
-		opts.csc_modules = []
-		opts.video_encoders = []
-		
+		opts.notifications = True
 		x.init(opts)
 		assert x.get_caps() is not None
 		x.server_capabilities = typedict({
-			"encodings" : ["rgb"],
-			"encodings.core" : ["rgb32", "rgb24", "png"],
-			"encodings.problematic" : [],
-			"encoding" : ""
+			"notifications" : True,
+			"notifications.close" : True,
 			})
 		x.parse_server_capabilities()
 
