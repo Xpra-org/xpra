@@ -10,14 +10,13 @@ from xpra.util import AdHocStruct
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
-class NetworkStateMixinTest(ServerMixinTest):
+class NotificationForwarderMixinTest(ServerMixinTest):
 
     def test_mmap(self):
-        from xpra.server.mixins.networkstate_server import NetworkStateServer
+        from xpra.server.mixins.notification_forwarder import NotificationForwarder
         opts = AdHocStruct()
-        opts.pings = 1
-        opts.bandwidth_limit = "10Mbps"
-        self._test_mixin_class(NetworkStateServer, opts)
+        opts.notifications = "yes"
+        self._test_mixin_class(NotificationForwarder, opts)
 
 def main():
     unittest.main()
