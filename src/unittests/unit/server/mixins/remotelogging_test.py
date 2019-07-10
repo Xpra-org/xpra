@@ -7,17 +7,10 @@
 import unittest
 
 from xpra.util import AdHocStruct
+from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
-class ServerMixinsTest(unittest.TestCase):
-
-    def test_mmap(self):
-        from xpra.server.mixins.mmap_server import MMAP_Server
-        x = MMAP_Server()
-        opts = AdHocStruct()
-        opts.mmap = "on"
-        x.init(opts)
-        assert x.get_info().get("mmap", {}).get("supported") is True
+class ServerMixinsTest(ServerMixinTest):
 
     def test_remotelogging(self):
         from xpra.server.mixins.logging_server import LoggingServer, log
@@ -28,6 +21,7 @@ class ServerMixinsTest(unittest.TestCase):
                 messages.append(args)
             log.log = newlogfn
             x = LoggingServer()
+            self.mixin = x
             proto = AdHocStruct()
             x._server_sources = {proto : "fake-source"}
             opts = AdHocStruct()

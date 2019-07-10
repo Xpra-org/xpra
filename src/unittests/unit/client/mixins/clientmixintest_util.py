@@ -9,7 +9,6 @@ import unittest
 from xpra.gtk_common.gobject_compat import import_glib
 
 
-
 class ClientMixinTest(unittest.TestCase):
 
 	@classmethod
