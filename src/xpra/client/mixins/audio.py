@@ -53,6 +53,8 @@ class AudioClient(StubClientMixin):
         self.server_sound_bundle_metadata = False
         self.server_ogg_latency_fix = False
         self.queue_used_sent = None
+        #duplicated from ServerInfo mixin:
+        self._remote_machine_id = None
 
     def init(self, opts, _extra_args=()):
         self.av_sync = opts.av_sync
