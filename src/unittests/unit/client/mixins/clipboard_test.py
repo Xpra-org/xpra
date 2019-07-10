@@ -12,10 +12,9 @@ from xpra.client.mixins.clipboard import ClipboardClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-
 class ClipboardClientTest(ClientMixinTest):
 
-	def test_audio(self):
+	def test_clipboard(self):
 		x = ClipboardClient()
 		opts = AdHocStruct()
 		opts.clipboard = "yes"
