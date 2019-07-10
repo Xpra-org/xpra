@@ -10,7 +10,7 @@ from xpra.util import AdHocStruct
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
-class ServerMixinsTest(ServerMixinTest):
+class ChildCommandMixinTest(ServerMixinTest):
 
     def test_mmap(self):
         from xpra.server.mixins.child_command_server import ChildCommandServer

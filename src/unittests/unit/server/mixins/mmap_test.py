@@ -10,7 +10,7 @@ from xpra.util import AdHocStruct
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
-class ServerMixinsTest(ServerMixinTest):
+class MMAPMixinTest(ServerMixinTest):
 
     def test_mmap(self):
         from xpra.server.mixins.mmap_server import MMAP_Server
