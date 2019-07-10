@@ -6,7 +6,6 @@
 
 import unittest
 
-from xpra.os_util import PYTHON3
 from xpra.util import AdHocStruct, typedict
 from xpra.client.mixins.notifications import NotificationClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
