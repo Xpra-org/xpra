@@ -49,8 +49,6 @@ class ServerMixinTest(unittest.TestCase):
         x.init_sockets([])
         x.setup()
         x.threaded_setup()
-        x.get_caps(None)
-        x.get_info(None)
         caps = typedict(caps or {})
         send_ui = True
         self.source = None
@@ -59,5 +57,7 @@ class ServerMixinTest(unittest.TestCase):
             self.source.init_state()
             self.source.parse_client_caps(caps)
             self.source.get_info()
+        x.get_caps(self.source)
+        x.get_info(None)
         x.parse_hello(self.source, caps, send_ui)
         x.get_info(self.source)
