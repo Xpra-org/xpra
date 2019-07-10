@@ -6,7 +6,6 @@
 
 import unittest
 
-from xpra.os_util import PYTHON3
 from xpra.util import AdHocStruct, typedict
 from xpra.client.mixins.webcam import WebcamForwarder
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
@@ -41,8 +40,7 @@ class WebcamTest(ClientMixinTest):
 			assert self.verify_packet(-1, ("webcam-stop", 0, ))
 
 def main():
-	if PYTHON3:
-		unittest.main()
+	unittest.main()
 
 
 if __name__ == '__main__':
