@@ -11,7 +11,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
-log = Logger("client")
+log = Logger("server")
 
 
 """
