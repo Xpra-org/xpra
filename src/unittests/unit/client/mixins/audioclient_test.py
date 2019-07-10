@@ -8,17 +8,13 @@ import unittest
 
 from xpra.os_util import PYTHON3
 from xpra.util import AdHocStruct, typedict
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.client.mixins.audio import AudioClient
+from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
-glib = import_glib()
 
-
-class AudioClientTest(unittest.TestCase):
+class AudioClientTest(ClientMixinTest):
 
 	def test_audio(self):
-		self.packets = []
-		main_loop = glib.MainLoop()
 		x = AudioClient()
 		opts = AdHocStruct()
 		opts.av_sync = True
@@ -40,11 +36,11 @@ class AudioClientTest(unittest.TestCase):
 			})
 		def stop():
 			x.stop_all_sound()
-			glib.timeout_add(1000, main_loop.quit)
-		glib.timeout_add(5000, stop)
+			self.stop()
+		self.glib.timeout_add(5000, stop)
 		try:
 			x.parse_server_capabilities()
-			main_loop.run()
+			self.main_loop.run()
 		finally:
 			x.stop_all_sound()
 		#print("packets=%s" % (self.packets,))
@@ -53,21 +49,6 @@ class AudioClientTest(unittest.TestCase):
 		assert self.verify_packet(1, ("sound-data", )) or self.verify_packet(0, ("sound-data", ))
 		assert self.verify_packet(-2, ("sound-control", "stop"))
 		assert self.verify_packet(-1, ("sound-control", "new-sequence"))
-
-	def send(self, *args):
-		self.packets.append(args)
-
-	def verify_packet(self, index, expected):
-		if index<0:
-			actual_index = len(self.packets)+index
-		else:
-			actual_index = index
-		assert actual_index>=0
-		assert len(self.packets)>actual_index, "not enough packets (%i) to access %i" % (len(self.packets), index)
-		packet = self.packets[actual_index]
-		pslice = packet[:len(expected)]
-		return pslice==expected
-
 
 def main():
 	if PYTHON3:
