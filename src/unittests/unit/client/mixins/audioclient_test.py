@@ -35,15 +35,9 @@ class AudioClientTest(ClientMixinTest):
 			"sound.decoders" : ["mp3", "opus"],
 			"sound.ogg-latency-fix" : True,
 			})
-		def stop():
-			x.stop_all_sound()
-			self.stop()
-		self.glib.timeout_add(5000, stop)
-		try:
-			x.parse_server_capabilities()
-			self.main_loop.run()
-		finally:
-			x.stop_all_sound()
+		self.glib.timeout_add(5000, self.stop)
+		x.parse_server_capabilities()
+		self.main_loop.run()
 		#print("packets=%s" % (self.packets,))
 		assert len(self.packets)>2
 		assert self.verify_packet(0, ("sound-control", "start")) or self.verify_packet(1, ("sound-control", "start"))
