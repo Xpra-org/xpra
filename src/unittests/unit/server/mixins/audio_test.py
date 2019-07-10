@@ -14,8 +14,6 @@ class AudioMixinTest(ServerMixinTest):
 
     def test_audio(self):
         from xpra.server.mixins.audio_server import AudioServer
-        x = AudioServer()
-        self.mixin = x
         opts = AdHocStruct()
         opts.sound_source = ""
         opts.speaker = "on"
@@ -25,10 +23,7 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio = True
         opts.pulseaudio_command = ""
         opts.pulseaudio_configure_commands = []
-        x.init(opts)
-        x.setup()
-        x.get_info(None)
-        x.get_caps(None)
+        self._test_mixin_class(AudioServer, opts)
 
 def main():
     unittest.main()

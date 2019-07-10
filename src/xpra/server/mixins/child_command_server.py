@@ -51,6 +51,11 @@ class ChildCommandServer(StubServerMixin):
         self.watch_manager = None
         self.watch_notifier = None
         self.xdg_menu_reload_timer = None
+        #does not belong here...
+        if not hasattr(self, "_upgrading"):
+            self._upgrading = False
+        if not hasattr(self, "session_name"):
+            self.session_name = ""
 
     def init(self, opts):
         self.exit_with_children = opts.exit_with_children
@@ -164,7 +169,7 @@ class ChildCommandServer(StubServerMixin):
 
     def get_caps(self, source):
         caps = {}
-        if source.wants_features:
+        if source and source.wants_features:
             xdg_menu = self._get_xdg_menu_data()
             if xdg_menu:
                 if source.xdg_menu_update:

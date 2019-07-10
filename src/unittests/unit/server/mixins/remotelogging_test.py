@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,17 +20,18 @@ class ServerMixinsTest(ServerMixinTest):
             def newlogfn(*args):
                 messages.append(args)
             log.log = newlogfn
-            x = LoggingServer()
-            self.mixin = x
             proto = AdHocStruct()
-            x._server_sources = {proto : "fake-source"}
+            def _LoggingServer():
+                ls = LoggingServer()
+                ls._server_sources = {proto : "fake-source"}
+                return ls
             opts = AdHocStruct()
             opts.remote_logging = "on"
-            x.init(opts)
             level = 20
             msg = "foo"
             packet = ["logging", level, msg]
-            x._process_logging(proto, packet)
+            self._test_mixin_class(_LoggingServer, opts)
+            self.mixin._process_logging(proto, packet)
             assert len(messages)==1
         finally:
             log.log = logfn
