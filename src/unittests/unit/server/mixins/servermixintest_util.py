@@ -34,8 +34,14 @@ class ServerMixinTest(unittest.TestCase):
     def stop(self):
         self.glib.timeout_add(1000, self.main_loop.quit)
 
+    def wait_for_threaded_init(self):
+        #we don't do threading yet,
+        #so no need to wait
+        pass
+
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=None):
         x = self.mixin = mclass()
+        x.wait_for_threaded_init = self.wait_for_threaded_init
         x.idle_add = self.glib.idle_add
         x.timeout_add = self.glib.timeout_add
         x.source_remove = self.glib.source_remove
