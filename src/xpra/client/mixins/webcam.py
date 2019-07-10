@@ -43,6 +43,11 @@ class WebcamForwarder(StubClientMixin):
         self.server_virtual_video_devices = 0
         if not hasattr(self, "send"):
             self.send = self.noop
+        #duplicated from encodings mixin:
+        self.server_encodings = []
+        if not hasattr(self, "server_ping_latency"):
+            from collections import deque
+            self.server_ping_latency = deque(maxlen=1000)
 
     def noop(self, *_args):
         pass

@@ -35,7 +35,6 @@ class WebcamTest(ClientMixinTest):
 			self.glib.timeout_add(5000, self.stop)
 			x.parse_server_capabilities()
 			self.main_loop.run()
-			print("packets=%s" % (self.packets,))
 			assert len(self.packets)>2
 			assert self.verify_packet(0, ("webcam-start", 0, ))
 			assert self.verify_packet(1, ("webcam-frame", 0, ))
