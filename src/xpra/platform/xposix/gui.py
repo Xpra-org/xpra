@@ -30,8 +30,10 @@ def X11WindowBindings():
             try:
                 from xpra.x11.bindings.window_bindings import X11WindowBindings as _X11WindowBindings #@UnresolvedImport
                 X11Window = _X11WindowBindings()
-            except Exception:
-                log.error("no X11 bindings", exc_info=True)
+            except Exception as e:
+                log("X11WindowBindings()", exc_info=True)
+                log.error("Error: no X11 bindings")
+                log.error(" %s", e)
     return X11Window
 
 X11XI2 = None
