@@ -1,58 +1,16 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import unittest
 
 from xpra.util import AdHocStruct, typedict
-from xpra.os_util import get_hex_uuid
-from xpra.client.mixins.network_state import NetworkState
-from xpra.client.mixins.mmap import MmapClient
 from xpra.client.mixins.remote_logging import RemoteLogging
 
 
 class MixinsTest(unittest.TestCase):
-
-	def test_networkstate(self):
-		x = NetworkState()
-		fake_protocol = AdHocStruct()
-		fake_protocol.get_info = lambda : {}
-		x._protocol = fake_protocol
-		opts = AdHocStruct()
-		opts.pings = True
-		opts.bandwidth_limit = 0
-		opts.bandwidth_detection = True
-		x.init(opts)
-		assert x.get_caps() is not None
-		x.server_capabilities = typedict({"start_time" : time.time()})
-		x.parse_server_capabilities()
-		assert x.server_start_time>=x.start_time, "server_start_time=%s vs start_time=%s" % (x.server_start_time, x.start_time)
-		x.uuid = get_hex_uuid()
-		x.send_info_request()
-		packet = ["info-response", {"foo" : "bar"}]
-		x._process_info_response(packet)
-		assert x.server_last_info.get("foo")=="bar"
-
-	def test_mmap(self):
-		x = MmapClient()
-		opts = AdHocStruct()
-		opts.mmap = "on"
-		opts.mmap_group = False
-		x.init(opts)
-		assert x.get_caps() is not None
-		conn = AdHocStruct()
-		conn.filename = "/tmp/fake"
-		x.setup_connection(conn)
-		x.server_capabilities = typedict({
-			"mmap.enabled"		: True,
-			"mmap.token"		: x.mmap_token,
-			"mmap.token_bytes"	: x.mmap_token_bytes,
-			"mmap.token_index"	: x.mmap_token_index,
-			})
-		x.parse_server_capabilities()
 
 	def test_remotelogging(self):
 		from xpra.log import is_debug_enabled
@@ -87,7 +45,6 @@ class MixinsTest(unittest.TestCase):
 		x.cleanup()
 		log.info("foo")
 		assert len(packets)==1
-
 
 def main():
 	unittest.main()
