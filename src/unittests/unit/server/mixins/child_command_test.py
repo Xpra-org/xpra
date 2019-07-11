@@ -28,7 +28,15 @@ class ChildCommandMixinTest(ServerMixinTest):
         opts.start_child_on_last_client_exit = []
         opts.exec_wrapper = None
         opts.start_env = []
-        self._test_mixin_class(ChildCommandServer, opts)
+        #pynotify can cause crashes,
+        #probably due to threading issues?
+        def noop():
+            pass
+        def _ChildCommandServer():
+            ccs = ChildCommandServer()
+            ccs.setup_menu_watcher = noop
+            return ccs
+        self._test_mixin_class(_ChildCommandServer, opts)
 
 def main():
     unittest.main()
