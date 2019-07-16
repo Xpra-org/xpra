@@ -69,6 +69,9 @@ class StubSourceMixin(object):
         pass
 
 
+    def queue_encode(self, item):
+        pass
+
     def send_more(self, *parts, **kwargs):
         pass
 

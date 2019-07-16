@@ -96,6 +96,12 @@ class EncodingsMixin(StubSourceMixin):
         self.video_helper.cleanup()
 
 
+    def all_window_sources(self):
+        #we can't assume that the window mixin is loaded:
+        window_sources = getattr(self, "window_sources", {})
+        return tuple(window_sources.values())
+
+
     def get_caps(self):
         caps = {}
         if self.wants_encodings and self.encoding:
@@ -123,8 +129,11 @@ class EncodingsMixin(StubSourceMixin):
         conn = p._conn
         if not conn:
             return
-        self.statistics.bytes_sent.append((now, conn.output_bytecount))
-        self.statistics.update_averages()
+        #we can't assume that 'self' is a full ClientConnection object:
+        stats = getattr(self, "statistics", None)
+        if stats:
+            stats.bytes_sent.append((now, conn.output_bytecount))
+            stats.update_averages()
         self.update_bandwidth_limits()
         wids = tuple(self.calculate_window_ids)  #make a copy so we don't clobber new wids
         focus = self.get_focus()
@@ -262,14 +271,17 @@ class EncodingsMixin(StubSourceMixin):
         self.encodings = c.strlistget("encodings")
         self.core_encodings = c.strlistget("encodings.core", self.encodings)
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
-        if self.send_windows and not self.core_encodings:
+        #we can't assume that the window mixin is loaded,
+        #or that the ui_client flag exists:
+        send_ui = getattr(self, "ui_client", True) and getattr(self, "send_windows", True)
+        if send_ui and not self.core_encodings:
             raise ClientException("client failed to specify any supported encodings")
         if "png" in self.core_encodings:
             self.window_icon_encodings.append("png")
         self.window_icon_encodings = c.strlistget("encodings.window-icon", ["premult_argb32"])
         self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
         #skip all other encoding related settings if we don't send pixels:
-        if not self.send_windows:
+        if not send_ui:
             log("windows/pixels forwarding is disabled for this client")
         else:
             self.parse_encoding_caps(c)
@@ -394,7 +406,7 @@ class EncodingsMixin(StubSourceMixin):
         if window_ids is not None:
             wss = (self.window_sources.get(wid) for wid in window_ids)
         else:
-            wss = self.window_sources.values()
+            wss = self.all_window_sources()
         for ws in wss:
             if ws is not None:
                 ws.set_auto_refresh_delay(delay)
@@ -404,8 +416,6 @@ class EncodingsMixin(StubSourceMixin):
             or for all windows if 'window_ids' is None.
         """
         log("set_encoding(%s, %s, %s)", encoding, window_ids, strict)
-        if not self.ui_client:
-            return
         if encoding and encoding!="auto":
             #old clients (v0.9.x and earlier) only supported 'rgb24' as 'rgb' mode:
             if encoding=="rgb24":
@@ -421,11 +431,14 @@ class EncodingsMixin(StubSourceMixin):
         if window_ids is not None:
             wss = [self.window_sources.get(wid) for wid in window_ids]
         else:
-            wss = self.window_sources.values()
+            wss = self.all_window_sources()
         #if we're updating all the windows, reset global stats too:
-        if set(wss).issuperset(self.window_sources.values()):
+        if set(wss).issuperset(self.all_window_sources()):
             log("resetting global stats")
-            self.statistics.reset()
+            #we can't assume that 'self' is a full ClientConnection object:
+            stats = getattr(self, "statistics", None)
+            if stats:
+                stats.reset()
             self.global_batch_config = self.default_batch_config.clone()
         for ws in wss:
             if ws is not None:
@@ -465,19 +478,19 @@ class EncodingsMixin(StubSourceMixin):
 
 
     def set_min_quality(self, min_quality):
-        for ws in tuple(self.window_sources.values()):
+        for ws in tuple(self.all_window_sources()):
             ws.set_min_quality(min_quality)
 
     def set_quality(self, quality):
-        for ws in tuple(self.window_sources.values()):
+        for ws in tuple(self.all_window_sources()):
             ws.set_quality(quality)
 
     def set_min_speed(self, min_speed):
-        for ws in tuple(self.window_sources.values()):
+        for ws in tuple(self.all_window_sources()):
             ws.set_min_speed(min_speed)
 
     def set_speed(self, speed):
-        for ws in tuple(self.window_sources.values()):
+        for ws in tuple(self.all_window_sources()):
             ws.set_speed(speed)
 
 

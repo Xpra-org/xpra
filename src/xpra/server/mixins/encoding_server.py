@@ -197,7 +197,7 @@ class EncodingServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss:
             ss.set_quality(quality)
-            self._idle_refresh_all_windows(proto)
+            self.call_idle_refresh_all_windows(proto)
 
     def _process_min_quality(self, proto, packet):
         min_quality = packet[1]
@@ -205,7 +205,7 @@ class EncodingServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss:
             ss.set_min_quality(min_quality)
-            self._idle_refresh_all_windows(proto)
+            self.call_idle_refresh_all_windows(proto)
 
     def _process_speed(self, proto, packet):
         speed = packet[1]
@@ -213,7 +213,7 @@ class EncodingServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss:
             ss.set_speed(speed)
-            self._idle_refresh_all_windows(proto)
+            self.call_idle_refresh_all_windows(proto)
 
     def _process_min_speed(self, proto, packet):
         min_speed = packet[1]
@@ -221,7 +221,14 @@ class EncodingServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss:
             ss.set_min_speed(min_speed)
-            self._idle_refresh_all_windows(proto)
+            self.call_idle_refresh_all_windows(proto)
+
+
+    def call_idle_refresh_all_windows(self, proto):
+        #we can't assume that the window server mixin is loaded:
+        refresh = getattr(self, "_idle_refresh_all_windows", None)
+        if refresh:
+            refresh(proto)
 
 
     def init_packet_handlers(self):

@@ -76,10 +76,13 @@ class WindowsMixin(StubSourceMixin):
         self.last_cursor_sent = None
 
     def cleanup(self):
-        for window_source in self.window_sources.values():
+        for window_source in self.all_window_sources():
             window_source.cleanup()
         self.window_sources = {}
         self.cancel_cursor_timer()
+
+    def all_window_sources(self):
+        return tuple(self.window_sources.values())
 
 
     def suspend(self, ui, wd):
@@ -107,7 +110,7 @@ class WindowsMixin(StubSourceMixin):
         if self.idle:
             return
         self.idle = True
-        for window_source in self.window_sources.values():
+        for window_source in self.all_window_sources():
             window_source.go_idle()
 
     def no_idle(self):
@@ -115,7 +118,7 @@ class WindowsMixin(StubSourceMixin):
         if not self.idle:
             return
         self.idle = False
-        for window_source in self.window_sources.values():
+        for window_source in self.all_window_sources():
             window_source.no_idle()
 
 
