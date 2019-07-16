@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util import typedict
+from xpra.util import typedict, AdHocStruct
 from xpra.gtk_common.gobject_compat import import_glib
 
 
@@ -21,6 +21,8 @@ class ServerMixinTest(unittest.TestCase):
     def setUp(self):
         self.mixin = None
         self.source = None
+        self.protocol = None
+        self.packet_handlers = {}
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
@@ -39,9 +41,24 @@ class ServerMixinTest(unittest.TestCase):
         #so no need to wait
         pass
 
+    def add_packet_handlers(self, defs):
+        self.packet_handlers.update(defs)
+
+    def handle_packet(self, packet):
+        packet_type = packet[0]
+        ph = self.packet_handlers.get(packet_type)
+        assert ph is not None, "no packet handler for %s" % packet_type
+        ph(self.protocol, packet)
+
+    def get_server_source(self, proto):
+        assert proto==self.protocol
+        return self.source
+
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=None):
         x = self.mixin = mclass()
         x.wait_for_threaded_init = self.wait_for_threaded_init
+        x.add_packet_handlers = self.add_packet_handlers
+        x.get_server_source = self.get_server_source
         x.idle_add = self.glib.idle_add
         x.timeout_add = self.glib.timeout_add
         x.source_remove = self.glib.source_remove
@@ -49,11 +66,14 @@ class ServerMixinTest(unittest.TestCase):
         x.init_sockets([])
         x.setup()
         x.threaded_setup()
+        x.init_packet_handlers()
         caps = typedict(caps or {})
         send_ui = True
         self.source = None
         if source_mixin_class:
             self.source = source_mixin_class()
+            self.protocol = AdHocStruct()
+            self.source.protocol = self.protocol
             self.source.init_state()
             self.source.parse_client_caps(caps)
             self.source.get_info()

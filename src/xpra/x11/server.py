@@ -894,7 +894,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             windowlog("cannot map window %i: not found, already removed?", wid)
             return
         assert not window.is_OR()
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         geomlog("client %s mapped window %i - %s, at: %s", ss, wid, window, (x, y, w, h))
@@ -919,7 +919,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("cannot unmap window %i: not found, already removed?", wid)
             return
         assert not window.is_OR()
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         self._window_mapped_at(proto, wid, window)
@@ -950,7 +950,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             x = max(0, min(x, rw-w))
             y = max(0, min(y, rh-h))
             #tell this client to honour the new location
-            ss = self._server_sources.get(proto)
+            ss = self.get_server_source(proto)
             if ss:
                 resize_counter = max(resize_counter, self._desktop_manager.get_resize_counter(window, 1))
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
@@ -962,7 +962,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if not window:
             geomlog("cannot configure window %i: not found, already removed?", wid)
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             return
         #some "configure-window" packets are only meant for metadata updates:

@@ -181,7 +181,7 @@ class ClipboardServer(StubServerMixin):
         assert self.clipboard
         if self.readonly:
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             #protocol has been dropped!
             return
@@ -229,7 +229,7 @@ class ClipboardServer(StubServerMixin):
         if self.readonly:
             return
         clipboard_enabled = packet[1]
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         self.set_clipboard_enabled_status(ss, clipboard_enabled)
 
     def set_clipboard_enabled_status(self, ss, clipboard_enabled):

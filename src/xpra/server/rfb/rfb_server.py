@@ -141,7 +141,7 @@ class RFBServer(object):
     def _process_rfb_KeyEvent(self, proto, packet):
         if not server_features.input_devices or self.readonly:
             return
-        source = self._server_sources.get(proto)
+        source = self.get_server_source(proto)
         if not source:
             return
         pressed, p1, p2, key = packet[1:5]

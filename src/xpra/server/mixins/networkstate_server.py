@@ -131,12 +131,12 @@ class NetworkStateServer(StubServerMixin):
 
 
     def _process_connection_data(self, proto, packet):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.update_connection_data(packet[1])
 
     def _process_bandwidth_limit(self, proto, packet):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             return
         bandwidth_limit = packet[1]
@@ -157,13 +157,13 @@ class NetworkStateServer(StubServerMixin):
         return True
 
     def _process_ping_echo(self, proto, packet):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.process_ping_echo(packet)
 
     def _process_ping(self, proto, packet):
         time_to_echo = packet[1]
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.process_ping(time_to_echo)
 

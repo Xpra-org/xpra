@@ -104,7 +104,7 @@ class WebcamServer(StubServerMixin):
         if self.readonly:
             return
         assert self.webcam_enabled
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
@@ -112,10 +112,9 @@ class WebcamServer(StubServerMixin):
         ss.start_virtual_webcam(device_id, w, h)
 
     def _process_webcam_stop(self, proto, packet):
-        assert proto in self._server_sources
         if self.readonly:
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
@@ -125,7 +124,7 @@ class WebcamServer(StubServerMixin):
     def _process_webcam_frame(self, proto, packet):
         if self.readonly:
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for webcam frame")
             return

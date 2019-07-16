@@ -374,7 +374,7 @@ class ChildCommandServer(StubServerMixin):
         if len(packet)>=5:
             shared = packet[4]
             if proc and not shared:
-                ss = self._server_sources.get(proto)
+                ss = self.get_server_source(proto)
                 assert ss
                 log("adding filter: pid=%s for %s", proc.pid, proto)
                 ss.add_window_filter("window", "pid", "=", proc.pid)

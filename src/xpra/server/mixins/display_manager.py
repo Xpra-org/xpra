@@ -78,13 +78,13 @@ class DisplayManager(StubServerMixin):
 
     def _process_set_cursors(self, proto, packet):
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.send_cursors = bool(packet[1])
 
     def _process_set_bell(self, proto, packet):
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.send_bell = bool(packet[1])
 
@@ -193,7 +193,7 @@ class DisplayManager(StubServerMixin):
 
     def _process_desktop_size(self, proto, packet):
         width, height = packet[1:3]
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         ss.desktop_size = (width, height)
@@ -273,7 +273,7 @@ class DisplayManager(StubServerMixin):
     # screenshots:
     def _process_screenshot(self, proto, _packet):
         packet = self.make_screenshot_packet()
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if packet and ss:
             ss.send(*packet)
 

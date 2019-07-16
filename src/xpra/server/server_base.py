@@ -131,6 +131,9 @@ class ServerBase(ServerBaseClass):
         if self.dbus_server:
             self.dbus_server.Event(str(args[0]), [str(x) for x in args[1:]])
 
+    def get_server_source(self, proto):
+        return self._server_sources.get(proto)
+
 
     def init(self, opts):
         #from now on, use the logger for parsing errors:
@@ -523,7 +526,7 @@ class ServerBase(ServerBaseClass):
     def _process_info_request(self, proto, packet):
         log("process_info_request(%s, %s)", proto, packet)
         #ignoring the list of client uuids supplied in packet[1]
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             return
         categories = None
@@ -655,7 +658,7 @@ class ServerBase(ServerBaseClass):
         Allows us to keep window properties for a client after disconnection.
         (we keep it in a map with the client's uuid as key)
         """
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.set_client_properties(wid, window, typedict(new_client_properties))
             #filter out encoding properties, which are expected to be set everytime:
@@ -685,13 +688,13 @@ class ServerBase(ServerBaseClass):
         log("client has requested compression level=%s", level)
         proto.set_compression_level(level)
         #echo it back to the client:
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.set_deflate(level)
 
     def _process_sharing_toggle(self, proto, packet):
         assert self.sharing is None
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             return
         sharing = bool(packet[1])
@@ -705,7 +708,7 @@ class ServerBase(ServerBaseClass):
 
     def _process_lock_toggle(self, proto, packet):
         assert self.lock is None
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.lock = bool(packet[1])
             log("lock set to %s for client %i", ss.lock, ss.counter)
@@ -916,7 +919,7 @@ class ServerBase(ServerBaseClass):
     def _log_disconnect(self, proto, *args):
         #skip logging of disconnection events for server sources
         #we have tagged during hello ("info_request", "exit_request", etc..)
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss and not ss.log_disconnect:
             #log at debug level only:
             netlog(*args)
@@ -987,7 +990,7 @@ class ServerBase(ServerBaseClass):
                 handler(proto, packet)
                 return
             def invalid_packet():
-                ss = self._server_sources.get(proto)
+                ss = self.get_server_source(proto)
                 if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
                     netlog("invalid packet: %s", packet)
                     netlog.error("Error: unknown or invalid packet type '%s'", packet_type)

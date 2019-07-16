@@ -223,7 +223,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: received printer definitions data")
             printlog.error(" but this server does not support printer forwarding")
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         printers = packet[1]
@@ -234,35 +234,35 @@ class FilePrintServer(StubServerMixin):
     ######################################################################
     # file transfers:
     def _process_send_file(self, proto, packet):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file packet")
             return
         ss._process_send_file(packet)
 
     def _process_ack_file_chunk(self, proto, packet):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for ack-file-chunk packet")
             return
         ss._process_ack_file_chunk(packet)
 
     def _process_send_file_chunk(self, proto, packet):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file-chunk packet")
             return
         ss._process_send_file_chunk(packet)
 
     def _process_send_data_request(self, proto, packet):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file-request packet")
             return
         ss._process_send_data_request(packet)
 
     def _process_send_data_response(self, proto, packet):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-data-response packet")
             return

@@ -348,7 +348,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def _process_desktop_size(self, proto, packet):
         #just record the screen size info in the source
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss and len(packet)>=4:
             ss.set_screen_sizes(packet[3])
 

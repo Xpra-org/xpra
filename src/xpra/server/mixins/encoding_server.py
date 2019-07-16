@@ -171,7 +171,7 @@ class EncodingServer(StubServerMixin):
 
     def _process_encoding(self, proto, packet):
         encoding = packet[1]
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         if len(packet)>=3:
@@ -194,7 +194,7 @@ class EncodingServer(StubServerMixin):
     def _process_quality(self, proto, packet):
         quality = packet[1]
         log("Setting quality to %s", quality)
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.set_quality(quality)
             self._idle_refresh_all_windows(proto)
@@ -202,7 +202,7 @@ class EncodingServer(StubServerMixin):
     def _process_min_quality(self, proto, packet):
         min_quality = packet[1]
         log("Setting min quality to %s", min_quality)
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.set_min_quality(min_quality)
             self._idle_refresh_all_windows(proto)
@@ -210,7 +210,7 @@ class EncodingServer(StubServerMixin):
     def _process_speed(self, proto, packet):
         speed = packet[1]
         log("Setting speed to ", speed)
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.set_speed(speed)
             self._idle_refresh_all_windows(proto)
@@ -218,7 +218,7 @@ class EncodingServer(StubServerMixin):
     def _process_min_speed(self, proto, packet):
         min_speed = packet[1]
         log("Setting min speed to ", min_speed)
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.set_min_speed(min_speed)
             self._idle_refresh_all_windows(proto)

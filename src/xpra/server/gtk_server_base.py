@@ -140,7 +140,7 @@ class GTKServerBase(ServerBase):
         if self.cursor_suspended:
             return
         self.cursor_suspended = True
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.cancel_cursor_timer()
             ss.send_empty_cursor()
@@ -150,7 +150,7 @@ class GTKServerBase(ServerBase):
         if not self.cursor_suspended:
             return
         self.cursor_suspended = False
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.send_cursor()
 

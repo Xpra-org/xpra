@@ -78,7 +78,7 @@ class DBUS_RPC_Server(StubServerMixin):
     def _process_rpc(self, proto, packet):
         if self.readonly:
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         assert ss is not None
         rpc_type = packet[1]
         rpcid = packet[2]

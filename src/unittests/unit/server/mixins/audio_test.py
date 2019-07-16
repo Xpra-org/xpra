@@ -24,6 +24,7 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio_command = ""
         opts.pulseaudio_configure_commands = []
         self._test_mixin_class(AudioServer, opts)
+        self.handle_packet(("sound-control", "stop"))
 
 def main():
     unittest.main()

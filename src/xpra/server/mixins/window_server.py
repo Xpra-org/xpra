@@ -237,7 +237,7 @@ class WindowServer(StubServerMixin):
             message = packet[6]
         else:
             message = ""
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
 
@@ -281,7 +281,7 @@ class WindowServer(StubServerMixin):
 
 
     def update_batch_config(self, proto, wid_windows, batch_props, client_properties):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         for wid, window in wid_windows.items():
@@ -291,7 +291,7 @@ class WindowServer(StubServerMixin):
             ss.update_batch(wid, window, batch_props)
 
     def _refresh_windows(self, proto, wid_windows, opts={}):
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         for wid, window in wid_windows.items():
@@ -313,7 +313,7 @@ class WindowServer(StubServerMixin):
     def _window_mapped_at(self, proto, wid, window, coords=None):
         #record where a window is mapped by a client
         #(in order to support multiple clients and different offsets)
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             return
         if coords:
@@ -348,7 +348,7 @@ class WindowServer(StubServerMixin):
         eventslog("suspend(%s)", packet[1:])
         ui = bool(packet[1])
         wd = self._get_window_dict(packet[2])
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.suspend(ui, wd)
 
@@ -356,7 +356,7 @@ class WindowServer(StubServerMixin):
         eventslog("resume(%s)", packet[1:])
         ui = bool(packet[1])
         wd = self._get_window_dict(packet[2])
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             ss.resume(ui, wd)
 
@@ -380,7 +380,7 @@ class WindowServer(StubServerMixin):
             modifiers = packet[2]
         else:
             modifiers = None
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             self._focus(ss, wid, modifiers)
             #if the client focused one of our windows, count this as a user event:

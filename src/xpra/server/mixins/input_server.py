@@ -119,7 +119,7 @@ class InputServer(StubServerMixin):
             options = packet[3]
         else:
             options = ""
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss and ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
@@ -127,7 +127,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         props = typedict(packet[1])
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         keylog("received new keymap from client")
@@ -150,7 +150,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         wid, keyname, pressed, modifiers, keyval, _, client_keycode, group = packet[1:9]
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         keyname = bytestostr(keyname)
@@ -248,7 +248,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         keyname = bytestostr(keyname)
@@ -279,7 +279,7 @@ class InputServer(StubServerMixin):
         assert proto in self._server_sources
         if self.readonly:
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         ss.keyboard_config.sync = bool(packet[1])
@@ -310,7 +310,7 @@ class InputServer(StubServerMixin):
 
     def _adjust_pointer(self, proto, wid, pointer):
         #the window may not be mapped at the same location by the client:
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         window = self._id_to_window.get(wid)
         if ss and window:
             ws = ss.get_window_source(wid)
@@ -346,7 +346,7 @@ class InputServer(StubServerMixin):
         mouselog("process_button_action(%s, %s)", proto, packet)
         if self.readonly:
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         ss.user_event()
@@ -365,7 +365,7 @@ class InputServer(StubServerMixin):
                  proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         wid, pdata, modifiers = packet[1:4]

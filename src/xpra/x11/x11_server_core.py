@@ -963,7 +963,7 @@ class X11ServerCore(GTKServerBase):
         pos = self.root_window.get_pointer()[-3:-1]
         uuid = None
         if proto:
-            ss = self._server_sources.get(proto)
+            ss = self.get_server_source(proto)
             if ss:
                 uuid = ss.uuid
         if pos!=pointer[:2] or self.input_devices=="xi":
@@ -975,7 +975,7 @@ class X11ServerCore(GTKServerBase):
     def _update_modifiers(self, proto, wid, modifiers):
         if self.readonly:
             return
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss:
             if self.ui_driver and self.ui_driver!=ss.uuid:
                 return

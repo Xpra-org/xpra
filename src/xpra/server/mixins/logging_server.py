@@ -33,7 +33,7 @@ class LoggingServer(StubServerMixin):
 
     def _process_logging(self, proto, packet):
         assert self.remote_logging
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if ss is None:
             return
         level, msg = packet[1:3]
