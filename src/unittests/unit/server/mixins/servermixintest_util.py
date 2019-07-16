@@ -49,7 +49,7 @@ class ServerMixinTest(unittest.TestCase):
     def add_packet_handler(self, packet_type, handler, _main_thread=True):
         self.packet_handlers[packet_type] = handler
 
-    def add_packet_handlers(self, defs):
+    def add_packet_handlers(self, defs, _main_thread=True):
         self.packet_handlers.update(defs)
 
     def handle_packet(self, packet):
@@ -80,6 +80,7 @@ class ServerMixinTest(unittest.TestCase):
         x.idle_add = self.glib.idle_add
         x.timeout_add = self.glib.timeout_add
         x.source_remove = self.glib.source_remove
+        x.init_state()
         x.init(opts)
         x.init_sockets([])
         x.setup()

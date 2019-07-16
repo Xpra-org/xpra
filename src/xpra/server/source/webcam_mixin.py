@@ -76,12 +76,10 @@ class WebcamMixin(StubSourceMixin):
 
 
     def send_webcam_ack(self, device, frame, *args):
-        if self.hello_sent:
-            self.send_async("webcam-ack", device, frame, *args)
+        self.send_async("webcam-ack", device, frame, *args)
 
     def send_webcam_stop(self, device, message):
-        if self.hello_sent:
-            self.send_async("webcam-stop", device, message)
+        self.send_async("webcam-stop", device, message)
 
 
     def start_virtual_webcam(self, device_id, w, h):
