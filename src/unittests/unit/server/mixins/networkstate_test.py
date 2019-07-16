@@ -12,7 +12,7 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 class NetworkStateMixinTest(ServerMixinTest):
 
-    def test_mmap(self):
+    def test_networkstate(self):
         from xpra.server.mixins.networkstate_server import NetworkStateServer
         opts = AdHocStruct()
         opts.pings = 1
