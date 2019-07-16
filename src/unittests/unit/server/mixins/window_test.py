@@ -12,7 +12,7 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 class WebcamMixinTest(ServerMixinTest):
 
-    def test_mmap(self):
+    def test_windowserver(self):
         from xpra.server.mixins.window_server import WindowServer
         opts = AdHocStruct()
         opts.min_size = "10x10"
