@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
+from threading import Lock
+
 from xpra.os_util import bytestostr
 from xpra.util import repr_ellipsized
 from xpra.scripts.config import FALSE_OPTIONS
@@ -21,6 +23,7 @@ class LoggingServer(StubServerMixin):
 
     def __init__(self):
         self.remote_logging = False
+        self.logging_lock = Lock()
 
     def init(self, opts):
         self.remote_logging = not (opts.remote_logging or "").lower() in FALSE_OPTIONS
@@ -38,8 +41,9 @@ class LoggingServer(StubServerMixin):
             return
         level, msg = packet[1:3]
         prefix = "client "
-        if ss.counter>0:
-            prefix += "%3i " % ss.counter
+        counter = getattr(ss, "counter", 0)
+        if counter>0:
+            prefix += "%3i " % counter
         if len(packet)>=4:
             dtime = packet[3]
             prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
@@ -62,7 +66,8 @@ class LoggingServer(StubServerMixin):
             log.error(" %s", e)
 
     def do_log(self, level, line):
-        log.log(level, line)
+        with self.logging_lock:
+            log.log(level, line)
 
     def init_packet_handlers(self):
         if self.remote_logging:
