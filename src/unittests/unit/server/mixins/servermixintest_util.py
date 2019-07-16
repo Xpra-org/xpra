@@ -45,6 +45,9 @@ class ServerMixinTest(unittest.TestCase):
         #so no need to wait
         pass
 
+    def add_packet_handler(self, packet_type, handler, _main_thread=True):
+        self.packet_handlers[packet_type] = handler
+
     def add_packet_handlers(self, defs):
         self.packet_handlers.update(defs)
 
@@ -62,6 +65,7 @@ class ServerMixinTest(unittest.TestCase):
         x = self.mixin = mclass()
         x.wait_for_threaded_init = self.wait_for_threaded_init
         x.add_packet_handlers = self.add_packet_handlers
+        x.add_packet_handler = self.add_packet_handler
         x.get_server_source = self.get_server_source
         x.idle_add = self.glib.idle_add
         x.timeout_add = self.glib.timeout_add

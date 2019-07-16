@@ -370,7 +370,11 @@ class ChildCommandServer(StubServerMixin):
             log.warn(" but the feature is currently disabled")
             return
         name, command, ignore = packet[1:4]
-        proc = self.start_command(name.decode("utf-8"), command.decode("utf-8"), ignore)
+        if isinstance(command, (list, tuple)):
+            cmd = command
+        else:
+            cmd = command.decode("utf-8")
+        proc = self.start_command(name.decode("utf-8"), cmd, ignore)
         if len(packet)>=5:
             shared = packet[4]
             if proc and not shared:
@@ -407,6 +411,8 @@ class ChildCommandServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
+        log("init_packet_handlers() COMMANDS_SIGNALS=%s, start new commands=%s",
+            COMMAND_SIGNALS, self.start_new_commands)
         if COMMAND_SIGNALS:
             self.add_packet_handler("command-signal", self._process_command_signal, False)
         if self.start_new_commands:
