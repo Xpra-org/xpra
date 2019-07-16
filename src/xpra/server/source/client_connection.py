@@ -119,15 +119,15 @@ class ClientConnection(ClientConnectionClass):
         self.disconnect = disconnect_cb
         self.session_name = session_name
 
-        for c in CC_BASES:
-            c.init_state(self)
-
         for bc in CC_BASES:
             try:
                 bc.__init__(self)
                 bc.init_from(self, protocol, server)
             except Exception as e:
                 raise Exception("failed to initialize %s: %s" % (bc, e))
+
+        for c in CC_BASES:
+            c.init_state(self)
 
         #holds actual packets ready for sending (already encoded)
         #these packets are picked off by the "protocol" via 'next_packet()'
