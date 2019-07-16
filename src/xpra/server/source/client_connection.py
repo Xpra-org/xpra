@@ -119,6 +119,9 @@ class ClientConnection(ClientConnectionClass):
         self.disconnect = disconnect_cb
         self.session_name = session_name
 
+        for c in CC_BASES:
+            c.init_state(self)
+
         for bc in CC_BASES:
             try:
                 bc.__init__(self)
@@ -187,8 +190,6 @@ class ClientConnection(ClientConnectionClass):
         self.wants_display = True
         self.wants_events = False
         self.wants_default_cursor = False
-        for c in CC_BASES:
-            c.init_state(self)
 
 
     def is_closed(self):
