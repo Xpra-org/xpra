@@ -271,12 +271,12 @@ class FilePrintServer(StubServerMixin):
 
     def init_packet_handlers(self):
         if self.file_transfer.printing:
-            self._authenticated_packet_handlers.update({
+            self.add_packet_handlers({
                 "printers":                             self._process_printers,
                 "print":                                self._process_print,
               })
         if self.file_transfer.printing or self.file_transfer.file_transfer:
-            self._authenticated_packet_handlers.update({
+            self.add_packet_handlers({
                 "send-file":                            self._process_send_file,
                 "ack-file-chunk":                       self._process_ack_file_chunk,
                 "send-file-chunk":                      self._process_send_file_chunk,
