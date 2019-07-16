@@ -43,8 +43,7 @@ class NetworkStateMixin(StubSourceMixin):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*monotonic_time())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
-        import time
-        self.send_async("ping", now_ms, int(time.time()*1000), will_have_more=False)
+        self.send_async("ping", now_ms, int(monotonic_time()*1000), will_have_more=False)
         timeout = PING_TIMEOUT
         self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000,
                                                                self.check_ping_echo_timeout, now_ms, timeout)
