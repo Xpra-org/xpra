@@ -40,6 +40,7 @@ class NetworkStateServer(StubServerMixin):
         self.pings = opts.pings
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
         bandwidthlog("bandwidth-limit(%s)=%s", opts.bandwidth_limit, self.bandwidth_limit)
+        self.init_cpuinfo()
 
     def setup(self):
         self.init_leak_detection()
@@ -112,7 +113,6 @@ class NetworkStateServer(StubServerMixin):
                     log.info("%.1fGB of system memory", self.mem_bytes/(1024.0**3))
             except:
                 pass
-        self.idle_add(self.init_cpuinfo)
 
     def init_cpuinfo(self):
         #this crashes if not run from the UI thread!
