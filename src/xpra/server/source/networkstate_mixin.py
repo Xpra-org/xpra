@@ -99,10 +99,10 @@ class NetworkStateMixin(StubSourceMixin):
         self.last_ping_echoed_time = echoedtime
         client_ping_latency = monotonic_time()-echoedtime/1000.0
         stats = getattr(self, "statistics", None)
-        if stats:
+        if stats and 0<client_ping_latency<60:
             stats.client_ping_latency.append((monotonic_time(), client_ping_latency))
         self.client_load = l1, l2, l3
-        if server_ping_latency>=0 and stats:
+        if 0<=server_ping_latency<60000 and stats:
             stats.server_ping_latency.append((monotonic_time(), server_ping_latency/1000.0))
         log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
