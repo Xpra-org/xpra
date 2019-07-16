@@ -12,7 +12,7 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 class InputMixinTest(ServerMixinTest):
 
-    def test_fileprint(self):
+    def test_logging(self):
         from xpra.server.mixins.logging_server import LoggingServer
         opts = AdHocStruct()
         opts.remote_logging = "yes"
