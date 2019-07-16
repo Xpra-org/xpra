@@ -8,6 +8,7 @@ import unittest
 
 from xpra.util import typedict, AdHocStruct
 from xpra.gtk_common.gobject_compat import import_glib
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 
 class ServerMixinTest(unittest.TestCase):
@@ -61,7 +62,7 @@ class ServerMixinTest(unittest.TestCase):
         assert proto==self.protocol
         return self.source
 
-    def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=None):
+    def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubSourceMixin):
         x = self.mixin = mclass()
         x.wait_for_threaded_init = self.wait_for_threaded_init
         x.add_packet_handlers = self.add_packet_handlers

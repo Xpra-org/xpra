@@ -38,7 +38,7 @@ class LoggingServer(StubServerMixin):
             return
         level, msg = packet[1:3]
         prefix = "client "
-        if len(self._server_sources)>1:
+        if ss.counter>0:
             prefix += "%3i " % ss.counter
         if len(packet)>=4:
             dtime = packet[3]
@@ -54,16 +54,16 @@ class LoggingServer(StubServerMixin):
             else:
                 dmsg = dec(msg)
             for l in dmsg.splitlines():
-                log.log(level, prefix+l)
+                self.do_log(level, prefix+l)
         except Exception as e:
             log("log message decoding error", exc_info=True)
             log.error("Error: failed to parse logging message:")
             log.error(" %s", repr_ellipsized(msg))
             log.error(" %s", e)
 
+    def do_log(self, level, line):
+        log.log(level, line)
 
     def init_packet_handlers(self):
         if self.remote_logging:
-            self._authenticated_packet_handlers.update({
-                "logging" : self._process_logging,
-              })
+            self.add_packet_handler("logging", self._process_logging, False)
