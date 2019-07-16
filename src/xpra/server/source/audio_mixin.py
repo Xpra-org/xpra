@@ -93,13 +93,17 @@ class AudioMixin(StubSourceMixin):
             return True
         machine_id = get_machine_id()
         uuid = get_user_uuid()
+        #these attributes belong in a different mixin,
+        #so we can't assume that they exist:
+        client_machine_id = getattr(self, "machine_id", None)
+        client_uuid = getattr(self, "uuid", None)
         log("audio_loop_check(%s) machine_id=%s client machine_id=%s, uuid=%s, client uuid=%s",
-            mode, machine_id, self.machine_id, uuid, self.uuid)
-        if self.machine_id:
-            if self.machine_id!=machine_id:
+            mode, machine_id, client_machine_id, uuid, client_uuid)
+        if client_machine_id:
+            if client_machine_id!=machine_id:
                 #not the same machine, so OK
                 return True
-            if self.uuid!=uuid:
+            if client_uuid!=uuid:
                 #different user, assume different pulseaudio server
                 return True
         #check pulseaudio id if we have it
@@ -131,7 +135,6 @@ class AudioMixin(StubSourceMixin):
 
     def start_sending_sound(self, codec=None, volume=1.0,
                             new_stream=None, new_buffer=None, skip_client_codec_check=False):
-        assert self.hello_sent
         log("start_sending_sound(%s)", codec)
         ss = None
         if getattr(self, "suspended", False):
@@ -310,7 +313,6 @@ class AudioMixin(StubSourceMixin):
     ##########################################################################
     # sound control commands:
     def sound_control(self, action, *args):
-        assert self.hello_sent
         action = bytestostr(action)
         log("sound_control(%s, %s)", action, args)
         method = getattr(self, "sound_control_%s" % (action.replace("-", "_")), None)

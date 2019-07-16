@@ -33,6 +33,10 @@ class ServerMixinTest(unittest.TestCase):
             self.mixin.cleanup()
             self.mixin = None
 
+    def debug_all(self):
+        from xpra.log import enable_debug_for
+        enable_debug_for("all")
+
     def stop(self):
         self.glib.timeout_add(1000, self.main_loop.quit)
 
@@ -73,7 +77,11 @@ class ServerMixinTest(unittest.TestCase):
         if source_mixin_class:
             self.source = source_mixin_class()
             self.protocol = AdHocStruct()
+            self.source.timeout_add = self.glib.timeout_add
+            self.source.idle_add = self.glib.idle_add
+            self.source.source_remove = self.glib.source_remove
             self.source.protocol = self.protocol
+            self.source.init_from(self.protocol, x)
             self.source.init_state()
             self.source.parse_client_caps(caps)
             self.source.get_info()

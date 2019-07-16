@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import unittest
 
 from xpra.util import AdHocStruct
@@ -14,6 +15,7 @@ class AudioMixinTest(ServerMixinTest):
 
     def test_audio(self):
         from xpra.server.mixins.audio_server import AudioServer
+        from xpra.server.source.audio_mixin import AudioMixin
         opts = AdHocStruct()
         opts.sound_source = ""
         opts.speaker = "on"
@@ -23,7 +25,14 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio = True
         opts.pulseaudio_command = ""
         opts.pulseaudio_configure_commands = []
-        self._test_mixin_class(AudioServer, opts)
+        self._test_mixin_class(AudioServer, opts, {
+            "sound.receive" : True,
+            "sound.decoders" : ("mp3",),
+            }, AudioMixin)
+        self.handle_packet(("sound-control", "start", "mp3"))
+        time.sleep(1)
+        self.handle_packet(("sound-control", "fadeout"))
+        time.sleep(1)
         self.handle_packet(("sound-control", "stop"))
 
 def main():

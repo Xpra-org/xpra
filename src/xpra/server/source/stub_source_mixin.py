@@ -67,3 +67,10 @@ class StubSourceMixin(object):
     """
     def may_notify(self, *args, **kwargs):
         pass
+
+
+    def send_more(self, *parts, **kwargs):
+        pass
+
+    def send_async(self, *parts, **kwargs):
+        pass
