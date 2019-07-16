@@ -14,7 +14,7 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 class InputMixinTest(ServerMixinTest):
 
-    def test_fileprint(self):
+    def test_input(self):
         if os.environ.get("DISPLAY") and POSIX and not OSX and os.environ.get("GDK_BACKEND", "x11")=="x11":
             from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
             init_gdk_display_source()
