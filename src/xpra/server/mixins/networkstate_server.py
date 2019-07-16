@@ -177,4 +177,4 @@ class NetworkStateServer(StubServerMixin):
             "ping_echo":                            self._process_ping_echo,
             "connection-data":                      self._process_connection_data,
             "bandwidth-limit":                      self._process_bandwidth_limit,
-          })
+          }, False)
