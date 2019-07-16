@@ -66,7 +66,7 @@ class TestCystats(unittest.TestCase):
 		self.assertEquals(int(round(a)), int(round(ra)))
 		self.assertGreater(a, 75)
 		#real data:
-                T = monotonic_time()
+                T = time.time()
                 v =[(T-21.557095, 157684, 9110), (T-22.23345, 3744, 1279), (T-22.376621, 3744, 706),
                         (T-22.515456, 3744, 1302), (T-23.013887, 78, 1342), (T-43.707768, 78, 920),
                         (T-44.043399, 78, 1558), (T-44.046686, 78, 1119), (T-44.048169, 78, 1007),
