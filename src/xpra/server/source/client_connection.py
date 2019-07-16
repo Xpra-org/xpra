@@ -300,7 +300,7 @@ class ClientConnection(ClientConnectionClass):
             msg = version_compat_check(self.proxy_version)
             if msg:
                 proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
-        self.update_connection_data(c.dictget("connection-data"))
+        self.client_connection_data = c.dictget("connection-data")
         if getattr(self, "mmap_size", 0)>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
@@ -433,12 +433,6 @@ class ClientConnection(ClientConnectionClass):
     def send_async(self, *parts, **kwargs):
         kwargs["synchronous"] = False
         self.send(*parts, **kwargs)
-
-
-    #client tells us about network connection status:
-    def update_connection_data(self, data):
-        netlog("update_connection_data(%s)", data)
-        self.client_connection_data = data
 
 
     def send_hello(self, server_capabilities):

@@ -140,16 +140,19 @@ class NetworkStateServer(StubServerMixin):
         if not ss:
             return
         bandwidth_limit = packet[1]
+        assert isinstance(bandwidth_limit, int)
         if self.bandwidth_limit and bandwidth_limit>self.bandwidth_limit or bandwidth_limit<=0:
             bandwidth_limit = self.bandwidth_limit or 0
         if ss.bandwidth_limit==bandwidth_limit:
             #unchanged
             return
         ss.bandwidth_limit = bandwidth_limit
+        #we can't assume to have a full ClientConnection object:
+        client_id = getattr(ss, "counter", None)
         if bandwidth_limit==0:
-            bandwidthlog.info("bandwidth-limit restrictions removed for client %i", ss.counter)
+            bandwidthlog.info("bandwidth-limit restrictions removed for client %s", client_id)
         else:
-            bandwidthlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
+            bandwidthlog.info("bandwidth-limit changed to %sbps for client %s", std_unit(bandwidth_limit), client_id)
 
     def send_ping(self):
         for ss in self._server_sources.values():
@@ -169,7 +172,7 @@ class NetworkStateServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self._authenticated_packet_handlers.update({
+        self.add_packet_handlers({
             "ping":                                 self._process_ping,
             "ping_echo":                            self._process_ping_echo,
             "connection-data":                      self._process_connection_data,
