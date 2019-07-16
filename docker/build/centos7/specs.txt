@@ -8,3 +8,4 @@ ffmpeg-xpra
 python-rencode
 python-pillow
 python-netifaces
+libfakeXinerama
