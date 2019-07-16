@@ -274,7 +274,7 @@ class FilePrintServer(StubServerMixin):
             self.add_packet_handlers({
                 "printers":                             self._process_printers,
                 "print":                                self._process_print,
-              })
+              }, False)
         if self.file_transfer.printing or self.file_transfer.file_transfer:
             self.add_packet_handlers({
                 "send-file":                            self._process_send_file,
@@ -282,4 +282,4 @@ class FilePrintServer(StubServerMixin):
                 "send-file-chunk":                      self._process_send_file_chunk,
                 "send-data-request":                    self._process_send_data_request,
                 "send-data-response":                   self._process_send_data_response,
-              })
+              }, False)
