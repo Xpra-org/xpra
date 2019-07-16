@@ -58,6 +58,15 @@ class ServerMixinTest(unittest.TestCase):
         assert ph is not None, "no packet handler for %s" % packet_type
         ph(self.protocol, packet)
 
+    def verify_packet_error(self, packet):
+        try:
+            self.handle_packet(packet)
+        except:
+            pass
+        else:
+            raise Exception("invalid packet %s should cause an error" % (packet,))
+        
+
     def get_server_source(self, proto):
         assert proto==self.protocol
         return self.source
