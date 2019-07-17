@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
@@ -14,15 +14,14 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 class AudioClientTest(ClientMixinTest):
 
 	def test_audio(self):
-		x = ServerInfoMixin()
-		def warn_and_quit(*_args):
-			pass
-		x.warn_and_quit = warn_and_quit
-		self.mixin = x
+		def _ServerInfoMixin():
+			x = ServerInfoMixin()
+			def warn_and_quit(*_args):
+				pass
+			x.warn_and_quit = warn_and_quit
+			return x
 		opts = AdHocStruct()
-		x.init(opts)
-		assert x.get_caps() is not None
-		x.server_capabilities = typedict({
+		x = self._test_mixin_class(_ServerInfoMixin, opts, {
 			"machine_id" : "123",
 			"uuid"	: "some-uuid",
 			"build.version"	: "3.0",
@@ -33,7 +32,6 @@ class AudioClientTest(ClientMixinTest):
 			"platform.release" : "dunno",
 			"platform.platform" : "platformX",
 			})
-		assert x.parse_server_capabilities()
 		del x.server_capabilities["build.version"]
 		assert not x.parse_server_capabilities(), "should have failed when version is missing"
 		version = "0.1"

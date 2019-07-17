@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct
 from xpra.client.mixins.webcam import WebcamForwarder
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
@@ -14,25 +14,17 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 class WebcamTest(ClientMixinTest):
 
 	def test_webcam(self):
-		x = WebcamForwarder()
-		self.mixin = x
 		opts = AdHocStruct()
 		opts.webcam = "on"
-		x.init(opts)
-		x.send = self.send
-		x.idle_add = self.glib.idle_add
-		x.timeout_add = self.glib.timeout_add
-		x.source_remove = self.glib.source_remove
-		assert x.get_caps() is not None
-		x.server_capabilities = typedict({
+		self._test_mixin_class(WebcamForwarder, opts, {
 			"webcam" : True,
 			"webcam.encodings" : ("png", "jpeg"),
 			"virtual-video-devices" : 1,
 			})
+		x = self.mixin
 		if x.webcam_forwarding>0:
 			self.glib.timeout_add(2500, x.stop_sending_webcam)
 			self.glib.timeout_add(5000, self.stop)
-			x.parse_server_capabilities()
 			self.main_loop.run()
 			assert len(self.packets)>2
 			self.verify_packet(0, ("webcam-start", 0, ))

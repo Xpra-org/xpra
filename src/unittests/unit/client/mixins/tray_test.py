@@ -6,28 +6,25 @@
 
 import unittest
 
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct
 from xpra.client.mixins.tray import TrayClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
 class AudioClientTest(ClientMixinTest):
 
-	def test_audio(self):
-		x = TrayClient()
-		def get_tray_menu_helper_class():
-			return None
-		def timeout_add(*_args):
-			return None
-		x.get_tray_menu_helper_class = get_tray_menu_helper_class
-		x.timeout_add = timeout_add
-		self.mixin = x
+	def test_tray(self):
+		def _TrayClient():
+			x = TrayClient()
+			def get_tray_menu_helper_class():
+				return None
+			x.get_tray_menu_helper_class = get_tray_menu_helper_class
+			return x
 		opts = AdHocStruct()
 		opts.tray = True
 		opts.delay_tray = 0
 		opts.tray_icon = ""
-		x.init(opts)
-		assert x.get_caps() is not None
+		self._test_mixin_class(_TrayClient, opts)
 
 def main():
 	unittest.main()
