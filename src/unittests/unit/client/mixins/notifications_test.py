@@ -8,12 +8,11 @@ import unittest
 
 from xpra.util import AdHocStruct, typedict
 from xpra.client.mixins.notifications import NotificationClient
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class AudioClientTest(NotificationClient):
+class NotificationClientTest(NotificationClient):
 
-	def test_audio(self):
+	def test_notification(self):
 		x = NotificationClient()
 		self.mixin = x
 		opts = AdHocStruct()
