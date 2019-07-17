@@ -36,6 +36,8 @@ class NetworkState(StubClientMixin):
     def __init__(self):
         StubClientMixin.__init__(self)
         self.server_start_time = -1
+        #legacy:
+        self.compression_level = 0
 
         #setting:
         self.pings = False
