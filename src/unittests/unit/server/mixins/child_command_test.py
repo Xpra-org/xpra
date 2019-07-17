@@ -16,8 +16,6 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 class ChildCommandMixinTest(ServerMixinTest):
 
     def test_command_server(self):
-        import tracemalloc
-        tracemalloc.start()
         from xpra.server.mixins.child_command_server import ChildCommandServer
         opts = AdHocStruct()
         opts.exit_with_children = True
