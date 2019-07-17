@@ -30,20 +30,23 @@ class AudioClientTest(ClientMixinTest):
 		assert x.get_caps() is not None
 		x.server_capabilities = typedict({
 			"sound.receive" : True,
-			"sound.send" : True,
+			"sound.send" : False,
 			"sound.encoders" : ["mp3", "opus"],
 			"sound.decoders" : ["mp3", "opus"],
 			"sound.ogg-latency-fix" : True,
 			})
-		self.glib.timeout_add(5000, self.stop)
+		def stop():
+			self.mixin.stop_sending_sound()
+			self.stop()
+		self.glib.timeout_add(5000, stop)
+		#self.debug_all()
 		x.parse_server_capabilities()
 		self.main_loop.run()
-		#print("packets=%s" % (self.packets,))
 		assert len(self.packets)>2
-		assert self.verify_packet(0, ("sound-control", "start")) or self.verify_packet(1, ("sound-control", "start"))
-		assert self.verify_packet(1, ("sound-data", )) or self.verify_packet(0, ("sound-data", ))
-		assert self.verify_packet(-2, ("sound-control", "stop"))
-		assert self.verify_packet(-1, ("sound-control", "new-sequence"))
+		self.verify_packet(0, ("sound-data", ))
+		assert self.packets[0][3].get("start-of-stream"), "start-of-stream not found"
+		self.verify_packet(-1, ("sound-data", ))
+		assert self.packets[-1][3].get("end-of-stream"), "end-of-stream not found"
 
 def main():
 	if PYTHON3:

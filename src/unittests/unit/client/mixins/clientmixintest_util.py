@@ -30,16 +30,24 @@ class ClientMixinTest(unittest.TestCase):
 	def stop(self):
 		self.glib.timeout_add(1000, self.main_loop.quit)
 
+	def debug_all(self):
+		from xpra.log import enable_debug_for
+		enable_debug_for("all")
+
+
 	def send(self, *args):
 		self.packets.append(args)
 
-	def verify_packet(self, index, expected):
+	def get_packet(self, index):
 		if index<0:
 			actual_index = len(self.packets)+index
 		else:
 			actual_index = index
-		assert actual_index>=0
+		assert actual_index>=0, "invalid actual index %i for index %i" % (actual_index, index)
 		assert len(self.packets)>actual_index, "not enough packets (%i) to access %i" % (len(self.packets), index)
-		packet = self.packets[actual_index]
+		return self.packets[actual_index]
+
+	def verify_packet(self, index, expected):
+		packet = self.get_packet(index)
 		pslice = packet[:len(expected)]
-		return pslice==expected
+		assert pslice==expected, "invalid packet slice %s, expected %s" % (pslice, expected)

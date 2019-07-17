@@ -35,9 +35,9 @@ class WebcamTest(ClientMixinTest):
 			x.parse_server_capabilities()
 			self.main_loop.run()
 			assert len(self.packets)>2
-			assert self.verify_packet(0, ("webcam-start", 0, ))
-			assert self.verify_packet(1, ("webcam-frame", 0, ))
-			assert self.verify_packet(-1, ("webcam-stop", 0, ))
+			self.verify_packet(0, ("webcam-start", 0, ))
+			self.verify_packet(1, ("webcam-frame", 0, ))
+			self.verify_packet(-1, ("webcam-stop", 0, ))
 
 def main():
 	unittest.main()
