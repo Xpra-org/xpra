@@ -77,6 +77,7 @@ class ClientMixinTest(unittest.TestCase):
 
 	def _test_mixin_class(self, mclass, opts, caps=None):
 		x = self.mixin = mclass()
+		x._protocol = None
 		x.add_packet_handlers = self.add_packet_handlers
 		x.add_packet_handler = self.add_packet_handler
 		x.idle_add = self.glib.idle_add
@@ -90,5 +91,6 @@ class ClientMixinTest(unittest.TestCase):
 		x.init_authenticated_packet_handlers()
 		x.server_capabilities = typedict(caps or {})
 		x.parse_server_capabilities()
+		x.process_ui_capabilities()
 		assert x.get_caps() is not None
 		return x
