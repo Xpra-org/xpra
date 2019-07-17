@@ -20,6 +20,7 @@ class ClientMixinTest(unittest.TestCase):
 	def setUp(self):
 		self.packets = []
 		self.mixin = None
+		self.packet_handlers = {}
 
 	def tearDown(self):
 		unittest.TestCase.tearDown(self)
@@ -51,3 +52,32 @@ class ClientMixinTest(unittest.TestCase):
 		packet = self.get_packet(index)
 		pslice = packet[:len(expected)]
 		assert pslice==expected, "invalid packet slice %s, expected %s" % (pslice, expected)
+
+
+	def add_packet_handler(self, packet_type, handler, _main_thread=True):
+		self.packet_handlers[packet_type] = handler
+
+	def add_packet_handlers(self, defs, _main_thread=True):
+		self.packet_handlers.update(defs)
+
+	def handle_packet(self, packet):
+		packet_type = packet[0]
+		ph = self.packet_handlers.get(packet_type)
+		assert ph is not None, "no packet handler for %s" % packet_type
+		ph(packet)
+
+
+	def _test_mixin_class(self, mclass, opts):
+		x = self.mixin = mclass()
+		x.add_packet_handlers = self.add_packet_handlers
+		x.add_packet_handler = self.add_packet_handler
+		x.idle_add = self.glib.idle_add
+		x.timeout_add = self.glib.timeout_add
+		x.source_remove = self.glib.source_remove
+		x.init(opts)
+		x.send = self.send
+		x.add_packet_handlers = self.add_packet_handlers
+		x.add_packet_handler = self.add_packet_handler
+		x.init_authenticated_packet_handlers()
+		assert x.get_caps() is not None
+		return x
