@@ -38,7 +38,7 @@ class AudioClient(StubClientMixin):
         #sound state:
         self.on_sink_ready = None
         self.sound_sink = None
-        self.min_sound_sequence = 0
+        self.sound_sink_sequence = 0
         self.server_sound_eos_sequence = False
         self.sound_source = None
         self.sound_in_bytecount = 0
@@ -374,15 +374,15 @@ class AudioClient(StubClientMixin):
 
     def stop_receiving_sound(self, tell_server=True):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
-        log("stop_receiving_sound(%s) sound sink=%s", tell_server, self.sound_sink)
+        log.error("stop_receiving_sound(%s) sound sink=%s", tell_server, self.sound_sink)
         ss = self.sound_sink
         if self.speaker_enabled:
             self.speaker_enabled = False
             self.emit("speaker-changed")
         if tell_server:
-            self.send("sound-control", "stop", self.min_sound_sequence)
-        self.min_sound_sequence += 1
-        self.send("sound-control", "new-sequence", self.min_sound_sequence)
+            self.send("sound-control", "stop", self.sound_sink_sequence)
+        self.sound_sink_sequence += 1
+        self.send("sound-control", "new-sequence", self.sound_sink_sequence)
         if ss is None:
             return
         self.sound_sink = None
@@ -506,8 +506,8 @@ class AudioClient(StubClientMixin):
             self.sound_in_bytecount += len(data)
         #verify sequence number if present:
         seq = metadata.intget("sequence", -1)
-        if self.min_sound_sequence>0 and 0<=seq<self.min_sound_sequence:
-            log("ignoring sound data with old sequence number %s (now on %s)", seq, self.min_sound_sequence)
+        if self.sound_sink_sequence>0 and 0<=seq<self.sound_sink_sequence:
+            log("ignoring sound data with old sequence number %s (now on %s)", seq, self.sound_sink_sequence)
             return
 
         if not self.speaker_enabled:
