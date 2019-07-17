@@ -211,6 +211,7 @@ class AudioMixin(StubSourceMixin):
         if ss:
             self.sound_source = None
             self.send_eos(ss.codec, ss.sequence)
+            self.sound_source_sequence += 1
             ss.cleanup()
 
     def send_eos(self, codec, sequence=0):
