@@ -6,7 +6,8 @@
 
 import os
 import unittest
-from xpra.os_util import pollwait, OSX, POSIX
+
+from xpra.os_util import pollwait, strtobytes, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED, EXIT_NO_AUTHENTICATION
 from unit.server_test_util import ServerTestUtil, log
 
@@ -25,13 +26,17 @@ class ServerAuthTest(ServerTestUtil):
         #try to connect
         cmd = ["info", uri_prefix+display]
         f = None
-        if password:
-            f = self._temp_file(password)
-            cmd += ["--password-file=%s" % f.name]
-        client = self.run_xpra(cmd)
-        r = pollwait(client, 5)
-        if f:
-            f.close()
+        try:
+            if password:
+                f = self._temp_file(strtobytes(password))
+                cmd += ["--password-file=%s" % f.name]
+                cmd += ["--challenge-handlers=file:filename=%s" % f.name]
+            client = self.run_xpra(cmd)
+            r = pollwait(client, 5)
+        finally:
+            if f:
+                f.close()
+                self.delete_temp_file(f)
         if client.poll() is None:
             client.terminate()
         server.terminate()
@@ -54,7 +59,7 @@ class ServerAuthTest(ServerTestUtil):
     def test_file(self):
         from xpra.os_util import get_hex_uuid
         password = get_hex_uuid()
-        f = self._temp_file(password)
+        f = self._temp_file(strtobytes(password))
         self._test_auth("file", "", EXIT_PASSWORD_REQUIRED)
         self._test_auth("file:filename=%s" % f.name, "", EXIT_PASSWORD_REQUIRED)
         self._test_auth("file:filename=%s" % f.name, "", EXIT_OK, password)
@@ -68,7 +73,7 @@ class ServerAuthTest(ServerTestUtil):
         password = get_hex_uuid()
         displays = ""
         data = "%s|%s|%i|%i|%s||" % (username, password, os.getuid(), os.getgid(), displays)
-        f = self._temp_file(data)
+        f = self._temp_file(strtobytes(data))
         self._test_auth("multifile", "", EXIT_PASSWORD_REQUIRED)
         self._test_auth("multifile:filename=%s" % f.name, "", EXIT_PASSWORD_REQUIRED)
         self._test_auth("multifile:filename=%s" % f.name, "", EXIT_OK, password)

@@ -201,6 +201,16 @@ class ProcessTestUtil(unittest.TestCase):
         self.temp_files.append(f.name)
         return f
 
+    def delete_temp_file(self, f):
+        try:
+            self.temp_files.remove(f.name)
+        except ValueError:
+            pass
+        try:
+            os.unlink(f.name)
+        except OSError as e:
+            log.error("Error deleting temp file '%s': %s", f.name, e)
+
 
     @classmethod
     def find_X11_display_numbers(cls):

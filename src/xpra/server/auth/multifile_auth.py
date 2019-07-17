@@ -8,7 +8,7 @@
 
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init
-from xpra.os_util import strtobytes, hexstr
+from xpra.os_util import strtobytes, bytestostr, hexstr
 from xpra.util import parse_simple_dict
 from xpra.net.digest import verify_digest
 assert init and log #tests will disable logging from here
@@ -33,9 +33,9 @@ def parse_auth_line(line):
     env_options = {}
     session_options = {}
     if len(ldata)>=6:
-        env_options = parse_simple_dict(ldata[5], ";")
+        env_options = parse_simple_dict(ldata[5], b";")
     if len(ldata)>=7:
-        session_options = parse_simple_dict(ldata[6], ";")
+        session_options = parse_simple_dict(ldata[6], b";")
     return username, password, uid, gid, displays, env_options, session_options
 
 
@@ -66,7 +66,7 @@ class Authenticator(FileAuthenticatorBase):
             except Exception as e:
                 log("parsing error", exc_info=True)
                 log.error("Error parsing password file '%s' at line %i:", self.password_filename, i)
-                log.error(" '%s'", line)
+                log.error(" '%s'", bytestostr(line))
                 log.error(" %s", e)
                 continue
         log("parsed auth data from file %s: %s", self.password_filename, auth_data)
