@@ -196,33 +196,7 @@ class ClipboardServer(StubServerMixin):
             return
         ch = self._clipboard_helper
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
-        def do_check():
-            if self.clipboard_nesting_check("receiving", packet[0], ss):
-                ch.process_clipboard_packet(packet)
-        #the nesting check and the clipboard handlers call gtk:
-        self.idle_add(do_check)
-
-    def clipboard_nesting_check(self, action, packet_type, ss):
-        cc = self._clipboard_client
-        if cc is None:
-            log("not %s clipboard packet '%s': no clipboard client", action, packet_type)
-            return False
-        if not cc.clipboard_enabled:
-            log("not %s clipboard packet '%s': client %s has clipboard disabled", action, packet_type, cc)
-            return False
-        ch = self._clipboard_helper
-        if ch and not ch.nesting_check():
-            #turn off clipboard at our end:
-            self.set_clipboard_enabled_status(ss, False)
-            #if we can, tell the client to do the same:
-            if ss.clipboard_set_enabled:
-                ss.send_clipboard_enabled("probable clipboard loop detected")
-                body = "Too many clipboard requests,\n"+\
-                       "a clipboard synchronization loop is likely to be causing this problem"
-                ss.may_notify(XPRA_CLIPBOARD_NOTIFICATION_ID,
-                              "Clipboard synchronization is now disabled", body, icon_name="clipboard")
-            return  False
-        return True
+        self.idle_add(ch.process_clipboard_packet, packet)
 
     def _process_clipboard_enabled_status(self, proto, packet):
         assert self.clipboard

@@ -178,9 +178,6 @@ class ClipboardProtocolHelperCore(object):
             x.cleanup()
         self._clipboard_proxies = {}
 
-    def nesting_check(self):
-        return True
-
     def client_reset(self):
         #if the client disconnects,
         #we can re-enable the clipboards it had problems with:
