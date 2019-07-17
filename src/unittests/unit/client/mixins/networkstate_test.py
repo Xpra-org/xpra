@@ -7,7 +7,7 @@
 import time
 import unittest
 
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct
 from xpra.os_util import get_hex_uuid
 from xpra.client.mixins.network_state import NetworkState
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
@@ -16,18 +16,12 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 class MixinsTest(ClientMixinTest):
 
 	def test_networkstate(self):
-		x = NetworkState()
-		fake_protocol = AdHocStruct()
-		fake_protocol.get_info = lambda : {}
-		x._protocol = fake_protocol
 		opts = AdHocStruct()
 		opts.pings = True
 		opts.bandwidth_limit = 0
 		opts.bandwidth_detection = True
-		x.init(opts)
-		assert x.get_caps() is not None
-		x.server_capabilities = typedict({"start_time" : time.time()})
-		x.parse_server_capabilities()
+		self._test_mixin_class(NetworkState, opts, {"start_time" : time.time()})
+		x = self.mixin
 		assert x.server_start_time>=x.start_time, "server_start_time=%s vs start_time=%s" % (x.server_start_time, x.start_time)
 		x.uuid = get_hex_uuid()
 		x.send_info_request()

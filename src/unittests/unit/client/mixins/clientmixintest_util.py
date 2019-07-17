@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util import typedict
+from xpra.util import typedict, AdHocStruct
 from xpra.gtk_common.gobject_compat import import_glib
 
 
@@ -77,13 +77,19 @@ class ClientMixinTest(unittest.TestCase):
 
 	def _test_mixin_class(self, mclass, opts, caps=None):
 		x = self.mixin = mclass()
-		x._protocol = None
+		fake_protocol = AdHocStruct()
+		fake_protocol.get_info = lambda : {}
+		fake_protocol.set_compression_level = lambda _x : None
+		x._protocol = fake_protocol
 		x.add_packet_handlers = self.add_packet_handlers
 		x.add_packet_handler = self.add_packet_handler
 		x.idle_add = self.glib.idle_add
 		x.timeout_add = self.glib.timeout_add
 		x.source_remove = self.glib.source_remove
 		x.init(opts)
+		conn = AdHocStruct()
+		conn.filename = "/tmp/fake"
+		x.setup_connection(conn)
 		x.send = self.send
 		x.send_now = self.send
 		x.add_packet_handlers = self.add_packet_handlers
@@ -94,3 +100,6 @@ class ClientMixinTest(unittest.TestCase):
 		x.process_ui_capabilities()
 		assert x.get_caps() is not None
 		return x
+
+	def make_caps(self, caps):
+		return typedict(caps or {})

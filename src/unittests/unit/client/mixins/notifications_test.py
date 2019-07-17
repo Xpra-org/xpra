@@ -6,24 +6,20 @@
 
 import unittest
 
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct
 from xpra.client.mixins.notifications import NotificationClient
+from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class NotificationClientTest(NotificationClient):
+class NotificationClientTest(ClientMixinTest):
 
 	def test_notification(self):
-		x = NotificationClient()
-		self.mixin = x
 		opts = AdHocStruct()
 		opts.notifications = True
-		x.init(opts)
-		assert x.get_caps() is not None
-		x.server_capabilities = typedict({
+		self._test_mixin_class(NotificationClient, opts, {
 			"notifications" : True,
 			"notifications.close" : True,
 			})
-		x.parse_server_capabilities()
 
 def main():
 	unittest.main()

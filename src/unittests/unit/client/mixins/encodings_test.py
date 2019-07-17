@@ -6,16 +6,14 @@
 
 import unittest
 
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct
 from xpra.client.mixins.encodings import Encodings
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
 class DisplayClientTest(ClientMixinTest):
 
-	def test_display(self):
-		x = Encodings()
-		self.mixin = x
+	def test_encoding(self):
 		opts = AdHocStruct()
 		opts.encoding = ""
 		opts.encodings = ["rgb", "png"]
@@ -27,16 +25,12 @@ class DisplayClientTest(ClientMixinTest):
 		opts.video_decoders = []
 		opts.csc_modules = []
 		opts.video_encoders = []
-		
-		x.init(opts)
-		assert x.get_caps() is not None
-		x.server_capabilities = typedict({
+		self._test_mixin_class(Encodings, opts, {
 			"encodings" : ["rgb"],
 			"encodings.core" : ["rgb32", "rgb24", "png"],
 			"encodings.problematic" : [],
 			"encoding" : ""
 			})
-		x.parse_server_capabilities()
 
 def main():
 	unittest.main()

@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct
 from xpra.client.mixins.mmap import MmapClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
@@ -14,23 +14,23 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 class MixinsTest(ClientMixinTest):
 
 	def test_mmap(self):
-		x = MmapClient()
-		self.mixin = x
 		opts = AdHocStruct()
 		opts.mmap = "on"
 		opts.mmap_group = False
-		x.init(opts)
-		assert x.get_caps() is not None
-		conn = AdHocStruct()
-		conn.filename = "/tmp/fake"
-		x.setup_connection(conn)
-		x.server_capabilities = typedict({
+		self._test_mixin_class(MmapClient, opts, {
 			"mmap.enabled"		: True,
+			})
+
+	def make_caps(self, caps):
+		d = ClientMixinTest.make_caps(self, caps)
+		x = self.mixin
+		d.update({
 			"mmap.token"		: x.mmap_token,
 			"mmap.token_bytes"	: x.mmap_token_bytes,
 			"mmap.token_index"	: x.mmap_token_index,
 			})
-		x.parse_server_capabilities()
+		return d
+
 
 def main():
 	unittest.main()
