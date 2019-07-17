@@ -169,12 +169,15 @@ class ChildCommandServer(StubServerMixin):
 
     def get_caps(self, source):
         caps = {}
-        if source and source.wants_features:
-            xdg_menu = self._get_xdg_menu_data()
-            if xdg_menu:
-                if source.xdg_menu_update:
-                    caps["xdg-menu"] = {}
-                else:
+        if not source:
+            return caps
+        #don't assume we have a real ClientConnection object:
+        if getattr(source, "wants_features", False):
+            caps["xdg-menu"] = {}
+            if not source.xdg_menu_update:
+                #we have to send it now:
+                xdg_menu = self._get_xdg_menu_data()
+                if xdg_menu:
                     l = len(str(xdg_menu))
                     #arbitrary: don't use more than half
                     #of the maximum size of the hello packet:
