@@ -12,21 +12,29 @@ from xpra.client.mixins.audio import AudioClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class AudioClientTest(ClientMixinTest):
+class AudioClientTestUtil(ClientMixinTest):
 
-	def _test_audio(self):
+	def _default_opts(self):
 		opts = AdHocStruct()
 		opts.av_sync = True
-		opts.speaker = "on"
-		opts.microphone = "on"
+		opts.speaker = "no"
+		opts.microphone = "no"
 		opts.sound_source = ""
 		opts.speaker_codec = []
 		opts.microphone_codec = []
 		opts.tray_icon = ""
+		return opts
+
+	def _test_audio(self, opts):
 		return self._test_mixin_class(AudioClient, opts)
 
-	def test_audio_send(self):
-		x = self._test_audio()
+
+class AudioClientSendTestUtil(AudioClientTestUtil):
+
+	def do_test_audio_send(self, auto_start=True):
+		opts = self._default_opts()
+		opts.microphone = "on" if auto_start else "off"
+		x = self._test_audio(opts)
 		x.server_capabilities = typedict({
 			"sound.receive" : True,
 			"sound.decoders" : ["mp3", "opus"],
@@ -37,6 +45,10 @@ class AudioClientTest(ClientMixinTest):
 			self.mixin.stop_sending_sound()
 			self.main_loop.quit()
 			return False
+		if not auto_start:
+			def request_start():
+				self.mixin.start_sending_sound()
+			self.glib.timeout_add(500, request_start)
 		self.glib.timeout_add(100, check_packets)
 		self.glib.timeout_add(5000, self.main_loop.quit)
 		x.parse_server_capabilities()
@@ -47,15 +59,31 @@ class AudioClientTest(ClientMixinTest):
 		self.verify_packet(-1, ("sound-data", ))
 		assert self.packets[-1][3].get("end-of-stream"), "end-of-stream not found"
 
+
+class AudioClientSendAuto(AudioClientSendTestUtil):
+
+	def test_audio_send_auto(self):
+		self.do_test_audio_send(True)
+
+class AudioClientSendRequest(AudioClientSendTestUtil):
+
+	def test_audio_send_request(self):
+		self.do_test_audio_send(False)
+
+
+class AudioClientReceiveTest(AudioClientTestUtil):
+
 	def test_audio_receive(self):
-		x = self._test_audio()
+		opts = self._default_opts()
+		opts.speaker = "yes"
+		x = self._test_audio(opts)
 		x.server_capabilities = typedict({
 			"sound.send" : True,
 			"sound.encoders" : ["mp3", "opus"],
 			"sound.ogg-latency-fix" : True,
 			})
 		def stop():
-			self.mixin.stop_receiving_sound()
+			x.stop_receiving_sound()
 			self.stop()
 		packet_data = [
 				('sound-data', b'opus', '', {'start-of-stream': True, 'codec': b'opus'}),
