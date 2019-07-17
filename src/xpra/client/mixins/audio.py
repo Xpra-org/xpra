@@ -385,12 +385,12 @@ class AudioClient(StubClientMixin):
         if self.speaker_enabled:
             self.speaker_enabled = False
             self.emit("speaker-changed")
-        if tell_server:
+        if not ss:
+            return
+        if tell_server and ss.sequence==self.sound_sink_sequence:
             self.send("sound-control", "stop", self.sound_sink_sequence)
         self.sound_sink_sequence += 1
         self.send("sound-control", "new-sequence", self.sound_sink_sequence)
-        if ss is None:
-            return
         self.sound_sink = None
         log("stop_receiving_sound(%s) calling %s", tell_server, ss.cleanup)
         ss.cleanup()
