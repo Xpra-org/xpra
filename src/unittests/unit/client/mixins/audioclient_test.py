@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.os_util import PYTHON3
-from xpra.util import AdHocStruct, typedict
+from xpra.util import AdHocStruct
 from xpra.client.mixins.audio import AudioClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
@@ -25,8 +25,8 @@ class AudioClientTestUtil(ClientMixinTest):
 		opts.tray_icon = ""
 		return opts
 
-	def _test_audio(self, opts):
-		return self._test_mixin_class(AudioClient, opts)
+	def _test_audio(self, opts, caps):
+		return self._test_mixin_class(AudioClient, opts, caps)
 
 
 class AudioClientSendTestUtil(AudioClientTestUtil):
@@ -34,8 +34,7 @@ class AudioClientSendTestUtil(AudioClientTestUtil):
 	def do_test_audio_send(self, auto_start=True):
 		opts = self._default_opts()
 		opts.microphone = "on" if auto_start else "off"
-		x = self._test_audio(opts)
-		x.server_capabilities = typedict({
+		self._test_audio(opts, {
 			"sound.receive" : True,
 			"sound.decoders" : ["mp3", "opus"],
 			})
@@ -51,7 +50,6 @@ class AudioClientSendTestUtil(AudioClientTestUtil):
 			self.glib.timeout_add(500, request_start)
 		self.glib.timeout_add(100, check_packets)
 		self.glib.timeout_add(5000, self.main_loop.quit)
-		x.parse_server_capabilities()
 		self.main_loop.run()
 		assert len(self.packets)>2
 		self.verify_packet(0, ("sound-data", ))
@@ -76,8 +74,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
 	def test_audio_receive(self):
 		opts = self._default_opts()
 		opts.speaker = "yes"
-		x = self._test_audio(opts)
-		x.server_capabilities = typedict({
+		x = self._test_audio(opts, {
 			"sound.send" : True,
 			"sound.encoders" : ["mp3", "opus"],
 			"sound.ogg-latency-fix" : True,
@@ -110,7 +107,6 @@ class AudioClientReceiveTest(AudioClientTestUtil):
 		self.glib.timeout_add(100, check_start)
 		self.glib.timeout_add(5000, stop)
 		#self.debug_all()
-		x.parse_server_capabilities()
 		self.main_loop.run()
 		assert not packet_data, "data was not fed to the receiver"
 		self.verify_packet(0, ("sound-control", "start", "opus"))

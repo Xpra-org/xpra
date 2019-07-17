@@ -6,6 +6,7 @@
 
 import unittest
 
+from xpra.util import typedict
 from xpra.gtk_common.gobject_compat import import_glib
 
 
@@ -34,6 +35,13 @@ class ClientMixinTest(unittest.TestCase):
 	def debug_all(self):
 		from xpra.log import enable_debug_for
 		enable_debug_for("all")
+
+	def dump_packets(self):
+		from xpra.os_util import get_util_logger
+		log = get_util_logger()
+		log.info("dump_packets() %i packets to send:", len(self.packets))
+		for x in self.packets:
+			log.info("%s", x)
 
 
 	def send(self, *args):
@@ -67,7 +75,7 @@ class ClientMixinTest(unittest.TestCase):
 		ph(packet)
 
 
-	def _test_mixin_class(self, mclass, opts):
+	def _test_mixin_class(self, mclass, opts, caps=None):
 		x = self.mixin = mclass()
 		x.add_packet_handlers = self.add_packet_handlers
 		x.add_packet_handler = self.add_packet_handler
@@ -76,8 +84,11 @@ class ClientMixinTest(unittest.TestCase):
 		x.source_remove = self.glib.source_remove
 		x.init(opts)
 		x.send = self.send
+		x.send_now = self.send
 		x.add_packet_handlers = self.add_packet_handlers
 		x.add_packet_handler = self.add_packet_handler
 		x.init_authenticated_packet_handlers()
+		x.server_capabilities = typedict(caps or {})
+		x.parse_server_capabilities()
 		assert x.get_caps() is not None
 		return x

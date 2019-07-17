@@ -6,37 +6,35 @@
 
 import unittest
 
-from xpra.os_util import POSIX
 from xpra.util import AdHocStruct, typedict
-from xpra.client.mixins.clipboard import ClipboardClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from unit.process_test_util import DisplayContext
 
 
 class ClipboardClientTest(ClientMixinTest):
 
 	def test_clipboard(self):
-		x = ClipboardClient()
-		self.mixin = x
+		from xpra.client.mixins.clipboard import ClipboardClient
 		opts = AdHocStruct()
 		opts.clipboard = "yes"
 		opts.clipboard_direction = "both"
-		x.init(opts)
-		from xpra.clipboard.clipboard_core import ALL_CLIPBOARDS
-		assert x.get_caps() is not None
-		x.server_capabilities = typedict({
+		opts.local_clipboard = "CLIPBOARD"
+		opts.remote_clipboard = "CLIPBOARD"
+		x = self._test_mixin_class(ClipboardClient, opts, {
 			"clipboard" : True,
-			"clipboard.enable-selections" : ALL_CLIPBOARDS,
+			"clipboard.enable-selections" : True,
 			"clipboard.contents-slice-fix" : True,
 			})
 		x.parse_server_capabilities()
-		if not POSIX:
-			self.glib.timeout_add(5000, self.stop)
-			x.process_ui_capabilities()
-			self.main_loop.run()
-			assert len(self.packets)>2
+		self.glib.timeout_add(5000, self.stop)
+		x.process_ui_capabilities()
+		self.main_loop.run()
+		self.dump_packets()
+		assert len(self.packets)>=1
 
 def main():
-	unittest.main()
+	with DisplayContext():
+		unittest.main()
 
 
 if __name__ == '__main__':
