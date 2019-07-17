@@ -14,7 +14,7 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 class AudioClientTest(ClientMixinTest):
 
-	def test_audio(self):
+	def _test_audio(self):
 		x = AudioClient()
 		self.mixin = x
 		opts = AdHocStruct()
@@ -28,16 +28,14 @@ class AudioClientTest(ClientMixinTest):
 		x.init(opts)
 		x.send = self.send
 		assert x.get_caps() is not None
+		return x
+
+	def test_audio_send(self):
+		x = self._test_audio()
 		x.server_capabilities = typedict({
 			"sound.receive" : True,
-			"sound.send" : False,
-			"sound.encoders" : ["mp3", "opus"],
 			"sound.decoders" : ["mp3", "opus"],
-			"sound.ogg-latency-fix" : True,
 			})
-		def stop():
-			self.mixin.stop_sending_sound()
-			self.stop()
 		def check_packets():
 			if len(self.packets)<5:
 				return True
@@ -45,14 +43,10 @@ class AudioClientTest(ClientMixinTest):
 			self.main_loop.quit()
 			return False
 		self.glib.timeout_add(100, check_packets)
-		self.glib.timeout_add(5000, stop)
-		#self.debug_all()
+		self.glib.timeout_add(5000, self.main_loop.quit)
 		x.parse_server_capabilities()
 		self.main_loop.run()
 		assert len(self.packets)>2
-		from xpra.os_util import get_util_logger
-		for p in self.packets:
-			get_util_logger().info("%s", p)
 		self.verify_packet(0, ("sound-data", ))
 		assert self.packets[0][3].get("start-of-stream"), "start-of-stream not found"
 		self.verify_packet(-1, ("sound-data", ))
