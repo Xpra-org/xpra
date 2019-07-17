@@ -38,11 +38,21 @@ class AudioClientTest(ClientMixinTest):
 		def stop():
 			self.mixin.stop_sending_sound()
 			self.stop()
+		def check_packets():
+			if len(self.packets)<5:
+				return True
+			self.mixin.stop_sending_sound()
+			self.main_loop.quit()
+			return False
+		self.glib.timeout_add(100, check_packets)
 		self.glib.timeout_add(5000, stop)
 		#self.debug_all()
 		x.parse_server_capabilities()
 		self.main_loop.run()
 		assert len(self.packets)>2
+		from xpra.os_util import get_util_logger
+		for p in self.packets:
+			get_util_logger().info("%s", p)
 		self.verify_packet(0, ("sound-data", ))
 		assert self.packets[0][3].get("start-of-stream"), "start-of-stream not found"
 		self.verify_packet(-1, ("sound-data", ))
