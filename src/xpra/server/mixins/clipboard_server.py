@@ -8,7 +8,7 @@
 import os.path
 
 from xpra.platform.features import CLIPBOARDS
-from xpra.util import csv, nonl, XPRA_CLIPBOARD_NOTIFICATION_ID
+from xpra.util import csv, nonl
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
