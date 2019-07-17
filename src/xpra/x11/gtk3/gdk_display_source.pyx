@@ -44,7 +44,8 @@ from gi.repository import GdkX11
 display = None
 def init_gdk_display_source():
     global display
-    if not is_X11():
+    import os
+    if os.environ.get("GDK_BACKEND", "")!="x11" and not is_X11():
         from xpra.scripts.config import InitException
         raise InitException("cannot use X11 bindings with Wayland and GTK3 (buggy)")
     if display:
@@ -55,7 +56,6 @@ def init_gdk_display_source():
     from gi.repository import Gdk
     gdk_display = gdk_display_get_default()
     if not gdk_display:
-        import os
         from xpra.scripts.config import InitException
         raise InitException("cannot access the default display '%s'" % os.environ.get("DISPLAY", ""))
     #this next line actually ensures Gdk is initialized, somehow
