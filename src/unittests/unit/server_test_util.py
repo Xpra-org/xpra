@@ -54,7 +54,11 @@ class ServerTestUtil(ProcessTestUtil):
                 except Exception:
                     log.error("failed to cleanup display '%s'", x, exc_info=True)
         if cls.xauthority_temp:
-            os.unlink(cls.xauthority_temp.name)
+            try:
+                os.unlink(cls.xauthority_temp.name)
+            except OSError as e:
+                log.error("Error deleting '%s': %s", cls.xauthority_temp.name, e)
+            cls.xauthority_temp = None
 
 
     def setUp(self):
