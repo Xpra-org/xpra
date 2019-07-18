@@ -50,8 +50,9 @@ class ServerSocketsTest(ServerTestUtil):
 		if password:
 			f = self._temp_file(password)
 			cmd += ["--password-file=%s" % f.name]
+			cmd += ["--challenge-handlers=file:filename=%s" % f.name]
 		client = self.run_xpra(cmd)
-		r = pollwait(client, 5)
+		r = pollwait(client, 10)
 		if f:
 			f.close()
 		if client.poll() is None:
@@ -61,16 +62,16 @@ class ServerSocketsTest(ServerTestUtil):
 			raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
 
 	def test_default_socket(self):
-		self._test_connect([], "allow", [], "hello", ":", EXIT_OK)
+		self._test_connect([], "allow", [], b"hello", ":", EXIT_OK)
 
 	def test_tcp_socket(self):
 		port = get_free_tcp_port()
-		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "tcp://127.0.0.1:%i/" % port, EXIT_OK)
-		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
+		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "tcp://127.0.0.1:%i/" % port, EXIT_OK)
+		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
 	def test_ws_socket(self):
 		port = get_free_tcp_port()
-		self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], "hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
+		self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], b"hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
 
 	def test_ssl(self):
@@ -171,6 +172,12 @@ class ServerSocketsTest(ServerTestUtil):
 		finally:
 			ServerSocketsTest.default_xpra_args = saved_default_xpra_args
 			shutil.rmtree(tmpdir)
+
+	def get_run_env(self):
+		env = ServerTestUtil.get_run_env(self)
+		#we want commands to timeout quickly
+		env["XPRA_CONNECT_TIMEOUT"] = "5"
+		return env
 
 
 def main():
