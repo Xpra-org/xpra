@@ -16,7 +16,6 @@ class NotificationForwarderMixinTest(ServerMixinTest):
         from xpra.server.mixins.notification_forwarder import NotificationForwarder
         opts = AdHocStruct()
         opts.notifications = "yes"
-        
         self._test_mixin_class(NotificationForwarder, opts)
         self.verify_packet_error(("notification-close", 1, "test", "hello"))
         self.verify_packet_error(("notification-action", 1))
