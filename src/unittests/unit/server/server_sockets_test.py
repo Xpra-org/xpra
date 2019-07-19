@@ -62,15 +62,15 @@ class ServerSocketsTest(ServerTestUtil):
 		if r!=exit_code:
 			raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
 
-	def Xtest_default_socket(self):
+	def test_default_socket(self):
 		self._test_connect([], "allow", [], b"hello", ":", EXIT_OK)
 
-	def Xtest_tcp_socket(self):
+	def test_tcp_socket(self):
 		port = get_free_tcp_port()
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "tcp://127.0.0.1:%i/" % port, EXIT_OK)
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
-	def Xtest_ws_socket(self):
+	def test_ws_socket(self):
 		port = get_free_tcp_port()
 		self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], b"hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
@@ -155,7 +155,7 @@ class ServerSocketsTest(ServerTestUtil):
 			if server:
 				server.terminate()
 
-	def Xtest_bind_tmpdir(self):
+	def test_bind_tmpdir(self):
 		#remove socket dirs from default arguments temporarily:
 		saved_default_xpra_args = ServerSocketsTest.default_xpra_args
 		ServerSocketsTest.default_xpra_args = [
