@@ -4,17 +4,18 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import monotonic_time
-from xpra.gtk_common.gobject_compat import import_glib
-glib = import_glib()
-
 import unittest
 from collections import deque
+
+from xpra.os_util import monotonic_time
+from xpra.gtk_common.gobject_compat import import_glib
 try:
     from xpra.server.window import video_subregion, region
 except ImportError:
     video_subregion = None
     region = None
+
+glib = import_glib()
 
 
 class TestVersionUtilModule(unittest.TestCase):
@@ -29,7 +30,10 @@ class TestVersionUtilModule(unittest.TestCase):
         ww = 1024
         wh = 768
         def assertiswin():
-            assert r.rectangle and r.rectangle.get_geometry()==(0, 0, ww, wh), "rectangle %s does not match whole window %ix%i" % (r.rectangle, ww, wh)
+            if not r.rectangle:
+                raise Exception("region not found, should have matched the whole window")
+            if r.rectangle.get_geometry()!=(0, 0, ww, wh):
+                raise Exception("rectangle %s does not match whole window %ix%i" % (r.rectangle, ww, wh))
 
         log("* checking that we need some events")
         last_damage_events = []
