@@ -79,7 +79,7 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         gobject.GObject.__init__(self)
         self.init_window()
-        ClipboardTimeoutHelper.__init__(self, send_packet_cb, progress_cb)
+        ClipboardTimeoutHelper.__init__(self, send_packet_cb, progress_cb, **kwargs)
 
     def __repr__(self):
         return "X11Clipboard"

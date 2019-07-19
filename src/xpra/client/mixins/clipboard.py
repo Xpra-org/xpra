@@ -7,7 +7,6 @@
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.platform.gui import get_clipboard_native_class
-from xpra.platform.paths import get_icon_filename
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.util import flatten_dict
 from xpra.os_util import bytestostr

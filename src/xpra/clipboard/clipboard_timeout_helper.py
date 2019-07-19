@@ -21,7 +21,7 @@ assert 0<REMOTE_TIMEOUT<5000
 
 class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
 
-    #a clipboard superclass that handle's timeouts
+    #a clipboard superclass that handles timeouts
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         ClipboardProtocolHelperCore.__init__(self, send_packet_cb, progress_cb, **kwargs)
         self._clipboard_outstanding_requests = {}
