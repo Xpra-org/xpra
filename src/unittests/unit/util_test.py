@@ -30,7 +30,31 @@ class TestIntegerClasses(unittest.TestCase):
 
     def test_AtomicInteger(self):
         self._test_IntegerClass(AtomicInteger)
-        #TODO: test lock with threading
+
+    def test_AtomicInteger_threading(self):
+        a = AtomicInteger()
+        N = 5000
+        def increase():
+            for _ in range(N):
+                a.increase()
+        def decrease():
+            for _ in range(N):
+                a.decrease()
+        T = 20
+        from threading import Thread
+        threads = []
+        for i in range(T):
+            if i%2==0:
+                target = increase
+            else:
+                target = decrease
+            t = Thread(target=target, name=str(target))
+            t.daemon = True
+            threads.append(t)
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
     def test_MutableInteger(self):
         self._test_IntegerClass(MutableInteger)
