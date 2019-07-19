@@ -1,18 +1,25 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.os_util import POSIX, OSX
+from xpra.os_util import POSIX
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
 class FilePrintMixinTest(ServerMixinTest):
+
+    def create_test_sockets(self):
+        if not POSIX:
+            return ()
+        return [
+            #socktype, socket, sockpath, cleanup_socket
+            ("unix-domain", None, "/fake/path", None)
+            ]
 
     def test_fileprint(self):
         from xpra.server.mixins.fileprint_server import FilePrintServer

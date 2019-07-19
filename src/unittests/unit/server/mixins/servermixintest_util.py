@@ -71,6 +71,9 @@ class ServerMixinTest(unittest.TestCase):
         assert proto==self.protocol
         return self.source
 
+    def create_test_sockets(self):
+        return ()
+
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubSourceMixin):
         x = self.mixin = mclass()
         x.wait_for_threaded_init = self.wait_for_threaded_init
@@ -82,7 +85,8 @@ class ServerMixinTest(unittest.TestCase):
         x.source_remove = self.glib.source_remove
         x.init_state()
         x.init(opts)
-        x.init_sockets([])
+        x.auth_classes = {}
+        x.init_sockets(self.create_test_sockets())
         x.setup()
         x.threaded_setup()
         x.init_packet_handlers()
