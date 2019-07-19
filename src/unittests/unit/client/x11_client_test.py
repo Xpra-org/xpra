@@ -16,7 +16,7 @@ CLIENT_TIMEOUT = envint("XPRA_TEST_CLIENT_TIMEOUT", 5)
 
 class X11ClientTest(X11ClientTestUtil):
 
-	def do_test_connect(self, sharing=False, *client_args):
+	def do_test_connect(self, sharing, *client_args):
 		display = self.find_free_display()
 		log("starting test server on %s", display)
 		server = self.check_start_server(display, "--start=xterm", "--sharing=%s" % sharing)
