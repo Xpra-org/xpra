@@ -21,7 +21,7 @@ def get_x11_property(atom_name):
     try:
         from xpra.gtk_common.error import xswallow
         from xpra.x11.bindings.posix_display_source import X11DisplayContext    #@UnresolvedImport
-        from xpra.x11.bindings.window_bindings import X11WindowBindings
+        from xpra.x11.bindings.window_bindings import X11WindowBindingsInstance
     except ImportError as e:
         log("get_x11_property(%s)", atom_name, exc_info=True)
         log.error("Error: unable to query X11 property '%s':", atom_name)
@@ -30,7 +30,7 @@ def get_x11_property(atom_name):
     try:
         with X11DisplayContext(display) as dc:
             with xswallow:
-                X11Window = X11WindowBindings()
+                X11Window = X11WindowBindingsInstance()
                 root = X11Window.getDefaultRootWindow()
                 log("getDefaultRootWindow()=%#x", root)
                 try:

@@ -54,11 +54,11 @@ cdef extern from "X11/Xlib.h":
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.display_source import get_display_name
 
-cdef _X11CoreBindings singleton = None
+cdef X11CoreBindingsInstance singleton = None
 def X11CoreBindings():
     global singleton
     if singleton is None:
-        singleton = _X11CoreBindings()
+        singleton = X11CoreBindingsInstance()
     return singleton
 
 #for debugging, we can hook this function which will log the caller:
@@ -77,7 +77,7 @@ def set_context_check(fn):
     context_check = fn
 
 
-cdef class _X11CoreBindings:
+cdef class X11CoreBindingsInstance:
 
     def __cinit__(self):
         assert is_X11(), "cannot load X11 bindings with wayland under python3 / GTK3"

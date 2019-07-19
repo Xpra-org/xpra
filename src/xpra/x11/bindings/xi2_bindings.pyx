@@ -315,16 +315,16 @@ CLASS_INFO = {
     }
 
 
-from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
-cdef _X11XI2Bindings singleton = None
+cdef X11CoreBindingsInstance singleton = None
 def X11XI2Bindings():
     global singleton
     if singleton is None:
-        singleton = _X11XI2Bindings()
+        singleton = X11XI2BindingsInstance()
     return singleton
 
-cdef class _X11XI2Bindings(_X11CoreBindings):
+cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
 
     cdef int opcode
     cdef object events

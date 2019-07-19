@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,6 +14,7 @@ from xpra.os_util import strtobytes
 from xpra.x11.bindings.display_source cimport set_display, get_display
 from xpra.x11.bindings.display_source import set_display_name
 from libc.stdint cimport uintptr_t
+
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
@@ -40,9 +41,9 @@ cdef do_init_posix_display_source(display_name):
 def close_display_source(uintptr_t ptr):
     assert ptr!=0, "invalid NULL display pointer"
     cdef Display * display = <Display *> ptr
-    cdef int v = XCloseDisplay(display)
     set_display(NULL)
     set_display_name("CLOSED")
+    cdef int v = XCloseDisplay(display)
     return v
 
 

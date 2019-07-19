@@ -10,6 +10,8 @@ from __future__ import absolute_import
 
 import struct
 
+from libc.stdint cimport uintptr_t
+
 from xpra.gtk_common.error import XError
 from xpra.os_util import strtobytes
 
@@ -387,18 +389,18 @@ class PropertyOverflow(PropertyError):
     pass
 
 
-from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
 cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 
-cdef _X11WindowBindings singleton = None
+cdef X11WindowBindingsInstance singleton = None
 def X11WindowBindings():
     global singleton
     if singleton is None:
-        singleton = _X11WindowBindings()
+        singleton = X11WindowBindingsInstance()
     return singleton
 
-cdef class _X11WindowBindings(_X11CoreBindings):
+cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     cdef object has_xshape
 
@@ -435,6 +437,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
                                  % (extension, cmajor, cminor, major, minor))
 
     def getDefaultRootWindow(self):
+        assert self.display
         return XDefaultRootWindow(self.display)
 
 

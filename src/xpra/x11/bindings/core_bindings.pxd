@@ -12,7 +12,7 @@ cdef extern from "X11/Xlib.h":
         pass
     ctypedef CARD32 Atom
 
-cdef class _X11CoreBindings:
+cdef class X11CoreBindingsInstance:
     cdef Display * display
     cdef char * display_name
     cdef Atom xatom(self, str_or_int)

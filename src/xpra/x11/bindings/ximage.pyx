@@ -890,16 +890,16 @@ cdef window_pixmap_wrapper(Display *xdisplay, Window xwindow):
     pw.init(xdisplay, xwindow, width, height)
     return pw
 
-from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
-cdef _XImageBindings singleton = None
+cdef XImageBindingsInstance singleton = None
 def XImageBindings():
     global singleton
     if singleton is None:
-        singleton = _XImageBindings()
+        singleton = XImageBindingsInstance()
     return singleton
 
-cdef class _XImageBindings(_X11CoreBindings):
+cdef class XImageBindingsInstance(X11CoreBindingsInstance):
     cdef int has_xshm
 
     def __cinit__(self):

@@ -124,16 +124,16 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     short XRRConfigCurrentRate(XRRScreenConfiguration *config)
 
-from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
-cdef _RandRBindings singleton = None
+cdef RandRBindingsInstance singleton = None
 def RandRBindings():
     global singleton
     if singleton is None:
-        singleton = _RandRBindings()
+        singleton = RandRBindingsInstance()
     return singleton
 
-cdef class _RandRBindings(_X11CoreBindings):
+cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     cdef int _has_randr
     cdef object _added_modes
