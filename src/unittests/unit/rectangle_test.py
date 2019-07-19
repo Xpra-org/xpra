@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
 try:
-    from xpra.server.region import rectangle        #@UnresolvedImport
+    from xpra.rectangle import rectangle        #@UnresolvedImport
 
     R1 = rectangle(0, 0, 20, 20)
     R2 = rectangle(0, 0, 20, 20)
@@ -64,7 +64,7 @@ class TestRegion(unittest.TestCase):
         assert len(l)==4
         #verify total area has not changed:
         total = r.width*r.height
-        assert total == sum(r.width*r.height for r in (l+[sub]))
+        assert total == sum(r.width*r.height for r in l+[sub])
         assert rectangle(0, 0, 100, 40) in l
         assert rectangle(0, 40, 40, 20) in l
         assert rectangle(0, 40, 40, 20) in l
