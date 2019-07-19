@@ -73,26 +73,9 @@ class ProcessTestUtil(unittest.TestCase):
         cls.default_env = os.environ.copy()
         cls.default_config = get_defaults()
         cls.display_start = 100+sys.version_info[0]
-        cls.processes = []
 
     @classmethod
     def tearDownClass(cls):
-        for x in cls.processes:
-            try:
-                if x.poll() is None:
-                    x.terminate()
-            except:
-                log.error("failed to stop subprocess %s", x)
-        def get_wait_for():
-            return tuple(proc for proc in cls.processes if proc.poll() is None)
-        wait_for = get_wait_for()
-        start = monotonic_time()
-        while wait_for and monotonic_time()-start<5:
-            if len(wait_for)==1:
-                pollwait(wait_for[0])
-            else:
-                time.sleep(1)
-            wait_for = get_wait_for()
         if cls.xauthority_temp:
             os.unlink(cls.xauthority_temp.name)
 
@@ -101,14 +84,46 @@ class ProcessTestUtil(unittest.TestCase):
         os.environ.clear()
         os.environ.update(self.default_env)
         self.temp_files = []
+        self.processes = []
 
     def tearDown(self):
+        self.stop_commands()
         if DELETE_TEMP_FILES:
             for x in self.temp_files:
                 try:
                     os.unlink(x)
                 except (OSError, IOError):
                     pass
+
+    def stop_commands(self):
+        for x in self.processes:
+            try:
+                if x.poll() is None:
+                    x.terminate()
+                stdout_file = getattr(x, "stdout_file", None)
+                if stdout_file:
+                    try:
+                        stdout_file.close()
+                    except:
+                        pass
+                stderr_file = getattr(x, "stderr_file", None)
+                if stderr_file:
+                    try:
+                        stderr_file.close()
+                    except:
+                        pass
+            except:
+                log.error("failed to stop subprocess %s", x)
+        def get_wait_for():
+            return tuple(proc for proc in self.processes if proc.poll() is None)
+        wait_for = get_wait_for()
+        start = monotonic_time()
+        while wait_for and monotonic_time()-start<5:
+            if len(wait_for)==1:
+                pollwait(wait_for[0])
+            else:
+                time.sleep(1)
+            wait_for = get_wait_for()
 
 
     def get_run_env(self):
