@@ -89,7 +89,15 @@ class SourceMixinsTest(unittest.TestCase):
             image.save(buf, "jpeg")
             data = buf.getvalue()
             buf.close()
-            assert not wm.process_webcam_frame(device_id, frame_no, "png", w, h, data)
+            #suspend error logging to avoid the scary message:
+            from xpra.server.source.webcam_mixin import log as webcam_log
+            elog = webcam_log.error
+            try:
+                webcam_log.error = webcam_log.debug
+                assert not wm.process_webcam_frame(device_id, frame_no, "png", w, h, data)
+            finally:
+                #restore it:
+                webcam_log.error = elog
             assert len(packets)==3
             assert packets[2][0]=="webcam-stop"
         finally:
