@@ -85,14 +85,21 @@ class ServerSocketsTest(ServerTestUtil):
 		ssl_port = get_free_tcp_port()
 		try:
 			tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
-			certfile = os.path.join(tmpdir, "self.pem")
+			keyfile = os.path.join(tmpdir, "key.pem")
+			outfile = os.path.join(tmpdir, "out.pem")
 			openssl_command = [
 				"openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
 				"-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
-				"-keyout", certfile, "-out", certfile,
+				"-keyout", keyfile, "-out", outfile,
 				]
 			openssl = self.run_command(openssl_command)
-			assert pollwait(openssl, 10)==0, "openssl certificate generation failed"
+			assert pollwait(openssl, 20)==0, "openssl certificate generation failed"
+			#combine the two files:
+			certfile = os.path.join(tmpdir, "cert.pem")
+			with open(certfile, 'wb') as cert:
+				for fname in (keyfile, outfile):
+					with open(fname, 'rb') as f:
+						cert.write(f.read())
 			cert_data = load_binary_file(certfile)
 			log("generated cert data: %s", repr_ellipsized(cert_data))
 			if not cert_data:
@@ -115,8 +122,10 @@ class ServerSocketsTest(ServerTestUtil):
 			#test it with openssl client:
 			for port in (tcp_port, ssl_port):
 				openssl_verify_command = ("openssl", "s_client", "-connect", "127.0.0.1:%i" % port, "-CAfile", certfile)
-				openssl = self.run_command(openssl_verify_command, shell=True)
-				assert pollwait(openssl, 10)==0, "openssl certificate verification failed"
+				devnull = os.open(os.devnull, os.O_WRONLY)
+				openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
+				r = pollwait(openssl, 10)
+				assert r==0, "openssl certificate verification failed, returned %s" % r
 
 			def test_connect(uri, exit_code, *client_args):
 				cmd = ["info", uri] + list(client_args)
