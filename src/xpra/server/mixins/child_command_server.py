@@ -282,12 +282,12 @@ class ChildCommandServer(StubServerMixin):
     def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
         log("start_command%s exec_wrapper=%s",
             (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper)
-        from subprocess import Popen, PIPE
+        from subprocess import Popen
         env = self.get_child_env()
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
-            proc = Popen(real_cmd, stdin=PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
+            proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             log("pid(%s)=%s", real_cmd, proc.pid)
             if not ignore:
