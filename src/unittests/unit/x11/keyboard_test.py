@@ -8,7 +8,7 @@ import os
 import unittest
 
 from unit.server_test_util import ServerTestUtil, log
-from xpra.os_util import OSX, POSIX, is_Wayland
+from xpra.os_util import OSX, POSIX
 
 
 class TestX11Keyboard(ServerTestUtil):
