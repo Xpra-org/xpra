@@ -155,13 +155,13 @@ class ProcessTestUtil(unittest.TestCase):
             env = kwargs.get("env") or self.get_run_env()
         kwargs["env"] = env
         stdout_file = stderr_file = None
-        if isinstance(command, str):
-            strcommand = command
-        else:
+        if isinstance(command, (list, tuple)):
             strcommand = " ".join("'%s'" % x for x in command)
+        else:
+            strcommand = command
         if XPRA_TEST_DEBUG:
             log("************************")
-            log("run_command(%s, %s)", " ".join('"%s"' % x for x in command), repr_ellipsized(str(env), 40))
+            log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
             log("************************")
         else:
             if "stdout" not in kwargs:
