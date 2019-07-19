@@ -283,6 +283,9 @@ Requires:			pygtk2
 Requires:			python2-pyopengl
 Requires:			pygtkglext
 %{Recommends}:		python2-pyu2f
+#no longer available in Fedora 30:
+#BuildRequires:		python2-cups
+BuildRequires:		python2-pyxdg
 %if 0%{?fedora}%{?el8}
 Recommends:         python2-xdg
 Recommends:			python2-xpra-audio
@@ -403,6 +406,8 @@ Summary:			python3 build of xpra client
 Group:				Networking
 Requires:			xpra-common-client = %{version}-%{release}
 Requires:			python3-xpra = %{version}-%{release}
+BuildRequires:		python3-pyxdg
+BuildRequires:		python3-cups
 Recommends:			python3-xpra-audio
 Recommends:			python3-cups
 Recommends:			python3-pyopengl
