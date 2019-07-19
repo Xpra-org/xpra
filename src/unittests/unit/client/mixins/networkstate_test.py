@@ -22,11 +22,12 @@ class MixinsTest(ClientMixinTest):
 		opts.bandwidth_detection = True
 		self._test_mixin_class(NetworkState, opts, {"start_time" : time.time()})
 		x = self.mixin
-		assert x.server_start_time>=x.start_time, "server_start_time=%s vs start_time=%s" % (x.server_start_time, x.start_time)
+		if x.server_start_time<x.start_time:
+			raise Exception("invalid time: server=%s vs start=%s" % (x.server_start_time, x.start_time))
 		x.uuid = get_hex_uuid()
 		x.send_info_request()
 		packet = ["info-response", {"foo" : "bar"}]
-		x._process_info_response(packet)
+		self.handle_packet(packet)
 		assert x.server_last_info.get("foo")=="bar"
 
 def main():
