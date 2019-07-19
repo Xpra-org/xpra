@@ -893,9 +893,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                                         opts.mmap_group, opts.socket_permissions,
                                         username, uid, gid)
     netlog("setting up local sockets: %s", local_sockets)
-    for socktype, socket, sockpath, cleanup_socket in local_sockets:
-        sockets.append((socktype, socket, sockpath, cleanup_socket))
-        netlog("%s %s : %s", socktype, sockpath, socket)
+    sockets += local_sockets
     if POSIX and (starting or upgrading or starting_desktop or upgrading_desktop):
         #all unix domain sockets:
         ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
