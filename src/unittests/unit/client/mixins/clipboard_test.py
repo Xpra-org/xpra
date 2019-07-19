@@ -27,8 +27,8 @@ class ClipboardClientTest(ClientMixinTest):
 			})
 		self.glib.timeout_add(5000, self.stop)
 		self.main_loop.run()
-		self.dump_packets()
 		assert len(self.packets)>=1
+		assert self.packets[0][0]=="clipboard-enable-selections"
 
 def main():
 	with DisplayContext():
