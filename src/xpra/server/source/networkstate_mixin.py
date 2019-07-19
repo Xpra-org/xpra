@@ -109,5 +109,6 @@ class NetworkStateMixin(StubSourceMixin):
 
     def update_connection_data(self, data):
         log("update_connection_data(%s)", data)
-        assert isinstance(data, dict)
+        if not isinstance(data, dict):
+            raise TypeError("connection-data must be a dictionary")
         self.client_connection_data = data

@@ -8,6 +8,7 @@ import os
 import shutil
 import unittest
 import tempfile
+
 from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST, EXIT_SSL_FAILURE, EXIT_STR
@@ -31,7 +32,7 @@ class ServerSocketsTest(ServerTestUtil):
 			raise Exception("server failed to start with args=%s, returned %s" % (args, estr(r)))
 		return server_proc
 
-	def _test_connect(self, server_args=[], auth="none", client_args=[], password=None, uri_prefix=":", exit_code=0):
+	def _test_connect(self, server_args=(), auth="none", client_args=(), password=None, uri_prefix=":", exit_code=0):
 		display_no = self.find_free_display_no()
 		display = ":%s" % display_no
 		log("starting test server on %s", display)
@@ -61,15 +62,15 @@ class ServerSocketsTest(ServerTestUtil):
 		if r!=exit_code:
 			raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
 
-	def test_default_socket(self):
+	def Xtest_default_socket(self):
 		self._test_connect([], "allow", [], b"hello", ":", EXIT_OK)
 
-	def test_tcp_socket(self):
+	def Xtest_tcp_socket(self):
 		port = get_free_tcp_port()
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "tcp://127.0.0.1:%i/" % port, EXIT_OK)
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
-	def test_ws_socket(self):
+	def Xtest_ws_socket(self):
 		port = get_free_tcp_port()
 		self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], b"hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
@@ -113,7 +114,7 @@ class ServerSocketsTest(ServerTestUtil):
 
 			#test it with openssl client:
 			for port in (tcp_port, ssl_port):
-				openssl_verify_command = "openssl s_client -connect 127.0.0.1:%i -CAfile %s < /dev/null" % (port, certfile)
+				openssl_verify_command = ("openssl", "s_client", "-connect", "127.0.0.1:%i" % port, "-CAfile", certfile)
 				openssl = self.run_command(openssl_verify_command, shell=True)
 				assert pollwait(openssl, 10)==0, "openssl certificate verification failed"
 
@@ -145,11 +146,13 @@ class ServerSocketsTest(ServerTestUtil):
 			if server:
 				server.terminate()
 
-	def test_bind_tmpdir(self):
+	def Xtest_bind_tmpdir(self):
 		#remove socket dirs from default arguments temporarily:
 		saved_default_xpra_args = ServerSocketsTest.default_xpra_args
-		ServerSocketsTest.default_xpra_args = [x for x in saved_default_xpra_args if not x.startswith("--socket-dir")] + ["--socket-dirs=/tmp"]
-		for _ in range(100):
+		ServerSocketsTest.default_xpra_args = [
+			x for x in saved_default_xpra_args if not x.startswith("--socket-dir")
+			] + ["--socket-dirs=/tmp"]
+		for _ in range(10):
 			log("")
 		try:
 			tmpdir = tempfile.mkdtemp(suffix='xpra')

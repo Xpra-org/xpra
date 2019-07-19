@@ -13,10 +13,10 @@ from unit.server.mixins.server_mixins_option_test_util import ServerMixinsOption
 class StartOptionTest(ServerMixinsOptionTestUtil):
 
     def test_nooptions(self):
-        self._test()
+        self._test("start", {})
 
     def test_nonotifications(self):
-        self._test(options={"notifications" : False})
+        self._test("start",options={"notifications" : False})
 
     def test_start_all(self):
         self._test_all("start")

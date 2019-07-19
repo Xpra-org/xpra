@@ -84,7 +84,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                     self.run_command(xrandr)
 
 
-    def _test(self, subcommand="start", options={}):
+    def _test(self, subcommand, options):
         log("starting test server with options=%s", options)
         args = ["--%s=%s" % (k,v) for k,v in options.items()]
         tcp_port = None
@@ -170,7 +170,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 try:
                     if x and x.poll() is None:
                         x.terminate()
-                except:
+                except OSError:
                     log("%s.terminate()", exc_info=True)
 
     def _test_all(self, subcommand="start"):

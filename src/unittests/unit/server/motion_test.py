@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -212,10 +212,10 @@ class TestMotion(unittest.TestCase):
 		raw_scroll, non_scroll = sd.get_scroll_values()
 		assert len(non_scroll)>0
 		scrolls = []
-		def h(v):
+		def hexstr(v):
 			return hex(v).lstrip("0x").rstrip("L")
 		for i in range(wh):
-			log("%2i:	%16s	%16s" % (i, h(a1[i]), h(a2[i])))
+			log("%2i:	%16s	%16s" % (i, hexstr(a1[i]), hexstr(a2[i])))
 		for scroll, line_defs in raw_scroll.items():
 			if scroll==0:
 				continue

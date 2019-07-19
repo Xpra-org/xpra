@@ -25,7 +25,7 @@ class NetworkStateMixinTest(ServerMixinTest):
         for v in (None, "foo", 1, 2.0, [], (), set()):
             try:
                 self.handle_packet(("connection-data", v))
-            except:
+            except TypeError:
                 pass
             else:
                 raise Exception("should not allow %s (%s) as connection-data" % (v, type(v)))
@@ -33,7 +33,7 @@ class NetworkStateMixinTest(ServerMixinTest):
         for v in (None, "foo", 2.0, [], (), set()):
             try:
                 self.handle_packet(("bandwidth-limit", v))
-            except:
+            except TypeError:
                 pass
             else:
                 raise Exception("should not allow %s (%s) as connection-data" % (v, type(v)))

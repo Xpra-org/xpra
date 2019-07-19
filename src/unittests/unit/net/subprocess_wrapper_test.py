@@ -6,18 +6,18 @@
 
 import unittest
 
-from xpra.gtk_common.gobject_compat import import_gobject, import_glib
-gobject = import_gobject()
-glib = import_glib()
-
-from xpra.log import Logger
-log = Logger("test")
-
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.net.protocol import Protocol
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
 from xpra.net.bytestreams import Connection
 from xpra.os_util import Queue
+from xpra.gtk_common.gobject_compat import import_gobject, import_glib
+from xpra.log import Logger
+
+log = Logger("test")
+
+gobject = import_gobject()
+glib = import_glib()
 
 TEST_TIMEOUT = 10*1000
 

@@ -61,7 +61,7 @@ class ServerMixinTest(unittest.TestCase):
     def verify_packet_error(self, packet):
         try:
             self.handle_packet(packet)
-        except:
+        except Exception:
             pass
         else:
             raise Exception("invalid packet %s should cause an error" % (packet,))

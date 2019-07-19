@@ -39,7 +39,7 @@ def main():
         cmd = ["python%s" % sys.version_info[0], p]
         try:
             proc = subprocess.Popen(cmd)
-        except:
+        except OSError:
             write("failed to execute %s" % p)
             return 1
         v = proc.wait()
@@ -71,5 +71,4 @@ def main():
             run_file(x)
 
 if __name__ == '__main__':
-    v = main()
-    sys.exit(v)
+    sys.exit(main())

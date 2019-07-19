@@ -27,7 +27,7 @@ class ServerMixinsTest(ServerMixinTest):
         msg = "foo"
         packet = ["logging", level, msg]
         self._test_mixin_class(_LoggingServer, opts)
-        self.mixin._process_logging(self.protocol, packet)
+        self.handle_packet(packet)
         assert len(messages)==1
 
 def main():

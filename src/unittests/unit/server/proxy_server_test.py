@@ -22,7 +22,7 @@ class ProxyServerTest(ServerTestUtil):
 		self.check_stop_server(proxy, "stop", display)
 
 	@classmethod
-	def stop_server(cls, server_proc, subcommand="stop", *connect_args):
+	def stop_server(cls, server_proc, subcommand, *connect_args):
 		log("stop_server%s", (server_proc, subcommand, connect_args))
 		if server_proc.poll() is not None:
 			return

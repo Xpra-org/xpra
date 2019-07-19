@@ -28,7 +28,7 @@ class X11ServerTest(ServerTestUtil):
 			try:
 				log("should not be able to start another test server on %s", display)
 				self.check_start_server(display)
-			except:
+			except Exception:
 				pass
 			else:
 				raise Exception("server using the same display should have failed to start")

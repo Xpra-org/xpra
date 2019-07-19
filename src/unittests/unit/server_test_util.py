@@ -9,13 +9,13 @@ import sys
 import time
 import subprocess
 
+from unit.process_test_util import ProcessTestUtil
 from xpra.util import envint
 from xpra.os_util import pollwait, bytestostr, POSIX, WIN32
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_xpra_command
-from unit.process_test_util import ProcessTestUtil
-
 from xpra.log import Logger
+
 log = Logger("test")
 
 SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
@@ -137,7 +137,8 @@ class ServerTestUtil(ProcessTestUtil):
             self.show_proc_error(version, "version check failed for %s, returned %s" % (display, r))
         return server_proc
 
-    def stop_server(self, server_proc, subcommand="stop", *connect_args):
+    def stop_server(self, server_proc, subcommand, *connect_args):
+        assert subcommand in ("stop", "exit")
         if server_proc.poll() is not None:
             return
         cmd = [subcommand]+list(connect_args)
@@ -148,5 +149,5 @@ class ServerTestUtil(ProcessTestUtil):
 
     def check_stop_server(self, server_proc, subcommand="stop", display=":99999"):
         self.stop_server(server_proc, subcommand, display)
-        if display:
-            assert display not in self.dotxpra.displays(), "server socket for display %s should have been removed" % display
+        if display and display in self.dotxpra.displays():
+            raise Exception("server socket for display %s should have been removed" % display)

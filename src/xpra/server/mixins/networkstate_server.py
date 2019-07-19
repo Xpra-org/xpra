@@ -140,7 +140,8 @@ class NetworkStateServer(StubServerMixin):
         if not ss:
             return
         bandwidth_limit = packet[1]
-        assert isinstance(bandwidth_limit, int)
+        if not isinstance(bandwidth_limit, int):
+            raise TypeError("bandwidth-limit must be an integer")
         if self.bandwidth_limit and bandwidth_limit>self.bandwidth_limit or bandwidth_limit<=0:
             bandwidth_limit = self.bandwidth_limit or 0
         if ss.bandwidth_limit==bandwidth_limit:
