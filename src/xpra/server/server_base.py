@@ -178,7 +178,10 @@ class ServerBase(ServerBaseClass):
         log("threaded_init() end")
 
     def wait_for_threaded_init(self):
-        assert self.init_thread
+        if not self.init_thread:
+            #looks like we didn't make it as far as calling setup()
+            log("wait_for_threaded_init() no init thread")
+            return
         log("wait_for_threaded_init() %s.is_alive()=%s", self.init_thread, self.init_thread.is_alive())
         if self.init_thread.is_alive():
             log.info("waiting for initialization thread to complete")
