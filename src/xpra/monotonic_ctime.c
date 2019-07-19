@@ -37,7 +37,7 @@ double get_monotonic_time(void){
 	}
 	if (freq.QuadPart>0) {
 		if (QueryPerformanceCounter(&t)) {
-			return (((double) t.QuadPart) * 1000 / freq.QuadPart);
+			return (((double) t.QuadPart) / freq.QuadPart);
 		}
 	}
 	ULONGLONG ticks = GetTickCount64();
