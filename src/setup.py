@@ -2368,7 +2368,8 @@ if v4l2_ENABLED:
     #we have to figure out if "device_caps" exists in the headers:
     ENABLE_DEVICE_CAPS = False
     if os.path.exists("/usr/include/linux/videodev2.h"):
-        hdata = open("/usr/include/linux/videodev2.h").read()
+        with open("/usr/include/linux/videodev2.h") as f:
+            hdata = f.read()
         ENABLE_DEVICE_CAPS = hdata.find("device_caps")>=0
     kwargs = {"ENABLE_DEVICE_CAPS" : ENABLE_DEVICE_CAPS}
     make_constants("xpra", "codecs", "v4l2", "constants", **kwargs)
