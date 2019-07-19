@@ -11,10 +11,10 @@ from xpra.util import envbool
 
 from xpra.net.crypto import DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE, DEFAULT_IV
 
-SHOW_PERF = envbool("XPRA_SHOW_PERF")
+SHOW_PERF = envbool("XPRA_SHOW_PERF", True)
 
 
-def log(message):
+def log(_message):
     #print(message[:256])
     pass
 
@@ -28,10 +28,11 @@ class TestCrypto(unittest.TestCase):
 
     def do_test_backend(self, message=b"some message1234", encrypt_count=1, decrypt_count=1):
         def mustequ(l):
-            if len(l)==0:
+            if not l:
                 return
             v = l[0]
-            for i in range(len(l)):
+            size = len(l)
+            for i in range(size):
                 assert l[i]==v
 
         password = "this is our secret"
@@ -79,18 +80,15 @@ class TestCrypto(unittest.TestCase):
 
     def do_test_perf(self, size=1024*4, enc_iterations=20, dec_iterations=20):
         asize = (size+15)//16
-        print("test_perf: size: %i Bytes" % (asize*16))
-        if len(self.backends)<2:
-            return
         times = []
         data = b"0123456789ABCDEF"*asize
         start = monotonic_time()
         self.do_test_backend(data, enc_iterations, dec_iterations)
         end = monotonic_time()
-        i = self.backend.get_info()
         elapsed = end-start
         speed = (asize*16) * (enc_iterations + dec_iterations) / elapsed
-        print("%-32s took %5.1fms: %16iKB/s" % (i.get("backend"), elapsed*1000/(enc_iterations + dec_iterations), speed/1024))
+        iter_time = elapsed*1000/(enc_iterations + dec_iterations)
+        print("%10iKB: %5.1fms: %16iMB/s" % (asize*16//1024, iter_time, speed//1024//1024))
         times.append(end-start)
         return times
 
@@ -98,14 +96,15 @@ class TestCrypto(unittest.TestCase):
         if not SHOW_PERF:
             return
         #RANGE = (1, 256, 1024, 1024*1024, 1024*1024*16)
-        RANGE = (1, 1024, 1024*1024)
-        print("Encryption Performance:")
+        RANGE = (1024, 1024*1024)
+        print("Python Cryptography:")
+        print("  Encryption:")
         for i in RANGE:
             self.do_test_perf(i, 10, 0)
-        print("Decryption Performance:")
+        print("  Decryption:")
         for i in RANGE:
             self.do_test_perf(i, 1, 10)
-        print("Global Performance:")
+        print("  Overall:")
         for i in RANGE:
             self.do_test_perf(i, 10, 10)
 
