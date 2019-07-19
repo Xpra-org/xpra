@@ -160,7 +160,7 @@ class WebcamMixin(StubSourceMixin):
         if not webcam:
             log.error("Error: webcam forwarding is not active, dropping frame")
             self.send_webcam_stop(device_id, "not started")
-            return
+            return False
         try:
             assert encoding in self.webcam_encodings, "invalid encoding specified: %s (must be one of %s)" % (encoding, self.webcam_encodings)
             rgb_pixel_format = "BGRX"       #BGRX
@@ -171,7 +171,7 @@ class WebcamMixin(StubSourceMixin):
             src_format = webcam.get_src_format()
             if not src_format:
                 #closed / closing
-                return
+                return False
             #one of those two should be present
             try:
                 csc_mod = "csc_libyuv"
@@ -182,7 +182,7 @@ class WebcamMixin(StubSourceMixin):
                     )
             except ImportError:
                 self.send_webcam_stop(device_id, "no csc module")
-                return
+                return False
             try:
                 assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
                 assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
@@ -191,7 +191,7 @@ class WebcamMixin(StubSourceMixin):
                 log.error(" input-colorspaces: %s", csv(get_input_colorspaces()))
                 log.error(" output-colorspaces: %s", csv(get_output_colorspaces(rgb_pixel_format)))
                 self.send_webcam_stop(device_id, "csc format error")
-                return
+                return False
             tw = webcam.get_width()
             th = webcam.get_height()
             csc = ColorspaceConverter()
@@ -200,6 +200,7 @@ class WebcamMixin(StubSourceMixin):
             webcam.push_image(image)
             #tell the client all is good:
             self.send_webcam_ack(device_id, frame_no)
+            return True
         except Exception as e:
             log("error on %ix%i frame %i using encoding %s", w, h, frame_no, encoding, exc_info=True)
             log.error("Error processing webcam frame:")
@@ -210,3 +211,4 @@ class WebcamMixin(StubSourceMixin):
             log.error(" %s", msg)
             self.send_webcam_stop(device_id, msg)
             self.stop_virtual_webcam(device_id)
+            return False

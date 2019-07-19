@@ -72,17 +72,26 @@ class SourceMixinsTest(unittest.TestCase):
             assert wm.start_virtual_webcam(device_id, w, h)
             assert wm.get_info().get("webcam", {}).get("active-devices", 0)==1
             assert len(packets)==1    #ack sent
+            assert packets[0][0]=="webcam-ack"
             frame_no = 0
-            encoding = "png"
-            buf = BytesIO()
             from PIL import Image
             image = Image.new('RGB', size=(w, h), color=(155, 0, 0))
-            image.save(buf, 'jpeg')
+            buf = BytesIO()
+            image.save(buf, "png")
             data = buf.getvalue()
             buf.close()
-            wm.process_webcam_frame(device_id, frame_no, encoding, w, h, data)
+            assert wm.process_webcam_frame(device_id, frame_no, "png", w, h, data)
             assert len(packets)==2    #ack sent
-            wm.stop_virtual_webcam(device_id)
+            assert packets[1][0]=="webcam-ack"
+            #now send a jpeg as png,
+            #which should fail and stop:
+            buf = BytesIO()
+            image.save(buf, "jpeg")
+            data = buf.getvalue()
+            buf.close()
+            assert not wm.process_webcam_frame(device_id, frame_no, "png", w, h, data)
+            assert len(packets)==3
+            assert packets[2][0]=="webcam-stop"
         finally:
             wm.cleanup()
 
