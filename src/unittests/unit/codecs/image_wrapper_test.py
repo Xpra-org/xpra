@@ -44,10 +44,12 @@ class TestImageWrapper(unittest.TestCase):
                     try:
                         #python2 (char)
                         av = ord(av)
-                    except:
+                    except TypeError:
                         #python3 (int already)
                         av = int(av)
-                    assert av==v, "expected value %#x for pixel (0, %i) of sub-image %s at (%i, 0), but got %#x" % (v, y, sub, x, av)
+                    if av!=v:
+                        raise Exception("""expected value %#x for pixel (0, %i)
+                                        of sub-image %s at (%i, 0), but got %#x""" % (v, y, sub, x, av))
         start = monotonic_time()
         copy = img.get_sub_image(0, 0, W, H)
         end = monotonic_time()
