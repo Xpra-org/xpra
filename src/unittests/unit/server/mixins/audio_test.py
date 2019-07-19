@@ -22,8 +22,8 @@ class AudioMixinTest(ServerMixinTest):
         opts.speaker_codec = ["mp3"]
         opts.microphone = "on"
         opts.microphone_codec = ["mp3"]
-        opts.pulseaudio = True
-        opts.pulseaudio_command = ""
+        opts.pulseaudio = False
+        opts.pulseaudio_command = "/bin/true"
         opts.pulseaudio_configure_commands = []
         self._test_mixin_class(AudioServer, opts, {
             "sound.receive" : True,
