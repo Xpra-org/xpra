@@ -1103,7 +1103,7 @@ class ServerCore(object):
             if http and self._html:
                 self.start_http_socket(socktype, ssl_conn, True, peek_data)
             else:
-                log_new_connection(conn, socket_info)
+                log_new_connection(ssl_conn, socket_info)
                 self.make_protocol(socktype, ssl_conn)
             return
 
