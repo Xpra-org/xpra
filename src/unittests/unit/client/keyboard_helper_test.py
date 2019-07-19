@@ -8,6 +8,7 @@ import unittest
 
 from xpra.util import AdHocStruct
 from xpra.client.keyboard_helper import KeyboardHelper
+from unit.process_test_util import DisplayContext
 
 
 class KeyboardHelperTest(unittest.TestCase):
@@ -26,11 +27,13 @@ class KeyboardHelperTest(unittest.TestCase):
 			#turn swap off and run again:
 			kh.keyboard.swap_keys = False
 		checkmask(SHIFT_MASK | CONTROL_MASK, "shift", "control")
+		kh.cleanup()
 
 	def test_keymap_properties(self):
 		kh = KeyboardHelper(None)
 		p = kh.get_keymap_properties()
 		assert p and len(p)>10
+		kh.cleanup()
 
 	def test_parse_shortcuts(self):
 		kh = KeyboardHelper(None)
@@ -66,10 +69,12 @@ class KeyboardHelperTest(unittest.TestCase):
 		window.quit = noop
 		assert kh.key_handled_as_shortcut(window, "F4", ("mod1", "shift"), True)
 		assert not kh.key_handled_as_shortcut(window, "F1", (), True)
+		kh.cleanup()
 
 
 def main():
-	unittest.main()
+	with DisplayContext():
+		unittest.main()
 
 
 if __name__ == '__main__':
