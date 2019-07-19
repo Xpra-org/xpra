@@ -148,7 +148,7 @@ class NetworkStateServer(StubServerMixin):
             return
         ss.bandwidth_limit = bandwidth_limit
         #we can't assume to have a full ClientConnection object:
-        client_id = getattr(ss, "counter", None)
+        client_id = getattr(ss, "counter", "")
         if bandwidth_limit==0:
             bandwidthlog.info("bandwidth-limit restrictions removed for client %s", client_id)
         else:
