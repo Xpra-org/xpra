@@ -57,6 +57,11 @@ class DisplayContext(OSEnvContext):
 
 class ProcessTestUtil(unittest.TestCase):
 
+    def __init__(self, methodName='runTest'):
+        if not hasattr(self, "runTest"):
+            self.runTest = None
+        unittest.TestCase.__init__(self, methodName)
+
     @classmethod
     def setUpClass(cls):
         from xpra.server.server_util import find_log_dir
@@ -275,23 +280,11 @@ class ProcessTestUtil(unittest.TestCase):
 				):    #DBUS_SESSION_BUS_ADDRESS
                 #keep it
                 env[x] = os.environ.get(x)
-        if len(screens)>1 or True:
-            cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset"]
-                    #"-auth", self.default_env["XAUTHORITY"]]
-            for i, screen in enumerate(screens):
-                (w, h) = screen
-                cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
-        else:
-            xvfb_cmd = self.default_config.get("xvfb")
-            assert xvfb_cmd, "no 'xvfb' command in default config"
-            import shlex
-            cmd = shlex.split(osexpand(xvfb_cmd))
-            try:
-                i = cmd.index("/etc/xpra/xorg.conf")
-            except ValueError:
-                i = -1
-            if i>0 and os.path.exists("./etc/xpra/xorg.conf"):
-                cmd[i] = "./etc/xpra/xorg.conf"
+        cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset"]
+                #"-auth", self.default_env["XAUTHORITY"]]
+        for i, screen in enumerate(screens):
+            (w, h) = screen
+            cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
         cmd.append(display)
         env["DISPLAY"] = display
         env["XPRA_LOG_DIR"] = "/tmp"
