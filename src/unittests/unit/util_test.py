@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -63,13 +63,31 @@ class TestIntegerClasses(unittest.TestCase):
 class TestTypeDict(unittest.TestCase):
 
     def test_typedict(self):
-        d = typedict({b"bytekey" : b"bytevalue"})
+        d = typedict({
+            b"bytekey" : b"bytevalue",
+            "strkey" : "strvalue",
+            1 : 1,
+            "boolvalue" : True,
+            "intpair" : (1, 2),
+            "strlist" : ["a", "b"],
+            })
         v = d.capsget("bytekey")
         self.assertIsNotNone(v)
-        #self.assertEquals(type(v), str)
-        #TODO: more!
+        #test all accessors:
+        self.assertEqual(d.strget("strkey"), "strvalue")
+        self.assertEqual(d.intget(1), 1)
+        self.assertEqual(d.boolget("boolvalue"), True)
+        self.assertEqual(d.intpair("intpair"), (1, 2))
+        self.assertEqual(d.strlistget("strlist"), ["a", "b"])
+        #now test defaults:
+        self.assertEqual(d.boolget("invalidkey"), False)
+        self.assertEqual(d.boolget("invalidkey", False), False)
+        self.assertEqual(d.boolget("invalidkey", True), True)
+        self.assertEqual(d.intget("invalidkey"), 0)
+        self.assertEqual(d.intget("invalidkey", 1), 1)
+        self.assertEqual(d.strget("invalidkey"), None)
 
-    def _test_values_type(self, d, getter, value_types, values_allowed=[]):
+    def _test_values_type(self, d, getter, value_types, values_allowed=()):
         for k in d.keys():
             v = getter(k)
             self.assertIsNotNone(v, "expected value for %s key '%s'" % (type(k), k))
@@ -125,7 +143,12 @@ class TestModuleFunctions(unittest.TestCase):
         self.assertIsNone(d.get("d2"))
         updict(d, "d2", d2)
         self.assertEqual(d.get("d2.1"), 2)
-        #TODO: test suffix stuff
+        d3 = {
+            "moo" : "cow",
+            }
+        updict(d, "d3", d3, "hat")
+        self.assertEqual(d.get("d3.moo.hat"), "cow")
+
 
     def test_pver(self):
         self.assertEqual(pver(""), "")
