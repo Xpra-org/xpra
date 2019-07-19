@@ -35,7 +35,6 @@ class DisplayContext(OSEnvContext):
     def __enter__(self):
         OSEnvContext.__enter__(self)
         if POSIX and not OSX:
-            from unit.process_test_util import ProcessTestUtil
             ProcessTestUtil.setUpClass()
             self.stu = ProcessTestUtil()
             self.stu.setUp()
@@ -49,7 +48,6 @@ class DisplayContext(OSEnvContext):
         if self.xvfb_process:
             self.xvfb_process.terminate()
             self.xvfb_process = None
-            from unit.server_test_util import ProcessTestUtil
             self.stu.tearDown()
             ProcessTestUtil.tearDownClass()
         OSEnvContext.__exit__(self)
@@ -62,8 +60,8 @@ class ProcessTestUtil(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from xpra.server.server_util import find_log_dir
-        cls.xauthority_temp = tempfile.NamedTemporaryFile(prefix="xpra-test.", suffix=".xauth", delete=False)
-        cls.xauthority_temp.close()
+        cls.xauthority_temp = None #tempfile.NamedTemporaryFile(prefix="xpra-test.", suffix=".xauth", delete=False)
+        #cls.xauthority_temp.close()
         #os.environ["XAUTHORITY"] = os.path.expanduser(cls.xauthority_temp.name)
         os.environ["XPRA_LOG_DIR"] = find_log_dir()
         os.environ["XPRA_NOTTY"] = "1"
@@ -104,15 +102,15 @@ class ProcessTestUtil(unittest.TestCase):
                 if stdout_file:
                     try:
                         stdout_file.close()
-                    except:
+                    except (OSError, IOError):
                         pass
                 stderr_file = getattr(x, "stderr_file", None)
                 if stderr_file:
                     try:
                         stderr_file.close()
-                    except:
+                    except (OSError, IOError):
                         pass
-            except:
+            except (OSError, IOError):
                 log.error("failed to stop subprocess %s", x)
         def get_wait_for():
             return tuple(proc for proc in self.processes if proc.poll() is None)
@@ -143,7 +141,7 @@ class ProcessTestUtil(unittest.TestCase):
             code, out, _ = get_status_output(["which", cmd])
             if code==0:
                 return strtobytes(out.splitlines()[0])
-        except:
+        except (OSError, IOError):
             pass
         return cmd
 
