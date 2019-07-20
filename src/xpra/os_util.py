@@ -197,7 +197,7 @@ def platform_name(sys_platform, release=None):
 
 def get_rand_chars(l=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"):
     import random
-    return b"".join(chars[random.randint(0, len(chars)-1)] for _ in range(l))
+    return b"".join(chars[random.randint(0, len(chars)-1):][:1] for _ in range(l))
 
 def get_hex_uuid():
     return uuid.uuid4().hex
