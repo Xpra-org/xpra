@@ -23,10 +23,13 @@ from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
-DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
-assert len(DEFAULT_VFB_RESOLUTION)==2
-DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024").replace(",", "x").split("x", 1))
-assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
+def parse_resolution(envkey="XPRA_DEFAULT_VFB_RESOLUTION", default_res="8192x4096"):
+    s = os.environ.get(envkey, default_res)
+    res = tuple(int(x) for x in s.replace(",", "x").split("x", 1))
+    assert len(res)==2, "invalid resolution string '%s'" % s
+    return res
+DEFAULT_VFB_RESOLUTION = parse_resolution()
+DEFAULT_DESKTOP_VFB_RESOLUTION = parse_resolution("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024")
 PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", False)
 XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
@@ -42,7 +45,7 @@ def get_vfb_logger():
 def osclose(fd):
     try:
         os.close(fd)
-    except:
+    except (OSError, IOError):
         pass
 
 def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
@@ -178,7 +181,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
 
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
-        assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last (found at index %i)" % logfile_argindex
+        if logfile_argindex+1>=len(xvfb_cmd):
+            raise InitException("invalid xvfb command string: -logfile should not be last")
         xorg_log_file = xvfb_cmd[logfile_argindex+1]
     except ValueError:
         xorg_log_file = None
@@ -196,8 +200,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                 if POSIX and uid!=getuid() or gid!=getgid():
                     try:
                         os.lchown(xorg_log_dir, uid, gid)
-                    except:
-                        pass
+                    except (OSError, IOError):
+                        log("lchown(%s, %i, %i)", xorg_log_dir, uid, gid, exc_info=True)
             except OSError as e:
                 raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
 
@@ -210,7 +214,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             log.warn("Warning: cannot use uinput")
             log.warn(" '-config' argument not found in the xvfb command")
         else:
-            assert config_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -config should not be last (found at index %i)" % config_argindex
+            if config_argindex+1>=len(xvfb_cmd):
+                raise InitException("invalid xvfb command string: -config should not be last")
             xorg_conf = xvfb_cmd[config_argindex+1]
             if xorg_conf.endswith("xorg.conf"):
                 xorg_conf = xorg_conf.replace("xorg.conf", "xorg-uinput.conf")
@@ -260,7 +265,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             n = parse_displayfd(buf, displayfd_err)
             new_display_name = ":%s" % n
             log("Using display number provided by %s: %s", xvfb_executable, new_display_name)
-            if tmp_xorg_log_file != None:
+            if tmp_xorg_log_file:
                 #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
                 f0 = shellsub(tmp_xorg_log_file, subs)
                 subs["DISPLAY"] = new_display_name
