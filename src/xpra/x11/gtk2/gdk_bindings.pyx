@@ -74,15 +74,51 @@ cdef extern from "glib-2.0/glib-object.h":
 # Xlib primitives and constants
 ######
 
-include "constants.pxi"
 ctypedef unsigned long CARD32
 ctypedef unsigned short CARD16
 ctypedef unsigned char CARD8
+DEF XNone = 0
 
 cdef extern from "X11/X.h":
     unsigned long NoSymbol
 
 cdef extern from "X11/Xlib.h":
+    int BadWindow
+    int MapRequest
+    int ConfigureRequest
+    int SelectionRequest
+    int SelectionClear
+    int FocusIn
+    int FocusOut
+    int KeymapNotify
+    int Expose
+    int GraphicsExpose
+    int NoExpose
+    int VisibilityNotify
+    int ClientMessage
+    int CreateNotify
+    int MapNotify
+    int UnmapNotify
+    int DestroyNotify
+    int ConfigureNotify
+    int ReparentNotify
+    int GravityNotify
+    int ResizeRequest
+    int CirculateNotify
+    int CirculateRequest
+    int SelectionNotify
+    int ColormapNotify
+    int MappingNotify
+    int PropertyNotify
+    int KeyPress
+    int KeyRelease
+    int ButtonPress
+    int ButtonRelease
+    int EnterNotify
+    int LeaveNotify
+    int MotionNotify
+    int GenericEvent
+
     ctypedef struct Display:
         pass
     # To make it easier to translate stuff in the X header files into

@@ -69,11 +69,11 @@ cdef extern from "sys/shm.h":
 cdef extern from "errno.h" nogil:
     int errno
 
-include "constants.pxi"
 ctypedef unsigned long CARD32
 ctypedef unsigned short CARD16
 ctypedef unsigned char CARD8
 ctypedef CARD32 Colormap
+DEF XNone = 0
 
 cdef extern from "X11/X.h":
     unsigned long NoSymbol

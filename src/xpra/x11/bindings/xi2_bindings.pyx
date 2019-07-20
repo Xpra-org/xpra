@@ -34,10 +34,13 @@ cdef extern from "X11/Xutil.h":
 # Xlib primitives and constants
 ######
 
-include "constants.pxi"
 ctypedef unsigned long CARD32
+DEF XNone = 0
 
 cdef extern from "X11/Xlib.h":
+    int BadRequest
+    int Success
+
     ctypedef struct Display:
         pass
 

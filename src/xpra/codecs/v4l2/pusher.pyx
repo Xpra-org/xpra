@@ -29,9 +29,46 @@ from libc.string cimport memset, memcpy
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
-include "constants.pxi"
+DEF ENABLE_DEVICE_CAPS = 1
 
 cdef extern from "./video.h":
+    int V4L2_FIELD_NONE
+    int V4L2_FIELD_TOP
+    int V4L2_FIELD_BOTTOM
+    int V4L2_FIELD_INTERLACED
+    int V4L2_FIELD_SEQ_TB
+    int V4L2_FIELD_SEQ_BT
+    int V4L2_FIELD_ALTERNATE
+    #int V4L2_FIELD_INTERLACED_TB
+    #int V4L2_FIELD_INTERLACED_BT
+    int V4L2_COLORSPACE_SRGB
+    int V4L2_COLORSPACE_470_SYSTEM_M
+    int V4L2_COLORSPACE_470_SYSTEM_BG
+    int V4L2_COLORSPACE_SMPTE170M
+    int V4L2_COLORSPACE_SMPTE240M
+    int V4L2_COLORSPACE_REC709
+
+    int V4L2_PIX_FMT_GREY
+    int V4L2_PIX_FMT_YUV422P
+    int V4L2_PIX_FMT_YUV420
+    int V4L2_PIX_FMT_YVU420
+    int V4L2_PIX_FMT_YUYV
+    int V4L2_PIX_FMT_UYVY
+    int V4L2_PIX_FMT_YUV410
+    int V4L2_PIX_FMT_YUV411P
+    int V4L2_PIX_FMT_BGR24
+    int V4L2_PIX_FMT_RGB24
+    int V4L2_PIX_FMT_BGR32
+    int V4L2_PIX_FMT_RGB32
+    int V4L2_PIX_FMT_NV12
+    int V4L2_PIX_FMT_NV21
+    #int V4L2_PIX_FMT_H264
+    #int V4L2_PIX_FMT_MPEG4
+    int VIDIOC_QUERYCAP
+    int VIDIOC_G_FMT
+    int VIDIOC_S_FMT
+    int V4L2_BUF_TYPE_VIDEO_OUTPUT
+    
     #define v4l2_fourcc(a,b,c,d)\
     #    (((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
     int v4l2_fourcc(unsigned char a, unsigned char b, unsigned char c, unsigned char d)

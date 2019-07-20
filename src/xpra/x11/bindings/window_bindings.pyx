@@ -29,7 +29,6 @@ from libc.stdlib cimport free, malloc       #pylint: disable=syntax-error
 # Xlib primitives and constants
 ######
 
-include "constants.pxi"
 # To make it easier to translate stuff in the X header files into
 # appropriate pyrex declarations, without having to untangle the typedefs
 # over and over again, here are some convenience typedefs.  (Yes, CARD32
@@ -48,6 +47,7 @@ ctypedef XID Pixmap
 ctypedef CARD32 Time
 ctypedef CARD32 VisualID
 ctypedef CARD32 Colormap
+DEF XNone = 0
 
 cdef extern from "X11/X.h":
     unsigned long NoSymbol
@@ -79,6 +79,68 @@ cdef extern from "X11/Xutil.h":
 
 
 cdef extern from "X11/Xlib.h":
+    int CWX
+    int CWY
+    int CWWidth
+    int CWHeight
+    int CurrentTime
+    int InputOnly
+    int RevertToParent
+    int ClientMessage
+    int ButtonPress
+    int Button1
+    int Button2
+    int Button3
+    int NoEventMask
+    int SelectionNotify
+    int ConfigureNotify
+    int StructureNotifyMask
+    int CWBorderWidth
+    int CWSibling
+    int CWStackMode
+    int SubstructureNotifyMask
+    int SubstructureRedirectMask
+    int FocusChangeMask
+    int AnyPropertyType
+    int Success
+    int PropModeReplace
+    int USPosition
+    int PPosition
+    int USSize
+    int PSize
+    int PMinSize
+    int IsUnmapped
+    int XNone
+    int PMaxSize
+    int PBaseSize
+    int PResizeInc
+    int PAspect
+    int PWinGravity
+    int InputHint
+    int StateHint
+    int IconPixmapHint
+    int IconWindowHint
+    int IconPositionHint
+    int IconMaskHint
+    int WindowGroupHint
+    int XUrgencyHint
+    int IconicState
+    int NormalState
+    int NotifyNormal
+    int NotifyGrab
+    int NotifyUngrab
+    int NotifyWhileGrabbed
+    int NotifyNonlinearVirtual
+    int NotifyAncestor
+    int NotifyVirtual
+    int NotifyInferior
+    int NotifyNonlinear
+    int NotifyNonlinearVirtual
+    int NotifyPointer
+    int NotifyPointerRoot
+    int NotifyDetailNone
+   
+    
     ctypedef struct Display:
         pass
 
@@ -260,6 +322,69 @@ cdef extern from "X11/Xlib.h":
     XWMHints *XGetWMHints(Display *display, Window w)
 
     Status XGetWMProtocols(Display *display, Window w, Atom **protocols_return, int *count_return)
+
+constants = {
+    "CWX"               : CWX,
+    "CWY"               : CWY,
+    "CWWidth"           : CWWidth,
+    "CWHeight"          : CWHeight,
+    "CurrentTime"       : CurrentTime,
+    "IsUnmapped"        : IsUnmapped,
+    "InputOnly"         : InputOnly,
+    "RevertToParent"    : RevertToParent,
+    "ClientMessage"     : ClientMessage,
+    "ButtonPress"       : ButtonPress,
+    "Button1"           : Button1,
+    "Button2"           : Button2,
+    "Button3"           : Button3,
+    "NoEventMask"       : NoEventMask,
+    "SelectionNotify"   : SelectionNotify,
+    "ConfigureNotify"   : ConfigureNotify,
+    "StructureNotifyMask" : StructureNotifyMask,
+    "CWBorderWidth"     : CWBorderWidth,
+    "CWSibling"         : CWSibling,
+    "CWStackMode"       : CWStackMode,
+    "SubstructureNotifyMask"   : SubstructureNotifyMask,
+    "SubstructureRedirectMask" : SubstructureRedirectMask,
+    "FocusChangeMask"   : FocusChangeMask,
+    "AnyPropertyType"   : AnyPropertyType,
+    "Success"           : Success,
+    "PropModeReplace"   : PropModeReplace,
+    "USPosition"        : USPosition,
+    "PPosition"         : PPosition,
+    "USSize"            : USSize,
+    "PSize"             : PSize,
+    "PMinSize"          : PMinSize,
+    "XNone"             : XNone,
+    "PMaxSize"          : PMaxSize,
+    "PBaseSize"         : PBaseSize,
+    "PResizeInc"        : PResizeInc,
+    "PAspect"           : PAspect,
+    "PWinGravity"       : PWinGravity,
+    "InputHint"         : InputHint,
+    "StateHint"         : StateHint,
+    "IconPixmapHint"    : IconPixmapHint,
+    "IconWindowHint"    : IconWindowHint,
+    "IconPositionHint"  : IconPositionHint,
+    "IconMaskHint"      : IconMaskHint,
+    "WindowGroupHint"   : WindowGroupHint,
+    "XUrgencyHint"      : XUrgencyHint,
+    "IconicState"       : IconicState,
+    "NormalState"       : NormalState,
+    "NotifyNormal"      : NotifyNormal,
+    "NotifyGrab"        : NotifyGrab,
+    "NotifyUngrab"      : NotifyUngrab,
+    "NotifyWhileGrabbed" : NotifyWhileGrabbed,
+    "NotifyNonlinear"   : NotifyNonlinear,
+    "NotifyNonlinearVirtual" : NotifyNonlinearVirtual,
+    "NotifyAncestor"    : NotifyAncestor,
+    "NotifyVirtual"     : NotifyVirtual,
+    "NotifyInferior"    : NotifyInferior,
+    "NotifyNonlinearVirtual" : NotifyNonlinearVirtual,
+    "NotifyPointer"     : NotifyPointer,
+    "NotifyPointerRoot" : NotifyPointerRoot,
+    "NotifyDetailNone"  : NotifyDetailNone,
+    }
 
 
 ###################################

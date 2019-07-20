@@ -21,20 +21,20 @@ traylog = Logger("posix", "tray")
 mouselog = Logger("posix", "mouse")
 xinputlog = Logger("posix", "xinput")
 
-X11Window = False
+_X11Window = False
 def X11WindowBindings():
-    global X11Window
-    if X11Window is False:
-        X11Window = None
+    global _X11Window
+    if _X11Window is False:
+        _X11Window = None
         if is_X11():
             try:
                 from xpra.x11.bindings.window_bindings import X11WindowBindings as _X11WindowBindings #@UnresolvedImport
-                X11Window = _X11WindowBindings()
+                _X11Window = _X11WindowBindings()
             except Exception as e:
                 log("X11WindowBindings()", exc_info=True)
                 log.error("Error: no X11 bindings")
                 log.error(" %s", e)
-    return X11Window
+    return _X11Window
 
 X11XI2 = None
 def X11XI2Bindings():
@@ -135,9 +135,8 @@ def _get_X11_window_property(xid, name, req_type):
         from xpra.gtk_common.error import xsync
         from xpra.x11.bindings.window_bindings import PropertyError #@UnresolvedImport
         try:
-            X11Window = X11WindowBindings()
             with xsync:
-                prop = X11Window.XGetWindowProperty(xid, name, req_type)
+                prop = X11WindowBindings().XGetWindowProperty(xid, name, req_type)
             log("_get_X11_window_property(%#x, %s, %s)=%s, len=%s", xid, name, req_type, type(prop), len(prop or []))
             return prop
         except PropertyError as e:
@@ -148,8 +147,7 @@ def _get_X11_window_property(xid, name, req_type):
     return None
 def _get_X11_root_property(name, req_type):
     try:
-        X11Window = X11WindowBindings()
-        root_xid = X11Window.getDefaultRootWindow()
+        root_xid = X11WindowBindings().getDefaultRootWindow()
         return _get_X11_window_property(root_xid, name, req_type)
     except Exception as e:
         log("_get_X11_root_property(%s, %s)", name, req_type, exc_info=True)

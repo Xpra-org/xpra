@@ -14,7 +14,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                remove_event_receiver,       #@UnresolvedImport
                get_pywindow,                #@UnresolvedImport
                get_xatom)                   #@UnresolvedImport
-from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
 from xpra.log import Logger
 
@@ -29,7 +29,7 @@ XSETTINGS = "_XSETTINGS_SETTINGS"
 #constant type in prop.py:
 XSETTINGS_TYPE = "xsettings-settings"
 
-XNone = constants["XNone"]
+XNone = 0
 
 
 class XSettingsManager(object):

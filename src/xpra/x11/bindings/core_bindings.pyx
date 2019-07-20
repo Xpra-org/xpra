@@ -18,8 +18,6 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "core")
 
 
-include "constants.pxi"
-
 ###################################
 # Headers, python magic
 ###################################
@@ -31,6 +29,11 @@ cdef extern from "X11/Xutil.h":
 ######
 
 cdef extern from "X11/Xlib.h":
+    int CurrentTime
+    int MappingBusy
+    int GrabModeAsync
+    int AnyModifier
+
     ctypedef struct Display:
         pass
     ctypedef CARD32 Time

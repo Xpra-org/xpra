@@ -7,8 +7,7 @@
 # later version. See the file COPYING for details.
 
 ##############################################################################
-# FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
-# does the make_constants hack.)
+# FIXME: Cython.Distutils.build_ext leaves crud in the source directory.
 
 import ssl
 import sys
@@ -570,53 +569,6 @@ def get_gcc_version():
                     break
     return GCC_VERSION
 
-def make_constants_pxi(constants_path, pxi_path, **kwargs):
-    constants = []
-    with open(constants_path) as f:
-        for line in f:
-            data = line.split("#", 1)[0].strip()
-            # data can be empty ''...
-            if not data:
-                continue
-            # or a pair like 'cFoo "Foo"'...
-            elif len(data.split()) == 2:
-                (pyname, cname) = data.split()
-                constants.append((pyname, cname))
-            # or just a simple token 'Foo'
-            else:
-                constants.append(data)
-
-    with open(pxi_path, "w") as out:
-        if constants:
-            out.write("cdef extern from *:\n")
-            ### Apparently you can't use | on enum's?!
-            # out.write("    enum MagicNumbers:\n")
-            # for const in constants:
-            #     if isinstance(const, tuple):
-            #         out.write('        %s %s\n' % const)
-            #     else:
-            #         out.write('        %s\n' % (const,))
-            for const in constants:
-                if isinstance(const, tuple):
-                    out.write('    unsigned int %s %s\n' % const)
-                else:
-                    out.write('    unsigned int %s\n' % (const,))
-
-            out.write("constants = {\n")
-            for const in constants:
-                if isinstance(const, tuple):
-                    pyname = const[0]
-                else:
-                    pyname = const
-                out.write('    "%s": %s,\n' % (pyname, pyname))
-            out.write("}\n")
-            if kwargs:
-                out.write("\n\n")
-
-        if kwargs:
-            for k, v in kwargs.items():
-                out.write('DEF %s = %s\n' % (k, v))
-
 
 def should_rebuild(src_file, bin_file):
     if not os.path.exists(bin_file):
@@ -627,19 +579,6 @@ def should_rebuild(src_file, bin_file):
         if os.path.getctime(bin_file)<os.path.getctime(__file__):
             return "newer build file"
     return None
-
-def make_constants(*paths, **kwargs):
-    base = os.path.join(os.getcwd(), *paths)
-    constants_file = "%s.txt" % base
-    try:
-        pxi_file = kwargs.pop("pxi_file")
-    except KeyError:
-        pxi_file = "%s.pxi" % base
-    reason = should_rebuild(constants_file, pxi_file)
-    if reason:
-        if verbose_ENABLED:
-            print("(re)generating %s (%s):" % (pxi_file, reason))
-        make_constants_pxi(constants_file, pxi_file, **kwargs)
 
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
@@ -963,13 +902,10 @@ def clean():
                    "xpra/gtk_common/gtk2/gdk_bindings.c",
                    "xpra/gtk_common/gtk3/gdk_atoms.c",
                    "xpra/gtk_common/gtk3/gdk_bindings.c",
-                   "xpra/x11/gtk2/constants.pxi",
                    "xpra/x11/gtk2/gdk_bindings.c",
                    "xpra/x11/gtk2/gdk_display_source.c",
-                   "xpra/x11/gtk3/constants.pxi",
                    "xpra/x11/gtk3/gdk_bindings.c",
                    "xpra/x11/gtk3/gdk_display_source.c",
-                   "xpra/x11/bindings/constants.pxi",
                    "xpra/x11/bindings/wait_for_x_server.c",
                    "xpra/x11/bindings/keyboard_bindings.c",
                    "xpra/x11/bindings/display_source.c",
@@ -996,7 +932,6 @@ def clean():
                    "xpra/codecs/jpeg/encoder.c",
                    "xpra/codecs/jpeg/decoder.c",
                    "xpra/codecs/enc_ffmpeg/encoder.c",
-                   "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/libav_common/av_log.c",
                    "xpra/codecs/webp/encode.c",
@@ -1025,10 +960,10 @@ def clean():
             ]
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
-        if ext in (".c", ".cpp", ".pxi"):
+        if ext in (".c", ".cpp"):
             #clean the Cython annotated html files:
             CLEAN_FILES.append(p+".html")
-            if WIN32 and ext!=".pxi":
+            if WIN32:
                 #on win32, the build creates ".pyd" files, clean those too:
                 CLEAN_FILES.append(p+".pyd")
                 #when building with python3, we need to clean files named like:
@@ -1856,12 +1791,6 @@ if cython_ENABLED:
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
-    make_constants("xpra", "x11", "bindings", "constants")
-    if gtk2_ENABLED:
-        make_constants("xpra", "x11", "constants", pxi_file="xpra/x11/gtk2/constants.pxi")
-    if gtk3_ENABLED:
-        make_constants("xpra", "x11", "constants", pxi_file="xpra/x11/gtk3/constants.pxi")
-
     cython_add(Extension("xpra.x11.bindings.wait_for_x_server",
                 ["xpra/x11/bindings/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
@@ -2372,7 +2301,6 @@ if v4l2_ENABLED:
             hdata = f.read()
         ENABLE_DEVICE_CAPS = hdata.find("device_caps")>=0
     kwargs = {"ENABLE_DEVICE_CAPS" : ENABLE_DEVICE_CAPS}
-    make_constants("xpra", "codecs", "v4l2", "constants", **kwargs)
     cython_add(Extension("xpra.codecs.v4l2.pusher",
                 ["xpra/codecs/v4l2/pusher.pyx"],
                 **v4l2_pkgconfig))

@@ -37,13 +37,17 @@ cdef extern from "X11/Xutil.h":
 # Xlib primitives and constants
 ######
 
-include "constants.pxi"
 ctypedef unsigned long CARD32
 
 cdef extern from "X11/X.h":
     unsigned long NoSymbol
 
 cdef extern from "X11/Xlib.h":
+    int MappingBusy
+    int GrabModeAsync
+    int AnyKey
+    int AnyModifier
+
     ctypedef struct Display:
         pass
     # To make it easier to translate stuff in the X header files into
