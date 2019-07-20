@@ -12,7 +12,7 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.simple_stats import std_unit
 from xpra.os_util import livefds, POSIX
-from xpra.util import envbool, detect_leaks, typedict
+from xpra.util import envbool, envint, detect_leaks, typedict
 from xpra.log import Logger
 
 log = Logger("network")
@@ -20,6 +20,9 @@ bandwidthlog = Logger("bandwidth")
 
 DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
+
+MIN_BANDWIDTH_LIMIT = envint("XPRA_MIN_BANDWIDTH_LIMIT", 1024*1024)
+MAX_BANDWIDTH_LIMIT = envint("XPRA_MIN_BANDWIDTH_LIMIT", 1024*1024)
 
 
 """
@@ -147,6 +150,12 @@ class NetworkStateServer(StubServerMixin):
         if ss.bandwidth_limit==bandwidth_limit:
             #unchanged
             return
+        if bandwidth_limit<MIN_BANDWIDTH_LIMIT:
+            log.warn("Warning: bandwidth limit requested is too low (%s)", std_unit(bandwidth_limit))
+            bandwidth_limit = MIN_BANDWIDTH_LIMIT
+        if bandwidth_limit>MAX_BANDWIDTH_LIMIT:
+            log("bandwidth limit over maximum, using no-limit instead")
+            bandwidth_limit = 0
         ss.bandwidth_limit = bandwidth_limit
         #we can't assume to have a full ClientConnection object:
         client_id = getattr(ss, "counter", "")

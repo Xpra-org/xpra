@@ -37,7 +37,7 @@ class NetworkStateMixinTest(ServerMixinTest):
                 pass
             else:
                 raise Exception("should not allow %s (%s) as connection-data" % (v, type(v)))
-        self.handle_packet(("bandwidth-limit", 10))
+        self.handle_packet(("bandwidth-limit", 10*1024*1024))
 
 
 def main():
