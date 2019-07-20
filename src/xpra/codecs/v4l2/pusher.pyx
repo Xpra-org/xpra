@@ -29,7 +29,7 @@ from libc.string cimport memset, memcpy
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
-DEF ENABLE_DEVICE_CAPS = 1
+include "constants.pxi"
 
 cdef extern from "./video.h":
     int V4L2_FIELD_NONE
