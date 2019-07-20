@@ -10,7 +10,7 @@ import unittest
 from xpra.os_util import (
     strtobytes, bytestostr, memoryview_to_bytes,
     OSEnvContext,
-    monotonic_time,
+    monotonic_time, get_rand_chars,
     )
 
 
@@ -59,6 +59,11 @@ class TestOSUtil(unittest.TestCase):
         t2 = monotonic_time()
         elapsed = t2-t1
         assert 0.9<elapsed<2, "expected roughly 1 second but got %.2f" % elapsed
+
+    def test_get_rand_chars(self):
+        for l in (0, 1, 512):
+            v = get_rand_chars(l)
+            assert len(v)==l
 
 def main():
     unittest.main()
