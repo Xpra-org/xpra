@@ -273,13 +273,13 @@ def get_uinput_device_path(device):
         #this magic value was calculated using the C macros:
         l = fcntl.ioctl(fd, 2148554028, buf)
         if 0<l<16:
-            virt_dev_path = buf.raw[:l].rstrip("\0")
+            virt_dev_path = buf.raw[:l].rstrip(b"\0")
             log("UI_GET_SYSNAME(%s)=%s", fd, virt_dev_path)
             uevent_path = b"/sys/devices/virtual/input/%s" % virt_dev_path
-            event_dirs = [x for x in os.listdir(uevent_path) if x.startswith("event")]
+            event_dirs = [x for x in os.listdir(uevent_path) if x.startswith(b"event")]
             log("event dirs(%s)=%s", uevent_path, event_dirs)
             for d in event_dirs:
-                uevent_filename = os.path.join(uevent_path, d, "uevent")
+                uevent_filename = os.path.join(uevent_path, d, b"uevent")
                 uevent_conf = open(uevent_filename, "rb").read()
                 for line in uevent_conf.splitlines():
                     if line.find(b"=")>0:
@@ -290,6 +290,7 @@ def get_uinput_device_path(device):
                             log("found device path: %s" % dev_path)
                             return dev_path
     except Exception as e:
+        log("get_uinput_device_path(%s)", device, exc_info=True)
         log.error("Error: cannot query uinput device path:")
         log.error(" %s", e)
     return None

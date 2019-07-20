@@ -94,7 +94,7 @@ def save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid):
     identifier = "xpra-virtual-%s" % dev_type
     conf_file = os.path.join(xorg_conf_dir, "%02i-%s.conf" % (i, dev_type))
     with open(conf_file, "wb") as f:
-        f.write(b"""Section "InputClass"
+        f.write(strtobytes("""Section "InputClass"
 Identifier "%s"
 MatchProduct "%s"
 MatchUSBID "ffff:ffff"
@@ -103,7 +103,7 @@ Driver "libinput"
 Option "AccelProfile" "flat"
 Option "Ignore" "False"
 EndSection
-""" % (identifier, product_name, upper_dev_type))
+""" % (identifier, product_name, upper_dev_type)))
         os.fchown(f.fileno(), uid, gid)
     #Option "AccelerationProfile" "-1"
     #Option "AccelerationScheme" "none"
