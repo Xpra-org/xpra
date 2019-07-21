@@ -129,6 +129,7 @@ class ProtocolTest(unittest.TestCase):
                 assert items
 
     def test_read_speed(self):
+        print("\n")
         total_size = 0
         total_elapsed = 0
         n_packets = 0
@@ -137,10 +138,10 @@ class ProtocolTest(unittest.TestCase):
             total_size += size
             total_elapsed += elapsed
             n_packets += n
-        log.info("\n%-9s incoming packet processing speed:\t%iMB/s",
-                 self.protocol_class.TYPE, total_size/total_elapsed//1024//1024)
-        log.info("\n%-9s packet parsed per second:\t\t%i",
-                 self.protocol_class.TYPE, n_packets/elapsed)
+        print("%-9s incoming packet processing speed:\t%iMB/s" % (
+                 self.protocol_class.TYPE, total_size/total_elapsed//1024//1024))
+        print("%-9s packet parsed per second:\t\t%i" % (
+                 self.protocol_class.TYPE, n_packets/elapsed))
 
 
     def do_test_read_speed(self, pixel_data_size=2**18, N=100):
@@ -199,6 +200,7 @@ class ProtocolTest(unittest.TestCase):
         return l
 
     def test_format_thread(self):
+        print("\n")
         packets = self.make_test_packets()
         N = 1000
         many = self.repeat_list(packets, N)
@@ -230,9 +232,9 @@ class ProtocolTest(unittest.TestCase):
         total_size = sum(len(packet) for packet in conn.write_data)
         elapsed = end-start
         log("bytes=%s, elapsed=%s", total_size, elapsed)
-        log.info("\n%-9s format thread:\t\t\t%iMB/s", protocol.TYPE, int(total_size/elapsed//1024//1024))
+        print("%-9s format thread:\t\t\t%iMB/s" % (protocol.TYPE, int(total_size/elapsed//1024//1024)))
         n_packets = len(packets)*N
-        log.info("\n%-9s packets formatted per second:\t\t%i", protocol.TYPE, int(n_packets/elapsed))
+        print("%-9s packets formatted per second:\t\t%i" % (protocol.TYPE, int(n_packets/elapsed)))
         assert conn.write_data
 
 
