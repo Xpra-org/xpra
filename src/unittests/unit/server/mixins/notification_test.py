@@ -23,8 +23,6 @@ class NotificationForwarderMixinTest(ServerMixinTest):
             #start a dbus server:
             from xpra.server.dbus.dbus_start import start_dbus
             dbus_pid, dbus_env = start_dbus("dbus-launch --sh-syntax --close-stderr")
-            print("dbus_pid=%s" % (dbus_pid))
-            print("dbus_env=%s" % (dbus_env))
             try:
                 if dbus_env:
                     os.environ.update(dbus_env)
