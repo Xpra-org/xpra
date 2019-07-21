@@ -21,11 +21,7 @@ class InputMixinTest(ServerMixinTest):
         from xpra.server.mixins.input_server import InputServer
         from xpra.server.source.input_mixin import InputMixin
         opts = AdHocStruct()
-        def _InputServer():
-            _is = InputServer()
-            _is._server_sources = {}
-            return _is
-        self._test_mixin_class(_InputServer, opts, {}, InputMixin)
+        self._test_mixin_class(InputServer, opts, {}, InputMixin)
 
 def main():
     unittest.main()

@@ -35,7 +35,6 @@ class DisplayMixinTest(ServerMixinTest):
             dm.get_root_window_size = get_root_window_size
             dm.calculate_workarea = calculate_workarea
             dm.set_desktop_geometry = set_desktop_geometry
-            dm._server_sources = {}
             return dm
         self._test_mixin_class(_DisplayManager, opts, {}, ClientDisplayMixin)
 
