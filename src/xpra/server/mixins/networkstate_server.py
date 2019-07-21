@@ -139,21 +139,23 @@ class NetworkStateServer(StubServerMixin):
             ss.update_connection_data(packet[1])
 
     def _process_bandwidth_limit(self, proto, packet):
+        log("_process_bandwidth_limit(%s, %s)", proto, packet)
         ss = self.get_server_source(proto)
         if not ss:
             return
         bandwidth_limit = packet[1]
         if not isinstance(bandwidth_limit, int):
             raise TypeError("bandwidth-limit must be an integer")
-        if self.bandwidth_limit and bandwidth_limit>self.bandwidth_limit or bandwidth_limit<=0:
+        if (self.bandwidth_limit and bandwidth_limit>=self.bandwidth_limit) or bandwidth_limit<=0:
             bandwidth_limit = self.bandwidth_limit or 0
         if ss.bandwidth_limit==bandwidth_limit:
             #unchanged
+            log("bandwidth limit unchanged: %s", std_unit(bandwidth_limit))
             return
         if bandwidth_limit<MIN_BANDWIDTH_LIMIT:
             log.warn("Warning: bandwidth limit requested is too low (%s)", std_unit(bandwidth_limit))
             bandwidth_limit = MIN_BANDWIDTH_LIMIT
-        if bandwidth_limit>MAX_BANDWIDTH_LIMIT:
+        if bandwidth_limit>=MAX_BANDWIDTH_LIMIT:
             log("bandwidth limit over maximum, using no-limit instead")
             bandwidth_limit = 0
         ss.bandwidth_limit = bandwidth_limit

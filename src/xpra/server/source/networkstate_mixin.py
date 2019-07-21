@@ -33,9 +33,12 @@ class NetworkStateMixin(StubSourceMixin):
         lpe = 0
         if self.last_ping_echoed_time>0:
             lpe = int(monotonic_time()*1000-self.last_ping_echoed_time)
-        return {
+        info = {
                 "last-ping-echo"    : lpe,
                 }
+        if self.bandwidth_limit>0:
+            info["bandwidth-limit"] = self.bandwidth_limit
+        return info
 
     ######################################################################
     # pings:
