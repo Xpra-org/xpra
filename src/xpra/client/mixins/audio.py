@@ -459,6 +459,7 @@ class AudioClient(StubClientMixin):
             if not ss:
                 return False
             self.sound_sink = ss
+            ss.sequence = self.sound_sink_sequence
             ss.connect("state-changed", self.sound_sink_state_changed)
             ss.connect("error", self.sound_sink_error)
             ss.connect("exit", self.sound_sink_exit)
