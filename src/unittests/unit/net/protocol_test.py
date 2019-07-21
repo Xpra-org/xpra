@@ -140,7 +140,7 @@ class ProtocolTest(unittest.TestCase):
             n_packets += n
         print("%-9s incoming packet processing speed:\t%iMB/s" % (
                  self.protocol_class.TYPE, total_size/total_elapsed//1024//1024))
-        print("%-9s packet parsed per second:\t\t%i" % (
+        print("%-9s packets parsed per second:\t\t%i" % (
                  self.protocol_class.TYPE, n_packets/elapsed))
 
 
