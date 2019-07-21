@@ -13,7 +13,7 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 class NetworkStateMixinTest(ServerMixinTest):
 
     def test_networkstate(self):
-        from xpra.server.mixins.networkstate_server import NetworkStateServer, MAX_BANDWIDTH_LIMIT, log
+        from xpra.server.mixins.networkstate_server import NetworkStateServer, MAX_BANDWIDTH_LIMIT
         from xpra.server.source.networkstate_mixin import NetworkStateMixin
         opts = AdHocStruct()
         opts.pings = 1
