@@ -2295,14 +2295,16 @@ if v4l2_ENABLED:
     v4l2_pkgconfig = pkgconfig()
     #fugly warning: cython makes this difficult,
     #we have to figure out if "device_caps" exists in the headers:
-    ENABLE_DEVICE_CAPS = 0
-    if os.path.exists("/usr/include/linux/videodev2.h"):
-        with open("/usr/include/linux/videodev2.h") as f:
-            hdata = f.read()
-        ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
-    with open("xpra/codecs/v4l2/constants.pxi", "wb") as f:
-        f.write(b"DEF ENABLE_DEVICE_CAPS=%i" % ENABLE_DEVICE_CAPS)
-    kwargs = {"ENABLE_DEVICE_CAPS" : ENABLE_DEVICE_CAPS}
+    videodev2_h = "/usr/include/linux/videodev2.h"
+    constants_pxi = "xpra/codecs/v4l2/constants.pxi"
+    if not os.path.exists(videodev2_h) or should_rebuild(videodev2_h, constants_pxi):
+        ENABLE_DEVICE_CAPS = 0
+        if os.path.exists(videodev2_h):
+            with open(videodev2_h) as f:
+                hdata = f.read()
+            ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
+        with open(constants_pxi, "wb") as f:
+            f.write(b"DEF ENABLE_DEVICE_CAPS=%i" % ENABLE_DEVICE_CAPS)
     cython_add(Extension("xpra.codecs.v4l2.pusher",
                 ["xpra/codecs/v4l2/pusher.pyx"],
                 **v4l2_pkgconfig))
