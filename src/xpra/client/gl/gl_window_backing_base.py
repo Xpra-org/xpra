@@ -772,6 +772,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glVertex2i(x+cw, y)
             glEnd()
 
+            glDisable(GL_BLEND)
             glBindTexture(target, 0)
             glDisable(target)
         else:
