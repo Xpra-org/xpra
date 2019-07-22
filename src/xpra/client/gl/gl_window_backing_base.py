@@ -757,10 +757,8 @@ class GLWindowBackingBase(WindowBackingBase):
             target = GL_TEXTURE_RECTANGLE_ARB
             glEnable(target)
             glBindTexture(target, self.textures[TEX_CURSOR])
-            glEnablei(GL_BLEND, self.textures[TEX_CURSOR])
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
-            glBlendFunc(GL_ONE, GL_ONE)
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+            #glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 
             glBegin(GL_QUADS)
             glTexCoord2i(0, 0)
