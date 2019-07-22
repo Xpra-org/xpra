@@ -31,7 +31,7 @@ from xpra.gtk_common.gtk_util import (
     get_screen_sizes, load_contents_async, load_contents_finish, GDKWindow,
     FILE_CHOOSER_ACTION_OPEN,
     CLASS_INPUT_ONLY,
-    RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_ACCEPT,
+    RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_ACCEPT, RESPONSE_REJECT,
     INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO,
     BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING,
     BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK,
@@ -242,8 +242,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         dialog = gtk.Dialog("Server Authentication",
                None,
                DIALOG_MODAL | DESTROY_WITH_PARENT)
-        RESPONSE_REJECT = 1
-        RESPONSE_ACCEPT = 2
         dialog.add_button(gtk.STOCK_CANCEL, RESPONSE_REJECT)
         dialog.add_button(gtk.STOCK_OK,     RESPONSE_ACCEPT)
         def add(widget, padding=0):
