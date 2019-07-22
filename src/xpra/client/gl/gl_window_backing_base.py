@@ -757,6 +757,7 @@ class GLWindowBackingBase(WindowBackingBase):
             target = GL_TEXTURE_RECTANGLE_ARB
             glEnable(target)
             glBindTexture(target, self.textures[TEX_CURSOR])
+            glEnable(GL_BLEND)
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
             #glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 
