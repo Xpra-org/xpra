@@ -31,7 +31,7 @@ from OpenGL.GL import (
     glActiveTexture, glTexSubImage2D,
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho,
     glGenTextures, glDisable,
-    glBindTexture, glPixelStorei, glEnable, glEnablei, glBegin, glFlush,
+    glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
     glTexParameteri,
     glTexImage2D,
     glMultiTexCoord2i,
@@ -650,7 +650,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindTexture(target, self.textures[TEX_FBO])
         if self._alpha_enabled:
             # support alpha channel if present:
-            glEnablei(GL_BLEND, self.textures[TEX_FBO])
+            glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
         glBegin(GL_QUADS)
@@ -758,7 +758,7 @@ class GLWindowBackingBase(WindowBackingBase):
             target = GL_TEXTURE_RECTANGLE_ARB
             glEnable(target)
             glBindTexture(target, self.textures[TEX_CURSOR])
-            glEnablei(GL_BLEND, self.textures[TEX_CURSOR])
+            glEnable(GL_BLEND)
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
             glBlendFunc(GL_ONE, GL_ONE)
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
