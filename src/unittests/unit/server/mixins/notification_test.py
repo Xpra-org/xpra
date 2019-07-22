@@ -5,10 +5,11 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.os_util import OSEnvContext
+from xpra.os_util import OSEnvContext, WIN32, OSX
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
@@ -40,7 +41,10 @@ class NotificationForwarderMixinTest(ServerMixinTest):
                     os.kill(dbus_pid, signal.SIGINT)
 
 def main():
-    unittest.main()
+    if WIN32 or OSX:
+        print("skipping test on %s" % sys.platform)
+    else:
+        unittest.main()
 
 
 if __name__ == '__main__':
