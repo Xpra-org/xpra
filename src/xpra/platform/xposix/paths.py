@@ -118,9 +118,9 @@ def do_get_user_conf_dirs(uid):
     if uid is None:
         uid = os.getuid()
     dirs = []
+    dirs += [os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "xpra")]
     if uid>0:
         dirs.append("~/.xpra")
-    dirs += [os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "xpra")]
     return dirs
 
 

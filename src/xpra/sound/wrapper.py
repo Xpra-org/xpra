@@ -27,6 +27,7 @@ FAKE_EXIT = envbool("XPRA_SOUND_FAKE_EXIT", False)
 FAKE_CRASH = envbool("XPRA_SOUND_FAKE_CRASH", False)
 SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 5000)
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
+QUERY_CACHE = envbool("XPRA_SOUND_QUERY_CACHE", True)
 
 DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS",
     "--windows=no "+
@@ -397,6 +398,45 @@ def start_receiving_sound(codec):
         return None
 
 def query_sound():
+    if QUERY_CACHE:
+        #first find the timestamp on the gstreamer registry file:
+        gstreg = os.environ.get("GST_REGISTRY")
+        if gstreg:
+            regpaths = [gstreg]
+        else:
+            cache_home = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
+            import glob
+            regpaths = glob.glob("%s/gstreamer-*/registry-*.bin" % cache_home)
+        ts = 0
+        for gstreg in regpaths:
+            if not os.path.exists(gstreg) or not os.path.isfile(gstreg):
+                continue
+            try:
+                cts = os.path.getctime(gstreg)
+                log("ctime(%s)=%s", gstreg, cts)
+            except (OSError, IOError):
+                log("os.path.getctype(%s)", gstreg, exc_info=True)
+                continue
+            ts = max(cts, ts)
+        if ts>0:
+            #ok we have a timestamp we can compare with,
+            #now try to find our cache file:
+            from xpra.platform.paths import get_system_conf_dirs
+            dirs = get_system_conf_dirs()
+            filename = "gstreamer-python%i-cache.txt" % (sys.version_info[0])
+            for d in dirs:
+                cache = os.path.join(d, filename)
+                if not os.path.exists(cache):
+                    continue
+                if os.path.getctime(cache)<os.path.getctime(src_file):
+                    log("query_sound() cache file out of date")
+                    return "binary file out of date"
+    v = do_query_sound()
+    if QUERY_CACHE:
+        pass
+    return v
+
+def do_query_sound():
     import subprocess
     command = get_full_sound_command()+["_sound_query"]
     _add_debug_args(command)
