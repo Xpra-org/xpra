@@ -31,7 +31,7 @@ from OpenGL.GL import (
     glActiveTexture, glTexSubImage2D,
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho,
     glGenTextures, glDisable,
-    glBindTexture, glPixelStorei, glEnable, glEnablei, glBegin, glFlush,
+    glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
     glTexParameteri,
     glTexImage2D,
     glMultiTexCoord2i,
