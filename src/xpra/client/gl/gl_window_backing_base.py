@@ -650,7 +650,6 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindTexture(target, self.textures[TEX_FBO])
         if self._alpha_enabled:
             # support alpha channel if present:
-            glEnablei(GL_BLEND, self.textures[TEX_FBO])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
         glBegin(GL_QUADS)
