@@ -285,8 +285,8 @@ Requires:			pygtkglext
 %{Recommends}:		python2-pyu2f
 #no longer available in Fedora 30:
 #BuildRequires:		python2-cups
-BuildRequires:		python2-pyxdg
 %if 0%{?fedora}%{?el8}
+BuildRequires:		python2-pyxdg
 Recommends:         python2-xdg
 Recommends:			python2-xpra-audio
 Recommends:			python2-cups
