@@ -36,7 +36,8 @@ class ServerTestUtil(ProcessTestUtil):
         cls.dotxpra = DotXpra("/tmp", ["/tmp"])
         cls.default_xpra_args = ["--speaker=no", "--microphone=no"]
         if not WIN32:
-            cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp"]
+            TMPDIR = os.environ.get("TMPDIR", "/tmp")
+            cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=%s" % TMPDIR]
         cls.existing_displays = cls.displays()
 
     @classmethod
