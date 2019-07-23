@@ -73,7 +73,7 @@ if [ "${DO_TESTS}" == "1" ]; then
 	ln -sf ../scripts/xpra .
 	UNITTEST_LOG=`pwd`/unittest.log
 	echo "running unit tests (see ${UNITTEST_LOG} - this may take a minute or two)"
-	XPRA_COMMAND=./xpra XPRA_NODOCK_COMMAND=./xpra XPRA_SOUND_COMMAND=./xpra PYTHONPATH=. ./unit/run.py >& ${UNITTEST_LOG}
+	XPRA_COMMAND="$PYTHON ./xpra" XPRA_NODOCK_COMMAND="$PYTHON ./xpra" XPRA_SOUND_COMMAND="$PYTHON ./xpra" PYTHONPATH=. ./unit/run.py >& ${UNITTEST_LOG}
 	if [ "$?" != "0" ]; then
 		popd
 		echo "ERROR: unit tests failed, see ${UNITTEST_LOG}:"
