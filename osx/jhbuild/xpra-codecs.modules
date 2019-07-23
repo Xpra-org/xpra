@@ -182,7 +182,7 @@
 		autogen-sh="configure">
         <branch module="/releases/ffmpeg-4.1.4.tar.xz"
             version="4.1.4"
-            hash="sha256:a7e71bd8901b0cfe7087d776263e5d60b94ec5dad6410a07116caf529f278407"
+            hash="sha256:f1f049a82fcfbf156564e73a3935d7e750891fab2abf302e735104fd4050a7e1"
 			repo="ffmpeg.org"/>
 		<dependencies>
 			<dep package="x264"/>
