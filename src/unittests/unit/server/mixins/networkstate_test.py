@@ -42,7 +42,7 @@ class NetworkStateMixinTest(ServerMixinTest):
                 raise Exception("should not allow %s (%s) as connection-data" % (v, type(v)))
         self.handle_packet(("bandwidth-limit", 10*1024*1024))
         self.assertEqual(10*1024*1024, self.source.get_info().get("bandwidth-limit"))
-        self.handle_packet(("bandwidth-limit", MAX_BANDWIDTH_LIMIT))
+        self.handle_packet(("bandwidth-limit", MAX_BANDWIDTH_LIMIT+1))
         self.assertEqual(min(capped_at, MAX_BANDWIDTH_LIMIT), self.source.get_info().get("bandwidth-limit"))
 
 
