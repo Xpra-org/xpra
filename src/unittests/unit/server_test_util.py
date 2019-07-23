@@ -33,11 +33,13 @@ class ServerTestUtil(ProcessTestUtil):
     @classmethod
     def setUpClass(cls):
         ProcessTestUtil.setUpClass()
-        cls.dotxpra = DotXpra("/tmp", ["/tmp"])
+        tmpdir = os.environ.get("TMPDIR", "/tmp")
+        cls.dotxpra = DotXpra(tmpdir, [tmpdir])
         cls.default_xpra_args = ["--speaker=no", "--microphone=no"]
         if not WIN32:
-            TMPDIR = os.environ.get("TMPDIR", "/tmp")
-            cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=%s" % TMPDIR]
+            cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no"]
+            for x in cls.dotxpra._sockdirs:
+                cls.default_xpra_args += ["--socket-dirs=%s" % x]
         cls.existing_displays = cls.displays()
 
     @classmethod
