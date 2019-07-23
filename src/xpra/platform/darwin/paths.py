@@ -187,6 +187,11 @@ def do_get_nodock_command():
     helper = os.path.join(base, "Resources", "scripts", "Xpra")
     if not os.path.exists(helper):
         helper = os.path.join(base, "Helpers", "Xpra")
+    if not os.path.exists(helper):
+        #having a dock is still better than
+        #trying to run a command that does not exist!
+        from xpra.platform.paths import get_xpra_command
+        return get_xpra_command()
     return [helper]
 
 def do_get_sound_command():
