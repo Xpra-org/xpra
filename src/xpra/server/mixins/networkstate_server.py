@@ -11,7 +11,7 @@ from time import sleep
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.simple_stats import std_unit
-from xpra.os_util import livefds, POSIX
+from xpra.os_util import livefds, POSIX, PYTHON3
 from xpra.util import envbool, envint, detect_leaks, typedict
 from xpra.log import Logger
 
@@ -23,6 +23,9 @@ DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 
 MIN_BANDWIDTH_LIMIT = envint("XPRA_MIN_BANDWIDTH_LIMIT", 1024*1024)
 MAX_BANDWIDTH_LIMIT = envint("XPRA_MAX_BANDWIDTH_LIMIT", 10*1024*1024*1024)
+
+if PYTHON3:
+    long = int
 
 
 """
@@ -144,7 +147,7 @@ class NetworkStateServer(StubServerMixin):
         if not ss:
             return
         bandwidth_limit = packet[1]
-        if not isinstance(bandwidth_limit, int):
+        if not isinstance(bandwidth_limit, (int, long)):
             raise TypeError("bandwidth-limit must be an integer, not %s" % type(bandwidth_limit))
         if (self.bandwidth_limit and bandwidth_limit>=self.bandwidth_limit) or bandwidth_limit<=0:
             bandwidth_limit = self.bandwidth_limit or 0
