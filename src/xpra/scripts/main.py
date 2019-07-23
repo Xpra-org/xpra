@@ -23,7 +23,7 @@ from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
     get_util_logger, getuid, getgid,
     monotonic_time, setsid, bytestostr, use_tty,
-    WIN32, OSX, POSIX, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
+    WIN32, OSX, POSIX, PYTHON2, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
 from xpra.scripts.parsing import (
     info, warn, error,
@@ -89,6 +89,11 @@ def main(script_file, cmdline):
             raise ValueError("md5 support is disabled")
         hashlib.algorithms_available.remove("md5")
         hashlib.md5 = nomd5
+
+    if OSX and PYTHON2 and any(x in cmdline for x in ("_sound_record", "_sound_play", "_sound_query")):
+        #bug 2365: force gi bindings early on macos
+        from xpra.gtk_common.gobject_compat import want_gtk3
+        want_gtk3(True)
 
     def debug_exc(msg="run_mode error"):
         get_util_logger().debug(msg, exc_info=True)
