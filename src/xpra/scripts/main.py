@@ -1855,6 +1855,10 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
 
 
 def no_gtk():
+    if OSX and PYTHON2:
+        #on macos, we may have loaded the bindings already
+        #and this is not a problem there
+        return
     gtk = sys.modules.get("gtk") or sys.modules.get("gi.repository.Gtk")
     if gtk is None:
         #all good, not loaded
