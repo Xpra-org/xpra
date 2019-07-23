@@ -851,7 +851,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         os.chdir(opts.chdir)
 
     dbus_pid, dbus_env = 0, {}
-    if not shadowing and POSIX and not clobber:
+    if not shadowing and POSIX and not OSX and not clobber:
         no_gtk()
         assert starting or starting_desktop or proxying
         from xpra.server.dbus.dbus_start import start_dbus
