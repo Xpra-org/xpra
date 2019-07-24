@@ -873,7 +873,7 @@ class ServerBase(ServerCore):
             if shell is None:
                 shell = not use_wrapper or not self.exec_wrapper
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
-            proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
+            proc = subprocess.Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
             self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             execlog("pid(%s)=%s", real_cmd, proc.pid)
             if not ignore:
