@@ -108,6 +108,9 @@ def find_ppd_file(short_name, filename):
 
 
 def get_lpinfo_drv(make_and_model):
+    if not LPINFO:
+        log.error("Error: lpinfo command is not defined")
+        return None
     command = shlex.split(LPINFO)+["--make-and-model", make_and_model, "-m"]
     def preexec():
         os.setsid()
