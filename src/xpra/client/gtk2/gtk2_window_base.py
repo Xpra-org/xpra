@@ -72,6 +72,10 @@ class GTK2WindowBase(GTKClientWindowBase):
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         self.set_data("_kde_no_window_grab", 1)
 
+    def init_drawing_area(self):
+        GTKClientWindowBase.init_drawing_area(self)
+        self.drawing_area.connect("expose-event", self.do_drawing_area_expose_event)
+
 
     def xget_u32_property(self, target, name):
         try:
@@ -115,6 +119,9 @@ class GTK2WindowBase(GTKClientWindowBase):
             #see: http://xpra.org/trac/ticket/1610
             event = DrawEvent(area=rect)
             self.do_expose_event(event)
+
+    def do_drawing_area_expose_event(self, drawing_area, event):
+        self.do_expose_event(event)
 
     def do_expose_event(self, event):
         #cannot use self

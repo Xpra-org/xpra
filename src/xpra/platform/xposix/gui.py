@@ -550,11 +550,11 @@ class XI2_Window(object):
         window.connect("configure-event", self.configured)
         self.configured()
         #replace event handlers with XI2 version:
-        self.do_motion_notify_event = window.do_motion_notify_event
-        window.do_motion_notify_event = self.noop
-        window.do_button_press_event = self.noop
-        window.do_button_release_event = self.noop
-        window.do_scroll_event = self.noop
+        self._do_motion_notify_event = window._do_motion_notify_event
+        window._do_motion_notify_event = self.noop
+        window._do_button_press_event = self.noop
+        window._do_button_release_event = self.noop
+        window._do_scroll_event = self.noop
         window.connect("destroy", self.cleanup)
 
     def noop(self, *args):

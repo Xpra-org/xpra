@@ -9,7 +9,7 @@ import os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.os_util import bytestostr, PYTHON2, PYTHON3, OSX, WIN32
+from xpra.os_util import bytestostr, PYTHON2, PYTHON3, OSX, WIN32, is_Wayland
 from xpra.util import typedict, envbool, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
@@ -649,7 +649,7 @@ class ClientWindowBase(ClientWidgetBase):
                 return
             backing = self._backing
             if backing and (backing.draw_needs_refresh or REPAINT_ALL):
-                if REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1:
+                if REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1 or is_Wayland():
                     rw, rh = self.get_size()
                     rx, ry = 0, 0
                 else:
@@ -740,7 +740,7 @@ class ClientWindowBase(ClientWidgetBase):
         #overriden in GTKClientWindowBase
         return self._id
 
-    def do_motion_notify_event(self, event):
+    def _do_motion_notify_event(self, event):
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
         pointer, relative_pointer, modifiers, buttons = self._pointer_modifiers(event)

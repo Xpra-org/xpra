@@ -9,7 +9,7 @@ gi.require_version('Gdk', '3.0')                #@UndefinedVariable
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gdk                   #@UnresolvedImport
 
-from xpra.os_util import OSX
+from xpra.os_util import OSX, POSIX, is_Wayland
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk3.client_window import ClientWindow
@@ -27,6 +27,10 @@ class XpraClient(GTKXpraClient):
         return "Python/GTK3"
 
     def client_toolkit(self):
+        if POSIX and not OSX:
+            if is_Wayland():
+                return "GTK3 Wayland"
+            return "GTK3 X11"
         return "GTK3"
 
 

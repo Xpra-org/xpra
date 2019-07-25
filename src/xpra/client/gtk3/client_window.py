@@ -60,28 +60,10 @@ class ClientWindow(GTKClientWindowBase):
 
     def do_init_window(self, window_type):
         Gtk.Window.__init__(self, type = window_type)
-        # tell KDE/oxygen not to intercept clicks
-        # see: https://bugs.kde.org/show_bug.cgi?id=274485
-        # does not work with gtk3? what the??
-        # they moved it gobject, then removed it, unbelievable:
-        # https://bugzilla.gnome.org/show_bug.cgi?id=641944
-        #self.set_data("_kde_no_window_grab", 1)
-        def motion(_w, event):
-            self.do_motion_notify_event(event)
-            return True
-        self.connect("motion-notify-event", motion)
-        def press(_w, event):
-            self.do_button_press_event(event)
-            return True
-        self.connect("button-press-event", press)
-        def release(_w, event):
-            self.do_button_release_event(event)
-            return True
-        self.connect("button-release-event", release)
-        def scroll(_w, event):
-            self.do_scroll_event(event)
-            return True
-        self.connect("scroll-event", scroll)
+
+    def init_drawing_area(self):
+        GTKClientWindowBase.init_drawing_area(self)
+        self.drawing_area.connect("draw", self.drawing_area_draw)
 
     def get_backing_class(self):
         return CairoBacking
@@ -106,7 +88,7 @@ class ClientWindow(GTKClientWindowBase):
         return self.get_mapped()
 
     def get_window_geometry(self):
-        gdkwindow = self.get_window()
+        gdkwindow = self.drawing_area.get_window()
         x, y = gdkwindow.get_origin()[1:]
         w, h = self.get_size()
         return (x, y, w, h)
@@ -153,10 +135,25 @@ class ClientWindow(GTKClientWindowBase):
         metalog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
         self.set_geometry_hints(None, geom, gdk_hints)
 
+    def queue_draw_area(self, x, y, width, height):
+        window = self.get_window()
+        if not window:
+            log.warn("Warning: ignoring draw packet,")
+            log.warn(" received for a window which is not realized yet or gone already")
+            return
+        rect = Gdk.Rectangle()
+        rect.x = x
+        rect.y = y
+        rect.width = width
+        rect.height = height
+        self.drawing_area.get_window().invalidate_rect(rect, False)
 
     def do_draw(self, context):
-        Gtk.Window.do_draw(self, context)
         paintlog("do_draw(%s)", context)
+        Gtk.Window.do_draw(self, context)
+
+    def drawing_area_draw(self, widget, context):
+        paintlog("drawing_area_draw(%s, %s)", widget, context)
         backing = self._backing
         if self.get_mapped() and backing:
             self.paint_backing_offset_border(backing, context)

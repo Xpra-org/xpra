@@ -29,4 +29,8 @@ class GLClientWindowBase(GLClientWindowCommon, ClientWindow):
 
     def new_backing(self, bw, bh):
         widget = ClientWindow.new_backing(self, bw, bh)
+        if self.drawing_area:
+            self.remove(self.drawing_area)
+        self.init_widget_events(widget)
         self.add(widget)
+        self.drawing_area = widget

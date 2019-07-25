@@ -208,6 +208,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             window_type = WINDOW_TOPLEVEL
         self.on_realize_cb = {}
         self.do_init_window(window_type)
+        self.init_drawing_area()
         self.set_decorated(self._is_decorated(metadata))
         self.set_app_paintable(True)
         self._window_state = {}
@@ -230,6 +231,32 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.init_dragndrop()
         self.init_focus()
         ClientWindowBase.init_window(self, metadata)
+
+    def init_drawing_area(self):
+        widget = gtk.DrawingArea()
+        widget.show()
+        self.drawing_area = widget
+        self.init_widget_events(widget)
+        self.add(widget)
+
+    def init_widget_events(self, widget):
+        widget.add_events(self.WINDOW_EVENT_MASK)
+        def motion(_w, event):
+            self._do_motion_notify_event(event)
+            return True
+        widget.connect("motion-notify-event", motion)
+        def press(_w, event):
+            self._do_button_press_event(event)
+            return True
+        widget.connect("button-press-event", press)
+        def release(_w, event):
+            self._do_button_release_event(event)
+            return True
+        widget.connect("button-release-event", release)
+        def scroll(_w, event):
+            self._do_scroll_event(event)
+            return True
+        widget.connect("scroll-event", scroll)
 
 
     ######################################################################
@@ -1416,22 +1443,22 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.queue_draw_area(x, y, w, h)
 
 
-    def do_button_press_event(self, event):
+    def _do_button_press_event(self, event):
         #gtk.Window.do_button_press_event(self, event)
         self._button_action(event.button, event, True)
 
-    def do_button_release_event(self, event):
+    def _do_button_release_event(self, event):
         #gtk.Window.do_button_release_event(self, event)
         self._button_action(event.button, event, False)
 
     ######################################################################
     # pointer motion
 
-    def do_motion_notify_event(self, event):
+    def _do_motion_notify_event(self, event):
         #gtk.Window.do_motion_notify_event(self, event)
         if self.moveresize_event:
             self.motion_moveresize(event)
-        ClientWindowBase.do_motion_notify_event(self, event)
+        ClientWindowBase._do_motion_notify_event(self, event)
 
     def motion_moveresize(self, event):
         x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh = self.moveresize_event
@@ -2038,7 +2065,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return ClientWindowBase.get_mouse_event_wid(self, x, y)
 
 
-    def do_scroll_event(self, event):
+    def _do_scroll_event(self, event):
         if self._client.readonly:
             return
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)

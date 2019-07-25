@@ -40,7 +40,11 @@ class GLClientWindowBase(GLClientWindowCommon, GTK2WindowBase):
         self.remove_backing()
         widget = GTK2WindowBase.new_backing(self, bw, bh)
         log("new_backing(%s, %s)=%s", bw, bh, widget)
+        if self.drawing_area:
+            self.remove(self.drawing_area)
+        self.init_widget_events(widget)
         self.add(widget)
+        self.drawing_area = widget
 
     def freeze(self):
         self.remove_backing()
