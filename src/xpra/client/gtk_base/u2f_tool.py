@@ -90,9 +90,8 @@ def main():
 
         #save to files:
         key_handle_filename = osexpand(key_handle_filenames[0])
-        f = open(key_handle_filename, "wb")
-        f.write(hexstr(key_handle).encode())
-        f.close
+        with open(key_handle_filename, "wb") as f:
+            f.write(hexstr(key_handle).encode())
         #find a filename we can use for this public key:
         i = 1
         while True:
@@ -102,9 +101,8 @@ def main():
             public_key_filename = os.path.join(conf_dir, "u2f%s-pub.hex" % c)
             if not os.path.exists(public_key_filename):
                 break
-        f = open(public_key_filename, "wb")
-        f.write(hexstr(pubkey).encode())
-        f.close
+        with open(public_key_filename, "wb") as f:
+            f.write(hexstr(pubkey).encode())
         #info("key handle: %s" % csv(hex40(key_handle)),
         #     "saved to file '%s'" % key_handle_filename,
         #     "public key: %s" % csv(hex40(pubkey)),
