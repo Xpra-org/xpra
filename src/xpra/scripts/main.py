@@ -1874,10 +1874,10 @@ def no_gtk():
 
 def run_glprobe(opts):
     props = do_run_glcheck(opts)
-    if not props.get("safe", False):
-        return 2
     if not props.get("success", False):
         return 3
+    if not props.get("safe", False):
+        return 2
     return 0
 
 def do_run_glcheck(opts):
