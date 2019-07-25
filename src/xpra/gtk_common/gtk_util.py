@@ -530,7 +530,7 @@ else:
     keymap_get_for_display  = gdk.keymap_get_for_display
 
     def get_default_cursor():
-        return gdk.Cursor(gdk.X_CURSOR)
+        return gdk.Cursor.new_from_name("default")
     color_parse             = gdk.color_parse
     new_Cursor_for_display  = gdk.Cursor
     new_Cursor_from_pixbuf  = gdk.Cursor
