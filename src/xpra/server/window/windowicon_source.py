@@ -11,7 +11,7 @@ import threading
 from io import BytesIO
 from PIL import Image
 
-from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes, strtobytes
+from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes
 from xpra.net import compression
 from xpra.util import envbool, envint, csv
 from xpra.log import Logger
