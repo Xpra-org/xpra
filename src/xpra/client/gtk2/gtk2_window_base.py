@@ -92,7 +92,7 @@ class GTK2WindowBase(GTKClientWindowBase):
     def is_mapped(self):
         return self.window is not None and self.window.is_visible()
 
-    def get_window_geometry(self):
+    def get_drawing_area_geometry(self):
         gdkwindow = self.get_window()
         x, y = gdkwindow.get_origin()
         w, h = gdkwindow.get_geometry()[2:4]

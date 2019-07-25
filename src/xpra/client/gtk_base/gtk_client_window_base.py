@@ -1693,7 +1693,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.process_map_event()
 
     def process_map_event(self):
-        x, y, w, h = self.get_window_geometry()
+        x, y, w, h = self.get_drawing_area_geometry()
         state = self._window_state
         props = self._client_properties
         self._client_properties = {}
@@ -1763,7 +1763,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def process_configure_event(self, skip_geometry=False):
         assert skip_geometry or not self.is_OR()
-        x, y, w, h = self.get_window_geometry()
+        x, y, w, h = self.get_drawing_area_geometry()
         w = max(1, w)
         h = max(1, h)
         ox, oy = self._pos
@@ -1786,7 +1786,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def send_configure_event(self, skip_geometry=False):
         assert skip_geometry or not self.is_OR()
-        x, y, w, h = self.get_window_geometry()
+        x, y, w, h = self.get_drawing_area_geometry()
         w = max(1, w)
         h = max(1, h)
         state = self._window_state

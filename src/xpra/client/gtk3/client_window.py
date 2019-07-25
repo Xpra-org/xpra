@@ -87,7 +87,7 @@ class ClientWindow(GTKClientWindowBase):
     def is_mapped(self):
         return self.get_mapped()
 
-    def get_window_geometry(self):
+    def get_drawing_area_geometry(self):
         gdkwindow = self.drawing_area.get_window()
         x, y = gdkwindow.get_origin()[1:]
         w, h = self.get_size()
