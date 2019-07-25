@@ -72,6 +72,7 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
+DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", False)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 TEXTURE_CURSOR = envbool("XPRA_OPENGL_TEXTURE_CURSOR", True)
@@ -245,7 +246,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
         self.init_formats()
-        self.draw_needs_refresh = False
+        self.draw_needs_refresh = DRAW_REFRESH
         self._backing.show()
 
     def init_gl_config(self, window_alpha):
