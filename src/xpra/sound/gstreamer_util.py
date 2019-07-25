@@ -744,9 +744,9 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
             if want_monitor_device:
                 dtype = "output monitor"
             elif input_or_output is False:
-                dtype = "audio input"
-            elif input_or_output is True:
                 dtype = "audio output"
+            elif input_or_output is True:
+                dtype = "audio input"
             log.info("found %i %s devices:", len(devices), dtype)
             for k,v in devices.items():
                 log.info(" * %s", bytestostr(v))
