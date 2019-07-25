@@ -96,7 +96,6 @@ class WindowBackingBase(object):
         self.default_cursor_data = None
         self.jpeg_decoder = None
         self.webp_decoder = None
-        self.pil_decoder = None
         self.pil_decoder = get_codec("dec_pillow")
         if self.pil_decoder:
             self._PIL_encodings = self.pil_decoder.get_encodings()
