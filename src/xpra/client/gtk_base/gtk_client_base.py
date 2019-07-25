@@ -792,7 +792,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 gdk_cursor = cursor_types.get(cursor_name.upper())
                 if gdk_cursor is not None:
                     cursorlog("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
-                    return new_Cursor_for_display(display, gdk_cursor)
+                    try:
+                        return new_Cursor_for_display(display, gdk_cursor)
+                    except TypeError as e:
+                        log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
+                        log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
                 global missing_cursor_names
                 if cursor_name not in missing_cursor_names:
                     cursorlog("cursor name '%s' not found", cursor_name)
