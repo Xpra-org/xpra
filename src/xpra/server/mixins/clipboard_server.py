@@ -7,7 +7,7 @@
 
 import os.path
 
-from xpra.platform.features import CLIPBOARDS
+from xpra.platform.features import CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS
 from xpra.util import csv, nonl
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -72,6 +72,7 @@ class ClipboardServer(StubServerMixin):
                 ""                      : True,
                 "enable-selections"     : True,
                 "contents-slice-fix"    : True,
+                "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
                 },
             }
         if self._clipboard_helper:

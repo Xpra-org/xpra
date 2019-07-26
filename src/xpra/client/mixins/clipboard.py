@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -33,6 +33,7 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboard_direction = ""
         self.server_clipboard_enable_selections = False
         self.server_clipboard_contents_slice_fix = False
+        self.server_clipboard_preferred_targets = False
         self.server_clipboards = []
         self.clipboard_helper = None
         self.local_clipboard_requests = 0
@@ -117,6 +118,7 @@ class ClipboardClient(StubClientMixin):
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
         self.server_clipboard_contents_slice_fix = c.boolget("clipboard.contents-slice-fix")
+        self.server_clipboard_preferred_targets = c.strlistget("clipboard.preferred-targets", ())
         if not self.server_clipboard_contents_slice_fix:
             log.info("server clipboard does not include contents slice fix")
         return True
@@ -300,7 +302,9 @@ class ClipboardClient(StubClientMixin):
                 self.remote_clipboard_requests = remote_requests
             n = self.local_clipboard_requests+self.remote_clipboard_requests
             self.clipboard_notify(n)
-        return helperClass(clipboard_send, clipboard_progress, **kwargs)
+        hc = helperClass(clipboard_send, clipboard_progress, **kwargs)
+        hc.set_preferred_targets(self.server_clipboard_preferred_targets)
+        return hc
 
     def clipboard_notify(self, n):
         log("clipboard_notify(%i)", n)
