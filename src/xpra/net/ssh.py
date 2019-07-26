@@ -494,14 +494,12 @@ keymd5(host_key),
                 log.warn(" so it can be used with the paramiko backend")
                 log.warn(" or switch to the OpenSSH backend with '--ssh=ssh'")
             key = None
-            pkey_classname = None
-            from paramiko import RSAKey, DSSKey, ECDSAKey, Ed25519Key
-            for pkey_class, pkey_classname in {
-                RSAKey      : "RSA",
-                DSSKey      : "DSS",
-                ECDSAKey    : "ECDSA",
-                Ed25519Key  : "Ed25519",
-                }.items():
+            import paramiko
+            for pkey_classname in ("RSA", "DSS", "ECDSA", "Ed25519"):
+                pkey_class = getattr(paramiko, "%sKey" % pkey_classname, None)
+                if pkey_class is None:
+                    log("no %s key type", pkey_classname)
+                    continue
                 log("trying to load as %s", pkey_classname)
                 try:
                     key = pkey_class.from_private_key_file(keyfile_path)
