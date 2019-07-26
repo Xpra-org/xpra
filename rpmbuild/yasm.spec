@@ -6,7 +6,7 @@ Release: 1%{?dist}
 License: BSD and (GPLv2+ or Artistic or LGPLv2+) and LGPLv2
 Group: Development/Languages
 URL: http://yasm.tortall.net/
-Source: http://www.tortall.net/projects/yasm/releases/yasm-%{version}.tar.gz
+Source: https://github.com/yasm/yasm/archive/v%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: bison, byacc, xmlto, gettext-devel
 
@@ -36,10 +36,11 @@ Install this package if you need to rebuild applications that use yasm.
 
 
 %prep
-%setup -q
+%setup -q -n yasm-%{version}
 
 
 %build
+autoreconf -fi
 %configure
 make %{?_smp_mflags}
 
