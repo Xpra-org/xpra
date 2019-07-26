@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
-from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
+from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_TARGETS, CLIPBOARDS
 from xpra.platform.gui import get_clipboard_native_class
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.util import flatten_dict
@@ -72,6 +72,7 @@ class ClipboardClient(StubClientMixin):
                 "want_targets"              : CLIPBOARD_WANT_TARGETS,
                 #buggy osx and win32 clipboards:
                 "greedy"                    : CLIPBOARD_GREEDY,
+                "preferred-targets"         : CLIPBOARD_TARGETS,
                 "set_enabled"               : True,
                 "contents-slice-fix"        : True,
                 },

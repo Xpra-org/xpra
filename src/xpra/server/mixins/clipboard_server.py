@@ -156,6 +156,7 @@ class ClipboardServer(StubServerMixin):
             ch.set_want_targets_client(ss.clipboard_want_targets)
             ch.enable_selections(ss.clipboard_client_selections)
             ch.set_clipboard_contents_slice_fix(ss.clipboard_contents_slice_fix)
+            ch.set_preferred_targets(ss.clipboard_preferred_targets)
         else:
             ch.enable_selections([])
 

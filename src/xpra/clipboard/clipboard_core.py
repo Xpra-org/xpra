@@ -20,7 +20,7 @@ log = Logger("clipboard")
 glib = import_glib()
 
 MIN_CLIPBOARD_COMPRESS_SIZE = envint("XPRA_MIN_CLIPBOARD_COMPRESS_SIZE", 512)
-MAX_CLIPBOARD_PACKET_SIZE = 4*1024*1024
+MAX_CLIPBOARD_PACKET_SIZE = 16*1024*1024
 MAX_CLIPBOARD_RECEIVE_SIZE = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
@@ -232,6 +232,11 @@ class ClipboardProtocolHelperCore(object):
     def set_want_targets_client(self, want_targets):
         log("set_want_targets_client(%s)", want_targets)
         self._want_targets = want_targets
+
+    def set_preferred_targets(self, preferred_targets):
+        for proxy in self._clipboard_proxies.values():
+            proxy.set_preferred_targets(preferred_targets)
+
 
     def init_packet_handlers(self):
         self._packet_handlers = {
@@ -547,6 +552,7 @@ class ClipboardProxyCore(object):
         self._get_contents_events = 0
         self._request_contents_events = 0
         self._last_targets = ()
+        self.preferred_targets = []
 
         self._loop_uuid = ""
 
@@ -563,6 +569,7 @@ class ClipboardProxyCore(object):
                 "have_token"            : self._have_token,
                 "enabled"               : self._enabled,
                 "greedy_client"         : self._greedy_client,
+                "preferred-targets"     : self.preferred_targets,
                 "blocked_owner_change"  : self._block_owner_change,
                 "last-targets"          : self._last_targets,
                 "loop-uuid"             : self._loop_uuid,
@@ -592,6 +599,10 @@ class ClipboardProxyCore(object):
     def set_greedy_client(self, greedy):
         log("%s.set_greedy_client(%s)", self, greedy)
         self._greedy_client = greedy
+
+    def set_preferred_targets(self, preferred_targets):
+        self.preferred_targets = preferred_targets
+
 
     def __repr__(self):
         return  "ClipboardProxyCore(%s)" % self._selection
