@@ -3101,7 +3101,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 		}
 		else if (CLIPBOARD_IMAGES && dtype=="image/png" && dformat==8 && wire_encoding=="bytes" && navigator.clipboard && navigator.clipboard.write) {
 			ctx.debug("clipboard", "png image received");
-			var blob = new Blob(wire_data, {type: dtype});
+			var blob = new Blob([wire_data], {type: dtype});
 			ctx.debug("clipboard", "created blob", blob);
 			var item = new ClipboardItem({"image/png": blob});
 			ctx.debug("clipboard", "created ClipboardItem", item);
