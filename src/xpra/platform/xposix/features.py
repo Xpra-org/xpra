@@ -37,6 +37,7 @@ DEFAULT_SSH_CMD = "ssh"
 CLIPBOARDS=["CLIPBOARD", "PRIMARY"]
 if not is_Wayland():
     CLIPBOARDS.append("SECONDARY")
+CLIPBOARD_PREFERRED_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain", "image/png")
 
 OPEN_COMMAND = ["/usr/bin/xdg-open"]
 
