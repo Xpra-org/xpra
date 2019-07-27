@@ -9,6 +9,7 @@ import unittest
 from xpra.os_util import PYTHON3
 from xpra.util import AdHocStruct
 from xpra.client.mixins.audio import AudioClient
+from xpra.sound.gstreamer_util import CODEC_ORDER
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
@@ -36,8 +37,11 @@ class AudioClientSendTestUtil(AudioClientTestUtil):
 		opts.microphone = "on" if auto_start else "off"
 		self._test_audio(opts, {
 			"sound.receive" : True,
-			"sound.decoders" : ["mp3", "opus"],
+			"sound.decoders" : CODEC_ORDER,
 			})
+		if not self.mixin.microphone_codecs:
+			print("no microphone codecs, test skipped")
+			return
 		def check_packets():
 			if len(self.packets)<5:
 				return True
@@ -76,12 +80,19 @@ class AudioClientReceiveTest(AudioClientTestUtil):
 		opts.speaker = "yes"
 		x = self._test_audio(opts, {
 			"sound.send" : True,
-			"sound.encoders" : ["mp3", "opus"],
+			"sound.encoders" : CODEC_ORDER,
 			"sound.ogg-latency-fix" : True,
 			})
 		def stop():
 			x.stop_receiving_sound()
 			self.stop()
+		if not self.mixin.speaker_codecs:
+			stop()
+			print("no speaker codecs, test skipped")
+		if "opus" not in self.mixin.speaker_codecs:
+			stop()
+			print("'opus' speaker codec missing, test skipped")
+			return
 		packet_data = [
 				('sound-data', b'opus', '', {'start-of-stream': True, 'codec': b'opus'}),
 				('sound-data', b'opus', b'fc60fddad634b19a5baa6dd0ae26e05d15106df1135c84590fa2ab85d9945dd504a1d7b54d3ea189b276b36909ee33d34f038fd0d4aa25baa6abd1cd6b896bbfab52e02b9b18bc260fc4441bc44a65b2e0428431aafeabc3cc4974c9a4afe02df92638c51c1eb36292662b710ee971fb16361692e6fb819a1ef7bc66a6badd04d71160c16b249aaf497e79cf56c622cffeb6bcfd83027954132d5d90500104a4', {b'duration': 13500000, b'timestamp': 0, b'time': 159963539, 'sequence': 0}),
