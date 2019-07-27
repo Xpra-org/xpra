@@ -16,10 +16,11 @@ class AudioMixinTest(ServerMixinTest):
     def test_audio(self):
         from xpra.server.mixins.audio_server import AudioServer
         from xpra.server.source.audio_mixin import AudioMixin
+        from xpra.sound.gstreamer_util import CODEC_ORDER
         opts = AdHocStruct()
         opts.sound_source = ""
         opts.speaker = "on"
-        opts.speaker_codec = ["mp3"]
+        opts.speaker_codec = CODEC_ORDER
         opts.microphone = "on"
         opts.microphone_codec = ["mp3"]
         opts.pulseaudio = False
@@ -27,9 +28,13 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio_configure_commands = []
         self._test_mixin_class(AudioServer, opts, {
             "sound.receive" : True,
-            "sound.decoders" : ("mp3",),
+            "sound.decoders" : CODEC_ORDER,
             }, AudioMixin)
-        self.handle_packet(("sound-control", "start", "mp3"))
+        if not self.mixin.speaker_codecs:
+            print("no speaker codecs available, test skipped")
+            return
+        codec = self.mixin.speaker_codecs[0]
+        self.handle_packet(("sound-control", "start", codec))
         time.sleep(1)
         self.handle_packet(("sound-control", "fadeout"))
         time.sleep(1)
