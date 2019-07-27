@@ -254,10 +254,10 @@
 
 	<distutils id="python3-numpy" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/d3/4b/f9f4b96c0b1ba43d28a5bdc4b64f0b9d3fbcf31313a51bc766942866a7c7/numpy-1.16.4.zip"
-			checkoutdir="numpy-1.16.4"
-			version="1.16.4"
-			hash="sha256:7242be12a58fec245ee9734e625964b97cf7e3f2f7d016603f9e56660ce479c7"/>
+			module="/packages/da/32/1b8f2bb5fb50e4db68543eb85ce37b9fa6660cd05b58bddfafafa7ed62da/numpy-1.17.0.zip"
+			checkoutdir="numpy-1.17.0"
+			version="1.17.0"
+			hash="sha256:951fefe2fb73f84c620bec4e001e80a80ddaa1b84dce244ded7f1e0cbe0ed34a"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
