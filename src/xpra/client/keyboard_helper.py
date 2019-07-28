@@ -437,7 +437,7 @@ class KeyboardHelper(object):
         kb_info = {}
         if self.xkbmap_query_struct or self.xkbmap_query:
             xkbqs = self.xkbmap_query_struct
-            if xkbqs:
+            if not xkbqs:
                 #parse query into a dict
                 from xpra.keyboard.layouts import parse_xkbmap_query
                 xkbqs = parse_xkbmap_query(self.xkbmap_query)
