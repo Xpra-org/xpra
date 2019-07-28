@@ -447,23 +447,9 @@ class GLWindowBackingBase(WindowBackingBase):
             log("initializing FBOs")
             # Define empty tmp FBO
             target = GL_TEXTURE_RECTANGLE_ARB
-            glBindTexture(target, self.textures[TEX_TMP_FBO])
-            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
-            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
-            glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
-            glClear(GL_COLOR_BUFFER_BIT)
-
+            self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, w, h, mag_filter)
             # Define empty FBO texture and set rendering to FBO
-            glBindTexture(target, self.textures[TEX_FBO])
-            # nvidia needs this even though we don't use mipmaps (repeated through this file):
-            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
-            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
-            glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
-            glClear(GL_COLOR_BUFFER_BIT)
+            self.init_fbo(TEX_FBO, self.offscreen_fbo, w, h, mag_filter)
 
             glBindTexture(target, 0)
 
@@ -475,6 +461,18 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
             self.gl_setup = True
             log("gl_init() done")
+
+    def init_fbo(self, texture_index, fbo, w, h, mag_filter):
+        target = GL_TEXTURE_RECTANGLE_ARB
+        glBindTexture(target, self.textures[texture_index])
+        # nvidia needs this even though we don't use mipmaps (repeated through this file):
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[texture_index], 0)
+        glClear(GL_COLOR_BUFFER_BIT)
+
 
     def close(self):
         #This seems to cause problems, so we rely
