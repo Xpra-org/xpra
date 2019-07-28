@@ -505,25 +505,9 @@ class GLWindowBackingBase(WindowBackingBase):
         def fail(msg):
             log.error("Error: %s", msg)
             fire_paint_callbacks(callbacks, False, msg)
+        bw, bh = self.size
         with context:
-            bw, bh = self.size
-            #paste from offscreen to tmp with delta offset:
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-            target = GL_TEXTURE_RECTANGLE_ARB
-            glEnable(target)
-            glBindTexture(target, self.textures[TEX_FBO])
-            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
-            glReadBuffer(GL_COLOR_ATTACHMENT0)
-
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
-            glBindTexture(target, self.textures[TEX_TMP_FBO])
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_TMP_FBO], 0)
-            glDrawBuffer(GL_COLOR_ATTACHMENT1)
-
-            #copy current fbo:
-            glBlitFramebuffer(0, 0, bw, bh,
-                              0, 0, bw, bh,
-                              GL_COLOR_BUFFER_BIT, GL_NEAREST)
+            self.copy_fbos()
 
             for x,y,w,h,xdelta,ydelta in scrolls:
                 if abs(xdelta)>=bw:
@@ -568,14 +552,9 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
                 glFlush()
 
-            #now swap references to tmp and offscreen so tmp becomes the new offscreen:
-            tmp = self.offscreen_fbo
-            self.offscreen_fbo = self.tmp_fbo
-            self.tmp_fbo = tmp
-            tmp = self.textures[TEX_FBO]
-            self.textures[TEX_FBO] = self.textures[TEX_TMP_FBO]
-            self.textures[TEX_TMP_FBO] = tmp
+            self.swap_fbos()
 
+            target = GL_TEXTURE_RECTANGLE_ARB
             #restore normal paint state:
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
             glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
@@ -586,6 +565,36 @@ class GLWindowBackingBase(WindowBackingBase):
             glDisable(target)
             fire_paint_callbacks(callbacks, True)
             self.present_fbo(0, 0, bw, bh, flush)
+
+    def copy_fbos(self):
+        #copy from offscreen to tmp:
+        bw, bh = self.size
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+        target = GL_TEXTURE_RECTANGLE_ARB
+        glEnable(target)
+        glBindTexture(target, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
+        glReadBuffer(GL_COLOR_ATTACHMENT0)
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
+        glBindTexture(target, self.textures[TEX_TMP_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_TMP_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+
+        #copy current fbo:
+        glBlitFramebuffer(0, 0, bw, bh,
+                          0, 0, bw, bh,
+                          GL_COLOR_BUFFER_BIT, GL_NEAREST)
+
+    def swap_fbos(self):
+        #swap references to tmp and offscreen so tmp becomes the new offscreen:
+        tmp = self.offscreen_fbo
+        self.offscreen_fbo = self.tmp_fbo
+        self.tmp_fbo = tmp
+        tmp = self.textures[TEX_FBO]
+        self.textures[TEX_FBO] = self.textures[TEX_TMP_FBO]
+        self.textures[TEX_TMP_FBO] = tmp
+
 
     def present_fbo(self, x, y, w, h, flush=0):
         log("present_fbo: adding %s to pending paint list (size=%i), flush=%s, paint_screen=%s",
