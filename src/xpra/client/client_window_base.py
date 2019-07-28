@@ -10,7 +10,7 @@ import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.os_util import bytestostr, PYTHON2, PYTHON3, OSX, WIN32, is_Wayland
-from xpra.util import typedict, envbool, WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.util import typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
 log = Logger("window")
@@ -29,6 +29,7 @@ SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 SET_SIZE_CONSTRAINTS = envbool("XPRA_SET_SIZE_CONSTRAINTS", True)
+DEFAULT_GRAVITY = envint("XPRA_DEFAULT_GRAVITY", 0)
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -65,6 +66,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._sticky = False
         self._iconified = False
         self._focused = False
+        self.gravity = 0
         self.border = border
         self.cursor_data = None
         self.default_cursor_data = default_cursor_data
@@ -519,8 +521,7 @@ class ClientWindowBase(ClientWidgetBase):
             geomlog.error(" from size constraints:")
             for k,v in size_constraints.items():
                 geomlog.error(" %s=%s", k, v)
-        #TODO: handle gravity
-        #gravity = size_metadata.get("gravity")
+        self.gravity = hints.get("gravity", DEFAULT_GRAVITY)
 
     def set_window_type(self, window_types):
         hints = 0
