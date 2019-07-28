@@ -104,7 +104,7 @@ class Keyboard(KeyboardBase):
         log("get_keymap_spec() Xkb query tostring(%s)=%s", query_struct, _query)
         #we no longer support servers via xkbmap_print:
         xkbmap_print = ""
-        log.warn("get_keymap_spec()=(%s, %s, %s)", nonl(xkbmap_print), nonl(_query), nonl(query_struct))
+        log("get_keymap_spec()=(%s, %s, %s)", nonl(xkbmap_print), nonl(_query), nonl(query_struct))
         return xkbmap_print, _query, query_struct
 
 
