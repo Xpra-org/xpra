@@ -315,10 +315,29 @@ class GLWindowBackingBase(WindowBackingBase):
     def init(self, ww, wh, bw, bh):
         #re-init gl projection with new dimensions
         #(see gl_init)
+        self.render_size = ww, wh
         if self.size!=(bw, bh):
             self.gl_setup = False
+            oldw, oldh = self.size
             self.size = bw, bh
-        self.render_size = ww, wh
+            try:
+                context = self.gl_context()
+            except Exception:
+                context = None
+            if context and self.offscreen_fbo is not None:
+                #if we have a valid context and and existing offscreen fbo,
+                #preserve the existing pixels by copying them onto the new tmp fbo (new size)
+                #and then doing the gl_init() call but without initializing the offscreen fbo.
+                with context:
+                    mag_filter = self.get_init_magfilter()
+                    #new tmp fbo with the new size:
+                    self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
+                    w, h = min(bw, oldw), min(bh, oldh)
+                    self.copy_fbos(w, h)
+                    self.swap_fbos()
+                    self.gl_init(True)
+                    self.copy_fbos(bw, bh)
+                    self.swap_fbos()
 
     def gl_marker(self, *msg):
         log(*msg)
@@ -391,7 +410,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 raise Exception("OpenGL shader %s setup failure: %s" % (name, err))
             log("%s shader initialized", name)
 
-    def gl_init(self):
+    def gl_init(self, skip_fbo=False):
         #must be called within a context!
         #performs init if needed
         if not self.debug_setup:
@@ -400,7 +419,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
         if not self.gl_setup:
             mt = get_max_texture_size()
-            rw, rh = self.render_size
             w, h = self.size
             if w>mt or h>mt:
                 raise Exception("invalid texture dimensions %ix%i, maximum is %i" % (w, h, mt))
@@ -439,18 +457,14 @@ class GLWindowBackingBase(WindowBackingBase):
             if self.textures is None:
                 self.gl_init_textures()
 
-            mag_filter = GL_NEAREST
-            if float(rw)/w!=rw//w or float(rh)/h!=rh//h:
-                #non integer scaling, use linear magnification filter:
-                mag_filter = GL_LINEAR
-
-            log("initializing FBOs")
+            mag_filter = self.get_init_magfilter()
             # Define empty tmp FBO
-            target = GL_TEXTURE_RECTANGLE_ARB
             self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, w, h, mag_filter)
-            # Define empty FBO texture and set rendering to FBO
-            self.init_fbo(TEX_FBO, self.offscreen_fbo, w, h, mag_filter)
+            if not skip_fbo:
+                # Define empty FBO texture and set rendering to FBO
+                self.init_fbo(TEX_FBO, self.offscreen_fbo, w, h, mag_filter)
 
+            target = GL_TEXTURE_RECTANGLE_ARB
             glBindTexture(target, 0)
 
             # Create and assign fragment programs
@@ -461,6 +475,15 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
             self.gl_setup = True
             log("gl_init() done")
+
+    def get_init_magfilter(self):
+        rw, rh = self.render_size
+        w, h = self.size
+        if float(rw)/w!=rw//w or float(rh)/h!=rh//h:
+            #non integer scaling, use linear magnification filter:
+            return GL_LINEAR
+        return GL_NEAREST
+
 
     def init_fbo(self, texture_index, fbo, w, h, mag_filter):
         target = GL_TEXTURE_RECTANGLE_ARB
@@ -505,7 +528,7 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks, False, msg)
         bw, bh = self.size
         with context:
-            self.copy_fbos()
+            self.copy_fbos(bw, bh)
 
             for x,y,w,h,xdelta,ydelta in scrolls:
                 if abs(xdelta)>=bw:
@@ -564,9 +587,8 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks, True)
             self.present_fbo(0, 0, bw, bh, flush)
 
-    def copy_fbos(self):
+    def copy_fbos(self, w, h):
         #copy from offscreen to tmp:
-        bw, bh = self.size
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
         target = GL_TEXTURE_RECTANGLE_ARB
         glEnable(target)
@@ -580,8 +602,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
         #copy current fbo:
-        glBlitFramebuffer(0, 0, bw, bh,
-                          0, 0, bw, bh,
+        glBlitFramebuffer(0, 0, w, h,
+                          0, 0, w, h,
                           GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
     def swap_fbos(self):
