@@ -389,8 +389,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 log.error("OpenGL shader %s failed:", name)
                 log.error(" %s", err)
                 raise Exception("OpenGL shader %s setup failure: %s" % (name, err))
-            else:
-                log("%s shader initialized", name)
+            log("%s shader initialized", name)
 
     def gl_init(self):
         #must be called within a context!
@@ -777,14 +776,13 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
             glDisable(target)
         else:
-            #FUGLY: paint each pixel separately..
+            #ugly and slow: paint each pixel separately..
             if not self.validate_cursor():
                 return
             pixels = self.cursor_data[8]
             blen = cw*ch*4
             p = struct.unpack(b"B"*blen, pixels)
             glLineWidth(1)
-            #TODO: use VBO arrays to make this faster
             for cx in range(cw):
                 for cy in range(ch):
                     i = cx*4+cy*cw*4
@@ -951,8 +949,8 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks)
             return
         try:
-            rgb_format = rgb_format.decode()
-        except:
+            rgb_format = rgb_format.decode("utf-8")
+        except (AttributeError, UnicodeDecodeError):
             pass
         try:
             upload, img_data = self.pixels_for_upload(img_data)
@@ -1108,7 +1106,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0)
             try:
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
-            except:
+            except Exception:
                 pass
             glTexSubImage2D(target, 0, 0, 0, w, h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
             glBindTexture(target, 0)
