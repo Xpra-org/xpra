@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.log import Logger
-from xpra.os_util import is_X11
+from xpra.os_util import is_X11, is_Wayland
 
 log = Logger("keyboard", "posix")
 
@@ -19,13 +19,14 @@ class Keyboard(KeyboardBase):
     def __init__(self):
         KeyboardBase.__init__(self)
         self.keymap_modifiers = None
-        try:
-            from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
-            self.keyboard_bindings = X11KeyboardBindings()
-        except Exception as e:
-            log.error("Error: failed to load posix keyboard bindings")
-            log.error(" %s", str(e) or type(e))
-            self.keyboard_bindings = None
+        self.keyboard_bindings = None
+        if not is_Wayland():
+            try:
+                from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
+                self.keyboard_bindings = X11KeyboardBindings()
+            except Exception as e:
+                log.error("Error: failed to load posix keyboard bindings")
+                log.error(" %s", str(e) or type(e))
 
 
     def get_keymap_modifiers(self):
@@ -69,18 +70,42 @@ class Keyboard(KeyboardBase):
             log.error("Error: failed to use raw x11 keymap", exc_info=True)
         return  {}
 
+    def get_locale_status(self):
+        #parse the output into a dictionary:
+        # $ localectl status
+        # System Locale: LANG=en_GB.UTF-8
+        # VC Keymap: gb
+        # X11 Layout: gb
+        from subprocess import getoutput
+        out = getoutput("localectl status")
+        if not out:
+            return {}
+        locale = {}
+        for line in out.splitlines():
+            parts = line.lstrip(" ").split(": ")
+            if len(parts)==2:
+                locale[parts[0]]=parts[1]
+        log("locale(%s)=%s", out, locale)
+        return locale
 
     def get_keymap_spec(self):
         log("get_keymap_spec() keyboard_bindings=%s", self.keyboard_bindings)
-        if not self.keyboard_bindings:
-            return None, None, {}
-        _query_struct = self.keyboard_bindings.getXkbProperties()
-        _query = xkbmap_query_tostring(_query_struct)
-        log("get_keymap_spec() Xkb query tostring(%s)=%s", _query_struct, _query)
+        if is_Wayland() or not self.keyboard_bindings:
+            locale = self.get_locale_status()
+            query_struct = {}
+            if locale:
+                layout = locale.get("X11 Layout")
+                if layout:
+                    query_struct["layout"] = layout
+            log.info("query_struct=%s", query_struct)
+            return None, None, query_struct
+        query_struct = self.keyboard_bindings.getXkbProperties()
+        _query = xkbmap_query_tostring(query_struct)
+        log("get_keymap_spec() Xkb query tostring(%s)=%s", query_struct, _query)
         #we no longer support servers via xkbmap_print:
         xkbmap_print = ""
-        log("get_keymap_spec()=(%s, %s, %s)", nonl(xkbmap_print), nonl(_query), nonl(_query_struct))
-        return xkbmap_print, _query, _query_struct
+        log.warn("get_keymap_spec()=(%s, %s, %s)", nonl(xkbmap_print), nonl(_query), nonl(query_struct))
+        return xkbmap_print, _query, query_struct
 
 
     def get_xkb_rules_names_property(self):
@@ -109,6 +134,9 @@ class Keyboard(KeyboardBase):
             props = self.keyboard_bindings.getXkbProperties()
             v = props.get("layout")
             options = props.get("options", "")
+        else:
+            locale = self.get_locale_status()
+            v = locale.get("X11 Layout")
         if not v:
             #fallback:
             v = self.get_xkb_rules_names_property()
