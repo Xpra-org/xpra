@@ -30,7 +30,7 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 DEFAULT_ALPHA = PYTHON3 or (not WIN32 and not OSX)
 GL_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", DEFAULT_ALPHA)
 #not working with gtk3 yet?
-CAN_DOUBLE_BUFFER = not PYTHON3
+CAN_DOUBLE_BUFFER = True
 #needed on win32?:
 DEFAULT_DOUBLE_BUFFERED = WIN32 or CAN_DOUBLE_BUFFER
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
