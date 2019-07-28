@@ -97,7 +97,7 @@ class Keyboard(KeyboardBase):
                 layout = locale.get("X11 Layout")
                 if layout:
                     query_struct["layout"] = layout
-            log.info("query_struct=%s", query_struct)
+            log("query_struct(locale)=%s", locale, query_struct)
             return None, None, query_struct
         query_struct = self.keyboard_bindings.getXkbProperties()
         _query = xkbmap_query_tostring(query_struct)
