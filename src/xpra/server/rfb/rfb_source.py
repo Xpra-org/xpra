@@ -59,6 +59,12 @@ class RFBSource(object):
             self.keyboard_config.set_default_keymap()
         return self.keyboard_config
 
+    def set_keymap(self, current_keyboard_config, keys_pressed, force=False, translate_only=False):
+        kc = self.keyboard_config
+        kc.keys_pressed = keys_pressed
+        kc.set_keymap(True)
+        kc.owner = self.uuid
+
     def send_server_event(self, *_args):
         pass
 
