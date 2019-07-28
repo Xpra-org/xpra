@@ -33,6 +33,11 @@ Name: {app}; Flags: uninsalwaysuninstall;
 Source: dist\*; Excludes: "etc\xpra"; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs;
 Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall; AfterInstall: PostInstall()
 
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\lib\*.py*"
+Type: filesandordirs; Name: "{app}\lib\library.zip"
+Type: filesandordirs; Name: "{app}\lib\xpra"
+
 [Icons]
 Name: "{group}\Xpra"; Filename: {app}\Xpra.exe; WorkingDir: {app}
 Name: "{group}\Xpra Session Browser"; Filename: {app}\Xpra_Browser.exe; WorkingDir: {app}
