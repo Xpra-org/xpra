@@ -829,16 +829,17 @@ class GLWindowBackingBase(WindowBackingBase):
         log("%s.do_present_fbo() done", self)
 
     def save_FBO(self):
+        target = GL_TEXTURE_RECTANGLE_ARB
         bw, bh = self.size
-        glEnable(GL_TEXTURE_RECTANGLE_ARB)
+        glEnable(target)
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+        glBindTexture(target, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glReadBuffer(GL_COLOR_ATTACHMENT0)
         glViewport(0, 0, bw, bh)
         size = bw*bh*4
         data = numpy.empty(size)
-        img_data = glGetTexImage(GL_TEXTURE_RECTANGLE_ARB, 0, GL_BGRA, GL_UNSIGNED_BYTE, data)
+        img_data = glGetTexImage(target, 0, GL_BGRA, GL_UNSIGNED_BYTE, data)
         img = Image.frombuffer("RGBA", (bw, bh), img_data, "raw", "BGRA", bw*4)
         img = ImageOps.flip(img)
         kwargs = {}
@@ -853,8 +854,8 @@ class GLWindowBackingBase(WindowBackingBase):
         log("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", bw, bh, size, filename)
         img.save(filename, SAVE_BUFFERS, **kwargs)
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0)
-        glDisable(GL_TEXTURE_RECTANGLE_ARB)
+        glBindTexture(target, 0)
+        glDisable(target)
 
     def draw_pointer(self):
         px, py, _, _, size, start_time = self.pointer_overlay
