@@ -48,6 +48,7 @@ MOUSE_SHOW = envbool("XPRA_MOUSE_SHOW", True)
 
 PAINT_FAULT_RATE = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
 PAINT_FAULT_TELL = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
+PAINT_DELAY = envint("XPRA_PAINT_DELAY", 0)
 
 WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
 TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
@@ -1351,8 +1352,10 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # painting windows:
     def _process_draw(self, packet):
-        #self.timeout_add(1000*1, self._draw_queue.put, packet)
-        self._draw_queue.put(packet)
+        if PAINT_DELAY>0:
+            self.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
+        else:
+            self._draw_queue.put(packet)
 
     def _process_eos(self, packet):
         self._draw_queue.put(packet)
