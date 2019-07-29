@@ -42,6 +42,9 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
     INSTALL_SIGNAL_HANDLERS = True
 
     def __init__(self):
+        self.idle_add = glib.idle_add
+        self.timeout_add = glib.timeout_add
+        self.source_remove = glib.source_remove
         gobject.GObject.__init__(self)
         XpraClientBase.__init__(self)
 
@@ -50,15 +53,6 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
         if self.INSTALL_SIGNAL_HANDLERS:
             self.install_signal_handlers()
         self.glib_init()
-
-    def timeout_add(self, *args):
-        return glib.timeout_add(*args)
-
-    def idle_add(self, *args):
-        return glib.idle_add(*args)
-
-    def source_remove(self, *args):
-        return glib.source_remove(*args)
 
     def get_scheduler(self):
         return glib

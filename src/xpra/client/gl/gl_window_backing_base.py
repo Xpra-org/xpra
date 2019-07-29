@@ -51,7 +51,11 @@ from OpenGL.GL.ARB.framebuffer_object import (
     glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
     )
 
-from xpra.os_util import monotonic_time, strtobytes, hexstr, POSIX, PYTHON2, DummyContextManager
+from xpra.os_util import (
+    monotonic_time, strtobytes, hexstr,
+    POSIX, PYTHON2, OSX,
+    DummyContextManager,
+    )
 from xpra.util import envint, envbool, repr_ellipsized, first_time
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
@@ -73,7 +77,7 @@ JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", False)
-FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
+FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", not OSX)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
