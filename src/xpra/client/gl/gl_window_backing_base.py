@@ -52,7 +52,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
     )
 
 from xpra.os_util import monotonic_time, strtobytes, hexstr, POSIX, PYTHON2, DummyContextManager
-from xpra.util import envint, envbool, repr_ellipsized
+from xpra.util import envint, envbool, repr_ellipsized, first_time
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import (
@@ -355,7 +355,7 @@ class GLWindowBackingBase(WindowBackingBase):
             context = None
         if context is None or self.offscreen_fbo is None:
             return
-        #if we have a valid context and and existing offscreen fbo,
+        #if we have a valid context and an existing offscreen fbo,
         #preserve the existing pixels by copying them onto the new tmp fbo (new size)
         #and then doing the gl_init() call but without initializing the offscreen fbo.
         with context:
@@ -417,7 +417,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 sx, dx = east_x()
                 sy, dy = south_y()
             elif self.gravity==StaticGravity:
-                log.warn("Warning: static gravity is not handled")
+                if first_time("StaticGravity-%i" % self.wid):
+                    log.warn("Warning: static gravity is not handled")
             #invert Y coordinates for OpenGL:
             #log("sx=%i, sy=%i, oldw=%i, oldh=%i, bw=%i, bh=%i, w=%i, h=%i", sx, sy, oldw, oldh, bw, bh, w, h)
             sy = (oldh-h)-sy
