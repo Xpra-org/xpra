@@ -73,6 +73,7 @@ JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", False)
+FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 TEXTURE_CURSOR = envbool("XPRA_OPENGL_TEXTURE_CURSOR", True)
@@ -359,10 +360,6 @@ class GLWindowBackingBase(WindowBackingBase):
         #preserve the existing pixels by copying them onto the new tmp fbo (new size)
         #and then doing the gl_init() call but without initializing the offscreen fbo.
         with context:
-            mag_filter = self.get_init_magfilter()
-            #new tmp fbo with the new size:
-            self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
-            #copy current offscreen to new tmp fbo:
             sx = sy = dx = dy = 0
             w = min(bw, oldw)
             h = min(bh, oldh)
@@ -419,17 +416,28 @@ class GLWindowBackingBase(WindowBackingBase):
             elif self.gravity==StaticGravity:
                 if first_time("StaticGravity-%i" % self.wid):
                     log.warn("Warning: static gravity is not handled")
+
             #invert Y coordinates for OpenGL:
-            #log("sx=%i, sy=%i, oldw=%i, oldh=%i, bw=%i, bh=%i, w=%i, h=%i", sx, sy, oldw, oldh, bw, bh, w, h)
             sy = (oldh-h)-sy
             dy = (bh-h)-dy
-            #log("copy_fbo%s for gravity=%s", (w, h, sx, sy, dx, dy), GRAVITY_STR.get(self.gravity, "unknown"))
-            self.copy_fbo(w, h, sx, sy, dx, dy)
-            self.swap_fbos()
+            #re-init our OpenGL context with the new size,
+            #but leave offscreen fbo with the old size
             self.gl_init(True)
-            self.copy_fbo(bw, bh)
+            #copy offscreen to new tmp:
+            self.copy_fbo(w, h, sx, sy, dx, dy)
+            #make tmp the new offscreen:
             self.swap_fbos()
-            self.do_present_fbo()
+            #now we don't need the old tmp fbo contents any more,
+            #and we can re-initialize it with the correct size:
+            mag_filter = self.get_init_magfilter()
+            self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
+            #no idea why, but we have to wait a bit to show it:
+            from gi.repository import GLib
+            def redraw():
+                with self.gl_context():
+                    self.pending_fbo_paint = ((0, 0, bw, bh), )
+                    self.do_present_fbo()
+            GLib.timeout_add(FBO_RESIZE_DELAY, redraw)
 
     def gl_marker(self, *msg):
         log(*msg)
