@@ -1778,6 +1778,8 @@ class WindowSource(WindowIconSource):
         self.pixel_format = image.get_pixel_format()
         self.image_depth = image.get_depth()
 
+        options["window-size"] = self.window_dimensions
+
         now = monotonic_time()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
@@ -2380,7 +2382,10 @@ class WindowSource(WindowIconSource):
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
-    def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options={}, _options={}):
+    def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options, options):
+        ws = options.get("window-size")
+        if ws:
+            client_options["window-size"] = ws
         packet = ("draw", self.wid, x, y, outw, outh, strtobytes(coding), data, self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1

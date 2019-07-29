@@ -856,6 +856,7 @@ class WindowVideoSource(WindowSource):
         #image may have been clipped to the new window size during resize:
         w = image.get_width()
         h = image.get_height()
+        options["window-size"] = self.window_dimensions
 
         av_delay = self.get_frame_encode_delay(options)
         #TODO: encode delay can be derived rather than hard-coded
@@ -1723,10 +1724,10 @@ class WindowVideoSource(WindowSource):
         return WindowSource.get_fail_cb(self, packet)
 
 
-    def make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options={}, options={}):
+    def make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options, options):
         #overriden so we can invalidate the scroll data:
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
-        packet = WindowSource.make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options)
+        packet = WindowSource.make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options, options)
         sd = self.scroll_data
         if sd and not options.get("scroll"):
             if client_options.get("scaled_size") or client_options.get("quality", 100)<20:
@@ -2239,7 +2240,10 @@ class WindowVideoSource(WindowSource):
         client_options["flush-encoder"] = True
         videolog("do_flush_video_encoder %s : (%s %s bytes, %s)",
                  flush_data, len(data or ()), type(data), client_options)
-        packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options, {})
+        #warning: 'options' will be missing the "window-size",
+        #so we may end up not honouring gravity during window resizing:
+        options = {}
+        packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options, options)
         self.queue_damage_packet(packet)
         #check for more delayed frames since we want to support multiple b-frames:
         if not self.b_frame_flush_timer and client_options.get("delayed", 0)>0:

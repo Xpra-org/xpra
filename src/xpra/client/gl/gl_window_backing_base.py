@@ -422,7 +422,7 @@ class GLWindowBackingBase(WindowBackingBase):
             #log("sx=%i, sy=%i, oldw=%i, oldh=%i, bw=%i, bh=%i, w=%i, h=%i", sx, sy, oldw, oldh, bw, bh, w, h)
             sy = (oldh-h)-sy
             dy = (bh-h)-dy
-            #log("copy_fbo%s for gravity=%s", (w, h, sx, sy, dx, dy), GRAVITY_STR.get(self.gravity, "unset"))
+            #log("copy_fbo%s for gravity=%s", (w, h, sx, sy, dx, dy), GRAVITY_STR.get(self.gravity, "unknown"))
             self.copy_fbo(w, h, sx, sy, dx, dy)
             self.swap_fbos()
             self.gl_init(True)
@@ -1041,7 +1041,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if JPEG_YUV and width>=2 and height>=2:
             img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, options, callbacks)
         else:
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
             self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
@@ -1052,7 +1052,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if subsampling=="YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha and width>=2 and height>=2:
             img = self.webp_decoder.decompress_yuv(img_data)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, options, callbacks)
             return
         WindowBackingBase.paint_webp(self, img_data, x, y, width, height, options, callbacks)
 
@@ -1097,6 +1097,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
                 glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, ptype, img_data)
 
+                x, y = self.gravity_adjust(x, y, options)
+
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
                 glTexCoord2i(0, 0)
@@ -1125,6 +1127,59 @@ class GLWindowBackingBase(WindowBackingBase):
             log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
         fire_paint_callbacks(callbacks, False, message)
 
+    def gravity_adjust(self, x, y, options):
+        #if the window size has changed,
+        #adjust the coordinates honouring the window gravity:
+        window_size = tuple(options.intlistget("window-size", (-1, -1)))
+        if window_size==self.size:
+            return x, y
+        if self.gravity==0 or self.gravity==NorthWestGravity:
+            return x, y
+        log("adjusting for %s gravity and window-size=%s, size=%s",
+            GRAVITY_STR.get(self.gravity, "unknown"), window_size, self.size)
+        oldw, oldh = window_size
+        bw, bh = self.size
+        def center_y():
+            if bh>=oldh:
+                return y + (bh-oldh)//2
+            return y - (oldh-bh)//2
+        def center_x():
+            if bw>=oldw:
+                return x + (bw-oldw)//2
+            return x - (oldw-bw)//2
+        def east_x():
+            if bw>=oldw:
+                return x + (bw-oldw)
+            return x - (oldw-bw)
+        def west_x():
+            return x
+        def north_y():
+            return y
+        def south_y():
+            if bh>=oldh:
+                return y + (bh-oldh)
+            return y - (oldh-bh)
+        if self.gravity==NorthGravity:
+            return center_x(), north_y()
+        if self.gravity==NorthEastGravity:
+            return east_x(), north_y()
+        if self.gravity==WestGravity:
+            return west_x(), center_y()
+        if self.gravity==CenterGravity:
+            return center_x(), center_y()
+        if self.gravity==EastGravity:
+            return east_x(), center_y()
+        if self.gravity==SouthWestGravity:
+            return west_x(), south_y()
+        if self.gravity==SouthGravity:
+            return center_x(), south_y()
+        if self.gravity==SouthEastGravity:
+            return east_x(), south_y()
+        #if self.gravity==StaticGravity:
+        #    pass
+        return x, y
+
+
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         if not zerocopy_upload or FORCE_CLONE:
             #copy so the data will be usable (usually a str)
@@ -1134,9 +1189,9 @@ class GLWindowBackingBase(WindowBackingBase):
             shader = RGBP2RGB_SHADER
         else:
             shader = YUV2RGB_SHADER
-        self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img, x, y, enc_width, enc_height, width, height, callbacks)
+        self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img, x, y, enc_width, enc_height, width, height, options, callbacks)
 
-    def gl_paint_planar(self, shader, flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks):
+    def gl_paint_planar(self, shader, flush, encoding, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
         log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks))
         try:
@@ -1151,13 +1206,15 @@ class GLWindowBackingBase(WindowBackingBase):
                 return
             with context:
                 self.gl_init()
-                self.update_planar_textures(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
+                self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
 
                 # Update FBO texture
                 x_scale, y_scale = 1, 1
                 if width!=enc_width or height!=enc_height:
                     x_scale = float(width)/enc_width
                     y_scale = float(height)/enc_height
+
+                x, y = self.gravity_adjust(x, y, options)
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale, shader)
                 self.paint_box(encoding, False, x, y, width, height)
                 fire_paint_callbacks(callbacks, True)
@@ -1175,9 +1232,9 @@ class GLWindowBackingBase(WindowBackingBase):
                   flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)
 
-    def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
+    def update_planar_textures(self, width, height, img, pixel_format, scaling=False):
         assert self.textures is not None, "no OpenGL textures!"
-        log("%s.update_planar_textures%s", self, (x, y, width, height, img, pixel_format))
+        log("%s.update_planar_textures%s", self, (width, height, img, pixel_format))
 
         divs = get_subsampling_divs(pixel_format)
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
@@ -1212,7 +1269,7 @@ class GLWindowBackingBase(WindowBackingBase):
             h = height//div_h
             if w==0 or h==0:
                 log.error("Error: zero dimension %ix%i for %s planar texture %s", w, h, pixel_format, tex_name)
-                log.error(" screen update %s dropped", (x, y, width, height))
+                log.error(" screen update %s dropped", (width, height))
                 continue
             glActiveTexture(texture)
 
