@@ -275,7 +275,6 @@ Requires:			gstreamer1-plugins-good
 Requires:			python2-gstreamer1
 BuildRequires:		gstreamer1
 BuildRequires:		gstreamer1-plugins-good
-BuildRequires:		gstreamer1-plugins-bad
 BuildRequires:		pulseaudio
 BuildRequires:		pulseaudio-utils
 %endif
