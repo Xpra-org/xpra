@@ -30,6 +30,7 @@ PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DE
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 SET_SIZE_CONSTRAINTS = envbool("XPRA_SET_SIZE_CONSTRAINTS", True)
 DEFAULT_GRAVITY = envint("XPRA_DEFAULT_GRAVITY", 0)
+OVERRIDE_GRAVITY = envint("XPRA_OVERRIDE_GRAVITY", 0)
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -66,7 +67,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._sticky = False
         self._iconified = False
         self._focused = False
-        self.gravity = 0
+        self.gravity = OVERRIDE_GRAVITY or DEFAULT_GRAVITY
         self.border = border
         self.cursor_data = None
         self.default_cursor_data = default_cursor_data
@@ -103,6 +104,9 @@ class ClientWindowBase(ClientWidgetBase):
         if self.max_window_size and b"size-constraints" not in metadata:
             #this ensures that we will set size-constraints and honour max_window_size:
             metadata[b"size-constraints"] = {}
+        #initialize gravity early:
+        sc = typedict(metadata.dictget("size-constraints"))
+        self.gravity = OVERRIDE_GRAVITY or sc.intget("gravity", DEFAULT_GRAVITY)
 
 
     def get_desktop_workspace(self):
@@ -120,6 +124,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._backing = self.make_new_backing(backing_class, w, h, bw, bh)
         self._backing.border = self.border
         self._backing.default_cursor_data = self.default_cursor_data
+        self._backing.gravity = self.gravity
         return self._backing._backing
 
 
@@ -521,7 +526,11 @@ class ClientWindowBase(ClientWidgetBase):
             geomlog.error(" from size constraints:")
             for k,v in size_constraints.items():
                 geomlog.error(" %s=%s", k, v)
-        self.gravity = hints.get("gravity", DEFAULT_GRAVITY)
+        self.gravity = OVERRIDE_GRAVITY or size_constraints.intget("gravity", DEFAULT_GRAVITY)
+        b = self._backing
+        if b:
+            b.gravity = self.gravity
+            
 
     def set_window_type(self, window_types):
         hints = 0

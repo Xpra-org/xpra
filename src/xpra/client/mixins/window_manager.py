@@ -1351,7 +1351,7 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # painting windows:
     def _process_draw(self, packet):
-        #self.timeout_add(1000*5, self._draw_queue.put, packet)
+        #self.timeout_add(1000*1, self._draw_queue.put, packet)
         self._draw_queue.put(packet)
 
     def _process_eos(self, packet):

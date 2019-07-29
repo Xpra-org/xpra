@@ -206,6 +206,32 @@ YUV2RGB_SHADER = 0
 RGBP2RGB_SHADER = 1
 YUV2RGB_FULL_SHADER = 2
 
+#X11 constants we use for gravity:
+NorthWestGravity = 1
+NorthGravity     = 2
+NorthEastGravity = 3
+WestGravity      = 4
+CenterGravity    = 5
+EastGravity      = 6
+SouthWestGravity = 7
+SouthGravity     = 8
+SouthEastGravity = 9
+StaticGravity    = 10
+
+GRAVITY_STR = {
+    NorthWestGravity : "NorthWest",
+    NorthGravity     : "North",
+    NorthEastGravity : "NorthEast",
+    WestGravity      : "West",
+    CenterGravity    : "Center",
+    EastGravity      : "East",
+    SouthWestGravity : "SouthWest",
+    SouthGravity     : "South",
+    SouthEastGravity : "SouthEast",
+    StaticGravity    : "South",
+    }
+
+
 """
 The logic is as follows:
 
@@ -332,12 +358,73 @@ class GLWindowBackingBase(WindowBackingBase):
                     mag_filter = self.get_init_magfilter()
                     #new tmp fbo with the new size:
                     self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
-                    w, h = min(bw, oldw), min(bh, oldh)
-                    self.copy_fbos(w, h)
+                    #copy current offscreen to new tmp fbo:
+                    sx = sy = dx = dy = 0
+                    w = min(bw, oldw)
+                    h = min(bh, oldh)
+                    def center_y():
+                        if bh>=oldh:
+                            #take the whole source, paste it in the middle
+                            return 0, (bh-oldh)//2
+                        #skip the edges of the source, paste all of it
+                        return (oldh-bh)//2, 0
+                    def center_x():
+                        if bw>=oldw:
+                            return 0, (bw-oldw)//2
+                        return (oldw-bw)//2, 0
+                    def east_x():
+                        if bw>=oldw:
+                            return 0, bw-oldw
+                        return oldw-bw, 0
+                    def west_x():
+                        return 0, 0
+                    def north_y():
+                        return 0, 0
+                    def south_y():
+                        if bh>=oldh:
+                            return 0, bh-oldh
+                        return oldh-bh, 0
+                    if not self.gravity or self.gravity==NorthWestGravity:
+                        #undefined (or 0), use NW
+                        sx, dx = west_x()
+                        sy, dy = north_y()
+                    elif self.gravity==NorthGravity:
+                        sx, dx = center_x()
+                        sy, dy = north_y()
+                    elif self.gravity==NorthEastGravity:
+                        sx, dx = east_x()
+                        sy, dy = north_y()
+                    elif self.gravity==WestGravity:
+                        sx, dx = west_x()
+                        sy, dy = center_y()
+                    elif self.gravity==CenterGravity:
+                        sx, dx = center_x()
+                        sy, dy = center_y()
+                    elif self.gravity==EastGravity:
+                        sx, dx = east_x()
+                        sy, dy = center_y()
+                    elif self.gravity==SouthWestGravity:
+                        sx, dx = west_x()
+                        sy, dy = south_y()
+                    elif self.gravity==SouthGravity:
+                        sx, dx = center_x()
+                        sy, dy = south_y()
+                    elif self.gravity==SouthEastGravity:
+                        sx, dx = east_x()
+                        sy, dy = south_y()
+                    elif self.gravity==StaticGravity:
+                        log.warn("Warning: static gravity is not handled")
+                    #invert Y coordinates for OpenGL:
+                    #log("sx=%i, sy=%i, oldw=%i, oldh=%i, bw=%i, bh=%i, w=%i, h=%i", sx, sy, oldw, oldh, bw, bh, w, h)
+                    sy = (oldh-h)-sy
+                    dy = (bh-h)-dy
+                    #log("copy_fbo%s for gravity=%s", (w, h, sx, sy, dx, dy), GRAVITY_STR.get(self.gravity, "unset"))
+                    self.copy_fbo(w, h, sx, sy, dx, dy)
                     self.swap_fbos()
                     self.gl_init(True)
-                    self.copy_fbos(bw, bh)
+                    self.copy_fbo(bw, bh)
                     self.swap_fbos()
+                    self.do_present_fbo()
 
     def gl_marker(self, *msg):
         log(*msg)
@@ -528,7 +615,7 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks, False, msg)
         bw, bh = self.size
         with context:
-            self.copy_fbos(bw, bh)
+            self.copy_fbo(bw, bh)
 
             for x,y,w,h,xdelta,ydelta in scrolls:
                 if abs(xdelta)>=bw:
@@ -587,7 +674,7 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks, True)
             self.present_fbo(0, 0, bw, bh, flush)
 
-    def copy_fbos(self, w, h):
+    def copy_fbo(self, w, h, sx=0, sy=0, dx=0, dy=0):
         #copy from offscreen to tmp:
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
         target = GL_TEXTURE_RECTANGLE_ARB
@@ -601,9 +688,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_TMP_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
-        #copy current fbo:
-        glBlitFramebuffer(0, 0, w, h,
-                          0, 0, w, h,
+        glBlitFramebuffer(sx, sy, sx+w, sy+h,
+                          dx, dy, dx+w, dy+h,
                           GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
     def swap_fbos(self):
