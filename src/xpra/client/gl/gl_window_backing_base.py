@@ -58,7 +58,7 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import (
     fire_paint_callbacks, WindowBackingBase,
     WEBP_PILLOW, SCROLL_ENCODING,
-    ) 
+    )
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe, get_max_texture_size
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, YUV2RGB_FULL_shader, RGBP2RGB_shader
 from xpra.client.gl.gl_spinner import draw_spinner
@@ -73,6 +73,7 @@ JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", False)
+FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
@@ -332,6 +333,8 @@ class GLWindowBackingBase(WindowBackingBase):
         props = WindowBackingBase.get_encoding_properties(self)
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
+        if FBO_RESIZE:
+            props["encoding.send-window-size"] = True
         props["encoding.bit-depth"] = self.bit_depth
         return props
 
@@ -347,7 +350,8 @@ class GLWindowBackingBase(WindowBackingBase):
             self.gl_setup = False
             oldw, oldh = self.size
             self.size = bw, bh
-            self.resize_fbo(oldw, oldh, bw, bh)
+            if FBO_RESIZE:
+                self.resize_fbo(oldw, oldh, bw, bh)
 
     def resize_fbo(self, oldw, oldh, bw, bh):
         try:
@@ -1139,7 +1143,10 @@ class GLWindowBackingBase(WindowBackingBase):
     def gravity_adjust(self, x, y, options):
         #if the window size has changed,
         #adjust the coordinates honouring the window gravity:
-        window_size = tuple(options.intlistget("window-size", (-1, -1)))
+        window_size = options.intlistget("window-size", None)
+        if not window_size:
+            return x, y
+        window_size = tuple(window_size)
         if window_size==self.size:
             return x, y
         if self.gravity==0 or self.gravity==NorthWestGravity:

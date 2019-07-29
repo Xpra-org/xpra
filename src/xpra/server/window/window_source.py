@@ -181,6 +181,7 @@ class WindowSource(WindowIconSource):
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [])
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
+        self.send_window_size = encoding_options.boolget("send-window-size", False)
         self.supports_delta = ()
         if not window.is_tray() and DELTA:
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -509,6 +510,7 @@ class WindowSource(WindowIconSource):
                                            "max"            : self.max_soft_expired,
                                            },
                 "send-timetamps"        : self.send_timetamps,
+                "send-window-size"      : self.send_window_size,
                 "rgb_formats"           : self.rgb_formats,
                 "bit-depth"             : {
                     "source"                : self.image_depth,
@@ -682,6 +684,7 @@ class WindowSource(WindowIconSource):
             #remove rgb formats with alpha
             rgb_formats = [x for x in rgb_formats if x.find("A")<0]
         self.rgb_formats = rgb_formats
+        self.send_window_size = properties.boolget("encoding.send-window-size", self.send_window_size)
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
         self.update_encoding_selection(self.encoding, [])
 
@@ -1778,7 +1781,8 @@ class WindowSource(WindowIconSource):
         self.pixel_format = image.get_pixel_format()
         self.image_depth = image.get_depth()
 
-        options["window-size"] = self.window_dimensions
+        if self.send_window_size:
+            options["window-size"] = self.window_dimensions
 
         now = monotonic_time()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
@@ -2383,9 +2387,10 @@ class WindowSource(WindowIconSource):
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
     def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options, options):
-        ws = options.get("window-size")
-        if ws:
-            client_options["window-size"] = ws
+        if self.send_window_size:
+            ws = options.get("window-size")
+            if ws:
+                client_options["window-size"] = ws
         packet = ("draw", self.wid, x, y, outw, outh, strtobytes(coding), data, self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1

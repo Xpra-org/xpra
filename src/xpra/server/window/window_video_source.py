@@ -856,7 +856,8 @@ class WindowVideoSource(WindowSource):
         #image may have been clipped to the new window size during resize:
         w = image.get_width()
         h = image.get_height()
-        options["window-size"] = self.window_dimensions
+        if self.send_window_size:
+            options["window-size"] = self.window_dimensions
 
         av_delay = self.get_frame_encode_delay(options)
         #TODO: encode delay can be derived rather than hard-coded
