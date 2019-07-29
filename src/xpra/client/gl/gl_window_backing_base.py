@@ -346,85 +346,89 @@ class GLWindowBackingBase(WindowBackingBase):
             self.gl_setup = False
             oldw, oldh = self.size
             self.size = bw, bh
-            try:
-                context = self.gl_context()
-            except Exception:
-                context = None
-            if context and self.offscreen_fbo is not None:
-                #if we have a valid context and and existing offscreen fbo,
-                #preserve the existing pixels by copying them onto the new tmp fbo (new size)
-                #and then doing the gl_init() call but without initializing the offscreen fbo.
-                with context:
-                    mag_filter = self.get_init_magfilter()
-                    #new tmp fbo with the new size:
-                    self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
-                    #copy current offscreen to new tmp fbo:
-                    sx = sy = dx = dy = 0
-                    w = min(bw, oldw)
-                    h = min(bh, oldh)
-                    def center_y():
-                        if bh>=oldh:
-                            #take the whole source, paste it in the middle
-                            return 0, (bh-oldh)//2
-                        #skip the edges of the source, paste all of it
-                        return (oldh-bh)//2, 0
-                    def center_x():
-                        if bw>=oldw:
-                            return 0, (bw-oldw)//2
-                        return (oldw-bw)//2, 0
-                    def east_x():
-                        if bw>=oldw:
-                            return 0, bw-oldw
-                        return oldw-bw, 0
-                    def west_x():
-                        return 0, 0
-                    def north_y():
-                        return 0, 0
-                    def south_y():
-                        if bh>=oldh:
-                            return 0, bh-oldh
-                        return oldh-bh, 0
-                    if not self.gravity or self.gravity==NorthWestGravity:
-                        #undefined (or 0), use NW
-                        sx, dx = west_x()
-                        sy, dy = north_y()
-                    elif self.gravity==NorthGravity:
-                        sx, dx = center_x()
-                        sy, dy = north_y()
-                    elif self.gravity==NorthEastGravity:
-                        sx, dx = east_x()
-                        sy, dy = north_y()
-                    elif self.gravity==WestGravity:
-                        sx, dx = west_x()
-                        sy, dy = center_y()
-                    elif self.gravity==CenterGravity:
-                        sx, dx = center_x()
-                        sy, dy = center_y()
-                    elif self.gravity==EastGravity:
-                        sx, dx = east_x()
-                        sy, dy = center_y()
-                    elif self.gravity==SouthWestGravity:
-                        sx, dx = west_x()
-                        sy, dy = south_y()
-                    elif self.gravity==SouthGravity:
-                        sx, dx = center_x()
-                        sy, dy = south_y()
-                    elif self.gravity==SouthEastGravity:
-                        sx, dx = east_x()
-                        sy, dy = south_y()
-                    elif self.gravity==StaticGravity:
-                        log.warn("Warning: static gravity is not handled")
-                    #invert Y coordinates for OpenGL:
-                    #log("sx=%i, sy=%i, oldw=%i, oldh=%i, bw=%i, bh=%i, w=%i, h=%i", sx, sy, oldw, oldh, bw, bh, w, h)
-                    sy = (oldh-h)-sy
-                    dy = (bh-h)-dy
-                    #log("copy_fbo%s for gravity=%s", (w, h, sx, sy, dx, dy), GRAVITY_STR.get(self.gravity, "unset"))
-                    self.copy_fbo(w, h, sx, sy, dx, dy)
-                    self.swap_fbos()
-                    self.gl_init(True)
-                    self.copy_fbo(bw, bh)
-                    self.swap_fbos()
-                    self.do_present_fbo()
+            self.resize_fbo(oldw, oldh, bw, bh)
+
+    def resize_fbo(self, oldw, oldh, bw, bh):
+        try:
+            context = self.gl_context()
+        except Exception:
+            context = None
+        if context is None or self.offscreen_fbo is None:
+            return
+        #if we have a valid context and and existing offscreen fbo,
+        #preserve the existing pixels by copying them onto the new tmp fbo (new size)
+        #and then doing the gl_init() call but without initializing the offscreen fbo.
+        with context:
+            mag_filter = self.get_init_magfilter()
+            #new tmp fbo with the new size:
+            self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
+            #copy current offscreen to new tmp fbo:
+            sx = sy = dx = dy = 0
+            w = min(bw, oldw)
+            h = min(bh, oldh)
+            def center_y():
+                if bh>=oldh:
+                    #take the whole source, paste it in the middle
+                    return 0, (bh-oldh)//2
+                #skip the edges of the source, paste all of it
+                return (oldh-bh)//2, 0
+            def center_x():
+                if bw>=oldw:
+                    return 0, (bw-oldw)//2
+                return (oldw-bw)//2, 0
+            def east_x():
+                if bw>=oldw:
+                    return 0, bw-oldw
+                return oldw-bw, 0
+            def west_x():
+                return 0, 0
+            def north_y():
+                return 0, 0
+            def south_y():
+                if bh>=oldh:
+                    return 0, bh-oldh
+                return oldh-bh, 0
+            if not self.gravity or self.gravity==NorthWestGravity:
+                #undefined (or 0), use NW
+                sx, dx = west_x()
+                sy, dy = north_y()
+            elif self.gravity==NorthGravity:
+                sx, dx = center_x()
+                sy, dy = north_y()
+            elif self.gravity==NorthEastGravity:
+                sx, dx = east_x()
+                sy, dy = north_y()
+            elif self.gravity==WestGravity:
+                sx, dx = west_x()
+                sy, dy = center_y()
+            elif self.gravity==CenterGravity:
+                sx, dx = center_x()
+                sy, dy = center_y()
+            elif self.gravity==EastGravity:
+                sx, dx = east_x()
+                sy, dy = center_y()
+            elif self.gravity==SouthWestGravity:
+                sx, dx = west_x()
+                sy, dy = south_y()
+            elif self.gravity==SouthGravity:
+                sx, dx = center_x()
+                sy, dy = south_y()
+            elif self.gravity==SouthEastGravity:
+                sx, dx = east_x()
+                sy, dy = south_y()
+            elif self.gravity==StaticGravity:
+                log.warn("Warning: static gravity is not handled")
+            #invert Y coordinates for OpenGL:
+            #log("sx=%i, sy=%i, oldw=%i, oldh=%i, bw=%i, bh=%i, w=%i, h=%i", sx, sy, oldw, oldh, bw, bh, w, h)
+            sy = (oldh-h)-sy
+            dy = (bh-h)-dy
+            #log("copy_fbo%s for gravity=%s", (w, h, sx, sy, dx, dy), GRAVITY_STR.get(self.gravity, "unset"))
+            self.copy_fbo(w, h, sx, sy, dx, dy)
+            self.swap_fbos()
+            self.gl_init(True)
+            self.copy_fbo(bw, bh)
+            self.swap_fbos()
+            self.do_present_fbo()
 
     def gl_marker(self, *msg):
         log(*msg)
