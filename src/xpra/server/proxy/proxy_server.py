@@ -288,7 +288,7 @@ class ProxyServer(ServerCore):
         proc = None
         socket_path = None
         display = None
-        sns = typedict(c.dictget("start-new-session"))
+        sns = typedict(c.dictget("start-new-session", {}))
         authlog("proxy_session: displays=%s, start_sessions=%s, start-new-session=%s",
                 displays, self._start_sessions, sns)
         if not displays or sns:

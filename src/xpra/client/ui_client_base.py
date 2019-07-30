@@ -452,7 +452,7 @@ class UIXpraClient(ClientBaseClass):
         #keyboard:
         c = self.server_capabilities
         if self.keyboard_helper:
-            modifier_keycodes = c.dictget("modifier_keycodes")
+            modifier_keycodes = c.dictget("modifier_keycodes", {})
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))

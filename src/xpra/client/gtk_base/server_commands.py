@@ -91,7 +91,7 @@ class ServerCommandsWindow(object):
         return btn
 
     def populate_table(self):
-        commands_info = typedict(self.client.server_last_info).dictget("commands")
+        commands_info = typedict(self.client.server_last_info).dictget("commands", {})
         if self.commands_info!=commands_info and commands_info:
             log("populate_table() new commands_info=%s", commands_info)
             self.commands_info = commands_info

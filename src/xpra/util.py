@@ -328,7 +328,7 @@ class typedict(dict):
     def boolget(self, k, default_value=False):
         return bool(self.capsget(k, default_value))
 
-    def dictget(self, k, default_value={}):
+    def dictget(self, k, default_value=None):
         v = self.capsget(k, default_value)
         if v is None:
             return default_value
@@ -803,12 +803,12 @@ def std(s, extras="-,./: "):
     s = s or ""
     try:
         s = s.decode("latin1")
-    except:
+    except Exception:
         pass
     def c(v):
         try:
             return chr(v)
-        except:
+        except Exception:
             return str(v)
     def f(v):
         return str.isalnum(c(v)) or v in extras
@@ -817,12 +817,12 @@ def std(s, extras="-,./: "):
 def alnum(s):
     try:
         s = s.encode("latin1")
-    except:
+    except Exception:
         pass
     def c(v):
         try:
             return chr(v)
-        except:
+        except Exception:
             return str(v)
     def f(v):
         return str.isalnum(c(v))
@@ -862,7 +862,7 @@ def obsc(v):
 def csv(v):
     try:
         return ", ".join(str(x) for x in v)
-    except:
+    except Exception:
         return str(v)
 
 def envint(name, d=0):

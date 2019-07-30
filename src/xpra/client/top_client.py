@@ -75,15 +75,15 @@ class TopClient(MonitorXpraClient):
             if v and revision:
                 v = " version %s-r%s" % (v, revision)
             mode = server_info.strget("mode", "server")
-            python_info = typedict(server_info.dictget("python"))
+            python_info = typedict(server_info.dictget("python", {}))
             bits = python_info.intget("bits", 32)
             server_str = "Xpra %s server%s %i-bit" % (mode, std(v), bits)
             proxy_info = self.dictget("proxy")
             if proxy_info:
-                proxy_platform_info = typedict(proxy_info.dictget("platform"))
+                proxy_platform_info = typedict(proxy_info.dictget("platform", {}))
                 proxy_platform = proxy_platform_info.strget("")
                 proxy_release = proxy_platform_info.strget("release")
-                proxy_build_info = typedict(proxy_info.dictget("build"))
+                proxy_build_info = typedict(proxy_info.dictget("build", {}))
                 proxy_version = proxy_build_info.strget("version")
                 proxy_distro = proxy_info.strget("linux_distribution")
                 server_str += " via: %s proxy version %s" % (
@@ -158,8 +158,8 @@ class TopClient(MonitorXpraClient):
         ctype = ci.strget("type", "unknown")
         title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.intget("revision"))
         #batch delay:
-        b_info = typedict(ci.dictget("batch"))
-        bi_info = typedict(b_info.dictget("delay"))
+        b_info = typedict(ci.dictget("batch", {}))
+        bi_info = typedict(b_info.dictget("delay", {}))
         bcur = bi_info.intget("cur")
         bavg = bi_info.intget("avg")
         batch_info = "batch delay: %i (%i)" %(

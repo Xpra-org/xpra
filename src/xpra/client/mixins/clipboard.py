@@ -90,7 +90,7 @@ class ClipboardClient(StubClientMixin):
             return True
         c = self.server_capabilities
         self.server_clipboard = c.boolget("clipboard")
-        self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids")
+        self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids", {})
         self.server_clipboard_direction = c.strget("clipboard-direction", "both")
         if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
             if self.client_clipboard_direction=="disabled":

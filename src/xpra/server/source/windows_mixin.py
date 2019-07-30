@@ -132,7 +132,7 @@ class WindowsMixin(StubSourceMixin):
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
-        self.window_frame_sizes = typedict(c.dictget("window.frame_sizes") or {})
+        self.window_frame_sizes = typedict(c.dictget("window.frame_sizes", {}))
         self.window_min_size = c.intlistget("window.min-size", (0, 0))
         self.window_max_size = c.intlistget("window.max-size", (0, 0))
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s",

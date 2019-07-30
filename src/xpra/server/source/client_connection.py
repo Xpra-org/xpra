@@ -287,8 +287,8 @@ class ClientConnection(ClientConnectionClass):
         self.bandwidth_limit = min(server_bandwidth_limit, bandwidth_limit)
         if self.bandwidth_detection:
             self.bandwidth_detection = c.boolget("bandwidth-detection", True)
-        cd = typedict(c.dictget("connection-data"))
-        self.jitter = cd.intget("jitter", 0)
+        self.client_connection_data = c.dictget("connection-data", {})
+        self.jitter = typedict(self.client_connection_data).intget("jitter", 0)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
                      server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
 
@@ -300,7 +300,6 @@ class ClientConnection(ClientConnectionClass):
             msg = version_compat_check(self.proxy_version)
             if msg:
                 proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
-        self.client_connection_data = c.dictget("connection-data")
         if getattr(self, "mmap_size", 0)>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0

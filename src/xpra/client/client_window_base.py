@@ -105,7 +105,7 @@ class ClientWindowBase(ClientWidgetBase):
             #this ensures that we will set size-constraints and honour max_window_size:
             metadata[b"size-constraints"] = {}
         #initialize gravity early:
-        sc = typedict(metadata.dictget("size-constraints"))
+        sc = typedict(metadata.dictget("size-constraints", {}))
         self.gravity = OVERRIDE_GRAVITY or sc.intget("gravity", DEFAULT_GRAVITY)
 
 
@@ -265,7 +265,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.reset_icon()
 
         if b"size-constraints" in metadata:
-            sc = typedict(metadata.dictget("size-constraints"))
+            sc = typedict(metadata.dictget("size-constraints", {}))
             self.size_constraints = sc
             self._set_initial_position = sc.boolget("set-initial-position", self._set_initial_position)
             self.set_size_constraints(sc, self.max_window_size)
@@ -391,13 +391,13 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_bypass_compositor(metadata.intget("bypass-compositor"))
 
         if b"strut" in metadata:
-            self.set_strut(metadata.dictget("strut"))
+            self.set_strut(metadata.dictget("strut", {}))
 
         if b"fullscreen-monitors" in metadata:
             self.set_fullscreen_monitors(metadata.intlistget("fullscreen-monitors"))
 
         if b"shape" in metadata:
-            self.set_shape(metadata.dictget("shape"))
+            self.set_shape(metadata.dictget("shape", {}))
 
         if b"command" in metadata:
             self.set_command(metadata.strget("command"))

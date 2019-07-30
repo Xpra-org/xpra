@@ -149,7 +149,7 @@ class KeyboardConfig(KeyboardConfigBase):
         parse_option("keycodes", props.listget)
         #dicts:
         for x in ("mod_meanings", "x11_keycodes", "query_struct"):
-            parse_option(x, props.dictget)
+            parse_option(x, props.dictget, {})
         #lists of strings:
         for x in ("mod_managed", "mod_pointermissing"):
             parse_option(x, props.strlistget)

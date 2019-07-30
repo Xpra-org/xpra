@@ -343,7 +343,7 @@ class ServerBase(ServerBaseClass):
                 self.ydpi = c.intget("dpi.y", 0)
                 self.double_click_time = c.intget("double_click.time", -1)
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
-                self.antialias = c.dictget("antialias")
+                self.antialias = c.dictget("antialias", {})
                 self.cursor_size = c.intget("cursor.size", 0)
             #FIXME: this belongs in DisplayManager!
             screenlog("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s, cursor_size=%s",

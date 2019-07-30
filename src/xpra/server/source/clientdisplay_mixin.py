@@ -62,8 +62,8 @@ class ClientDisplayMixin(StubSourceMixin):
         self.set_screen_sizes(c.listget("screen_sizes"))
         self.set_desktops(c.intget("desktops", 1), c.strlistget("desktop.names"))
         self.show_desktop_allowed = c.boolget("show-desktop")
-        self.icc = c.dictget("icc")
-        self.display_icc = c.dictget("display-icc")
+        self.icc = c.dictget("icc", {})
+        self.display_icc = c.dictget("display-icc", {})
 
 
     def set_screen_sizes(self, screen_sizes):
