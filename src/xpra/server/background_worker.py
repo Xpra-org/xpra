@@ -60,7 +60,7 @@ class Worker_Thread(Thread):
             try:
                 debug("Worker_Thread.run() calling %s (queue size=%s)", item, self.items.qsize())
                 item()
-            except:
+            except Exception:
                 log.error("Error in worker thread processing item %s", item, exc_info=True)
         debug("Worker_Thread.run() ended (queue size=%s)", self.items.qsize())
 
