@@ -159,7 +159,7 @@ def use_stdin():
         if not_a_console(hstdin):
             return False
         return get_console_position(hstdin)!=(-1, -1)
-    except:
+    except Exception:
         pass
     return True
 
