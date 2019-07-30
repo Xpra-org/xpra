@@ -237,6 +237,7 @@ def make_ssh_server_connection(conn, none_auth=False, password_auth=None):
     log("make_ssh_server_connection%s", (conn, none_auth, password_auth))
     ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth)
     DoGSSAPIKeyExchange = False
+    sock = conn._socket
     t = None
     def close():
         if t:
@@ -253,7 +254,7 @@ def make_ssh_server_connection(conn, none_auth=False, password_auth=None):
     ssh_key_dirs = get_ssh_conf_dirs()
     log("ssh key dirs=%s", ssh_key_dirs)
     try:
-        t = paramiko.Transport(conn._socket, gss_kex=DoGSSAPIKeyExchange)
+        t = paramiko.Transport(sock, gss_kex=DoGSSAPIKeyExchange)
         t.set_gss_host(socket.getfqdn(""))
         host_keys = {}
         log("trying to load ssh host keys from: %s", csv(ssh_key_dirs))
@@ -327,5 +328,4 @@ def make_ssh_server_connection(conn, none_auth=False, password_auth=None):
         close()
         return None
     log("client authenticated, channel=%s", chan)
-    sock = conn._socket
     return SSHSocketConnection(ssh_server.proxy_channel, sock, conn.local, conn.endpoint, conn.target)
