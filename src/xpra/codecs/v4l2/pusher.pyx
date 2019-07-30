@@ -68,7 +68,7 @@ cdef extern from "./video.h":
     int VIDIOC_G_FMT
     int VIDIOC_S_FMT
     int V4L2_BUF_TYPE_VIDEO_OUTPUT
-    
+
     #define v4l2_fourcc(a,b,c,d)\
     #    (((__u32)(a)<<0)|((__u32)(b)<<8)|((__u32)(c)<<16)|((__u32)(d)<<24))
     int v4l2_fourcc(unsigned char a, unsigned char b, unsigned char c, unsigned char d)

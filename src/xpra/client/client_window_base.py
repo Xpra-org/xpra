@@ -530,7 +530,7 @@ class ClientWindowBase(ClientWidgetBase):
         b = self._backing
         if b:
             b.gravity = self.gravity
-            
+
 
     def set_window_type(self, window_types):
         hints = 0

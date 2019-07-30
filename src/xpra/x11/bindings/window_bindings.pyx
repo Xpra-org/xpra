@@ -139,8 +139,7 @@ cdef extern from "X11/Xlib.h":
     int NotifyPointer
     int NotifyPointerRoot
     int NotifyDetailNone
-   
-    
+
     ctypedef struct Display:
         pass
 

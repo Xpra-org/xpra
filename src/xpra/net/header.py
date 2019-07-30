@@ -6,7 +6,7 @@
 import struct
 
 #Note: since encoding flags and compression flags are all mutually exclusive,
-# (ie: only one encoder and at most one compressor can be used at a time) 
+# (ie: only one encoder and at most one compressor can be used at a time)
 # we could theoretically add many more values here,
 # not necessarily limitting ourselves to the ones that land on a bit.
 
