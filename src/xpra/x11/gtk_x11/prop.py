@@ -180,4 +180,4 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
 
 def prop_del(target, key):
     with xsync:
-        X11Window.XDeleteProperty(get_xwindow(target), key)
+        X11WindowBindings().XDeleteProperty(get_xwindow(target), key)
