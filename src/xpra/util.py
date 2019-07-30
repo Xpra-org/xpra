@@ -364,6 +364,14 @@ class typedict(dict):
             self._warn("listget%s", (k, default_value, item_type, max_items))
             self._warn("expected a list or tuple value for %s but got %s", k, type(v))
             return default_value
+        if min_items is not None:
+            if len(v)<min_items:
+                self._warn("too few items in %s %s: minimum %s allowed, but got %s", type(v), k, max_items, len(v))
+                return default_value
+        if max_items is not None:
+            if len(v)>max_items:
+                self._warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))
+                return default_value
         aslist = list(v)
         if item_type:
             for i, x in enumerate(aslist):
@@ -377,14 +385,6 @@ class typedict(dict):
                 if not isinstance(x, item_type):
                     self._warn("invalid item type for %s %s: expected %s but got %s", type(v), k, item_type, type(x))
                     return default_value
-        if min_items is not None:
-            if len(v)<min_items:
-                self._warn("too few items in %s %s: minimum %s allowed, but got %s", type(v), k, max_items, len(v))
-                return default_value
-        if max_items is not None:
-            if len(v)>max_items:
-                self._warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))
-                return default_value
         return aslist
 
 
