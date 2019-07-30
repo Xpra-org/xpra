@@ -367,13 +367,12 @@ class X11ServerBase(X11ServerCore):
                         log.warn("error setting double click distance from %s: %s", double_click_distance, e)
 
             if k not in old_settings or v != old_settings[k]:
-                def root_set(p):
-                    from xpra.x11.gtk_x11.prop import prop_set
-                    log("server_settings: setting %s to %s", nonl(p), nonl(v))
-                    prop_set(self.root_window, p, "latin1", strtobytes(v).decode("latin1"))
                 if k == b"xsettings-blob":
                     self.set_xsettings(v)
                 elif k == b"resource-manager":
-                    root_set("RESOURCE_MANAGER")
+                    from xpra.x11.gtk_x11.prop import prop_set
+                    p = "RESOURCE_MANAGER"
+                    log("server_settings: setting %s to %s", nonl(p), nonl(v))
+                    prop_set(self.root_window, p, "latin1", strtobytes(v).decode("latin1"))
                 else:
                     log.warn("Warning: unexpected setting '%s'", bytestostr(k))
