@@ -24,7 +24,7 @@ from xpra.gtk_common.gobject_compat import (
     )
 from xpra.net.net_util import if_indextoname
 from xpra.util import typedict, DEFAULT_PORTS
-from xpra.os_util import bytestostr, WIN32
+from xpra.os_util import bytestostr, WIN32, POSIX
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -280,6 +280,18 @@ class SessionsGUI(gtk.Window):
         display = tt.strget("display", "")
         username = tt.strget("username", "")
         mode = tt.strget("mode", "")
+        if not mode:
+            #guess the mode from the service name,
+            #ie: "localhost.localdomain :2 (wss)" -> "wss"
+            pos = name.rfind("(")
+            if name.endswith(")") and pos>0:
+                mode = name[pos+1:-1]
+                if mode not in ("tcp", "ws", "wss", "ssl", "ssh"):
+                    mode = None
+            elif POSIX:
+                mode = "socket"
+        if not mode:
+            return ""
         if display and display.startswith(":"):
             dstr = display[1:]
         #append interface to IPv6 host URI for link local addresses ("fe80:"):
