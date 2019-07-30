@@ -2,6 +2,8 @@ xpra (1.0.14-1) UNRELEASED; urgency=low
   * fix html5 clipboard wrongly disabled
   * fix html5 handling of websocket frames with more than one packet
   * fix desktop-scaling normalization calculations
+  * fix handling of unicode values for desktop names
+  * fix file descriptor leak when running child commands
   * fix MS Windows tray icon backport
   * fix XShape serial not being ignored as it should
   * fix race condition with some clipboard control packets
@@ -20,6 +22,9 @@ xpra (1.0.14-1) UNRELEASED; urgency=low
   * fix error in the codec loader if the first codec attempted fails
   * fix mmap leak which can cause the client to stop painting
   * fix HTML5 client authentication issue when going through a proxy server
+  * fix errors if md5 is not available: use sha1
+  * silence annoying atk warnings
+  * avoid running invalid lpinfo commands
   * support newer nvidia encode shared libraries
   * prevent hash collisions in motion search
   * warn that Python optimized code will crash
@@ -32,7 +37,7 @@ xpra (1.0.14-1) UNRELEASED; urgency=low
   * avoid keyboard warnings
   * fix sdist
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 10 Jun 2019 17:36:07 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 30 Jul 2019 17:19:34 +0700
 
 xpra (1.0.13-1) UNRELEASED; urgency=low
   * fix server crash with application setting invalid X11 atoms
