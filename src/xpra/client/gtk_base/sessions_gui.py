@@ -24,7 +24,7 @@ from xpra.gtk_common.gobject_compat import (
     )
 from xpra.net.net_util import if_indextoname
 from xpra.util import typedict, DEFAULT_PORTS
-from xpra.os_util import bytestostr, WIN32, POSIX
+from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
 
 log = Logger("client", "util")
