@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import re
 import os.path
+from collections import OrderedDict
 
 from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, PYTHON2, OSX, POSIX, LINUX
-from collections import OrderedDict
 from xpra.platform.paths import get_app_dir, get_user_conf_dirs
 from xpra.log import Logger
 
@@ -214,8 +214,8 @@ def load_command_to_type():
                             ctype = categories_to_type.get(c.lower())
                             if not ctype:
                                 #try a more fuzzy match:
-                                for category,ct in categories_to_type.items():
-                                    if c.lower().find(category)>=0:
+                                for category_name,ct in categories_to_type.items():
+                                    if c.lower().find(category_name)>=0:
                                         ctype = ct
                                         break
                             if ctype:
