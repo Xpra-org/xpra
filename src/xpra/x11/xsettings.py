@@ -122,3 +122,18 @@ class XSettingsWatcher(XSettingsHelper, gobject.GObject):
             self.emit("xsettings-changed")
 
 gobject.type_register(XSettingsWatcher)
+
+
+def main():
+    from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+    init_gdk_display_source()
+    s = XSettingsHelper().get_settings()
+    assert s
+    seq, data = s
+    print("XSettings: (sequence %i)" % seq)
+    for v in data:
+        print("%s" % (v, ))
+
+
+if __name__ == "__main__":
+    main()
