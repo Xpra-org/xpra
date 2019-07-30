@@ -135,7 +135,6 @@ cdef extern from "X11/Xlib.h":
     int NotifyVirtual
     int NotifyInferior
     int NotifyNonlinear
-    int NotifyNonlinearVirtual
     int NotifyPointer
     int NotifyPointerRoot
     int NotifyDetailNone
