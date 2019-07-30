@@ -17,6 +17,8 @@ from xpra.gtk_common.gtk_util import (
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                          #@UnresolvedImport
     remove_event_receiver,                       #@UnresolvedImport
+    init_x11_filter,
+    cleanup_x11_filter,
     )
 from xpra.clipboard.clipboard_core import (
     ClipboardProtocolHelperCore, ClipboardProxyCore, TEXT_TARGETS,
@@ -79,6 +81,8 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         gobject.GObject.__init__(self)
         self.init_window()
+        init_x11_filter()
+        self.x11_filter = True
         ClipboardTimeoutHelper.__init__(self, send_packet_cb, progress_cb, **kwargs)
 
     def __repr__(self):
@@ -101,6 +105,9 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
             w.destroy()
 
     def cleanup(self):
+        if self.x11_filter:
+            self.x11_filter = False
+            cleanup_x11_filter()
         ClipboardTimeoutHelper.cleanup(self)
         self.cleanup_window()
 
