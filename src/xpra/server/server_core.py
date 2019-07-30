@@ -234,7 +234,7 @@ class ServerCore(object):
 
         #Features:
         self.mdns = False
-        self.mdns_publishers = []
+        self.mdns_publishers = {}
         self.encryption = None
         self.encryption_keyfile = None
         self.tcp_encryption = None
@@ -770,12 +770,14 @@ class ServerCore(object):
                 mdnslog("mdns_publish() recs[%s]=%s", st, recs)
         from xpra.server.socket_util import mdns_publish
         mdns_info = self.get_mdns_info()
-        self.mdns_publishers = []
+        self.mdns_publishers = {}
         for mdns_mode, listen_on in mdns_recs.items():
-            ap = mdns_publish(self.display_name, mdns_mode, listen_on, mdns_info)
+            info = dict(mdns_info)
+            info["mode"] = mdns_mode
+            ap = mdns_publish(self.display_name, listen_on, info)
             if ap:
                 ap.start()
-                self.mdns_publishers.append(ap)
+                self.mdns_publishers[ap] = mdns_mode
 
     def get_mdns_socktypes(self, socktype):
         #for a given socket type,
@@ -823,16 +825,18 @@ class ServerCore(object):
 
     def mdns_cleanup(self):
         mp = self.mdns_publishers
-        self.mdns_publishers = []
-        for ap in mp:
+        self.mdns_publishers = {}
+        for ap in mp.keys():
             ap.stop()
 
     def mdns_update(self):
         if not self.mdns:
             return
         txt = self.get_mdns_info()
-        for mdns_publisher in self.mdns_publishers:
-            mdns_publisher.update_txt(txt)
+        for mdns_publisher, mode in self.mdns_publishers.items():
+            info = dict(txt)
+            info["mode"] = mode
+            mdns_publisher.update_txt(info)
 
 
     def start_listen_sockets(self):

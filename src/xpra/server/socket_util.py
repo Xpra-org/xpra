@@ -431,7 +431,7 @@ def handle_socket_error(sockpath, sperms, e):
 
 #warn just once:
 MDNS_WARNING = False
-def mdns_publish(display_name, mode, listen_on, text_dict=None):
+def mdns_publish(display_name, listen_on, text_dict=None):
     global MDNS_WARNING
     if MDNS_WARNING is True:
         return None
@@ -459,7 +459,6 @@ def mdns_publish(display_name, mode, listen_on, text_dict=None):
         log.warn(" or use the 'mdns=no' option")
         return None
     d = dict(text_dict or {})
-    d["mode"] = mode
     #ensure we don't have duplicate interfaces:
     f_listen_on = {}
     for host, port in listen_on:
@@ -470,6 +469,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict=None):
         name = "Xpra"
     if display_name and not (OSX or WIN32):
         name += " %s" % display_name
+    mode = d.get("mode", "tcp")
     if mode not in ("tcp", "rfb"):
         name += " (%s)" % mode
     service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)
