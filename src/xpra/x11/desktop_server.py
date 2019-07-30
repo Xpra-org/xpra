@@ -14,7 +14,7 @@ from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.gobject_compat import import_glib
-from xpra.gtk_common.error import xswallow, XError
+from xpra.gtk_common.error import XError
 from xpra.gtk_common.gtk_util import (
     get_screen_sizes, get_root_size,
     get_xwindow,
