@@ -14,12 +14,9 @@ import struct
 
 from xpra.os_util import hexstr, PYTHON3
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
 log = Logger("x11", "window")
-
-X11Window = X11WindowBindings()
 
 if PYTHON3:
     long = int              #@ReservedAssignment

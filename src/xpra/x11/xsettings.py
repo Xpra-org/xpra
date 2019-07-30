@@ -10,16 +10,14 @@ from xpra.gtk_common.error import xlog, XError
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.gdk_bindings import (
-               add_event_receiver,          #@UnresolvedImport
-               remove_event_receiver,       #@UnresolvedImport
-               get_pywindow,                #@UnresolvedImport
-               get_xatom)                   #@UnresolvedImport
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+    add_event_receiver,          #@UnresolvedImport
+    remove_event_receiver,       #@UnresolvedImport
+    get_pywindow,                #@UnresolvedImport
+    get_xatom,                   #@UnresolvedImport
+    )
+from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
-X11Window = X11WindowBindings()
-gtk = import_gtk()
 gobject = import_gobject()
 
 log = Logger("x11", "xsettings")
@@ -68,6 +66,8 @@ class XSettingsHelper(object):
 
     def xsettings_owner(self):
         with xlog:
+            from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+            X11Window = X11WindowBindings()
             owner_x = X11Window.XGetSelectionOwner(self._selection)
             log("XGetSelectionOwner(%s)=%#x", self._selection, owner_x)
             if owner_x == XNone:

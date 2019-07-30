@@ -33,8 +33,6 @@ log = Logger("x11", "util")
 gtk = import_gtk()
 gobject = import_gobject()
 
-X11Window = X11WindowBindings()
-
 StructureNotifyMask = constants["StructureNotifyMask"]
 XNone = constants["XNone"]
 
@@ -59,7 +57,7 @@ class ManagerSelection(gobject.GObject):
         self._xwindow = None
 
     def _owner(self):
-        return X11Window.XGetSelectionOwner(self.atom)
+        return X11WindowBindings().XGetSelectionOwner(self.atom)
 
     def owned(self):
         "Returns True if someone owns the given selection."
@@ -110,11 +108,11 @@ class ManagerSelection(gobject.GObject):
         # Calculate the X atom for this selection:
         selection_xatom = get_xatom(self.atom)
         # Ask X what window we used:
-        self._xwindow = X11Window.XGetSelectionOwner(self.atom)
+        self._xwindow = X11WindowBindings().XGetSelectionOwner(self.atom)
 
         root = self.clipboard.get_display().get_default_screen().get_root_window()
         xid = get_xwindow(root)
-        X11Window.sendClientMessage(xid, xid, False, StructureNotifyMask,
+        X11WindowBindings().sendClientMessage(xid, xid, False, StructureNotifyMask,
                           "MANAGER",
                           ts_num, selection_xatom, self._xwindow)
 

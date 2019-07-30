@@ -36,8 +36,6 @@ log = Logger("x11", "window")
 gtk = import_gtk()
 gdk = import_gdk()
 
-X11Window = X11WindowBindings()
-
 
 def _get_atom(_disp, d):
     unpacked = struct.unpack(b"@L", d)[0]
@@ -45,7 +43,7 @@ def _get_atom(_disp, d):
         log.warn("Warning: invalid zero atom value")
         return None
     with xsync:
-        pyatom = X11Window.XGetAtomName(unpacked)
+        pyatom = X11WindowBindings().XGetAtomName(unpacked)
     if not pyatom:
         log.error("invalid atom: %s - %s", repr(d), repr(unpacked))
         return  None
@@ -56,7 +54,7 @@ def _get_atom(_disp, d):
 
 def _get_xatom(str_or_int):
     with xsync:
-        return X11Window.get_xatom(str_or_int)
+        return X11WindowBindings().get_xatom(str_or_int)
 
 def _get_multiple(disp, d):
     uint_struct = struct.Struct(b"@L")
@@ -128,12 +126,12 @@ PROP_TYPES.update({
 def prop_set(target, key, etype, value):
     with xsync:
         dtype, dformat, data = prop_encode(target, etype, value)
-        X11Window.XChangeProperty(get_xwindow(target), key, dtype, dformat, data)
+        X11WindowBindings().XChangeProperty(get_xwindow(target), key, dtype, dformat, data)
 
 
 def prop_type_get(target, key):
     try:
-        return X11Window.GetWindowPropertyType(get_xwindow(target), key)
+        return X11WindowBindings().GetWindowPropertyType(get_xwindow(target), key)
     except XError:
         return None
 
@@ -148,7 +146,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     try:
         buffer_size = PROP_SIZES.get(scalar_type, 64*1024)
         with XSyncContext():
-            data = X11Window.XGetWindowProperty(get_xwindow(target), key, atom, etype, buffer_size)
+            data = X11WindowBindings().XGetWindowProperty(get_xwindow(target), key, atom, etype, buffer_size)
         if data is None:
             if not ignore_errors:
                 log("Missing property %s (%s)", key, etype)
