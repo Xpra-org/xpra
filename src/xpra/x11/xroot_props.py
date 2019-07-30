@@ -9,7 +9,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
     )
 from xpra.gtk_common.gtk_util import PROPERTY_CHANGE_MASK
-from xpra.gtk_common.error import xsync
 from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
