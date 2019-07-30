@@ -31,7 +31,7 @@ def inet_ton(af, addr):
         #no ipv6 support with python2 on win32:
         return None
     return inet_pton(af, addr)   #@UndefinedVariable
-        
+
 
 class ZeroconfPublishers(object):
     """
