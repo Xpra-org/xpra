@@ -48,7 +48,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_qualit
             qscore *= 2.0
     return int(qscore)
 
-def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=100):
+def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=100, min_speed=0):
     #when subsampling, add the speed gains to the video encoder
     #which now has less work to do:
     mult = {
@@ -69,6 +69,11 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=10
     #when already downscaling, favour YUV420P subsampling:
     if csc_format=="YUV420P" and scaling!=(1, 1):
         sscore += 25
+    if min_speed>=speed:
+        #if this encoder's speed is lower than the min_speed
+        #then it isn't very suitable, discount its score:
+        mss = (min_speed - speed) // 2
+        sscore = max(0, sscore - mss)
     return max(0, min(100, sscore))
 
 def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
@@ -92,7 +97,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
     def clamp(v):
         return max(0, min(100, v))
     qscore = clamp(get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling, target_quality, min_quality))
-    sscore = clamp(get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed))
+    sscore = clamp(get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed, min_speed))
 
     #multiplier for setup_cost:
     #(lose points if we have less than N fps)
