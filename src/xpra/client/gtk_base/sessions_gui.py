@@ -287,11 +287,9 @@ class SessionsGUI(gtk.Window):
             if name.endswith(")") and pos>0:
                 mode = name[pos+1:-1]
                 if mode not in ("tcp", "ws", "wss", "ssl", "ssh"):
-                    mode = None
-            elif POSIX:
-                mode = "socket"
-        if not mode:
-            return ""
+                    return ""
+            else:
+                mode = "tcp"
         if display and display.startswith(":"):
             dstr = display[1:]
         #append interface to IPv6 host URI for link local addresses ("fe80:"):
