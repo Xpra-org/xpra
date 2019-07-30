@@ -125,14 +125,21 @@ gobject.type_register(XSettingsWatcher)
 
 
 def main():
+    from xpra.x11.xsettings_prop import XSettingsNames
     from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
     s = XSettingsHelper().get_settings()
     assert s
     seq, data = s
     print("XSettings: (sequence %i)" % seq)
-    for v in data:
-        print("%s" % (v, ))
+    for vtype, prop, value, serial  in data:
+        if isinstance(value, bytes):
+            vstr = value.decode()
+        else:
+            vstr = str(value)
+        if serial>0:
+            vstr += " (serial=%#x)" % serial
+        print("%8s: %32s = %-32s" % (XSettingsNames.get(vtype, "?"), prop.decode(), vstr))
 
 
 if __name__ == "__main__":
