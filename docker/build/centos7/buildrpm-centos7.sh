@@ -73,5 +73,7 @@ rpmbuild -bb \
 rpmbuild/xpra.spec
 
 #copy rpms to mounted dir so we get them outside the container
-mkdir -p ./docker/out/x86_64
-cp -v /home/builder/rpmbuild/RPMS/x86_64/*.rpm ./docker/out/x86_64
+pwd
+OUTDIR="./docker/out/CentOS/7.6/x86_64"
+mkdir -p ${OUTDIR}
+cp -v /home/builder/rpmbuild/RPMS/x86_64/*.rpm ${OUTDIR}
