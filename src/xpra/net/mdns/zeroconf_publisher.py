@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
-from zeroconf import ServiceInfo, Zeroconf        #@UnresolvedImport
+from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version #@UnresolvedImport
 
 from xpra.log import Logger
 from xpra.util import csv
@@ -14,6 +14,7 @@ from xpra.net.mdns import XPRA_MDNS_TYPE, SHOW_INTERFACE
 from xpra.net.net_util import get_iface
 
 log = Logger("network", "mdns")
+log("python-zeroconf version %s", zeroconf_version)
 
 
 def get_interface_index(host):
@@ -167,6 +168,7 @@ def main():
     glib = import_glib()
     glib.idle_add(publisher.start)
     loop = glib.MainLoop()
+    log.info("python-zeroconf version %s", zeroconf_version)
     def update_rec():
         log("update_rec()")
         from zeroconf import DNSText, _CLASS_ANY, _DNS_OTHER_TTL, current_time_millis
