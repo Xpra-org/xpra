@@ -92,8 +92,17 @@ class ZeroconfPublishers(object):
                 td["iface"] = iface
             td = self.txt_rec(td)
             try:
+                #ie: service_name = localhost.localdomain :2 (ssl)
                 st = service_type+"local."
-                regname = service_name+"."+service_type+"local."
+                parts = service_name.split(" ", 1)
+                regname = parts[0].split(".")[0]
+                if len(parts)==2:
+                    regname += parts[1]
+                regname = regname.replace(" ", "-")
+                regname = regname.replace("(", "")
+                regname = regname.replace(")", "")
+                #ie: regname = localhost:2-ssl
+                regname += "."+service_type+"local."
                 args = (st, regname, address, port, 0, 0, td, hostname)
                 service = ServiceInfo(*args)
                 ServiceInfo.args = args
