@@ -826,14 +826,14 @@ class ServerCore(object):
     def mdns_cleanup(self):
         mp = self.mdns_publishers
         self.mdns_publishers = {}
-        for ap in mp.keys():
+        for ap in tuple(mp.keys()):
             ap.stop()
 
     def mdns_update(self):
         if not self.mdns:
             return
         txt = self.get_mdns_info()
-        for mdns_publisher, mode in self.mdns_publishers.items():
+        for mdns_publisher, mode in dict(self.mdns_publishers).items():
             info = dict(txt)
             info["mode"] = mode
             mdns_publisher.update_txt(info)
