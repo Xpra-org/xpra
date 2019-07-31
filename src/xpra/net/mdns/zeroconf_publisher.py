@@ -90,10 +90,14 @@ class ZeroconfPublishers(object):
             if iface is not None and SHOW_INTERFACE:
                 td = text_dict.copy()
                 td["iface"] = iface
+            td = self.txt_rec(td)
             try:
-                service = ServiceInfo(service_type+"local.", service_name+"."+service_type+"local.",
-                                      address, port, 0, 0,
-                                      td, hostname)
+                st = service_type+"local."
+                regname = service_name+"."+service_type+"local."
+                args = (st, regname, address, port, 0, 0, td, hostname)
+                service = ServiceInfo(*args)
+                ServiceInfo.args = args
+                log("ServiceInfo%s=%s", args, service)
                 self.services.append(service)
             except Exception as e:
                 log("zeroconf ServiceInfo", exc_info=True)
@@ -123,9 +127,23 @@ class ZeroconfPublishers(object):
         self.zeroconf = None
 
 
+    def txt_rec(self, text_dict):
+        #prevent zeroconf from mangling our ints into booleans:
+        from collections import OrderedDict
+        new_dict = OrderedDict()
+        for k,v in text_dict.items():
+            if isinstance(v, int):
+                new_dict[k] = str(v)
+            else:
+                new_dict[k] = v
+        return new_dict
+
     def update_txt(self, txt):
-        #TODO: use stop / start to update?
-        pass
+        for service in tuple(self.registered):
+            args = list(service.args)
+            args[6] = self.txt_rec(txt)
+            si = ServiceInfo(*args)
+            self.zeroconf.update_service(si)
 
 
 def main():
