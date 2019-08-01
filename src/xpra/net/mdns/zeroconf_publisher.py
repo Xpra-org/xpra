@@ -67,7 +67,7 @@ class ZeroconfPublishers(object):
         errs = 0
         hostname = socket.gethostname()+"."
         all_listen_on = {}
-        def add_address(key, af, addr_str):
+        def add_address(port, af, addr_str):
             if af==socket.AF_INET6 and not IPV6:
                 return
             af_str = "AF_INET"
@@ -84,7 +84,7 @@ class ZeroconfPublishers(object):
                 return
             if address:
                 log("inet_ton(%s, %s)=%s", af_str, addr_str, address)
-                all_listen_on.setdefault(key, []).append(address)
+                all_listen_on.setdefault(port, []).append(address)
         for host_str, port in listen_on:
             if host_str=="":
                 hosts = ("127.0.0.1", "::1")
@@ -99,22 +99,16 @@ class ZeroconfPublishers(object):
                             for defs in addresses.get(af, {}):
                                 addr = defs.get("addr")
                                 if addr:
-                                    add_address((addr, port), af, addr)
+                                    add_address(port, af, addr)
                     continue
                 if host.find(":")>=0:
                     af = socket.AF_INET6
                 else:
                     af = socket.AF_INET
-                add_address((host, port), af, host)
+                add_address(port, af, host)
         log("will listen on: %s", all_listen_on)
-        for host_port, addresses in all_listen_on.items():
-            host, port = host_port
+        for port, addresses in all_listen_on.items():
             td = self.txt_rec(text_dict or {})
-            if SHOW_INTERFACE:
-                iface = get_iface(host)
-                log("get_iface(%s)=%s", host, iface)
-                if iface is not None:
-                    td["iface"] = iface
             try:
                 #ie: service_name = localhost.localdomain :2 (ssl)
                 st = service_type+"local."
@@ -149,7 +143,7 @@ class ZeroconfPublishers(object):
                 log("zeroconf ServiceInfo", exc_info=True)
                 if errs==0:
                     log.error("Error: zeroconf failed to create service")
-                log.error(" for host '%s' and port %i", host, port)
+                log.error(" for port %i", port)
                 log.error(" %s", e)
                 errs += 1
 
