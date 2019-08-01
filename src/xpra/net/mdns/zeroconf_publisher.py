@@ -107,11 +107,10 @@ class ZeroconfPublishers(object):
                     af = socket.AF_INET
                 add_address(port, af, host)
         log("will listen on: %s", all_listen_on)
-        for port, addresses in all_listen_on.items():
+        for i, (port, addresses) in enumerate(all_listen_on.items()):
             td = self.txt_rec(text_dict or {})
             try:
                 #ie: service_name = localhost.localdomain :2 (ssl)
-                st = service_type+"local."
                 parts = service_name.split(" ", 1)
                 regname = parts[0].split(".")[0]
                 if len(parts)==2:
@@ -120,8 +119,11 @@ class ZeroconfPublishers(object):
                 regname = regname.replace(" ", "-")
                 regname = regname.replace("(", "")
                 regname = regname.replace(")", "")
+                if i>0:
+                    regname += "-%i" % (i+1)
                 #ie: regname = localhost:2-ssl
                 regname += "."+service_type+"local."
+                st = service_type+"local."
                 if mult:
                     address = None
                     kwargs = {"addresses" : addresses}
@@ -130,6 +132,7 @@ class ZeroconfPublishers(object):
                     ServiceInfo.args = args
                     ServiceInfo.kwargs = kwargs
                     log("ServiceInfo%s=%s", tuple(list(args)+[kwargs]), service)
+                    self.services.append(service)
                 else:
                     for address in addresses:
                         kwargs = {}
@@ -138,7 +141,7 @@ class ZeroconfPublishers(object):
                         ServiceInfo.args = args
                         ServiceInfo.kwargs = kwargs
                         log("ServiceInfo%s=%s", args, service)
-                self.services.append(service)
+                        self.services.append(service)
             except Exception as e:
                 log("zeroconf ServiceInfo", exc_info=True)
                 if errs==0:
@@ -183,7 +186,15 @@ class ZeroconfPublishers(object):
             args = list(service.args)
             args[6] = self.txt_rec(txt)
             si = ServiceInfo(*args, **service.kwargs)
-            self.zeroconf.update_service(si)
+            try:
+                self.zeroconf.update_service(si)
+            except KeyError as e:
+                #probably a race condition with cleanup
+                log("update_txt(%s)", txt, exc_info=True)
+                log.warn("Warning: failed to update service")
+                log.warn(" %s", e)
+            except Exception:
+                log.error("Error: failed to update service", exc_info=True)
 
 
 def main():
