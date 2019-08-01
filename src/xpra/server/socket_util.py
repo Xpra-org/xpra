@@ -462,7 +462,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     #ensure we don't have duplicate interfaces:
     f_listen_on = {}
     for host, port in listen_on:
-        f_listen_on[get_interface_index(host)] = (host, port)
+        f_listen_on[(get_interface_index(host), port)] = (host, port)
     try:
         name = socket.gethostname()
     except (IOError, OSError):
