@@ -70,7 +70,7 @@ class ZeroconfPublishers(object):
         all_listen_on = {}
         for host_str, port in listen_on:
             if host_str=="":
-                hosts = ("127.0.0.1", "::")
+                hosts = ("127.0.0.1", "::1")
             else:
                 hosts = (host_str,)
             for host in hosts:
