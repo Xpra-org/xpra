@@ -44,6 +44,8 @@ class ZeroconfPublishers(object):
         self.services = []
         def add_address(host, port, af=socket.AF_INET):
             try:
+                if af==socket.AF_INET6 and host.find("%"):
+                    host = host.split("%")[0]
                 address = inet_ton(af, host)
                 zp = ZeroconfPublisher(address, host, port, service_name, service_type, text_dict)
             except Exception as e:
@@ -123,7 +125,7 @@ class ZeroconfPublisher(object):
             self.zeroconf = Zeroconf(interfaces=[self.host])
         except OSError:
             log("start()", exc_info=True)
-            log.error("Error: failed to create Zeroconf instance for '%s'", self.host)
+            log.error("Error: failed to create Zeroconf instance for address '%s'", self.host)
             return
         try:
             self.zeroconf.register_service(self.service)
