@@ -119,7 +119,11 @@ class ZeroconfPublisher(object):
             log.error(" %s", e)
 
     def start(self):
-        self.zeroconf = Zeroconf(interfaces=[self.host])
+        try:
+            self.zeroconf = Zeroconf(interfaces=[self.host])
+        except OSError:
+            log.error("Error: failed to create Zeroconf instance for '%s'", self.host)
+            return
         try:
             self.zeroconf.register_service(self.service)
         except Exception:
