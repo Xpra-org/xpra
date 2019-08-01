@@ -122,6 +122,7 @@ class ZeroconfPublisher(object):
         try:
             self.zeroconf = Zeroconf(interfaces=[self.host])
         except OSError:
+            log("start()", exc_info=True)
             log.error("Error: failed to create Zeroconf instance for '%s'", self.host)
             return
         try:
