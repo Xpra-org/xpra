@@ -393,35 +393,36 @@ class GLWindowBackingBase(WindowBackingBase):
                 if bh>=oldh:
                     return 0, bh-oldh
                 return oldh-bh, 0
-            if not self.gravity or self.gravity==NorthWestGravity:
+            g = self.gravity
+            if not g or g==NorthWestGravity:
                 #undefined (or 0), use NW
                 sx, dx = west_x()
                 sy, dy = north_y()
-            elif self.gravity==NorthGravity:
+            elif g==NorthGravity:
                 sx, dx = center_x()
                 sy, dy = north_y()
-            elif self.gravity==NorthEastGravity:
+            elif g==NorthEastGravity:
                 sx, dx = east_x()
                 sy, dy = north_y()
-            elif self.gravity==WestGravity:
+            elif g==WestGravity:
                 sx, dx = west_x()
                 sy, dy = center_y()
-            elif self.gravity==CenterGravity:
+            elif g==CenterGravity:
                 sx, dx = center_x()
                 sy, dy = center_y()
-            elif self.gravity==EastGravity:
+            elif g==EastGravity:
                 sx, dx = east_x()
                 sy, dy = center_y()
-            elif self.gravity==SouthWestGravity:
+            elif g==SouthWestGravity:
                 sx, dx = west_x()
                 sy, dy = south_y()
-            elif self.gravity==SouthGravity:
+            elif g==SouthGravity:
                 sx, dx = center_x()
                 sy, dy = south_y()
-            elif self.gravity==SouthEastGravity:
+            elif g==SouthEastGravity:
                 sx, dx = east_x()
                 sy, dy = south_y()
-            elif self.gravity==StaticGravity:
+            elif g==StaticGravity:
                 if first_time("StaticGravity-%i" % self.wid):
                     log.warn("Warning: static gravity is not handled")
 
@@ -1154,10 +1155,10 @@ class GLWindowBackingBase(WindowBackingBase):
         window_size = tuple(window_size)
         if window_size==self.size:
             return x, y
-        if self.gravity==0 or self.gravity==NorthWestGravity:
+        if self.window_gravity==0 or self.window_gravity==NorthWestGravity:
             return x, y
         log("adjusting for %s gravity and window-size=%s, size=%s",
-            GRAVITY_STR.get(self.gravity, "unknown"), window_size, self.size)
+            GRAVITY_STR.get(self.window_gravity, "unknown"), window_size, self.size)
         oldw, oldh = window_size
         bw, bh = self.size
         def center_y():
@@ -1180,21 +1181,22 @@ class GLWindowBackingBase(WindowBackingBase):
             if bh>=oldh:
                 return y + (bh-oldh)
             return y - (oldh-bh)
-        if self.gravity==NorthGravity:
+        g = self.window_gravity
+        if g==NorthGravity:
             return center_x(), north_y()
-        if self.gravity==NorthEastGravity:
+        if g==NorthEastGravity:
             return east_x(), north_y()
-        if self.gravity==WestGravity:
+        if g==WestGravity:
             return west_x(), center_y()
-        if self.gravity==CenterGravity:
+        if g==CenterGravity:
             return center_x(), center_y()
-        if self.gravity==EastGravity:
+        if g==EastGravity:
             return east_x(), center_y()
-        if self.gravity==SouthWestGravity:
+        if g==SouthWestGravity:
             return west_x(), south_y()
-        if self.gravity==SouthGravity:
+        if g==SouthGravity:
             return center_x(), south_y()
-        if self.gravity==SouthEastGravity:
+        if g==SouthEastGravity:
             return east_x(), south_y()
         #if self.gravity==StaticGravity:
         #    pass
