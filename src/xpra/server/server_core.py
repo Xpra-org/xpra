@@ -738,7 +738,6 @@ class ServerCore(object):
             if bit_depth:
                 extra = " with %i bit colors" % bit_depth
             log.info(" connected to X11 display %s%s", display, extra)
-        now = monotonic_time()
 
 
     ######################################################################
