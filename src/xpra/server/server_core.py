@@ -762,6 +762,8 @@ class ServerCore(object):
                     assert st=="ssh"
                     host = "*"
                     iport = get_ssh_port()
+                    if not iport:
+                        continue
                 else:
                     host, iport = info
                 for h in hosts(host):
@@ -773,7 +775,7 @@ class ServerCore(object):
         mdns_info = self.get_mdns_info()
         self.mdns_publishers = {}
         for mdns_mode, listen_on in mdns_recs.items():
-            info = dict(mdns_info)
+            info = OrderedDict(mdns_info)
             info["mode"] = mdns_mode
             ap = mdns_publish(self.display_name, listen_on, info)
             if ap:
