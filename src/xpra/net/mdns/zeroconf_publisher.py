@@ -46,7 +46,7 @@ class ZeroconfPublishers(object):
         self.registered = []
         errs = 0
         hostname = socket.gethostname()+".local."
-        all_listen_on = []
+        all_listen_on = {}
         for host_str, port in listen_on:
             if host_str=="":
                 hosts = ("127.0.0.1", "::")
@@ -64,7 +64,7 @@ class ZeroconfPublishers(object):
                                         addr_str = addr.split("%", 1)[0]
                                         address = inet_ton(af, addr_str)
                                         if address:
-                                            all_listen_on.append((addr_str, port, address))
+                                            all_listen_on.setdefault((host, port), []).append(address)
                                     except OSError as e:
                                         log("socket.inet_pton '%s'", addr_str, exc_info=True)
                                         log.error("Error: cannot parse IP address '%s'", addr_str)
@@ -78,14 +78,15 @@ class ZeroconfPublishers(object):
                         af = socket.AF_INET
                     address = inet_ton(af, host)
                     if address:
-                        all_listen_on.append((host, port, address))
+                        all_listen_on.setdefault((host, port), []).append(address)
                 except OSError as e:
                     log("socket.inet_pton '%s'", host, exc_info=True)
                     log.error("Error: cannot parse IP address '%s'", host)
                     log.error(" %s", e)
                     continue
         log("will listen on: %s", all_listen_on)
-        for host, port, address in all_listen_on:
+        for host_port, addresses in all_listen_on.items():
+            host, port = host_port
             td = text_dict or {}
             iface = get_iface(host)
             if iface is not None and SHOW_INTERFACE:
@@ -104,10 +105,13 @@ class ZeroconfPublishers(object):
                 regname = regname.replace(")", "")
                 #ie: regname = localhost:2-ssl
                 regname += "."+service_type+"local."
-                args = (st, regname, address, port, 0, 0, td, hostname)
-                service = ServiceInfo(*args)
-                ServiceInfo.args = args
-                log("ServiceInfo%s=%s", args, service)
+                kwargs = {}
+                for address in addresses:
+                    args = (st, regname, address, port, 0, 0, td, hostname)
+                    service = ServiceInfo(*args, **kwargs)
+                    ServiceInfo.args = args
+                    ServiceInfo.kwargs = kwargs
+                    log("ServiceInfo%s=%s", args, service)
                 self.services.append(service)
             except Exception as e:
                 log("zeroconf ServiceInfo", exc_info=True)
@@ -152,7 +156,7 @@ class ZeroconfPublishers(object):
         for service in tuple(self.registered):
             args = list(service.args)
             args[6] = self.txt_rec(txt)
-            si = ServiceInfo(*args)
+            si = ServiceInfo(*args, **service.kwargs)
             self.zeroconf.update_service(si)
 
 
