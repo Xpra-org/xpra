@@ -42,18 +42,26 @@ class ZeroconfPublishers(object):
     def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.services = []
+        self.ports = {}
         def add_address(host, port, af=socket.AF_INET):
             try:
                 if af==socket.AF_INET6 and host.find("%"):
                     host = host.split("%")[0]
                 address = inet_ton(af, host)
-                zp = ZeroconfPublisher(address, host, port, service_name, service_type, text_dict)
+                sn = service_name
+                ports = set(self.ports.get(service_name, ()))
+                log("add_address(%s, %s, %s) ports=%s", host, port, af, ports)
+                ports.add(port)
+                if len(ports)>1:
+                    sn += "-%i" % len(ports)
+                zp = ZeroconfPublisher(address, host, port, sn, service_type, text_dict)
             except Exception as e:
                 log("inet_aton(%s)", host, exc_info=True)
                 log.warn("Warning: cannot publish records on %s:", host)
                 log.warn(" %s", e)
             else:
                 self.services.append(zp)
+                self.ports[service_name] = ports
         for host, port in listen_on:
             if host in ("0.0.0.0", "::"):
                 #annoying: we have to enumerate all interfaces
@@ -71,7 +79,10 @@ class ZeroconfPublishers(object):
                 host = "127.0.0.1"
             af = socket.AF_INET
             if host.find(":")>=0:
-                af = socket.AF_INET6
+                if IPV6:
+                    af = socket.AF_INET6
+                else:
+                    host = "127.0.0.1"
             add_address(host, port, af)
 
     def start(self):
