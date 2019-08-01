@@ -8,7 +8,7 @@ import socket
 from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version #@UnresolvedImport
 
 from xpra.log import Logger
-from xpra.os_util import strtobytes
+from xpra.util import envbool
 from xpra.net.net_util import get_interfaces_addresses
 from xpra.net.mdns import XPRA_MDNS_TYPE
 from xpra.net.net_util import get_iface
@@ -16,12 +16,23 @@ from xpra.net.net_util import get_iface
 log = Logger("network", "mdns")
 log("python-zeroconf version %s", zeroconf_version)
 
+IPV6 = envbool("XPRA_ZEROCONF_IPV6", False)
+
 
 def get_interface_index(host):
     #we don't use interface numbers with zeroconf,
     #so just return the interface name,
     #which is also unique
     return get_iface(host)
+
+def inet_ton(af, addr):
+    if af==socket.AF_INET:
+        return socket.inet_aton(addr)
+    inet_pton = getattr(socket, "inet_pton", None)
+    if not inet_pton:
+        #no ipv6 support with python2 on win32:
+        return None
+    return inet_pton(af, addr)   #@UndefinedVariable
 
 
 class ZeroconfPublishers(object):
@@ -31,32 +42,35 @@ class ZeroconfPublishers(object):
     def __init__(self, listen_on, service_name, service_type=XPRA_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.services = []
-        def add_address(host, port):
+        def add_address(host, port, af=socket.AF_INET):
             try:
-                address = socket.inet_aton(host)
+                address = inet_ton(af, host)
+                zp = ZeroconfPublisher(address, host, port, service_name, service_type, text_dict)
             except Exception as e:
                 log("inet_aton(%s)", host, exc_info=True)
-                if host.find(":")>=0 or host.find("%")>=0:
-                    #IPv6 addresses are not handled by python-zeroconf
-                    return
                 log.warn("Warning: cannot publish records on %s:", host)
                 log.warn(" %s", e)
-                return
-            zp = ZeroconfPublisher(address, host, port, service_name, service_type, text_dict)
-            self.services.append(zp)
+            else:
+                self.services.append(zp)
         for host, port in listen_on:
             if host in ("0.0.0.0", "::"):
                 #annoying: we have to enumerate all interfaces
                 for iface, addresses in get_interfaces_addresses().items():
-                    log("%s: %s", iface, addresses.get(socket.AF_INET, {}))
-                    for defs in addresses.get(socket.AF_INET, {}):
-                        addr = defs.get("addr")
-                        if addr:
-                            add_address(addr, port)
+                    for af in (socket.AF_INET, socket.AF_INET6):
+                        if af==socket.AF_INET6 and not IPV6:
+                            continue
+                        log("%s: %s", iface, addresses.get(socket.AF_INET, {}))
+                        for defs in addresses.get(af, {}):
+                            addr = defs.get("addr")
+                            if addr:
+                                add_address(addr, port, af)
                 continue
             if host=="":
                 host = "127.0.0.1"
-            add_address(host, port)
+            af = socket.AF_INET
+            if host.find(":")>=0:
+                af = socket.AF_INET6
+            add_address(host, port, af)
 
     def start(self):
         for s in self.services:
