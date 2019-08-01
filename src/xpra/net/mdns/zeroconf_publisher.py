@@ -65,7 +65,7 @@ class ZeroconfPublishers(object):
         self.registered = []
         mult = has_multiple_addresses_support()
         errs = 0
-        hostname = socket.gethostname()+"."
+        hostname = socket.gethostname()+".local."
         all_listen_on = {}
         def add_address(port, af, addr_str):
             if af==socket.AF_INET6 and not IPV6:
