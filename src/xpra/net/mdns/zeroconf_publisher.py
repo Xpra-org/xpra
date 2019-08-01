@@ -63,52 +63,49 @@ class ZeroconfPublishers(object):
         self.zeroconf = None
         self.services = []
         self.registered = []
-        #we get lots of domain parsing errors if IPv6 is enabled
         mult = has_multiple_addresses_support()
         errs = 0
         hostname = socket.gethostname()+"."
         all_listen_on = {}
+        def add_address(key, af, addr_str):
+            if af==socket.AF_INET6 and not IPV6:
+                return
+            af_str = "AF_INET"
+            if af==socket.AF_INET6:
+                af_str = "AF_INET6"
+            try:
+                #ie: fe80::b8d:288d:8e43:b3f%eth0 -> fe80::b8d:288d:8e43:b3f
+                addr_str = addr_str.split("%", 1)[0]
+                address = inet_ton(af, addr_str)
+            except OSError as e:
+                log("inet_ton(%s, '%s')", af_str, addr_str, exc_info=True)
+                log.error("Error: cannot parse %s address '%s'", af_str, addr_str)
+                log.error(" %s", e)
+                return
+            if address:
+                log("inet_ton(%s, %s)=%s", af_str, addr_str, address)
+                all_listen_on.setdefault(key, []).append(address)
         for host_str, port in listen_on:
             if host_str=="":
                 hosts = ("127.0.0.1", "::1")
             else:
                 hosts = (host_str,)
             for host in hosts:
-                if host in ("0.0.0.0", "::", ""):
+                if host in ("0.0.0.0", "::"):
                     #annoying: we have to enumerate all interfaces
                     for iface, addresses in get_interfaces_addresses().items():
                         for af in (socket.AF_INET, socket.AF_INET6):
-                            if af==socket.AF_INET6 and not IPV6:
-                                continue
+                            log("%s: %s", iface, addresses.get(af, {}))
                             for defs in addresses.get(af, {}):
                                 addr = defs.get("addr")
                                 if addr:
-                                    try:
-                                        addr_str = addr.split("%", 1)[0]
-                                        address = inet_ton(af, addr_str)
-                                        if address:
-                                            log("inet_ton(AF_INET%s, %s)=%s",
-                                                "" if af==socket.AF_INET else "6", addr_str, address)
-                                            all_listen_on.setdefault((addr, port), []).append(address)
-                                    except OSError as e:
-                                        log("socket.inet_pton '%s'", addr_str, exc_info=True)
-                                        log.error("Error: cannot parse IP address '%s'", addr_str)
-                                        log.error(" %s", e)
-                                        continue
+                                    add_address((addr, port), af, addr)
                     continue
-                try:
-                    if host.find(":")>=0:
-                        af = socket.AF_INET6
-                    else:
-                        af = socket.AF_INET
-                    address = inet_ton(af, host)
-                    if address:
-                        all_listen_on.setdefault((host, port), []).append(address)
-                except OSError as e:
-                    log("socket.inet_pton '%s'", host, exc_info=True)
-                    log.error("Error: cannot parse IP address '%s'", host)
-                    log.error(" %s", e)
-                    continue
+                if host.find(":")>=0:
+                    af = socket.AF_INET6
+                else:
+                    af = socket.AF_INET
+                add_address((host, port), af, host)
         log("will listen on: %s", all_listen_on)
         for host_port, addresses in all_listen_on.items():
             host, port = host_port
