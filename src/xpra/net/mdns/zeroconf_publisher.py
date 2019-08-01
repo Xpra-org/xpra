@@ -61,7 +61,7 @@ class ZeroconfPublishers(object):
         self.services = []
         self.registered = []
         #we get lots of domain parsing errors if IPv6 is enabled
-        mult = has_multiple_addresses_support() and not IPV6
+        mult = has_multiple_addresses_support()
         errs = 0
         hostname = socket.gethostname()+"."
         all_listen_on = {}
@@ -86,7 +86,7 @@ class ZeroconfPublishers(object):
                                         if address:
                                             log("inet_ton(AF_INET%s, %s)=%s",
                                                 "" if af==socket.AF_INET else "6", addr_str, address)
-                                            all_listen_on.setdefault((host, port), []).append(address)
+                                            all_listen_on.setdefault((addr, port), []).append(address)
                                     except OSError as e:
                                         log("socket.inet_pton '%s'", addr_str, exc_info=True)
                                         log.error("Error: cannot parse IP address '%s'", addr_str)
@@ -112,6 +112,7 @@ class ZeroconfPublishers(object):
             td = self.txt_rec(text_dict or {})
             if SHOW_INTERFACE:
                 iface = get_iface(host)
+                log("get_iface(%s)=%s", host, iface)
                 if iface is not None:
                     td["iface"] = iface
             try:
