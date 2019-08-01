@@ -51,10 +51,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def __init__(self, sock, addr,
                  web_root="/usr/share/xpra/www/",
-                 http_headers_dir="/usr/share/xpra/http-headers", script_paths={}):
+                 http_headers_dir="/usr/share/xpra/http-headers", script_paths=None):
         self.web_root = web_root
         self.http_headers_dir = http_headers_dir
-        self.script_paths = script_paths
+        self.script_paths = script_paths or {}
         server = AdHocStruct()
         server.logger = log
         self.directory_listing = DIRECTORY_LISTING
