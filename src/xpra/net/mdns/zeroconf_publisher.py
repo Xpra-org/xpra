@@ -17,9 +17,12 @@ log = Logger("network", "mdns")
 log("python-zeroconf version %s", zeroconf_version)
 
 IPV6 = envbool("XPRA_ZEROCONF_IPV6", True)
+MULTI = envbool("XPRA_ZEROCONF_MULTI", True)
 
 
 def has_multiple_addresses_support():
+    if not MULTI:
+        return False
     _parse_version = None
     try:
         from packaging.version import parse as _parse_version
