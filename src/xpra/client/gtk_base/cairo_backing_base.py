@@ -38,45 +38,30 @@ class CairoBackingBase(WindowBackingBase):
         WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
         self.idle_add = glib.idle_add
 
-    def init(self, ww, wh, w, h):
-        self.size = w, h
+    def init(self, ww, wh, bw, bh):
+        self.size = bw, bh
         self.render_size = ww, wh
         old_backing = self._backing
         #should we honour self.depth here?
         self._backing = None
-        if w==0 or h==0:
+        if bw==0 or bh==0:
             #this can happen during cleanup
             return
-        self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+        self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, bw, bh)
         cr = cairo.Context(self._backing)
         cr.set_operator(cairo.OPERATOR_CLEAR)
         cr.set_source_rgba(1, 1, 1, 1)
-        cr.rectangle(0, 0, w, h)
+        cr.rectangle(0, 0, bw, bh)
         cr.fill()
         if old_backing is not None:
-            # Really we should respect bit-gravity here but... meh.
-            old_w = old_backing.get_width()
-            old_h = old_backing.get_height()
+            oldw, oldh = old_backing.get_width(), old_backing.get_height()
+            sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
+            cr.translate(dx-sx, dy-sy)
+            cr.rectangle(sx, sy, w, h)
+            cr.fill()
             cr.set_operator(cairo.OPERATOR_SOURCE)
-            if w>old_w and h>old_h:
-                #both width and height are bigger:
-                cr.rectangle(old_w, 0, w-old_w, h)
-                cr.fill()
-                cr.new_path()
-                cr.rectangle(0, old_h, old_w, h-old_h)
-                cr.fill()
-            elif w>old_w:
-                #enlarged in width only
-                cr.rectangle(old_w, 0, w-old_w, h)
-                cr.fill()
-            if h>old_h:
-                #enlarged in height only
-                cr.rectangle(0, old_h, w, h-old_h)
-                cr.fill()
-            #cr.set_operator(cairo.OPERATOR_CLEAR)
             cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
-            #old_backing.finish()
 
     def close(self):
         if self._backing:

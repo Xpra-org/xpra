@@ -9,7 +9,7 @@ from threading import Lock
 
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
-from xpra.util import typedict, csv, envint, envbool, repr_ellipsized
+from xpra.util import typedict, csv, envint, envbool, repr_ellipsized, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import bytestostr, _buffer
@@ -18,6 +18,31 @@ try:
 except ImportError:
     from xpra.util import xor as xor_str
 from xpra.log import Logger
+
+#X11 constants we use for gravity:
+NorthWestGravity = 1
+NorthGravity     = 2
+NorthEastGravity = 3
+WestGravity      = 4
+CenterGravity    = 5
+EastGravity      = 6
+SouthWestGravity = 7
+SouthGravity     = 8
+SouthEastGravity = 9
+StaticGravity    = 10
+
+GRAVITY_STR = {
+    NorthWestGravity : "NorthWest",
+    NorthGravity     : "North",
+    NorthEastGravity : "NorthEast",
+    WestGravity      : "West",
+    CenterGravity    : "Center",
+    EastGravity      : "East",
+    SouthWestGravity : "SouthWest",
+    SouthGravity     : "South",
+    SouthEastGravity : "SouthEast",
+    StaticGravity    : "South",
+    }
 
 log = Logger("paint")
 deltalog = Logger("delta")
@@ -82,7 +107,7 @@ class WindowBackingBase(object):
         self.size = 0, 0
         self.render_size = 0, 0
         self.offsets = 0, 0, 0, 0       #top,left,bottom,right
-        self.window_gravity = 0
+        self.gravity = 0
         self._alpha_enabled = window_alpha
         self._backing = None
         self._delta_pixel_data = [None for _ in range(DELTA_BUCKETS)]
@@ -112,6 +137,123 @@ class WindowBackingBase(object):
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area
         self.mmap_enabled = True
+
+    def gravity_copy_coords(self, oldw, oldh, bw, bh):
+        sx = sy = dx = dy = 0
+        def center_y():
+            if bh>=oldh:
+                #take the whole source, paste it in the middle
+                return 0, (bh-oldh)//2
+            #skip the edges of the source, paste all of it
+            return (oldh-bh)//2, 0
+        def center_x():
+            if bw>=oldw:
+                return 0, (bw-oldw)//2
+            return (oldw-bw)//2, 0
+        def east_x():
+            if bw>=oldw:
+                return 0, bw-oldw
+            return oldw-bw, 0
+        def west_x():
+            return 0, 0
+        def north_y():
+            return 0, 0
+        def south_y():
+            if bh>=oldh:
+                return 0, bh-oldh
+            return oldh-bh, 0
+        g = self.gravity
+        if not g or g==NorthWestGravity:
+            #undefined (or 0), use NW
+            sx, dx = west_x()
+            sy, dy = north_y()
+        elif g==NorthGravity:
+            sx, dx = center_x()
+            sy, dy = north_y()
+        elif g==NorthEastGravity:
+            sx, dx = east_x()
+            sy, dy = north_y()
+        elif g==WestGravity:
+            sx, dx = west_x()
+            sy, dy = center_y()
+        elif g==CenterGravity:
+            sx, dx = center_x()
+            sy, dy = center_y()
+        elif g==EastGravity:
+            sx, dx = east_x()
+            sy, dy = center_y()
+        elif g==SouthWestGravity:
+            sx, dx = west_x()
+            sy, dy = south_y()
+        elif g==SouthGravity:
+            sx, dx = center_x()
+            sy, dy = south_y()
+        elif g==SouthEastGravity:
+            sx, dx = east_x()
+            sy, dy = south_y()
+        elif g==StaticGravity:
+            if first_time("StaticGravity-%i" % self.wid):
+                log.warn("Warning: static gravity is not handled")
+        w = min(bw, oldw)
+        h = min(bh, oldh)
+        return sx, sy, dx, dy, w, h
+
+    def gravity_adjust(self, x, y, options):
+        #if the window size has changed,
+        #adjust the coordinates honouring the window gravity:
+        window_size = options.intlistget("window-size", None)
+        g = self.gravity
+        log("gravity_adjust%s window_size=%s, size=%s, gravity=%s",
+            (x, y, options), window_size, self.size, GRAVITY_STR.get(g, "unknown"))
+        if not window_size:
+            return x, y
+        window_size = tuple(window_size)
+        if window_size==self.size:
+            return x, y
+        if g==0 or self.gravity==NorthWestGravity:
+            return x, y
+        oldw, oldh = window_size
+        bw, bh = self.size
+        def center_y():
+            if bh>=oldh:
+                return y + (bh-oldh)//2
+            return y - (oldh-bh)//2
+        def center_x():
+            if bw>=oldw:
+                return x + (bw-oldw)//2
+            return x - (oldw-bw)//2
+        def east_x():
+            if bw>=oldw:
+                return x + (bw-oldw)
+            return x - (oldw-bw)
+        def west_x():
+            return x
+        def north_y():
+            return y
+        def south_y():
+            if bh>=oldh:
+                return y + (bh-oldh)
+            return y - (oldh-bh)
+        if g==NorthGravity:
+            return center_x(), north_y()
+        if g==NorthEastGravity:
+            return east_x(), north_y()
+        if g==WestGravity:
+            return west_x(), center_y()
+        if g==CenterGravity:
+            return center_x(), center_y()
+        if g==EastGravity:
+            return east_x(), center_y()
+        if g==SouthWestGravity:
+            return west_x(), south_y()
+        if g==SouthGravity:
+            return center_x(), south_y()
+        if g==SouthEastGravity:
+            return east_x(), south_y()
+        #if self.gravity==StaticGravity:
+        #    pass
+        return x, y
+
 
     def close(self):
         self._backing = None
@@ -151,6 +293,7 @@ class WindowBackingBase(object):
                  "encodings.rgb_formats"    : self.RGB_MODES,
                  "encoding.transparency"    : self._alpha_enabled,
                  "encoding.full_csc_modes"  : self._get_full_csc_modes(self.RGB_MODES),
+                 "encoding.send-window-size" : True,
                  }
 
     def _get_full_csc_modes(self, rgb_modes):
@@ -274,6 +417,7 @@ class WindowBackingBase(object):
             before calling _do_paint_rgb from the UI thread via idle_add
         """
         rgb_data = self.process_delta(raw_data, width, height, rowstride, options)
+        x, y = self.gravity_adjust(x, y, options)
         self.idle_add(self.do_paint_rgb, rgb_format, rgb_data, x, y, width, height, rowstride, options, callbacks)
 
     def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
@@ -446,6 +590,8 @@ class WindowBackingBase(object):
                     for k,v in options.items():
                         log.error("   %s=%s", k, v)
                 return
+
+            x, y = self.gravity_adjust(x, y, options)
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         if self._backing is None:
             self.close_decoder(True)
@@ -505,6 +651,7 @@ class WindowBackingBase(object):
         data = mmap_read(self.mmap, *img_data)
         rgb_format = options.strget(b"rgb_format", b"RGB")
         #Note: BGR(A) is only handled by gl_window_backing
+        x, y = self.gravity_adjust(x, y, options)
         self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, options, callbacks)
 
     def paint_scroll(self, _img_data, _options, callbacks):

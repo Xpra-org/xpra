@@ -83,32 +83,20 @@ class PixmapBacking(GTK2WindowBacking):
             self._backing = None
 
     def copy_backing(self, old_backing):
-        w, h = self.size
+        bw, bh = self.size
         cr = self._backing.cairo_create()
         cr.set_source_rgb(1, 1, 1)
         if old_backing is not None:
-            # Really we should respect bit-gravity here but... meh.
-            old_w, old_h = old_backing.get_size()
-            if w>old_w and h>old_h:
-                #both width and height are bigger:
-                cr.rectangle(old_w, 0, w-old_w, h)
-                cr.fill()
-                cr.new_path()
-                cr.rectangle(0, old_h, old_w, h-old_h)
-                cr.fill()
-            elif w>old_w:
-                #enlarged in width only
-                cr.rectangle(old_w, 0, w-old_w, h)
-                cr.fill()
-            if h>old_h:
-                #enlarged in height only
-                cr.rectangle(0, old_h, w, h-old_h)
-                cr.fill()
+            oldw, oldh = old_backing.get_size()
+            sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
+            cr.translate(dx-sx, dy-sy)
+            cr.rectangle(sx, sy, w, h)
+            cr.fill()
             cr.set_operator(cairo.OPERATOR_SOURCE)
             cr.set_source_pixmap(old_backing, 0, 0)
             cr.paint()
         else:
-            cr.rectangle(0, 0, w, h)
+            cr.rectangle(0, 0, bw, bh)
             cr.fill()
 
     def paint_scroll(self, img_data, _options, callbacks):

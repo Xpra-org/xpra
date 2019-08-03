@@ -212,31 +212,6 @@ YUV2RGB_SHADER = 0
 RGBP2RGB_SHADER = 1
 YUV2RGB_FULL_SHADER = 2
 
-#X11 constants we use for gravity:
-NorthWestGravity = 1
-NorthGravity     = 2
-NorthEastGravity = 3
-WestGravity      = 4
-CenterGravity    = 5
-EastGravity      = 6
-SouthWestGravity = 7
-SouthGravity     = 8
-SouthEastGravity = 9
-StaticGravity    = 10
-
-GRAVITY_STR = {
-    NorthWestGravity : "NorthWest",
-    NorthGravity     : "North",
-    NorthEastGravity : "NorthEast",
-    WestGravity      : "West",
-    CenterGravity    : "Center",
-    EastGravity      : "East",
-    SouthWestGravity : "SouthWest",
-    SouthGravity     : "South",
-    SouthEastGravity : "SouthEast",
-    StaticGravity    : "South",
-    }
-
 
 """
 The logic is as follows:
@@ -337,8 +312,6 @@ class GLWindowBackingBase(WindowBackingBase):
         props = WindowBackingBase.get_encoding_properties(self)
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
-        if FBO_RESIZE:
-            props["encoding.send-window-size"] = True
         props["encoding.bit-depth"] = self.bit_depth
         return props
 
@@ -367,65 +340,8 @@ class GLWindowBackingBase(WindowBackingBase):
         #if we have a valid context and an existing offscreen fbo,
         #preserve the existing pixels by copying them onto the new tmp fbo (new size)
         #and then doing the gl_init() call but without initializing the offscreen fbo.
+        sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
         with context:
-            sx = sy = dx = dy = 0
-            w = min(bw, oldw)
-            h = min(bh, oldh)
-            def center_y():
-                if bh>=oldh:
-                    #take the whole source, paste it in the middle
-                    return 0, (bh-oldh)//2
-                #skip the edges of the source, paste all of it
-                return (oldh-bh)//2, 0
-            def center_x():
-                if bw>=oldw:
-                    return 0, (bw-oldw)//2
-                return (oldw-bw)//2, 0
-            def east_x():
-                if bw>=oldw:
-                    return 0, bw-oldw
-                return oldw-bw, 0
-            def west_x():
-                return 0, 0
-            def north_y():
-                return 0, 0
-            def south_y():
-                if bh>=oldh:
-                    return 0, bh-oldh
-                return oldh-bh, 0
-            g = self.gravity
-            if not g or g==NorthWestGravity:
-                #undefined (or 0), use NW
-                sx, dx = west_x()
-                sy, dy = north_y()
-            elif g==NorthGravity:
-                sx, dx = center_x()
-                sy, dy = north_y()
-            elif g==NorthEastGravity:
-                sx, dx = east_x()
-                sy, dy = north_y()
-            elif g==WestGravity:
-                sx, dx = west_x()
-                sy, dy = center_y()
-            elif g==CenterGravity:
-                sx, dx = center_x()
-                sy, dy = center_y()
-            elif g==EastGravity:
-                sx, dx = east_x()
-                sy, dy = center_y()
-            elif g==SouthWestGravity:
-                sx, dx = west_x()
-                sy, dy = south_y()
-            elif g==SouthGravity:
-                sx, dx = center_x()
-                sy, dy = south_y()
-            elif g==SouthEastGravity:
-                sx, dx = east_x()
-                sy, dy = south_y()
-            elif g==StaticGravity:
-                if first_time("StaticGravity-%i" % self.wid):
-                    log.warn("Warning: static gravity is not handled")
-
             #invert Y coordinates for OpenGL:
             sy = (oldh-h)-sy
             dy = (bh-h)-dy
@@ -1117,8 +1033,6 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
                 glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, ptype, img_data)
 
-                x, y = self.gravity_adjust(x, y, options)
-
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
                 glTexCoord2i(0, 0)
@@ -1146,62 +1060,6 @@ class GLWindowBackingBase(WindowBackingBase):
             message = "OpenGL %s paint error: %s" % (rgb_format, e)
             log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
         fire_paint_callbacks(callbacks, False, message)
-
-    def gravity_adjust(self, x, y, options):
-        #if the window size has changed,
-        #adjust the coordinates honouring the window gravity:
-        window_size = options.intlistget("window-size", None)
-        if not window_size:
-            return x, y
-        window_size = tuple(window_size)
-        if window_size==self.size:
-            return x, y
-        if self.window_gravity==0 or self.window_gravity==NorthWestGravity:
-            return x, y
-        log("adjusting for %s gravity and window-size=%s, size=%s",
-            GRAVITY_STR.get(self.window_gravity, "unknown"), window_size, self.size)
-        oldw, oldh = window_size
-        bw, bh = self.size
-        def center_y():
-            if bh>=oldh:
-                return y + (bh-oldh)//2
-            return y - (oldh-bh)//2
-        def center_x():
-            if bw>=oldw:
-                return x + (bw-oldw)//2
-            return x - (oldw-bw)//2
-        def east_x():
-            if bw>=oldw:
-                return x + (bw-oldw)
-            return x - (oldw-bw)
-        def west_x():
-            return x
-        def north_y():
-            return y
-        def south_y():
-            if bh>=oldh:
-                return y + (bh-oldh)
-            return y - (oldh-bh)
-        g = self.window_gravity
-        if g==NorthGravity:
-            return center_x(), north_y()
-        if g==NorthEastGravity:
-            return east_x(), north_y()
-        if g==WestGravity:
-            return west_x(), center_y()
-        if g==CenterGravity:
-            return center_x(), center_y()
-        if g==EastGravity:
-            return east_x(), center_y()
-        if g==SouthWestGravity:
-            return west_x(), south_y()
-        if g==SouthGravity:
-            return center_x(), south_y()
-        if g==SouthEastGravity:
-            return east_x(), south_y()
-        #if self.gravity==StaticGravity:
-        #    pass
-        return x, y
 
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
@@ -1238,7 +1096,6 @@ class GLWindowBackingBase(WindowBackingBase):
                     x_scale = float(width)/enc_width
                     y_scale = float(height)/enc_height
 
-                x, y = self.gravity_adjust(x, y, options)
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale, shader)
                 self.paint_box(encoding, False, x, y, width, height)
                 fire_paint_callbacks(callbacks, True)
