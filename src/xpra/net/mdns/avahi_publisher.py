@@ -193,11 +193,12 @@ class AvahiPublisher(object):
                 log.error(" another instance already claims this dbus name")
                 log.error(" %s", e)
                 log.error(" %s", message)
-                return
-            for l in str(e).splitlines():
-                for x in l.split(":", 1):
-                    if x:
-                        log.error(" %s", x)
+            else:
+                for l in str(e).splitlines():
+                    for x in l.split(":", 1):
+                        if x:
+                            log.error(" %s", x)
+            self.stop()
 
     def stop(self):
         group = self.group
@@ -213,6 +214,9 @@ class AvahiPublisher(object):
 
 
     def update_txt(self, txt):
+        if not self.server:
+            log("update_txt ignored, already stopped")
+            return
         if not self.group:
             log.warn("Warning: cannot update mdns record")
             log.warn(" publisher has already been stopped")
