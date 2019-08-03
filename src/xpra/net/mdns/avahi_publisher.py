@@ -215,7 +215,7 @@ class AvahiPublisher(object):
 
     def update_txt(self, txt):
         if not self.server:
-            log("update_txt ignored, already stopped")
+            log("update_txt(%s) ignored, already stopped", txt)
             return
         if not self.group:
             log.warn("Warning: cannot update mdns record")

@@ -776,8 +776,8 @@ class ServerCore(object):
         for mdns_mode, listen_on in mdns_recs.items():
             info = OrderedDict(mdns_info)
             info["mode"] = mdns_mode
-            ap = mdns_publish(self.display_name, listen_on, info)
-            if ap:
+            aps = mdns_publish(self.display_name, listen_on, info)
+            for ap in aps:
                 ap.start()
                 self.mdns_publishers[ap] = mdns_mode
 

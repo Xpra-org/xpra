@@ -435,6 +435,9 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     global MDNS_WARNING
     if MDNS_WARNING is True:
         return None
+    from xpra.log import Logger
+    log = Logger("mdns")
+    log.warn("mdns_publish%s", (display_name, listen_on, text_dict))
     try:
         from xpra.net import mdns
         assert mdns
@@ -446,8 +449,6 @@ def mdns_publish(display_name, listen_on, text_dict=None):
             from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
     except ImportError as e:
         MDNS_WARNING = True
-        from xpra.log import Logger
-        log = Logger("mdns")
         log("mdns import failure", exc_info=True)
         log.warn("Warning: failed to load the mdns publisher")
         try:
@@ -470,7 +471,17 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     if display_name and not (OSX or WIN32):
         name += " %s" % display_name
     mode = d.get("mode", "tcp")
-    if mode not in ("tcp", "rfb"):
-        name += " (%s)" % mode
     service_type = {"rfb" : RFB_MDNS_TYPE}.get(mode, XPRA_MDNS_TYPE)
-    return MDNSPublishers(f_listen_on.values(), name, service_type=service_type, text_dict=d)
+    index = 0
+    aps = []
+    for host, port in listen_on:
+        sn = name
+        mode_str = mode
+        if index>0:
+            mode_str = "%s-%i" % (mode, index+1)
+        if mode not in ("tcp", "rfb"):
+            sn += " (%s)" % mode_str
+        listen = ( (host, port), )
+        index += 1
+        aps.append(MDNSPublishers(listen, sn, service_type=service_type, text_dict=d))
+    return aps
