@@ -19,7 +19,7 @@ from xpra.log import Logger
 log = Logger("test")
 
 SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
-STOP_WAIT_TIMEOUT = envint("XPRA_STOP_WAIT_TIMEOUT", 10)
+STOP_WAIT_TIMEOUT = envint("XPRA_STOP_WAIT_TIMEOUT", 20)
 
 
 class ServerTestUtil(ProcessTestUtil):
