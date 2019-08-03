@@ -91,8 +91,8 @@ def get_version():
 #hardcoded for now:
 MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
-IN_COLORSPACES = ["BGRX"]
-OUT_COLORSPACES = ["YUV420P"]
+IN_COLORSPACES = ("BGRX", )
+OUT_COLORSPACES = ("YUV420P", )
 def get_info():
     global IN_COLORSPACES, OUT_COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {

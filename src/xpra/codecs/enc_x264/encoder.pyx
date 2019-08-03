@@ -393,7 +393,7 @@ def get_encodings():
 
 def get_input_colorspaces(encoding):
     assert encoding in get_encodings()
-    return  COLORSPACES.keys()
+    return tuple(COLORSPACES.keys())
 
 def get_output_colorspaces(encoding, input_colorspace):
     assert encoding in get_encodings()

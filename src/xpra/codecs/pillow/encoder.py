@@ -35,7 +35,7 @@ def do_get_encodings():
         if stripped in Image.SAVE:
             encodings.append(encoding)
     log("do_get_encodings()=%s", encodings)
-    return encodings
+    return tuple(encodings)
 
 def get_encodings():
     return ENCODINGS

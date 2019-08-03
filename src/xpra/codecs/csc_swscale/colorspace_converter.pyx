@@ -112,6 +112,7 @@ for av_enum_name, av_enum, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
     if pix_fmt not in COLORSPACES:
         COLORSPACES.append(pix_fmt)
 log("swscale pixel formats: %s", FORMATS)
+COLORSPACES = tuple(COLORSPACES)
 log("colorspaces: %s", COLORSPACES)
 
 BYTES_PER_PIXEL = {

@@ -199,8 +199,8 @@ PACKET_KIND = {
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES = {}
 
-CODECS = ["vp8", "vp9"]
-COLORSPACES["vp8"] = ["YUV420P"]
+CODECS = ("vp8", "vp9")
+COLORSPACES["vp8"] = ("YUV420P", )
 vp9_cs = ["YUV420P"]
 #this is the ABI version with libvpx 1.4.0:
 if ENABLE_VP9_YUV444:
@@ -208,7 +208,7 @@ if ENABLE_VP9_YUV444:
         vp9_cs.append("YUV444P")
     else:
         log("encoder abi is too low to enable YUV444P: %s", VPX_ENCODER_ABI_VERSION)
-COLORSPACES["vp9"] = vp9_cs
+COLORSPACES["vp9"] = tuple(vp9_cs)
 
 VP9_RANGE = 3
 #as of 1.8:

@@ -345,10 +345,10 @@ def get_info():
             "encodings"     : get_encodings(),
             "threading"     : bool(WEBP_THREADING),
             "image-hint"    : DEFAULT_IMAGE_HINT,
-            "image-hints"   : IMAGE_HINT.values(),
+            "image-hints"   : tuple(IMAGE_HINT.values()),
             "preset"        : DEFAULT_PRESET,
             "preset-small"  : PRESET_SMALL,
-            "presets"       : PRESETS.values(),
+            "presets"       : tuple(PRESETS.values()),
             }
 
 def webp_check(int ret):
