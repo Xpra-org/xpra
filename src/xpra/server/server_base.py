@@ -375,7 +375,6 @@ class ServerBase(ServerBaseClass):
             #close it already
             ss.close()
             raise
-        self.notify_new_user(ss)
         self._server_sources[proto] = ss
         self.mdns_update()
         #process ui half in ui thread:
@@ -392,6 +391,8 @@ class ServerBase(ServerBaseClass):
         try:
             if self._closing:
                 raise Exception("server is shutting down")
+
+            self.notify_new_user(ss)
 
             self.parse_hello(ss, c, send_ui)
             #send_hello will take care of sending the current and max screen resolutions
