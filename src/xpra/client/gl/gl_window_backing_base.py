@@ -441,12 +441,13 @@ class GLWindowBackingBase(WindowBackingBase):
             mag_filter = self.get_init_magfilter()
             self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
             #no idea why, but we have to wait a bit to show it:
-            from gi.repository import GLib
+            from xpra.gtk_common.gobject_compat import import_glib
+            glib = import_glib()
             def redraw():
                 with self.gl_context():
                     self.pending_fbo_paint = ((0, 0, bw, bh), )
                     self.do_present_fbo()
-            GLib.timeout_add(FBO_RESIZE_DELAY, redraw)
+            glib.timeout_add(FBO_RESIZE_DELAY, redraw)
 
     def gl_marker(self, *msg):
         log(*msg)
