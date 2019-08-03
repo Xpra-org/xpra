@@ -88,7 +88,7 @@ class AvahiPublishers(object):
                             fqdn += ".local"
                         log("cannot find a fully qualified domain name for '%s', using: %s", host, fqdn)
                 except (OSError, IOError, IndexError):
-                    log("failed to get hostbyaddr", exc_info=True)
+                    log("failed to get hostbyaddr for '%s'", host, exc_info=True)
             self.publishers.append(AvahiPublisher(bus, service_name, port, service_type, domain="", host=fqdn, text=txt, interface=iface_index))
 
     def start(self):
