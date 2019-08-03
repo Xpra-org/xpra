@@ -46,8 +46,9 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         ServerTestUtil.setUpClass()
         cls.default_xpra_args = []
         if POSIX:
+            tmpdir = os.environ.get("TMPDIR", "/tmp")
             cls.default_xpra_args += [
-                "--socket-dirs=/tmp",
+                "--socket-dirs=%s" % tmpdir,
                 ]
             if not OSX:
                 cls.default_xpra_args += [

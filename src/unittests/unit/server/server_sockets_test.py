@@ -158,9 +158,10 @@ class ServerSocketsTest(ServerTestUtil):
 	def test_bind_tmpdir(self):
 		#remove socket dirs from default arguments temporarily:
 		saved_default_xpra_args = ServerSocketsTest.default_xpra_args
+		tmpdir = os.environ.get("TMPDIR", "/tmp")
 		ServerSocketsTest.default_xpra_args = [
 			x for x in saved_default_xpra_args if not x.startswith("--socket-dir")
-			] + ["--socket-dirs=/tmp"]
+			] + ["--socket-dirs=%s" % tmpdir]
 		for _ in range(10):
 			log("")
 		try:
