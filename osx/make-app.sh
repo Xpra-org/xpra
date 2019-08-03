@@ -68,18 +68,22 @@ echo "OK"
 
 if [ "${DO_TESTS}" == "1" ]; then
 	pushd ./unittests
+	rm -fr ./tmpdir
+	mkdir ./tmpdir
 	#make sure the unit tests can run "python2 xpra ...":
 	rm -f ./xpra >& /dev/null
 	ln -sf ../scripts/xpra .
 	UNITTEST_LOG=`pwd`/unittest.log
 	echo "running unit tests (see ${UNITTEST_LOG} - this may take a minute or two)"
-	XPRA_COMMAND="$PYTHON ./xpra" XPRA_NODOCK_COMMAND="$PYTHON ./xpra" XPRA_SOUND_COMMAND="$PYTHON ./xpra" PYTHONPATH=. ./unit/run.py >& ${UNITTEST_LOG}
+	TMPDIR=./tmpdir XPRA_COMMAND="$PYTHON ./xpra" XPRA_NODOCK_COMMAND="$PYTHON ./xpra" XPRA_SOUND_COMMAND="$PYTHON ./xpra" PYTHONPATH=. ./unit/run.py >& ${UNITTEST_LOG}
 	if [ "$?" != "0" ]; then
+		rm -fr ./tmpdir
 		popd
 		echo "ERROR: unit tests failed, see ${UNITTEST_LOG}:"
 		tail -n 20 ${UNITTEST_LOG}
 		exit 1
 	else
+		rm -fr ./tmpdir
 		echo "OK"
 	fi
 	popd
