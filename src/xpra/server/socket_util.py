@@ -437,7 +437,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         return None
     from xpra.log import Logger
     log = Logger("mdns")
-    log.warn("mdns_publish%s", (display_name, listen_on, text_dict))
+    log("mdns_publish%s", (display_name, listen_on, text_dict))
     try:
         from xpra.net import mdns
         assert mdns
