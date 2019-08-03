@@ -295,13 +295,15 @@ def encoding_help(encoding):
 
 def main():
     from xpra.platform import program_context
-    from xpra.log import enable_color
+    from xpra.log import enable_color, LOG_FORMAT, NOPREFIX_FORMAT
     from xpra.util import print_nested_dict, pver
     with program_context("Loader", "Encoding Info"):
-        enable_color()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
+        format_string = NOPREFIX_FORMAT
         if verbose:
+            format_string = LOG_FORMAT
             log.enable_debug()
+        enable_color(format_string)
 
         load_codecs()
         #not really a codec, but gets used by codecs, so include version info:
