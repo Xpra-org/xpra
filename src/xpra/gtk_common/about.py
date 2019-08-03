@@ -33,7 +33,6 @@ def load_license():
     return GPL2
 
 
-global about_dialog
 about_dialog = None
 def about(on_close=None):
     global about_dialog
