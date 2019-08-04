@@ -29,6 +29,7 @@ class ClientWidgetBase(object):
         self._window_alpha = False
         self._client = client
         self._current_icon = None
+        self._backing = None
 
     def make_new_backing(self, backing_class, ww, wh, bw, bh):
         #size of the backing (same as server window source):
