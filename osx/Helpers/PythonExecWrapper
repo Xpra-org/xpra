@@ -18,7 +18,7 @@ shift
 full_path=$(cd "$(dirname "$0")"; pwd)
 
 tmp="$full_path"
-while [ "`basename $tmp`" != "Contents" ]; do
+while [ "`basename "$tmp"`" != "Contents" ]; do
 	tmp=`dirname "$tmp"`
 	if [ -z "$tmp" ]; then
 		echo "cannot find /Contents/ in \"$full_path\""
