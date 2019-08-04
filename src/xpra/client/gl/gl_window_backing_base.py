@@ -977,7 +977,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if JPEG_YUV and width>=2 and height>=2:
             img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, options, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
         else:
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
             self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
@@ -988,7 +988,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if subsampling=="YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha and width>=2 and height>=2:
             img = self.webp_decoder.decompress_yuv(img_data)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, options, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, callbacks)
             return
         WindowBackingBase.paint_webp(self, img_data, x, y, width, height, options, callbacks)
 
@@ -1071,9 +1071,11 @@ class GLWindowBackingBase(WindowBackingBase):
             shader = RGBP2RGB_SHADER
         else:
             shader = YUV2RGB_SHADER
-        self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img, x, y, enc_width, enc_height, width, height, options, callbacks)
+        self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img,
+                      x, y, enc_width, enc_height, width, height, callbacks)
 
-    def gl_paint_planar(self, shader, flush, encoding, img, x, y, enc_width, enc_height, width, height, options, callbacks):
+    def gl_paint_planar(self, shader, flush, encoding, img,
+                        x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
         log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks))
         try:
@@ -1088,7 +1090,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 return
             with context:
                 self.gl_init()
-                self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
+                scaling = enc_width!=width or enc_height!=height
+                self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling)
 
                 # Update FBO texture
                 x_scale, y_scale = 1, 1
