@@ -18,7 +18,7 @@ from xpra.util import envbool
 from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
+from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer
 

@@ -71,7 +71,7 @@ class NamedPipeConnection(Connection):
 
     def can_retry(self, e):
         code = e.args[0]
-        if code==errno.WSAEWOULDBLOCK:      #@UndefinedVariable
+        if code==errno.WSAEWOULDBLOCK:      #@UndefinedVariable pylint: disable=no-member
             return "WSAEWOULDBLOCK"
         #convert those to a connection closed:
         closed = CONNECTION_CLOSED_ERRORS.get(code)

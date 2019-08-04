@@ -17,7 +17,7 @@ from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer
+from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer #pylint: disable=syntax-error
 
 from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport uint8_t, uintptr_t
