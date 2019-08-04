@@ -77,8 +77,9 @@ JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", False)
-FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", not OSX)
+FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
+CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", OSX)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 TEXTURE_CURSOR = envbool("XPRA_OPENGL_TEXTURE_CURSOR", True)
@@ -249,7 +250,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.last_present_fbo_error = None
 
         WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
-        self.init_gl_config(window_alpha)
+        self.init_gl_config(self._alpha_enabled)
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
         self.init_formats()
@@ -327,6 +328,10 @@ class GLWindowBackingBase(WindowBackingBase):
             self.gl_setup = False
             oldw, oldh = self.size
             self.size = bw, bh
+            if CONTEXT_REINIT:
+                self.close_gl_config()
+                self.init_gl_config(self._alpha_enabled)
+                return
             if FBO_RESIZE:
                 self.resize_fbo(oldw, oldh, bw, bh)
 
@@ -523,7 +528,11 @@ class GLWindowBackingBase(WindowBackingBase):
         glClear(GL_COLOR_BUFFER_BIT)
 
 
+    def close_gl_config(self):
+        pass
+
     def close(self):
+        self.close_gl_config()
         #This seems to cause problems, so we rely
         #on destroying the context to clear textures and fbos...
         #if self.offscreen_fbo is not None:

@@ -66,8 +66,7 @@ class GLDrawingArea(GLWindowBackingBase):
             #glFlush was enough
             pass
 
-    def close(self):
-        GLWindowBackingBase.close(self)
+    def close_gl_config(self):
         c = self.context
         if c:
             self.context = None
