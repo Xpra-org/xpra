@@ -79,9 +79,10 @@ class TestMotion(unittest.TestCase):
 		def cdf(v1, v2):
 			try:
 				self.calculate_distances(v1, v2, 1)
-			except:
+			except Exception:
 				return
-			raise Exception("calculate_distances should have failed for values: %s" % (v1, v2))
+			else:
+				raise Exception("calculate_distances should have failed for values: %s, %s" % (v1, v2))
 		cdf(None, None)
 		cdf([], None)
 		cdf(None, [])
