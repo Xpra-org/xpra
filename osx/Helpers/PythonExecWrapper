@@ -20,6 +20,10 @@ full_path=$(cd "$(dirname "$0")"; pwd)
 tmp="$full_path"
 while [ "`basename "$tmp"`" != "Contents" ]; do
 	tmp=`dirname "$tmp"`
+	if [ "$tmp" == "/" ]; then
+		echo "cannot find /Contents/ in \"$full_path\""
+		exit 1
+	fi
 	if [ -z "$tmp" ]; then
 		echo "cannot find /Contents/ in \"$full_path\""
 		exit 1
