@@ -56,7 +56,7 @@ from xpra.os_util import (
     POSIX, PYTHON2, OSX,
     DummyContextManager,
     )
-from xpra.util import envint, envbool, repr_ellipsized, first_time
+from xpra.util import envint, envbool, repr_ellipsized
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import (
