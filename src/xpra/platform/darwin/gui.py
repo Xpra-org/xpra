@@ -222,7 +222,7 @@ def get_double_click_time():
         #what are ticks? just an Apple retarded way of measuring elapsed time.
         #They must have considered gigaparsecs divided by teapot too, which is just as useful.
         #(but still call it "Time" you see)
-        MS_PER_TICK = 1000/60
+        MS_PER_TICK = 1000.0/60
         return int(GetDblTime() * MS_PER_TICK)
     except:
         return -1
