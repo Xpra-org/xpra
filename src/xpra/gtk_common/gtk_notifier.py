@@ -368,7 +368,7 @@ def main():
         notifier.bg_color = color_parse(color[0])
         notifier.fg_color = color_parse(color[1])
         notifier.show_timeout = random.choice((True, False))
-        notifier.new_popup(title, message, [], icon)
+        notifier.new_popup(0, title, message, (), icon)
         return True
     def gtk_main_quit():
         print("quitting")
