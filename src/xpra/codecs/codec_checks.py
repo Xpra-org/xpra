@@ -56,7 +56,7 @@ def make_test_image(pixel_format, w, h):
         u = makebuf(w//udiv[0]*h//udiv[1])
         vdiv = divs[2]
         v = makebuf(w//vdiv[0]*h//vdiv[1])
-        image = ImageWrapper(0, 0, w, h, [y, u, v], pixel_format, 32, [w//ydiv[0], w//udiv[0], w//vdiv[0]], planes=ImageWrapper._3_PLANES, thread_safe=True)
+        image = ImageWrapper(0, 0, w, h, (y, u, v), pixel_format, 32, (w//ydiv[0], w//udiv[0], w//vdiv[0]), planes=ImageWrapper._3_PLANES, thread_safe=True)
         #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210"):
         stride = w*len(pixel_format)
@@ -109,7 +109,7 @@ def testdecoding(decoder_module, encoding, full):
                 #test failures:
                 try:
                     image = e.decompress_image(b"junk", {})
-                except:
+                except Exception:
                     image = None
                 if image is not None:
                     raise Exception("decoding junk with %s should have failed, got %s instead" % (decoder_module.get_type(), image))
@@ -236,7 +236,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                         try:
                             image = make_test_image(wrong_format, W, H)
                             out = e.compress_image(image, options=options)
-                        except:
+                        except Exception:
                             out = None
                         assert out is None, "encoder %s should have failed using %s encoding with %s instead of %s / %s" % (encoder_module.get_type(), encoding, wrong_format, cs_in, cs_out)
                     for w,h in ((W//2, H//2), (W*2, H//2), (W//2, H**2)):
@@ -245,7 +245,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                         try:
                             image = make_test_image(cs_in, w, h)
                             out = e.compress_image(image, options=options)
-                        except:
+                        except Exception:
                             out = None
                         assert out is None, "encoder %s, info=%s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (encoder_module.get_type(), e.get_info(), encoding, w, h, W, H)
             finally:
@@ -272,7 +272,7 @@ def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, li
                 do_testcsc(colorspace_converter, tw, th, False, test_cs_in, test_cs_out, limit_w, limit_h)
                 log("%s can handle %ix%i", colorspace_converter, tw, th)
                 MAX_WIDTH, MAX_HEIGHT = tw, th
-            except:
+            except Exception:
                 log("%s is limited to %ix%i for %s",
                     colorspace_converter, MAX_WIDTH, MAX_HEIGHT, (test_cs_in, test_cs_out), exc_info=True)
                 break
@@ -309,7 +309,7 @@ def do_testcsc(csc_module, W, H, full=False, test_cs_in=None, test_cs_out=None, 
                         try:
                             image = make_test_image(cs_in, w, h)
                             out = e.convert_image(image)
-                        except:
+                        except Exception:
                             out = None
                         if out is not None:
                             raise Exception("converting an image of a smaller size with %s should have failed, got %s instead" % (csc_module.get_type(), out))

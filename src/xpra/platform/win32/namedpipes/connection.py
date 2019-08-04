@@ -157,7 +157,7 @@ class NamedPipeConnection(Connection):
             l = log.error
             try:
                 code = e[0]
-            except:
+            except (IndexError, TypeError):
                 #python3?
                 code = 0
             if code==ERROR_PIPE_NOT_CONNECTED:

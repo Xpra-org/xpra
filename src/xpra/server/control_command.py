@@ -42,7 +42,7 @@ class ControlCommand(object):
 
 class ArgsControlCommand(ControlCommand):
     """ Adds very basic argument validation """
-    def __init__(self, name, help_text=None, run=None, validation=[], min_args=None, max_args=None):
+    def __init__(self, name, help_text=None, run=None, validation=(), min_args=None, max_args=None):
         super(ArgsControlCommand, self).__init__(name, help_text, run)
         self.validation = validation
         self.min_args = min_args

@@ -29,6 +29,8 @@ class CairoBacking(CairoBackingBase):
     def __repr__(self):
         return "gtk2.CairoBacking(%s)" % self._backing
 
+    def idle_add(self, *_args, **_kwargs):
+        raise NotImplementedError()
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
