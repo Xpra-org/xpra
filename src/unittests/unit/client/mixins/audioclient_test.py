@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.os_util import PYTHON3
+from xpra.os_util import PYTHON3, WIN32
 from xpra.util import AdHocStruct
 from xpra.client.mixins.audio import AudioClient
 from xpra.sound.gstreamer_util import CODEC_ORDER
@@ -127,7 +127,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
 
 
 def main():
-	if PYTHON3:
+	if PYTHON3 and not WIN32:
 		unittest.main()
 
 
