@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@
 import socket
 import sys
 
+from xpra.os_util import WIN32, OSX, PYTHON3
 from xpra.log import Logger
 
 log = Logger("network", "util")
@@ -212,7 +213,6 @@ def get_iface(ip):
 if_nametoindex = None
 if_indextoname = None
 
-from xpra.os_util import WIN32, OSX, PYTHON3
 if WIN32:
     def int_if_nametoindex(iface):
         #IPv6 addresses give us the interface as a string:
@@ -224,10 +224,12 @@ if WIN32:
     if_nametoindex = int_if_nametoindex
 elif PYTHON3:
     if_nametoindex = socket.if_nametoindex
-    def if_indextoname(index):
+    def socket_if_indextoname(index):
         if index<0:
             return None
         return socket.if_indextoname(index)
+    if_indextoname = socket_if_indextoname
+
 else:
     library = "libc.so.6"
     if OSX:

@@ -212,14 +212,14 @@ class TopClient(MonitorXpraClient):
         return tuple((x, WHITE) for x in info if x)
 
     def box(self, window, x, y, w, h):
-        window.hline(y, x, curses.ACS_HLINE, w-1)
-        window.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)
-        window.vline(y, x, curses.ACS_VLINE, h)
-        window.vline(y, x + w -1, curses.ACS_VLINE, h)
-        window.addch(y, x, curses.ACS_ULCORNER)
-        window.addch(y, x + w - 1, curses.ACS_URCORNER)
-        window.addch(y + h - 1, x, curses.ACS_LLCORNER)
-        window.addch(y + h - 1, x + w - 1, curses.ACS_LRCORNER)
+        window.hline(y, x, curses.ACS_HLINE, w-1)               #@UndefinedVariable
+        window.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)     #@UndefinedVariable
+        window.vline(y, x, curses.ACS_VLINE, h)                 #@UndefinedVariable
+        window.vline(y, x + w -1, curses.ACS_VLINE, h)          #@UndefinedVariable
+        window.addch(y, x, curses.ACS_ULCORNER)                 #@UndefinedVariable
+        window.addch(y, x + w - 1, curses.ACS_URCORNER)         #@UndefinedVariable
+        window.addch(y + h - 1, x, curses.ACS_LLCORNER)         #@UndefinedVariable
+        window.addch(y + h - 1, x + w - 1, curses.ACS_LRCORNER) #@UndefinedVariable
 
 
     def do_command(self):

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -61,8 +61,9 @@ class Win32Hooks(object):
             #we only use this code for resizable windows, so use SM_C?SIZEFRAME:
             self.frame_width = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
             self.frame_height = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
-            self.caption_height = GetSystemMetrics(win32con.SM_CYCAPTION);
-        except:
+            self.caption_height = GetSystemMetrics(win32con.SM_CYCAPTION)
+        except Exception:
+            log("error querying frame attributes", exc_info=True)
             self.frame_width = 4
             self.frame_height = 4
             self.caption_height = 26
@@ -87,9 +88,10 @@ class Win32Hooks(object):
                 fw, fh = self.frame_width, self.frame_height
                 dw = fw*2
                 dh = self.caption_height + fh*2
-                log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s, frame=%sx%s", hwnd, self.min_size, self.max_size, fw, fh)
+                log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s, frame=%sx%s",
+                    hwnd, self.min_size, self.max_size, fw, fh)
             if self.min_size:
-                minw, minh = self.min_size
+                minw, minh = self.min_size  #pylint: disable=unpacking-non-sequence
                 minw += dw
                 minh += dh
                 if not HOOK_MINMAXINFO_OVERRIDE:
@@ -105,7 +107,7 @@ class Win32Hooks(object):
                 info.ptMinTrackSize  = point
                 log("on_getminmaxinfo actual min_size=%ix%i", minw, minh)
             if self.max_size:
-                maxw, maxh = self.max_size
+                maxw, maxh = self.max_size  #pylint: disable=unpacking-non-sequence
                 maxw += dw
                 maxh += dh
                 if not HOOK_MINMAXINFO_OVERRIDE:
@@ -124,7 +126,9 @@ class Win32Hooks(object):
                 info.ptMaxTrackSize  = point
                 log("on_getminmaxinfo actual max_size=%ix%i", maxw, maxh)
             return 0
-        log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s", hwnd, self.min_size, self.max_size)
+        log("on_getminmaxinfo%s min_size=%s, max_size=%s",
+            (hwnd, msg, wparam, lparam), self.min_size, self.max_size)
+        return 0
 
     def cleanup(self, *args):
         log("cleanup%s", args)
@@ -136,7 +140,7 @@ class Win32Hooks(object):
             SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
             self._oldwndproc = None
             self._hwnd = None
-        except:
+        except Exception:
             log.error("Error: window hooks cleanup failure", exc_info=True)
 
     def _wndproc(self, hwnd, msg, wparam, lparam):
