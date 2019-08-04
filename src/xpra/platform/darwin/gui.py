@@ -16,7 +16,10 @@ from Quartz import (
     CGWindowListCopyWindowInfo, kCGDisplaySetModeFlag, kCGWindowListOptionOnScreenOnly, #@UnresolvedImport
     kCGNullWindowID, kCGWindowListOptionAll,    #@UnresolvedImport
     )
-from Quartz.CoreGraphics import CGDisplayRegisterReconfigurationCallback, CGDisplayRemoveReconfigurationCallback #@UnresolvedImport
+from Quartz.CoreGraphics import (
+    CGDisplayRegisterReconfigurationCallback,   #@UnresolvedImport
+    CGDisplayRemoveReconfigurationCallback,     #@UnresolvedImport
+    )
 from AppKit import NSAppleEventManager, NSScreen, NSObject, NSBeep   #@UnresolvedImport
 from AppKit import (
     NSApp, NSApplication, NSWorkspace,              #@UnresolvedImport
@@ -24,7 +27,10 @@ from AppKit import (
     NSWorkspaceWillSleepNotification,               #@UnresolvedImport
     NSWorkspaceDidWakeNotification,                 #@UnresolvedImport
     )
-from Foundation import NSUserNotification, NSUserNotificationCenter, NSUserNotificationDefaultSoundName #@UnresolvedImport
+from Foundation import (
+    NSUserNotification, NSUserNotificationCenter,   #@UnresolvedImport
+    NSUserNotificationDefaultSoundName,             #@UnresolvedImport
+    )
 
 from xpra.os_util import PYTHON2
 from xpra.util import envbool, envint, roundup

@@ -279,7 +279,7 @@ def load_ignored_changed_files():
     with open("./ignored_changed_files.txt", "rU") as f:
         for line in f:
             s = line.strip()
-            if len(s)==0:
+            if not s:
                 continue
             if s[0] in ('!', '#'):
                 continue
@@ -338,7 +338,8 @@ def get_svn_props():
             #use a normalized path ("/") that does not interfere with regexp:
             norm_path = filename.replace(os.path.sep, "/")
             if norm_path==x:
-                print("'%s' matches ignore list entry: '%s' exactly, not counting it as a modified file" % (filename, x))
+                print("'%s' matches ignore list entry: '%s' exactly," % (filename, x))
+                print(" not counting it as a modified file")
                 ignore = True
                 break
             rstr = r"^%s$" % x.replace("*", ".*")
