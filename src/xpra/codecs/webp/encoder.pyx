@@ -12,8 +12,8 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
-from libc.stdlib cimport free
-from libc.string cimport memset
+from libc.stdlib cimport free   #pylint: disable=syntax-error
+from libc.string cimport memset #pylint: disable=syntax-error
 
 from xpra.buffers.membuf cimport object_as_buffer
 from xpra.os_util import bytestostr

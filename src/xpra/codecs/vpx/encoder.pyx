@@ -16,7 +16,7 @@ log = Logger("encoder", "vpx")
 from xpra.codecs.codec_constants import video_spec
 from xpra.os_util import get_cpu_count, bytestostr, WIN32, OSX, POSIX, BITS
 from xpra.util import AtomicInteger, envint, envbool
-from xpra.buffers.membuf cimport object_as_buffer
+from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t
 from libc.stdlib cimport free, malloc
