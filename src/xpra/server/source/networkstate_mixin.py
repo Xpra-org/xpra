@@ -36,8 +36,6 @@ class NetworkStateMixin(StubSourceMixin):
         info = {
                 "last-ping-echo"    : lpe,
                 }
-        if self.bandwidth_limit>0:
-            info["bandwidth-limit"] = self.bandwidth_limit
         return info
 
     ######################################################################
