@@ -513,7 +513,9 @@ class ClientConnection(ClientConnectionClass):
         else:
             icon_filename = get_icon_filename(icon_name)
             icon = parse_image_path(icon_filename) or ""
-            self.notify("", nid, "Xpra", 0, "", summary, body, actions, hints or {}, expire_timeout, icon, user_callback)
+            self.notify("", nid, "Xpra", 0, "",
+                        summary, body, actions, hints or {},
+                        expire_timeout, icon, user_callback)
 
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon,
                summary, body, actions, hints, expire_timeout, icon, user_callback=None):

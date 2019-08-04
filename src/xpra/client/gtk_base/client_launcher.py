@@ -523,7 +523,9 @@ class ApplicationWindow:
                 ssh_port = int(ssh_port)
             except ValueError:
                 ssh_port = -1
-            errs.append((self.ssh_port_entry, ssh_port<0 or ssh_port>=2**16, "invalid SSH port number"))
+            errs.append((self.ssh_port_entry,
+                         ssh_port<0 or ssh_port>=2**16,
+                         "invalid SSH port number"))
         if sshtossh:
             #validate ssh port:
             proxy_port = self.proxy_port_entry.get_text()
@@ -531,7 +533,9 @@ class ApplicationWindow:
                 proxy_port = int(proxy_port)
             except ValueError:
                 proxy_port = -1
-            errs.append((self.proxy_port_entry, proxy_port<0 or proxy_port>=2**16, "invalid SSH port number"))
+            errs.append((self.proxy_port_entry,
+                         proxy_port<0 or proxy_port>=2**16,
+                         "invalid SSH port number"))
         port = self.port_entry.get_text()
         if sshtossh:
             if self.password_scb.get_active():
@@ -544,12 +548,18 @@ class ApplicationWindow:
                 self.username_entry.set_text(self.proxy_username_entry.get_text())
             else:
                 self.username_entry.set_sensitive(True)
-            errs.append((self.proxy_host_entry, not bool(self.proxy_host_entry.get_text()), "specify the proxy host"))
+            errs.append((self.proxy_host_entry,
+                         not bool(self.proxy_host_entry.get_text()),
+                         "specify the proxy host"))
         # check username *after* the checkbox action
         if ssh or sshtossh:
-            errs.append((self.username_entry, not bool(self.username_entry.get_text()), "specify username"))
+            errs.append((self.username_entry,
+                         not bool(self.username_entry.get_text()),
+                         "specify username"))
         if sshtossh:
-            errs.append((self.proxy_username_entry, not bool(self.proxy_username_entry.get_text()), "specify proxy username"))
+            errs.append((self.proxy_username_entry,
+                         not bool(self.proxy_username_entry.get_text()),
+                         "specify proxy username"))
         if ssh or sshtossh and not port:
             port = 0        #port optional with ssh
         else:

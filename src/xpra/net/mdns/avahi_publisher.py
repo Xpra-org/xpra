@@ -89,7 +89,9 @@ class AvahiPublishers(object):
                         log("cannot find a fully qualified domain name for '%s', using: %s", host, fqdn)
                 except (OSError, IOError, IndexError):
                     log("failed to get hostbyaddr for '%s'", host, exc_info=True)
-            self.publishers.append(AvahiPublisher(bus, service_name, port, service_type, domain="", host=fqdn, text=txt, interface=iface_index))
+            self.publishers.append(AvahiPublisher(bus, service_name, port,
+                                                  service_type, domain="", host=fqdn,
+                                                  text=txt, interface=iface_index))
 
     def start(self):
         log("avahi:starting: %s", self.publishers)
@@ -142,8 +144,10 @@ class AvahiPublisher(object):
 
     def start(self):
         try:
-            self.server = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER), avahi.DBUS_INTERFACE_SERVER)
-            self.group = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, self.server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
+            self.server = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER),
+                                         avahi.DBUS_INTERFACE_SERVER)
+            self.group = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, self.server.EntryGroupNew()),
+                                        avahi.DBUS_INTERFACE_ENTRY_GROUP)
         except Exception as e:
             log.warn("failed to connect to avahi's dbus interface: %s", e)
             return False

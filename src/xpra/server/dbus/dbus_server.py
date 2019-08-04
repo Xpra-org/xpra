@@ -355,9 +355,9 @@ class DBUS_Server(DBUS_Server_Base):
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetAllInfo(self, callback, errback):
         self.log(".GetAllInfo()")
-        def gotinfo(_proto=None, info={}):
+        def gotinfo(_proto, info):
             try:
-                v =  dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in info.items())
+                v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in info.items())
                 #v =  native_to_dbus(info)
                 log("native_to_dbus(..)=%s", v)
                 callback(v)
@@ -371,7 +371,7 @@ class DBUS_Server(DBUS_Server_Base):
     @dbus.service.method(INTERFACE, in_signature='s', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetInfo(self, subsystem, callback, errback):
         self.log(".GetInfo(%s)", subsystem)
-        def gotinfo(_proto=None, info={}):
+        def gotinfo(_proto, info):
             sub = info.get(subsystem)
             try:
                 v =  dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in sub.items())

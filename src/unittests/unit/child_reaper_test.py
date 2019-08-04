@@ -55,7 +55,9 @@ class TestChildReaper(unittest.TestCase):
         count -= 1
         i = cr.get_info()
         children = i.get("children").get("total")
-        assert children==count, "expected the sleep process to have been forgotten (%s children), but got %s children instead in the reaper records" % (count, children)
+        if children!=count:
+            raise Exception("expected the sleep process to have been forgotten (%s children)" % count +
+            "but got %s children instead in the reaper records" % children)
         reaper_cleanup()
 
 

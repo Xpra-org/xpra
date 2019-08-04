@@ -593,7 +593,7 @@ class BaseWindowModel(CoreX11WindowModel):
                 log.info("Unhandled _NET_WM_STATE request: '%s'", event, atom1)
                 log.info(" event%s", event)
             return True
-        elif event.message_type=="WM_CHANGE_STATE":
+        if event.message_type=="WM_CHANGE_STATE":
             iconic = event.data[0]
             log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%#x",
                 ICONIC_STATE_STRING.get(iconic, iconic), event.serial, self.last_unmap_serial)
@@ -604,16 +604,16 @@ class BaseWindowModel(CoreX11WindowModel):
                 ):
                 self._updateprop("iconic", iconic==IconicState)
             return True
-        elif event.message_type=="_NET_WM_MOVERESIZE":
+        if event.message_type=="_NET_WM_MOVERESIZE":
             log("_NET_WM_MOVERESIZE: %s", event)
             self.emit("initiate-moveresize", event)
             return True
-        elif event.message_type=="_NET_ACTIVE_WINDOW" and event.data[0] in (0, 1):
+        if event.message_type=="_NET_ACTIVE_WINDOW" and event.data[0] in (0, 1):
             log("_NET_ACTIVE_WINDOW: %s", event)
             self.set_active()
             self.emit("raised", event)
             return True
-        elif event.message_type=="_NET_WM_DESKTOP":
+        if event.message_type=="_NET_WM_DESKTOP":
             workspace = int(event.data[0])
             #query the workspace count on the root window
             #since we cannot access Wm from here..
@@ -630,7 +630,7 @@ class BaseWindowModel(CoreX11WindowModel):
                 workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s",
                                   workspacestr(workspace), ndesktops)
             return True
-        elif event.message_type=="_NET_WM_FULLSCREEN_MONITORS":
+        if event.message_type=="_NET_WM_FULLSCREEN_MONITORS":
             log("_NET_WM_FULLSCREEN_MONITORS: %s", event)
             #TODO: we should validate the indexes instead of copying them blindly!
             #TODO: keep track of source indication so we can forward that to the client

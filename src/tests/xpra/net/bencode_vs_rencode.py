@@ -69,7 +69,17 @@ def test_packets():
         'pycrypto.version': '2.6.1', 'bell': True, 'cursor.default_size': 66,
         'platform.release': '3.11.10-200.fc19.x86_64', 'lz4': True,
         'encoding.vpx.version': 'v1.2.0', 'sound.receive': True, 'digest': ('hmac', 'xor'),
-        'aliases': {'suspend': 13, 'encoding': 14, 'desktop_size': 15, 'damage-sequence': 10, 'focus': 16, 'unmap-window': 17, 'connection-lost': 21, 'jpeg-quality': 19, 'min-speed': 20, 'ping_echo': 8, 'keymap-changed': 18, 'shutdown-server': 22, 'quality': 23, 'close-window': 24, 'exit-server': 25, 'server-settings': 26, 'set-clipboard-enabled': 7, 'speed': 28, 'ping': 9, 'set-cursors': 11, 'resize-window': 29, 'set_deflate': 30, 'key-repeat': 31, 'layout-changed': 32, 'set-keyboard-sync-enabled': 12, 'sound-control': 33, 'screenshot': 34, 'resume': 35, 'sound-data': 36, 'pointer-position': 37, 'disconnect': 27, 'button-action': 38, 'map-window': 39, 'buffer-refresh': 40, 'info-request': 41, 'set-notify': 5, 'rpc': 42, 'configure-window': 43, 'set-bell': 6, 'min-quality': 44, 'gibberish': 45, 'hello': 46, 'key-action': 47, 'move-window': 48},
+        'aliases': {
+            'suspend': 13, 'encoding': 14, 'desktop_size': 15, 'damage-sequence': 10, 'focus': 16, 'unmap-window': 17,
+            'connection-lost': 21, 'jpeg-quality': 19, 'min-speed': 20, 'ping_echo': 8, 'keymap-changed': 18,
+            'shutdown-server': 22, 'quality': 23, 'close-window': 24, 'exit-server': 25, 'server-settings': 26,
+            'set-clipboard-enabled': 7, 'speed': 28, 'ping': 9, 'set-cursors': 11, 'resize-window': 29,
+            'set_deflate': 30, 'key-repeat': 31, 'layout-changed': 32, 'set-keyboard-sync-enabled': 12,
+            'sound-control': 33, 'screenshot': 34, 'resume': 35, 'sound-data': 36, 'pointer-position': 37,
+            'disconnect': 27, 'button-action': 38, 'map-window': 39, 'buffer-refresh': 40, 'info-request': 41,
+            'set-notify': 5, 'rpc': 42, 'configure-window': 43, 'set-bell': 6, 'min-quality': 44, 'gibberish': 45,
+            'hello': 46, 'key-action': 47, 'move-window': 48,
+            },
         'platform.platform': 'Linux-3.11.10-200.fc19.x86_64-x86_64-with-fedora-19-Schr\xc3\xb6dinger\xe2\x80\x99s_Cat',
         'change-quality': True, 'window_unmap': True,
         'uuid': '8643124ce701ee68dbb6b7a8c4eb13a5f6409494',
@@ -129,8 +139,13 @@ def test_packets():
     test_packet(pointer_position)
     key_action = [47, 1, 's', True, ['mod2'], 115, 's', 39, 0]
     test_packet(key_action)
-    new_window = [12, 2, 0, 0, 499, 316,
-                    {'size-constraints': {'minimum-size': (25, 17), 'base-size': (19, 4), 'increment': (6, 13)}, 'fullscreen': False, 'has-alpha': False, 'xid': '0xc00022', 'title': 'xterm', 'pid': 13773, 'client-machine': 'desktop', 'icon-title': 'xterm', 'window-type': ['NORMAL'], 'modal': False, 'maximized': False, 'class-instance': ['xterm', 'XTerm']}, {}]
+    new_window = [
+        12, 2, 0, 0, 499, 316, {
+            'size-constraints': {'minimum-size': (25, 17), 'base-size': (19, 4), 'increment': (6, 13)},
+            'fullscreen': False, 'has-alpha': False, 'xid': '0xc00022', 'title': 'xterm', 'pid': 13773,
+            'client-machine': 'desktop', 'icon-title': 'xterm', 'window-type': ['NORMAL'], 'modal': False,
+            'maximized': False, 'class-instance': ['xterm', 'XTerm']}, {},
+        ]
     test_packet(new_window)
 
     print("summary of packet tests:")
@@ -152,7 +167,8 @@ def test_image():
     cr.save()
     cr.transform(cairo.Matrix(0.6, 0, 1.0/3, 0.5, 0.02, 0.45))
     cr.push_group()
-    cr.rectangle(0, 0, 1, 1); cr.clip()
+    cr.rectangle(0, 0, 1, 1)
+    cr.clip()
     def draw_dest():
         cr.set_source_rgb(1, 1, 1)
         cr.rectangle(0, 0, 1, 1)
@@ -169,7 +185,8 @@ def test_image():
     cr.save()
     cr.transform(cairo.Matrix(0.6, 0, 1.0/3, 0.5, 0.04, 0.25))
     cr.push_group()
-    cr.rectangle(0, 0, 1, 1); cr.clip()
+    cr.rectangle(0, 0, 1, 1)
+    cr.clip()
     def draw_mask():
         cr.set_source_rgb(1, 0.9, 0.6)
         cr.rectangle(0, 0, 1, 1)
@@ -182,7 +199,8 @@ def test_image():
     cr.save()
     cr.transform(cairo.Matrix(0.6, 0, 1.0/3, 0.5, 0.06, 0.05))
     cr.push_group()
-    cr.rectangle(0, 0, 1, 1); cr.clip()
+    cr.rectangle(0, 0, 1, 1)
+    cr.clip()
     def draw_src():
         cr.set_source_rgb(0, 0, 0)
         cr.rectangle(0, 0, 1, 1)
@@ -192,43 +210,45 @@ def test_image():
     cr.paint_with_alpha(alpha[2])
     cr.restore()
 
-    if True:
-        cr.save()
-        cr.translate(1, 0)
-        cr.scale(1.0 / 3, 1.0 / 3)
-        cr.push_group()
-        cr.rectangle(0, 0, 1, 1); cr.clip()
-        draw_src()
-        cr.pop_group_to_source()
-        cr.paint()
-        cr.restore()
+    cr.save()
+    cr.translate(1, 0)
+    cr.scale(1.0 / 3, 1.0 / 3)
+    cr.push_group()
+    cr.rectangle(0, 0, 1, 1)
+    cr.clip()
+    draw_src()
+    cr.pop_group_to_source()
+    cr.paint()
+    cr.restore()
 
-        cr.save()
-        cr.translate(1, 1.0 / 3)
-        cr.scale(1.0 / 3, 1.0 / 3)
-        cr.push_group()
-        cr.rectangle(0, 0, 1, 1); cr.clip()
-        draw_mask()
-        cr.pop_group_to_source()
-        cr.paint()
-        cr.restore()
+    cr.save()
+    cr.translate(1, 1.0 / 3)
+    cr.scale(1.0 / 3, 1.0 / 3)
+    cr.push_group()
+    cr.rectangle(0, 0, 1, 1)
+    cr.clip()
+    draw_mask()
+    cr.pop_group_to_source()
+    cr.paint()
+    cr.restore()
 
-        cr.save()
-        cr.translate(1, 2.0 / 3)
-        cr.scale(1.0 / 3, 1.0 / 3)
-        cr.push_group()
-        cr.rectangle(0, 0, 1, 1); cr.clip()
-        draw_dest()
-        cr.pop_group_to_source()
-        cr.paint()
-        cr.restore()
+    cr.save()
+    cr.translate(1, 2.0 / 3)
+    cr.scale(1.0 / 3, 1.0 / 3)
+    cr.push_group()
+    cr.rectangle(0, 0, 1, 1)
+    cr.clip()
+    draw_dest()
+    cr.pop_group_to_source()
+    cr.paint()
+    cr.restore()
 
-        cr.set_line_width( max(cr.device_to_user_distance(2, 2)) )
-        cr.rectangle(1, 0, 1.0/3, 1)
-        cr.clip_preserve()
-        cr.stroke()
-        cr.rectangle(1, 1.0/3, 1.0/3, 1.0/3)
-        cr.stroke()
+    cr.set_line_width( max(cr.device_to_user_distance(2, 2)) )
+    cr.rectangle(1, 0, 1.0/3, 1)
+    cr.clip_preserve()
+    cr.stroke()
+    cr.rectangle(1, 1.0/3, 1.0/3, 1.0/3)
+    cr.stroke()
 
     pixels = surface.get_data()[:]
     #cr.show_page()
@@ -236,7 +256,7 @@ def test_image():
     surface.finish()
 
     reset_stats()
-    for encoder in ENCODER_NAME.keys():
+    for encoder in ENCODER_NAME:
         test_encode(pixels, encoder, 500)
     print("image compression test complete")
     print_stats()

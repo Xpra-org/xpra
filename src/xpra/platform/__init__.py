@@ -97,7 +97,7 @@ def _glib():
 def set_prgname(name):
     try:
         _glib().set_prgname(name)
-    except:
+    except Exception:
         pass
 
 def get_prgname():
@@ -109,7 +109,7 @@ def get_prgname():
 def set_application_name(name):
     try:
         _glib().set_application_name(name)
-    except:
+    except Exception:
         pass
 
 def get_application_name():
@@ -124,11 +124,11 @@ def do_get_username():
     try:
         import pwd
         return pwd.getpwuid(os.getuid()).pw_name
-    except:
+    except Exception:
         try:
             import getpass
             return getpass.getuser()
-        except:
+        except Exception:
             pass
     return ""
 
@@ -158,8 +158,7 @@ def platform_import(where, pm, required, *imports):
         if not found:
             if required:
                 raise Exception("could not find %s in %s" % (x, module))
-            else:
-                continue
+            continue
         v = getattr(platform_module, x)
         where[x] = v
 

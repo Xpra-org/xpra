@@ -29,7 +29,9 @@ def get_low_limit(mmap_enabled, window_dimensions):
     return low_limit
 
 
-def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, is_OR, soft_expired, batch, global_statistics, statistics, bandwidth_limit):
+def calculate_batch_delay(wid, window_dimensions,
+                          has_focus, other_is_fullscreen, other_is_maximized, is_OR,
+                          soft_expired, batch, global_statistics, statistics, bandwidth_limit):
     """
         Calculates a new batch delay.
         We first gather some statistics,
@@ -40,7 +42,8 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen
 
     #for each indicator: (description, factor, weight)
     factors = statistics.get_factors(bandwidth_limit)
-    statistics.target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency, global_statistics.avg_client_latency)
+    statistics.target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency,
+                                                                     global_statistics.avg_client_latency)
     factors += global_statistics.get_factors(low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
@@ -96,7 +99,7 @@ def update_batch_delay(batch, factors, min_delay=0):
         else:
             log("update_batch_delay: %-28s : %.2f,%.2f  %s", x[0], x[2], x[3], x[1])
     valid_factors = tuple(x for x in factors if x is not None and len(x)==4)
-    all_factors_weight = sum(w for _,_,_,w in valid_factors)
+    all_factors_weight = sum(vf[-1] for vf in valid_factors)
     if all_factors_weight==0:
         log("update_batch_delay: no weights yet!")
         return
@@ -236,7 +239,9 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     return info, int(speed), max_speed
 
 
-def get_target_quality(window_dimensions, batch, global_statistics, statistics, bandwidth_limit, min_quality, min_speed):
+def get_target_quality(window_dimensions, batch,
+                       global_statistics, statistics, bandwidth_limit,
+                       min_quality, min_speed):
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
     #***********************************************************
     # quality:

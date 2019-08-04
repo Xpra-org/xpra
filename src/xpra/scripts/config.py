@@ -1384,7 +1384,7 @@ def fixup_keyboard(options):
             if r and len(r)==1 and r[0]=="":
                 r = []
             return r
-        except:
+        except Exception:
             return []
     options.keyboard_layouts = p(options.keyboard_layouts)
     options.keyboard_variants = p(options.keyboard_variants)

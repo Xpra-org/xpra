@@ -277,7 +277,7 @@ class AudioMixin(StubSourceMixin):
             if not self.sound_bundle_metadata:
                 #client does not support bundling, send packet metadata as individual packets before the main packet:
                 for x in packet_metadata:
-                    self.send_sound_data(sound_source, x)
+                    self.send_sound_data(sound_source, x, {})
                 packet_metadata = ()
             else:
                 #the packet metadata is compressed already:
@@ -286,7 +286,7 @@ class AudioMixin(StubSourceMixin):
         can_drop_packet = (sound_source.info or {}).get("buffer_count", 0)>10
         self.send_sound_data(sound_source, data, metadata, packet_metadata, can_drop_packet)
 
-    def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=None, can_drop_packet=False):
+    def send_sound_data(self, sound_source, data, metadata, packet_metadata=None, can_drop_packet=False):
         packet_data = [sound_source.codec, Compressed(sound_source.codec, data), metadata]
         if packet_metadata:
             assert self.sound_bundle_metadata

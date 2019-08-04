@@ -720,7 +720,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         challenge_response = gendigest(actual_digest, password, salt)
         if not challenge_response:
             log("invalid digest module '%s': %s", actual_digest)
-            self.auth_error(EXIT_UNSUPPORTED, "server requested '%s' digest but it is not supported" % actual_digest, "invalid digest")
+            self.auth_error(EXIT_UNSUPPORTED,
+                            "server requested '%s' digest but it is not supported" % actual_digest, "invalid digest")
             return
         authlog("%s(%s, %s)=%s", actual_digest, repr(password), repr(salt), repr(challenge_response))
         self.do_send_challenge_reply(challenge_response, client_salt)
@@ -741,13 +742,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #either from hello response or from challenge packet:
         self.server_padding_options = caps.strlistget("cipher.padding.options", [DEFAULT_PADDING])
         if not cipher or not cipher_iv:
-            self.warn_and_quit(EXIT_ENCRYPTION, "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
+            self.warn_and_quit(EXIT_ENCRYPTION,
+                               "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
             return False
         if cipher not in ENCRYPTION_CIPHERS:
-            self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, csv(ENCRYPTION_CIPHERS)))
+            self.warn_and_quit(EXIT_ENCRYPTION,
+                               "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, csv(ENCRYPTION_CIPHERS)))
             return False
         if padding not in ALL_PADDING_OPTIONS:
-            self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher padding: %s, allowed ciphers: %s" % (padding, csv(ALL_PADDING_OPTIONS)))
+            self.warn_and_quit(EXIT_ENCRYPTION,
+                               "unsupported server cipher padding: %s, allowed ciphers: %s" % (padding, csv(ALL_PADDING_OPTIONS)))
             return False
         p = self._protocol
         if not p:
