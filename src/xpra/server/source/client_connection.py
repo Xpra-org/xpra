@@ -453,7 +453,6 @@ class ClientConnection(ClientConnectionClass):
                 "hello-sent"        : self.hello_sent,
                 "jitter"            : self.jitter,
                 "bandwidth-limit"   : {
-                    "setting"       : self.bandwidth_limit or 0,
                     "detection"     : self.bandwidth_detection,
                     "actual"        : self.soft_bandwidth_limit or 0,
                     }
