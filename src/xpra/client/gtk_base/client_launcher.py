@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#pylint: disable=no-member
+
 """ client_launcher.py
 
 This is a simple GUI for starting the xpra client.

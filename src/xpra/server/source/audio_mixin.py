@@ -321,7 +321,7 @@ class AudioMixin(StubSourceMixin):
             msg = "unknown sound action: %s" % action
             log.error(msg)
             return msg
-        return method(*args)
+        return method(*args)  #pylint: disable=not-callable
 
     def sound_control_stop(self, sequence_str=""):
         if sequence_str:
