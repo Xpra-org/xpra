@@ -799,6 +799,7 @@ class ClientExtras(object):
                         self.client.suspend()
                     else:
                         self.client.resume()
+            return True
         except Exception:
             log.error("Error checking display sleep status", exc_info=True)
             self.check_display_timer = 0
