@@ -105,10 +105,10 @@ class GTK2WindowBase(GTKClientWindowBase):
     ######################################################################
 
     def queue_draw_area(self, x, y, width, height):
-    	if self.drawing_area:
-	        window = self.drawing_area.get_window()
+        if self.drawing_area:
+            window = self.drawing_area.get_window()
         else:
-	        window = self.get_window()
+            window = self.get_window()
         drawlog("queue_draw_area%s window=%s, window offset=%s", (x, y, width, height), window, self.window_offset)
         if not window:
             log.warn("Warning: ignoring draw packet,")
@@ -132,10 +132,10 @@ class GTK2WindowBase(GTKClientWindowBase):
         backing = self._backing
         if not (self.flags() & gtk.MAPPED) or backing is None:
             return
-    	if self.drawing_area:
-	        window = self.drawing_area.get_window()
+        if self.drawing_area:
+            window = self.drawing_area.get_window()
         else:
-	        window = self.get_window()
+            window = self.get_window()
         w,h = window.get_size()
         if w>=32768 or h>=32768:
             log.error("cannot paint on window which is too large: %sx%s !", w, h)
