@@ -81,7 +81,7 @@ def do_get_encodings():
         if stripped in Image.OPEN:
             encodings.append(encoding)
     log("do_get_encodings()=%s", encodings)
-    return tuple(encodings)
+    return encodings
 
 def get_encodings():
     return ENCODINGS
