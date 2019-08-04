@@ -30,7 +30,11 @@ def make_graph_imagesurface(data, labels=None, width=320, height=200, title=None
                       colours=DEFAULT_COLOURS, dots=False, curves=True):
     #print("make_graph_pixmap(%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (data, labels, width, height, title,
     #                  show_y_scale, show_x_scale, min_y_scale, colours))
-    surface = cairo.ImageSurface(cairo.Format.RGB24, width, height)
+    try:
+        fmt = cairo.Format.RGB24
+    except AttributeError:
+        fmt = cairo.FORMAT_RGB24
+    surface = cairo.ImageSurface(fmt, width, height)
     y_label_chars = 4
     x_offset = y_label_chars*8
     y_offset = 20
