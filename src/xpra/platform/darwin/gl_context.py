@@ -5,9 +5,10 @@
 
 import objc #@UnresolvedImport
 from Cocoa import (
-    NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLPFAWindow, NSOpenGLPFAAlphaSize, #@UnresolvedImport
-    NSOpenGLPFABackingStore, NSOpenGLPFAColorSize, NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, #@UnresolvedImport
-    NSOpenGLPFAAccumSize, NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, #@UnresolvedImport
+    NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLPFAWindow,                #@UnresolvedImport
+    NSOpenGLPFAAlphaSize, NSOpenGLPFABackingStore, NSOpenGLPFAColorSize,    #@UnresolvedImport
+    NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,    #@UnresolvedImport
+    NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, NSOpenGLCPSurfaceOpacity, #@UnresolvedImport
     )
 
 from xpra.gtk_common.gtk_util import make_temp_window
@@ -18,8 +19,11 @@ from xpra.log import Logger
 log = Logger("opengl")
 
 if is_gtk3():
-    from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr   #@UnresolvedImport
+    from xpra.platform.darwin.gdk3_bindings import (    #@UnresolvedImport
+        get_nsview_ptr, enable_transparency,
+        )
 else:
+    enable_transparency = None
     def get_nsview_ptr(window):
         return window.nsview
 
@@ -145,6 +149,9 @@ class AGLContext(object):
             self.nsview_ptr = nsview_ptr
             nsview = objc.objc_object(c_void_p=nsview_ptr)
             log("get_paint_context(%s) nsview(%#x)=%s", gdk_window, nsview_ptr, nsview)
+            if self.alpha and enable_transparency:
+                self.gl_context.setValues_forParameter_(0, NSOpenGLCPSurfaceOpacity)
+                enable_transparency(gdk_window)
             self.window_context = AGLWindowContext(self.gl_context, nsview)
         return self.window_context
 

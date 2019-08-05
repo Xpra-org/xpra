@@ -17,7 +17,7 @@ from xpra.util import (
     )
 from xpra.os_util import (
     bytestostr, strtobytes, hexstr, monotonic_time,
-    WIN32, OSX, POSIX, is_Wayland,
+    WIN32, OSX, POSIX, PYTHON3, is_Wayland,
     )
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
@@ -1095,8 +1095,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return (self.ClientWindowClass,)
             if metadata.boolget("has-alpha", False):
                 return (self.ClientWindowClass,)
-        if OSX:
-            #OSX doesn't do alpha:
+        if OSX and not PYTHON3:
+            #GTK2 on OSX doesn't do alpha:
             if metadata.boolget("has-alpha", False):
                 return (self.ClientWindowClass,)
         return (self.GLClientWindowClass, self.ClientWindowClass)

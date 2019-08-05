@@ -1759,9 +1759,10 @@ if OSX:
         add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
                     "-ObjC",
                     "-framework", "AppKit",
+                    "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/",
                     "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/")
         cython_add(Extension("xpra.platform.darwin.gdk3_bindings",
-                ["xpra/platform/darwin/gdk3_bindings.pyx"],
+                ["xpra/platform/darwin/gdk3_bindings.pyx", "xpra/platform/darwin/transparency_glue.m"],
                 language="objc",
                 **quartz_pkgconfig
                 ))
@@ -1772,7 +1773,7 @@ if OSX:
                     '-framework', 'Foundation',
                     '-framework', 'AppKit',
                     '-ObjC',
-                    "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/Cocoa.h")
+                    "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/")
         cython_add(Extension("xpra.platform.darwin.gdk_bindings",
                 ["xpra/platform/darwin/gdk_bindings.pyx", "xpra/platform/darwin/nsevent_glue.m"],
                 language="objc",
