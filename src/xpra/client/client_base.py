@@ -654,7 +654,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if local and ALLOW_LOCALHOST_PASSWORDS:
                 return True
             if not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
-                self.auth_error(EXIT_ENCRYPTION, "server requested '%s' digest, cowardly refusing to use it without encryption" % digest, "invalid digest")
+                self.auth_error(EXIT_ENCRYPTION,
+                                "server requested '%s' digest, cowardly refusing to use it without encryption" % digest,
+                                "invalid digest")
                 return False
         salt_digest = "xor"
         if len(packet)>=5:
