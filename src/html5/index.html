@@ -848,7 +848,8 @@
 				}
 				function update_clock() {
 					var now = new Date().getTime();
-					var server_time = client.last_ping_server_time + (now - client.last_ping_local_time);
+					var server_time = client.last_ping_server_time + (now - client.last_ping_local_time) + client.server_ping_latency;
+					clog("update_clock() now=", now, "last_ping_server_time=", client.last_ping_server_time, "last_ping_local_time=", client.last_ping_local_time);
 					var date = new Date(server_time);
 					var clock_text = $("#clock_text");
 					var width = clock_text.width();
