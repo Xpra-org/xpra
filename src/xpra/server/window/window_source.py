@@ -129,7 +129,8 @@ class WindowSource(WindowIconSource):
                     av_sync, av_sync_delay,
                     video_helper,
                     server_core_encodings, server_encodings,
-                    encoding, encodings, core_encodings, window_icon_encodings, encoding_options, icons_encoding_options,
+                    encoding, encodings, core_encodings, window_icon_encodings,
+                    encoding_options, icons_encoding_options,
                     rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size, bandwidth_limit, jitter):
@@ -602,7 +603,7 @@ class WindowSource(WindowIconSource):
         if not self.is_OR and not self.is_tray and "icons" in self.window.get_property_names():
             self.send_window_icon()
 
-    def refresh(self, options={}):
+    def refresh(self, options):
         assert self.ui_thread == threading.current_thread()
         w, h = self.window.get_dimensions()
         self.damage(0, 0, w, h, options)
@@ -1250,7 +1251,7 @@ class WindowSource(WindowIconSource):
         self.update_refresh_attributes()
 
 
-    def damage(self, x, y, w, h, options={}):
+    def damage(self, x, y, w, h, options=None):
         """ decide what to do with the damage area:
             * send it now (if not congested)
             * add it to an existing delayed region
@@ -1276,6 +1277,8 @@ class WindowSource(WindowIconSource):
             damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
             return
         now = monotonic_time()
+        if options is None:
+            options = {}
         if options.pop("damage", False):
             damagelog("damage%s wid=%i", (x, y, w, h, options), self.wid)
             self.statistics.last_damage_events.append((now, x,y,w,h))
@@ -1973,7 +1976,7 @@ class WindowSource(WindowIconSource):
         #overriden in window video source to exclude the video subregion
         return None
 
-    def full_quality_refresh(self, damage_options={}):
+    def full_quality_refresh(self, damage_options):
         #can be called from:
         # * xpra control channel
         # * send timeout
@@ -2008,7 +2011,7 @@ class WindowSource(WindowIconSource):
                 "speed"         : AUTO_REFRESH_SPEED,
                 }
 
-    def queue_damage_packet(self, packet, damage_time=0, process_damage_time=0, options={}):
+    def queue_damage_packet(self, packet, damage_time=0, process_damage_time=0, options=None):
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -2216,7 +2219,7 @@ class WindowSource(WindowIconSource):
 
     def decode_error_refresh(self):
         self.decode_error_refresh_timer = None
-        self.full_quality_refresh()
+        self.full_quality_refresh({})
 
     def cancel_decode_error_refresh_timer(self):
         dert = self.decode_error_refresh_timer
@@ -2334,7 +2337,7 @@ class WindowSource(WindowIconSource):
                 #maybe delta is not helping us, so clear it:
                 self.delta_pixel_data[bucket] = None
                 deltalog("delta: clearing bucket %i (compressed size=%s, original size=%s)", bucket, csize, psize)
-                #TODO: could tell the clients they can clear it too
+                #we could tell the clients they can clear it too - meh
                 #(add a new client capability and send it a zero store value)
             else:
                 #find the bucket to use:

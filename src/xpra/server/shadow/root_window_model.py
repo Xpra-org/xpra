@@ -144,7 +144,7 @@ class RootWindowModel(object):
                     icon = (w, h, "png", icon_data)
                     icons = (icon,)
                     return icons
-            except:
+            except Exception:
                 log("failed to return window icon")
             return ()
         if prop=="content-type":

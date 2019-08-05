@@ -312,7 +312,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             traylog("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
             if icon_filename:
                 return pixbuf_new_from_file(icon_filename)
-        except:
+        except Exception:
             traylog.error("get_pixbuf(%s)", icon_name, exc_info=True)
         return  None
 
@@ -324,7 +324,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)
-        except:
+        except Exception:
             traylog.error("get_image(%s, %s)", icon_name, size, exc_info=True)
             return  None
 

@@ -59,7 +59,7 @@ class RFBSource(object):
             self.keyboard_config.set_default_keymap()
         return self.keyboard_config
 
-    def set_keymap(self, current_keyboard_config, keys_pressed, force=False, translate_only=False):
+    def set_keymap(self, _current_keyboard_config, keys_pressed, _force=False, _translate_only=False):
         kc = self.keyboard_config
         kc.keys_pressed = keys_pressed
         kc.set_keymap(True)
@@ -75,8 +75,8 @@ class RFBSource(object):
     def update_mouse(self, *args):
         log("update_mouse%s", args)
 
-    def damage(self, _wid, window, x, y, w, h, options={}):
-        polling = options.get("polling", False)
+    def damage(self, _wid, window, x, y, w, h, options=None):
+        polling = options and options.get("polling", False)
         p = self.protocol
         if polling and p is None or p.queue_size()>=2:
             #very basic RFB update rate control,

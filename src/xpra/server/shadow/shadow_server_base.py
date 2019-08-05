@@ -156,7 +156,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 self.notifier = x()
                 notifylog("notifier=%s", self.notifier)
                 break
-            except:
+            except Exception:
                 notifylog("failed to instantiate %s", x, exc_info=True)
 
     def get_notifier_classes(self):

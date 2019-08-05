@@ -115,12 +115,12 @@ class WindowIconSource(object):
         icons = self.window.get_property("icons")
         log("send_window_icon window %s found %i icons", self.window, len(icons or ()))
         if not icons:
-            #FIXME: this is a bit dirty,
+            #this is a bit dirty:
             #we figure out if the client is likely to have an icon for this wmclass already,
             #(assuming the window even has a 'class-instance'), and if not we send the default
             try:
                 c_i = self.window.get_property("class-instance")
-            except:
+            except Exception:
                 c_i = None
             if c_i and len(c_i)==2:
                 wm_class = c_i[0].encode("utf-8")

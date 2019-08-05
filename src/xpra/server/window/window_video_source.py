@@ -357,9 +357,11 @@ class WindowVideoSource(WindowSource):
             self.cleanup_codecs()
         WindowSource.set_new_encoding(self, encoding, strict)
 
-    def update_encoding_selection(self, encoding=None, exclude=[], init=False):
+    def update_encoding_selection(self, encoding=None, exclude=None, init=False):
         #override so we don't use encodings that don't have valid csc modes:
         log("wvs.update_encoding_selection(%s, %s, %s) full_csc_modes=%s", encoding, exclude, init, self.full_csc_modes)
+        if exclude is None:
+            exclude = []
         for x in self.video_encodings:
             if x not in self.core_encodings:
                 exclude.append(x)
@@ -561,7 +563,7 @@ class WindowVideoSource(WindowSource):
         self.cleanup_codecs()
 
 
-    def full_quality_refresh(self, damage_options={}):
+    def full_quality_refresh(self, damage_options):
         vs = self.video_subregion
         if vs and vs.rectangle:
             if vs.detection:
@@ -716,16 +718,19 @@ class WindowVideoSource(WindowSource):
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
-            return send_nonvideo(encoding=None)
+            send_nonvideo(encoding=None)
+            return
 
         if coding!="auto" and coding not in self.video_encodings:
             sublog("not a video encoding: %s" % coding)
             #keep current encoding selection function
-            return send_nonvideo(get_best_encoding=self.get_best_encoding)
+            send_nonvideo(get_best_encoding=self.get_best_encoding)
+            return
 
         if options.get("novideo"):
             sublog("video disabled in options")
-            return send_nonvideo(encoding=None)
+            send_nonvideo(encoding=None)
+            return
 
         if not vr:
             sublog("no video region, we may use the video encoder for something else")
@@ -772,7 +777,8 @@ class WindowVideoSource(WindowSource):
             ww, wh = self.window.get_dimensions()
             if actual_vr.x+actual_vr.width>ww or actual_vr.y+actual_vr.height>wh:
                 sublog("video region partially outside the window")
-                return send_nonvideo(encoding=None)
+                send_nonvideo(encoding=None)
+                return
             #send this using the video encoder:
             video_options = options.copy()
             video_options["av-sync"] = True
@@ -1868,7 +1874,7 @@ class WindowVideoSource(WindowSource):
             coding = "scroll"
             end = monotonic_time()
             packet = self.make_draw_packet(x, y, w, h, coding, LargeStructure(coding, scrolls), 0, client_options, options)
-            self.queue_damage_packet(packet)
+            self.queue_damage_packet(packet, 0, 0, options)
             compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s as %3i rectangles  (%5iKB)           , sequence %5i, client_options=%s",
                  (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options)
         #send the rest as rectangles:
@@ -1903,7 +1909,7 @@ class WindowVideoSource(WindowSource):
                 #    im.save(filename, "png")
                 #    log.info("saved scroll y=%i h=%i to %s", sy, sh, filename)
                 packet = self.make_draw_packet(sub.get_target_x(), sub.get_target_y(), outw, outh, coding, data, outstride, client_options, options)
-                self.queue_damage_packet(packet)
+                self.queue_damage_packet(packet, 0, 0, options)
                 psize = w*sh*4
                 csize = len(data)
                 compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",

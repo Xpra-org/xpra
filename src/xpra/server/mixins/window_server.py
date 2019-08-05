@@ -245,7 +245,7 @@ class WindowServer(StubServerMixin):
         ww, wh = window.get_dimensions()
         self.refresh_window_area(window, 0, 0, ww, wh)
 
-    def refresh_window_area(self, window, x, y, width, height, options={}):
+    def refresh_window_area(self, window, x, y, width, height, options=None):
         wid = self._window_to_id[window]
         for ss in tuple(self._server_sources.values()):
             ss.damage(wid, window, x, y, width, height, options)

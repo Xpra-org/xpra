@@ -246,7 +246,7 @@ class AudioMixin(StubSourceMixin):
                     log("Popen(%s)=%s", cmd, proc)
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
-            except:
+            except Exception:
                 pass
         log("new_stream(%s, %s)", sound_source, codec)
         if self.sound_source!=sound_source:
