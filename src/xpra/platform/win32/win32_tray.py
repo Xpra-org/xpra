@@ -79,12 +79,12 @@ class Win32Tray(TrayBase):
             log.warn("Warning: failed to query monitors: %s", e)
         log("calculate_offset() x=%i, y=%i", self.offset_x, self.offset_y)
 
-    def set_tooltip(self, name):
+    def set_tooltip(self, tooltip=None):
         if self.tray_widget:
-            self.tray_widget.set_tooltip(name)
+            self.tray_widget.set_tooltip(tooltip)
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
         if self.tray_widget:
             self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
             self.icon_timestamp = monotonic_time()

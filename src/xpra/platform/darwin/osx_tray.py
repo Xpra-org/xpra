@@ -36,6 +36,9 @@ class OSXTray(TrayBase):
         set_exit_cb(self.quit)
 
 
+    def get_geometry(self):
+        return None
+
     def show(self):
         pass
 
@@ -52,7 +55,7 @@ class OSXTray(TrayBase):
     def ready(self):
         gui_ready()
 
-    def set_tooltip(self, text=None):
+    def set_tooltip(self, tooltip=None):
         #label cannot be set on the dock icon?
         pass
 
@@ -65,7 +68,7 @@ class OSXTray(TrayBase):
                 self.macapp.cancel_attention_request(self.last_attention_request_id)
                 self.last_attention_request_id = -1
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
         tray_icon = pixbuf_new_from_data(pixels, COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
         self.icon_timestamp = monotonic_time()

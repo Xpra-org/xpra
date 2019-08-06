@@ -63,22 +63,22 @@ class AppindicatorTray(TrayBase):
         #no way to tell :(
         return None
 
-    def hide(self, *_args):
+    def hide(self):
         self.tray_widget.set_status(PASSIVE)
 
-    def show(self, *_args):
+    def show(self):
         self.tray_widget.set_status(ACTIVE)
 
     def set_blinking(self, on):
         #"I'm Afraid I Can't Do That"
         pass
 
-    def set_tooltip(self, text=None):
+    def set_tooltip(self, tooltip=None):
         #we only use this if we haven't got an icon
         #as with appindicator this creates a large text label
         #next to where the icon is/should be
         if not self._has_icon:
-            self.tray_widget.set_label(text or "Xpra")
+            self.tray_widget.set_label(tooltip or "Xpra")
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
         self.clean_last_tmp_icon()
