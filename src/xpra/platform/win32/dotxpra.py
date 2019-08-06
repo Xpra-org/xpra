@@ -15,7 +15,7 @@ PIPE_PATH = "%s.\\pipe\\" % PIPE_ROOT
 
 
 class DotXpra(object):
-    def __init__(self, sockdir=None, sockdirs=[], actual_username="", *args, **kwargs):
+    def __init__(self, sockdir=None, sockdirs=(), actual_username="", *_args, **_kwargs):
         self.username = actual_username
 
     def osexpand(self, v):
@@ -33,7 +33,7 @@ class DotXpra(object):
     UNKNOWN = UNKNOWN
     INACCESSIBLE = INACCESSIBLE
 
-    def get_server_state(self, sockpath, timeout=5):
+    def get_server_state(self, sockpath, _timeout=5):
         full_path = PIPE_PATH+sockpath
         if os.path.exists(full_path):
             return self.LIVE
