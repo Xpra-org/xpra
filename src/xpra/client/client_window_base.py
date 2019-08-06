@@ -664,9 +664,9 @@ class ClientWindowBase(ClientWidgetBase):
                     rx, ry = 0, 0
                 else:
                     rx, ry, rw, rh = self._client.srect(x, y, width, height)
-                if self.window_offset:
-                    rx += self.window_offset[0]
-                    ry += self.window_offset[1]
+                #if self.window_offset:
+                #    rx -= self.window_offset[0]
+                #    ry -= self.window_offset[1]
                 self.idle_add(self.queue_draw_area, rx, ry, rw, rh)
         #only register this callback if we actually need it:
         if backing.draw_needs_refresh:

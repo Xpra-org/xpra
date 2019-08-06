@@ -1995,7 +1995,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         rx, ry = self._get_relative_pointer(event)
         #adjust for window offset:
         pointer = self._offset_pointer(x, y)
-        relative_pointer = self._offset_pointer(rx, ry)
+        relative_pointer = self._client.cp(rx, ry)
         #FIXME: state is used for both mods and buttons??
         modifiers = self._client.mask_to_names(event.state)
         buttons = self._event_buttons(event)
