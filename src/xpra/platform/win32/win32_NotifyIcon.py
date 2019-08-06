@@ -235,8 +235,6 @@ class win32NotifyIcon(object):
                 pass
             self.current_icon = self.LoadImage(iconPathName) or FALLBACK_ICON
         self.create_tray_window()
-        #register callbacks:
-        win32NotifyIcon.instances[self.hwnd] = self
 
     def __repr__(self):
         return "win32NotifyIcon(%#x)" % self.app_id
@@ -256,6 +254,8 @@ class win32NotifyIcon(object):
             raise ctypes.WinError(ctypes.get_last_error())
         log("create_window() hwnd=%#x", self.hwnd)
         UpdateWindow(self.hwnd)
+        #register callbacks:
+        win32NotifyIcon.instances[self.hwnd] = self
 
     def register_tray(self):
         r = Shell_NotifyIconW(NIM_ADD, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
