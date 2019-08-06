@@ -113,7 +113,6 @@ class TopClient(MonitorXpraClient):
             cursor_info = self.dictget("cursor")
             cx, cy = cursor_info.intlistget("position", (0, 0))
             self.stdscr.addstr(4, 0, "cursor at %ix%i" % (cx, cy))
-            #todo: show clipboard state
 
             hpos = 6
             for client_no in range(nclients):

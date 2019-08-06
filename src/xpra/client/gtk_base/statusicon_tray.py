@@ -61,20 +61,20 @@ class GTKStatusIconTray(TrayBase):
         else:
             self.handle_click(1)
 
-    def popup_menu(self, widget, button, time, *args):
+    def popup_menu(self, widget, button, event_time, *args):
         modifiers_mask = get_default_root_window().get_pointer()[-1]
-        log("popup_menu(%s, %s, %s, %s) modifiers_mask=%s", widget, button, time, args, modifiers_mask)
+        log("popup_menu(%s, %s, %s, %s) modifiers_mask=%s", widget, button, event_time, args, modifiers_mask)
         if (modifiers_mask & SHIFT_MASK) ^ OSX:
             self.handle_click(1)
         else:
             self.handle_click(2)
 
-    def handle_click(self, button, time=0):
-        log("handle_click(%i, %i)", button, time)
+    def handle_click(self, button, event_time=0):
+        log("handle_click(%i, %i)", button, event_time)
         self.may_guess()
         if self.click_cb:
-            self.click_cb(button, 1, time)
-            self.click_cb(button, 0, time)
+            self.click_cb(button, 1, event_time)
+            self.click_cb(button, 0, event_time)
 
 
     def hide(self):

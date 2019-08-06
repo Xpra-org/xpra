@@ -37,7 +37,7 @@ class KeyboardHelper(object):
         self.options = options
         #the platform class which allows us to map the keys:
         from xpra.platform.keyboard import Keyboard
-        self.keyboard = Keyboard()
+        self.keyboard = Keyboard()      #pylint: disable=not-callable
         log("KeyboardHelper(%s) keyboard=%s",
             (net_send, keyboard_sync, key_shortcuts,
              raw, layout, layouts, variant, variants, options), self.keyboard)
@@ -86,7 +86,6 @@ class KeyboardHelper(object):
 
 
     def parse_shortcuts(self, strs):
-        #TODO: maybe parse with re instead?
         if not strs:
             """ if none are defined, add this as default
             it would be nicer to specify it via OptionParser in main
@@ -210,7 +209,7 @@ class KeyboardHelper(object):
                     modifiers.append(imod)
                 if not valid:
                     continue
-            #TODO: validate keyname
+            #should we be validating the keyname?
             keyname = keyspec[len(keyspec)-1]
             shortcuts.setdefault(keyname, []).append((modifiers, action, args))
             log("shortcut(%s)=%s", s, csv((modifiers, action, args)))

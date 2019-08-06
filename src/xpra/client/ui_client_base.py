@@ -103,7 +103,7 @@ class UIXpraClient(ClientBaseClass):
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
             log.info(" running on %s", osinfo)
-        except:
+        except Exception:
             log("platform name error:", exc_info=True)
         wm = get_wm_name()      #pylint: disable=assignment-from-none
         if wm:
@@ -156,7 +156,7 @@ class UIXpraClient(ClientBaseClass):
         self._on_server_setting_changed = {}
 
 
-    def init(self, opts, extra_args=[]):
+    def init(self, opts, extra_args=()):
         """ initialize variables from configuration """
         for c in CLIENT_BASES:
             log("init: %s", c)
@@ -201,8 +201,8 @@ class UIXpraClient(ClientBaseClass):
             from xpra.scripts.main import strip_defaults_start_child
             from xpra.scripts.config import make_defaults_struct
             defaults = make_defaults_struct()
-            self.start_new_commands  = strip_defaults_start_child(opts.start, defaults.start)
-            self.start_child_new_commands  = strip_defaults_start_child(opts.start_child, defaults.start_child)
+            self.start_new_commands  = strip_defaults_start_child(opts.start, defaults.start)   #pylint: disable=no-member
+            self.start_child_new_commands  = strip_defaults_start_child(opts.start_child, defaults.start_child) #pylint: disable=no-member
 
         if MOUSE_DELAY_AUTO:
             try:
@@ -239,7 +239,7 @@ class UIXpraClient(ClientBaseClass):
             log("UIXpraClient.cleanup() calling %s.cleanup()", type(x))
             try:
                 x.cleanup()
-            except:
+            except Exception:
                 log.error("error on %s cleanup", type(x), exc_info=True)
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
