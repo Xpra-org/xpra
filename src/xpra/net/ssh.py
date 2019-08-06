@@ -183,6 +183,15 @@ class SSHProxyCommandConnection(SSHSocketConnection):
         SSHSocketConnection.__init__(self, ssh_channel, None, None, peername, target, info)
         self.process = None
 
+    def error_is_closed(self, e):
+        p = self.process
+        if p:
+            #if the process has terminated,
+            #then the connection must be closed:
+            if p[0].poll() is not None:
+                return True
+        return SSHSocketConnection.error_is_closed(self, e)
+
     def get_socket_info(self):
         p = self.process
         if not p:

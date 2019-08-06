@@ -352,11 +352,14 @@ class SocketConnection(Connection):
         except EOFError:
             log("%s.close()", s, exc_info=True)
         except IOError as e:
-            if isinstance(e, CLOSED_EXCEPTIONS):
+            if self.error_is_closed(e):
                 log("%s.close() already closed!", s)
             else:
                 raise
         log("%s.close() done", self)
+
+    def error_is_closed(self, e):
+        return isinstance(e, CLOSED_EXCEPTIONS)
 
     def __repr__(self):
         if self.remote:
