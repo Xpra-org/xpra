@@ -181,9 +181,20 @@ class SSHSocketConnection(SocketConnection):
 class SSHProxyCommandConnection(SSHSocketConnection):
     def __init__(self, ssh_channel, peername, target, info):
         SSHSocketConnection.__init__(self, ssh_channel, None, None, peername, target, info)
+        self.process = None
 
     def get_socket_info(self):
-        return {}
+        p = self.process
+        if not p:
+            return {}
+        proc, _ssh, cmd = p
+        return {
+            "process" : {
+                "pid"       : proc.pid,
+                "returncode": proc.returncode,
+                "command"   : cmd,
+                }
+            }
 
 
 def ssh_paramiko_connect_to(display_desc):
