@@ -133,7 +133,7 @@ def input_pass(prompt):
 
 class SSHSocketConnection(SocketConnection):
 
-    def __init__(self, ssh_channel, sock, sockname, peername, target, info={}):
+    def __init__(self, ssh_channel, sock, sockname, peername, target, info=None):
         SocketConnection.__init__(self, ssh_channel, sockname, peername, target, "ssh", info)
         self._raw_socket = sock
 
