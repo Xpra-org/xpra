@@ -788,8 +788,7 @@ class Protocol(object):
             self.start_read_parser_thread()
         self._read_queue.put(data)
         #from now on, take shortcut:
-        if self._read_queue_put==self.read_queue_put:
-            self._read_queue_put = self._read_queue.put
+        self._read_queue_put = self._read_queue.put
 
     def start_read_parser_thread(self):
         self._read_parser_thread = start_thread(self._read_parse_thread_loop, "parse", daemon=True)
@@ -920,7 +919,7 @@ class Protocol(object):
 
                 #decrypt if needed:
                 if self.cipher_in:
-                    if not (protocol_flags & FLAGS_CIPHER):
+                    if not protocol_flags & FLAGS_CIPHER:
                         self.invalid("unencrypted packet dropped", data)
                         return
                     cryptolog("received %i %s encrypted bytes with %i padding",
@@ -930,7 +929,7 @@ class Protocol(object):
                         def debug_str(s):
                             try:
                                 return hexstr(bytearray(s))
-                            except:
+                            except Exception:
                                 return csv(tuple(s))
                         # pad byte value is number of padding bytes added
                         padtext = pad(self.cipher_in_padding, padding_size)
