@@ -782,7 +782,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		var me = this;
 		setTimeout(function () {
 			me.send(packet);
-			if (pressed && me.swap_keys && raw_modifiers.includes("meta") && ostr!="meta") {
+			if (pressed && Utilities.isMacOS() && raw_modifiers.includes("meta") && ostr!="meta") {
 				//macos will swallow the key release event if the meta modifier is pressed,
 				//so simulate one immediately:
 				packet = ["key-action", me.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
