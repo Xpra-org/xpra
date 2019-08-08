@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -37,7 +37,7 @@ class Encoder(object):
         the raw pixels and the metadata that goes with it.
     """
 
-    def init_context(self, width, height, src_format, dst_formats, encoding, quality, speed, scaling, options):
+    def init_context(self, width, height, src_format, dst_formats, encoding, quality, speed, scaling, _options):
         self.encoding = encoding
         self.width = width
         self.height = height
@@ -120,7 +120,7 @@ class Encoder(object):
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def compress_image(self, image, quality=-1, speed=-1, options={}):
+    def compress_image(self, image, quality=-1, speed=-1, options=None):
         log("compress_image(%s, %s)", image, options)
         #pass the pixels as they are
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
@@ -134,7 +134,7 @@ class Encoder(object):
                 "frame"     : self.frames,
                 "pts"       : image.get_timestamp()-self.first_frame_timestamp,
                 #pass-through encoder options:
-                "options"   : options,
+                "options"   : options or {},
                 #redundant metadata:
                 #"width"     : image.get_width(),
                 #"height"    : image.get_height(),
