@@ -109,12 +109,16 @@ class SessionsGUI(gtk.Window):
 
     def do_quit(self):
         log("do_quit()")
+        self.cleanup()
         gtk.main_quit()
 
     def app_signal(self, signum):
         self.exit_code = 128 + signum
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.do_quit()
+
+    def cleanup(self):
+        self.destroy()
 
 
     def update(self):

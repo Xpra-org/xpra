@@ -34,6 +34,10 @@ class mdns_sessions(SessionsGUI):
         self.listener.start()
 
 
+    def cleanup(self):
+        self.listener.stop()
+        SessionsGUI.cleanup(self)
+
     def mdns_remove(self, r_interface, r_protocol, r_name, r_stype, r_domain, r_flags):
         log("mdns_remove%s", (r_interface, r_protocol, r_name, r_stype, r_domain, r_flags))
         old_recs = self.records

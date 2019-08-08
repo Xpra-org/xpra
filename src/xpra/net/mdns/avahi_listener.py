@@ -30,6 +30,7 @@ class AvahiListener:
         self.sdref = None
         self.readers = []
         self.resolvers = []
+        self.signal_match = []
         self.service_type = service_type
         self.mdns_found = mdns_found
         self.mdns_add = mdns_add
@@ -86,12 +87,19 @@ class AvahiListener:
                                 avahi.PROTO_UNSPEC, XPRA_MDNS_TYPE, 'local', dbus.UInt32(0))),
                                 avahi.DBUS_INTERFACE_SERVICE_BROWSER)
         log("AvahiListener.start() service browser=%s", self.sbrowser)
-        self.sbrowser.connect_to_signal("ItemNew", self.service_found)
-        self.sbrowser.connect_to_signal("ItemRemove", self.service_removed)
+        s = self.sbrowser.connect_to_signal("ItemNew", self.service_found)
+        self.signal_match.append(s)
+        s = self.sbrowser.connect_to_signal("ItemRemove", self.service_removed)
+        self.signal_match.append(s)
 
     def stop(self):
-        #FIXME: how do we tell dbus we are no longer interested?
-        pass
+        sm = self.signal_match
+        self.signal_match = []
+        for s in sm:
+            try:
+                s.remove()
+            except Exception:
+                log.warn("Warning: failed to remove signal", exc_info=True)
 
 
 def main():
