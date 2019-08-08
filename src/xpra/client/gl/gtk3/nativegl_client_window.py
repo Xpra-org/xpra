@@ -7,7 +7,7 @@ from xpra.client.gl.gtk3.gl_client_window import GLClientWindowBase
 from xpra.client.gl.gtk_base.gl_drawing_area import GLDrawingArea, GLContext
 
 def check_support(force_enable=False, check_colormap=False):
-    return GLContext().check_support(force_enable)
+    return GLContext().check_support(force_enable)  #pylint: disable=not-callable
 
 
 class GLClientWindow(GLClientWindowBase):

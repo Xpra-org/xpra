@@ -79,7 +79,7 @@ def check_functions(*functions):
     for x in functions:
         try:
             name = x.__name__
-        except:
+        except AttributeError:
             name = str(x)
         if not bool(x):
             missing.append(name)
@@ -157,7 +157,7 @@ def check_PyOpenGL_support(force_enable):
             accel_version = OpenGL_accelerate.__version__
             props["accelerate"] = accel_version
             log("OpenGL_accelerate version %s", accel_version)
-        except:
+        except ImportError:
             log("OpenGL_accelerate not found")
             OpenGL_accelerate = None
             accel_version = None

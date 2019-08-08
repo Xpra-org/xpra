@@ -15,7 +15,7 @@ log = Logger("decoder", "vpx")
 
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport padbuf, MemBuf, memalign, object_as_buffer, memory_as_pybuffer
+from xpra.buffers.membuf cimport padbuf, MemBuf, memalign, object_as_buffer, memory_as_pybuffer #pylint: disable=syntax-error
 from xpra.os_util import bytestostr, OSX
 from xpra.util import envint
 

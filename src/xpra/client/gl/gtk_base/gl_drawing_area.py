@@ -5,13 +5,14 @@
 
 import sys
 
-from xpra.platform.gl_context import GLContext
-if not GLContext:
-    raise ImportError("no OpenGL context implementation for %s" % sys.platform)
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
 from xpra.gtk_common.gobject_compat import import_glib, import_gtk, gtk_version
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
+from xpra.platform.gl_context import GLContext
 from xpra.log import Logger
+
+if not GLContext:
+    raise ImportError("no OpenGL context implementation for %s" % sys.platform)
 
 log = Logger("opengl", "paint")
 
@@ -28,7 +29,7 @@ class GLDrawingArea(GLWindowBackingBase):
         glib.idle_add(*args, **kwargs)
 
     def init_gl_config(self, window_alpha):
-        self.context = GLContext(window_alpha)
+        self.context = GLContext(window_alpha)  #pylint: disable=not-callable
         self.window_context = None
 
     def is_double_buffered(self):

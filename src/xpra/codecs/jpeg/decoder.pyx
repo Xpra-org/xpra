@@ -12,7 +12,7 @@ log = Logger("decoder", "jpeg")
 
 from xpra.util import envbool, reverse_dict
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer
+from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer  #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from xpra.monotonic_time cimport monotonic_time

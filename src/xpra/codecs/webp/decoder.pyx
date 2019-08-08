@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport memalign, memory_as_pybuffer
+from xpra.buffers.membuf cimport memalign, memory_as_pybuffer  #pylint: disable=syntax-error
 from xpra.os_util import bytestostr
 
 

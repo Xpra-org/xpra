@@ -18,7 +18,7 @@ from xpra.os_util import path_permission_info
 from xpra.util import nonl, print_nested_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.buffers.membuf cimport memalign, object_as_buffer
+from xpra.buffers.membuf cimport memalign, object_as_buffer #pylint: disable=syntax-error
 
 
 from libc.stdint cimport uint32_t, uint8_t
