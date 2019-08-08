@@ -75,6 +75,8 @@ class subprocess_callee(object):
     """
     def __init__(self, input_filename="-", output_filename="-", wrapped_object=None, method_whitelist=None):
         self.name = ""
+        self._input = None
+        self._output = None
         self.input_filename = input_filename
         self.output_filename = output_filename
         self.method_whitelist = method_whitelist
@@ -130,16 +132,20 @@ class subprocess_callee(object):
             if self.protocol:
                 self.protocol.close()
                 self.protocol = None
-            if self.input_filename=="-":
+            i = self._input
+            if i:
+                self._input = None
                 try:
-                    self._input.close()
+                    i.close()
                 except (OSError, IOError):
-                    log("%s.close()", self._input, exc_info=True)
-            if self.output_filename=="-":
+                    log("%s.close()", i, exc_info=True)
+            o = self._output
+            if o:
+                self._output = None
                 try:
-                    self._output.close()
+                    o.close()
                 except (OSError, IOError):
-                    log("%s.close()", self._output, exc_info=True)
+                    log("%s.close()", o, exc_info=True)
 
     def make_protocol(self):
         #figure out where we read from and write to:
@@ -156,7 +162,9 @@ class subprocess_callee(object):
         else:
             self._output = open(self.output_filename, 'wb')
         #stdin and stdout wrapper:
-        conn = TwoFileConnection(self._output, self._input, abort_test=None, target=self.name, socktype=self.name, close_cb=self.net_stop)
+        conn = TwoFileConnection(self._output, self._input,
+                                 abort_test=None, target=self.name,
+                                 socktype=self.name, close_cb=self.net_stop)
         conn.timeout = 0
         protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
         setup_fastencoder_nocompression(protocol)
