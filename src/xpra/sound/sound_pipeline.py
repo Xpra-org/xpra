@@ -18,11 +18,11 @@ log = Logger("sound")
 gstlog = Logger("gstreamer")
 
 
-KNOWN_TAGS = set(
+KNOWN_TAGS = set((
     "bitrate", "codec", "audio-codec", "mode",
     "container-format", "encoder", "description", "language-code",
     "minimum-bitrate", "maximum-bitrate", "channel-mode",
-    )
+    ))
 
 FAULT_RATE = envint("XPRA_SOUND_FAULT_INJECTION_RATE")
 _counter = 0
