@@ -64,7 +64,7 @@ class Encodings(StubClientMixin):
         self.min_quality = opts.min_quality
         self.speed = opts.speed
         self.min_speed = opts.min_speed
-        load_codec("enc_pillow")
+        load_codec("dec_pillow")
         ae = self.allowed_encodings
         if "jpeg" in ae:
             #try to load the fast jpeg encoder:
