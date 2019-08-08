@@ -472,7 +472,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     #start the test command:
                     if config.USE_VIRTUALGL:
                         if isinstance(test_command, str):
-                            cmd = config.VGLRUN_BIN + "-d "+os.environ.get("DISPLAY")+" -- "+ test_command
+                            cmd = config.VGLRUN_BIN + " -d "+os.environ.get("DISPLAY")+" -- "+ test_command
                         elif isinstance(test_command, (list, tuple)):
                             cmd = [config.VGLRUN_BIN, "-d", os.environ.get("DISPLAY"), "--"] + list(test_command)
                         else:
