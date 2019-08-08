@@ -276,8 +276,6 @@ class EncodingsMixin(StubSourceMixin):
         send_ui = getattr(self, "ui_client", True) and getattr(self, "send_windows", True)
         if send_ui and not self.core_encodings:
             raise ClientException("client failed to specify any supported encodings")
-        if "png" in self.core_encodings:
-            self.window_icon_encodings.append("png")
         self.window_icon_encodings = c.strlistget("encodings.window-icon", ["premult_argb32"])
         self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
         #skip all other encoding related settings if we don't send pixels:
