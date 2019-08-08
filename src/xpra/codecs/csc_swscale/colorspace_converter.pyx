@@ -473,7 +473,7 @@ cdef class ColorspaceConverter:
         #now parse the output:
         if self.dst_format.endswith("P"):
             #planar mode, assume 3 planes:
-            oplanes = ImageWrapper._3_PLANES
+            oplanes = ImageWrapper.PLANAR_3
             out = [memoryview(output_buf[i]) for i in range(3)]
             strides = [self.out_stride[i] for i in range(3)]
         else:

@@ -42,7 +42,7 @@ def do_test_codec_roundtrip(encoder_class, decoder_class, encoding, src_format, 
         else:
             strides, pixels = make_planar_input(src_format, w, h, populate=populate)
             isize = sum([len(x) for x in pixels])
-            image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=ImageWrapper._3_PLANES)
+            image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=ImageWrapper.PLANAR_3)
 
         print("FRAME %s" % i)
         print("using %s to compress %s" % (encoder, image))

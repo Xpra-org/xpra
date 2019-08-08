@@ -304,7 +304,7 @@ def decompress_yuv(data, has_alpha=False):
             memory_as_pybuffer(<void *> YUVA.u, u_size, True),
             memory_as_pybuffer(<void *> YUVA.v, v_size, True),
             )
-    img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper._3_PLANES+alpha)
+    img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
     img.cython_buffer = <uintptr_t> buf
     return img
 

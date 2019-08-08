@@ -446,7 +446,7 @@ cdef class Pusher:
         cdef int Vhdiv = divs[2][1]
 
         iplanes = image.get_planes()
-        assert iplanes==ImageWrapper._3_PLANES, "invalid input format: %s planes" % iplanes
+        assert iplanes==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % iplanes
         assert image.get_width()>=self.width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.width)
         assert image.get_height()>=self.height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.height)
         planes = image.get_pixels()

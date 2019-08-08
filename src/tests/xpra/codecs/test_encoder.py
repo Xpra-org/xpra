@@ -102,7 +102,7 @@ def gen_src_images(src_format, w, h, nframes):
         #create a dummy ImageWrapper to compress:
         if src_format.startswith("YUV"):
             strides, pixels = make_planar_input(src_format, w, h, use_strings=False, populate=True, seed=seed+i)
-            planes = ImageWrapper._3_PLANES
+            planes = ImageWrapper.PLANAR_3
         else:
             pixels = make_rgb_input(src_format, w, h, use_strings=False, populate=True, seed=seed+i)
             strides = w*len(src_format)

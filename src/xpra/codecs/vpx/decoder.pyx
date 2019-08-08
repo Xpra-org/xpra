@@ -315,7 +315,7 @@ cdef class Decoder:
         self.frames += 1
         cdef double elapsed = 1000*(monotonic_time()-start)
         log("%s frame %4i decoded in %3ims", self.encoding, self.frames, elapsed)
-        return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper._3_PLANES)
+        return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3)
 
 
 def selftest(full=False):

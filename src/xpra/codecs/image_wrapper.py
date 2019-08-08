@@ -16,12 +16,14 @@ def clone_plane(plane):
 class ImageWrapper(object):
 
     PACKED = 0
-    _3_PLANES = 3
-    _4_PLANES = 4
-    PLANE_OPTIONS = (PACKED, _3_PLANES, _4_PLANES)
-    PLANE_NAMES = {PACKED       : "PACKED",
-                   _3_PLANES    : "3_PLANES",
-                   _4_PLANES    : "4_PLANES"}
+    PLANAR_3 = 3
+    PLANAR_4 = 4
+    PLANE_OPTIONS = (PACKED, PLANAR_3, PLANAR_4)
+    PLANE_NAMES = {
+        PACKED      : "PACKED",
+        PLANAR_3    : "3_PLANES",
+        PLANAR_4    : "4_PLANES",
+        }
 
     def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride,
                  bytesperpixel=4, planes=PACKED, thread_safe=True, palette=None):

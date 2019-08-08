@@ -57,7 +57,7 @@ def make_test_image(pixel_format, w, h):
         u = makebuf(w//udiv[0]*h//udiv[1])
         vdiv = divs[2]
         v = makebuf(w//vdiv[0]*h//vdiv[1])
-        image = ImageWrapper(0, 0, w, h, (y, u, v), pixel_format, 32, (w//ydiv[0], w//udiv[0], w//vdiv[0]), planes=ImageWrapper._3_PLANES, thread_safe=True)
+        image = ImageWrapper(0, 0, w, h, (y, u, v), pixel_format, 32, (w//ydiv[0], w//udiv[0], w//vdiv[0]), planes=ImageWrapper.PLANAR_3, thread_safe=True)
         #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210"):
         stride = w*len(pixel_format)

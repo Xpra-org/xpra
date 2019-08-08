@@ -156,7 +156,7 @@ def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, dst_w, dst
         print("do_test_csc_rgb() output=%s" % out)
     pixels = out.get_pixels()
     if dst_format.endswith("P"):
-        assert out.get_planes()==ImageWrapper._3_PLANES, "expected 3 planes as output but got: %s in %s" % (out.get_planes(), out)
+        assert out.get_planes()==ImageWrapper.PLANAR_3, "expected 3 planes as output but got: %s in %s" % (out.get_planes(), out)
         assert len(pixels)==3, "expected 3 planes but found: %s" % len(pixels)
         assert len(out.get_rowstride())==3, "expected 3 rowstrides but got: %s" % str(out.get_rowstride())
     #for i in range(3):
@@ -253,7 +253,7 @@ def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels
         print("ColorspaceConverter=%s" % cc)
         for i in range(3):
             print("test_csc() plane[%s]=%s" % (i, dump_pixels(pixels[i])))
-    image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=ImageWrapper._3_PLANES)
+    image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=ImageWrapper.PLANAR_3)
     for _ in range(count):
         out = cc.convert_image(image)
     if DEBUG:
