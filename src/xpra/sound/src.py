@@ -49,7 +49,7 @@ class SoundSource(SoundPipeline):
         "new-buffer"    : n_arg_signal(3),
         })
 
-    def __init__(self, src_type=None, src_options={}, codecs=get_encoders(), codec_options={}, volume=1.0):
+    def __init__(self, src_type=None, src_options=None, codecs=(), codec_options=None, volume=1.0):
         if not src_type:
             try:
                 from xpra.sound.pulseaudio.pulseaudio_util import get_pa_device_options
@@ -95,6 +95,8 @@ class SoundSource(SoundPipeline):
         self.file = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
         self.stream_compressor = stream_compressor
+        if src_options is None:
+            src_options = {}
         src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
@@ -114,7 +116,8 @@ class SoundSource(SoundPipeline):
         if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
         if CUTTER_THRESHOLD>0 and encoder not in ENCODER_CANNOT_USE_CUTTER and not fmt:
-            pipeline_els.append("cutter threshold=%.4f run-length=%i pre-length=%i leaky=false name=cutter" % (CUTTER_THRESHOLD, CUTTER_RUN_LENGTH*MS_TO_NS, CUTTER_PRE_LENGTH*MS_TO_NS))
+            pipeline_els.append("cutter threshold=%.4f run-length=%i pre-length=%i leaky=false name=cutter" % (
+                CUTTER_THRESHOLD, CUTTER_RUN_LENGTH*MS_TO_NS, CUTTER_PRE_LENGTH*MS_TO_NS))
             if encoder in CUTTER_NEEDS_CONVERT:
                 pipeline_els.append("audioconvert")
             if encoder in CUTTER_NEEDS_RESAMPLE:
@@ -211,8 +214,8 @@ class SoundSource(SoundPipeline):
         return info
 
 
-    def do_parse_element_message(self, _message, name, props={}):
-        if name=="cutter":
+    def do_parse_element_message(self, _message, name, props=None):
+        if name=="cutter" and props:
             above = props.get("above")
             ts = props.get("timestamp", 0)
             if above is False:
@@ -272,9 +275,13 @@ class SoundSource(SoundPipeline):
             return 0
         return self._emit_buffer(data, metadata)
 
-    def _emit_buffer(self, data, metadata={}):
+    def _emit_buffer(self, data, metadata):
         if self.stream_compressor and data:
-            cdata = compressed_wrapper("sound", data, level=9, zlib=False, lz4=(self.stream_compressor=="lz4"), lzo=(self.stream_compressor=="lzo"), can_inline=True)
+            cdata = compressed_wrapper("sound", data, level=9,
+                                       zlib=False,
+                                       lz4=self.stream_compressor=="lz4",
+                                       lzo=self.stream_compressor=="lzo",
+                                       can_inline=True)
             if len(cdata)<len(data)*90//100:
                 log("compressed using %s from %i bytes down to %i bytes", self.stream_compressor, len(data), len(cdata))
                 metadata["compress"] = self.stream_compressor
@@ -335,7 +342,7 @@ class SoundSource(SoundPipeline):
             d,m = self.jitter_queue.get(False)
             self.do_emit_buffer(d, m)
 
-    def do_emit_buffer(self, data, metadata={}):
+    def do_emit_buffer(self, data, metadata):
         self.inc_buffer_count()
         self.inc_byte_count(len(data))
         for x in self.pending_metadata:

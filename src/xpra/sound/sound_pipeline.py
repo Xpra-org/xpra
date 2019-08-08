@@ -4,8 +4,10 @@
 # later version. See the file COPYING for details.
 
 #must be done before importing gobject!
+#pylint: disable=wrong-import-position
 from xpra.sound.gstreamer_util import import_gst
 gst = import_gst()
+
 from xpra.util import envint
 from xpra.os_util import monotonic_time
 from xpra.gtk_common.gobject_compat import import_glib
@@ -15,6 +17,12 @@ from xpra.log import Logger
 log = Logger("sound")
 gstlog = Logger("gstreamer")
 
+
+KNOWN_TAGS = set(
+    "bitrate", "codec", "audio-codec", "mode",
+    "container-format", "encoder", "description", "language-code",
+    "minimum-bitrate", "maximum-bitrate", "channel-mode",
+    )
 
 FAULT_RATE = envint("XPRA_SOUND_FAULT_INJECTION_RATE")
 _counter = 0
@@ -288,7 +296,7 @@ class SoundPipeline(gobject.GObject):
                     for dl in d.splitlines():
                         if dl.strip():
                             gstlog.error(" %s", dl.strip())
-            except:
+            except Exception:
                 gstlog.error(" %s", details)
             self.update_state("error")
             self.idle_emit("error", str(err))
@@ -310,8 +318,8 @@ class SoundPipeline(gobject.GObject):
             gstlog("stream status: %s", message)
             try:
                 gstlog("stream status: %s", message.get_stream_status_object().get_state())
-            except:
-                pass
+            except Exception:
+                gstlog("error querying stream status", exc_info=True)
         elif t == gst.MessageType.STREAM_START:
             log("stream start: %s", message)
             #with gstreamer 1.x, we don't always get the "audio-codec" message..
@@ -362,7 +370,7 @@ class SoundPipeline(gobject.GObject):
             props[name] = structure.get_value(name)
         self.do_parse_element_message(message, message.src.get_name(), props)
 
-    def do_parse_element_message(self, message, name, props={}):
+    def do_parse_element_message(self, message, name, props=None):
         gstlog("do_parse_element_message%s", (message, name, props))
 
     def parse_message(self, message):
@@ -401,14 +409,6 @@ class SoundPipeline(gobject.GObject):
             if x in tags:
                 desc = taglist.get_string(x)
                 gstlog("%s: %s", x, desc[1])
-        #TODO: use sets
-        if not any(True for x in tags if x in (
-            "bitrate", "codec", "audio-codec", "mode",
-            "container-format", "encoder", "description", "language-code",
-            )):
-            #no match yet
-            if not any(True for x in tags if x in (
-                "minimum-bitrate", "maximum-bitrate", "channel-mode",
-                )):
-                structure = message.get_structure()
-                self.gstloginfo("unknown sound pipeline tag message: %s, tags=%s", structure.to_string(), tags)
+        if not set(tags).intersection(KNOWN_TAGS):
+            structure = message.get_structure()
+            self.gstloginfo("unknown sound pipeline tag message: %s, tags=%s", structure.to_string(), tags)

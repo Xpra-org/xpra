@@ -271,7 +271,7 @@ def sanitize_name(name):
     valid_chars = "-_.:%s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in name if c in valid_chars)
 
-def add_printer(name, options, info, location, attributes={}, success_cb=None):
+def add_printer(name, options, info, location, attributes, success_cb=None):
     log("add_printer%s", (name, options, info, location, attributes, success_cb))
     mimetypes = options.get("mimetypes", [DEFAULT_MIMETYPE])
     if not mimetypes:
@@ -386,8 +386,8 @@ def cancel_polling_timer():
         try:
             _polling_timer = None
             pt.cancel()
-        except:
-            pass
+        except Exception:
+            log("error cancelling polling timer %s", pt, exc_info=True)
 
 def init_printing(callback=None):
     global printers_modified_callback

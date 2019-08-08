@@ -351,10 +351,10 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
             ]
         _add_debug_args(self.command)
 
-    def add_data(self, data, metadata={}, packet_metadata=()):
+    def add_data(self, data, metadata=None, packet_metadata=()):
         if DEBUG_SOUND:
             log("add_data(%s bytes, %s, %s) forwarding to %s", len(data), metadata, len(packet_metadata), self.protocol)
-        self.send("add_data", data, dict(metadata), packet_metadata)
+        self.send("add_data", data, dict(metadata or {}), packet_metadata)
 
     def __repr__(self):
         proc = self.process
@@ -392,7 +392,7 @@ def start_receiving_sound(codec):
     log("start_receiving_sound(%s)", codec)
     try:
         return sink_subprocess_wrapper(None, codec, 1.0, {})
-    except:
+    except Exception:
         log.error("failed to start sound sink", exc_info=True)
         return None
 

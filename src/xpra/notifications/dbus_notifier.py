@@ -209,7 +209,7 @@ def main():
     gtk = import_gtk()
     def show():
         n = DBUS_Notifier_factory()
-        actions = ["0", "Hello", "1", "Bye"]
+        #actions = ["0", "Hello", "1", "Bye"]
         actions = []
         n.show_notify("", None, 0, "Test", 0, "", "Summary", "Body line1\nline2...",
                       actions, {}, 0, "")

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,19 +17,14 @@ def main():
     from xpra.os_util import WIN32, OSX, POSIX, bytestostr
     from xpra.util import print_nested_dict, csv
     from xpra.platform import program_context
-    from xpra.log import Logger, enable_color
+    from xpra.log import enable_color, enable_debug_for
     with program_context("Keyboard-Tool", "Keyboard Tool"):
         #use the logger for the platform module we import from
-        global log
-        log = None
-        platform_import(globals(), "keyboard", True, "log")
-        if log is None:
-            log = Logger("keyboard")
         enable_color()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv or \
             (WIN32 and not ("-q" in sys.argv or "--quiet"))
         if verbose:
-            log.enable_debug()
+            enable_debug_for("keyboard")
 
         #naughty, but how else can I hook this up?
         if POSIX and not OSX:
@@ -41,7 +36,7 @@ def main():
                 print(" %s" % e)
                 #hope for the best..
 
-        keyboard = Keyboard()
+        keyboard = Keyboard()  #pylint: disable=not-callable
         mod_meanings, mod_managed, mod_pointermissing = keyboard.get_keymap_modifiers()
         print("Modifiers:")
         print_nested_dict(mod_meanings)

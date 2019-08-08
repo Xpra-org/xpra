@@ -66,7 +66,7 @@ class SoundSink(SoundPipeline):
         "eos"       : one_arg_signal,
         })
 
-    def __init__(self, sink_type=None, sink_options={}, codecs=get_decoders(), codec_options={}, volume=1.0):
+    def __init__(self, sink_type=None, sink_options=None, codecs=(), codec_options=None, volume=1.0):
         if not sink_type:
             sink_type = get_default_sink()
         if sink_type not in get_sink_plugins():
@@ -74,14 +74,16 @@ class SoundSink(SoundPipeline):
         matching = [x for x in CODEC_ORDER if (x in codecs and x in get_decoders())]
         log("SoundSink(..) found matching codecs %s", matching)
         if not matching:
-            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_decoders().keys())))
+            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (
+                csv(codecs), csv(get_decoders().keys())))
         codec = matching[0]
         decoder, parser, stream_compressor = get_decoder_elements(codec)
         SoundPipeline.__init__(self, codec)
         self.container_format = (parser or "").replace("demux", "").replace("depay", "")
         self.sink_type = sink_type
         self.stream_compressor = stream_compressor
-        log("container format=%s, stream_compressor=%s, sink type=%s", self.container_format, self.stream_compressor, self.sink_type)
+        log("container format=%s, stream_compressor=%s, sink type=%s",
+            self.container_format, self.stream_compressor, self.sink_type)
         self.levels = deque(maxlen=100)
         self.volume = None
         self.src    = None
@@ -135,7 +137,8 @@ class SoundSink(SoundPipeline):
             v = get_options_cb()
             log("%s()=%s", get_options_cb, v)
             sink_attributes.update(v)
-        sink_attributes.update(sink_options)
+        if sink_options:
+            sink_attributes.update(sink_options)
         sink_str = plugin_str(sink_type, sink_attributes)
         pipeline_els.append(sink_str)
         if not self.setup_pipeline_and_bus(pipeline_els):
@@ -271,7 +274,8 @@ class SoundSink(SoundPipeline):
             mst = self.queue.get_property("max-size-time")//MS_TO_NS
             mrange = max(lrange+100, UNDERRUN_MIN_LEVEL)
             mtt = min(mst-50, mrange)
-            gstlog("set_min_level mtt=%3i, max-size-time=%3i, lrange=%s, mrange=%s (UNDERRUN_MIN_LEVEL=%s)", mtt, mst, lrange, mrange, UNDERRUN_MIN_LEVEL)
+            gstlog("set_min_level mtt=%3i, max-size-time=%3i, lrange=%s, mrange=%s (UNDERRUN_MIN_LEVEL=%s)",
+                   mtt, mst, lrange, mrange, UNDERRUN_MIN_LEVEL)
         else:
             mtt = 0
         cmtt = self.queue.get_property("min-threshold-time")//MS_TO_NS
@@ -391,7 +395,7 @@ class SoundSink(SoundPipeline):
                 clt = self.queue.get_property("current-level-time")//MS_TO_NS
                 qmin = self.queue.get_property("min-threshold-time")//MS_TO_NS
                 gstlog("add_data: refill=%s, level=%i, min=%i", self.refill, clt, qmin)
-                if qmin>0 and clt>qmin:
+                if 0<qmin<clt:
                     self.refill = False
         self.emit_info()
 

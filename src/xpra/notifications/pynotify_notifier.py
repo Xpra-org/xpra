@@ -15,11 +15,6 @@ class PyNotify_Notifier(NotifierBase):
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
-        if icon_string:
-            #closed(nid) will take care of removing the temporary file
-            #FIXME: register for the closed signal instead of using a timer
-            from xpra.gtk_common.gobject_compat import import_glib
-            import_glib().timeout_add(10*1000, self.clean_notification, nid)
         pynotify.init(app_name or "Xpra")
         n = pynotify.Notification(summary, body, icon_string)
         n.set_urgency(pynotify.URGENCY_LOW)
@@ -30,6 +25,10 @@ class PyNotify_Notifier(NotifierBase):
                 self.add_action(n, action_id, action_label)
                 actions = actions[2:]
         n.show()
+        if icon_string:
+            def notification_closed(*_args):
+                self.clean_notification(nid)
+            n.connect("closed", notification_closed)
 
     def add_action(self, n, action_id, action_label):
         #n.add_action("foo", "Foo!", foo_action)

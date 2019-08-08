@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,11 +28,8 @@ def main():
         print("Host:")
         d = get_host_info()
         #add os specific version info:
-        try:
-            from xpra.platform.info import get_version_info as pvinfo
-            d.update(pvinfo())
-        except:
-            pass
+        from xpra.platform.info import get_version_info as pvinfo
+        d.update(pvinfo())
         print_nested_dict(d)
 
 
