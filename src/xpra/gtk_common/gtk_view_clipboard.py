@@ -116,7 +116,7 @@ class ClipboardInstance(object):
         except TypeError:
             try:
                 s = self.ellipsis("\\".join([str(x) for x in bytearray(selection_data.data)]))
-            except:
+            except Exception:
                 s = "!ERROR! binary data?"
         self.log("Got selection data: '%s'" % s)
         self.value_label.set_text(s)
@@ -224,7 +224,7 @@ class ClipboardStateInfoWindow(object):
             self.window.set_icon(icon)
         try:
             self.add_event("ALL", "window=%s, xid=%#x" % (self.window, get_xwindow(self.window.get_window())))
-        except:
+        except Exception:
             self.add_event("ALL", "window=%s" % self.window)
 
     def add_event(self, selection, message):

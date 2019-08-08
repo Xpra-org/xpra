@@ -217,10 +217,10 @@ def redirect_std_to_log(logfd, *noclose_fds):
 def daemonize():
     os.chdir("/")
     if os.fork():
-        os._exit(0)
+        os._exit(0)     #pylint: disable=protected-access
     os.setsid()
     if os.fork():
-        os._exit(0)
+        os._exit(0)     #pylint: disable=protected-access
 
 
 def write_pidfile(pidfile):

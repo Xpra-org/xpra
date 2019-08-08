@@ -10,7 +10,7 @@ from xpra.gtk_common.gobject_compat import import_gobject
 gobject = import_gobject()
 try:
     SIGNAL_RUN_LAST = gobject.SignalFlags.RUN_LAST
-except:
+except AttributeError:
     SIGNAL_RUN_LAST = gobject.SIGNAL_RUN_LAST
 def n_arg_signal(n):
     return (SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,) * n)
@@ -54,7 +54,7 @@ class AutoPropGObjectMixin(object):
 # pretty useless to call a default do_* method... but even if such a method is
 # not defined, a default implementation will still be called automatically,
 # and that implementation simply returns None.)
-def non_none_list_accumulator(ihint, return_accu, handler_return):
+def non_none_list_accumulator(_ihint, return_accu, handler_return):
     if return_accu is None:
         return_accu = []
     if handler_return is not None:

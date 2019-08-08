@@ -13,10 +13,10 @@ from xpra.server.pam import pam_session #@UnresolvedImport
 def daemonize():
     os.chdir("/")
     if os.fork():
-        os._exit(0)
+        os._exit(0)     #pylint: disable=protected-access
     os.setsid()
     if os.fork():
-        os._exit(0)
+        os._exit(0)     #pylint: disable=protected-access
 
 stdout = sys.stdout
 stderr = sys.stderr

@@ -19,6 +19,7 @@ from xpra.scripts.config import InitException, FALSE_OPTIONS
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX, PYTHON3,
     FDChangeCaptureContext,
+    force_quit,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand,
     )
@@ -56,7 +57,7 @@ def deadly_signal(signum):
     # and exits the program (causing the cleanup handlers to be run again):
     #signal.signal(signum, signal.SIG_DFL)
     #kill(os.getpid(), signum)
-    os._exit(128 + signum)
+    force_quit(128 + signum)
 
 
 def _root_prop_set(prop_name, ptype="u32", value=0):

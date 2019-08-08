@@ -129,7 +129,7 @@ class DBusHelper(object):
         try:
             fn = obj.get_dbus_method(function, interface)
             log("%s.get_dbus_method(%s, %s)=%s", obj, function, interface, fn)
-        except:
+        except Exception:
             msg = "failed to locate remote function '%s' on %s" % (function, obj)
             log("DBusHelper: %s", msg)
             err_cb(msg)

@@ -135,7 +135,7 @@ class FakeApplication:
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)
-        except:
+        except Exception:
             log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
             return None
 

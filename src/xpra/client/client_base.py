@@ -27,7 +27,7 @@ from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import (
     get_machine_id, get_user_uuid,
-    load_binary_file,
+    load_binary_file, force_quit,
     SIGNAMES, PYTHON3, BITS,
     strtobytes, bytestostr, hexstr, monotonic_time, use_tty,
     )
@@ -208,7 +208,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         sys.stderr.write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
         sys.stderr.flush()
         self.cleanup()
-        os._exit(128 + signum)
+        force_quit(128 + signum)
     def handle_app_signal(self, signum, _frame=None):
         try:
             log.info("exiting")
@@ -245,7 +245,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.disconnect_and_quit(exit_code, reason)
         self.quit(exit_code)
         self.exit()
-        os._exit(exit_code)
+        force_quit(exit_code)
 
     def signal_cleanup(self):
         #placeholder for stuff that can be cleaned up from the signal handler

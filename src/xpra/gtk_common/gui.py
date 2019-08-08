@@ -197,7 +197,7 @@ class GUI(gtk.Window):
         if proc.poll() is None:
             self.busy_cursor(self.connect_button)
 
-    def start(self, *args):
+    def start(self, *_args):
         if not self.start_session:
             self.start_session = StartSession()
         self.start_session.show()
@@ -387,7 +387,7 @@ class StartSession(gtk.Window):
             submenu = self.categories[category]
             assert isinstance(submenu, Menu)
             for entry in submenu.getEntries():
-                #TODO: can we have more than 2 levels of submenus?
+                #can we have more than 2 levels of submenus?
                 if isinstance(entry, MenuEntry):
                     name = entry.DesktopEntry.getName()
                     self.commands[name] = entry.DesktopEntry
@@ -449,7 +449,7 @@ class StartSession(gtk.Window):
             if self.desktop_entry.getTryExec():
                 try:
                     command = self.desktop_entry.findTryExec()
-                except:
+                except Exception:
                     command = self.desktop_entry.getTryExec()
             else:
                 command = self.desktop_entry.getExec()

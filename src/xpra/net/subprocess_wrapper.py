@@ -35,17 +35,18 @@ HEXLIFY_PACKETS = envbool("XPRA_HEXLIFY_PACKETS", False)
 WIN32_SHOWWINDOW = envbool("XPRA_WIN32_SHOWWINDOW", False)
 
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
+def noop(_p):
+    pass
+INJECT_FAULT = noop
 if FAULT_RATE>0:
     _counter = 0
-    def INJECT_FAULT(p):
+    def DO_INJECT_FAULT(p):
         global _counter
         _counter += 1
         if (_counter % FAULT_RATE)==0:
             log.warn("injecting fault in %s", p)
             p.raw_write("Wrapper JUNK! added by fault injection code")
-else:
-    def INJECT_FAULT(p):
-        pass
+    INJECT_FAULT = DO_INJECT_FAULT
 
 
 def setup_fastencoder_nocompression(protocol):
@@ -132,13 +133,13 @@ class subprocess_callee(object):
             if self.input_filename=="-":
                 try:
                     self._input.close()
-                except:
-                    pass
+                except (OSError, IOError):
+                    log("%s.close()", self._input, exc_info=True)
             if self.output_filename=="-":
                 try:
                     self._output.close()
-                except:
-                    pass
+                except (OSError, IOError):
+                    log("%s.close()", self._output, exc_info=True)
 
     def make_protocol(self):
         #figure out where we read from and write to:
@@ -221,7 +222,7 @@ class subprocess_callee(object):
     def get_packet(self):
         try:
             item = self.send_queue.get(False)
-        except:
+        except Exception:
             item = None
         return (item, None, None, self.send_queue.qsize()>0)
 
@@ -231,17 +232,17 @@ class subprocess_callee(object):
             log("connection-lost: %s, calling stop", packet[1:])
             self.net_stop()
             return
-        elif command==Protocol.GIBBERISH:
+        if command==Protocol.GIBBERISH:
             log.warn("gibberish received:")
             log.warn(" %s", repr_ellipsized(packet[1], limit=80))
             log.warn(" stopping")
             self.net_stop()
             return
-        elif command=="stop":
+        if command=="stop":
             log("received stop message")
             self.net_stop()
             return
-        elif command=="exit":
+        if command=="exit":
             log("received exit message")
             sys.exit(0)
             return
@@ -284,7 +285,7 @@ def exec_kwargs():
     kwargs["stderr"] = stderr
     return kwargs
 
-def exec_env(blacklist=["LS_COLORS", ]):
+def exec_env(blacklist=("LS_COLORS", )):
     env = os.environ.copy()
     env["XPRA_SKIP_UI"] = "1"
     env["XPRA_FORCE_COLOR_LOG"] = "1"
@@ -295,7 +296,7 @@ def exec_env(blacklist=["LS_COLORS", ]):
             continue
         try:
             env[k] = bytestostr(v.encode("utf8"))
-        except:
+        except Exception:
             env[k] = bytestostr(v)
     return env
 
@@ -415,7 +416,7 @@ class subprocess_caller(object):
     def get_packet(self):
         try:
             item = self.send_queue.get(False)
-        except:
+        except Exception:
             item = None
         return (item, None, None, None, False, self.send_queue.qsize()>0)
 
@@ -433,13 +434,13 @@ class subprocess_caller(object):
         self._fire_callback(signal_name, packet[1:])
         INJECT_FAULT(proto)
 
-    def _fire_callback(self, signal_name, extra_args=[]):
+    def _fire_callback(self, signal_name, extra_args=()):
         callbacks = self.signal_callbacks.get(signal_name)
         log("firing callback for '%s': %s", signal_name, callbacks)
         if callbacks:
             for cb, args in callbacks:
                 try:
-                    all_args = list(args) + extra_args
+                    all_args = list(args) + list(extra_args)
                     self.idle_add(cb, self, *all_args)
                 except Exception:
                     log.error("error processing callback %s for %s packet", cb, signal_name, exc_info=True)

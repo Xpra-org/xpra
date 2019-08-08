@@ -94,18 +94,11 @@ class FontWindow(gtk.Window):
             ):
             for y in range(2):
                 for x in range(2):
-                    def paint_to_image(antialias=cairo.ANTIALIAS_NONE):
-                        img = cairo.ImageSurface(cairo.FORMAT_RGB24, bw, bh)
-                        icr = cairo.Context(img)
-                        self.paint_pattern(icr, 0, 0, antialias, None, background, foreground)
-                        img.flush()
-                        return img
-
                     cr.save()
                     #paint antialias value:
                     antialias = tuple(ANTIALIAS.keys())[y*2+x]
-                    v = paint_to_image(antialias)
-                    none = paint_to_image()
+                    v = self.paint_to_image(bw, bh, background, foreground, antialias)
+                    none = self.paint_to_image(bw, bh, background, foreground)
                     #xor the buffers
                     vdata = v.get_data()
                     ndata = none.get_data()
@@ -119,6 +112,12 @@ class FontWindow(gtk.Window):
                     cr.paint()
                     cr.restore()
 
+    def paint_to_image(self, bw, bh, background, foreground, antialias=cairo.ANTIALIAS_NONE):
+        img = cairo.ImageSurface(cairo.FORMAT_RGB24, bw, bh)
+        icr = cairo.Context(img)
+        self.paint_pattern(icr, 0, 0, antialias, None, background, foreground)
+        img.flush()
+        return img
 
         #layout = pangocairo.create_layout(cr)
         #layout.set_text("Text", -1)
