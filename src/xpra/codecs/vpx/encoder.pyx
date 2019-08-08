@@ -6,8 +6,9 @@
 #cython: auto_pickle=False, cdivision=True, language_level=3
 from __future__ import absolute_import
 
-import time
 import os
+import time
+import math
 from collections import deque
 
 from xpra.log import Logger
@@ -26,7 +27,8 @@ from xpra.monotonic_time cimport monotonic_time
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
-cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, get_cpu_count()-1))
+cdef int default_nthreads = max(1, int(math.sqrt(get_cpu_count()+1)))
+cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", default_nthreads)
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
