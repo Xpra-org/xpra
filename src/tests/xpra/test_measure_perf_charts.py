@@ -166,7 +166,7 @@ def accumulate_values(file_name, rep, param, uniqueId):
         else:
             app = get_value(row, "Test Command")
             if (not app in apps):
-                print "Application: " + app + " not defined."
+                print("Application: " + app + " not defined.")
                 exit()
 
             if (apps[app] == 1):
@@ -179,7 +179,7 @@ def accumulate_values(file_name, rep, param, uniqueId):
                     encoding = 'vp8'
 
                 if (not encoding in encodings):
-                    print "Encoding: " + encoding + " not defined."
+                    print("Encoding: " + encoding + " not defined.")
                     exit()
 
                 if (encodings[encoding] == 1):
