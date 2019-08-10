@@ -510,9 +510,9 @@
 
 	<distutils id="python-gssapi">
 		<branch repo="pypi.python.org"
-			module="/packages/c9/88/8306f545a9c2425f18678fa8f3ff369df2615168b2aaf3495f32dd609225/gssapi-1.4.1.tar.gz"
-			hash="sha256:be8f37dd9da726db375b9c693e0a63b391d381d903516e79ecc2a2cc965580e4"
-			version="1.4.1">
+			module="/packages/21/00/61ab7b1e246787ef32e3122011a418f906ec4c8c60ae7fd6e07956b8d611/gssapi-1.6.1.tar.gz"
+			hash="sha256:99172a907ecc2d831390f389d3d2099863f48a16975f3c823f3ff3ad1579d5bf"
+			version="1.6.1">
 		</branch>
 		<dependencies>
 			<dep package="python-decorator"/>
