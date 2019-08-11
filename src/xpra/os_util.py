@@ -260,7 +260,9 @@ def is_X11():
     return is_X11_Display()
 
 def is_Wayland():
-    return os.environ.get("GDK_BACKEND", "")!="x11" and (os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE")=="wayland")
+    return os.environ.get("GDK_BACKEND", "")!="x11" and (
+        os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE")=="wayland"
+        )
 
 
 def is_distribution_variant(variant=b"Debian"):
@@ -269,14 +271,14 @@ def is_distribution_variant(variant=b"Debian"):
     try:
         v = load_os_release_file()
         return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith(b"NAME="))
-    except:
+    except Exception:
         pass
     try:
         if b"RedHat"==variant and get_linux_distribution()[0].startswith(variant):
             return True
         if get_linux_distribution()[0]==variant:
             return True
-    except:
+    except Exception:
         pass
     return False
 
@@ -324,11 +326,11 @@ def get_linux_distribution():
             p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out = p.communicate()[0]
             assert p.returncode==0 and out
-        except:
+        except Exception:
             try:
                 from xpra.scripts.config import python_platform
                 _linux_distribution = python_platform.linux_distribution()
-            except:
+            except Exception:
                 _linux_distribution = ("unknown", "unknown", "unknown")
         else:
             d = {}
@@ -395,7 +397,7 @@ def get_cpu_count():
             #python2:
             import multiprocessing
             cpus = multiprocessing.cpu_count()
-    except:
+    except Exception:
         pass
     return cpus
 
@@ -420,7 +422,7 @@ def load_binary_file(filename):
 
 #here so we can override it when needed
 def force_quit(status=1):
-    os._exit(status)
+    os._exit(status)  #pylint: disable=protected-access
 
 
 def livefds():
@@ -495,14 +497,14 @@ def shellsub(s, subs=None):
     return s
 
 
-def osexpand(s, actual_username="", uid=0, gid=0, subs={}):
+def osexpand(s, actual_username="", uid=0, gid=0, subs=None):
     def expanduser(s):
         if actual_username and s.startswith("~/"):
             #replace "~/" with "~$actual_username/"
             return os.path.expanduser("~%s/%s" % (actual_username, s[2:]))
         return os.path.expanduser(s)
     from collections import OrderedDict
-    d = OrderedDict(subs)
+    d = OrderedDict(subs or {})
     d.update({
         "PID"   : os.getpid(),
         "HOME"  : expanduser("~/"),
