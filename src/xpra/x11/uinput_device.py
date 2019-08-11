@@ -12,7 +12,7 @@ from uinput import (
 
 from xpra.util import envint
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.gtk_common.error import xsync
+from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
 log = Logger("x11", "server", "mouse")
@@ -50,16 +50,13 @@ class UInputDevice(object):
         #the first event always goes MIA:
         #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
         #so synthesize a dummy one now:
-        try:
-            with xsync:
-                from xpra.x11.bindings.xi2_bindings import X11XI2Bindings
-                xi2 = X11XI2Bindings()
-                v = xi2.get_xi_version()
-                log("XInput version %s", ".".join(str(x) for x in v))
-                if v<=(2, 2):
-                    self.wheel_motion(4, 1)
-        except:
-            log.warn("cannot query XInput protocol version", exc_info=True)
+        with xlog:
+            from xpra.x11.bindings.xi2_bindings import X11XI2Bindings  #pylint: disable=no-name-in-module
+            xi2 = X11XI2Bindings()
+            v = xi2.get_xi_version()
+            log("XInput version %s", ".".join(str(x) for x in v))
+            if v<=(2, 2):
+                self.wheel_motion(4, 1)
 
     def click(self, button, pressed, *_args):
         #this multiplier is based on the values defined in 71-xpra-virtual-pointer.rules as:

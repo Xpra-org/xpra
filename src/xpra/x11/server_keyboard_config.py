@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,7 +10,7 @@ from xpra.util import csv, nonl, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, get_default_root_window
-from xpra.gtk_common.error import xsync
+from xpra.gtk_common.error import xsync, xlog
 from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
@@ -311,7 +311,9 @@ class KeyboardConfig(KeyboardConfigBase):
     def set_keymap(self, translate_only=False):
         if not self.enabled:
             return
-        log("set_keymap(%s) layout=%s, variant=%s, options=%s, print=%s, query=%s", translate_only, self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options, nonl(self.xkbmap_print), nonl(self.xkbmap_query))
+        log("set_keymap(%s) layout=%s, variant=%s, options=%s, print=%s, query=%s",
+            translate_only, self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
+            nonl(self.xkbmap_print), nonl(self.xkbmap_query))
         if translate_only:
             self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
             self.add_gtk_keynames()
@@ -320,57 +322,51 @@ class KeyboardConfig(KeyboardConfigBase):
             self.compute_client_modifier_keycodes()
             return
 
-        try:
-            with xsync:
-                clean_keyboard_state()
-                do_set_keymap(self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
-                              self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
-        except:
-            log.error("Error setting up new keymap", exc_info=True)
+        with xlog:
+            clean_keyboard_state()
+            do_set_keymap(self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
+                          self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
         log("set_keymap: xkbmap_print=%s, xkbmap_query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
-        try:
-            with xsync:
-                #first clear all existing modifiers:
+        with xlog:
+            #first clear all existing modifiers:
+            clean_keyboard_state()
+
+            if not self.xkbmap_raw:
+                has_keycodes = bool(self.xkbmap_x11_keycodes) or bool(self.xkbmap_keycodes)
+                assert has_keycodes, "client failed to provide any keycodes!"
+
+                clear_modifiers(ALL_X11_MODIFIERS.keys())       #just clear all of them (set or not)
                 clean_keyboard_state()
 
-                if not self.xkbmap_raw:
-                    has_keycodes = bool(self.xkbmap_x11_keycodes) or bool(self.xkbmap_keycodes)
-                    assert has_keycodes, "client failed to provide any keycodes!"
-
-                    clear_modifiers(ALL_X11_MODIFIERS.keys())       #just clear all of them (set or not)
-                    clean_keyboard_state()
-
-                    #now set all the keycodes:
-                    #first compute the modifier maps as this may have an influence
-                    #on the keycode mappings (at least for the from_keycodes case):
-                    self.compute_modifiers()
-                    #key translation:
-                    if bool(self.xkbmap_query):
-                        #native full mapping of all keycodes:
-                        self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, False, self.keynames_for_mod)
-                    else:
-                        #if the client does not provide a full native keymap with all the keycodes,
-                        #try to preserve the initial server keycodes and translate the client keycodes instead:
-                        #(used by non X11 clients like osx,win32 or HTML5)
-                        self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
-                    self.add_gtk_keynames()
-
-                    #now set the new modifier mappings:
-                    clean_keyboard_state()
-                    log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s, keynames_for_mod=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []), self.keynames_for_mod)
-                    if self.keynames_for_mod:
-                        set_modifiers(self.keynames_for_mod)
-                    log("keynames_for_mod=%s", self.keynames_for_mod)
-                    self.compute_modifier_keynames()
+                #now set all the keycodes:
+                #first compute the modifier maps as this may have an influence
+                #on the keycode mappings (at least for the from_keycodes case):
+                self.compute_modifiers()
+                #key translation:
+                if bool(self.xkbmap_query):
+                    #native full mapping of all keycodes:
+                    self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, False, self.keynames_for_mod)
                 else:
-                    self.keycode_translation = {}
-                    log("keyboard raw mode, keycode translation left empty")
-                    self.compute_modifiers()
-                self.compute_client_modifier_keycodes()
-                log("keyname_for_mod=%s", self.keynames_for_mod)
+                    #if the client does not provide a full native keymap with all the keycodes,
+                    #try to preserve the initial server keycodes and translate the client keycodes instead:
+                    #(used by non X11 clients like osx,win32 or HTML5)
+                    self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
+                self.add_gtk_keynames()
+
+                #now set the new modifier mappings:
                 clean_keyboard_state()
-        except:
-            log.error("Error setting X11 keymap", exc_info=True)
+                log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s, keynames_for_mod=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []), self.keynames_for_mod)
+                if self.keynames_for_mod:
+                    set_modifiers(self.keynames_for_mod)
+                log("keynames_for_mod=%s", self.keynames_for_mod)
+                self.compute_modifier_keynames()
+            else:
+                self.keycode_translation = {}
+                log("keyboard raw mode, keycode translation left empty")
+                self.compute_modifiers()
+            self.compute_client_modifier_keycodes()
+            log("keyname_for_mod=%s", self.keynames_for_mod)
+            clean_keyboard_state()
 
     def add_gtk_keynames(self):
         #add the keynames we find via gtk

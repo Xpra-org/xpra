@@ -18,7 +18,7 @@ log = Logger("x11", "bindings", "xinput")
 from xpra.x11.common import X11Event
 from xpra.os_util import hexstr
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 
 ###################################
