@@ -284,11 +284,11 @@ class UDPProtocol(Protocol):
                     #too many are missing, forget about it
                     try:
                         del self.resend_cache[seqno]
-                    except:
+                    except KeyError:
                         pass
                     try:
                         del self.fail_cb[seqno]
-                    except:
+                    except KeyError:
                         pass
                     self.cancel.add(seqno)
                     fail_cb_seq()

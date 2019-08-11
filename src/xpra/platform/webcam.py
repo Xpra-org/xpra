@@ -16,10 +16,10 @@ def get_all_video_devices():
     #this is different from an empty dict!
     return None
 
-def add_video_device_change_callback(callback):
+def add_video_device_change_callback(_callback):
     #not implemented here
     pass
-def remove_video_device_change_callback(callback):
+def remove_video_device_change_callback(_callback):
     #not implemented here
     pass
 

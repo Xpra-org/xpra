@@ -293,7 +293,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         clipboard_item.connect("toggled", clipboard_option_changed)
         return clipboard_item
 
-    def select_clipboard_menu_option(self, item=None, label=None, labels=[]):
+    def select_clipboard_menu_option(self, item=None, label=None, labels=()):
         #ensure that only the matching menu item is selected,
         #(can be specified as a menuitem object, or using its label)
         #all the other menu items whose labels are specified will be made inactive
@@ -330,8 +330,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         try:
             label = CLIPBOARD_NAME_TO_LABEL.get(self.client.clipboard_helper.remote_clipboard)
             self.select_clipboard_menu_option(None, label, CLIPBOARD_LABELS)
-        except:
-            pass
+        except Exception:
+            clipboardlog("failed to select remote clipboard option in menu", exc_info=True)
         direction_label = CLIPBOARD_DIRECTION_NAME_TO_LABEL.get(self.client.client_clipboard_direction, "Disabled")
         clipboardlog("direction(%s)=%s", self.client.client_clipboard_direction, direction_label)
         self.select_clipboard_menu_option(None, direction_label, CLIPBOARD_DIRECTION_LABELS)
@@ -424,7 +424,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 return  None
             if size:
                 return scaled_image(pixbuf, size)
-            return  gtk.image_new_from_pixbuf(pixbuf)
-        except:
+            return gtk.image_new_from_pixbuf(pixbuf)
+        except Exception:
             log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
             return  None

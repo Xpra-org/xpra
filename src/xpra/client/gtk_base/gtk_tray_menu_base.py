@@ -281,8 +281,8 @@ class GTKTrayMenuBase(object):
         self.client.show_bug_report(*args)
 
 
-    def get_image(self, *args):
-        return self.client.get_image(*args)
+    def get_image(self, icon_name, size=None):
+        return self.client.get_image(icon_name, size)
 
     def setup_menu(self, show_close=True):
         log("setup_menu(%s)", show_close)
@@ -1653,19 +1653,19 @@ class GTKTrayMenuBase(object):
         return None
 
     def start_menuitem(self, title, icondata=None):
-        menuitem = self.handshake_menuitem(title)
+        smi = self.handshake_menuitem(title)
         if icondata:
             image = self.get_appimage(title, icondata)
             if image:
-                menuitem.set_image(image)
-        return menuitem
+                smi.set_image(image)
+        return smi
 
     def make_applaunch_menu_item(self, app_name, command_props):
         icondata = command_props.get(b"IconData")
         app_menu_item = self.start_menuitem(app_name.decode("utf-8"), icondata)
         def app_launch(*_args):
             command = command_props.get(b"command")
-            command = re.sub(b'\%[fFuU]', '', command)
+            command = re.sub(b'\\%[fFuU]', '', command)
             log("command=%s", command)
             if command:
                 self.client.send_start_command(app_name, command, False, self.client.server_sharing)

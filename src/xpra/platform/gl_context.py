@@ -10,7 +10,7 @@ from xpra.platform import platform_import
 GLContext = None
 
 def check_support():
-    return GLContext().check_support()
+    return GLContext().check_support()  #pylint: disable=not-callable
 
 platform_import(globals(), "gl_context", False, "GLContext", "check_support")
 
