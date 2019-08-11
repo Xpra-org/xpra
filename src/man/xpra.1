@@ -1015,7 +1015,7 @@ Use the value 'none' to not load any colourspace conversion modules.
 
 .TP
 \fB--socket-permissions\fP=\fIACCESS-MODE\fP
-Specifies the permissions on the server socket.
+Specifies the file permissions on the server's unix domain sockets.
 Defaults to 600. This is ignored when \fImmap-group\fP is enabled.
 .TP
 
@@ -1316,6 +1316,12 @@ to function.
 When used server-side, the default value \fIauto\fP allows the clients
 to decide if they are willing to share the session.
 When used client-side, the default value \fIauto\fP evaluates to \fIno\fP.
+To allow sharing to work with unix domain sockets (either using local
+connections or via ssh), you should create at least one socket in a group
+accessible directory. On Posix with a default configuration, being a
+member of the \fIxpra\fP group should be enough to create a socket
+in \fI/run/xpra\fP. You must also ensure that the permissions of this
+socket file allow group access, see \fIsocket-permissions\fP.
 .TP
 \fB--lock\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Locking allows a client to refuse to hand over the session to a new client.
