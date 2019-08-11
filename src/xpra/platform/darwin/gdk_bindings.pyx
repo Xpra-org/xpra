@@ -14,7 +14,7 @@ import gobject
 import gtk
 import gtk.gdk
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 from xpra.log import Logger
 log = Logger("osx", "bindings", "gtk")
