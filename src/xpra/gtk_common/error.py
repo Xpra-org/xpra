@@ -234,7 +234,7 @@ class XLogContext(object):
         #don't raise exceptions:
         return True
 
-xlog = XSwallowContext()
+xlog = XLogContext()
 
 
 def verify_sync():
