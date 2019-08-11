@@ -474,7 +474,7 @@ class UIXpraClient(ClientBaseClass):
         for cb, args in oh:
             try:
                 cb(*args)
-            except:
+            except Exception:
                 log.error("Error processing handshake callback %s", cb, exc_info=True)
 
     def after_handshake(self, cb, *args):

@@ -85,7 +85,7 @@ def check_functions(*functions):
             missing.append(name)
         else:
             available.append(name)
-    if len(missing)>0:
+    if missing:
         raise_fatal_error("some required OpenGL functions are missing:\n%s" % csv(missing))
     else:
         log("All the required OpenGL functions are available: %s " % csv(available))
@@ -114,7 +114,7 @@ def check_PyOpenGL_support(force_enable):
             import ctypes
             ctypes.string_at(0)
             raise Exception("should have crashed!")
-        elif TIMEOUT>0:
+        if TIMEOUT>0:
             import time
             time.sleep(TIMEOUT)
         #log redirection:
@@ -179,24 +179,25 @@ def check_PyOpenGL_support(force_enable):
 
         try:
             extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
-        except:
+        except Exception:
             log("error querying extensions", exc_info=True)
             extensions = []
-            raise_fatal_error("OpenGL could not find the list of GL extensions - does the graphics driver support OpenGL?")
+            raise_fatal_error("OpenGL could not find the list of GL extensions -"+
+                              " does the graphics driver support OpenGL?")
         log("OpenGL extensions found: %s", csv(extensions))
         props["extensions"] = extensions
 
         from OpenGL.arrays.arraydatatype import ArrayDatatype
         try:
             log("found the following array handlers: %s", set(ArrayDatatype.getRegistry().values()))
-        except:
+        except Exception:
             pass
 
         from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
         def fixstring(v):
             try:
                 return str(v).strip()
-            except:
+            except Exception:
                 return str(v)
         for d,s,fatal in (("vendor",     GL_VENDOR,      True),
                           ("renderer",   GL_RENDERER,    True),
@@ -205,7 +206,7 @@ def check_PyOpenGL_support(force_enable):
                 v = glGetString(s)
                 v = fixstring(v.decode())
                 log("%s: %s", d, v)
-            except:
+            except Exception:
                 if fatal:
                     gl_check_error("OpenGL property '%s' is missing" % d)
                 else:
@@ -221,7 +222,8 @@ def check_PyOpenGL_support(force_enable):
                     log.warn("Warning: '%s' OpenGL driver requires version %i.%i", vendor, req_maj, req_min)
                     log.warn(" version %i.%i was found", gl_major, gl_minor)
                 else:
-                    gl_check_error("OpenGL version %i.%i is too old, %i.%i is required for %s" % (gl_major, gl_minor, req_maj, req_min, vendor))
+                    gl_check_error("OpenGL version %i.%i is too old, %i.%i is required for %s" % (
+                        gl_major, gl_minor, req_maj, req_min, vendor))
 
         from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
         for d,s in {"GLU.version": GLU_VERSION, "GLU.extensions":GLU_EXTENSIONS}.items():
@@ -411,16 +413,16 @@ def main():
         force_enable = "-f" in sys.argv or "--force" in sys.argv
         from xpra.platform.gl_context import GLContext
         log("testing %s", GLContext)
-        gl_context = GLContext()
+        gl_context = GLContext()  #pylint: disable=not-callable
         log("GLContext=%s", gl_context)
         #replace ImportError with a log message:
-        global gl_check_error, raise_fatal_error
+        global gl_check_error, gl_fatal_error
         errors = []
         def log_error(msg):
             log.error("ERROR: %s", msg)
             errors.append(msg)
         gl_check_error = log_error
-        raise_fatal_error = log_error
+        gl_fatal_error = log_error
         try:
             props = gl_context.check_support(force_enable)
         except Exception as e:
@@ -428,7 +430,7 @@ def main():
             log("check_support", exc_info=True)
             errors.append(e)
         log.info("")
-        if len(errors)>0:
+        if errors:
             log.info("OpenGL errors:")
             for e in errors:
                 log.info("  %s", e)

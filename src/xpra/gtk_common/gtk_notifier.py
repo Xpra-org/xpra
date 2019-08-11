@@ -124,7 +124,9 @@ class GTK_Notifier(NotifierBase):
             if x.nid==nid:
                 x.hide_notification()
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, timeout, icon):
+    def show_notify(self, dbus_id, tray, nid,
+                    app_name, replaces_nid, app_icon,
+                    summary, body, actions, hints, timeout, icon):
         self.new_popup(nid, summary, body, actions, icon, timeout, 0<timeout<=600)
 
     def new_popup(self, nid, summary, body, actions, icon, timeout=10*1000, show_timeout=False):
@@ -261,7 +263,7 @@ class Popup(gtk.Window):
     def action_button(self, action_id, action_text):
         try:
             button = gtk.Button(action_text.decode("utf-8"))
-        except:
+        except Exception:
             button = gtk.Button(bytestostr(action_text))
         button.set_relief(RELIEF_NORMAL)
         def popup_cb_clicked(*args):
