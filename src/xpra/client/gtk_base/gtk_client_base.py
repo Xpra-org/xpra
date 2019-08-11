@@ -233,8 +233,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return ncs
 
 
-    def _process_startup_complete(self, *args):
-        UIXpraClient._process_startup_complete(self, *args)
+    def _process_startup_complete(self, packet):
+        UIXpraClient._process_startup_complete(self, packet)
         gdk.notify_startup_complete()
 
 
@@ -546,7 +546,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
             if icon_filename:
                 return pixbuf_new_from_file(icon_filename)
-        except:
+        except Exception:
             log.error("get_pixbuf(%s)", icon_name, exc_info=True)
         return None
 
@@ -558,7 +558,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)
-        except:
+        except Exception:
             log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
             return None
 

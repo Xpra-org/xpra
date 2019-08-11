@@ -46,7 +46,7 @@ class GLDrawingArea(GLWindowBackingBase):
         da.show()
         self._backing = da
 
-    def get_bit_depth(self, pixel_depth):
+    def get_bit_depth(self, pixel_depth=0):
         return self.context.get_bit_depth() or pixel_depth or 24
 
     def gl_context(self):
@@ -58,10 +58,10 @@ class GLDrawingArea(GLWindowBackingBase):
         self.window_context = self.context.get_paint_context(gdk_window)
         return self.window_context
 
-    def do_gl_show(self, _rect_count):
+    def do_gl_show(self, rect_count):
         if self.is_double_buffered():
             # Show the backbuffer on screen
-            log("%s.gl_show() swapping buffers now", self)
+            log("%s.do_gl_show(%s) swapping buffers now", rect_count, self)
             self.window_context.swap_buffers()
         else:
             #glFlush was enough
