@@ -281,6 +281,11 @@ platform_import(globals(), "paths", False,
                 )
 
 def get_info():
+    try:
+        import xpra
+        XPRA_MODULE_PATH = xpra.__file__
+    except AttributeError:
+        XPRA_MODULE_PATH = ""
     return {
         "install"           : {"prefix" : get_install_prefix()},
         "default_conf"      : {"dirs"   : get_default_conf_dirs()},
@@ -293,6 +298,7 @@ def get_info():
         "libexec"           : {"dir"    : get_libexec_dir()},
         "mmap"              : {"dir"    : get_mmap_dir()},
         "xpra-tmp"          : {"dir"    : get_xpra_tmp_dir()},
+        "xpra-module"       : XPRA_MODULE_PATH,
         "app"               : {"default" : {"dir"   : default_get_app_dir()}},
         "desktop-background": get_desktop_background_paths(),
         "resources"         : get_resources_dir(),
