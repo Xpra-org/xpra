@@ -16,6 +16,7 @@
               href="http://www.webkitgtk.org/releases/"/>
   <repository type="tarball" name="icu"
               href="http://download.icu-project.org/files/"/>
+  <repository type="tarball" name="github-tarball" href="https://github.com/"/>
 
   <!-- Builds last version of WebKitGTK that supported GTK 2.x -->
   <metamodule id="meta-gtk-osx-webkit">
@@ -98,13 +99,19 @@
     </dependencies>
   </autotools>
 
+  <autotools id="libpsl" autogen-sh='configure'>
+    <branch repo="github-tarball" version="0.20.2"
+            module="rockdaboot/libpsl/releases/download/libpsl-0.20.2/libpsl-0.20.2.tar.gz" />
+  </autotools>
+  
   <autotools id="libsoup" autogen-sh="configure"
-             autogenargs="set_more_warnings=no">
-    <branch module="libsoup/2.62/libsoup-2.62.2.tar.xz" version="2.62.2"
-            hash="sha256:9e536fe3da60b25d2c63addb84a9d5072d00b0d8b8cbeabc629a6bcd63f879b6">
-      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/libsoup-python.patch" strip="0"/>
+             autogenargs="set_more_warnings=no --enable-introspection=no">
+    <branch module="libsoup/2.64/libsoup-2.64.2.tar.xz" version="2.64.2"
+            hash="sha256:75ddc194a5b1d6f25033bb9d355f04bfe5c03e0e1c71ed0774104457b3a786c6">
     </branch>
     <dependencies>
+      <dep package="libpsl"/>
+      <dep package="python3"/>
       <dep package="glib"/>
       <dep package="glib-networking"/>
       <dep package="sqlite"/>

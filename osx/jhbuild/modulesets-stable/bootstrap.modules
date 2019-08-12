@@ -27,14 +27,6 @@
     </branch>
   </autotools>
 
-  <autotools id='bash' autogen-sh="configure"  autogenargs="--with-installed-readline">
-    <branch repo="ftp.gnu.org" module="bash/bash-4.3.30.tar.gz"
-            version="4.3.30"/>
-    <dependencies>
-      <dep package="readline"/>
-    </dependencies>
-  </autotools>
-
   <autotools id="xz" autogen-sh="configure" bootstrap="true">
     <branch repo="tukaani.org" module="xz/xz-5.2.4.tar.bz2" version="5.2.4"/>
   </autotools>
@@ -59,7 +51,6 @@
             module="make/make-4.2.1.tar.bz2" version="4.2.1" hash="sha256:d6e262bf3601b42d2b1e4ef8310029e1dcf20083c5446b4b7aa67081fdffc589">
     </branch>
   </autotools>
-
   <autotools id="gettext-tools" autogen-sh="configure"
              autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp --with-included-glib --with-included-libcroco">
     <branch repo="ftp.gnu.org" source-subdir="gettext-tools"
@@ -175,25 +166,6 @@
             repo="sourceforge"/>
   </autotools>
 
-  <perl id="perl-xml-parser" makeargs="EXPATLIBPATH=${prefix}/lib EXPATINCPATH=${prefix}/include">
-    <branch repo="cpan"
-            module="authors/id/T/TO/TODDR/XML-Parser-2.44.tar.gz"
-            version="2.44"/>
-    <dependencies>
-      <dep package="expat"/>
-    </dependencies>
-  </perl>
-
-  <perl id="perl-xml-simple">
-    <branch repo="cpan"
-	    module="authors/id/G/GR/GRANTM/XML-Simple-2.22.tar.gz"
-	    version="2.22"
-            size="77937" md5sum="0914abddfce749453ed89b54029f2643"/>
-    <dependencies>
-      <dep package="perl-xml-parser"/>
-    </dependencies>
-  </perl>
-
   <!-- Needed for building Gnome apps from the repository -->
   <autotools id="gnome-common">
     <branch module="gnome-common/3.18/gnome-common-3.18.0.tar.xz" version="3.18.0"
@@ -227,24 +199,14 @@
     <dependencies>
       <dep package="xz"/>
       <dep package="gettext-tools" /> <!-- Needed for 64-bit -->
-      <dep package="readline" />
-      <dep package="bash" />  <!-- Needed for El Cap and later to work around SIP. -->
       <dep package="cmake"/>
       <dep package="autoconf" />
       <dep package="autoconf-archive" />
       <dep package="libtool" />
-      <dep package="automake-1.10" />
-      <dep package="automake-1.11" />
-      <dep package="automake-1.12" />
-      <dep package="automake-1.13" />
-      <dep package="automake-1.14"/>
       <dep package="automake"/>
       <dep package="pkg-config" />
       <dep package="bison"/>
       <dep package="flex"/>
-      <dep package="expat"/>
-      <dep package="perl-xml-parser"/>
-      <dep package="perl-xml-simple"/>
       <dep package="gtk-osx-docbook"/>
       <dep package="gnome-common"/>
       <dep package="intltool"/>

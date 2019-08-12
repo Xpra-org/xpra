@@ -119,13 +119,16 @@
   </autotools>
 
   <autotools id="gtk-doc" autogen-sh="configure">
-    <branch version="1.28" module="gtk-doc/1.28/gtk-doc-1.28.tar.xz"
-            hash="sha256:911e29e302252c96128965ee1f4067d5431a88e00ad1023a8bc1d6b922af5715"/>
+    <branch version="1.30" module="gtk-doc/1.30/gtk-doc-1.30.tar.xz"
+            hash="sha256:a4f6448eb838ccd30d76a33b1fd095f81aea361f03b12c7b23df181d21b7069e"/>
     <dependencies>
       <dep package="libxml2"/>
+      <dep package="libxslt"/>
       <dep package="itstool"/>
-      <dep package="yelp-tools"/>
     </dependencies>
+    <after>
+      <dep package="python3"/>
+    </after>
   </autotools>
 
   <autotools id="icu" autogen-sh="source/configure" autogenargs="--enable-rpath"
