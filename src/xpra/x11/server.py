@@ -30,7 +30,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase
-from xpra.gtk_common.error import xsync, xswallow, xlog
+from xpra.gtk_common.error import xsync, xswallow, xlog, XError
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_gobject, is_gtk3
 from xpra.log import Logger
 
@@ -1317,7 +1317,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             try:
                 with xsync:
                     img = window.get_image(0, 0, w, h)
-            except:
+            except XError:
                 log.warn("screenshot: window %s could not be captured", wid)
                 continue
             if img is None:

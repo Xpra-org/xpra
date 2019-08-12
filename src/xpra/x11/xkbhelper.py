@@ -10,7 +10,7 @@ import re
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 from xpra.util import std, csv
 from xpra.os_util import bytestostr
-from xpra.gtk_common.error import xsync
+from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.log import Logger
 
@@ -47,14 +47,10 @@ OPTIONAL_KEYS = [
 
 
 def clean_keyboard_state():
-    try:
+    with xlog:
         X11Keyboard.ungrab_all_keys()
-    except:
-        log.error("error ungrabbing keys", exc_info=True)
-    try:
+    with xlog:
         X11Keyboard.unpress_all_keys()
-    except:
-        log.error("error unpressing keys", exc_info=True)
 
 ################################################################################
 # keyboard layouts
@@ -279,7 +275,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         def estr(entries):
             try:
                 return csv(tuple(set(x[0] for x in entries)))
-            except:
+            except Exception:
                 return csv(tuple(entries))
         for keycode, entries in mappings.items():
             mods = modifiers_for(entries)
@@ -609,7 +605,7 @@ def keymap_to_xmodmap(trans_keycodes):
             assert 0<=index<keysyms_per_keycode
             try:
                 keysym = X11Keyboard.parse_keysym(name)
-            except:
+            except Exception:
                 keysym = None
             if keysym is None:
                 if name!="":

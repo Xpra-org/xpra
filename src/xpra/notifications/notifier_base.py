@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,7 +26,7 @@ class NotifierBase(object):
         tf = self.temp_files
         if tf:
             self.temp_files = {}
-            for nid in self.temp_files.keys():
+            for nid in self.temp_files:
                 self.clean_notification(nid)
 
     def show_notify(self, dbus_id, tray, nid,
@@ -38,7 +38,7 @@ class NotifierBase(object):
         if app_icon and not os.path.isabs(app_icon):
             #safe to use
             return app_icon
-        elif icon and icon[0]==b"png":
+        if icon and icon[0]==b"png":
             icon_data = icon[3]
             from xpra.platform.paths import get_xpra_tmp_dir
             tmp = osexpand(get_xpra_tmp_dir())
@@ -49,7 +49,8 @@ class NotifierBase(object):
                 d = os.path.dirname(d)
             for d in reversed(missing):
                 os.mkdir(d, 0o700)
-            temp = tempfile.NamedTemporaryFile(mode='w+b', suffix='.png', prefix='xpra-notification-icon-', dir=tmp, delete=False)
+            temp = tempfile.NamedTemporaryFile(mode='w+b', suffix='.png',
+                                               prefix='xpra-notification-icon-', dir=tmp, delete=False)
             temp.write(icon_data)
             temp.close()
             self.temp_files[nid] = temp.name
