@@ -33,27 +33,17 @@
        all the time:
 
        - gtk-osx-python.modules: self explaining.
-       - gtk-osx-gtkmm.modules: self explaining.
-       - gtk-osx-javascript.modules: GJS, associated tools, and the Mozilla JS
-         library it depends on.
        - gtk-osx-gstreamer.modules: self explaining.
        - gtk-osx-themes.modules: self explaining.
        - gtk-osx-network.modules: The network/crypto stack and various
          configurations of WebKit.
-
-       - gtk-osx-random.modules: "random stuff", has apps for testing GTK+.
-       - gtk-osx-unsupported.modules: more testing stuff, competely unsupported.
   -->
 
   <include href="gtk-osx-bootstrap.modules"/>
   <include href="gtk-osx-gstreamer.modules"/>
-  <include href="gtk-osx-gtkmm.modules"/>
-  <include href="gtk-osx-javascript.modules"/>
   <include href="gtk-osx-network.modules"/>
   <include href="gtk-osx-python.modules"/>
-  <include href="gtk-osx-random.modules"/>
   <include href="gtk-osx-themes.modules"/>
-  <include href="gtk-osx-unsupported.modules"/>
 
   <metamodule id="meta-gtk-osx-core">
     <dependencies>
