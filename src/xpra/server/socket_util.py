@@ -434,7 +434,7 @@ MDNS_WARNING = False
 def mdns_publish(display_name, listen_on, text_dict=None):
     global MDNS_WARNING
     if MDNS_WARNING is True:
-        return None
+        return ()
     from xpra.log import Logger
     log = Logger("mdns")
     log("mdns_publish%s", (display_name, listen_on, text_dict))
@@ -458,7 +458,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         log.warn(" %s", einfo)
         log.warn(" either install the 'python-avahi' module")
         log.warn(" or use the 'mdns=no' option")
-        return None
+        return ()
     d = dict(text_dict or {})
     #ensure we don't have duplicate interfaces:
     f_listen_on = {}
