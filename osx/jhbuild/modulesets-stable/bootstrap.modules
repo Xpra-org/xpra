@@ -16,7 +16,7 @@
   <repository type="tarball" name="tukaani.org"
               href="http://tukaani.org/"/>
   <repository type="tarball" name="cmake"
-              href="http://www.cmake.org/files/"/>
+              href="http://cmake.org/files/"/>
   <repository type="tarball" name="cpan" href="http://search.cpan.org/CPAN/" />
   <repository type="tarball" name="intltool"
               href="http://launchpad.net/intltool/trunk/"/>
