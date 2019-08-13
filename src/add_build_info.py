@@ -121,56 +121,61 @@ def get_status_output(*args, **kwargs):
     stdout, stderr = p.communicate()
     return p.returncode, stdout, stderr
 
-def get_output_lines(commands):
-    for cmd, valid_exit_code in commands:
-        try:
-            returncode, stdout, stderr = get_status_output(cmd, stdin=None, shell=True)
-            if returncode!=valid_exit_code:
-                print("'%s' failed with return code %s" % (cmd, returncode))
-                print("stderr: %s" % stderr)
-                continue
-            if not stdout:
-                print("could not get version information")
-                continue
-            out = stdout.decode('utf-8')
-            return out.splitlines()
-        except:
-            pass
-    return  []
+def get_output_lines(cmd, valid_exit_code=0):
+    try:
+        returncode, stdout, stderr = get_status_output(cmd, stdin=None, shell=True)
+        if returncode!=valid_exit_code:
+            print("'%s' failed with return code %s" % (cmd, returncode))
+            print("stderr: %s" % stderr)
+            return ()
+        if not stdout:
+            print("could not get output from command '%s'" % (cmd,))
+            return ()
+        out = stdout.decode('utf-8')
+        return out.splitlines()
+    except Exception as e:
+        print("error running '%s': %s" % (cmd, e))
+    return  ()
 
-def get_first_line_output(commands):
-    lines = get_output_lines(commands)
+def get_first_line_output(cmd, valid_exit_code=0):
+    lines = get_output_lines(cmd, valid_exit_code)
     if lines:
         return lines[0]
     return  ""
 
 def get_nvcc_version():
-    options = []
     for p in ("/usr/local/cuda/bin", "/opt/cuda/bin", ""):
         nvcc = os.path.join(p, "nvcc")
         if p=="" or os.path.exists(nvcc):
-            options.append(("%s --version" % (nvcc), 0))
-    lines = get_output_lines(options)
-    if lines:
-        vline = lines[-1]
-        vpos = vline.rfind(", V")
-        if vpos>0:
-            return vline[vpos+3:]
+            cmd = "%s --version" % (nvcc)
+            lines = get_output_lines(cmd)
+            if lines:
+                vline = lines[-1]
+                vpos = vline.rfind(", V")
+                if vpos>0:
+                    return vline[vpos+3:]
     return None
 
 def get_compiler_version():
-    test_options = [("%s --version" % os.environ.get("CC", "gcc"), 0)]
-    if sys.platform.startswith("win"):
-        test_options.append(("cl", 0))
-        test_options.append((os.path.join(os.environ.get("VCINSTALLDIR", ""), "bin", "cl"), 0))
-    return get_first_line_output(test_options)
+    cc_version = "%s --version" % os.environ.get("CC", "gcc")
+    if sys.platform=="darwin":
+        lines = get_output_lines(cc_version)
+        for line in lines:
+            if line.startswith("Apple"):
+                return line
+        return None
+    return get_first_line_output(cc_version)
 
 def get_linker_version():
-    test_options = [("%s --version" % os.environ.get("LD", "ld"), 0)]
-    if sys.platform.startswith("win"):
-        test_options.append(("link", 1100))
-        test_options.append((os.path.join(os.environ.get("VCINSTALLDIR", ""), "bin", "link"), 1100))
-    return get_first_line_output(test_options)
+    if sys.platform=="darwin":
+        ld_version = "%s -v" % os.environ.get("LD", "ld")
+        lines = get_output_lines(ld_version)
+        for line in lines:
+            if line.find("using: ")>0:
+                return line.split("using: ", 1)[1]
+        return None
+    ld_version = "%s --version" % os.environ.get("LD", "ld")
+    return get_first_line_output(ld_version)
 
 
 def set_prop(props, key, value):
