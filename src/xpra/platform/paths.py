@@ -284,6 +284,9 @@ def get_info():
     try:
         import xpra
         XPRA_MODULE_PATH = xpra.__file__
+        pos = XPRA_MODULE_PATH.find("__init__.py")
+        if pos>0:
+            XPRA_MODULE_PATH = XPRA_MODULE_PATH[:pos]
     except AttributeError:
         XPRA_MODULE_PATH = ""
     return {
