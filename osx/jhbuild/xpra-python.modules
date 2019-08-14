@@ -7,7 +7,7 @@
 	<repository type="tarball" name="pypi.python.org" href="https://pypi.python.org"/>
 	<repository type="tarball" name="xpra.org" href="http://xpra.org"/>
 	<repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
-	<repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
+	<repository type="tarball" name="github-tarball" default="yes" href="https://github.com/"/>
 	<repository type="tarball" name="pyyaml.org" href="http://pyyaml.org"/>
 
 
@@ -155,7 +155,7 @@
 	</distutils>
 
 	<distutils id="python-asn1crypto">
-		<branch repo="github.com"
+		<branch repo="github-tarball"
 			module="/wbond/asn1crypto/archive/0.24.0.tar.gz"
 			hash="sha256:d2a82bb3c29e1abcb376b59679510b58dd796c813f8983f2db9b45e9ab228190"
 			checkoutdir="asn1crypto-0.24.0"
@@ -665,9 +665,10 @@
 
 
 	<distutils id="python-rencode">
-		<branch repo="files.pythonhosted.org"
-			module="/packages/3a/fb/3c03dbe4438dd596e1378b5299990b81041739658a76e0f4a301eded67f4/rencode-1.0.6.tar.gz"
-			hash="sha256:2586435c4ea7d45f74e26765ad33d75309de7cf47c4d762e8efabd39905c0718"
+		<branch repo="github-tarball"
+			module="/aresch/rencode/tar.gz/v1.0.6"
+			hash="sha256:0ed61111f053ea37511da86ca7aed2a3cfda6bdaa1f54a237c4b86eea52f0733"
+			checkoutdir="rencode-1.0.6"
 			version="1.0.6"/>
 		<dependencies>
 			<dep package="python"/>
