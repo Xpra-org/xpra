@@ -126,10 +126,9 @@
     </dependencies>
   </meson>
 
-  <meson id="pango">
-    <branch version="1.44.1" module="pango/1.44/pango-1.44.1.tar.xz"
-            hash="sha256:07fab549d383cae6d4715eaf853903433328d6e3618e7307bdedb4995f3bfe5f">
-    </branch>
+  <autotools id="pango"  autogen-sh="autoreconf">
+    <branch version="1.42.4" module="pango/1.42/pango-1.42.4.tar.xz"
+            hash="sha256:1d2b74cd63e8bd41961f2f8d952355aa0f9be6002b52c8aa7699d9f5da597c9d">
     <dependencies>
       <dep package="glib"/>
       <dep package="cairo"/>
@@ -141,7 +140,7 @@
       <dep package="meta-gtk-osx-freetype"/>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
-  </meson>
+  </autotools>
   
  <meson id="atk">
     <branch module="atk/2.32/atk-2.32.0.tar.xz" version="2.32.0"
