@@ -50,12 +50,23 @@
 		</after>
 	</distutils>
 
+	<distutils id="python-ifaddr">
+		<branch repo="pypi.python.org"
+			module="/packages/9f/54/d92bda685093ebc70e2057abfa83ef1b3fb0ae2b6357262a3e19dfe96bb8/ifaddr-0.1.6.tar.gz"
+			hash="sha256:c19c64882a7ad51a394451dabcbbed72e98b5625ec1e79789924d5ea3e3ecb93"
+			version="0.1.6"/>
+		<after>
+			<dep package="python"/>
+		</after>
+	</distutils>
+
 	<distutils id="python-zeroconf">
 		<branch repo="pypi.python.org"
 			module="/packages/bf/e3/acc6e2c2938428afa2450143fc4d3953ec60cb4d859db3a58f03d149ef04/zeroconf-0.19.1.tar.gz"
 			hash="sha256:434eab8da9525ae725d6842aae7e59d9ec6580bdc5ae84f3c225240bc6797f7a"
 			version="0.19.1"/>
 		<dependencies>
+			<dep package="python-ifaddr"/>
 			<dep package="python-enum-compat"/>
 		</dependencies>
 		<after>

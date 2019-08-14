@@ -64,6 +64,16 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-ifaddr" python3="1">
+		<branch repo="pypi.python.org"
+			module="/packages/9f/54/d92bda685093ebc70e2057abfa83ef1b3fb0ae2b6357262a3e19dfe96bb8/ifaddr-0.1.6.tar.gz"
+			hash="sha256:c19c64882a7ad51a394451dabcbbed72e98b5625ec1e79789924d5ea3e3ecb93"
+			version="0.1.6"/>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 	<distutils id="python3-zeroconf" python3="1">
 		<branch repo="github.com"
 			module="/jstasiak/python-zeroconf/tar.gz/0.23.0"
@@ -71,6 +81,7 @@
 			checkoutdir="python-zeroconf-0.23.0"
 			version="0.23.0"/>
 		<dependencies>
+			<dep package="python3-ifaddr"/>
 			<dep package="python3-enum-compat"/>
 		</dependencies>
 		<after>
