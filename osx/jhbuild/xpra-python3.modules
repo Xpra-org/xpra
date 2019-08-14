@@ -8,6 +8,7 @@
 	<repository type="tarball" name="xpra.org" href="http://xpra.org"/>
 	<repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
 	<repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
+	<repository type="tarball" name="github-tarball" default="yes" href="https://github.com/"/>
 	<repository type="tarball" name="pyyaml.org" href="http://pyyaml.org"/>
 
 	<autotools id="gtk-mac-integration-python" autogen-sh="configure"
