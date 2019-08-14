@@ -149,6 +149,7 @@
     <branch repo="harfbuzz" module="harfbuzz-2.5.3.tar.xz" version="2.5.3">
     </branch>
     <dependencies>
+      <dep package="freetype-no-harfbuzz"/>
       <dep package="ragel"/>
       <dep package="glib"/>
       <dep package="icu"/>
@@ -156,6 +157,18 @@
     <after>
       <dep package="icu55"/>
     </after>
+  </autotools>
+
+  <autotools id="freetype-no-harfbuzz" autogen-sh="configure"
+             skip-autogen="never"
+             autogenargs="--without-bzip2 --without-harfbuzz">
+    <branch module="freetype/freetype-2.7.1.tar.gz" version="2.7.1"
+            repo="sourceforge">
+      <!--patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/freetype-2.5.3-ccexe_cflags.patch" strip="1"/-->
+    </branch>
+    <dependencies>
+      <dep package="zlib"/>
+    </dependencies>
   </autotools>
 
   <autotools id="freetype" autogen-sh="configure"
