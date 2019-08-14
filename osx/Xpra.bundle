@@ -63,6 +63,12 @@
 		${prefix}/lib/librsvg*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libfribidi*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libgthread*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libx264.*.dylib
 	</binary>
 	<binary>
