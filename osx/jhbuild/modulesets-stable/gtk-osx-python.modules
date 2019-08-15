@@ -14,7 +14,7 @@
   <repository type="tarball" name="pymodules"
               href="https://pypi.python.org/packages/"/>
   <repository type="tarball" name="github-tarball"
-              href="https://github.com"/>
+              href="https://codeload.github.com"/>
 
   <metamodule id="meta-gtk-osx-python">
     <dependencies>
@@ -209,8 +209,10 @@
   </autotools>
 
   <distutils id="python-six">
-    <branch module="/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz" repo="pymodules" version="1.11.0"
-            checkoutdir="six"/>
+	<branch repo="pypi.python.org"
+		module="/packages/dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz"
+		hash="sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"
+		version="1.12.0"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
