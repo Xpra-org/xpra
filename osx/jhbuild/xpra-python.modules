@@ -666,7 +666,7 @@
 
 	<distutils id="python-rencode">
 		<branch repo="github-tarball"
-			module="/aresch/rencode/tar.gz/v1.0.6"
+			module="/aresch/rencode/archive/v1.0.6.tar.gz"
 			hash="sha256:0ed61111f053ea37511da86ca7aed2a3cfda6bdaa1f54a237c4b86eea52f0733"
 			checkoutdir="rencode-1.0.6"
 			version="1.0.6"/>
