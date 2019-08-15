@@ -209,8 +209,8 @@
   </autotools>
 
   <distutils id="python-six">
-	<branch repo="pypi.python.org"
-		module="/packages/dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz"
+	<branch repo="pymodules"
+		module="dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz"
 		hash="sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"
 		version="1.12.0"/>
     <dependencies>
