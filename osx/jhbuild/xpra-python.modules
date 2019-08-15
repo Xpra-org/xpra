@@ -13,9 +13,9 @@
 
 	<distutils id="python-setuptools">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/1d/64/a18a487b4391a05b9c7f938b94a16d80305bf0369c6b0b9509e86165e1d3/setuptools-41.0.1.zip"
-			hash="sha256:a222d126f5471598053c9a77f4b5d4f26eaa1f150ad6e01dcf1a42e185d05613"
-			version="41.0.1"/>
+			module="/packages/68/0c/e470db6866aedbff3c4c88faf7f81b90343d8ff32cd68b62db1b65037fb4/setuptools-41.1.0.zip"
+			hash="sha256:c519b84c299911fd94ef47e3de4fe678c254aefc5cdf8a9b12e4cdc8cc3744a8"
+			version="41.1.0"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -130,9 +130,9 @@
 
 	<distutils id="python-parsing">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/5d/3a/24d275393f493004aeb15a1beae2b4a3043526e8b692b65b4a9341450ebe/pyparsing-2.4.0.tar.gz"
-			hash="sha256:1873c03321fc118f4e9746baf201ff990ceb915f433f23b395f5580d1840cb2a"
-			version="2.4.0"/>
+			module="/packages/7e/24/eaa8d7003aee23eda270099eeec754d7bf4399f75c6a011ef948304f66a2/pyparsing-2.4.2.tar.gz"
+			hash="sha256:6f98a7b9397e206d78cc01df10131398f1c8b8510a2f4d97d9abd82e1aacdd80"
+			version="2.4.2"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -143,9 +143,9 @@
 
 	<distutils id="python-packaging">
 		<branch repo="pypi.python.org"
-			module="/packages/16/51/d72654dbbaa4a4ffbf7cb0ecd7d12222979e0a660bf3f42acc47550bf098/packaging-19.0.tar.gz"
-			hash="sha256:03432ca3d87a962ab267f17fd59a16bbd43bb0eff9291c10b6801a002422b17a"
-			version="19.0"/>
+			module="/packages/8b/3a/5bfe64c319be5775ed7ea3bc1a8e5667e0d57a740cc0498ce03e032eaf93/packaging-19.1.tar.gz"
+			hash="sha256:c491ca87294da7cc01902edbe30a5bc6c4c28172b5138ab4e4aa1b9d7bfaeafe"
+			version="19.1"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -191,9 +191,9 @@
 
 	<distutils id="python-pyasn1">
 		<branch repo="pypi.python.org"
-			module="/packages/46/60/b7e32f6ff481b8a1f6c8f02b0fd9b693d1c92ddd2efb038ec050d99a7245/pyasn1-0.4.5.tar.gz"
-			hash="sha256:da2420fe13a9452d8ae97a0e478adde1dee153b11ba832a95b223a2ba01c10f7"
-			version="0.4.5">
+			module="/packages/e3/12/dfffc84b783e280e942409d6b651fe4a5a746433c34589da7362db2c99c6/pyasn1-0.4.6.tar.gz"
+			hash="sha256:b773d5c9196ffbc3a1e13bdf909d446cad80a039aa3340bcad72f395b76ebc86"
+			version="0.4.6">
 		</branch>
 		<dependencies>
 			<dep package="python"/>
@@ -205,9 +205,9 @@
 
 	<distutils id="python-pillow">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/81/1a/6b2971adc1bca55b9a53ed1efa372acff7e8b9913982a396f3fa046efaf8/Pillow-6.0.0.tar.gz"
-			hash="sha256:809c0a2ce9032cbcd7b5313f71af4bdc5c8c771cb86eb7559afd954cab82ebb5"
-			version="6.0.0"/>
+			module="/packages/51/fe/18125dc680720e4c3086dd3f5f95d80057c41ab98326877fc7d3ff6d0ee5/Pillow-6.1.0.tar.gz"
+			hash="sha256:0804f77cb1e9b6dbd37601cee11283bba39a8d44b9ddb053400c58e0c0d7d9de"
+			version="6.1.0"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="libwebp"/>
@@ -224,9 +224,9 @@
 
 	<distutils id="python-py2app">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/cb/e2/38df103ada1d19f217170150bb85f9544e6b4ccf00554f1705fa96be3aad/py2app-0.18.tar.gz"
-			hash="sha256:1daaaea4dccad8fab25eec7edda81a52906dd657ad39b493ae3174498cf983c1"
-			version="0.18"/>
+			module="/packages/4d/a2/c01b3eb13163be0fe3065c0c5461f75e702ab0dc66a7f42f8987884448a5/py2app-0.19.tar.gz"
+			hash="sha256:f3b9f4deb466998304fedea739bfa7bc553a1887656f7ee6accb2899e9e45b52"
+			version="0.19"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -237,9 +237,9 @@
 
 	<distutils id="python-cython">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/87/26/6f8a63fda4743d9e405c17c2872ac3242b63b5eba79c475ddf1777f17b9e/Cython-0.29.11.tar.gz"
-			hash="sha256:763a522cc5d1673ba7a4092c0914790f11704b1d4c41e2671e50d0f702a8c6a0"
-			version="0.29.11"/>
+			module="/packages/a5/1f/c7c5450c60a90ce058b47ecf60bb5be2bfe46f952ed1d3b95d1d677588be/Cython-0.29.13.tar.gz"
+			hash="sha256:c29d069a4a30f472482343c866f7486731ad638ef9af92bfe5fca9c7323d638e"
+			version="0.29.13"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -264,9 +264,9 @@
 
 	<distutils id="python-bcrypt">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/ce/3a/3d540b9f5ee8d92ce757eebacf167b9deedb8e30aedec69a2a072b2399bb/bcrypt-3.1.6.tar.gz"
-			hash="sha256:44636759d222baa62806bbceb20e96f75a015a6381690d1bc2eda91c01ec02ea"
-			version="3.1.6"/>
+			module="/packages/fa/aa/025a3ab62469b5167bc397837c9ffc486c42a97ef12ceaa6699d8f5a5416/bcrypt-3.1.7.tar.gz"
+			hash="sha256:0b0069c752ec14172c5f78208f1863d7ad6755a6fae6fe76ec2c80d13be41e42"
+			version="3.1.7"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -319,9 +319,9 @@
 
 	<distutils id="python-setuptools-scm">
 		<branch repo="pypi.python.org"
-			module="/packages/54/85/514ba3ca2a022bddd68819f187ae826986051d130ec5b972076e4f58a9f3/setuptools_scm-3.2.0.tar.gz"
-			hash="sha256:52ab47715fa0fc7d8e6cd15168d1a69ba995feb1505131c3e814eb7087b57358"
-			version="3.2.0"/>
+			module="/packages/83/44/53cad68ce686585d12222e6769682c4bdb9686808d2739671f9175e2938b/setuptools_scm-3.3.3.tar.gz"
+			hash="sha256:bd25e1fb5e4d603dcf490f1fde40fb4c595b357795674c3e5cb7f6217ab39ea5"
+			version="3.3.3"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -332,9 +332,9 @@
 
 	<distutils id="python-pkgconfig">
 		<branch repo="pypi.python.org"
-			module="/packages/17/b7/b6e2b5798eeadb6bfbebf6c332c8989463166769815f74d6e87ed9951f61/pkgconfig-1.4.0.tar.gz"
-			hash="sha256:048c3b457da7b6f686b647ab10bf09e2250e4c50acfe6f215398a8b5e6fcdb52"
-			version="1.4.0"/>
+			module="/packages/6e/a9/ff67ef67217dfdf2aca847685fe789f82b931a6957a3deac861297585db6/pkgconfig-1.5.1.tar.gz"
+			hash="sha256:97bfe3d981bab675d5ea3ef259045d7919c93897db7d3b59d4e8593cba8d354f"
+			version="1.5.1"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -345,9 +345,9 @@
 
 	<distutils id="python-deprecation">
 		<branch repo="pypi.python.org"
-			module="/packages/8c/e3/e5c66eba8fa2fd567065fa70ada98b990f449f74fb812b408fa7aafe82c9/deprecation-1.0.1.tar.gz"
-			hash="sha256:b9bff5cc91f601ef2a8a0200bc6cde3f18a48c2ed3d1ecbfc16076b14b3ad935"
-			version="1.0.1"/>
+			module="/packages/cd/94/8d9d6303f5ddcbf40959fc2b287479bd9a201ea9483373d9b0882ae7c3ad/deprecation-2.0.7.tar.gz"
+			hash="sha256:c0392f676a6146f0238db5744d73e786a43510d54033f80994ef2f4c9df192ed"
+			version="2.0.7"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -358,9 +358,9 @@
 
 	<distutils id="python-test-runner">
 		<branch repo="pypi.python.org"
-			module="/packages/9e/b7/fe6e8f87f9a756fd06722216f1b6698ccba4d269eac6329d9f0c441d0f93/pytest-runner-4.2.tar.gz"
-			hash="sha256:d23f117be39919f00dd91bffeb4f15e031ec797501b717a245e377aee0f577be"
-			version="4.2"/>
+			module="/packages/d9/6d/4b41a74b31720e25abd4799be72d54811da4b4d0233e38b75864dcc1f7ad/pytest-runner-5.1.tar.gz"
+			hash="sha256:25a013c8d84f0ca60bb01bd11913a3bcab420f601f0f236de4423074af656e7a"
+			version="5.1"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="python-setuptools-scm"/>
@@ -423,9 +423,9 @@
 
 	<distutils id="python-pyasn1-modules">
 		<branch repo="pypi.python.org"
-			module="/packages/ab/76/36ab0e099e6bd27ed95b70c2c86c326d3affa59b9b535c63a2f892ac9f45/pyasn1-modules-0.2.1.tar.gz"
-			hash="sha256:af00ea8f2022b6287dc375b2c70f31ab5af83989fc6fe9eacd4976ce26cd7ccc"
-			version="0.2.1">
+			module="/packages/f1/a9/a1ef72a0e43feff643cf0130a08123dea76205e7a0dda37e3efb5f054a31/pyasn1-modules-0.2.6.tar.gz"
+			hash="sha256:43c17a83c155229839cc5c6b868e8d0c6041dba149789b6d6e28801c64821722"
+			version="0.2.6">
 		</branch>
 		<dependencies>
 			<dep package="python-pyasn1"/>
@@ -437,9 +437,9 @@
 
 	<distutils id="python-ldap3">
 		<branch repo="pypi.python.org"
-			module="/packages/c9/41/1c982033eb0355e0aa7da3a070d7869ca4705181012c10737a20b283913d/ldap3-2.5.2.tar.gz"
-			hash="sha256:3f67c83185b1f0df8fdf6b52fa42c55bc9e9b7120c8b7fec60f0d6003c536d18"
-			version="2.5.2">
+			module="/packages/79/66/d297c6f3c30b69c813c06e8933769c2732c83d35ca584107346d81ab2eee/ldap3-2.6.tar.gz"
+			hash="sha256:0533eefc18d5ce0532f07fe1ce4e1f27128e1073845a6bf39fef2c828a401bb8"
+			version="2.6">
 		</branch>
 		<dependencies>
 			<dep package="python-pyasn1"/>
@@ -465,9 +465,9 @@
 
 	<distutils id="python-future">
 		<branch repo="pypi.python.org"
-			module="/packages/00/2b/8d082ddfed935f3608cc61140df6dcbf0edea1bc3ab52fb6c29ae3e81e85/future-0.16.0.tar.gz"
-			hash="sha256:e39ced1ab767b5936646cedba8bcce582398233d6a627067d4c6a454c90cfedb"
-			version="0.16.0">
+			module="/packages/90/52/e20466b85000a181e1e144fd8305caf2cf475e2f9674e797b222f8105f5f/future-0.17.1.tar.gz"
+			hash="sha256:67045236dcfd6816dc439556d009594abf643e5eb48992e36beac09c2ca659b8"
+			version="0.17.1">
 		</branch>
 		<dependencies>
 			<dep package="python"/>
@@ -507,9 +507,9 @@
 
 	<distutils id="python-decorator">
 		<branch repo="pypi.python.org"
-			module="/packages/c4/26/b48aaa231644bc875bb348e162d156edb18b994da900a10f4493ea995a2f/decorator-4.3.2.tar.gz"
-			hash="sha256:33cd704aea07b4c28b3eb2c97d288a06918275dac0ecebdaf1bc8a48d98adb9e"
-			version="4.3.2">
+			module="https://files.pythonhosted.org/packages/ba/19/1119fe7b1e49b9c8a9f154c930060f37074ea2e8f9f6558efc2eeaa417a2/decorator-4.4.0.tar.gz"
+			hash="sha256:86156361c50488b84a3f148056ea716ca587df2f0de1d34750d35c21312725de"
+			version="4.4.0">
 		</branch>
 		<dependencies>
 			<dep package="python"/>
@@ -680,9 +680,9 @@
 
 	<distutils id="python-yaml">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/9f/2c/9417b5c774792634834e730932745bc09a7d36754ca00acf1ccd1ac2594d/PyYAML-5.1.tar.gz"
-			hash="sha256:436bc774ecf7c103814098159fbb84c2715d25980175292c648f2da143909f95"
-			version="5.1"/>
+			module="/packages/e3/e8/b3212641ee2718d556df0f23f78de8303f068fe29cdaa7a91018849582fe/PyYAML-5.1.2.tar.gz"
+			hash="sha256:01adf0b6c6f61bd11af6e10ca52b7d4057dd0be0343eb9283c878cf3af56aee4"
+			version="5.1.2"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
