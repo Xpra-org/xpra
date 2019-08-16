@@ -180,9 +180,6 @@
       <dep package="meta-gtk-osx-core"/>
       <dep package="pycairo"/>
     </dependencies>
-    <after>
-      <dep package="libglade"/>
-    </after>
   </autotools>
 
   <autotools id="gtk-mac-integration-python" autogen-sh="configure"
