@@ -155,9 +155,9 @@
     </after>
   </meson>
 
-   <autotools id="gdk-pixbuf" autogen-sh="configure">
+  <autotools id="gdk-pixbuf" autogen-sh="configure">
     <branch module="gdk-pixbuf/2.36/gdk-pixbuf-2.36.12.tar.xz" version="2.36.12"
-            hash="sha256:fff85cf48223ab60e3c3c8318e2087131b590fd6f1737e42cb3759a3b427a334"/>  <meson id="gdk-pixbuf" mesonargs="-Dx11=false -Dman=false">
+            hash="sha256:fff85cf48223ab60e3c3c8318e2087131b590fd6f1737e42cb3759a3b427a334">
     </branch>
     <after>
       <dep package="pango"/>
