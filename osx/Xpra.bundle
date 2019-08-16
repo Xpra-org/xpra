@@ -29,7 +29,7 @@
 	</data>
 
 	<binary>
-		${prefix}/lib/gdk-pixbuf-2.0/${pkg:${gtk}:gtk_binary_version}/loaders/*.so
+		${prefix}/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.so
 	</binary>
 	<!-- Copy in libpyglib, which will pull in other dependencies we need -->
 	<binary>
