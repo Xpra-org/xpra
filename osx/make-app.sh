@@ -137,6 +137,7 @@ echo "**************************************************************************
 echo "calling 'gtk-mac-bundler Xpra.bundle' in `pwd`"
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	sed -i '' -e "s+gtk2+gtk3+g" "./Xpra.bundle"
+	sed -i '' -e "s+pygtk+cairo+g" Xpra.bundle
 fi
 #we have to make sure we use python2 here (not ported yet):
 python2 ~/.local/bin/gtk-mac-bundler Xpra.bundle
