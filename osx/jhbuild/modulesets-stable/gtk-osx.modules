@@ -143,9 +143,9 @@
     </after>
   </autotools>
   
- <meson id="atk">
-    <branch module="atk/2.32/atk-2.32.0.tar.xz" version="2.32.0"
-            hash="sha256:cb41feda7fe4ef0daa024471438ea0219592baf7c291347e5a858bb64e4091cc"/>
+  <autotools id="atk" autogen-sh="configure">
+    <branch module="atk/2.28/atk-2.28.1.tar.xz" version="2.28.1"
+            hash="sha256:cd3a1ea6ecc268a2497f0cd018e970860de24a6d42086919d6bf6c8e8d53f4fc"/>
     <dependencies>
     </dependencies>
     <after>
@@ -153,7 +153,7 @@
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="gobject-introspection"/>
     </after>
-  </meson>
+  </autotools>
 
   <autotools id="gdk-pixbuf" autogen-sh="configure">
     <branch module="gdk-pixbuf/2.36/gdk-pixbuf-2.36.12.tar.xz" version="2.36.12"
