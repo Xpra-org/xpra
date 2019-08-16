@@ -155,16 +155,15 @@
     </after>
   </meson>
 
-  <meson id="gdk-pixbuf" mesonargs="-Dx11=false -Dman=false">
-    <branch module="gdk-pixbuf/2.38/gdk-pixbuf-2.38.1.tar.xz" version="2.38.1"
-            hash="sha256:f19ff836ba991031610dcc53774e8ca436160f7d981867c8c3a37acfe493ab3a">
-      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/gdk-pixbuf-loader-name.patch" strip="1"/>
+   <autotools id="gdk-pixbuf" autogen-sh="configure">
+    <branch module="gdk-pixbuf/2.36/gdk-pixbuf-2.36.12.tar.xz" version="2.36.12"
+            hash="sha256:fff85cf48223ab60e3c3c8318e2087131b590fd6f1737e42cb3759a3b427a334"/>  <meson id="gdk-pixbuf" mesonargs="-Dx11=false -Dman=false">
     </branch>
     <after>
       <dep package="pango"/>
       <dep package="gobject-introspection"/>
     </after>
-  </meson>
+  </autotools>
 
   <autotools id="gtk+" autogen-sh="autoreconf"
              autogenargs="--with-gdktarget=quartz --enable-quartz-relocation --disable-introspection">
