@@ -118,7 +118,7 @@ rm -fr ./image/flat ./image/root ./image/scripts
 
 if [ ! -z "${CODESIGN_KEYNAME}" ]; then
 		echo "Signing with key '${CODESIGN_KEYNAME}'"
-		productsign --sign "3rd Party Mac Developer Installer: ${CODESIGN_KEYNAME}" ./image/$PKG_FILENAME ./image/$PKG_FILENAME.signed
+		productsign --sign "${CODESIGN_KEYNAME}" ./image/$PKG_FILENAME ./image/$PKG_FILENAME.signed
 		if [ "$?" == "0" ]; then
 			ls -la ./image/*pkg*
 			mv ./image/$PKG_FILENAME.signed ./image/$PKG_FILENAME
