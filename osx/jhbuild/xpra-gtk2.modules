@@ -14,7 +14,7 @@
 
 
 	<!-- HACK: patch after autoreconf is run -->
-	<autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s %(autogenargs)s">
+	<autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; ./configure --prefix %(prefix)s %(autogenargs)s">
 	<branch module="/src/gtkglext-1.2.0.tar.bz2"
 		version="1.2.0"
 		checkoutdir="gtkglext-1.2.0"
