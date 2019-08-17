@@ -48,6 +48,7 @@
 			<dep package="meta-gtk-osx-themes"/>
 			<dep package="gtkglext"/>
 			<dep package="pygtkglext"/>
+			<dep package="pygobject3"/>
 			<dep package="meta-osx-xpra-tools-deps"/>
 			<dep package="meta-osx-xpra-python-deps"/>
 			<dep package="meta-osx-xpra-codec-deps"/>
