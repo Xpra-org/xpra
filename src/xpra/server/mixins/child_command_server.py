@@ -294,7 +294,7 @@ class ChildCommandServer(StubServerMixin):
                 log.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
             self.children_started.append(procinfo)
             return proc
-        except OSError as e:
+        except (OSError, ValueError) as e:
             log("start_command%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), exc_info=True)
             log.error("Error spawning child '%s':" % (child_cmd, ))
             log.error(" %s" % (e,))
