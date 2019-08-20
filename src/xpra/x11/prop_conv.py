@@ -210,8 +210,10 @@ def _read_image(_disp, stream):
             return None
         width, height = struct.unpack(b"@LL", header)
         data = stream.read(width * height * long_size)
-        if len(data) < width * height * long_size:
-            log.warn("Corrupt _NET_WM_ICON")
+        expected = width * height * long_size
+        if len(data) < expected:
+            log.warn("Warning: corrupt _NET_WM_ICON, execpted %i bytes but got %i",
+                     expected, len(data))
             return None
         if int_size!=long_size:
             #long to ints (CARD32):
