@@ -82,7 +82,11 @@ def do_get_system_conf_dirs():
     #the system wide configuration directory
     dirs = []
     try:
-        from Foundation import  NSSearchPathForDirectoriesInDomains, NSApplicationSupportDirectory, NSLocalDomainMask, NSSystemDomainMask  #@UnresolvedImport
+        from Foundation import (
+            NSSearchPathForDirectoriesInDomains,    #@UnresolvedImport
+            NSApplicationSupportDirectory,          #@UnresolvedImport
+            NSLocalDomainMask, NSSystemDomainMask   #@UnresolvedImport
+            )
         sdirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSLocalDomainMask|NSSystemDomainMask, False)
         for x in sdirs:
             #ie: "/Library/Application Support/Xpra"
@@ -116,7 +120,9 @@ def do_get_user_conf_dirs(_uid):
 def do_get_default_log_dirs():
     dirs = []
     try:
-        from Foundation import  NSSearchPathForDirectoriesInDomains, NSLibraryDirectory, NSUserDomainMask    #@UnresolvedImport
+        from Foundation import (
+            NSSearchPathForDirectoriesInDomains, NSLibraryDirectory, NSUserDomainMask,  #@UnresolvedImport
+            )
         udirs = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, False)
         for x in udirs:
             #ie: ~/Library/
@@ -133,7 +139,9 @@ def do_get_socket_dirs():
 def do_get_download_dir():
     d = "~/Downloads"
     try:
-        from Foundation import  NSSearchPathForDirectoriesInDomains, NSDownloadsDirectory, NSUserDomainMask     #@UnresolvedImport
+        from Foundation import (
+            NSSearchPathForDirectoriesInDomains, NSDownloadsDirectory, NSUserDomainMask,    #@UnresolvedImport
+            )
         d = NSSearchPathForDirectoriesInDomains(NSDownloadsDirectory, NSUserDomainMask, False)[0]
         #(should be "~/Downloads")
     except:

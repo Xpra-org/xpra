@@ -33,7 +33,7 @@ def do_get_install_prefix():
     #$HOME/.local/lib/python2.7/site-packages/xpra/platform/paths.py
     try:
         base = site.getuserbase()
-    except:
+    except Exception:
         base = site.USER_BASE
     if __file__.startswith(base):
         return base
@@ -57,7 +57,7 @@ def do_get_resources_dir():
         local_share_path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "..", "share", "xpra"))
         if os.path.exists(local_share_path) and os.path.isdir(local_share_path):
             return local_share_path
-    except:
+    except Exception:
         pass
     return os.getcwd()
 

@@ -59,9 +59,10 @@ def get_virtual_video_devices(capture_only=True):
         if not f.startswith("video"):
             continue
         try:
-            no = int(f[len("video"):])
+            no_str = f[len("video"):]
+            no = int(no_str)
             assert no>=0
-        except:
+        except (TypeError, ValueError, AssertionError):
             continue
         dev_file = "/dev/%s" % f
         dev_info = query_video_device(dev_file)
@@ -78,7 +79,7 @@ def get_virtual_video_devices(capture_only=True):
             try:
                 name = open(dev_name).read().replace("\n", "")
                 info["card"] = name
-            except:
+            except (OSError, IOError):
                 pass
         devices[no] = info
     log("devices: %s", devices)
@@ -101,9 +102,10 @@ def get_all_video_devices(capture_only=True):
             continue
         device_paths.add(dev_file)
         try:
-            no = int(f[len("video"):])
+            no_str = f[len("video"):]
+            no = int(no_str)
             assert no>=0
-        except:
+        except (TypeError, ValueError, AssertionError):
             continue
         dev_info = query_video_device(dev_file)
         if capture_only and not _can_capture_video(dev_file, dev_info):
@@ -165,16 +167,16 @@ def remove_video_device_change_callback(callback):
         return
     log("remove_video_device_change_callback(%s)", callback)
     _video_device_change_callbacks.remove(callback)
-    if len(_video_device_change_callbacks)==0:
+    if not _video_device_change_callbacks:
         log("last video device change callback removed, closing the watch manager")
         #we can close it:
         try:
             _notifier.stop()
-        except:
+        except Exception:
             pass
         _notifier = None
         try:
             _watch_manager.close()
-        except:
+        except Exception:
             pass
         _watch_manager = None

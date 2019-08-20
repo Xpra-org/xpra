@@ -5,6 +5,7 @@
 
 
 import os.path
+from ctypes import POINTER
 
 #make it possible to run this file without any xpra dependencies:
 try:
@@ -21,11 +22,12 @@ except ImportError:
 import logging
 logging.getLogger("comtypes").setLevel(logging.INFO)
 
+#we need a logger before we import comtypes, so:
+#pylint: disable=wrong-import-position
 import comtypes                                         #@UnresolvedImport
 from comtypes import client                             #@UnresolvedImport
 from comtypes.automation import VARIANT                 #@UnresolvedImport
 from comtypes.persist import IPropertyBag, IErrorLog    #@UnresolvedImport
-from ctypes import POINTER
 from xpra.platform.win32.comtypes_util import QuietenLogging
 
 
@@ -58,7 +60,7 @@ class DeviceEnumerator(comtypes.CoClass):
 
 def get_device_information(moniker):
     log("get_device_information(%s)", moniker)
-    storage = moniker.RemoteBindToStorage(None, None, directshow.IPropertyBag._iid_)
+    storage = moniker.RemoteBindToStorage(None, None, directshow.IPropertyBag._iid_)  #pylint: disable=protected-access
     bag = storage.QueryInterface(interface=IPropertyBag)
     info = {}
     for prop,k in {
@@ -72,7 +74,7 @@ def get_device_information(moniker):
             v = bag.Read(pszPropName=prop, pVar=variant, pErrorLog=error())
             log("prop.Read(%s)=%s (%s)", prop, v, type(v))
             info[k] = v
-        except:
+        except Exception:
             log("prop.Read(%s) failed", prop)
     return info
 
