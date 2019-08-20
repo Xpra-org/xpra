@@ -29,7 +29,7 @@ class TestCystats(unittest.TestCase):
             data.append((ts, s, v))
             ts += 1
         a, ra = cystats.calculate_timesize_weighted_average(data)
-        assert 0<a and 0<ra
+        assert a>0 and ra>0
         #the calculations use the ratio of the size divided by the elapsed time,
         #so check that a predictable ratio gives the expected value:
         for x in (5, 1000):
@@ -105,10 +105,10 @@ class TestCystats(unittest.TestCase):
         for _ in range(1000):
             x = random.random()
             v = cystats.logp(x)
-            assert v>=0 and v<=1
+            assert 0<=v<=1
         for x in (0, 1):
             v = cystats.logp(x)
-            assert v>=0 and v<=1
+            assert 0<=v<=1
 
 
 def main():
