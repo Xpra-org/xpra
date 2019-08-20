@@ -2024,7 +2024,7 @@ class WindowSource(WindowIconSource):
         width, height, coding, data, damage_packet_sequence, _, client_options = packet[4:11]
         ldata = len(data)
         actual_batch_delay = process_damage_time-damage_time
-        ack_pending = [0, coding, 0, 0, 0, width*height, client_options]
+        ack_pending = [0, coding, 0, 0, 0, width*height, client_options, damage_time]
         statistics = self.statistics
         statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
         def start_send(bytecount):
@@ -2144,14 +2144,17 @@ class WindowSource(WindowIconSource):
             return
         del self.statistics.damage_ack_pending[damage_packet_sequence]
         gs = self.global_statistics
-        start_send_at, _, start_bytes, end_send_at, end_bytes, pixels, client_options = pending
+        start_send_at, _, start_bytes, end_send_at, end_bytes, pixels, client_options, damage_time = pending
         bytecount = end_bytes-start_bytes
         #it is possible
         #that we get the ack before we've had a chance to call
         #damage_packet_sent, so we must validate the data:
         if bytecount>0 and end_send_at>0:
+            now = monotonic_time()
             if decode_time>0:
-                self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
+                latency = int(1000*(now-damage_time))
+                self.global_statistics.record_latency(self.wid, decode_time,
+                                                      start_send_at, end_send_at, pixels, bytecount, latency)
             #we can ignore some packets:
             # * the first frame (frame=0) of video encoders can take longer to decode
             #   as we have to create a decoder context
@@ -2163,7 +2166,6 @@ class WindowSource(WindowIconSource):
                 netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
                 sendlatency = min(200, self.estimate_send_delay(bytecount))
                 #decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
-                now = monotonic_time()
                 live_time = int(1000*(now-self.statistics.init_time))
                 ack_tolerance = self.jitter + ACK_TOLERANCE + max(0, 200-live_time//10)
                 latency = netlatency + sendlatency + decode_time + ack_tolerance

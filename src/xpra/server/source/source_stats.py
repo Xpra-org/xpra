@@ -63,6 +63,9 @@ class GlobalPerformanceStatistics(object):
                                                             #(event_time, no of pixels, quality)
         self.speed = deque(maxlen=NRECS)                    #speed used for sending updates:
                                                             #(event_time, no of pixels, speed)
+        self.frame_total_latency = deque(maxlen=NRECS)      #how long it takes from the time we get a damage event
+                                                            #until we get the ack back from the client
+                                                            #(wid, event_time, no_of_pixels, latency)
         self.client_load = None
         self.last_congestion_time = 0
         self.congestion_value = 0
@@ -80,8 +83,9 @@ class GlobalPerformanceStatistics(object):
         self.avg_server_ping_latency = self.DEFAULT_LATENCY
         self.recent_server_ping_latency = self.DEFAULT_LATENCY
         self.avg_congestion_send_speed = 0
+        self.avg_frame_total_latency = 0
 
-    def record_latency(self, wid, decode_time, start_send_at, end_send_at, pixels, bytecount):
+    def record_latency(self, wid, decode_time, start_send_at, end_send_at, pixels, bytecount, latency):
         now = monotonic_time()
         send_diff = now-start_send_at
         echo_diff = now-end_send_at
@@ -91,7 +95,8 @@ class GlobalPerformanceStatistics(object):
                 send_diff*1000, echo_diff*1000, decode_time/1000, pixels, bytecount, send_latency*1000, echo_latency*1000)
         if self.min_client_latency is None or self.min_client_latency>send_latency:
             self.min_client_latency = send_latency
-        self.client_latency.append((wid, monotonic_time(), pixels, send_latency))
+        self.client_latency.append((wid, now, pixels, send_latency))
+        self.frame_total_latency.append((wid, now, pixels, latency))
 
     def get_damage_pixels(self, wid):
         """ returns the list of (event_time, pixelcount) for the given window id """
@@ -142,6 +147,11 @@ class GlobalPerformanceStatistics(object):
             cps.append((etime, sum(matches)))
         #log("cps(%s)=%s (now=%s)", cst, cps, now)
         self.congestion_value = time_weighted_average(cps)
+        ftl = tuple(self.frame_total_latency)
+        if ftl:
+            edata = tuple((event_time, pixels, latency) for _, event_time, pixels, latency in ftl)
+            #(wid, event_time, no_of_pixels, latency)
+            self.avg_frame_total_latency = int(calculate_size_weighted_average(edata)[1])
 
     def get_factors(self, pixel_count):
         factors = []
@@ -207,6 +217,8 @@ class GlobalPerformanceStatistics(object):
         pqsizes = tuple(x[1] for x in tuple(self.packet_qsizes))
         now = monotonic_time()
         time_limit = now-60             #ignore old records (60s)
+        client_latency = max(0, self.avg_frame_total_latency-
+                             int((self.avg_client_ping_latency+self.avg_server_ping_latency)//2))
         info = {
             "damage" : {
                 "events"        : self.damage_events_count,
@@ -217,6 +229,8 @@ class GlobalPerformanceStatistics(object):
                 "packet_queue"  : {
                     "size"   : get_list_stats(pqsizes),
                     },
+                "frame-total-latency" : self.avg_frame_total_latency,
+                "client-latency"    : client_latency,
                 },
             "encoding" : {"decode_errors"   : self.decode_errors},
             "congestion" : {
