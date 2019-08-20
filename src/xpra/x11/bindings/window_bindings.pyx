@@ -10,7 +10,7 @@ from __future__ import absolute_import
 
 import struct
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 from xpra.gtk_common.error import XError
 from xpra.os_util import strtobytes

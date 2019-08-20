@@ -13,7 +13,7 @@ from __future__ import absolute_import
 
 from time import sleep
 from xpra.os_util import bytestostr
-from xpra.monotonic_time cimport monotonic_time
+from xpra.monotonic_time cimport monotonic_time  #pylint: disable=syntax-error
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:

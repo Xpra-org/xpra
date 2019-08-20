@@ -11,7 +11,7 @@ from __future__ import absolute_import
 import errno as pyerrno
 
 from xpra.os_util import strtobytes, bytestostr
-from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
+from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer  #pylint: disable=syntax-error
 from xpra.monotonic_time cimport monotonic_time
 from xpra.x11.bindings.display_source import get_display_name
 from xpra.log import Logger
