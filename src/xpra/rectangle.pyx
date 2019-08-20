@@ -12,7 +12,7 @@
 from __future__ import absolute_import
 
 #what I want is a real macro!
-cdef inline int MIN(int a, int b):
+cdef inline int MIN(int a, int b):  #pylint: disable=syntax-error
     if a<=b:
         return a
     return b

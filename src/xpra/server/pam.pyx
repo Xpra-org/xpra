@@ -16,7 +16,8 @@ log = Logger("util", "auth")
 
 from xpra.os_util import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer
-from libc.stdint cimport uintptr_t
+
+from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
 
 

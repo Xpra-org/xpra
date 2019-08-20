@@ -10,7 +10,7 @@
 from __future__ import absolute_import
 
 import time
-from xpra.monotonic_time cimport monotonic_time
+from xpra.monotonic_time cimport monotonic_time  #pylint: disable=syntax-error
 
 cdef extern from "math.h":
     double log(double x)

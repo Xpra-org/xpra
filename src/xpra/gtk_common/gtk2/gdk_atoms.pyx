@@ -12,7 +12,7 @@ from __future__ import absolute_import
 import gobject
 from gtk import gdk
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 # Serious black magic happens here (I owe these guys beers):
 cdef extern from "pygobject.h":

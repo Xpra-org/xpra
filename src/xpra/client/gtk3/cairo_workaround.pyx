@@ -27,7 +27,7 @@ from __future__ import absolute_import
 
 
 import cairo
-from xpra.buffers.membuf cimport object_as_buffer
+from xpra.buffers.membuf cimport object_as_buffer  #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 from libc.string cimport memcpy
 

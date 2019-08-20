@@ -7,7 +7,7 @@
 from __future__ import absolute_import
 
 import socket as pysocket
-from libc.string cimport memset
+from libc.string cimport memset  #pylint: disable=syntax-error
 
 
 cdef extern from "unistd.h":

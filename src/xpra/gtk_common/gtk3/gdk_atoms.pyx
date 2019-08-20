@@ -12,7 +12,7 @@ from __future__ import absolute_import
 from gi.repository import Gdk
 
 from xpra.os_util import bytestostr
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 
 cdef extern from "Python.h":

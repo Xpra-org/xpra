@@ -22,7 +22,7 @@ from gi.repository import Gtk                   #@UnresolvedImport
 from gi.repository import GObject               #@UnresolvedImport
 
 
-cdef extern from "gtk-3.0/gdk/gdk.h":
+cdef extern from "gtk-3.0/gdk/gdk.h":  #pylint: disable=syntax-error
     ctypedef struct GdkWindow:
         pass
     ctypedef struct GdkDisplay:

@@ -17,7 +17,7 @@ from xpra.log import Logger
 clipboardlog = Logger("clipboard", "gtk")
 
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 
 ###################################
