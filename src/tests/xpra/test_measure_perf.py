@@ -144,6 +144,7 @@ HEADERS = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Cu
            "Regions/s", "Pixels/s Sent", "Encoding Pixels/s", "Decoding Pixels/s",
            "Application packets in/s", "Application bytes in/s",
            "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
+           "Frame Total Latency", "Client Frame Latency",
            "Video Encoder", "CSC", "CSC Mode", "Scaling",
            ]
 for x in ("client", "server"):
@@ -684,6 +685,9 @@ def xpra_get_stats(initial_stats=None, all_stats=[]):
     add("", avg, "Pixels/s Sent",                   ["client.encoding.pixels_per_second", "encoding.pixels_per_second", "pixels_per_second"])
     add("", avg, "Encoding Pixels/s",               ["client.encoding.pixels_encoded_per_second", "encoding.pixels_encoded_per_second", "pixels_encoded_per_second"])
     add("", avg, "Decoding Pixels/s",               ["client.encoding.pixels_decoded_per_second", "encoding.pixels_decoded_per_second", "pixels_decoded_per_second"])
+
+    add("", avg, "Frame Total Latency",             ["client.damage.frame-total-latency"])
+    add("", avg, "Client Frame Latency",            ["client.damage.client-latency"])
 
     for prefix, op in (("Min", min), ("Max", max), ("Avg", avg)):
         add(prefix, op, "Batch Delay (ms)",         ["client.batch.delay.%s", "batch.delay.%s", "batch_delay.%s", "%s_batch_delay"])
