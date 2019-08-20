@@ -185,19 +185,19 @@ def find_matching_lines(out, pattern):
             lines.append(line)
     return  lines
 
-def getoutput_lines(cmd, pattern, setup_info):
+def getoutput_lines(cmd, pattern):
     out = getoutput(cmd)
     return  find_matching_lines(out, pattern)
 
-def getoutput_line(cmd, pattern, setup_info):
-    lines = getoutput_lines(cmd, pattern, setup_info)
+def getoutput_line(cmd, pattern):
+    lines = getoutput_lines(cmd, pattern)
     if len(lines)!=1:
         print("WARNING: expected 1 line matching '%s' from %s but found %s" % (pattern, cmd, len(lines)))
         return "not found"
     return  lines[0]
 
 def get_cpu_info():
-    lines = getoutput_lines(["cat", "/proc/cpuinfo"], "model name", "cannot find cpu info")
+    lines = getoutput_lines(["cat", "/proc/cpuinfo"], "model name")
     assert lines, "coult not find 'model name' in '/proc/cpuinfo'"
     cpu0 = lines[0]
     n = len(lines)
@@ -212,15 +212,14 @@ def get_cpu_info():
     print("CPU_INFO=%s" % cpu_info)
     return  cpu_info, n
 
-XORG_VERSION = getoutput_line([config.XORG_BIN, "-version"], "X.Org X Server", "Cannot detect Xorg server version")
+XORG_VERSION = getoutput_line([config.XORG_BIN, "-version"], "X.Org X Server")
 print("XORG_VERSION=%s" % XORG_VERSION)
 CPU_INFO, N_CPUS = get_cpu_info()
 KERNEL_VERSION = getoutput(["uname", "-r"]).replace("\n", "").replace("\r", "")
 PAGE_SIZE = int(getoutput(["getconf", "PAGESIZE"]).replace("\n", "").replace("\r", ""))
 PLATFORM = getoutput(["uname", "-p"]).replace("\n", "").replace("\r", "")
 OPENGL_INFO = getoutput_line(["glxinfo"],
-                             "OpenGL renderer string",
-                             "Cannot detect OpenGL renderer string").split("OpenGL renderer string:")[1].strip()
+                             "OpenGL renderer string").split("OpenGL renderer string:")[1].strip()
 
 SCREEN_SIZE = get_root_size()
 print("screen size=%s" % str(SCREEN_SIZE))
@@ -327,7 +326,7 @@ def compute_stat(prefix, time_total_diff, old_pid_stat, new_pid_stat):
 
 def getiptables_line(chain, pattern, setup_info):
     cmd = config.IPTABLES_CMD + ["-vnL", chain]
-    line = getoutput_line(cmd, pattern, setup_info)
+    line = getoutput_line(cmd, pattern)
     if not line:
         raise Exception("no line found matching %s, make sure you have a rule like: %s" % (pattern, setup_info))
     return line
