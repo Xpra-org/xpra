@@ -12,7 +12,7 @@ from gi.repository import Gdk                   #@UnresolvedImport @UnusedImport
 
 from xpra.client.gtk3.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
-from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
+from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, BUTTON_MASK
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 
@@ -45,7 +45,6 @@ class ClientWindow(GTKClientWindowBase):
     __gsignals__ = GTKClientWindowBase.__common_gsignals__
 
 
-    WINDOW_EVENT_MASK   = WINDOW_EVENT_MASK
     BUTTON_MASK         = BUTTON_MASK
     OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT

@@ -10,7 +10,7 @@ import gtk          #@UnresolvedImport
 from gtk import gdk #@UnresolvedImport
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
-from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
+from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.util import envbool
 from xpra.log import Logger
@@ -53,7 +53,6 @@ class GTK2WindowBase(GTKClientWindowBase):
                                 "xpra-focus-in-event"   : one_arg_signal,
                                 })
 
-    WINDOW_EVENT_MASK   = WINDOW_EVENT_MASK
     OR_TYPE_HINTS       = GTK2_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
     BUTTON_MASK         = BUTTON_MASK

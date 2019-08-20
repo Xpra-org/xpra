@@ -36,6 +36,7 @@ from xpra.gtk_common.gtk_util import (
     DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY,
     BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
     POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK,
+    WINDOW_EVENT_MASK,
     )
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
@@ -226,7 +227,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #add platform hooks
         self.connect_after("realize", self.on_realize)
         self.connect('unrealize', self.on_unrealize)
-        self.add_events(self.WINDOW_EVENT_MASK)
+        self.add_events(WINDOW_EVENT_MASK)
         if DRAGNDROP and not self._client.readonly:
             self.init_dragndrop()
         self.init_focus()
@@ -240,7 +241,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.add(widget)
 
     def init_widget_events(self, widget):
-        widget.add_events(self.WINDOW_EVENT_MASK)
+        widget.add_events(WINDOW_EVENT_MASK)
         def motion(_w, event):
             self._do_motion_notify_event(event)
             return True
