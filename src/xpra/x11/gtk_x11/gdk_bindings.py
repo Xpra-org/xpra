@@ -15,7 +15,7 @@ if is_gtk3():
 else:
     from gtk import gdk                     #@UnresolvedImport
     x11_get_server_time = gdk.x11_get_server_time
-    from xpra.x11.gtk2 import gdk_bindings  #@UnresolvedImport, @Reimport
+    from xpra.x11.gtk2 import gdk_bindings  #@UnresolvedImport, @Reimport pylint: disable=ungrouped-imports
 
 get_pywindow                = gdk_bindings.get_pywindow
 get_xatom                   = gdk_bindings.get_xatom
