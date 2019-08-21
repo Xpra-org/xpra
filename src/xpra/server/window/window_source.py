@@ -2138,15 +2138,15 @@ class WindowSource(WindowIconSource):
             self.statistics.client_decode_time.append((monotonic_time(), width*height, decode_time))
         elif decode_time<0:
             self.client_decode_error(decode_time, message)
-        pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
-        if pending is None:
+        try:
+            pending = self.statistics.damage_ack_pending.pop(damage_packet_sequence)
+        except KeyError:
             log("cannot find sent time for sequence %s", damage_packet_sequence)
             return
-        del self.statistics.damage_ack_pending[damage_packet_sequence]
         gs = self.global_statistics
         start_send_at, _, start_bytes, end_send_at, end_bytes, pixels, client_options, damage_time = pending
         bytecount = end_bytes-start_bytes
-        #it is possible
+        #it is possible though unlikely
         #that we get the ack before we've had a chance to call
         #damage_packet_sent, so we must validate the data:
         if bytecount>0 and end_send_at>0:
