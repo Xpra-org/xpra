@@ -207,5 +207,8 @@ def selftest(_full=False):
                 except Exception:
                     datainfo = str(hexdata)
             log.error("Pillow error decoding %s with data=%s..", encoding, datainfo[:16])
-            log.error(" %s", e, exc_info=True)
+            from xpra.os_util import is_CentOS
+            #don't log a backtrace for webp on CentOS:
+            exc_info = not (is_CentOS() and encoding=="webp")
+            log.error(" %s", e, exc_info=exc_info)
             ENCODINGS.remove(encoding)
