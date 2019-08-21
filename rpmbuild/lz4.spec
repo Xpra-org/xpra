@@ -1,7 +1,7 @@
 %global _hardened_build 1
 
 Name:           lz4
-Version:        1.8.3
+Version:        1.9.2
 Release:        1%{?dist}
 Summary:        Extremely fast compression algorithm
 
@@ -86,6 +86,9 @@ chmod -x %{buildroot}%{_includedir}/*.h
 
 
 %changelog
+* Wed Aug 21 2019 Antoine Martin <antoine@xpra.org> - 1.9.2-1
+- new upstream release
+
 * Wed Sep 12 2018 Antoine Martin <antoine@xpra.org> - 1.8.3-1
 - new upstream release
 
