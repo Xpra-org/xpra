@@ -1373,8 +1373,6 @@ class WindowClient(StubClientMixin):
             try:
                 self._do_draw(packet)
                 sleep(0)
-            except KeyboardInterrupt:
-                raise
             except Exception as e:
                 log.error("Error '%s' processing %s packet", e, packet[0], exc_info=True)
         log("draw thread ended")
