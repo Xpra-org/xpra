@@ -2570,7 +2570,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 					ctx.request_redraw(win);
 				}
 				else {
-					decode_time = Math.round(Utilities.monotonicTime() - start);
+					decode_time = Math.round(1000*(Utilities.monotonicTime() - start));
 				}
 				ctx.debug("draw", "decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time, ", flush=", flush);
 				send_damage_sequence(decode_time, error || "");
