@@ -38,7 +38,7 @@ from xpra.gtk_common.gtk3.gdk_bindings import get_display_for
 from xpra.x11.common import REPR_FUNCTIONS
 def get_window_xid(window):
     return hex(window.get_xid())
-REPR_FUNCTIONS[Gdk.Window] = get_window_xid
+REPR_FUNCTIONS[GdkX11.X11Window] = get_window_xid
 def get_display_name(display):
     return display.get_name()
 REPR_FUNCTIONS[Gdk.Display] = get_display_name
