@@ -4,31 +4,31 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.gtk3.client_window import ClientWindow
+from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
 from xpra.client.gl.gtk_base.gl_client_window_common import GLClientWindowCommon
 from xpra.log import Logger
 
 log = Logger("opengl", "window")
 
 
-class GLClientWindowBase(GLClientWindowCommon, ClientWindow):
+class GLClientWindowBase(GLClientWindowCommon, GTK3ClientWindow):
 
     def set_alpha(self):
-        ClientWindow.set_alpha(self)
+        GTK3ClientWindow.set_alpha(self)
         rgb_formats = self._client_properties.get("encodings.rgb_formats", [])
         GLClientWindowCommon.add_rgb_formats(self, rgb_formats)
 
     def do_configure_event(self, event):
         log("GL do_configure_event(%s)", event)
-        ClientWindow.do_configure_event(self, event)
+        GTK3ClientWindow.do_configure_event(self, event)
         self._backing.paint_screen = True
 
     def destroy(self):
         self.remove_backing()
-        ClientWindow.destroy(self)
+        GTK3ClientWindow.destroy(self)
 
     def new_backing(self, bw, bh):
-        widget = ClientWindow.new_backing(self, bw, bh)
+        widget = GTK3ClientWindow.new_backing(self, bw, bh)
         if self.drawing_area:
             self.remove(self.drawing_area)
         self.init_widget_events(widget)

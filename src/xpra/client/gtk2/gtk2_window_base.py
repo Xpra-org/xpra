@@ -48,10 +48,6 @@ class GTK2WindowBase(GTKClientWindowBase):
     #add GTK focus workaround so we will get focus events
     #even when we grab the keyboard:
     __common_gsignals__ = GTKClientWindowBase.__common_gsignals__
-    __common_gsignals__.update({
-                                "xpra-focus-out-event"  : one_arg_signal,
-                                "xpra-focus-in-event"   : one_arg_signal,
-                                })
 
     OR_TYPE_HINTS       = GTK2_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
