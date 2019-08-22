@@ -290,7 +290,7 @@ class WindowServer(StubServerMixin):
             self._set_client_properties(proto, wid, window, client_properties)
             ss.update_batch(wid, window, batch_props)
 
-    def _refresh_windows(self, proto, wid_windows, opts={}):
+    def _refresh_windows(self, proto, wid_windows, opts):
         ss = self.get_server_source(proto)
         if ss is None:
             return
