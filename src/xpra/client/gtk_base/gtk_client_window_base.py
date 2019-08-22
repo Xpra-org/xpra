@@ -1116,11 +1116,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def property_changed(self, widget, event):
-        statelog("property_changed(%s, %s) : %s", widget, event, event.atom)
-        if event.atom=="_NET_WM_DESKTOP":
+        atom = str(event.atom)
+        statelog("property_changed(%s, %s) : %s", widget, event, atom)
+        if atom=="_NET_WM_DESKTOP":
             if self._been_mapped and not self._override_redirect and self._can_set_workspace:
                 self.do_workspace_changed(event)
-        elif event.atom=="_NET_FRAME_EXTENTS":
+        elif atom=="_NET_FRAME_EXTENTS":
             if prop_get:
                 v = prop_get(self.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
                 statelog("_NET_FRAME_EXTENTS: %s", v)
@@ -1142,12 +1143,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
                     self._window_state["frame"] = self._client.crect(*v)
                     self.send_configure_event(True)
-        elif event.atom=="XKLAVIER_STATE":
+        elif atom=="XKLAVIER_STATE":
             if prop_get:
                 #unused for now, but log it:
                 xklavier_state = prop_get(self.get_window(), "XKLAVIER_STATE", ["integer"], ignore_errors=False)
                 keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
-        elif event.atom=="_NET_WM_STATE":
+        elif atom=="_NET_WM_STATE":
+            log.error("_NET_WM_STATE: %s, prop_get=%s", event, prop_get)
             if prop_get:
                 wm_state_atoms = prop_get(self.get_window(), "_NET_WM_STATE", ["atom"], ignore_errors=False)
                 #code mostly duplicated from gtk_x11/window.py:
