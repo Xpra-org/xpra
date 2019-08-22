@@ -31,6 +31,7 @@ import threading
 import traceback
 
 from xpra.util import envbool
+from xpra.os_util import bytestostr
 from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.log import Logger
 
@@ -66,7 +67,7 @@ class XError(Exception):
         self.msg = message
 
     def __str__(self):
-        return "XError: %s" % str(self.msg)
+        return "XError: %s" % bytestostr(self.msg)
 
 
 xerror_to_name = None
