@@ -30,7 +30,7 @@ except:
     select_device = None
 
 
-from libc.stdint cimport uintptr_t, uint32_t, uint64_t
+from libc.stdint cimport uintptr_t, uint32_t, uint64_t  #pylint: disable=syntax-error
 from libc.string cimport memset, memcpy
 from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport padbuf, MemBuf

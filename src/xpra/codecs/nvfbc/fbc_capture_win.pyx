@@ -33,7 +33,7 @@ except Exception as e:
 import ctypes
 from ctypes import wintypes
 
-from libc.stdint cimport uintptr_t, uint8_t, int64_t
+from libc.stdint cimport uintptr_t, uint8_t, int64_t  #pylint: disable=syntax-error
 from libc.string cimport memset, memcpy
 from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport padbuf, MemBuf
