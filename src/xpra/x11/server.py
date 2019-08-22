@@ -12,7 +12,7 @@ import math
 from collections import deque, namedtuple
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import updict, rindex, envbool, envint
+from xpra.util import updict, rindex, envbool, envint, typedict
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -846,14 +846,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
         assert proto in self._server_sources
         if not new_window_state:
             return []
+        nws = typedict(new_window_state)
         metadatalog("set_window_state%s", (wid, window, new_window_state))
         changes = []
         if "frame" in new_window_state:
             #the size of the window frame may have changed
-            frame = new_window_state.get("frame") or (0, 0, 0, 0)
+            frame = nws.intlistget("frame", (0, 0, 0, 0))
             window.set_property("frame", frame)
         #boolean: but not a wm_state and renamed in the model... (iconic vs inconified!)
-        iconified = new_window_state.get("iconified")
+        iconified = nws.boolget("iconified")
         if iconified is not None:
             if window.is_OR():
                 log("ignoring iconified=%s on OR window %s", iconified, window)
@@ -868,14 +869,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
             "sticky", "shaded",
             "skip-pager", "skip-taskbar", "focused",
             ):
-            if k in new_window_state:
-                #metadatalog.info("window.get_property=%s", window.get_property)
-                new_state = bool(new_window_state.get(k, False))
-                cur_state = bool(window.get_property(k))
-                #metadatalog.info("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
-                if cur_state!=new_state:
-                    window.update_wm_state(k, new_state)
-                    changes.append(k)
+            #metadatalog.info("window.get_property=%s", window.get_property)
+            new_state = nws.boolget(k, None)
+            if new_state is None:
+                continue
+            cur_state = bool(window.get_property(k))
+            #metadatalog.info("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
+            if cur_state!=new_state:
+                window.update_wm_state(k, new_state)
+                changes.append(k)
         metadatalog("set_window_state: changes=%s", changes)
         return changes
 
@@ -1004,7 +1006,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self.last_client_configure_event = monotonic_time()
                 if is_ui_driver and len(packet)>=9:
                     changes = self._set_window_state(proto, wid, window, packet[8])
-                    damage |= len(changes)>0
+                    if changes:
+                        damage = True
                 if not skip_geometry:
                     owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
                     resize_counter = 0
