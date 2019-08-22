@@ -66,6 +66,7 @@ CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
 USE_X11_BINDINGS = POSIX and envbool("XPRA_USE_X11_BINDINGS", is_X11())
 prop_get, prop_set, prop_del = None, None, None
+NotifyInferior = None
 if USE_X11_BINDINGS:
     try:
         from xpra.gtk_common.error import xlog, verify_sync
@@ -445,10 +446,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_xpra_focus_out_event(self, event):
         focuslog("do_xpra_focus_out_event(%s)", event)
-        detail = getattr(event, "detail", 0)
-        if detail==NotifyInferior:
-            log("dropped NotifyInferior focus event")
-            return True
+        if NotifyInferior is not None:
+            detail = getattr(event, "detail", None)
+            if detail==NotifyInferior:
+                log("dropped NotifyInferior focus event")
+                return True
         self._focus_latest = False
         return self.schedule_recheck_focus()
 
