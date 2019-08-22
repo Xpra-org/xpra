@@ -38,7 +38,7 @@ class XRootPropWatcher(gobject.GObject):
     def do_xpra_property_notify_event(self, event):
         log("XRootPropWatcher.do_xpra_property_notify_event(%s)", event)
         if event.atom in self._props:
-            self.do_notify(event.atom)
+            self.do_notify(str(event.atom))
 
     def do_notify(self, prop):
         log("XRootPropWatcher.do_notify(%s)", prop)

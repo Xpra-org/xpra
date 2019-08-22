@@ -117,7 +117,7 @@ class XSettingsWatcher(XSettingsHelper, gobject.GObject):
             self.emit("xsettings-changed")
 
     def do_xpra_property_notify_event(self, event):
-        if event.atom == XSETTINGS:
+        if str(event.atom) == XSETTINGS:
             log("XSettings property value changed")
             self.emit("xsettings-changed")
 
