@@ -77,6 +77,7 @@ if USE_X11_BINDINGS:
         set_context_check(verify_sync)
         X11Window = X11WindowBindings()
         X11Core = X11CoreBindings()
+        NotifyInferior = constants["NotifyInferior"]
         HAS_X11_BINDINGS = True
 
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
@@ -442,6 +443,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_xpra_focus_out_event(self, event):
         focuslog("do_xpra_focus_out_event(%s)", event)
+        detail = getattr(event, "detail", 0)
+        if detail==NotifyInferior:
+            log("dropped NotifyInferior focus event")
+            return True
         self._focus_latest = False
         return self.schedule_recheck_focus()
 
