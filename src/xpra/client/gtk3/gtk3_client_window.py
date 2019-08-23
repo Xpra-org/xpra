@@ -54,6 +54,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
     WINDOW_STATE_ABOVE      = Gdk.WindowState.ABOVE
     WINDOW_STATE_BELOW      = Gdk.WindowState.BELOW
     WINDOW_STATE_STICKY     = Gdk.WindowState.STICKY
+    WINDOW_STATE_FOCUSED    = Gdk.WindowState.FOCUSED
 
 
     def do_init_window(self, window_type):
