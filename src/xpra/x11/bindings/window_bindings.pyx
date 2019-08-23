@@ -91,10 +91,36 @@ cdef extern from "X11/Xlib.h":
     int Button1
     int Button2
     int Button3
-    int NoEventMask
     int SelectionNotify
     int ConfigureNotify
-    int StructureNotifyMask
+
+    int NoEventMask
+    int KeyPressMask  
+    int KeyReleaseMask
+    int ButtonPressMask  
+    int ButtonReleaseMask  
+    int EnterWindowMask  
+    int LeaveWindowMask  
+    int PointerMotionMask  
+    int PointerMotionHintMask  
+    int Button1MotionMask  
+    int Button2MotionMask  
+    int Button3MotionMask 
+    int Button4MotionMask 
+    int Button5MotionMask 
+    int ButtonMotionMask 
+    int KeymapStateMask
+    int ExposureMask 
+    int VisibilityChangeMask 
+    int StructureNotifyMask 
+    int ResizeRedirectMask 
+    int SubstructureNotifyMask 
+    int SubstructureRedirectMask 
+    int FocusChangeMask 
+    int PropertyChangeMask 
+    int ColormapChangeMask 
+    int OwnerGrabButtonMask 
+
     int CWBorderWidth
     int CWSibling
     int CWStackMode
@@ -933,7 +959,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFixesSelectSelectionInput(self.display, window, selection, event_mask)
 
     def selectSelectionInput(self, Window xwindow):
-        self.context_check()
         self.addXSelectInput(xwindow, SelectionNotify)
 
     def sendSelectionNotify(self, Window xwindow, selection, target, property, time=CurrentTime):
@@ -1039,6 +1064,10 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return bool(XMoveResizeWindow(self.display, xwindow, x, y, width, height))
 
 
+    def addDefaultEvents(self, Window xwindow):
+        ADDMASK = StructureNotifyMask | PropertyChangeMask | FocusChangeMask | PointerMotionMask | PointerMotionHintMask | ButtonMotionMask
+        self.addXSelectInput(xwindow, ADDMASK)
+
     def addXSelectInput(self, Window xwindow, add_mask):
         self.context_check()
         cdef XWindowAttributes curr
@@ -1058,11 +1087,9 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         implement the equivalent of alt-tab; I can't imagine how it'd be useful
         these days.  Metacity and KWin do not support it; GTK+/GDK and Qt4 provide
         no way to actually send it.)"""
-        self.context_check()
         self.addXSelectInput(xwindow, SubstructureRedirectMask)
 
     def selectFocusChange(self, Window xwindow):
-        self.context_check()
         self.addXSelectInput(xwindow, FocusChangeMask)
 
 

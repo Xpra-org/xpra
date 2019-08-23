@@ -290,7 +290,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def setup(self):
         # Start listening for important events.
-        self.client_window.set_events(self.client_window_saved_events | ADDMASK)
+        X11Window.addDefaultEvents(self.xid)
         self._damage_forward_handle = self._composite.connect("contents-changed", self._forward_contents_changed)
         self._setup_property_sync()
 
