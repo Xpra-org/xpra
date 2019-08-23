@@ -59,7 +59,7 @@ class GTK2WindowBase(GTKClientWindowBase):
     WINDOW_STATE_ABOVE      = gdk.WINDOW_STATE_ABOVE
     WINDOW_STATE_BELOW      = gdk.WINDOW_STATE_BELOW
     WINDOW_STATE_STICKY     = gdk.WINDOW_STATE_STICKY
-    WINDOW_STATE_FOCUSED    = gdk.WINDOW_STATE_FOCUSED
+    WINDOW_STATE_FOCUSED    = 0 #does not exist in pygtk?
 
 
     def do_init_window(self, window_type=gtk.WINDOW_TOPLEVEL):
