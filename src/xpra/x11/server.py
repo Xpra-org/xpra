@@ -58,6 +58,7 @@ REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
+ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
 
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
@@ -1082,7 +1083,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     """ override so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus) """
     def _move_pointer(self, wid, pos, *args):
-        if wid>0 and self.last_raised!=wid:
+        if wid>0 and (self.last_raised!=wid or ALWAYS_RAISE_WINDOW):
             window = self._lookup_window(wid)
             if not window:
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
