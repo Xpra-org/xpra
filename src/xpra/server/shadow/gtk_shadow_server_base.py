@@ -352,7 +352,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.tray_menu_shown = True
 
     def tray_exit_callback(self, *_args):
-        self.clean_quit(False)
+        self.close_tray_menu()
+        self.idle_add(self.clean_quit, False)
 
     def close_tray_menu(self, *_args):
         if self.tray_menu_shown:
