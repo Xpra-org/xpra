@@ -326,6 +326,7 @@ class X11ServerCore(GTKServerBase):
         with xswallow:
             clean_keyboard_state()
         GTKServerBase.do_cleanup(self)
+        log("close_gdk_display_source()")
         close_gdk_display_source()
 
 
