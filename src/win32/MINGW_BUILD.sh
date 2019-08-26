@@ -142,12 +142,15 @@ if [ "${DO_SERVICE}" == "1" ]; then
 	echo "* Compiling system service shim"
 	pushd "win32/service" > /dev/null
 	rm -f event_log.rc event_log.res MSG00409.bin Xpra-Service.exe
-	WINDOWS_KITS="C:\Program Files (x86)\\Windows Kits"
-	if [ -d "C:\\Program Files\\Windows Kits" ]; then
-		WINDOWS_KITS="C:\Program Files\\Windows Kits"
-	fi
-	MC="${WINDOWS_KITS}\\8.1\\bin\\x86\\mc.exe"
-	RC="${WINDOWS_KITS}\\8.1\\bin\\x86\\rc.exe"
+	for KIT_DIR in "C:\Program Files\\Windows Kits" "C:\\Program Files (x86)\\Windows Kits"; do
+		for V in 8.1 10; do
+			MC="${KIT_DIR}\\$V\\bin\\x86\\mc.exe"
+			RC="${KIT_DIR}\\$V\\bin\\x86\\rc.exe"
+			if [ -e "$MC" ]; then
+				break 2
+			fi
+		done
+	done
 	LINK="C:\\Program Files\\Microsoft Visual Studio 14.0\\VC\\bin\\link.exe"
 	if  [ ! -e "${LINK}" ]; then
 		LINK="C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\bin\\link.exe"
