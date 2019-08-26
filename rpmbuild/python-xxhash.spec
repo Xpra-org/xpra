@@ -19,13 +19,13 @@
 
 
 Name:           python2-xxhash
-Version:        1.3.0
+Version:        1.4.0
 Release:        1%{?dist}
 URL:            https://github.com/ifduyue/python-xxhash
 Summary:        xxhash Bindings for Python
 License:        BSD
 Group:          Development/Languages/Python
-Source:         https://files.pythonhosted.org/packages/4a/f9/f83b3ab3bd1bf50ae7b6c21f9fa28107df38c9283c721ce40688ea443eb9/xxhash-%{version}.tar.gz
+Source:         https://codeload.github.com/ifduyue/python-xxhash/tar.gz/v%{version}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -46,7 +46,7 @@ https://github.com/Cyan4973/xxHash by Yann Collet.
 %endif
 
 %prep
-%setup -q -n xxhash-%{version}
+%setup -q -n python-xxhash-%{version}
 %if 0%{?with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
