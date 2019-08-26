@@ -83,7 +83,6 @@ def get_log_packets(exclude=False):
 
 LOG_PACKETS = get_log_packets()
 NOLOG_PACKETS = get_log_packets(True)
-log("LOG_PACKETS=%s, NOLOG_PACKETS=%s", LOG_PACKETS, NOLOG_PACKETS)
 
 
 HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
