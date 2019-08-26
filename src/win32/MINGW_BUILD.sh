@@ -144,11 +144,14 @@ if [ "${DO_SERVICE}" == "1" ]; then
 	rm -f event_log.rc event_log.res MSG00409.bin Xpra-Service.exe
 	for KIT_DIR in "C:\Program Files\\Windows Kits" "C:\\Program Files (x86)\\Windows Kits"; do
 		for V in 8.1 10; do
-			MC="${KIT_DIR}\\$V\\bin\\x86\\mc.exe"
-			RC="${KIT_DIR}\\$V\\bin\\x86\\rc.exe"
-			if [ -e "$MC" ]; then
-				break 2
-			fi
+			for B in x64 x86; do
+				MC="${KIT_DIR}\\$V\\bin\\$B\\mc.exe"
+				RC="${KIT_DIR}\\$V\\bin\\$B\\rc.exe"
+				if [ -e "$MC" ]; then
+					echo "  using SDK $V $B found in $KIT_DIR"
+					break 3
+				fi
+			done
 		done
 	done
 	LINK="C:\\Program Files\\Microsoft Visual Studio 14.0\\VC\\bin\\link.exe"
@@ -356,11 +359,11 @@ fi
 if [ "${DO_VERPATCH}" == "1" ]; then
 	for exe in `ls dist/*exe | grep -v Plink.exe`; do
 		tool_name=`echo $exe | sed 's+dist/++g;s+Xpra_++g;s+Xpra-++g;s+_+ +g;s+-+ +g;s+\.exe++g'`
-		verpatch $exe				//s desc "Xpra $tool_name"		//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+		verpatch $exe				//s desc "Xpra $tool_name"		//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2019" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	done
-	verpatch dist/Xpra_cmd.exe 		//s desc "Xpra command line"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
-	verpatch dist/Xpra-Proxy.exe	//s desc "Xpra Proxy Server"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
-	verpatch dist/Xpra.exe 			//s desc "Xpra" 				//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	verpatch dist/Xpra_cmd.exe 		//s desc "Xpra command line"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2019" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	verpatch dist/Xpra-Proxy.exe	//s desc "Xpra Proxy Server"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2019" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	verpatch dist/Xpra.exe 			//s desc "Xpra" 				//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2019" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 fi
 
 ################################################################################
