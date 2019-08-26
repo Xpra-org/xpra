@@ -14,18 +14,23 @@ shell32 = ctypes.WinDLL("shell32", use_last_error=True)
 SHGetFolderPath = shell32.SHGetFolderPathW
 
 CSIDL_APPDATA = 26
+CSIDL_LOCAL_APPDATA = 28
 CSIDL_COMMON_APPDATA = 35
 
-
-def _get_data_dir():
-    #if not running from a binary, return current directory:
-    if not getattr(sys, 'frozen', ''):
-        return os.getcwd()
+def sh_get_folder_path(v):
     try:
         buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
         SHGetFolderPath(0, CSIDL_APPDATA, None, 0, buf)
-        appdata = buf.value
+        return buf.value
     except:
+        return None
+
+def _get_data_dir(roaming=True):
+    #if not running from a binary, return current directory:
+    if not getattr(sys, 'frozen', ''):
+        return os.getcwd()
+    appdata = sh_get_folder_path(CSIDL_APPDATA if roaming else CSIDL_LOCAL_APPDATA)
+    if not appdata:
         #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
         #UAC in vista onwards will not allow us to write where the software is installed,
         #so we place the log file (etc) in "~/Application Data"
