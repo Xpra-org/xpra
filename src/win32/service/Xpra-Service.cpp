@@ -21,6 +21,7 @@ SERVICE_STATUS_HANDLE   gSvcStatusHandle;
 HANDLE                  ghSvcStopEvent = NULL;
 
 VOID SvcInstall(void);
+VOID SvcUninstall(void);
 VOID WINAPI SvcCtrlHandler(DWORD);
 VOID WINAPI SvcMain(DWORD, LPTSTR *);
 
@@ -34,6 +35,11 @@ int __cdecl main(int argc, TCHAR *argv[])
     if (lstrcmpi(argv[1], TEXT("install")) == 0)
     {
         SvcInstall();
+        return 0;
+    }
+    else if (lstrcmpi(argv[1], TEXT("uninstall")) == 0)
+    {
+        SvcUninstall();
         return 0;
     }
 
@@ -95,11 +101,79 @@ VOID SvcInstall() {
     }
     else
     {
-    	printf("Service installed successfully\n");
+        printf("Service installed successfully\n");
     }
     CloseServiceHandle(schService);
     CloseServiceHandle(schSCManager);
 }
+
+
+VOID SvcUninstall(void)
+{
+    SC_HANDLE schSCManager;
+    SC_HANDLE schService;
+    SERVICE_STATUS ssStatus;
+
+    // Get a handle to the SCM database.
+
+    schSCManager = OpenSCManager(
+        NULL,                    // local computer
+        NULL,                    // ServicesActive database
+        SC_MANAGER_ALL_ACCESS);  // full access rights
+
+    if (NULL == schSCManager)
+    {
+        printf("OpenSCManager failed (%d)\n", GetLastError());
+        return;
+    }
+
+    // Get a handle to the service.
+    schService = OpenService(
+        schSCManager,       // SCM database
+        SVCNAME,          // name of service
+        SERVICE_ALL_ACCESS);  // need delete access
+
+    if (schService == NULL)
+    {
+        printf("OpenService failed (%d)\n", GetLastError());
+        CloseServiceHandle(schSCManager);
+        return;
+    }
+
+    // Check if the service is started
+    SERVICE_STATUS stat;
+    if (!QueryServiceStatus(schService, &stat)) {
+        printf("QueryServiceStatus failed (%d)\n", GetLastError());
+        CloseServiceHandle(schSCManager);
+        return;
+    }
+
+    if (stat.dwCurrentState != SERVICE_STOPPED) {
+        // The service is running, stop it
+        SERVICE_CONTROL_STATUS_REASON_PARAMS reason;
+        memset(&reason, 0, sizeof(SERVICE_CONTROL_STATUS_REASON_PARAMS));
+        reason.dwReason = SERVICE_STOP_REASON_FLAG_PLANNED|SERVICE_STOP_REASON_MAJOR_OTHER|SERVICE_STOP_REASON_MINOR_INSTALLATION;
+		//SERVICE_CONTROL_STATUS_REASON_INFO=1
+        if (!ControlServiceEx(schService, SERVICE_CONTROL_STOP, 1, &reason)) {
+            printf("ControlServiceEx failed (%d)\n", GetLastError());
+            CloseServiceHandle(schSCManager);
+            return;
+        }
+    }
+
+    // Delete the service.
+     if (!DeleteService(schService))
+    {
+        printf("DeleteService failed (%d)\n", GetLastError());
+    }
+    else {
+        printf("Service deleted successfully\n");
+    }
+
+    CloseServiceHandle(schService);
+    CloseServiceHandle(schSCManager);
+}
+
 
 //
 // Purpose:
@@ -148,12 +222,12 @@ VOID WINAPI SvcMain(DWORD dwArgc, LPTSTR *lpszArgv)
 //
 VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	HANDLE event_log = RegisterEventSource(NULL, SVCNAME);
-	const char* message = "Going to start Xpra proxy server";
-	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
-	char buf[64];
+    HANDLE event_log = RegisterEventSource(NULL, SVCNAME);
+    const char* message = "Going to start Xpra proxy server";
+    ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+    char buf[64];
 
-	// Create an event. The control handler function, SvcCtrlHandler,
+    // Create an event. The control handler function, SvcCtrlHandler,
     // signals this event when it receives the stop control code.
     ghSvcStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (ghSvcStopEvent==NULL)
@@ -168,33 +242,33 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    //LPTSTR command = "\"E:\\Xpra\\trunk\\src\\dist\\Xpra_cmd.exe\" proxy --bind-tcp=0.0.0.0:14500";
+    //LPTSTR command = "\"E:\\Xpra\\trunk\\src\\dist\\Xpra-Proxy.exe\" --bind=xpra-proxy --bind-tcp=0.0.0.0:14500 --tcp-auth=sys -d win32,proxy";
     //LPCTSTR cwd = "E:\\Xpra\\trunk\\src\\dist\\";
     //TODO add SSL: --tcp-auth=sys --ssl-cert=""{commonappdata}\Xpra\ssl-cert.pem"";
     LPTSTR command = "\"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\" proxy --bind=xpra-proxy --bind-tcp=0.0.0.0:14500 --tcp-auth=sys -d win32,proxy";
     LPCTSTR cwd = "C:\\Program Files\\Xpra\\";
     if (!CreateProcess(NULL, command, NULL, NULL, FALSE, 0, NULL, cwd, &si, &pi))
     {
-    	snprintf(buf, 64, "CreateProcess failed (%d).\n", GetLastError());
-    	message = (const char*) &buf;
-    	ReportEvent(event_log, EVENTLOG_ERROR_TYPE, 0, 0, NULL, 1, 0, &message, NULL);
+        snprintf(buf, 64, "CreateProcess failed (%d).\n", GetLastError());
+        message = (const char*) &buf;
+        ReportEvent(event_log, EVENTLOG_ERROR_TYPE, 0, 0, NULL, 1, 0, &message, NULL);
         DeregisterEventSource(event_log);
 
         ReportSvcStatus(SERVICE_STOPPED, 1, 0);
         return;
     }
 
-	snprintf(buf, 64, "Xpra proxy started with pid=%d.\n", pi.dwProcessId);
-	message = (const char*) &buf;
-	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+    snprintf(buf, 64, "Xpra proxy started with pid=%d.\n", pi.dwProcessId);
+    message = (const char*) &buf;
+    ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
     ReportSvcStatus( SERVICE_RUNNING, NO_ERROR, 0 );
 
     while (1)
     {
         WaitForSingleObject(ghSvcStopEvent, INFINITE);
 
-    	message = "Xpra Service asked to close";
-    	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+        message = "Xpra Service asked to close";
+        ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
         PostMessage((HWND) pi.hProcess, WM_CLOSE, 0, 0);
         Sleep(1*1000);
         PostMessage((HWND) pi.hProcess, WM_QUIT, 0, 0);
@@ -203,8 +277,8 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
 
         Sleep(2*1000);
 
-    	message = "Xpra Service forced to terminate";
-    	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+        message = "Xpra Service forced to terminate";
+        ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
         DeregisterEventSource(event_log);
         TerminateProcess(pi.hProcess, 0);
 
@@ -243,7 +317,7 @@ VOID ReportSvcStatus( DWORD dwCurrentState,
         gSvcStatus.dwControlsAccepted = 0;
     }
     else {
-    	gSvcStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
+        gSvcStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
     }
 
     if ((dwCurrentState==SERVICE_RUNNING) || (dwCurrentState == SERVICE_STOPPED))
@@ -251,9 +325,9 @@ VOID ReportSvcStatus( DWORD dwCurrentState,
         gSvcStatus.dwCheckPoint = 0;
     }
     else
-	{
-    	gSvcStatus.dwCheckPoint = dwCheckPoint++;
-	}
+    {
+        gSvcStatus.dwCheckPoint = dwCheckPoint++;
+    }
     // Report the status of the service to the SCM.
     SetServiceStatus( gSvcStatusHandle, &gSvcStatus );
 }
