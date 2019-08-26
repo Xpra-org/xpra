@@ -1,6 +1,6 @@
 /**
  * This file is part of Xpra.
- * Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+ * Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
  *
  * This service code is based on "The Complete Service Sample":
  * https://msdn.microsoft.com/en-us/library/bb540476(v=VS.85).aspx
@@ -184,7 +184,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
         return;
     }
 
-	snprintf(buf, 64, "Xpra shadow started with pid=%d.\n", pi.dwProcessId);
+	snprintf(buf, 64, "Xpra proxy started with pid=%d.\n", pi.dwProcessId);
 	message = (const char*) &buf;
 	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
     ReportSvcStatus( SERVICE_RUNNING, NO_ERROR, 0 );
@@ -193,7 +193,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     {
         WaitForSingleObject(ghSvcStopEvent, INFINITE);
 
-    	message = "Xpra shadow asked to close";
+    	message = "Xpra Service asked to close";
     	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
         PostMessage((HWND) pi.hProcess, WM_CLOSE, 0, 0);
         Sleep(1*1000);
@@ -203,7 +203,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
 
         Sleep(2*1000);
 
-    	message = "Xpra shadow forced to terminate";
+    	message = "Xpra Service forced to terminate";
     	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
         DeregisterEventSource(event_log);
         TerminateProcess(pi.hProcess, 0);
