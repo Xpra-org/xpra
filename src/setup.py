@@ -1696,6 +1696,7 @@ else:
 
 if scripts_ENABLED:
     scripts += ["scripts/xpra", "scripts/xpra_launcher"]
+toggle_modules(WIN32, "xpra/scripts/win32_proxy_service")
 
 if data_ENABLED:
     add_data_files(share_xpra,                      ["README", "COPYING"])
