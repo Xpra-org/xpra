@@ -329,11 +329,12 @@ def do_init():
         return
     if envbool("XPRA_LOG_TO_FILE", True):
         from xpra.platform import get_prgname
-        LOG_FILENAME = (get_prgname() or "Xpra")+".log"
-        from xpra.platform.win32.paths import _get_data_dir
-        d = _get_data_dir()
-        log_file = os.path.join(d, LOG_FILENAME)
-        sys.stdout = open(log_file, "a")
+        log_filename = os.environ.get("XPRA_LOG_FILENAME")
+        if not log_filename:
+            from xpra.platform.win32.paths import _get_data_dir
+            d = _get_data_dir()
+            log_filename = os.path.join(d, (get_prgname() or "Xpra")+".log")
+        sys.stdout = open(log_filename, "a")
         sys.stderr = sys.stdout
 
 
