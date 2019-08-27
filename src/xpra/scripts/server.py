@@ -335,7 +335,7 @@ def make_shadow_server():
     return ShadowServer()
 
 def make_proxy_server():
-    from xpra.server.proxy.proxy_server import ProxyServer
+    from xpra.platform.proxy_server import ProxyServer
     return ProxyServer()
 
 
