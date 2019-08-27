@@ -30,6 +30,7 @@ from xpra.platform.win32.namedpipes.common import (
 from xpra.platform.win32.constants import (
     FILE_FLAG_OVERLAPPED, PIPE_ACCESS_DUPLEX, PIPE_READMODE_BYTE,
     PIPE_UNLIMITED_INSTANCES, PIPE_WAIT, PIPE_TYPE_BYTE, NMPWAIT_USE_DEFAULT_WAIT,
+    WAIT_TIMEOUT,
     )
 log = Logger("network", "named-pipe", "win32")
 
@@ -93,9 +94,11 @@ class NamedPipeListener(Thread):
             if not r and not self.exit_loop:
                 r = WaitForSingleObject(event, INFINITE)
                 log("WaitForSingleObject(..)=%s", WAIT_STR.get(r, r))
+                if r==WAIT_TIMEOUT:
+                    continue
                 if r:
-                    log("do_run() error on WaitForSingleObject", exc_info=True)
                     log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
+                    log.error(" %s", WAIT_STR.get(r, r))
                     CloseHandle(pipe_handle)
                     continue
             if self.exit_loop:
