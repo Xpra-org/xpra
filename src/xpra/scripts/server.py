@@ -710,7 +710,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         configure_imsettings_env(opts.input_method)
     if display_name[0] != 'S':
         os.environ["DISPLAY"] = display_name
-        os.environ["CKCON_X11_DISPLAY"] = display_name
+        if POSIX:
+            os.environ["CKCON_X11_DISPLAY"] = display_name
     else:
         try:
             del os.environ["DISPLAY"]
