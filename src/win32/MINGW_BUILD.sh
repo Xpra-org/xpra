@@ -12,7 +12,7 @@ DO_ZIP=${DO_ZIP:-0}
 DO_INSTALLER=${DO_INSTALLER:-1}
 DO_TESTS=${DO_TESTS:-1}
 DO_VERPATCH=${DO_VERPATCH:-1}
-DO_SERVICE=${DO_SERVICE:-0}
+DO_SERVICE=${DO_SERVICE:-1}
 CLIENT_ONLY=${CLIENT_ONLY:-0}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
@@ -148,7 +148,8 @@ if [ "${DO_SERVICE}" == "1" ]; then
 				MC="${KIT_DIR}\\$V\\bin\\$B\\mc.exe"
 				RC="${KIT_DIR}\\$V\\bin\\$B\\rc.exe"
 				if [ -e "$MC" ]; then
-					echo "  using SDK $V $B found in $KIT_DIR"
+					echo "  using SDK $V $B found in:"
+					echo "  '$KIT_DIR'"
 					break 3
 				fi
 			done
