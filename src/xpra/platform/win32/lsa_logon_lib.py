@@ -264,7 +264,8 @@ class ContiguousUnicode(ctypes.Structure):
         bufsize = (len(value) + 1) * wchar_size
         ctypes.resize(self, ctypes.sizeof(cls) + bufsize)
         addr = ctypes.addressof(self) + ctypes.sizeof(cls)
-        ctypes.memmove(addr, value, bufsize)
+        src_buf = ctypes.create_unicode_buffer(value)
+        ctypes.memmove(addr, ctypes.addressof(src_buf), bufsize)
 
     def _set_unicode_string(self, name, value):
         values = []
