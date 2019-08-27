@@ -20,7 +20,7 @@ CSIDL_COMMON_APPDATA = 35
 def sh_get_folder_path(v):
     try:
         buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
-        SHGetFolderPath(0, CSIDL_APPDATA, None, 0, buf)
+        SHGetFolderPath(0, v, None, 0, buf)
         return buf.value
     except:
         return None
@@ -34,7 +34,7 @@ def _get_data_dir(roaming=True):
         #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
         #UAC in vista onwards will not allow us to write where the software is installed,
         #so we place the log file (etc) in "~/Application Data"
-        appdata = os.environ.get("APPDATA")
+        appdata = os.environ.get("APPDATA" if roaming else "LOCALAPPDATA")
     if not appdata:
         #we need some kind of path..
         appdata = os.environ.get("TEMP", "C:\\TEMP\\")
@@ -106,8 +106,15 @@ def do_get_default_conf_dirs():
     return [os.path.join(get_app_dir(), "etc", "xpra")]
 
 def do_get_user_conf_dirs(_uid):
+    dd = _get_data_dir()
     #ie: "C:\Users\<user name>\AppData\Roaming"
-    return [_get_data_dir()]
+    SYSTEMROOT = os.environ.get("SYSTEMROOT")
+    #ie: when running as a system service, we may get:
+    # "C:\Windows\System32\config\systemprofile\AppData\Roaming"
+    # and we don't want to use that:
+    if dd.startswith(SYSTEMROOT):
+        return []
+    return [dd]
 
 
 def do_get_desktop_background_paths():
