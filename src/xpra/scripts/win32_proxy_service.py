@@ -15,7 +15,7 @@ def main():
     from xpra.scripts.main import main
     args = sys.argv[:1] + [
         "proxy",
-        "--bind=xpra-proxy"
+        "--bind=xpra-proxy",
         "--bind-tcp=0.0.0.0:14500",
         "--tcp-auth=sys",
         "-d", "win32,proxy",
