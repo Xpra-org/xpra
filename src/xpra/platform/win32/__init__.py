@@ -332,7 +332,10 @@ def do_init():
         if not log_filename:
             from xpra.platform.win32.paths import _get_data_dir
             from xpra.platform import get_prgname
-            log_filename = os.path.join(_get_data_dir(False), (get_prgname() or "Xpra")+".log")
+            data_dir = _get_data_dir(False)
+            if not os.path.exists(data_dir):
+                os.mkdir(data_dir)
+            log_filename = os.path.join(data_dir, (get_prgname() or "Xpra")+".log")
         sys.stdout = open(log_filename, "a")
         sys.stderr = sys.stdout
 

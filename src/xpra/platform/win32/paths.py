@@ -42,8 +42,6 @@ def _get_data_dir(roaming=True):
     if not os.path.exists(appdata):
         os.mkdir(appdata)
     data_dir = os.path.join(appdata, "Xpra")
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
     return data_dir
 
 
@@ -114,6 +112,8 @@ def do_get_user_conf_dirs(_uid):
     # and we don't want to use that:
     if dd.startswith(SYSTEMROOT):
         return []
+    if not os.path.exists(dd):
+        os.mkdir(dd)
     return [dd]
 
 
