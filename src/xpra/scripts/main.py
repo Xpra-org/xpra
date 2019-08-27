@@ -1329,7 +1329,8 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             #we still hit the following errors that we need to retry:
             from xpra.net import bytestreams
             bytestreams.CAN_RETRY_EXCEPTIONS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
-        tcp_socket.setblocking(True)
+        if not WIN32 or not PYTHON3:
+            tcp_socket.setblocking(True)
         try:
             ssl_sock = wrap_socket(tcp_socket, **kwargs)
         except Exception as e:
