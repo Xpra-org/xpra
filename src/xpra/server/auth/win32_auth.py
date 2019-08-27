@@ -7,6 +7,7 @@ from ctypes import windll, byref, POINTER, FormatError, GetLastError
 from ctypes.wintypes import LPCWSTR, DWORD, HANDLE, BOOL
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
+from xpra.os_util import bytestostr
 from xpra.platform.win32.common import CloseHandle
 assert init and log #tests will disable logging from here
 
@@ -35,16 +36,16 @@ class Authenticator(SysAuthenticator):
     def check(self, password):
         token = HANDLE()
         domain = '' #os.environ.get('COMPUTERNAME')
-        status = LogonUser(self.username, domain, password,
+        password_str = bytestostr(password)
+        status = LogonUser(self.username, domain, password_str,
                      LOGON32_LOGON_NETWORK_CLEARTEXT,
                      LOGON32_PROVIDER_DEFAULT,
                      byref(token))
-        error = GetLastError()
         if status:
             CloseHandle(token)
             return True
         log.error("Error: win32 authentication failed:")
-        log.error(" %s", FormatError(error))
+        log.error(" %s", FormatError(GetLastError()))
         return False
 
     def __repr__(self):
