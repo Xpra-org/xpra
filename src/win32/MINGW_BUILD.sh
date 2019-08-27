@@ -230,6 +230,10 @@ if [ "$?" != "0" ]; then
 	tail -n 20 "${CX_FREEZE_LOG}"
 	exit 1
 fi
+#fix case sensitive mess:
+mv ${DIST}/lib/girepository-1.0/Glib-2.0.typelib ${DIST}/lib/girepository-1.0/GLib-2.0.typelib.tmp
+mv ${DIST}/lib/girepository-1.0/GLib-2.0.typelib.tmp ${DIST}/lib/girepository-1.0/GLib-2.0.typelib
+
 #fixup cx_Logging, required by the service class before we can patch sys.path to find it:
 if [ -e "${DIST}/lib/cx_Logging.pyd" ]; then
 	mv "${DIST}/lib/cx_Logging.pyd" "${DIST}/"
