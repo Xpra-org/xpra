@@ -1669,6 +1669,7 @@ class GTKTrayMenuBase(object):
             try:
                 command = re.sub(b'\\%[fFuU]', b'', command)
             except Exception:
+                log("re substitution failed", exc_info=True)
                 command = command.split(b"%", 1)[0]
             log("command=%s", command)
             if command:
