@@ -145,6 +145,7 @@ class SysAuthenticatorBase(object):
             ret = self.check(password)
             log("authenticate_check(..)=%s", ret)
         except Exception as e:
+            log("check(..)", exc_info=True)
             log.error("Error: %s authentication check failed:", self)
             log.error(" %s", e)
             return False
