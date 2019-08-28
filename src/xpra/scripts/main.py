@@ -933,8 +933,9 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             pipe_name = parts[-1]
         else:
             pipe_name = afterproto
-        if not pipe_name.startswith("xpra\\"):
-            pipe_name = "xpra\\%s" % pipe_name
+        from xpra.platform.win32.dotxpra import PIPE_PREFIX
+        if not pipe_name.startswith(PIPE_PREFIX):
+            pipe_name = "%s%s" % (PIPE_PREFIX, pipe_name)
         desc.update({
                      "type"             : "named-pipe",
                      "local"            : True,
