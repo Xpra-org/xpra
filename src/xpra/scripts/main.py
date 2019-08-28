@@ -650,6 +650,10 @@ def parse_proxy_attributes(display_name):
         return display_name, desc_tmp
 
 def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
+    if WIN32:
+        from xpra.platform.win32.dotxpra import PIPE_PREFIX
+    else:
+        PIPE_PREFIX = None
     desc = {"display_name" : display_name}
     display_name, proxy_attrs = parse_proxy_attributes(display_name)
     desc.update(proxy_attrs)
@@ -667,7 +671,6 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             except ValueError:
                 pass
         elif WIN32:
-            from xpra.platform.win32.dotxpra import PIPE_PREFIX
             display_name = "named-pipe://%s%s" % (PIPE_PREFIX, display_name)
             match = True
         if session_name_lookup and not match:
@@ -937,7 +940,6 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             pipe_name = parts[-1]
         else:
             pipe_name = afterproto
-        from xpra.platform.win32.dotxpra import PIPE_PREFIX
         if not pipe_name.startswith(PIPE_PREFIX):
             pipe_name = "%s%s" % (PIPE_PREFIX, pipe_name)
         desc.update({
