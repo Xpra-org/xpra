@@ -63,5 +63,6 @@ class DotXpra(object):
             #found an xpra pipe
             #FIXME: filter using matching_display?
             xpra_pipes[name] = pipe_name
+            log("found xpra pipe: %s", pipe_name)
         log("get_all_namedpipes()=%s", xpra_pipes)
         return xpra_pipes
