@@ -1359,7 +1359,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
 
     def pointer_ungrab(self, *args):
-        grablog("pointer_ungrab%s", args)
+        grablog("pointer_ungrab%s pointer_grabbed=%s",
+                args, self._client.pointer_grabbed)
         self._client.pointer_grabbed = False
         gdkwin = self.get_window()
         if gdkwin:
@@ -1369,8 +1370,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return True
 
     def toggle_pointer_grab(self):
-        grablog("toggle_pointer_grab()")
-        if self._client.pointer_grabbed:
+        pg = self._client.pointer_grabbed
+        grablog("toggle_pointer_grab() pointer_grabbed=%s", pg)
+        if pg:
             self.pointer_ungrab()
         else:
             self.pointer_grab()

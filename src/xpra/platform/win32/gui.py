@@ -382,11 +382,13 @@ def pointer_grab(window, *args):
 
 def pointer_ungrab(window, *args):
     hwnd = get_window_handle(window)
-    grablog("pointer_ungrab%s window=%s, hwnd=%s", args, window, hwnd)
+    client = window._client
+    grablog("pointer_ungrab%s window=%s, hwnd=%s, pointer_grabbed=%s",
+            args, window, hwnd, client.pointer_grabbed)
     if hwnd:
         grablog("ClipCursor(None)")
         ClipCursor(None)
-    window._client.pointer_grabbed = False
+    client.pointer_grabbed = False
 
 def fixup_window_style(self, *_args):
     """ a fixup function we want to call from other places """
