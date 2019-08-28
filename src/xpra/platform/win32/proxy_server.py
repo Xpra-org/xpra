@@ -41,6 +41,7 @@ def exec_command(username, command, env):
     log("Popen(%s)=%s", command, proc)
     return proc
 
+
 class ProxyServer(_ProxyServer):
 
     def start_new_session(self, username, uid, gid, new_session_dict=None, displays=()):
@@ -54,9 +55,11 @@ class ProxyServer(_ProxyServer):
         #exec_command([whoami])
         port = 10000
         xpra_command = os.path.join(get_app_dir(), "xpra.exe")
+        named_pipe = username.replace(" ", "_")
         command = [
             xpra_command,
             "shadow",
+            "--bind=%s" % named_pipe,
             "--bind-tcp=0.0.0.0:%i" % port,
             ]
         from xpra.log import debug_enabled_categories
@@ -75,4 +78,4 @@ class ProxyServer(_ProxyServer):
             raise Exception("shadow subprocess failed with exit code %s" % r)
         self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
         #exec_command(["C:\\Windows\notepad.exe"])
-        return proc, "tcp/localhost:%i" % port, "Main"
+        return proc, "tcp/localhost:%i" % port, "named-pipe://%s" % named_pipe
