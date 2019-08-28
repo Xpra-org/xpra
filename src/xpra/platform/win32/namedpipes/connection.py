@@ -13,7 +13,7 @@ from xpra.os_util import strtobytes
 from xpra.net.bytestreams import Connection
 from xpra.net.common import ConnectionClosedException
 from xpra.platform.win32.common import (
-    CloseHandle,
+    CloseHandle, FormatMessageSystem,
     ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED,
     IO_ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING,
     )
@@ -198,10 +198,13 @@ def connect_to_namedpipe(pipe_name, timeout=10):
         log("CreateFileA(%s)=%#x", pipe_name, pipe_handle)
         if pipe_handle!=INVALID_HANDLE_VALUE:
             break
-        if GetLastError()!=ERROR_PIPE_BUSY:
-            raise Exception("cannot open named pipe '%s'" % pipe_name)
-        if WaitNamedPipeA(pipe_name, timeout*10000)==0:
-            raise Exception("timeout waiting for named pipe '%s'" % pipe_name)
+        err = GetLastError()
+        log("CreateFileA(..) error=%s", err)
+        if err==ERROR_PIPE_BUSY:
+            if WaitNamedPipeA(pipe_name, timeout*10000)==0:
+                raise Exception("timeout waiting for named pipe '%s'" % pipe_name)
+        else:
+            raise Exception("cannot open named pipe '%s': %s" % (pipe_name, FormatMessageSystem(err)))
     #we have a valid handle!
     dwMode = c_ulong(PIPE_READMODE_BYTE)
     r = SetNamedPipeHandleState(pipe_handle, byref(dwMode), None, None)

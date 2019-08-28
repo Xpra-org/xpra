@@ -121,6 +121,7 @@ class NamedPipeListener(Thread):
             sa = self.CreateUnrestrictedPipeSecurityObject()
         else:
             sa = self.CreatePipeSecurityObject()
+        log("CreateNamedPipeA using %s (UNRESTRICTED=%s)", sa, UNRESTRICTED)
         return CreateNamedPipeA(strtobytes(self.pipe_name), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
                                 PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_ACCEPT_REMOTE_CLIENTS,
                                 PIPE_UNLIMITED_INSTANCES, BUFSIZE, BUFSIZE, NMPWAIT_USE_DEFAULT_WAIT, ctypes.byref(sa))

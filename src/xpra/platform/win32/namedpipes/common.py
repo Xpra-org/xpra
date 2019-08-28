@@ -12,6 +12,8 @@ from ctypes.wintypes import DWORD, ULONG, HANDLE, USHORT, BOOL, INT
 from ctypes.wintypes import LPCSTR
 from xpra.platform.win32.constants import WAIT_ABANDONED, WAIT_OBJECT_0, WAIT_TIMEOUT, WAIT_FAILED
 
+PDWORD = POINTER(DWORD)
+PHANDLE = POINTER(HANDLE)
 LPDWORD = POINTER(DWORD)
 LPCVOID = c_void_p
 LPVOID = c_void_p
@@ -65,6 +67,7 @@ class SECURITY_DESCRIPTOR(Structure):
         ('Sacl',        c_void_p),
         ('Dacl',        c_void_p),
     ]
+PSECURITY_DESCRIPTOR = POINTER(SECURITY_DESCRIPTOR)
 
 class TOKEN_USER(Structure):
     _fields_ = [
@@ -108,12 +111,21 @@ FlushFileBuffers = kernel32.FlushFileBuffers
 FlushFileBuffers.argtypes = [HANDLE]
 FlushFileBuffers.restype = BOOL
 GetLastError = kernel32.GetLastError
+GetLastError.argtypes = []
+GetLastError.restype = DWORD
 GetCurrentProcess = kernel32.GetCurrentProcess
+GetCurrentProcess.argtypes = []
 GetCurrentProcess.restype = HANDLE
 
 advapi32 = WinDLL("advapi32", use_last_error=True)
 InitializeSecurityDescriptor = advapi32.InitializeSecurityDescriptor
 SetSecurityDescriptorOwner = advapi32.SetSecurityDescriptorOwner
 SetSecurityDescriptorDacl = advapi32.SetSecurityDescriptorDacl
+#SetSecurityDescriptorDacl.argtypes = [PSECURITY_DESCRIPTOR, BOOL, PACL, BOOL]
+SetSecurityDescriptorDacl.restype = BOOL
 OpenProcessToken = advapi32.OpenProcessToken
+OpenProcessToken.argtypes = [HANDLE, DWORD, PHANDLE]
+OpenProcessToken.restype = BOOL
 GetTokenInformation = advapi32.GetTokenInformation
+#GetTokenInformation.argtypes = [HANDLE, TOKEN_INFORMATION_CLASS, LPVOID, DWORD, PDWORD]
+GetTokenInformation.restype = BOOL

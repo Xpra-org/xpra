@@ -156,6 +156,8 @@ def GetMonitorInfo(hmonitor):
         }
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
+LocalFree = kernel32.LocalFree
+FormatMessageW = kernel32.FormatMessageW
 SetConsoleTitleA = kernel32.SetConsoleTitleA
 SetConsoleTitleA.restype = INT
 SetConsoleTitleA.argtypes = [LPCTSTR]
@@ -609,3 +611,31 @@ IO_ERROR_STR = {
     ERROR_COUNTER_TIMEOUT       : "COUNTER_TIMEOUT",
     ERROR_PIPE_BUSY             : "PIPE_BUSY",
     }
+
+#https://gist.github.com/EBNull/6135237
+LANG_NEUTRAL = 0x00
+SUBLANG_NEUTRAL = 0x00
+SUBLANG_DEFAULT = 0x01
+
+LANG_ENGLISH = 0x09
+SUBLANG_ENGLISH_US = 0x01
+
+def MAKELANGID(primary, sublang):
+    return (primary & 0xFF) | (sublang & 0xFF) << 16
+
+LCID_ENGLISH = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)
+LCID_DEFAULT = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
+LCID_NEUTRAL = MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)
+
+def FormatMessageSystem(message_id, langid=LCID_ENGLISH):
+    from xpra.platform.win32.constants import FORMAT_MESSAGE_ALLOCATE_BUFFER, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS
+    sys_flag = FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS
+    bufptr = LPWSTR()
+    chars = kernel32.FormatMessageW(sys_flag, None, message_id, langid, byref(bufptr), 0, None)
+    if not chars:
+        chars = FormatMessageW(sys_flag, None, message_id, LCID_NEUTRAL, byref(bufptr), 0, None)
+        if not chars:
+            return str(message_id)
+    val = bufptr.value[:chars]
+    LocalFree(bufptr)
+    return val
