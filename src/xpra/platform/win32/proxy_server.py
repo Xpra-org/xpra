@@ -7,6 +7,7 @@ import os
 
 from xpra.server.proxy.proxy_server import ProxyServer as _ProxyServer
 from xpra.platform.paths import get_app_dir
+from xpra.os_util import pollwait
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -44,8 +45,6 @@ def exec_command(username, command, env):
         log("stderr=%s", proc.stderr.read())
     except (OSError, IOError, AttributeError):
         pass
-    if proc.poll() is not None:
-        return None
     return proc
 
 class ProxyServer(_ProxyServer):
@@ -71,8 +70,9 @@ class ProxyServer(_ProxyServer):
             command += ["-d", ",".join(tuple(debug_enabled_categories))]
         env = self.get_proxy_env()
         proc = exec_command(username, command, env)
-        if not proc:
-            return None, None
+        r = pollwait(proc, 1)
+        if r:
+            raise Exception("shadow subprocess failed with exit code %s" % r)
         self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
         #exec_command(["C:\\Windows\notepad.exe"])
-        return "tcp/localhost:%i" % port, proc
+        return proc, "tcp/localhost:%i" % port, "Main"
