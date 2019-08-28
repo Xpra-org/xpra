@@ -666,6 +666,10 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                 match = True
             except ValueError:
                 pass
+        elif WIN32:
+            from xpra.platform.win32.dotxpra import PIPE_PREFIX
+            display_name = "named-pipe://%s%s" % (PIPE_PREFIX, display_name)
+            match = True
         if session_name_lookup and not match:
             #try to find a session whose "session-name" matches:
             match = find_session_by_name(opts, display_name)
@@ -890,7 +894,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         opts.display = None
         return desc
     elif display_name.startswith(":"):
-        assert not WIN32, "unix-domain sockets are not supported on MS Windows"
+        assert not WIN32, "X11 display names are not supported on MS Windows"
         desc.update({
                 "type"          : "unix-domain",
                 "local"         : True,
