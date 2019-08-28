@@ -24,7 +24,7 @@ WAIT_STR = {
     }
 
 INFINITE = 65535
-INVALID_HANDLE_VALUE = -1
+INVALID_HANDLE_VALUE = HANDLE(-1).value
 
 
 class _inner_struct(Structure):
