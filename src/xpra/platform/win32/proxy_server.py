@@ -39,12 +39,6 @@ def exec_command(username, command, env):
     proc = Popen(command, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env,
                  startupinfo=startupinfo, creationinfo=creation_info)
     log("Popen(%s)=%s", command, proc)
-    log("poll()=%s", proc.poll())
-    try:
-        log("stdout=%s", proc.stdout.read())
-        log("stderr=%s", proc.stderr.read())
-    except (OSError, IOError, AttributeError):
-        pass
     return proc
 
 class ProxyServer(_ProxyServer):
@@ -72,6 +66,12 @@ class ProxyServer(_ProxyServer):
         proc = exec_command(username, command, env)
         r = pollwait(proc, 1)
         if r:
+            log("poll()=%s", r)
+            try:
+                log("stdout=%s", proc.stdout.read())
+                log("stderr=%s", proc.stderr.read())
+            except (OSError, IOError, AttributeError):
+                log("failed to read stdout / stderr of subprocess", exc_info=True)
             raise Exception("shadow subprocess failed with exit code %s" % r)
         self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
         #exec_command(["C:\\Windows\notepad.exe"])
