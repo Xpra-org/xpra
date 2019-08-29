@@ -60,6 +60,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.notifications = bool(opts.notifications)
         if self.notifications:
             self.make_notifier()
+        log("init(..) session_name=%s", opts.session_name)
         if opts.session_name:
             self.session_name = opts.session_name
         else:
@@ -78,8 +79,10 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             capture.clean()
 
 
-    def guess_session_name(self, _procs=None):
+    def guess_session_name(self, procs=None):
+        log("guess_session_name(%s)", procs)
         self.session_name = get_wm_name()       # pylint: disable=assignment-from-none
+        log("get_wm_name()=%s", self.session_name)
 
     def get_server_mode(self):
         if PYTHON3:
