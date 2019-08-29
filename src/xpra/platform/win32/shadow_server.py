@@ -387,6 +387,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def guess_session_name(self, _procs=None):
         desktop_name = get_desktop_name()
+        log("get_desktop_name()=%s", desktop_name)
         if desktop_name:
             self.session_name = desktop_name
 
