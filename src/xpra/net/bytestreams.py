@@ -32,6 +32,7 @@ SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
 SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
 #this is more proper but would break the proxy server:
 SOCKET_SHUTDOWN = envbool("XPRA_SOCKET_SHUTDOWN", False)
+LOG_TIMEOUTS = envint("XPRA_LOG_TIMEOUTS", 1)
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets
 #raises an IOError but we should continue if the error code is EINTR
@@ -116,8 +117,9 @@ def untilConcludes(is_active_cb, can_retry_cb, f, *a, **kw):
             return f(*a, **kw)
         except Exception as e:
             retry = can_retry_cb(e)
-            log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s",
-                is_active_cb, can_retry_cb, f, a, kw, e, retry, exc_info=True)
+            if LOG_TIMEOUTS>0:
+                log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s",
+                    is_active_cb, can_retry_cb, f, a, kw, e, retry, exc_info=LOG_TIMEOUTS>=2)
             e = None
             if not retry:
                 raise
