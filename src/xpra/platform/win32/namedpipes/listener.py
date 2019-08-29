@@ -6,8 +6,8 @@
 
 #@PydevCodeAnalysisIgnore
 
-import ctypes
 from ctypes.wintypes import HANDLE, DWORD
+from ctypes import byref, sizeof, create_string_buffer, cast, c_void_p, pointer, POINTER
 from threading import Thread
 
 from xpra.log import Logger
@@ -16,26 +16,29 @@ from xpra.os_util import strtobytes
 from xpra.platform.win32.common import CloseHandle
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, INFINITE, WAIT_STR,
-    SECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, TOKEN_USER,
-    )
-from xpra.platform.win32.namedpipes.common import (
+    SECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, TOKEN_USER, TOKEN_PRIMARY_GROUP,
     CreateEventA, CreateNamedPipeA, ConnectNamedPipe,
     WaitForSingleObject, GetLastError,
-    )
-from xpra.platform.win32.namedpipes.common import (
-    SetSecurityDescriptorDacl, InitializeSecurityDescriptor,
+    SetSecurityDescriptorDacl, SetSecurityDescriptorSacl,
+    InitializeSecurityDescriptor,
     GetCurrentProcess, OpenProcessToken, GetTokenInformation,
-    SetSecurityDescriptorOwner,
+    SetSecurityDescriptorOwner, SetSecurityDescriptorGroup,
+    InitializeAcl, GetLengthSid,
+    AddAccessAllowedAce, CreateWellKnownSid,
+    SID, ACL, ACCESS_ALLOWED_ACE,
     )
 from xpra.platform.win32.constants import (
     FILE_FLAG_OVERLAPPED, PIPE_ACCESS_DUPLEX, PIPE_READMODE_BYTE,
     PIPE_UNLIMITED_INSTANCES, PIPE_WAIT, PIPE_TYPE_BYTE, NMPWAIT_USE_DEFAULT_WAIT,
     WAIT_TIMEOUT,
+    ACL_REVISION,
     )
 log = Logger("network", "named-pipe", "win32")
 
 UNRESTRICTED = envbool("XPRA_NAMED_PIPE_UNRESTRICTED", False)
 
+
+ERROR_INSUFFICIENT_BUFFER = 122
 
 FILE_ALL_ACCESS = 0x1f01ff
 PIPE_ACCEPT_REMOTE_CLIENTS = 0
@@ -45,14 +48,47 @@ ERROR_PIPE_CONNECTED = 535
 TIMEOUT = 6000
 BUFSIZE = 65536
 
+ERROR_ALLOTTED_SPACE_EXCEEDED = 1344
+ERROR_INVALID_ACL = 1336
+ERROR_INVALID_SID = 1337
+ERROR_REVISION_MISMATCH = 1306
+ACL_ERRORS = {
+    ERROR_ALLOTTED_SPACE_EXCEEDED   : "ERROR_ALLOTTED_SPACE_EXCEEDED",
+    ERROR_INVALID_ACL               : "ERROR_INVALID_ACL",
+    ERROR_INVALID_SID               : "ERROR_INVALID_SID",
+    ERROR_REVISION_MISMATCH         : "ERROR_REVISION_MISMATCH",
+    }
+
+TokenUser = 0x1
+TokenPrimaryGroup = 0x5
+
+WinWorldSid = 1
+WinLocalSid = 2
+WinAnonymousSid = 13
+
+STANDARD_RIGHTS_ALL = 0x001F0000
+SPECIFIC_RIGHTS_ALL = 0x0000FFFF
+GENERIC_ALL = 0x10000000
+
 
 class NamedPipeListener(Thread):
     def __init__(self, pipe_name, new_connection_cb=None):
+        log("NamedPipeListener(%s, %s)", pipe_name, new_connection_cb)
         self.pipe_name = pipe_name
         self.new_connection_cb = new_connection_cb
         self.exit_loop = False
         Thread.__init__(self, name="NamedPipeListener-%s" % pipe_name)
         self.daemon = True
+        self.security_attributes = None
+        self.security_descriptor = None
+        self.token_process = HANDLE()
+        self.tokens = []
+        cur_proc = GetCurrentProcess()
+        log("GetCurrentProcess()=%#x", cur_proc)
+        TOKEN_QUERY = 0x8
+        if not OpenProcessToken(HANDLE(cur_proc), TOKEN_QUERY, byref(self.token_process)):
+            raise WindowsError()    #@UndefinedVariable
+        log("process=%s", self.token_process.value)
 
     def __repr__(self):
         return "NamedPipeListener(%s)" % self.pipe_name
@@ -67,6 +103,13 @@ class NamedPipeListener(Thread):
             self.do_run()
         except Exception:
             log.error("Error: named pipe '%s'", self.pipe_name, exc_info=True)
+        tp = self.token_process
+        if tp:
+            self.token_process = None
+            CloseHandle(tp)
+        self.tokens = []
+        self.security_attributes = None
+        self.security_descriptor = None
 
     def do_run(self):
         while not self.exit_loop:
@@ -117,45 +160,120 @@ class NamedPipeListener(Thread):
             self.new_connection_cb(self, pipe_handle)
 
     def CreatePipeHandle(self):
-        if UNRESTRICTED:
-            sa = self.CreateUnrestrictedPipeSecurityObject()
-        else:
-            sa = self.CreatePipeSecurityObject()
+        sa = self.CreatePipeSecurityAttributes()
         log("CreateNamedPipeA using %s (UNRESTRICTED=%s)", sa, UNRESTRICTED)
         return CreateNamedPipeA(strtobytes(self.pipe_name), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
                                 PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_ACCEPT_REMOTE_CLIENTS,
-                                PIPE_UNLIMITED_INSTANCES, BUFSIZE, BUFSIZE, NMPWAIT_USE_DEFAULT_WAIT, ctypes.byref(sa))
+                                PIPE_UNLIMITED_INSTANCES, BUFSIZE, BUFSIZE, NMPWAIT_USE_DEFAULT_WAIT,
+                                byref(sa))
 
-    def CreateUnrestrictedPipeSecurityObject(self):
-        SD = SECURITY_DESCRIPTOR()
-        InitializeSecurityDescriptor(ctypes.byref(SD), SECURITY_DESCRIPTOR.REVISION)
-        if SetSecurityDescriptorDacl(ctypes.byref(SD), True, None, False)==0:
-            raise WindowsError()    #@UndefinedVariable
-        SA = SECURITY_ATTRIBUTES()
-        SA.descriptor = SD
-        SA.bInheritHandle = False
-        return SA
-
-    def CreatePipeSecurityObject(self):
-        TOKEN_QUERY = 0x8
-        cur_proc = GetCurrentProcess()
-        log("CreatePipeSecurityObject() GetCurrentProcess()=%#x", cur_proc)
-        process = HANDLE()
-        if OpenProcessToken(HANDLE(cur_proc), TOKEN_QUERY, ctypes.byref(process))==0:
-            raise WindowsError()    #@UndefinedVariable
-        log("CreatePipeSecurityObject() process=%s", process.value)
+    def GetToken(self, token_type, token_struct):
+        assert self.token_process
         data_size = DWORD()
-        GetTokenInformation(process, TOKEN_QUERY, 0, 0, ctypes.byref(data_size))
-        log("CreatePipeSecurityObject() GetTokenInformation data size %#x", data_size.value)
-        data = ctypes.create_string_buffer(data_size.value)
-        if GetTokenInformation(process, TOKEN_QUERY, ctypes.byref(data), ctypes.sizeof(data), ctypes.byref(data_size))==0:
+        if not GetTokenInformation(self.token_process, token_type, 0, 0, byref(data_size)):
+            if GetLastError()!=ERROR_INSUFFICIENT_BUFFER:
+                raise WindowsError()
+        log("GetTokenInformation data size %#x", data_size.value)
+        token_data = create_string_buffer(data_size.value)
+        self.tokens.append(token_data)
+        if not GetTokenInformation(self.token_process, token_type, byref(token_data), data_size.value, byref(data_size)):
             raise WindowsError()    #@UndefinedVariable
-        user = ctypes.cast(data, ctypes.POINTER(TOKEN_USER)).contents
-        log("CreatePipeSecurityObject() user: SID=%s, attributes=%#x", user.SID, user.ATTRIBUTES)
+        token = cast(token_data, POINTER(token_struct)).contents
+        return token
+
+    def CreatePipeSecurityAttributes(self):
+        user = self.GetToken(TokenUser, TOKEN_USER)
+        user_SID = user.SID.contents
+        log("user SID=%s, attributes=%#x", user_SID, user.ATTRIBUTES)
+
+        group = self.GetToken(TokenPrimaryGroup, TOKEN_PRIMARY_GROUP)
+        group_SID = group.PrimaryGroup.contents
+        log("group SID=%s", group_SID)
+
         SD = SECURITY_DESCRIPTOR()
-        InitializeSecurityDescriptor(ctypes.byref(SD), SECURITY_DESCRIPTOR.REVISION)
-        SetSecurityDescriptorOwner(ctypes.byref(SD), user.SID, 0)
+        self.security_descriptor = SD
+        log("SECURITY_DESCRIPTOR=%s", SD)
+        if not InitializeSecurityDescriptor(byref(SD), SECURITY_DESCRIPTOR.REVISION):
+            raise WindowsError()
+        log("InitializeSecurityDescriptor: %s", SD)
+        if not SetSecurityDescriptorOwner(byref(SD), user.SID, False):
+            raise WindowsError()
+        log("SetSecurityDescriptorOwner: %s", SD)
+        if not SetSecurityDescriptorGroup(byref(SD), group.PrimaryGroup, False):
+            raise WindowsError()
+        log("SetSecurityDescriptorGroup: %s", SD)
         SA = SECURITY_ATTRIBUTES()
-        SA.descriptor = SD
-        SA.bInheritHandle = False
+        log("CreatePipeSecurityObject() SECURITY_ATTRIBUTES=%s", SA)
+        if not UNRESTRICTED:
+            SA.descriptor = SD
+            SA.bInheritHandle = False
+            return SA
+        if not SetSecurityDescriptorSacl(byref(SD), False, None, False):
+            raise WindowsError()
+        if not SetSecurityDescriptorDacl(byref(SD), True, None, False):
+            raise WindowsError()
+        #this doesn't work - and I don't know why:
+        #SECURITY_NT_AUTHORITY = 5
+        #sia_anonymous = SID_IDENTIFIER_AUTHORITY((0, 0, 0, 0, 0, SECURITY_NT_AUTHORITY))
+        #log("SID_IDENTIFIER_AUTHORITY(SECURITY_NT_AUTHORITY)=%s", sia_anonymous)
+        #sid_allow = SID()
+        #log("empty SID: %s", sid_allow)
+        #if not AllocateAndInitializeSid(byref(sia_anonymous), 1,
+        #                         SECURITY_ANONYMOUS_LOGON_RID, 0, 0, 0, 0, 0, 0, 0,
+        #                         byref(sid_allow),
+        #                         ):
+        #    raise WindowsError()
+        #    log("AllocateAndInitializeSid(..) sid_anonymous=%s", sid_allow)
+        sid_allow = SID()
+        sid_size = DWORD(sizeof(SID))
+        sid_type = WinWorldSid
+        SECURITY_MAX_SID_SIZE = 68
+        assert sizeof(SID)>=SECURITY_MAX_SID_SIZE
+        if not CreateWellKnownSid(sid_type, None, byref(sid_allow), byref(sid_size)):
+            log.error("error=%s", GetLastError())
+            raise WindowsError()
+        assert sid_size.value<=SECURITY_MAX_SID_SIZE
+        log("CreateWellKnownSid(..) sid_allow=%s, sid_size=%s", sid_allow, sid_size)
+
+        acl_size = sizeof(ACL)
+        acl_size += 2*(sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD))
+        acl_size += GetLengthSid(byref(sid_allow))
+        acl_size += GetLengthSid(byref(user.SID.contents))
+        #acl_size += GetLengthSid(user.SID)
+        acl_data = create_string_buffer(acl_size)
+        acl = cast(acl_data, POINTER(ACL)).contents
+        log("acl_size=%s, acl_data=%s, acl=%s", acl_size, acl_data, acl)
+        if not InitializeAcl(byref(acl), acl_size, ACL_REVISION):
+            raise WindowsError()
+        log("InitializeAcl(..) acl=%s", acl)
+
+        rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
+        add_sid = user.SID
+        r = AddAccessAllowedAce(byref(acl), ACL_REVISION, rights, add_sid)
+        if r==0:
+            err = GetLastError()
+            log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
+            raise WindowsError()
+
+        rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
+        add_sid = byref(sid_allow)
+        r = AddAccessAllowedAce(byref(acl), ACL_REVISION, rights, add_sid)
+        if r==0:
+            err = GetLastError()
+            log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
+            raise WindowsError()
+        if not SetSecurityDescriptorDacl(byref(SD), True, byref(acl), False):
+            raise WindowsError()
+        SA.nLength = sizeof(SECURITY_ATTRIBUTES)
+        SA.lpSecurityDescriptor = cast(pointer(SD), c_void_p)
+        SA.bInheritHandle = True
+        self.security_attributes = SA
         return SA
+
+
+def main():
+    l = NamedPipeListener("\\\\.\\pipe\\Xpra\\Test")
+    l.run()
+
+if __name__ == "__main__":
+    main()

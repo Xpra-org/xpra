@@ -110,14 +110,14 @@ class SID_IDENTIFIER_AUTHORITY(Structure):
         ('Value',         BYTE*6),
     ]
     def __repr__(self):
-        return "<SID_IDENTIFIER_AUTHORITY: %s" % (":".join(hex(v) for v in self.Value))
+        return "<SID_IDENTIFIER_AUTHORITY: %s" % (":".join(str(v) for v in self.Value))
 PSID_IDENTIFIER_AUTHORITY = POINTER(SID_IDENTIFIER_AUTHORITY)
 class SID(Structure):
     _fields_ = [
         ('Revision',            BYTE),
         ('SubAuthorityCount',   BYTE),
         ('IdentifierAuthority', SID_IDENTIFIER_AUTHORITY),
-        ('SubAuthority',        DWORD*128),
+        ('SubAuthority',        DWORD*16),
     ]
     def __repr__(self):
         subs = []
@@ -157,14 +157,19 @@ PSECURITY_DESCRIPTOR = POINTER(SECURITY_DESCRIPTOR)
 
 InitializeSecurityDescriptor = advapi32.InitializeSecurityDescriptor
 SetSecurityDescriptorOwner = advapi32.SetSecurityDescriptorOwner
-SetSecurityDescriptorOwner.argtypes = [SECURITY_DESCRIPTOR, PSID, BOOL]
+#don't set this argtypes, or you will get mysterious segfaults:
+#SetSecurityDescriptorOwner.argtypes = [SECURITY_DESCRIPTOR, PSID, BOOL]
 SetSecurityDescriptorOwner.restype = BOOL
 SetSecurityDescriptorGroup = advapi32.SetSecurityDescriptorGroup
-SetSecurityDescriptorGroup.argtypes = [SECURITY_DESCRIPTOR, PSID, BOOL]
+#don't set this argtypes, or you will get mysterious segfaults:
+#SetSecurityDescriptorGroup.argtypes = [SECURITY_DESCRIPTOR, PSID, BOOL]
 SetSecurityDescriptorGroup.restype = BOOL
 SetSecurityDescriptorDacl = advapi32.SetSecurityDescriptorDacl
-#SetSecurityDescriptorDacl.argtypes = [PSECURITY_DESCRIPTOR, BOOL, PACL, BOOL]
+SetSecurityDescriptorDacl.argtypes = [PSECURITY_DESCRIPTOR, BOOL, PACL, BOOL]
 SetSecurityDescriptorDacl.restype = BOOL
+SetSecurityDescriptorSacl = advapi32.SetSecurityDescriptorSacl
+SetSecurityDescriptorSacl.argtypes = [PSECURITY_DESCRIPTOR, BOOL, PACL, BOOL]
+SetSecurityDescriptorSacl.restype = BOOL
 
 AllocateAndInitializeSid = advapi32.AllocateAndInitializeSid
 AllocateAndInitializeSid.argtypes = [PSID_IDENTIFIER_AUTHORITY, BYTE, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, PSID]
@@ -194,7 +199,7 @@ class ACCESS_ALLOWED_ACE(Structure):
         ('SidStart',        DWORD),
         ]
 AddAccessAllowedAce = advapi32.AddAccessAllowedAce
-AddAccessAllowedAce.argtypes = [PACL, DWORD, DWORD, PSID]
+#AddAccessAllowedAce.argtypes = [PACL, DWORD, DWORD, PSID]
 AddAccessAllowedAce.restype = BOOL
 
 class TOKEN_USER(Structure):
