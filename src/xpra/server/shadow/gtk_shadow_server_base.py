@@ -247,7 +247,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
 
     def make_tray_widget(self):
-        from xpra.platform.xposix.gui import get_native_system_tray_classes
+        from xpra.platform.gui import get_native_system_tray_classes
         classes = get_native_system_tray_classes()
         try:
             from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
