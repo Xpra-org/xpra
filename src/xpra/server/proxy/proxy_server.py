@@ -413,16 +413,24 @@ class ProxyServer(ServerCore):
                 log("starting %s from pid=%s", process, os.getpid())
                 self.processes[process] = (display, message_queue)
                 process.start()
-                log("process started")
+                log("ProxyInstanceProcess started")
                 popen = process._popen
                 assert popen
                 #when this process dies, run reap to update our list of proxy processes:
                 self.child_reaper.add_process(popen, "xpra-proxy-%s" % display,
                                               "xpra-proxy-instance", True, True, self.reap)
+            except Exception as e:
+                log("do_start_proxy() failed", exc_info=True)
+                log.error("Error starting proxy instance process:")
+                log.error(" %s", e)
+                message_queue.put("error: %s" % e)
+                message_queue.put("stop")
             finally:
                 #now we can close our handle on the connection:
+                log("handover complete: closing connection from proxy server")
                 client_conn.close()
                 server_conn.close()
+                log("sending socket-handover-complete")
                 message_queue.put("socket-handover-complete")
         start_thread(do_start_proxy, "start_proxy(%s)" % client_conn)
 
