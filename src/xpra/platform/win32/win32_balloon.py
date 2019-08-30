@@ -7,7 +7,6 @@
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 import struct
-from io import BytesIO
 from ctypes import windll
 
 from xpra.os_util import strtobytes
