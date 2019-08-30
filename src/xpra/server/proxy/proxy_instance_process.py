@@ -211,7 +211,7 @@ class ProxyInstanceProcess(Process):
     def setproctitle(self, title):
         try:
             import setproctitle
-            setproctitle.setproctitle(title)
+            setproctitle.setproctitle(title)  #@UndefinedVariable
         except ImportError as e:
             log("setproctitle not installed: %s", e)
 
