@@ -54,7 +54,7 @@ class ProxyServer(_ProxyServer):
         #whoami = os.path.join(get_app_dir(), "whoami.exe")
         #exec_command([whoami])
         port = 10000
-        xpra_command = os.path.join(get_app_dir(), "xpra.exe")
+        xpra_command = os.path.join(get_app_dir(), "Xpra-Shadow.exe")
         named_pipe = username.replace(" ", "_")
         command = [
             xpra_command,
