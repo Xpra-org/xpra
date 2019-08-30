@@ -1309,7 +1309,7 @@ if WIN32:
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         if (client_ENABLED or server_ENABLED) and (gtk2_ENABLED or gtk3_ENABLED):
             add_gui_exe("scripts/xpra",                         "xpra.ico",         "Xpra")
-            add_gui_exe("scripts/xpra",                         "xpra.ico",         "Xpra-Shadow")
+            add_gui_exe("win32/service/shadow_server.py",       "server-notconnected.ico",    "Xpra-Shadow")
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_console_exe("scripts/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
