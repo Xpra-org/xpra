@@ -21,7 +21,10 @@ def get_commonappdata_dir():
         return None
 
 def main():
-    #os.environ["XPRA_REDIRECT_OUTPUT"] = "1"
+    from multiprocessing import freeze_support #@UnresolvedImport
+    freeze_support()
+
+    os.environ["XPRA_REDIRECT_OUTPUT"] = "1"
     #os.environ["XPRA_LOG_FILENAME"] = "E:\\Shadow.log"
     #os.environ["XPRA_ALL_DEBUG"] = "1"
     #os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "1"
