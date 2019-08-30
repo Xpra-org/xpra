@@ -394,9 +394,13 @@ def get_cpu_count():
             #python3:
             cpus = os.cpu_count()
         except AttributeError:
-            #python2:
-            import multiprocessing
-            cpus = multiprocessing.cpu_count()
+            try:
+                from cpuinfo import get_cpu_info
+                cpus = int(get_cpu_info().get("count"))
+            except Exception:
+                #python2:
+                import multiprocessing
+                cpus = multiprocessing.cpu_count()
     except Exception:
         pass
     return cpus

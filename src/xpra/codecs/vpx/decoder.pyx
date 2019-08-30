@@ -16,7 +16,7 @@ log = Logger("decoder", "vpx")
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport padbuf, MemBuf, memalign, object_as_buffer, memory_as_pybuffer #pylint: disable=syntax-error
-from xpra.os_util import bytestostr, OSX
+from xpra.os_util import bytestostr, OSX, get_cpu_count
 from xpra.util import envint
 
 from libc.stdint cimport uint8_t, int64_t
@@ -25,16 +25,7 @@ from libc.stdlib cimport malloc
 from xpra.monotonic_time cimport monotonic_time
 
 
-#sensible default:
-cpus = 2
-try:
-    cpus = os.cpu_count()
-except:
-    try:
-        import multiprocessing
-        cpus = multiprocessing.cpu_count()
-    except:
-        pass
+cpus = get_cpu_count()
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 
 cdef inline int roundup(int n, int m):
