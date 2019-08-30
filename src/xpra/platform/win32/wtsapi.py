@@ -109,7 +109,7 @@ WTS_INFO_CLASS = {
     WTSValidationInfo       : "ValidationInfo",
     WTSSessionAddressV4     : "SessionAddressV4",
     WTSIsRemoteSession      : "IsRemoteSession",
-    } 
+    }
 WTSRegisterSessionNotification = wtsapi32.WTSRegisterSessionNotification
 WTSRegisterSessionNotification.restype = BOOL
 WTSRegisterSessionNotification.argtypes = [HANDLE, DWORD]
@@ -131,6 +131,24 @@ WTSQuerySessionInformationA.argtypes = [HANDLE, DWORD, c_int, POINTER(LPSTR), PO
 WTSFreeMemory = wtsapi32.WTSFreeMemory
 WTSFreeMemory.restype = BOOL
 #WTSFreeMemory.argtypes = [c_void_p]
+WTSDisconnectSession = wtsapi32.WTSDisconnectSession
+WTSDisconnectSession.restype = BOOL
+WTSDisconnectSession.argtypes = [HANDLE, DWORD, BOOL]
+WTSLogoffSession = wtsapi32.WTSLogoffSession
+WTSLogoffSession.restype = BOOL
+WTSLogoffSession.argtypes = [HANDLE, DWORD, BOOL]
+WTSSendMessageA = wtsapi32.WTSSendMessageA
+WTSSendMessageA.restype = BOOL
+WTSSendMessageA.argtypes = [HANDLE, DWORD, LPSTR, DWORD, LPSTR, DWORD, DWORD, DWORD, POINTER(DWORD), BOOL]
+WTSShutdownSystem = wtsapi32.WTSShutdownSystem
+WTSShutdownSystem.restype = BOOL
+WTSShutdownSystem.argtypes = [HANDLE, DWORD]
+WTSTerminateProcess = wtsapi32.WTSTerminateProcess
+WTSTerminateProcess.restype = BOOL
+WTSTerminateProcess.argtypes = [HANDLE, DWORD, DWORD]
+#WTSVirtualChannelOpen
+#WTSWaitSystemEvent
+
 
 def main():
     from ctypes import byref, cast

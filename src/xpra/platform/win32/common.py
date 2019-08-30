@@ -15,7 +15,7 @@ from ctypes.wintypes import (
     SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE,
     )
 from ctypes.wintypes import (
-    HANDLE, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
+    HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
     HINSTANCE, HMENU, ULONG,
     )
@@ -140,6 +140,14 @@ class MONITORINFOEX(Structure):
         ('szDevice', WCHAR * CCHDEVICENAME),
         ]
 
+class SECURITY_ATTRIBUTES(Structure):
+    _fields_ = [
+        ("nLength",                 c_int),
+        ("lpSecurityDescriptor",    c_void_p),
+        ("bInheritHandle",          c_int),
+        ]
+LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
+
 def GetMonitorInfo(hmonitor):
     info = MONITORINFOEX()
     info.szDevice = ""
@@ -208,6 +216,9 @@ WideCharToMultiByte.argtypes = [UINT, DWORD, LPCWSTR, c_int, c_void_p, c_int, LP
 MultiByteToWideChar = kernel32.MultiByteToWideChar
 MultiByteToWideChar.restype = c_int
 MultiByteToWideChar.argtypes =  [UINT, DWORD, LPCSTR, c_int, LPWSTR, c_int]
+WTSGetActiveConsoleSessionId = kernel32.WTSGetActiveConsoleSessionId
+WTSGetActiveConsoleSessionId.restype = DWORD
+WTSGetActiveConsoleSessionId.argtypes = []
 
 user32 = WinDLL("user32", use_last_error=True)
 RegisterClassExA = user32.RegisterClassExA
@@ -353,12 +364,18 @@ OpenWindowStationW = user32.OpenWindowStationW
 OpenWindowStationW.restype = HWINSTA
 ACCESS_MASK = DWORD
 OpenWindowStationW.argtypes = [LPWSTR, BOOL, ACCESS_MASK]
+OpenWindowStationA = user32.OpenWindowStationA
+OpenWindowStationA.restype = HWINSTA
+OpenWindowStationA.argtypes = [LPCSTR, BOOL, ACCESS_MASK]
 GetProcessWindowStation = user32.GetProcessWindowStation
 GetProcessWindowStation.restype = HWINSTA
 GetProcessWindowStation.argtypes = []
 SetProcessWindowStation = user32.SetProcessWindowStation
 SetProcessWindowStation.restype = BOOL
 SetProcessWindowStation.argtypes = [HWINSTA]
+CreateWindowStationA = user32.CreateWindowStationA
+CreateWindowStationA.restype = HWINSTA
+CreateWindowStationA.argtypes = [LPCSTR, DWORD, ACCESS_MASK, LPSECURITY_ATTRIBUTES]
 CloseWindowStation = user32.CloseWindowStation
 CloseWindowStation.restype = BOOL
 CloseWindowStation.argtypes = [HWINSTA]
@@ -449,6 +466,40 @@ CountClipboardFormats = user32.CountClipboardFormats
 CountClipboardFormats.restype = c_int
 CountClipboardFormats.argtypes = []
 
+class PROCESS_INFORMATION(Structure):
+    _fields_ = (
+        ('_hProcess',   HANDLE),
+        ('_hThread',    HANDLE),
+        ('dwProcessId', DWORD),
+        ('dwThreadId',  DWORD),
+        )
+PPROCESS_INFORMATION = POINTER(PROCESS_INFORMATION)
+class STARTUPINFOA(Structure):
+    _fields_ = (
+        ('cb',              DWORD),
+        ('lpReserved',      LPWSTR),
+        ('lpDesktop',       LPWSTR),
+        ('lpTitle',         LPWSTR),
+        ('dwX',             DWORD),
+        ('dwY',             DWORD),
+        ('dwXSize',         DWORD),
+        ('dwYSize',         DWORD),
+        ('dwXCountChars',   DWORD),
+        ('dwYCountChars',   DWORD),
+        ('dwFillAttribute', DWORD),
+        ('dwFlags',         DWORD),
+        ('wShowWindow',     WORD),
+        ('cbReserved2',     WORD),
+        ('lpReserved2',     c_void_p),
+        ('hStdInput',       HANDLE),
+        ('hStdOutput',      HANDLE),
+        ('hStdError',       HANDLE),
+        )
+PSTARTUPINFOA = POINTER(STARTUPINFOA)
+advapi32 = WinDLL("advapi32")
+CreateProcessAsUserA = advapi32.CreateProcessAsUserA
+CreateProcessAsUserA.restype = BOOL
+CreateProcessAsUserA.argtypes = [HANDLE, LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCSTR, LPCSTR, PSTARTUPINFOA, PPROCESS_INFORMATION]
 
 gdi32 = WinDLL("gdi32", use_last_error=True)
 CreateCompatibleDC = gdi32.CreateCompatibleDC

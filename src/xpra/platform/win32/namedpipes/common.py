@@ -6,11 +6,12 @@
 
 #@PydevCodeAnalysisIgnore
 
-from ctypes import POINTER, WinDLL, Structure, Union, c_void_p, c_int, c_ubyte, addressof
+from ctypes import POINTER, WinDLL, Structure, Union, c_void_p, c_ubyte, addressof
 from ctypes.wintypes import DWORD, ULONG, HANDLE, BOOL, INT, BYTE, WORD
 from ctypes.wintypes import LPCSTR
 
 from xpra.platform.win32.constants import WAIT_ABANDONED, WAIT_OBJECT_0, WAIT_TIMEOUT, WAIT_FAILED
+from xpra.platform.win32.common import LPSECURITY_ATTRIBUTES
 
 PDWORD = POINTER(DWORD)
 PHANDLE = POINTER(HANDLE)
@@ -48,14 +49,6 @@ class OVERLAPPED(Structure):
         ('hEvent',          HANDLE),
         ]
 LPOVERLAPPED = POINTER(OVERLAPPED)
-
-class SECURITY_ATTRIBUTES(Structure):
-    _fields_ = [
-        ("nLength",                 c_int),
-        ("lpSecurityDescriptor",    c_void_p),
-        ("bInheritHandle",          c_int),
-        ]
-LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
 WaitForSingleObject = kernel32.WaitForSingleObject
