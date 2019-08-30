@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from ctypes import POINTER, WinDLL, c_void_p, Structure, c_int
-
+from ctypes import byref, cast
 from ctypes.wintypes import WORD, DWORD, HANDLE, BOOL, LPSTR
 
 PDWORD = POINTER(DWORD)
@@ -13,6 +13,8 @@ PDWORD = POINTER(DWORD)
 wtsapi32 = WinDLL("WtsApi32")
 
 NOTIFY_FOR_THIS_SESSION = 0
+
+WTS_CURRENT_SERVER_HANDLE = 0
 
 #no idea where we're supposed to get those from:
 WM_WTSSESSION_CHANGE        = 0x02b1
@@ -150,34 +152,31 @@ WTSTerminateProcess.argtypes = [HANDLE, DWORD, DWORD]
 #WTSWaitSystemEvent
 
 
+def print_session_info(csid):
+    buf = LPSTR()
+    size = DWORD()
+    for q in (WTSInitialProgram, WTSApplicationName, WTSWorkingDirectory,
+              WTSUserName, WTSWinStationName, WTSDomainName,
+              WTSClientName, WTSClientDirectory,
+              WTSClientDisplay, ):
+        if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, q, byref(buf), byref(size)):
+            #log.info("%s=%s (%i bytes)", WTS_INFO_CLASS.get(q, q), bytestostr(buf.value), size.value)
+            print(" %s=%s" % (WTS_INFO_CLASS.get(q, q), buf.value.decode("latin1")))
+        else:
+            print(" WTSQuerySessionInformationA failed for %s" % WTS_INFO_CLASS.get(q, q))
+    if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSConnectState, byref(buf), byref(size)):
+        if size.value==4:
+            state = cast(buf, POINTER(DWORD)).contents.value
+            print(" WTSConnectState=%s" % (CONNECT_STATE.get(state, state),))
+    if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientProtocolType, byref(buf), byref(size)):
+        if size.value==2:
+            ptype = cast(buf, POINTER(WORD)).contents.value
+            print(" WTSClientProtocolType=%s" % {0:"console", 1:"legacy", 2:"RDP"}.get(ptype, ptype))
+
 def main():
-    from ctypes import byref, cast
-    WTS_CURRENT_SERVER_HANDLE = 0
     from xpra.platform.win32.common import WTSGetActiveConsoleSessionId
     csid = WTSGetActiveConsoleSessionId()
     print("WTSGetActiveConsoleSessionId()=%s" % csid)
-    if csid!=0xFFFFFFFF:
-        buf = LPSTR()
-        size = DWORD()
-        for q in (WTSInitialProgram, WTSApplicationName, WTSWorkingDirectory,
-                  WTSUserName, WTSWinStationName, WTSDomainName,
-                  WTSClientName, WTSClientDirectory,
-                  WTSClientDisplay, ):
-            if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, q, byref(buf), byref(size)):
-                #log.info("%s=%s (%i bytes)", WTS_INFO_CLASS.get(q, q), bytestostr(buf.value), size.value)
-                print("%s=%s" % (WTS_INFO_CLASS.get(q, q), buf.value.decode("latin1")))
-            else:
-                print("WTSQuerySessionInformationA failed for %s" % WTS_INFO_CLASS.get(q, q))
-        if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSConnectState, byref(buf), byref(size)):
-            if size.value==4:
-                state = cast(buf, POINTER(DWORD)).contents.value
-                print("WTSConnectState=%s" % (CONNECT_STATE.get(state, state),))
-        if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientProtocolType, byref(buf), byref(size)):
-            if size.value==2:
-                ptype = cast(buf, POINTER(WORD)).contents.value
-                print("WTSClientProtocolType=%s" % {0:"console", 1:"legacy", 2:"RDP"}.get(ptype, ptype))
-
-
     cur = LPSTR(WTS_CURRENT_SERVER_HANDLE)
     h = WTSOpenServerA(cur)
     print("WTSOpenServerA(WTS_CURRENT_SERVER_HANDLE)=%s" % (h,))
@@ -192,6 +191,7 @@ def main():
                 print(" %#x" % session.SessionId)
                 print(" %s" % session.pWinStationName.decode("latin1"))
                 print(" %s" % CONNECT_STATE.get(session.State, session.State))
+                print_session_info(session.SessionId)
 
             WTSFreeMemory(sessions)
         WTSCloseServer(h)
