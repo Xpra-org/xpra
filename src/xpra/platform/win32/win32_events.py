@@ -7,6 +7,11 @@
 import ctypes
 
 from xpra.util import envbool
+from xpra.platform.win32.wtsapi import (
+    NOTIFY_FOR_THIS_SESSION,
+    WM_WTSSESSION_CHANGE, WM_DWMNCRENDERINGCHANGED, WM_DWMCOMPOSITIONCHANGED,
+    WTSRegisterSessionNotification, WTSUnRegisterSessionNotification,
+    )
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
@@ -21,14 +26,6 @@ from xpra.log import Logger
 
 log = Logger("events", "win32")
 
-try:
-    wtsapi32 = ctypes.WinDLL("WtsApi32")
-except Exception as e:
-    log.error("Error: cannot load WtsApi2 DLL, session events will not be detected")
-    log.error(" %s", e)
-    del e
-    wtsapi32 = None
-NOTIFY_FOR_THIS_SESSION = 0
 
 KNOWN_EVENTS = {}
 POWER_EVENTS = {}
@@ -40,10 +37,6 @@ for x in dir(win32con):
         v = getattr(win32con, x)
         POWER_EVENTS[v] = x
 
-#no idea where we're supposed to get those from:
-WM_WTSSESSION_CHANGE        = 0x02b1
-WM_DWMNCRENDERINGCHANGED    = 0x031F
-WM_DWMCOMPOSITIONCHANGED    = 0x031E
 IGNORE_EVENTS = {
             win32con.WM_ACTIVATEAPP         : "WM_ACTIVATEAPP",
             win32con.WM_TIMECHANGE          : "WM_TIMECHANGE",
@@ -135,13 +128,12 @@ class Win32EventListener(object):
         if self.hwnd==0:
             raise ctypes.WinError(ctypes.get_last_error())
 
-        if wtsapi32:
-            #register our interest in session events:
-            #http://timgolden.me.uk/python/win32_how_do_i/track-session-events.html#isenslogon
-            #http://stackoverflow.com/questions/365058/detect-windows-logout-in-python
-            #http://msdn.microsoft.com/en-us/library/aa383841.aspx
-            #http://msdn.microsoft.com/en-us/library/aa383828.aspx
-            wtsapi32.WTSRegisterSessionNotification(self.hwnd, NOTIFY_FOR_THIS_SESSION)
+        #register our interest in session events:
+        #http://timgolden.me.uk/python/win32_how_do_i/track-session-events.html#isenslogon
+        #http://stackoverflow.com/questions/365058/detect-windows-logout-in-python
+        #http://msdn.microsoft.com/en-us/library/aa383841.aspx
+        #http://msdn.microsoft.com/en-us/library/aa383828.aspx
+        WTSRegisterSessionNotification(self.hwnd, NOTIFY_FOR_THIS_SESSION)
         log("Win32EventListener created with hwnd=%s", self.hwnd)
 
 
@@ -151,8 +143,7 @@ class Win32EventListener(object):
 
         hwnd = self.hwnd
         if hwnd:
-            if wtsapi32:
-                wtsapi32.WTSUnRegisterSessionNotification(hwnd)
+            WTSUnRegisterSessionNotification(hwnd)
 
             self.hwnd = None
             try:
