@@ -13,10 +13,13 @@ from threading import Thread
 from xpra.log import Logger
 from xpra.util import envbool
 from xpra.os_util import strtobytes
-from xpra.platform.win32.common import CloseHandle, ERROR_IO_PENDING, FormatMessageSystem
+from xpra.platform.win32.common import (
+    CloseHandle, ERROR_IO_PENDING, FormatMessageSystem,
+    SECURITY_ATTRIBUTES,
+    )
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, INFINITE, WAIT_STR,
-    SECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, TOKEN_USER, TOKEN_PRIMARY_GROUP,
+    SECURITY_DESCRIPTOR, TOKEN_USER, TOKEN_PRIMARY_GROUP,
     CreateEventA, CreateNamedPipeA, ConnectNamedPipe,
     WaitForSingleObject, GetLastError,
     SetSecurityDescriptorDacl, SetSecurityDescriptorSacl,
