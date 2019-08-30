@@ -533,7 +533,7 @@ class ProxyServer(ServerCore):
                     break
             if sessions:
                 uid, gid = sessions[:2]
-                if not POSIX or (uid==os.getuid() and gid==os.getgid()):
+                if not POSIX or (uid==getuid() and gid==getgid()):
                     self.reap()
                     i = 0
                     for p,v in self.processes.items():

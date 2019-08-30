@@ -218,7 +218,7 @@ class ProxyInstanceProcess(Process):
     def run(self):
         log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
         self.setproctitle("Xpra Proxy Instance for %s" % self.server_conn)
-        if POSIX and (os.getuid()!=self.uid or os.getgid()!=self.gid):
+        if POSIX and (getuid()!=self.uid or getgid()!=self.gid):
             #do we need a valid XDG_RUNTIME_DIR for the socket-dir?
             username = get_username_for_uid(self.uid)
             socket_dir = osexpand(self.socket_dir, username, self.uid, self.gid)
