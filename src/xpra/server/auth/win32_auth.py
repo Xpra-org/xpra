@@ -1,15 +1,18 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import windll, byref, POINTER, FormatError, GetLastError
+from ctypes import windll, byref, addressof, POINTER, FormatError, GetLastError
 from ctypes.wintypes import LPCWSTR, DWORD, HANDLE, BOOL
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
+from xpra.util import envbool
 from xpra.os_util import bytestostr
 from xpra.platform.win32.common import CloseHandle
 assert init and log #tests will disable logging from here
+
+LOG_CREDENTIALS = envbool("XPRA_LOG_CREDENTIALS", False)
 
 MAX_COMPUTERNAME_LENGTH = 15
 LOGON32_LOGON_NETWORK_CLEARTEXT = 8
@@ -37,10 +40,14 @@ class Authenticator(SysAuthenticator):
         token = HANDLE()
         domain = '' #os.environ.get('COMPUTERNAME')
         password_str = bytestostr(password)
+        if LOG_CREDENTIALS:
+            log("LogonUser(%s, %s, %s, CLEARTEXT, DEFAULT, %#x)",
+                self.username, domain, password_str, addressof(token))
         status = LogonUser(self.username, domain, password_str,
                      LOGON32_LOGON_NETWORK_CLEARTEXT,
                      LOGON32_PROVIDER_DEFAULT,
                      byref(token))
+        log("LogonUser(..)=%#x", status)
         if status:
             CloseHandle(token)
             return True
