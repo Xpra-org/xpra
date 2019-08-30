@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (c) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (c) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from threading import Thread
 from xpra.log import Logger
 from xpra.util import envbool
 from xpra.os_util import strtobytes
-from xpra.platform.win32.common import CloseHandle
+from xpra.platform.win32.common import CloseHandle, ERROR_IO_PENDING, FormatMessageSystem
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, INFINITE, WAIT_STR,
     SECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, TOKEN_USER, TOKEN_PRIMARY_GROUP,
@@ -75,7 +75,7 @@ class NamedPipeListener(Thread):
     def __init__(self, pipe_name, new_connection_cb=None):
         log("NamedPipeListener(%s, %s)", pipe_name, new_connection_cb)
         self.pipe_name = pipe_name
-        self.new_connection_cb = new_connection_cb
+        self.new_connection_cb = new_connection_cb or self.new_connection
         self.exit_loop = False
         Thread.__init__(self, name="NamedPipeListener-%s" % pipe_name)
         self.daemon = True
@@ -112,20 +112,21 @@ class NamedPipeListener(Thread):
         self.security_descriptor = None
 
     def do_run(self):
+        pipe_handle = None
         while not self.exit_loop:
-            pipe_handle = None
-            try:
-                pipe_handle = self.CreatePipeHandle()
-            except Exception as e:
-                log("CreatePipeHandle()", exc_info=True)
-                log.error("Error: failed to create named pipe")
-                log.error(" at path '%s'", self.pipe_name)
-                log.error(" %s", e)
-                return
-            log("CreatePipeHandle()=%#x", pipe_handle)
-            if pipe_handle==INVALID_HANDLE_VALUE:
-                log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
-                return
+            if not pipe_handle:
+                try:
+                    pipe_handle = self.CreatePipeHandle()
+                except Exception as e:
+                    log("CreatePipeHandle()", exc_info=True)
+                    log.error("Error: failed to create named pipe")
+                    log.error(" at path '%s'", self.pipe_name)
+                    log.error(" %s", e)
+                    return
+                log("CreatePipeHandle()=%#x", pipe_handle)
+                if pipe_handle==INVALID_HANDLE_VALUE:
+                    log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
+                    return
             event = CreateEventA(None, True, False, None)
             overlapped = OVERLAPPED()
             overlapped.hEvent = event
@@ -134,30 +135,50 @@ class NamedPipeListener(Thread):
             overlapped.union.Pointer = None
             r = ConnectNamedPipe(pipe_handle, overlapped)
             log("ConnectNamedPipe()=%s", r)
-            if not r and not self.exit_loop:
-                r = WaitForSingleObject(event, INFINITE)
-                log("WaitForSingleObject(..)=%s", WAIT_STR.get(r, r))
-                if r==WAIT_TIMEOUT:
-                    continue
-                if r:
-                    log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
-                    log.error(" %s", WAIT_STR.get(r, r))
-                    CloseHandle(pipe_handle)
-                    continue
             if self.exit_loop:
-                CloseHandle(pipe_handle)
                 break
-            if r==0 and False:
+            if r==0:
                 e = GetLastError()
+                log("GetLastError()=%s (%i)", FormatMessageSystem(e).rstrip("\n\r"), e)
                 if e==ERROR_PIPE_CONNECTED:
                     pass
+                elif e==ERROR_IO_PENDING:
+                    while not self.exit_loop:
+                        r = WaitForSingleObject(event, INFINITE)
+                        log("WaitForSingleObject(..)=%s", WAIT_STR.get(r, r))
+                        if r==WAIT_TIMEOUT:
+                            continue
+                        if r==0:
+                            break
+                        log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
+                        log.error(" %s", WAIT_STR.get(r, r))
+                        CloseHandle(pipe_handle)
+                        pipe_handle = None
+                        break
                 else:
                     log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
                     log.error(" error %s", e)
                     CloseHandle(pipe_handle)
-                    continue
+                    pipe_handle = None
+                if self.exit_loop:
+                    break
             #from now on, the pipe_handle will be managed elsewhere:
-            self.new_connection_cb(self, pipe_handle)
+            if pipe_handle:
+                self.new_connection_cb(self, pipe_handle)
+                pipe_handle = None
+        if pipe_handle:
+            self.close_handle(pipe_handle)
+
+    def close_handle(self, pipe_handle):
+        try:
+            log("CloseHandle(%#x)", pipe_handle)
+            CloseHandle(pipe_handle)
+        except:
+            log("CloseHandle(%#x)", pipe_handle, exc_info=True)
+
+    def new_connection(self, listener, pipe_handle):
+        log.info("new_connection(%s, %#x)", listener, pipe_handle)
+        self.close_handle(pipe_handle)
 
     def CreatePipeHandle(self):
         sa = self.CreatePipeSecurityAttributes()
@@ -272,7 +293,15 @@ class NamedPipeListener(Thread):
 
 
 def main():
-    l = NamedPipeListener("\\\\.\\pipe\\Xpra\\Test")
+    import sys
+    for verbose in ("-v", "--verbose"):
+        if verbose in sys.argv:
+            sys.argv.pop(verbose)
+            log.enable_debug()
+    pipe_name = "Xpra\\Test"
+    if len(sys.argv)>1:
+        pipe_name = sys.argv[1]
+    l = NamedPipeListener("\\\\.\\pipe\\%s" % pipe_name)
     l.run()
 
 if __name__ == "__main__":
