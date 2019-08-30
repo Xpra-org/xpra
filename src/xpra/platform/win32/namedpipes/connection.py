@@ -177,7 +177,7 @@ class NamedPipeConnection(Connection):
             _close_err("CloseHandle", e)
 
     def __repr__(self):
-        return "named-pipe:%s" % self.target
+        return self.target
 
     def get_info(self):
         d = Connection.get_info(self)
