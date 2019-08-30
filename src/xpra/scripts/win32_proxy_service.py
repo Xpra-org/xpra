@@ -17,6 +17,9 @@ def get_commonappdata_dir():
         return None
 
 def main():
+    from multiprocessing import freeze_support #@UnresolvedImport
+    freeze_support()
+
     os.environ["XPRA_REDIRECT_OUTPUT"] = "1"
     #os.environ["XPRA_LOG_FILENAME"] = "E:\\Proxy.log"
     #os.environ["XPRA_ALL_DEBUG"] = "1"
