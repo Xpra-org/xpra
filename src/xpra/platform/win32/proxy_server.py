@@ -11,7 +11,6 @@ from xpra.os_util import pollwait
 from xpra.log import Logger
 
 log = Logger("proxy")
-authlog = Logger("proxy", "auth")
 
 
 def exec_command(username, command, env):
@@ -53,19 +52,21 @@ class ProxyServer(_ProxyServer):
         #hwinstaold = set_window_station("winsta0")
         #whoami = os.path.join(get_app_dir(), "whoami.exe")
         #exec_command([whoami])
-        port = 10000
         xpra_command = os.path.join(get_app_dir(), "Xpra-Shadow.exe")
         named_pipe = username.replace(" ", "_")
         command = [
             xpra_command,
-            "shadow",
             "--bind=%s" % named_pipe,
-            "--bind-tcp=0.0.0.0:%i" % port,
+            #"--tray=no",
             ]
         from xpra.log import debug_enabled_categories
         if debug_enabled_categories:
             command += ["-d", ",".join(tuple(debug_enabled_categories))]
+        #command += ["-d", "all"]
         env = self.get_proxy_env()
+        #env["XPRA_ALL_DEBUG"] = "1"
+        #env["XPRA_REDIRECT_OUTPUT"] = "1"
+        #env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
         proc = exec_command(username, command, env)
         r = pollwait(proc, 1)
         if r:
@@ -77,5 +78,8 @@ class ProxyServer(_ProxyServer):
                 log("failed to read stdout / stderr of subprocess", exc_info=True)
             raise Exception("shadow subprocess failed with exit code %s" % r)
         self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
-        #exec_command(["C:\\Windows\notepad.exe"])
-        return proc, "tcp/localhost:%i" % port, "named-pipe://%s" % named_pipe
+        #TODO: poll the named pipe
+        log("sleep wait..")
+        import time
+        time.sleep(2)
+        return proc, "named-pipe://%s" % named_pipe, "Main"
