@@ -183,11 +183,7 @@ class ProcessTestUtil(unittest.TestCase):
         self.processes.append(proc)
         return proc
 
-    def show_proc_error(self, proc, msg):
-        if not proc:
-            raise Exception("command failed to start: %s" % msg)
-        log.warn("%s failed:", proc.command)
-        log.warn("returncode=%s", proc.poll())
+    def show_proc_pipes(self, proc):
         def showfile(fileobj, filetype="stdout"):
             if fileobj and fileobj.name and os.path.exists(fileobj.name):
                 log.warn("contents of %s file '%s':", filetype, fileobj.name)
@@ -202,6 +198,13 @@ class ProcessTestUtil(unittest.TestCase):
                 log.warn("no %s file", filetype)
         showfile(proc.stdout_file, "stdout")
         showfile(proc.stderr_file, "stderr")
+
+    def show_proc_error(self, proc, msg):
+        if not proc:
+            raise Exception("command failed to start: %s" % msg)
+        log.warn("%s failed:", proc.command)
+        log.warn("returncode=%s", proc.poll())
+        self.show_proc_pipes(proc)
         raise Exception(msg+" command=%s" % proc.command)
 
 

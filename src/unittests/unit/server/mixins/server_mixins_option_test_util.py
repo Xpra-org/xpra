@@ -164,7 +164,10 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
 
             if gui_client:
                 r = pollwait(gui_client, 20)
-                assert r is not None, "gui client should have been disconnected"
+                if r is None:
+                    log.warn("client still connected!")
+                    self.show_proc_pipes(server)
+                    raise Exception("gui client should have been disconnected")
         except Exception:
             log.error("test error for '%s' subcommand with options=%s", subcommand, options)
             raise
