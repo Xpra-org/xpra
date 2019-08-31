@@ -11,7 +11,7 @@ from time import sleep
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.simple_stats import std_unit
-from xpra.os_util import livefds, POSIX, PYTHON3
+from xpra.os_util import livefds, POSIX, PYTHON3, WIN32
 from xpra.util import envbool, envint, detect_leaks, typedict
 from xpra.log import Logger
 
@@ -121,6 +121,9 @@ class NetworkStateServer(StubServerMixin):
                 pass
 
     def init_cpuinfo(self):
+        if WIN32:
+            #crashes on win32!
+            return
         #this crashes if not run from the UI thread!
         try:
             from cpuinfo import get_cpu_info
