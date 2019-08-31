@@ -137,7 +137,9 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                     rfb_cmd = [vncviewer, "localhost::%i" % tcp_port]
                     rfb_client = self.run_command(rfb_cmd, **client_kwargs)
                     r = pollwait(rfb_client, 10)
-                    assert r is None, "rfb client terminated early and returned %i for server with args=%s" % (r, args)
+                    if r is not None:
+                        self.show_proc_error(rfb_client,
+                                             "rfb client terminated early and returned %i for server with args=%s" % (r, args))
 
             #connect a gui client:
             if WIN32 or (self.client_display and self.client_xvfb):
@@ -149,8 +151,8 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 gui_client = self.run_xpra(xpra_args, **client_kwargs)
                 r = pollwait(gui_client, 10)
                 if r is not None:
-                    log.warn("gui client stdout: %s", gui_client.stdout_file)
-                assert r is None, "gui client terminated early and returned %i : '%s' for server with args=%s" % (r, EXIT_STR.get(r, r), args)
+                    self.show_proc_error(gui_client,
+                                         "gui client terminated early and returned %i : '%s' for server with args=%s" % (r, EXIT_STR.get(r, r), args))
 
             if self.display:
                 self.stop_server(server, "exit", *connect_args)
