@@ -5,7 +5,7 @@ SET KERNEL=%1
 SET CUDA_SRC=xpra\codecs\cuda_common\%KERNEL%.cu
 SET CUDA_BIN=xpra\codecs\cuda_common\%KERNEL%.fatbin
 
-SET NVCC_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\bin\
+SET NVCC_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\
 SET NVCC=%NVCC_DIR%\nvcc.exe
 CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
 
@@ -17,7 +17,8 @@ CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_
 	-gencode=arch=compute_60,code=sm_60 ^
 	-gencode=arch=compute_61,code=sm_61 ^
 	-gencode=arch=compute_62,code=sm_62 ^
-	-gencode=arch=compute_70,code=sm_70
+	-gencode=arch=compute_70,code=sm_70 ^
+	-gencode=arch=compute_75,code=sm_75
 
 ENDLOCAL
 SET ERRORLEVEL=0
