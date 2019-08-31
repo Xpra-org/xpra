@@ -144,7 +144,12 @@ if [ "${DO_SERVICE}" == "1" ]; then
 	rm -f event_log.rc event_log.res MSG00409.bin Xpra-Service.exe
 	for KIT_DIR in "C:\Program Files\\Windows Kits" "C:\\Program Files (x86)\\Windows Kits"; do
 		for V in 8.1 10; do
-			for B in x64 x86; do
+			if [ "${BITS}" == "64" ]; then
+				ARCH_DIRS="x64 x86"
+			else
+				ARCH_DIRS="x86"
+			fi
+			for B in $ARCH_DIRS; do
 				MC="${KIT_DIR}\\$V\\bin\\$B\\mc.exe"
 				RC="${KIT_DIR}\\$V\\bin\\$B\\rc.exe"
 				if [ -e "$MC" ]; then
@@ -155,10 +160,14 @@ if [ "${DO_SERVICE}" == "1" ]; then
 			done
 		done
 	done
-	LINK="C:\\Program Files\\Microsoft Visual Studio 14.0\\VC\\bin\\link.exe"
-	if  [ ! -e "${LINK}" ]; then
-		LINK="C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\bin\\link.exe"
-	fi
+	for PF in "C:\\Program Files" "C:\\Program Files (x86)"; do
+		for VSV in 14.0 17.0 19.0; do
+			LINK="$PF\\Microsoft Visual Studio $VSV\\VC\\bin\\link.exe"
+			if  [ -e "${LINK}" ]; then
+				break 2
+			fi
+		done
+	done
 	#MC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x64\\mc.exe"
 	#RC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x64\\mc.exe"
 	EVENT_LOG_BUILD_LOG="event_log_build.log"
