@@ -15,13 +15,13 @@
 %global debug_package %{nil}
 
 Name:           python2-pycuda
-Version:        2019.1
+Version:        2019.2
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source:        	https://files.pythonhosted.org/packages/4d/29/5a3eb66c2f1a4adc681f6c8131e9ed677af31b0c8a78726d540bd44b3403/pycuda-%{version}.tar.gz
+Source:        	https://files.pythonhosted.org/packages/5e/3f/5658c38579b41866ba21ee1b5020b8225cec86fe717e4b1c5c972de0a33c/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pycuda
 Obsoletes:      python-pycuda
@@ -130,6 +130,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sat Aug 31 2019 Antoine Martin <antoine@xpra.org> - 2019.2-1
+- new upstream release
+
 * Mon May 20 2019 Antoine Martin <antoine@xpra.org> - 2019.1-1
 - new upstream release
 - remove patch which has been merged
