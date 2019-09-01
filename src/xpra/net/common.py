@@ -42,4 +42,3 @@ if LOG_PACKETS or NOLOG_PACKETS:
     may_log_packet = _may_log_packet
 else:
     may_log_packet = noop
-log.info("may_log_packet=%s", may_log_packet)
