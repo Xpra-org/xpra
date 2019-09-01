@@ -374,6 +374,8 @@ external_excludes = [
                     "tty",
                     "setuptools", "doctest"
                     ]
+if not PYTHON3:
+    external_excludes.append("cpuinfo")
 if not html5_ENABLED and not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
 if not html5_ENABLED:
