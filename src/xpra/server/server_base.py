@@ -975,7 +975,7 @@ class ServerBase(ServerBaseClass):
         try:
             handler = None
             packet_type = bytestostr(packet[0])
-            self.may_log_packet(packet_type, packet)
+            may_log_packet(packet_type, packet)
             if proto in self._server_sources:
                 handler = self._authenticated_ui_packet_handlers.get(packet_type)
                 if handler:
