@@ -74,7 +74,7 @@ class RemoteLogging(StubClientMixin):
             exc_info = kwargs.get("exc_info")
             if exc_info is True:
                 exc_info = sys.exc_info()
-            if exc_info:
+            if exc_info and exc_info[0]:
                 for x in traceback.format_tb(exc_info[2]):
                     self.send("logging", level, enc(x), dtime)
                 try:
