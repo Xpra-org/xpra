@@ -11,6 +11,7 @@ from threading import Thread
 
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
+from xpra.net.common import may_log_packet
 from xpra.os_util import monotonic_time, bytestostr, strtobytes, WIN32, PYTHON3
 from xpra.util import (
     typedict, flatten_dict, updict, merge_dicts, envbool, envint,
