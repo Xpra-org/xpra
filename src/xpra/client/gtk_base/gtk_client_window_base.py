@@ -57,6 +57,7 @@ mouselog = Logger("mouse")
 geomlog = Logger("geometry")
 grablog = Logger("grab")
 draglog = Logger("dragndrop")
+alphalog = Logger("alpha")
 
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -759,7 +760,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #try to enable alpha on this window if needed,
         #and if the backing class can support it:
         bc = self.get_backing_class()
-        metalog("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s",
+        alphalog("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s",
                 self._has_alpha, bc, bc.HAS_ALPHA, self.is_realized())
         #by default, only RGB (no transparency):
         #rgb_formats = tuple(BACKING_CLASS.RGB_MODES)

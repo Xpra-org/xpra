@@ -22,6 +22,7 @@ keylog = Logger("keyboard")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
 iconlog = Logger("icon")
+alphalog = Logger("alpha")
 
 
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
@@ -308,7 +309,7 @@ class ClientWindowBase(ClientWidgetBase):
         if b"has-alpha" in metadata:
             new_alpha = metadata.boolget("has-alpha")
             if new_alpha!=self._has_alpha:
-                l = metalog
+                l = alphalog
                 if PYTHON3 and not WIN32:
                     #win32 without opengl can't do transparency,
                     #so it triggers too many warnings

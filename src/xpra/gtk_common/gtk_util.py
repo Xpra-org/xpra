@@ -21,6 +21,7 @@ from xpra.log import Logger
 log = Logger("gtk", "util")
 traylog = Logger("gtk", "tray")
 screenlog = Logger("gtk", "screen")
+alphalog = Logger("gtk", "alpha")
 
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -494,11 +495,11 @@ else:
     def enable_alpha(window):
         screen = window.get_screen()
         rgba = screen.get_rgba_colormap()
-        log("enable_alpha(%s) rgba colormap=%s", window, rgba)
+        alphalog("enable_alpha(%s) rgba colormap=%s", window, rgba)
         if rgba is None:
             log.error("Error: cannot handle window transparency, no RGBA colormap", exc_info=True)
             return False
-        log("enable_alpha(%s) using rgba colormap %s", window, rgba)
+        alphalog("enable_alpha(%s) using rgba colormap %s", window, rgba)
         window.set_colormap(rgba)
         return True
 

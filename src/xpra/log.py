@@ -200,6 +200,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("focus"        , "Window focus"),
                 ("workspace"    , "Window workspace synchronization"),
                 ("metadata"     , "Window metadata"),
+                ("alpha"        , "Window Alpha channel (transparency)"),
                 ("state"        , "Window state"),
                 ("icon"         , "Window icons"),
                 ("frame"        , "Window frame"),
