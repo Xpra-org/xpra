@@ -24,6 +24,7 @@ from xpra.version_util import (
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.net.common import may_log_packet
 from xpra.net.bytestreams import (
     SocketConnection, SSLSocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT,
@@ -70,19 +71,6 @@ LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
 PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
-
-def get_log_packets(exclude=False):
-    lp = os.environ.get("XPRA_LOG_PACKETS")
-    if not lp:
-        return None
-    pt = []
-    for x in lp.split(","):
-        if x.startswith("-")==exclude:
-            pt.append(x[int(exclude):])
-    return tuple(pt)
-
-LOG_PACKETS = get_log_packets()
-NOLOG_PACKETS = get_log_packets(True)
 
 
 HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
@@ -2120,19 +2108,6 @@ class ServerCore(object):
         return si
 
 
-    def may_log_packet(self, packet_type, packet):
-        if LOG_PACKETS:
-            logit = packet_type in LOG_PACKETS
-        elif NOLOG_PACKETS:
-            logit = packet_type not in NOLOG_PACKETS
-        else:
-            logit = False
-        if logit:
-            s = str(packet)
-            if len(s)>200:
-                s = repr_ellipsized(s, 200)
-            log.info(s)
-
     ######################################################################
     # packet handling:
     def process_packet(self, proto, packet):
@@ -2140,7 +2115,7 @@ class ServerCore(object):
         handler = None
         try:
             packet_type = bytestostr(packet[0])
-            self.may_log_packet(packet_type, packet)
+            may_log_packet(packet_type, packet)
             handler = self._default_packet_handlers.get(packet_type)
             if handler:
                 netlog("process packet %s", packet_type)

@@ -14,6 +14,7 @@ from xpra.log import Logger
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
+from xpra.net.common import may_log_packet
 from xpra.net.protocol_classes import get_client_protocol_class
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.net_util import get_network_caps
@@ -935,6 +936,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             packet_type = packet[0]
             if packet_type!=int:
                 packet_type = bytestostr(packet_type)
+            may_log_packet(packet_type, packet)
             handler = self._packet_handlers.get(packet_type)
             if handler:
                 handler(packet)
