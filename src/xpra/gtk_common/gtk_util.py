@@ -498,7 +498,7 @@ else:
         rgba = screen.get_rgba_colormap()
         alphalog("enable_alpha(%s) rgba colormap=%s", window, rgba)
         if rgba is None:
-            log.error("Error: cannot handle window transparency, no RGBA colormap", exc_info=True)
+            log.error("Error: cannot handle window transparency, no RGBA colormap")
             return False
         alphalog("enable_alpha(%s) using rgba colormap %s", window, rgba)
         window.set_colormap(rgba)
