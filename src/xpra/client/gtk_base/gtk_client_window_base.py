@@ -773,6 +773,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self._client_properties["encodings.rgb_formats"] = ["RGBA", "RGB", "RGBX"]
                 self._window_alpha = True
             else:
+                alphalog("enable_alpha()=False")
                 self._has_alpha = False
                 self._client_properties["encoding.transparency"] = False
 

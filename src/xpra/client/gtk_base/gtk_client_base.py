@@ -1080,9 +1080,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog("init_opengl(%s)", enable_opengl, exc_info=True)
 
     def get_client_window_classes(self, w, h, metadata, override_redirect):
-        log("get_client_window_class%s GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
+        log("get_client_window_class%s ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
             (w, h, metadata, override_redirect),
-            self.GLClientWindowClass,self.opengl_enabled, self.mmap_enabled, self.encoding)
+            self.ClientWindowClass, self.GLClientWindowClass,
+            self.opengl_enabled, self.mmap_enabled, self.encoding)
         if self.GLClientWindowClass is None or not self.opengl_enabled:
             return (self.ClientWindowClass,)
         #verify texture limits:
