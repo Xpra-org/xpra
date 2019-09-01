@@ -15,6 +15,7 @@ avsynclog = Logger("av-sync")
 log = Logger("client", "sound")
 
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
+DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 
 
 """
@@ -109,7 +110,6 @@ class AudioClient(StubClientMixin):
             self.microphone_allowed = False
         self.speaker_enabled = self.speaker_allowed and sound_option(opts.speaker)=="on"
         self.microphone_enabled = self.microphone_allowed and opts.microphone.lower()=="on"
-        self.av_sync = opts.av_sync
         log("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
         log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s",
             decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
@@ -139,6 +139,13 @@ class AudioClient(StubClientMixin):
         if self.sound_sink:
             self.stop_receiving_sound()
 
+
+    def get_caps(self):
+        d = {}
+        updict(d, "av-sync", self.get_avsync_capabilities())
+        updict(d, "sound", self.get_audio_capabilities())
+        return d
+
     def get_audio_capabilities(self):
         if not self.sound_properties:
             return {}
@@ -155,8 +162,11 @@ class AudioClient(StubClientMixin):
         log("audio capabilities: %s", caps)
         return caps
 
-    def get_caps(self):
-        return updict({}, "sound", self.get_audio_capabilities())
+    def get_avsync_capabilities(self):
+        return {
+            ""              : self.av_sync,
+            "delay.default" : max(0, DEFAULT_AV_SYNC_DELAY + AV_SYNC_DELTA),
+            }
 
 
     def setup_connection(self, _conn):
