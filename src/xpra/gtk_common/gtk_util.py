@@ -150,13 +150,14 @@ if is_gtk3():
     def enable_alpha(window):
         screen = window.get_screen()
         visual = screen.get_rgba_visual()
+        alphalog("enable_alpha(%s) screen=%s, visual=%s", window, screen, visual)
         #we can't do alpha on win32 with plain GTK,
         #(though we handle it in the opengl backend)
         if WIN32:
-            l = log
+            l = alphalog
         else:
-            l = log.error
-        if visual is None or not screen.is_composited():
+            l = alphalog.error
+        if visual is None or (not WIN32 and not screen.is_composited()):
             l("Error: cannot handle window transparency")
             if visual is None:
                 l(" no RGBA visual")
@@ -164,7 +165,7 @@ if is_gtk3():
                 assert not screen.is_composited()
                 l(" screen is not composited")
             return False
-        log("enable_alpha(%s) using rgba visual %s", window, visual)
+        alphalog("enable_alpha(%s) using rgba visual %s", window, visual)
         window.set_visual(visual)
         return True
 
