@@ -980,7 +980,7 @@ class WindowClient(StubClientMixin):
 
 
     def get_client_window_classes(self, _w, _h, _metadata, _override_redirect):
-        return [self.ClientWindowClass]
+        return (self.ClientWindowClass,)
 
 
     def _process_new_window(self, packet):
