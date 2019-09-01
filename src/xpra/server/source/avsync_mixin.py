@@ -11,6 +11,7 @@ from xpra.log import Logger
 log = Logger("av-sync")
 
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
+DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 
 
 class AVSyncMixin(StubSourceMixin):
@@ -53,7 +54,7 @@ class AVSyncMixin(StubSourceMixin):
     def parse_client_caps(self, c):
         av_sync = c.boolget("av-sync")
         self.av_sync_enabled = self.av_sync and av_sync
-        self.set_av_sync_delay(int(self.av_sync_enabled) * c.intget("av-sync.delay.default", 150))
+        self.set_av_sync_delay(int(self.av_sync_enabled) * c.intget("av-sync.delay.default", DEFAULT_AV_SYNC_DELAY))
         log("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
 
 
