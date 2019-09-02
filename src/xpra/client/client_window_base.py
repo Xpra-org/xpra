@@ -243,20 +243,17 @@ class ClientWindowBase(ClientWidgetBase):
                             #atvar = "@@"
                             return "@"
                         default_value = default_values.get(var, "<unknown %s>" % var)
-                        value = self._metadata.strget(var, default_value)
-                        if PYTHON2:
-                            value = value.decode("utf-8")
-                        return value
+                        value = self._metadata.bytesget(var, default_value)
+                        try:
+                            return value.decode("utf-8")
+                        except UnicodeDecodeError:
+                            return str(value)
                     title = re.sub(r"@[\w\-]*@", metadata_replace, title)
-                if PYTHON2:
-                    utf8_title = title.encode("utf-8")
-                else:
-                    utf8_title = title
             except Exception as e:
                 log.error("Error parsing window title:")
                 log.error(" %s", e)
-                utf8_title = b""
-            self.set_title(utf8_title)
+                title = b""
+            self.set_title(title)
 
         if b"icon-title" in metadata:
             icon_title = metadata.strget("icon-title")

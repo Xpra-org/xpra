@@ -313,6 +313,13 @@ class typedict(dict):
         from xpra.os_util import bytestostr
         return bytestostr(v)
 
+    def bytesget(self, k, default=None):
+        v = self.capsget(k, default)
+        if v is None:
+            return default
+        from xpra.os_util import strtobytes
+        return strtobytes(v)
+
     def intget(self, k, d=0):
         v = self.capsget(k)
         if v is None:
