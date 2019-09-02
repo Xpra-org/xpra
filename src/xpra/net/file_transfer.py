@@ -300,6 +300,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.check_digest(filename, digest.hexdigest(), expected_digest)
         start_time = chunk_state[0]
         elapsed = monotonic_time()-start_time
+        mimetype = bytestostr(mimetype)
         filelog("%i bytes received in %i chunks, took %ims", filesize, chunk, elapsed*1000)
         t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False,
                          args=(filename, mimetype, printit, openit, filesize, options))
