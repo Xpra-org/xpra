@@ -57,3 +57,5 @@ popd
 
 #for webcam support:
 #$PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
+
+echo "for printing support, install libpdfium"
