@@ -30,10 +30,12 @@ dev_read_sysfs(cups_xpra_t)
 kernel_read_system_state(cups_xpra_t)
 
 
-allow cups_xpra_t print_spool_t:dir { search open read };
+allow cups_xpra_t print_spool_t:dir { search open read add_name getattr remove_name write };
+allow cups_xpra_t print_spool_t:file { create getattr ioctl open read unlink write };
+
 allow cups_xpra_t user_tmp_t:dir { search getattr };
 
-allow cups_xpra_t self:capability dac_override;
+allow cups_xpra_t self:capability { dac_override dac_read_search };
 
 fs_rw_anon_inodefs_files(cups_xpra_t)
 fs_search_auto_mountpoints(cups_xpra_t)
