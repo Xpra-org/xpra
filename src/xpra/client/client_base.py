@@ -513,7 +513,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def cleanup(self):
         reaper_cleanup()
-        FilePrintMixin.cleanup(self)
+        try:
+            FilePrintMixin.cleanup(self)
+        except Exception:
+            log.error("%s", FilePrintMixin.cleanup, exc_info=True)
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
         if p:
