@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
-from xpra.util import envbool
+from xpra.util import envbool, typedict
 from xpra.os_util import get_machine_id, bytestostr
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -125,10 +125,11 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     def setup_printer(self, name, props, attributes):
         from xpra.platform.pycups_printing import add_printer
-        info = props.get("printer-info", "")
+        props = typedict(props)
+        info = props.strget("printer-info", "")
         attrs = attributes.copy()
         attrs["remote-printer"] = name
-        attrs["remote-device-uri"] = props.get("device-uri")
+        attrs["remote-device-uri"] = props.strget("device-uri")
         location = PRINTER_LOCATION_STRING
         if self.hostname:
             location = "on %s"
