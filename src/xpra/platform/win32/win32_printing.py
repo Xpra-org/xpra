@@ -207,6 +207,7 @@ class GDIPrinterContext(object):
 
 def main(argv):
 	import datetime
+	title = ""
 	if len(argv)==1:
 		from xpra.platform.win32.printing import get_printers
 		printers = get_printers()
@@ -214,14 +215,12 @@ def main(argv):
 		printer_name = printers.keys()[0]
 	elif len(argv)==2:
 		printer_name = argv[1]
+	elif len(argv)==3:
+		printer_name = argv[1]
+		title = argv[2]
 	else:
-		log.error("usage: %s [printer-name]", argv[0])
+		log.error("usage: %s [printer-name [title]]", argv[0])
 		return 1
-
-	title = "Test Page"
-	log.warn("HELLO1")
-	x = GDIPrinterContext(printer_name)
-	log.warn("HELLO GDIPrinterContext: %s", x)
 
 	with GDIPrinterContext(printer_name) as hdc:
 		log("hdc=%s", hdc)

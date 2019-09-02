@@ -8,6 +8,7 @@ import os
 import sys
 
 from xpra.util import repr_ellipsized
+from xpra.os_util import strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
 from xpra.platform.win32.win32_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, LPCSTR
@@ -90,7 +91,7 @@ def get_error():
 	v = FPDF_GetLastError()
 	return ERROR_STR.get(v, v)
 
-def do_print_pdf(hdc, title="PDF Print Test", pdf_data=None):
+def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
 	assert pdf_data, "no pdf data"
 	from xpra.log import Logger
 	log = Logger("printing", "win32")
@@ -120,7 +121,7 @@ def do_print_pdf(hdc, title="PDF Print Test", pdf_data=None):
 		count = FPDF_GetPageCount(doc)
 		log("FPDF_GetPageCount(%s)=%s", doc, count)
 		docinfo = DOCINFO()
-		docinfo.lpszDocName = LPCSTR("%s\0" % title)
+		docinfo.lpszDocName = LPCSTR(b"%s\0" % title)
 		jobid = StartDocA(hdc, pointer(docinfo))
 		if jobid<0:
 			log.error("Error: StartDocA failed: %i", jobid)
@@ -180,13 +181,13 @@ def main():
 	if len(sys.argv)==2:
 		from xpra.platform.win32.printing import get_printers
 		printers = get_printers()
-		printer_name = printers.keys()[0]
+		printer_name = strtobytes(printers.keys()[0])
 	if len(sys.argv) in (3, 4):
-		printer_name = sys.argv[2]
+		printer_name = strtobytes(sys.argv[2])
 	if len(sys.argv)==4:
-		title = sys.argv[3]
+		title = strtobytes(sys.argv[3])
 	else:
-		title = os.path.basename(filename)
+		title = strtobytes(os.path.basename(filename))
 
 	import time
 	from xpra.util import csv
