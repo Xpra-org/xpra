@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import subprocess
 
 from xpra.platform.win32 import constants as win32con
@@ -192,7 +193,7 @@ def print_files(printer, filenames, title, options):
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
-        process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, startupinfo=startupinfo)
+        process = subprocess.Popen(command, stdin=None, stdout=sys.stdout, stderr=sys.stderr, cwd=cwd, startupinfo=startupinfo)
         process.print_filename = filename
         #we just let it run, no need for reaping the process on win32
         processes.append(process)
