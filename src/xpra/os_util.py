@@ -256,8 +256,12 @@ def is_X11():
         return False
     if PYTHON2:
         return True
-    from xpra.x11.gtk3.gdk_bindings import is_X11_Display   #@UnresolvedImport
-    return is_X11_Display()
+    try:
+        from xpra.x11.gtk3.gdk_bindings import is_X11_Display   #@UnresolvedImport
+        return is_X11_Display()
+    except ImportError:
+        get_util_logger().debug("failed to load x11 bindings", exc_info=True)
+        return True
 
 def is_Wayland():
     return os.environ.get("GDK_BACKEND", "")!="x11" and (
