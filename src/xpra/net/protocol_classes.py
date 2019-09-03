@@ -7,7 +7,7 @@ def get_client_protocol_class(socktype):
     if socktype=="udp":
         from xpra.net.udp_protocol import UDPClientProtocol
         return UDPClientProtocol
-    elif socktype in ("ws", "wss"):
+    if socktype in ("ws", "wss"):
         from xpra.net.websockets.protocol import WebSocketProtocol
         return WebSocketProtocol
     from xpra.net.protocol import Protocol
@@ -17,7 +17,7 @@ def get_server_protocol_class(socktype):
     if socktype=="udp":
         from xpra.net.udp_protocol import UDPServerProtocol
         return UDPServerProtocol
-    elif socktype in ("ws", "wss"):
+    if socktype in ("ws", "wss"):
         from xpra.net.websockets.protocol import WebSocketProtocol
         return WebSocketProtocol
     from xpra.net.protocol import Protocol
