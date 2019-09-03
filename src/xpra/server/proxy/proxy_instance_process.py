@@ -68,6 +68,13 @@ def set_blocking(conn):
     except IOError:
         log("cannot set %s to blocking mode", conn)
 
+def set_proc_title(title):
+    try:
+        import setproctitle
+        setproctitle.setproctitle(title)  #@UndefinedVariable
+    except ImportError as e:
+        log("setproctitle not installed: %s", e)
+
 
 class ProxyInstanceProcess(Process, QueueScheduler):
 
@@ -168,16 +175,9 @@ class ProxyInstanceProcess(Process, QueueScheduler):
         return info
 
 
-    def setproctitle(self, title):
-        try:
-            import setproctitle
-            setproctitle.setproctitle(title)  #@UndefinedVariable
-        except ImportError as e:
-            log("setproctitle not installed: %s", e)
-
     def run(self):
         log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
-        self.setproctitle("Xpra Proxy Instance for %s" % self.server_conn)
+        set_proc_title("Xpra Proxy Instance for %s" % self.server_conn)
         if POSIX and (getuid()!=self.uid or getgid()!=self.gid):
             #do we need a valid XDG_RUNTIME_DIR for the socket-dir?
             username = get_username_for_uid(self.uid)
