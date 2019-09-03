@@ -7,7 +7,6 @@
 import socket
 from time import sleep
 
-from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.net import compression
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper
@@ -15,18 +14,15 @@ from xpra.net.protocol import Protocol
 from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import (
-    Queue, monotonic_time, bytestostr, strtobytes,
-    )
+from xpra.scripts.config import parse_number, parse_bool
+from xpra.os_util import Queue, monotonic_time, bytestostr, strtobytes
 from xpra.util import (
-    flatten_dict, typedict, updict,
-    repr_ellipsized, envint, envbool,
-    csv, first_time,
-    SERVER_SHUTDOWN,
+    flatten_dict, typedict, updict, repr_ellipsized, envint, envbool,
+    csv, first_time, SERVER_SHUTDOWN,
     )
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
-from xpra.scripts.config import parse_number, parse_bool
+from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -142,7 +138,7 @@ class ProxyInstance(object):
                 log.info(" %s", x)
             self.exit = True
         self.stop_encode_thread()
-        self.close_connections(skip_proto, reasons)
+        self.close_connections(skip_proto, *reasons)
         log.info("stopped %s", self)
 
 

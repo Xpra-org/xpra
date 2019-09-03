@@ -40,6 +40,7 @@ PROXY_WS_TIMEOUT = envfloat("XPRA_PROXY_WS_TIMEOUT", "1.0")
 assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
 CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", getuid()!=0)
 STOP_PROXY_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_SOCKET_TYPES", "unix-domain,named-pipe").split(",")
+PROXY_INSTANCE_THREADED = envbool("XPRA_PROXY_INSTANCE_THREADED", False)
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_PROXY_MAX_CONCURRENT_CONNECTIONS", 200)
 if WIN32:
@@ -78,7 +79,7 @@ class ProxyServer(ServerCore):
         #keep track of the proxy process instances
         #the display they're on and the message queue we can
         # use to communicate with them
-        self.processes = {}
+        self.instances = {}
         #connections used exclusively for requests:
         self._requests = set()
         self.idle_add = glib.idle_add
@@ -141,28 +142,37 @@ class ProxyServer(ServerCore):
     def handle_stop_command(self, *args):
         display = args[0]
         log("stop command: will try to find proxy process for display %s", display)
-        for process, v in self.processes.items():
-            disp,mq = v
+        for instance, v in self.instances.items():
+            _, disp, _ = v
             if disp==display:
-                pid = process.pid
-                log.info("stop command: found process %s with pid %i for display %s", process, pid, display)
-                log.info(" forwarding the 'stop' request")
-                mq.put("stop")
-                return "stopped proxy process with pid %s" % pid
+                log.info("stop command: found matching process %s with pid %i for display %s",
+                         instance, instance.pid, display)
+                self.stop_proxy(instance)
+                return "stopped proxy instance for display %s" % display
         raise ControlError("no proxy found for display %s" % display)
 
-
     def stop_all_proxies(self):
-        processes = self.processes
-        self.processes = {}
-        log("stop_all_proxies() will stop proxy processes: %s", processes)
-        for process, v in processes.items():
-            if not process.is_alive():
-                continue
-            disp,mq = v
-            log("stop_all_proxies() stopping process %s for display %s", process, disp)
-            mq.put("stop")
+        instances = self.instances
+        log("stop_all_proxies() will stop proxy instances: %s", instances)
+        for instance in instances:
+            self.stop_proxy(instance)
+        self.instances = {}
         log("stop_all_proxies() done")
+
+    def stop_proxy(self, instance):
+        v = self.instances.get(instance)
+        if not v:
+            log.error("Error: proxy instance not found for %s", instance)
+            return
+        isprocess, _, mq = v
+        log("stop_proxy(%s) %s", instance, v)
+        if isprocess:
+            if not instance.is_alive():
+                return
+            mq.put("stop")
+        else:
+            instance.stop(None, "proxy server request")
+
 
     def cleanup(self):
         self.stop_all_proxies()
@@ -387,6 +397,27 @@ class ProxyServer(ServerCore):
             if cipher:
                 encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)
 
+        use_thread = PROXY_INSTANCE_THREADED
+        if not use_thread:
+            client_socktype = get_socktype(client_proto)
+            server_socktype = disp_desc["type"]
+            if client_socktype in ("ssl", "wss", "ssh"):
+                log.info("using threaded mode for %s client connection", client_socktype)
+                use_thread = True
+            elif server_socktype in ("ssl", "wss", "ssh"):
+                log.info("using threaded mode for %s server connection", server_socktype)
+                use_thread = True
+        if use_thread:
+            if env_options:
+                log.warn("environment options are ignored in threaded mode")
+            from xpra.server.proxy.proxy_instance_thread import ProxyInstanceThread
+            pit = ProxyInstanceThread(session_options, self.video_encoders,
+                                      client_proto, server_conn,
+                                      disp_desc, cipher, encryption_key, c)
+            pit.run()
+            self.instances[pit] = (False, display, None)
+            return
+
         #this may block, so run it in a thread:
         def start_proxy_process():
             log("start_proxy_process()")
@@ -416,12 +447,12 @@ class ProxyServer(ServerCore):
                                                client_conn, disp_desc, client_state,
                                                cipher, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())
-                self.processes[process] = (display, message_queue)
+                self.instances[process] = (True, display, message_queue)
                 process.start()
                 log("ProxyInstanceProcess started")
                 popen = process._popen
                 assert popen
-                #when this process dies, run reap to update our list of proxy processes:
+                #when this process dies, run reap to update our list of proxy instances:
                 self.child_reaper.add_process(popen, "xpra-proxy-%s" % display,
                                               "xpra-proxy-instance", True, True, self.reap)
             except Exception as e:
@@ -523,13 +554,16 @@ class ProxyServer(ServerCore):
     def reap(self, *args):
         log("reap%s", args)
         dead = []
-        for p in tuple(self.processes):
-            live = p.is_alive()
-            if not live:
-                dead.append(p)
+        for instance, descr in dict(self.instances).items():
+            isprocess, _, mq = descr
+            if not isprocess:
+                continue
+            #instance is a process
+            if not instance.is_alive():
+                dead.append(instance)
         log("reap%s dead processes: %s", args, dead or None)
         for p in dead:
-            del self.processes[p]
+            del self.instances[p]
 
 
     def get_info(self, proto, *_args):
@@ -549,13 +583,20 @@ class ProxyServer(ServerCore):
                 if not POSIX or (uid==getuid() and gid==getgid()):
                     self.reap()
                     i = 0
-                    for p,v in self.processes.items():
-                        d,_ = v
-                        info[i] = {
-                                   "display"    : d,
-                                   "live"       : p.is_alive(),
-                                   "pid"        : p.pid,
-                                   }
+                    instances = dict(self.instances)
+                    for p, v in instances.items():
+                        isprocess, d, _ = v
+                        iinfo = {
+                            "display"    : d,
+                            }
+                        if isprocess:
+                            iinfo.update({
+                                "live"       : p.is_alive(),
+                                "pid"        : p.pid,
+                                })
+                        else:
+                            iinfo.update(p.get_info())
+                        info[i] = iinfo
                         i += 1
-                    info["proxies"] = len(self.processes)
+                    info["proxies"] = len(instances)
         return info
