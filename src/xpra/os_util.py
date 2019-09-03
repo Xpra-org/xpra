@@ -158,7 +158,7 @@ def platform_release(release):
         try:
             import plistlib
             if PYTHON2:
-                pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist')
+                pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist') #pylint: disable=deprecated-method
             else:
                 with open(SYSTEMVERSION_PLIST, "rb") as f:
                     pl = plistlib.load(f)           #@UndefinedVariable
@@ -274,7 +274,7 @@ def is_distribution_variant(variant=b"Debian"):
     except Exception:
         pass
     try:
-        if b"RedHat"==variant and get_linux_distribution()[0].startswith(variant):
+        if variant==b"RedHat" and get_linux_distribution()[0].startswith(variant):
             return True
         if get_linux_distribution()[0]==variant:
             return True
@@ -288,7 +288,7 @@ def load_os_release_file():
     if os_release_file_data is False:
         try:
             os_release_file_data = load_binary_file("/etc/os-release")
-        except:
+        except (OSError, IOError):
             os_release_file_data = None
     return os_release_file_data
 
