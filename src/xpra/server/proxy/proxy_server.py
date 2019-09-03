@@ -17,7 +17,6 @@ from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
     getuid, getgid, WIN32, POSIX,
     )
-from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
@@ -49,6 +48,13 @@ if WIN32:
 else:
     DEFAULT_ENV_WHITELIST = "LANG,HOSTNAME,PWD,TERM,SHELL,SHLVL,PATH"
 ENV_WHITELIST = os.environ.get("XPRA_PROXY_ENV_WHITELIST", DEFAULT_ENV_WHITELIST).split(",")
+
+
+def get_socktype(proto):
+    try:
+        return proto._conn.socktype
+    except AttributeError:
+        return "unknown"
 
 
 class ProxyServer(ServerCore):
@@ -193,10 +199,7 @@ class ProxyServer(ServerCore):
                 self.send_disconnect(proto, msg)
                 return
             #verify socket type (only local connections by default):
-            try:
-                socktype = proto._conn.get_info().get("type", "unknown")
-            except Exception:
-                socktype = "unknown"
+            socktype = get_socktype(proto)
             if socktype not in STOP_PROXY_SOCKET_TYPES:
                 msg = "cannot stop proxy server from a '%s' connection" % socktype
                 log.warn("Warning: %s", msg)
@@ -233,7 +236,7 @@ class ProxyServer(ServerCore):
         if not client_proto.authenticators:
             log.error("Error: the proxy server requires an authentication mode,")
             try:
-                log.error(" client connection '%s' does not specify one", client_proto._conn.socktype)
+                log.error(" client connection '%s' does not specify one", get_socktype(client_proto))
             except AttributeError:
                 pass
             log.error(" use 'none' to disable authentication")
@@ -378,34 +381,37 @@ class ProxyServer(ServerCore):
             return
         log("server connection=%s", server_conn)
 
-        #no other packets should be arriving until the proxy instance responds to the initial hello packet
-        def unexpected_packet(packet):
-            if packet:
-                log.warn("Warning: received an unexpected packet")
-                log.warn(" from the proxy connection %s:", client_proto)
-                log.warn(" %s", repr_ellipsized(packet))
-                client_proto.close()
-        client_conn = client_proto.steal_connection(unexpected_packet)
-        client_state = client_proto.save_state()
         cipher = None
         encryption_key = None
         if auth_caps:
             cipher = auth_caps.get("cipher")
             if cipher:
                 encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)
-        log("start_proxy(..) client connection=%s", client_conn)
-        log("start_proxy(..) client state=%s", client_state)
 
         #this may block, so run it in a thread:
-        def do_start_proxy():
-            log("do_start_proxy()")
+        def start_proxy_process():
+            log("start_proxy_process()")
             message_queue = MQueue()
             try:
+                #no other packets should be arriving until the proxy instance responds to the initial hello packet
+                def unexpected_packet(packet):
+                    if packet:
+                        log.warn("Warning: received an unexpected packet")
+                        log.warn(" from the proxy connection %s:", client_proto)
+                        log.warn(" %s", repr_ellipsized(packet))
+                        client_proto.close()
+                client_conn = client_proto.steal_connection(unexpected_packet)
+                client_state = client_proto.save_state()
+                log("start_proxy_process(..) client connection=%s", client_conn)
+                log("start_proxy_process(..) client state=%s", client_state)
+
                 ioe = client_proto.wait_for_io_threads_exit(5+self._socket_timeout)
                 if not ioe:
                     log.error("Error: some network IO threads have failed to terminate")
+                    client_proto.close()
                     return
                 client_conn.set_active(True)
+                from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
                                                self.video_encoders, self.csc_modules,
                                                client_conn, disp_desc, client_state,
@@ -420,7 +426,7 @@ class ProxyServer(ServerCore):
                 self.child_reaper.add_process(popen, "xpra-proxy-%s" % display,
                                               "xpra-proxy-instance", True, True, self.reap)
             except Exception as e:
-                log("do_start_proxy() failed", exc_info=True)
+                log("start_proxy_process() failed", exc_info=True)
                 log.error("Error starting proxy instance process:")
                 log.error(" %s", e)
                 message_queue.put("error: %s" % e)
@@ -432,7 +438,7 @@ class ProxyServer(ServerCore):
                 server_conn.close()
                 log("sending socket-handover-complete")
                 message_queue.put("socket-handover-complete")
-        start_thread(do_start_proxy, "start_proxy(%s)" % client_conn)
+        start_thread(start_proxy_process, "start_proxy(%s)" % client_proto)
 
     def start_new_session(self, username, uid, gid, new_session_dict=None, displays=()):
         log("start_new_session%s", (username, uid, gid, new_session_dict, displays))

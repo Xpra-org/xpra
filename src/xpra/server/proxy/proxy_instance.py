@@ -11,7 +11,6 @@ from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.net import compression
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper
-from xpra.net.protocol_classes import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol import Protocol
 from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -49,22 +48,18 @@ class ProxyInstance(object):
 
     def __init__(self, session_options,
                  video_encoder_modules, csc_modules,
-                 client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps):
+                 disp_desc, cipher, encryption_key, caps):
         self.session_options = session_options
         self.video_encoder_modules = video_encoder_modules
         self.csc_modules = csc_modules
-        self.client_conn = client_conn
         self.disp_desc = disp_desc
-        self.client_state = client_state
         self.cipher = cipher
         self.encryption_key = encryption_key
-        self.server_conn = server_conn
         self.caps = caps
         log("ProxyInstance%s", (
             session_options,
             video_encoder_modules, csc_modules,
-            client_conn, disp_desc, repr_ellipsized(str(client_state)),
-            cipher, encryption_key, server_conn,
+            disp_desc, cipher, encryption_key,
             "%s: %s.." % (type(caps), repr_ellipsized(str(caps)))))
         self.client_protocol = None
         self.server_protocol = None
@@ -81,22 +76,11 @@ class ProxyInstance(object):
 
 
     def run(self):
-        log.info("started %s", self)
-        log.info(" for client %s", self.client_conn)
-        log.info(" and server %s", self.server_conn)
-
         self.video_init()
 
         #setup protocol wrappers:
         self.server_packets = Queue(PROXY_QUEUE_SIZE)
         self.client_packets = Queue(PROXY_QUEUE_SIZE)
-        client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
-        server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
-        self.client_protocol = client_protocol_class(self, self.client_conn,
-                                                     self.process_client_packet, self.get_client_packet)
-        self.client_protocol.restore_state(self.client_state)
-        self.server_protocol = server_protocol_class(self, self.server_conn,
-                                                     self.process_server_packet, self.get_server_packet)
         #server connection tweaks:
         for x in (b"input-devices", b"draw", b"window-icon", b"keymap-changed", b"server-settings"):
             self.server_protocol.large_packets.append(x)

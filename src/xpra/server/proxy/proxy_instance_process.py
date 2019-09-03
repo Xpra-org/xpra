@@ -11,6 +11,7 @@ from multiprocessing import Process
 from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.server.proxy.proxy_instance import ProxyInstance
 from xpra.scripts.server import deadly_signal
+from xpra.net.protocol_classes import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol import Protocol
 from xpra.os_util import (
     SIGNAMES, POSIX,
@@ -62,13 +63,16 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                  client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps, message_queue):
         ProxyInstance.__init__(self, session_options,
                                video_encoder_modules, csc_modules,
-                               client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps)
+                               disp_desc, cipher, encryption_key, caps)
         QueueScheduler.__init__(self)
         Process.__init__(self, name=str(client_conn))
+        self.client_conn = client_conn
+        self.server_conn = server_conn
         self.uid = uid
         self.gid = gid
         self.env_options = env_options
         self.socket_dir = socket_dir
+        self.client_state = client_state
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
                                video_encoder_modules, csc_modules,
                                client_conn, disp_desc, repr_ellipsized(str(client_state)),
@@ -116,6 +120,17 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     ################################################################################
 
     def run(self):
+        log.info("started %s", self)
+        log.info(" for client %s", self.client_conn)
+        log.info(" and server %s", self.server_conn)
+        client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
+        server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
+        self.client_protocol = client_protocol_class(self, self.client_conn,
+                                                     self.process_client_packet, self.get_client_packet)
+        self.client_protocol.restore_state(self.client_state)
+        self.server_protocol = server_protocol_class(self, self.server_conn,
+                                                     self.process_server_packet, self.get_server_packet)
+
         log("ProxyProcessProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
         set_proc_title("Xpra Proxy Instance for %s" % self.server_conn)
         if POSIX and (getuid()!=self.uid or getgid()!=self.gid):
