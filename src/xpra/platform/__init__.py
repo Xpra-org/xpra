@@ -151,7 +151,12 @@ def platform_import(where, pm, required, *imports):
     #cannot log this early! (win32 needs log to file redirection..)
     #log = Logger("platform", "import")
     #log("importing %s from %s (required=%s)" % (imports, module, required))
-    platform_module = __import__(module, {}, {}, imports)
+    try:
+        platform_module = __import__(module, {}, {}, imports)
+    except ImportError:
+        if required:
+            raise
+        return
     assert platform_module
     for x in imports:
         found = hasattr(platform_module, x)
