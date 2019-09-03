@@ -140,6 +140,33 @@ class ProxyInstanceProcess(Process, QueueScheduler):
         self.stop(None, SIGNAMES.get(signum, signum))
 
 
+    def get_proxy_info(self, proto):
+        sinfo = {}
+        sinfo.update(get_server_info())
+        sinfo.update(get_thread_info(proto))
+        return {
+            "proxy" : {
+                "version"    : XPRA_VERSION,
+                ""           : sinfo,
+                },
+            "window" : self.get_window_info(),
+            }
+
+    def get_window_info(self):
+        info = {}
+        now = monotonic_time()
+        for wid, encoder in self.video_encoders.items():
+            einfo = encoder.get_info()
+            einfo["idle_time"] = int(now-self.video_encoders_last_used_time.get(wid, 0))
+            info[wid] = {
+                "proxy"    : {
+                    ""           : encoder.get_type(),
+                    "encoder"    : einfo
+                    },
+                }
+        enclog("get_window_info()=%s", info)
+        return info
+
 
     def setproctitle(self, title):
         try:
@@ -225,6 +252,9 @@ class ProxyInstanceProcess(Process, QueueScheduler):
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
 
+
+    ################################################################################
+
     def video_init(self):
         enclog("video_init() loading codecs")
         enclog("video_init() loading pillow encoder")
@@ -272,6 +302,9 @@ class ProxyInstanceProcess(Process, QueueScheduler):
         self.video_encoder_types = [x for x in order if x in encoder_types]
         enclog.info("proxy video encoders: %s", csv(self.video_encoder_types or ["none",]))
 
+
+    ################################################################################
+    # control socket:
 
     def create_control_socket(self):
         assert self.socket_dir
@@ -380,6 +413,9 @@ class ProxyInstanceProcess(Process, QueueScheduler):
         self.send_disconnect(proto, CONTROL_COMMAND_ERROR,
                              "this socket only handles 'info', 'version' and 'stop' requests")
 
+
+    ################################################################################
+
     def send_disconnect(self, proto, *reasons):
         log("send_disconnect(%s, %s)", proto, reasons)
         if proto.is_closed():
@@ -390,18 +426,6 @@ class ProxyInstanceProcess(Process, QueueScheduler):
     def force_disconnect(self, proto):
         proto.close()
 
-
-    def get_proxy_info(self, proto):
-        sinfo = {}
-        sinfo.update(get_server_info())
-        sinfo.update(get_thread_info(proto))
-        return {
-            "proxy" : {
-                "version"    : XPRA_VERSION,
-                ""           : sinfo,
-                },
-            "window" : self.get_window_info(),
-            }
 
     def send_hello(self, challenge_response=None, client_salt=None):
         hello = self.filter_client_caps(self.caps)
@@ -712,6 +736,8 @@ class ProxyInstanceProcess(Process, QueueScheduler):
         self.queue_client_packet(packet)
 
 
+    ################################################################################
+
     def encode_loop(self):
         """ thread for slower encoding related work """
         while not self.exit:
@@ -908,18 +934,3 @@ class ProxyInstanceProcess(Process, QueueScheduler):
                         return spec
         enclog("_find_video_encoder(%s, %s) not found", video_encoding, rgb_format)
         return None
-
-    def get_window_info(self):
-        info = {}
-        now = monotonic_time()
-        for wid, encoder in self.video_encoders.items():
-            einfo = encoder.get_info()
-            einfo["idle_time"] = int(now-self.video_encoders_last_used_time.get(wid, 0))
-            info[wid] = {
-                "proxy"    : {
-                    ""           : encoder.get_type(),
-                    "encoder"    : einfo
-                    },
-                }
-        enclog("get_window_info()=%s", info)
-        return info
