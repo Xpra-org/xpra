@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import socket
 from time import sleep
 
@@ -19,7 +18,6 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import (
     Queue, monotonic_time, bytestostr, strtobytes,
-    getuid, getgid
     )
 from xpra.util import (
     flatten_dict, typedict, updict,
@@ -83,8 +81,7 @@ class ProxyInstance(object):
 
 
     def run(self):
-        log("ProxyProcessInstance.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
-        log.info("new proxy instance started")
+        log.info("started %s", self)
         log.info(" for client %s", self.client_conn)
         log.info(" and server %s", self.server_conn)
 
@@ -137,7 +134,7 @@ class ProxyInstance(object):
     def stop(self, skip_proto, *reasons):
         log("stop(%s, %s)", skip_proto, reasons)
         if not self.exit:
-            log.info("stopping proxy instance pid %i:", os.getpid())
+            log.info("stopping %s", self)
             for x in reasons:
                 log.info(" %s", x)
             self.exit = True
@@ -161,7 +158,7 @@ class ProxyInstance(object):
                 log("still waiting %i/10 - client.closed=%s, server.closed=%s",
                     i+1, self.client_protocol.is_closed(), self.server_protocol.is_closed())
             sleep(0.1)
-        log.info("proxy instance %s stopped", os.getpid())
+        log.info("stopped %s", self)
 
 
     ################################################################################
@@ -503,7 +500,7 @@ class ProxyInstance(object):
                         del self.video_encoders_last_used_time[wid]
                 else:
                     enclog.warn("unexpected encode packet: %s", packet_type)
-            except:
+            except Exception:
                 enclog.warn("error encoding packet", exc_info=True)
 
 
