@@ -120,6 +120,22 @@ class ProxyInstance(object):
 
     ################################################################################
 
+    def close_connections(self, skip_proto, *reasons):
+        for proto in (self.client_protocol, self.server_protocol):
+            if proto and proto!=skip_proto:
+                log("sending disconnect to %s", proto)
+                proto.send_disconnect([SERVER_SHUTDOWN]+list(reasons))
+        #wait for connections to close down cleanly before we exit
+        for i in range(10):
+            if self.client_protocol.is_closed() and self.server_protocol.is_closed():
+                break
+            if i==0:
+                log.info("waiting for network connections to close")
+            else:
+                log("still waiting %i/10 - client.closed=%s, server.closed=%s",
+                    i+1, self.client_protocol.is_closed(), self.server_protocol.is_closed())
+            sleep(0.1)
+
     def send_disconnect(self, proto, *reasons):
         log("send_disconnect(%s, %s)", proto, reasons)
         if proto.is_closed():
@@ -138,26 +154,8 @@ class ProxyInstance(object):
             for x in reasons:
                 log.info(" %s", x)
             self.exit = True
-        #empty the encode queue:
-        q = self.encode_queue
-        q.put_nowait(None)
-        q = Queue()
-        q.put(None)
-        self.encode_queue = q
-        for proto in (self.client_protocol, self.server_protocol):
-            if proto and proto!=skip_proto:
-                log("sending disconnect to %s", proto)
-                proto.send_disconnect([SERVER_SHUTDOWN]+list(reasons))
-        #wait for connections to close down cleanly before we exit
-        for i in range(10):
-            if self.client_protocol.is_closed() and self.server_protocol.is_closed():
-                break
-            if i==0:
-                log.info("waiting for network connections to close")
-            else:
-                log("still waiting %i/10 - client.closed=%s, server.closed=%s",
-                    i+1, self.client_protocol.is_closed(), self.server_protocol.is_closed())
-            sleep(0.1)
+        self.stop_encode_thread()
+        self.close_connections(skip_proto, reasons)
         log.info("stopped %s", self)
 
 
@@ -463,6 +461,15 @@ class ProxyInstance(object):
                 return
         self.queue_client_packet(packet)
 
+
+    def stop_encode_thread(self):
+        #empty the encode queue:
+        q = self.encode_queue
+        if q:
+            q.put_nowait(None)
+            q = Queue()
+            q.put(None)
+            self.encode_queue = q
 
     def encode_loop(self):
         """ thread for slower encoding related work """
