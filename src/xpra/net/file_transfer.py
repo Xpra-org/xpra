@@ -125,7 +125,7 @@ class FileTransferHandler(FileTransferAttributes):
     def cleanup(self):
         for x in list(self.file_descriptors):
             try:
-                x.close()
+                os.close(x)
             except:
                 pass
         self.init_attributes()
