@@ -47,18 +47,17 @@ CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "l
 class ProxyInstance(object):
 
     def __init__(self, session_options,
-                 video_encoder_modules, csc_modules,
+                 video_encoder_modules,
                  disp_desc, cipher, encryption_key, caps):
         self.session_options = session_options
         self.video_encoder_modules = video_encoder_modules
-        self.csc_modules = csc_modules
         self.disp_desc = disp_desc
         self.cipher = cipher
         self.encryption_key = encryption_key
         self.caps = caps
         log("ProxyInstance%s", (
             session_options,
-            video_encoder_modules, csc_modules,
+            video_encoder_modules,
             disp_desc, cipher, encryption_key,
             "%s: %s.." % (type(caps), repr_ellipsized(str(caps)))))
         self.client_protocol = None
@@ -76,6 +75,9 @@ class ProxyInstance(object):
 
 
     def run(self):
+        log.info("started %s", self)
+        log.info(" for client %s", self.client_protocol._conn)
+        log.info(" and server %s", self.server_protocol._conn)
         self.video_init()
 
         #setup protocol wrappers:
@@ -95,11 +97,12 @@ class ProxyInstance(object):
         self.encode_queue = Queue()
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
-        log("starting network threads")
-        self.server_protocol.start()
-        self.client_protocol.start()
+        self.start_network_threads()
 
         self.send_hello()
+
+    def start_network_threads(self):
+        raise NotImplementedError()
 
 
     ################################################################################
@@ -248,7 +251,7 @@ class ProxyInstance(object):
     ################################################################################
 
     def queue_client_packet(self, packet):
-        log("queueing client packet: %s", packet[0])
+        log("queueing client packet: %s", bytestostr(packet[0]))
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
@@ -301,7 +304,7 @@ class ProxyInstance(object):
 
 
     def queue_server_packet(self, packet):
-        log("queueing server packet: %s", packet[0])
+        log("queueing server packet: %s", bytestostr(packet[0]))
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
@@ -652,15 +655,18 @@ class ProxyInstance(object):
         enclog("_find_video_encoder(%s, %s) not found", video_encoding, rgb_format)
         return None
 
+    def video_helper_init(self):
+        self.video_helper = getVideoHelper()
+        #only use video encoders (no CSC supported in proxy)
+        self.video_helper.set_modules(video_encoders=self.video_encoder_modules)
+        self.video_helper.init()
+
     def video_init(self):
         enclog("video_init() loading codecs")
         enclog("video_init() loading pillow encoder")
         load_codec("enc_pillow")
         enclog("video_init() will try video encoders: %s", csv(self.video_encoder_modules) or "none")
-        self.video_helper = getVideoHelper()
-        #only use video encoders (no CSC supported in proxy)
-        self.video_helper.set_modules(video_encoders=self.video_encoder_modules)
-        self.video_helper.init()
+        self.video_helper_init()
 
         self.video_encoding_defs = {}
         self.video_encoders = {}

@@ -90,7 +90,6 @@ class ProxyServer(ServerCore):
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
         self.video_encoders = opts.proxy_video_encoders
-        self.csc_modules = opts.csc_modules
         self._start_sessions = opts.proxy_start_sessions
         ServerCore.init(self, opts)
         #ensure we cache the platform info before intercepting SIGCHLD
@@ -413,7 +412,7 @@ class ProxyServer(ServerCore):
                 client_conn.set_active(True)
                 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
-                                               self.video_encoders, self.csc_modules,
+                                               self.video_encoders,
                                                client_conn, disp_desc, client_state,
                                                cipher, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())

@@ -59,10 +59,10 @@ def set_blocking(conn):
 class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def __init__(self, uid, gid, env_options, session_options, socket_dir,
-                 video_encoder_modules, csc_modules,
+                 video_encoder_modules,
                  client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps, message_queue):
         ProxyInstance.__init__(self, session_options,
-                               video_encoder_modules, csc_modules,
+                               video_encoder_modules,
                                disp_desc, cipher, encryption_key, caps)
         QueueScheduler.__init__(self)
         Process.__init__(self, name=str(client_conn))
@@ -74,7 +74,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.socket_dir = socket_dir
         self.client_state = client_state
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
-                               video_encoder_modules, csc_modules,
+                               video_encoder_modules,
                                client_conn, disp_desc, repr_ellipsized(str(client_state)),
                                cipher, encryption_key, server_conn,
                                "%s: %s.." % (type(caps), repr_ellipsized(str(caps))), message_queue))
@@ -173,6 +173,11 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             self.stop(None, str(e))
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
+
+    def start_network_threads(self):
+        log("start_network_threads()")
+        self.server_protocol.start()
+        self.client_protocol.start()
 
 
     ################################################################################
