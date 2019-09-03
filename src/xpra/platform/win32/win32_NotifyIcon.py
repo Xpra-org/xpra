@@ -55,8 +55,6 @@ class win32NotifyIcon(object):
         # Create the Window.
         self.current_icon = self.LoadImage(iconPathName)
         self.create_tray_window()
-        #register callbacks:
-        win32NotifyIcon.instances[self.hwnd] = self
         self.move_callback = move_callbacks
         self.click_callback = click_callback
         self.exit_callback = exit_callback
@@ -68,6 +66,8 @@ class win32NotifyIcon(object):
         self.hwnd = win32gui.CreateWindow(NIclassAtom, self.title+" StatusIcon Window", style, \
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
             0, 0, self.hinst, None)
+        #register callbacks:
+        win32NotifyIcon.instances[self.hwnd] = self
         win32gui.UpdateWindow(self.hwnd)
         win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, self.make_nid(win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP))
 
