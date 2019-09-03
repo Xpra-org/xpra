@@ -7,11 +7,11 @@
 import socket
 import os
 import signal
-from threading import Timer, RLock
 from multiprocessing import Process
 from time import sleep
 
 from xpra.server.server_core import get_server_info, get_thread_info
+from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.scripts.server import deadly_signal
 from xpra.net import compression
 from xpra.net.net_util import get_network_caps
@@ -29,7 +29,7 @@ from xpra.os_util import (
 from xpra.util import (
     flatten_dict, typedict, updict,
     repr_ellipsized, envint, envbool,
-    csv, first_time, AtomicInteger, \
+    csv, first_time,
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN,
     )
 from xpra.version_util import XPRA_VERSION
@@ -69,11 +69,12 @@ def set_blocking(conn):
         log("cannot set %s to blocking mode", conn)
 
 
-class ProxyInstanceProcess(Process):
+class ProxyInstanceProcess(Process, QueueScheduler):
 
     def __init__(self, uid, gid, env_options, session_options, socket_dir,
                  video_encoder_modules, csc_modules,
                  client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps, message_queue):
+        QueueScheduler.__init__(self)
         Process.__init__(self, name=str(client_conn))
         self.uid = uid
         self.gid = gid
@@ -97,8 +98,6 @@ class ProxyInstanceProcess(Process):
         self.client_protocol = None
         self.server_protocol = None
         self.client_challenge_packet = None
-        self.exit = False
-        self.main_queue = None
         self.message_queue = message_queue
         self.encode_queue = None            #holds draw packets to encode
         self.encode_thread = None
@@ -115,9 +114,6 @@ class ProxyInstanceProcess(Process):
         self.control_socket_path = None
         self.potential_protocols = []
         self.max_connections = MAX_CONCURRENT_CONNECTIONS
-        self.timer_id = AtomicInteger()
-        self.timers = {}
-        self.timer_lock = RLock()
 
     def server_message_queue(self):
         while True:
@@ -143,69 +139,6 @@ class ProxyInstanceProcess(Process):
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(None, SIGNAMES.get(signum, signum))
 
-
-    def source_remove(self, tid):
-        log("source_remove(%i)", tid)
-        with self.timer_lock:
-            try:
-                timer = self.timers[tid]
-                if timer is not None:
-                    del self.timers[tid]
-                if timer:
-                    timer.cancel()
-            except KeyError:
-                pass
-
-    def idle_add(self, fn, *args, **kwargs):
-        tid = self.timer_id.increase()
-        self.main_queue.put((self.idle_repeat_call, (tid, fn, args, kwargs), {}))
-        #add an entry,
-        #but use the value False to stop us from trying to call cancel()
-        self.timers[tid] = False
-        return tid
-
-    def idle_repeat_call(self, tid, fn, args, kwargs):
-        if tid not in self.timers:
-            return False    #cancelled
-        return fn(*args, **kwargs)
-
-    def timeout_add(self, timeout, fn, *args, **kwargs):
-        tid = self.timer_id.increase()
-        self.do_timeout_add(tid, timeout, fn, *args, **kwargs)
-        return tid
-
-    def do_timeout_add(self, tid, timeout, fn, *args, **kwargs):
-        #emulate glib's timeout_add using Timers
-        args = (tid, timeout, fn, args, kwargs)
-        t = Timer(timeout/1000.0, self.queue_timeout_function, args)
-        self.timers[tid] = t
-        t.start()
-
-    def queue_timeout_function(self, tid, timeout, fn, fn_args, fn_kwargs):
-        if tid not in self.timers:
-            return      #cancelled
-        #add to run queue:
-        mqargs = [tid, timeout, fn, fn_args, fn_kwargs]
-        self.main_queue.put((self.timeout_repeat_call, mqargs, {}))
-
-    def timeout_repeat_call(self, tid, timeout, fn, fn_args, fn_kwargs):
-        #executes the function then re-schedules it (if it returns True)
-        if tid not in self.timers:
-            return False    #cancelled
-        v = fn(*fn_args, **fn_kwargs)
-        if bool(v):
-            #create a new timer with the same tid:
-            with self.timer_lock:
-                if tid in self.timers:
-                    self.do_timeout_add(tid, timeout, fn, *fn_args, **fn_kwargs)
-        else:
-            try:
-                del self.timers[tid]
-            except KeyError:
-                pass
-        #we do the scheduling via timers, so always return False here
-        #so that the main queue won't re-schedule this function call itself:
-        return False
 
 
     def setproctitle(self, title):
@@ -541,24 +474,7 @@ class ProxyInstanceProcess(Process):
 
 
     def run_queue(self):
-        log("run_queue() queue has %s items already in it", self.main_queue.qsize())
-        #process "idle_add"/"timeout_add" events in the main loop:
-        while not self.exit:
-            log("run_queue() size=%s", self.main_queue.qsize())
-            v = self.main_queue.get()
-            if v is None:
-                log("run_queue() None exit marker")
-                break
-            fn, args, kwargs = v
-            log("run_queue() %s%s%s", fn, args, kwargs)
-            try:
-                v = fn(*args, **kwargs)
-                if bool(v):
-                    #re-run it
-                    self.main_queue.put(v)
-            except:
-                log.error("error during main loop callback %s", fn, exc_info=True)
-        self.exit = True
+        QueueScheduler.run(self)
         #wait for connections to close down cleanly before we exit
         for i in range(10):
             if self.client_protocol.is_closed() and self.server_protocol.is_closed():
@@ -586,11 +502,7 @@ class ProxyInstanceProcess(Process):
         if csc:
             self.control_socket_cleanup = None
             csc()
-        self.main_queue.put(None)
-        #empty the main queue:
-        q = Queue()
-        q.put(None)
-        self.main_queue = q
+        self.stop_main_queue()
         #empty the encode queue:
         q = Queue()
         q.put(None)
