@@ -603,7 +603,7 @@ class Protocol(object):
             alias = self.send_aliases.get(packet_type)
             if alias:
                 #replace the packet type with the alias:
-                packet[0] = self.send_aliases[packet_type]
+                packet[0] = alias
         try:
             main_packet, proto_flags = self._encoder(packet)
         except Exception:
