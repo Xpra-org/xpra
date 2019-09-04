@@ -599,9 +599,11 @@ class Protocol(object):
         #now the main packet (or what is left of it):
         packet_type = packet[0]
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
-        if USE_ALIASES and self.send_aliases and packet_type in self.send_aliases:
-            #replace the packet type with the alias:
-            packet[0] = self.send_aliases[packet_type]
+        if USE_ALIASES:
+            alias = self.send_aliases.get(packet_type)
+            if alias:
+                #replace the packet type with the alias:
+                packet[0] = self.send_aliases[packet_type]
         try:
             main_packet, proto_flags = self._encoder(packet)
         except Exception:
@@ -1010,9 +1012,10 @@ class Protocol(object):
                     raw_packets = {}
 
                 packet_type = packet[0]
-                if self.receive_aliases and isinstance(packet_type, int) and packet_type in self.receive_aliases:
+                if self.receive_aliases and isinstance(packet_type, int):
                     packet_type = self.receive_aliases.get(packet_type)
-                    packet[0] = packet_type
+                    if packet_type:
+                        packet[0] = packet_type
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
                 if LOG_RAW_PACKET_SIZE:
                     log("%s: %i bytes", packet_type, HEADER_SIZE + payload_size)
