@@ -517,8 +517,11 @@ class ServerBase(ServerBaseClass):
                          "actual_desktop_size"  : (root_w, root_h),
                          "root_window_size"     : (root_w, root_h),
                          })
-        if self._reverse_aliases and server_source.wants_aliases:
-            capabilities["aliases"] = self._reverse_aliases
+        if self._aliases and server_source.wants_aliases:
+            reverse_aliases = {}
+            for i, packet_type in self._aliases.items():
+                reverse_aliases[packet_type] = i
+            capabilities["aliases"] = reverse_aliases
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)

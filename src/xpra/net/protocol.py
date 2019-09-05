@@ -267,7 +267,8 @@ class Protocol(object):
         pass
 
     def parse_remote_caps(self, caps):
-        self.send_aliases = caps.dictget("aliases", {})
+        for k,v in caps.dictget("aliases", {}).items():
+            self.send_aliases[bytestostr(k)] = v
 
     def get_info(self, alias_info=True):
         info = {
@@ -604,6 +605,8 @@ class Protocol(object):
             if alias:
                 #replace the packet type with the alias:
                 packet[0] = alias
+            else:
+                log("packet type send alias not found for '%s'", packet_type)
         try:
             main_packet, proto_flags = self._encoder(packet)
         except Exception:

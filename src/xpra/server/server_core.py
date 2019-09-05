@@ -213,7 +213,6 @@ class ServerCore(object):
         self._www_dir = None
         self._http_headers_dir = None
         self._aliases = {}
-        self._reverse_aliases = {}
         self.socket_types = {}
         self.socket_info = {}
         self.socket_verify_timer = WeakKeyDictionary()
@@ -893,7 +892,6 @@ class ServerCore(object):
         i = 1
         for key in packet_types:
             self._aliases[i] = key
-            self._reverse_aliases[key] = i
             i += 1
 
     def cleanup_udp_listeners(self):

@@ -12,6 +12,27 @@ log = Logger("network")
 class ConnectionClosedException(Exception):
     pass
 
+#this is used for generating aliases:
+PACKET_TYPES = [
+    "hello", "info",
+    "open-url", "send-file", "send-data-request", "send-data-response", "ack-file-chunk", "send-file-chunk",
+    "sound-data", "new-stream", "state-changed", "new-buffer",
+    "ping", "ping_echo",
+    "info-response", "server-event",
+    "disconnect", "set_deflate", "connection-lost", "gibberish", "invalid",
+    "show-desktop", "desktop_size",
+    "new-window", "new-override-redirect", "new-tray",
+    "raise-window", "initiate-moveresize", "window-move-resize", "window-resized", "window-metadata",
+    "configure-override-redirect", "lost-window", "window-icon",
+    "draw",
+    "eos", "cursor", "bell",
+    "pointer-position", "pointer-grab", "pointer-ungrab",
+    "webcam-stop", "webcam-ack",
+    "set-clipboard-enabled", "clipboard-token", "clipboard-request",
+    "clipboard-contents", "clipboard-contents-none", "clipboard-pending-requests", "clipboard-enable-selections",
+    "notify_show", "notify_close",
+    "rpc-reply", "startup-complete", "setting-change", "control",
+    ]
 
 def get_log_packets(exclude=False):
     lp = os.environ.get("XPRA_LOG_PACKETS")

@@ -14,7 +14,7 @@ from xpra.log import Logger
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
-from xpra.net.common import may_log_packet
+from xpra.net.common import may_log_packet, PACKET_TYPES
 from xpra.net.protocol_classes import get_client_protocol_class
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.net_util import get_network_caps
@@ -120,7 +120,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_delay = MOUSE_DELAY
         self._mouse_position_timer = 0
         self._aliases = {}
-        self._reverse_aliases = {}
         #server state and caps:
         self.server_capabilities = None
         self.completed_startup = False
@@ -147,6 +146,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             crypto_backend_init()
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.init_challenge_handlers(opts.challenge_handlers)
+        self.init_aliases()
 
     def init_challenge_handlers(self, challenge_handlers):
         #register the authentication challenge handlers:
@@ -315,12 +315,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def init_aliases(self):
-        packet_types = list(self._packet_handlers.keys())
-        packet_types += list(self._ui_packet_handlers.keys())
         i = 1
-        for key in packet_types:
+        for key in PACKET_TYPES:
             self._aliases[i] = key
-            self._reverse_aliases[key] = i
             i += 1
 
     def has_password(self):
@@ -423,8 +420,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                         "randr_notify"        : False,        #only client.py cares about this
                         "windows"            : False,        #only client.py cares about this
                        }
-        if self._reverse_aliases:
-            capabilities["aliases"] = self._reverse_aliases
+        if self._aliases:
+            reverse_aliases = {}
+            for i, packet_type in self._aliases.items():
+                reverse_aliases[packet_type] = i
+            capabilities["aliases"] = reverse_aliases
         return capabilities
 
     def compressed_wrapper(self, datatype, data, level=5):
@@ -819,7 +819,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self._protocol.max_packet_size = max(self._protocol.max_packet_size, self.file_size_limit*1024*1024)
         netlog("server_connection_established() adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
-        self.init_aliases()
         return True
 
 
