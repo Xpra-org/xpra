@@ -346,20 +346,22 @@ def get_net_config():
     return config
 
 
-def get_ssl_info():
+def get_ssl_info(show_constants=False):
     try:
         import ssl
     except ImportError as e:
         log("no ssl: %s", e)
         return {}
-    protocols = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("PROTOCOL_"))
-    ops = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("OP_"))
-    vers = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("VERIFY_"))
-    info = {
-            "protocols"    : protocols,
-            "options"    : ops,
-            "verify"    : vers,
-            }
+    info = {}
+    if show_constants:
+        protocols = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("PROTOCOL_"))
+        ops = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("OP_"))
+        vers = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("VERIFY_"))
+        info.update({
+                "protocols"    : protocols,
+                "options"    : ops,
+                "verify"    : vers,
+                })
     for k,name in {
                     "HAS_ALPN"                : "alpn",
                     "HAS_ECDH"                : "ecdh",
@@ -526,7 +528,7 @@ def main():
 
         print("")
         print("SSL:")
-        print_nested_dict(get_ssl_info())
+        print_nested_dict(get_ssl_info(True))
 
         try:
             from xpra.net.crypto import crypto_backend_init, get_crypto_caps
