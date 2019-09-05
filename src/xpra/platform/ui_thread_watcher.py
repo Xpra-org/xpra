@@ -111,7 +111,8 @@ class UI_thread_watcher(object):
         log("poll_UI_loop() running")
         while not self.exit.isSet():
             delta = monotonic_time()-self.last_UI_thread_time
-            log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago (max %i), UI_blocked=%s", delta, self.max_delta/1000, self.UI_blocked)
+            log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago (max %i), UI_blocked=%s",
+                delta, self.max_delta/1000, self.UI_blocked)
             if delta>self.max_delta/1000.0:
                 #UI thread is (still?) blocked:
                 if not self.UI_blocked:
@@ -133,7 +134,8 @@ class UI_thread_watcher(object):
                     #this can be caused by an ntp update?
                     #or just by suspend + resume
                     log.warn("Warning: long timer waiting time,")
-                    log.warn(" UI thread polling waited %.1f seconds longer than intended (%.1f vs %.1f)", wdelta-wait_time, wdelta, wait_time)
+                    log.warn(" UI thread polling waited %.1f seconds longer than intended (%.1f vs %.1f)",
+                             wdelta-wait_time, wdelta, wait_time)
                     #force run resume (even if we never fired the fail callbacks)
                     self.UI_blocked = False
                     self.UI_thread_wakeup()
