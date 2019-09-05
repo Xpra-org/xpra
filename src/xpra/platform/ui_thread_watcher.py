@@ -12,7 +12,6 @@ from xpra.util import envint
 from xpra.log import Logger
 
 log = Logger("util")
-log.enable_debug()
 
 FAKE_UI_LOCKUPS = envint("XPRA_FAKE_UI_LOCKUPS")
 POLLING = envint("XPRA_UI_THREAD_POLLING", 500)
