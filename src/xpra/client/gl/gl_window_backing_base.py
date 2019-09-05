@@ -364,11 +364,15 @@ class GLWindowBackingBase(WindowBackingBase):
             #no idea why, but we have to wait a bit to show it:
             from xpra.gtk_common.gobject_compat import import_glib
             glib = import_glib()
-            def redraw():
-                with self.gl_context():
-                    self.pending_fbo_paint = ((0, 0, bw, bh), )
-                    self.do_present_fbo()
-            glib.timeout_add(FBO_RESIZE_DELAY, redraw)
+        del context
+        def redraw():
+            context = self.gl_context()
+            if not context:
+                return
+            with context:
+                self.pending_fbo_paint = ((0, 0, bw, bh), )
+                self.do_present_fbo()
+        glib.timeout_add(FBO_RESIZE_DELAY, redraw)
 
     def gl_marker(self, *msg):
         log(*msg)
