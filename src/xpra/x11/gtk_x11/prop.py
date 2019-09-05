@@ -157,10 +157,11 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
             raise
         log.info("Missing window %s or wrong property type %s (%s)", target, key, etype)
         return None
-    except PropertyError:
+    except PropertyError as e:
         log("prop_get%s", (target, key, etype, ignore_errors, raise_xerrors), exc_info=True)
         if not ignore_errors:
             log.info("Missing property or wrong property type %s (%s)", key, etype)
+            log.info(" %s", e)
         return None
     try:
         with XSyncContext():
