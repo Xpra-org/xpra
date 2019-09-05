@@ -29,7 +29,6 @@ CLIPBOARD_PREFERRED_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
 EXECUTABLE_EXTENSION = ""
 
-UI_THREAD_POLLING = 0
 OPEN_COMMAND = []
 
 COMMAND_SIGNALS = ()
@@ -81,7 +80,6 @@ _features_list_ = [
                    "CLIPBOARD_GREEDY",
                    "CLIPBOARD_PREFERRED_TARGETS",
                    "EXECUTABLE_EXTENSION",
-                   "UI_THREAD_POLLING",
                    "CLIENT_MODULES",
                    "INPUT_DEVICES",
                    "SYSTEM_PROXY_SOCKET",

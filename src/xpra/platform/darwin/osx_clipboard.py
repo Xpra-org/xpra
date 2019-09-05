@@ -71,7 +71,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         ClipboardProxyCore.__init__(self, selection)
         self.update_change_count()
         #setup clipboard counter watcher:
-        w = get_UI_watcher(glib.timeout_add)
+        w = get_UI_watcher(glib.timeout_add, glib.source_remove)
         if w is None:
             log.warn("Warning: no UI watcher instance available")
             log.warn(" cannot detect clipboard change events")
@@ -80,7 +80,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
 
     def cleanup(self):
         ClipboardProxyCore.cleanup(self)
-        w = get_UI_watcher(glib.timeout_add)
+        w = get_UI_watcher()
         if w:
             try:
                 w.remove_alive_callback(self.timer_clipboard_check)
@@ -186,7 +186,7 @@ def main():
         #init UI watcher with gobject (required by pasteboard monitoring code)
         from xpra.gtk_common.gtk_util import import_gtk
         gtk = import_gtk()
-        get_UI_watcher(glib.timeout_add)
+        get_UI_watcher(glib.timeout_add, glib.source_remove)
 
         def noop(*_args):
             pass

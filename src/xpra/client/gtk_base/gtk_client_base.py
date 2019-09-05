@@ -203,7 +203,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def start_UI_watcher(self, _client):
         from xpra.platform.ui_thread_watcher import get_UI_watcher
-        self.UI_watcher = get_UI_watcher(self.timeout_add)
+        self.UI_watcher = get_UI_watcher(self.timeout_add, self.source_remove)
         self.UI_watcher.start()
         #if server supports it, enable UI thread monitoring workaround when needed:
         def UI_resumed():

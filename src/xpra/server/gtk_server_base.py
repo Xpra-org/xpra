@@ -28,6 +28,8 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.log import Logger
 
+UI_THREAD_WATCHER = envbool("XPRA_UI_THREAD_WATCHER")
+
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 cursorlog = Logger("server", "cursor")
@@ -51,6 +53,7 @@ class GTKServerBase(ServerBase):
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove
         self.cursor_suspended = False
+        self.ui_watcher = None
         ServerBase.__init__(self)
 
     def watch_keymap_changes(self):
@@ -75,6 +78,9 @@ class GTKServerBase(ServerBase):
     def do_cleanup(self):
         ServerBase.do_cleanup(self)
         self.close_gtk_display()
+        uiw = self.ui_watcher
+        if uiw:
+            uiw.stop()
 
     def close_gtk_display(self):
         # Close our display(s) first, so the server dying won't kill us.
@@ -94,6 +100,10 @@ class GTKServerBase(ServerBase):
 
 
     def do_run(self):
+        if UI_THREAD_WATCHER:
+            from xpra.platform.ui_thread_watcher import get_UI_watcher
+            self.ui_watcher = get_UI_watcher(glib.timeout_add, glib.source_remove)
+            self.ui_watcher.start()
         if server_features.windows:
             display = display_get_default()
             i=0

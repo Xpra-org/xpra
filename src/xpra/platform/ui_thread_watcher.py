@@ -9,17 +9,13 @@ from threading import Event
 from xpra.make_thread import start_thread
 from xpra.os_util import monotonic_time
 from xpra.util import envint
-from xpra.platform.features import UI_THREAD_POLLING
 from xpra.log import Logger
 
 log = Logger("util")
+log.enable_debug()
 
 FAKE_UI_LOCKUPS = envint("XPRA_FAKE_UI_LOCKUPS")
-if FAKE_UI_LOCKUPS>0 and UI_THREAD_POLLING<=0:
-    #even if the platform normally disables UI thread polling,
-    #we need it for testing:
-    UI_THREAD_POLLING = 1000
-POLLING = envint("XPRA_UI_THREAD_POLLING", UI_THREAD_POLLING)
+POLLING = envint("XPRA_UI_THREAD_POLLING", 500)
 
 
 class UI_thread_watcher(object):
@@ -33,8 +29,9 @@ class UI_thread_watcher(object):
         Beware that the callbacks (fail, resume and alive)
         will run from different threads..
     """
-    def __init__(self, timeout_add, polling_timeout):
+    def __init__(self, timeout_add, source_remove, polling_timeout):
         self.timeout_add = timeout_add
+        self.source_remove = source_remove
         self.polling_timeout = polling_timeout
         self.max_delta = polling_timeout * 2
         self.init_vars()
@@ -45,6 +42,7 @@ class UI_thread_watcher(object):
         self.resume_callbacks = []
         self.UI_blocked = False
         self.last_UI_thread_time = 0
+        self.ui_wakeup_timer = None
         self.exit = Event()
 
     def start(self):
@@ -54,7 +52,7 @@ class UI_thread_watcher(object):
         #run once to initialize:
         self.UI_thread_wakeup()
         if self.polling_timeout>0:
-            start_thread(self.poll_UI_loop, "UI thread polling")
+            start_thread(self.poll_UI_loop, "UI thread polling", daemon=True)
         else:
             log("not starting an IO polling thread")
         if FAKE_UI_LOCKUPS>0:
@@ -97,8 +95,13 @@ class UI_thread_watcher(object):
             except Exception:
                 log.error("failed to run %s", x, exc_info=True)
 
-    def UI_thread_wakeup(self):
-        log("UI_thread_wakeup()")
+    def UI_thread_wakeup(self, scheduled_at=0):
+        if scheduled_at:
+            elapsed = monotonic_time()-scheduled_at
+        else:
+            elapsed = 0
+        self.ui_wakeup_timer = None
+        log("UI_thread_wakeup() elapsed=%.2fms", 1000*elapsed)
         self.last_UI_thread_time = monotonic_time()
         #UI thread was blocked?
         if self.UI_blocked:
@@ -123,7 +126,8 @@ class UI_thread_watcher(object):
                 #seems to be ok:
                 log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
                 self.run_callbacks(self.alive_callbacks)
-            self.timeout_add(0, self.UI_thread_wakeup)
+            now = monotonic_time()
+            self.ui_wakeup_timer = self.timeout_add(0, self.UI_thread_wakeup, now)
             wstart = monotonic_time()
             wait_time = self.polling_timeout/1000.0     #convert to seconds
             self.exit.wait(wait_time)
@@ -141,12 +145,16 @@ class UI_thread_watcher(object):
                     self.UI_thread_wakeup()
         self.init_vars()
         log("poll_UI_loop() ended")
+        uiwt = self.ui_wakeup_timer
+        if uiwt:
+            self.ui_wakeup_timer = None
+            self.source_remove(uiwt)
 
 
 UI_watcher = None
-def get_UI_watcher(timeout_add=None):
+def get_UI_watcher(timeout_add=None, source_remove=None):
     global UI_watcher
     if UI_watcher is None and timeout_add:
-        UI_watcher = UI_thread_watcher(timeout_add, POLLING)
+        UI_watcher = UI_thread_watcher(timeout_add, source_remove, POLLING)
         log("get_UI_watcher(%s)", timeout_add)
     return UI_watcher
