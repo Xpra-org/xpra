@@ -310,8 +310,10 @@ class WindowModel(BaseWindowModel):
     def do_unmanaged(self, wm_exiting):
         log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
         self._internal_set_property("owner", None)
-        if self.corral_window:
-            remove_event_receiver(self.corral_window, self)
+        cwin = self.corral_window
+        if cwin:
+            self.corral_window = None
+            remove_event_receiver(cwin, self)
             geom = None
             #use a new context so we will XSync right here
             #and detect if the window is already gone:
@@ -322,9 +324,6 @@ class WindowModel(BaseWindowModel):
                     self.client_window.reparent(get_default_root_window(), 0, 0)
                 self.client_window.set_events(self.client_window_saved_events)
             self.client_reparented = False
-            #it is now safe to destroy the corral window:
-            self.corral_window.destroy()
-            self.corral_window = None
             # It is important to remove from our save set, even after
             # reparenting, because according to the X spec, windows that are
             # in our save set are always Mapped when we exit, *even if those
@@ -339,6 +338,8 @@ class WindowModel(BaseWindowModel):
                 X11Window.sendConfigureNotify(self.xid)
             if wm_exiting:
                 self.client_window.show_unraised()
+            #it is now safe to destroy the corral window:
+            cwin.destroy()
         BaseWindowModel.do_unmanaged(self, wm_exiting)
 
 
