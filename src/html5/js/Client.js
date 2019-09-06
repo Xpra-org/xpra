@@ -1305,6 +1305,7 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
+	this._poll_clipboard(e);
 	var mouse = this.getMouse(e, window),
 		x = Math.round(mouse.x),
 		y = Math.round(mouse.y);
@@ -1402,6 +1403,49 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	//store left overs:
 	this.wheel_delta_x = (this.wheel_delta_x>=0) ? wx : -wx;
 	this.wheel_delta_y = (this.wheel_delta_y>=0) ? wy : -wy;
+}
+
+
+XpraClient.prototype._poll_clipboard = function(e) {
+	//see if the clipboard contents have changed:
+	this.debug("clipboard", "poll clipboard, navigator.clipboard=", navigator.clipboard);
+	if (navigator.clipboard && navigator.clipboard.readText) {
+		var client = this;
+		//warning: this can take a while,
+		//so we may send the click before the clipboard contents...
+		navigator.clipboard.readText().then(function(text) {
+			client.debug("clipboard", "paste event, text=", text);
+			var clipboard_buffer = unescape(encodeURIComponent(text));
+			if (clipboard_buffer!=client.clipboard_buffer) {
+				client.debug("clipboard", "clipboard contents have changed");
+				client.clipboard_buffer = clipboard_buffer;
+				client.send_clipboard_token();
+			}
+		}, function(err) {
+			client.debug("clipboard", "paste event failed:", err);
+		});
+	}
+	else {
+		var datatype = "text/plain";
+		var clipboardData = (e.originalEvent || e).clipboardData;
+		//IE: must use window.clipboardData because the event clipboardData is null!
+		if (!clipboardData) {
+			clipboardData = window.clipboardData;
+			if (!clipboardData) {
+				return;
+			}
+		}
+		if (Utilities.isIE()) {
+			datatype = "Text";
+		}
+		clipboard_buffer = unescape(encodeURIComponent(clipboardData.getData(datatype)));
+		this.debug("clipboard", "paste event, data=", clipboard_buffer);
+		if (clipboard_buffer!=client.clipboard_buffer) {
+			this.debug("clipboard", "clipboard contents have changed");
+			this.clipboard_buffer = clipboard_buffer;
+			this.send_clipboard_token();
+		}
+	}
 }
 
 
@@ -3247,7 +3291,7 @@ XpraClient.prototype.send_clipboard_string = function(request_id, selection, cli
 	} else {
 		packet = ["clipboard-contents", request_id, selection, datatype || "UTF8_STRING", 8, "bytes", clipboard_buffer];
 	}
-	this.log("send_clipboard_string: packet=", packet);
+	this.debug("clipboard", "send_clipboard_string: packet=", packet);
 	this.send(packet);
 }
 

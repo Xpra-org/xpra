@@ -719,7 +719,9 @@
 					if (navigator.clipboard && navigator.clipboard.readText) {
 						navigator.clipboard.readText().then(function(text) {
 							cdebug("clipboard", "paste event, text=", text);
-							client.send_clipboard_token(unescape(encodeURIComponent(text)));
+							var paste_data = unescape(encodeURIComponent(text));
+							client.clipboard_buffer = paste_data;
+							client.send_clipboard_token(paste_data);
 						}, function(err) {
 							cdebug("clipboard", "paste event failed:", err);
 						});
@@ -734,10 +736,10 @@
 						if (Utilities.isIE()) {
 							datatype = "Text";
 						}
-						paste_data = clipboardData.getData(datatype);
+						paste_data = unescape(encodeURIComponent(clipboardData.getData(datatype)));
 						cdebug("clipboard", "paste event, data=", paste_data);
 						client.clipboard_buffer = paste_data;
-						client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
+						client.send_clipboard_token(paste_data);
 					}
 					return false;
 				});
@@ -763,12 +765,11 @@
 						var clipboard_buffer = client.get_clipboard_buffer();
 						var clipboard_datatype = (client.get_clipboard_datatype() || "").toLowerCase();
 						var is_text = clipboard_datatype.indexOf("text")>=0 || clipboard_datatype.indexOf("string")>=0;
-						if (is_text) {
-							pasteboard.text(clipboard_buffer);
+						if (!is_text) {
+							//maybe just abort here instead?
+							clipboard_buffer = "";
 						}
-						else {
-							pasteboard.text("");
-						}
+						pasteboard.text(clipboard_buffer);
 						pasteboard.select();
 						cdebug("clipboard", "click event, with pending clipboard datatype=", clipboard_datatype, ", buffer=", clipboard_buffer);
 						//for IE:
@@ -794,6 +795,8 @@
 							//probably no point in trying again?
 						}
 						if (success) {
+							//clipboard_buffer may have been cleared if not set to text:
+							client.clipboard_buffer = clipboard_buffer;
 							client.clipboard_pending = false;
 						}
 					}
