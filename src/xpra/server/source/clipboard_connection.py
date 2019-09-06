@@ -10,7 +10,7 @@ from collections import deque
 from xpra.net.compression import Compressible, compressed_wrapper
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
-from xpra.util import envint, XPRA_CLIPBOARD_NOTIFICATION_ID
+from xpra.util import envint
 from xpra.os_util import monotonic_time
 from xpra.log import Logger
 
@@ -118,14 +118,6 @@ class ClipboardConnection(StubSourceMixin):
                 log("%i events in the last %i seconds: %s", len(events), MAX_CLIPBOARD_LIMIT_DURATION, events)
                 if len(events)>=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION:
                     log.warn(" limit sustained for more than %i seconds,", MAX_CLIPBOARD_LIMIT_DURATION)
-                    log.warn(" the clipboard is now disabled")
-                    self.clipboard_enabled = False
-                    body = "Too many clipboard requests,\n"+\
-                           "a clipboard synchronization loop may be causing this problem,\n"+\
-                           "or an overly aggressive clipboard manager perhaps?"
-                    self.send_clipboard_enabled(msg)
-                    self.may_notify(XPRA_CLIPBOARD_NOTIFICATION_ID,
-                                    "Clipboard synchronization is now disabled", body, icon_name="clipboard")
                 return
         #call compress_clibboard via the encode work queue:
         self.queue_encode((True, self.compress_clipboard, packet))
