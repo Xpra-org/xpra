@@ -1064,7 +1064,7 @@ XpraClient.prototype._make_hello_base = function() {
 		});
 	}
 
-	if(typeof BrotliDecode != "undefined") {
+	if(typeof BrotliDecode != "undefined" && !Utilities.isIE()) {
 		this._update_capabilities({
 			"brotli"					: true,
 		});
