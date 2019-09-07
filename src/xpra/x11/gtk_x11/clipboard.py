@@ -432,7 +432,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         for requestor, prop, time in pending:
             if log.is_debug_enabled():
                 log("setting response %s to property %s of window %s as %s",
-                     repr_ellipsized(str(data)), prop, self.get_wininfo(get_xwindow(requestor)), dtype)
+                     repr_ellipsized(bytestostr(data)), prop, self.get_wininfo(get_xwindow(requestor)), dtype)
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, time)
 
 
