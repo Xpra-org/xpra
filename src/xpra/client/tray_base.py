@@ -80,12 +80,15 @@ class TrayBase(object):
         raise NotImplementedError("override me!")
 
     def get_icon_filename(self, basename=None):
-        return get_icon_filename(basename or self.default_icon_filename, self.default_icon_extension)
+        name = basename or self.default_icon_filename
+        f = get_icon_filename(name, self.default_icon_extension)
+        if not f:
+            log.error("Error: cannot find icon '%s'", name)
+        return f
 
     def set_icon(self, basename=None):
         filename = self.get_icon_filename(basename)
         if not filename:
-            log.error("Error: cannot find icon '%s'", basename)
             return
         log("set_icon(%s) using filename=%s", basename, filename)
         self.set_icon_from_file(filename)
