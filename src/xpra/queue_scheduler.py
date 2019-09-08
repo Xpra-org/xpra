@@ -107,6 +107,10 @@ class QueueScheduler(object):
                 log.error("error during main loop callback %s", fn, exc_info=True)
         self.exit = True
 
+    def stop(self):
+        self.exit = True
+        self.stop_main_queue()
+
     def stop_main_queue(self):
         self.main_queue.put(None)
         #empty the main queue:
