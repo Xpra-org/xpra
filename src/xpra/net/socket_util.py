@@ -117,10 +117,13 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connectio
             from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
             glib = import_glib()
             sock.listen(5)
+            def io_callback(sock, flags):
+                log("io_callback(%s, %s)", sock, flags)
+                new_connection_cb(socktype, sock)
             if is_gtk3():
-                glib.io_add_watch(sock, glib.PRIORITY_DEFAULT, glib.IO_IN, new_connection_cb, sock)
+                glib.io_add_watch(sock, glib.PRIORITY_DEFAULT, glib.IO_IN, io_callback)
             else:
-                glib.io_add_watch(sock, glib.IO_IN, new_connection_cb, sock, priority=glib.PRIORITY_DEFAULT)
+                glib.io_add_watch(sock, glib.IO_IN, io_callback, priority=glib.PRIORITY_DEFAULT)
     except Exception as e:
         log("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
         log.error("Error: failed to listen on %s socket %s:", socktype, info or sock)

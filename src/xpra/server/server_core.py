@@ -214,7 +214,6 @@ class ServerCore(object):
         self._www_dir = None
         self._http_headers_dir = None
         self._aliases = {}
-        self.socket_types = {}
         self.socket_info = {}
         self.socket_verify_timer = WeakKeyDictionary()
         self.socket_rfb_upgrade_timer = WeakKeyDictionary()
@@ -916,7 +915,6 @@ class ServerCore(object):
     def add_listen_socket(self, socktype, sock):
         info = self.socket_info.get(sock)
         netlog("add_listen_socket(%s, %s) info=%s", socktype, sock, info)
-        self.socket_types[sock] = socktype
         add_listen_socket(socktype, sock, info, self._new_connection, self._new_udp_connection)
 
     def _new_udp_connection(self, sock):
@@ -924,16 +922,16 @@ class ServerCore(object):
         udpl = UDPListener(sock, self.process_udp_packet)
         self._udp_listeners.append(udpl)
 
-    def _new_connection(self, listener, *args):
+    def _new_connection(self, socktype, listener, *args):
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
+        log.warn("_new_connection%s", [listener, socktype]+list(args))
         if self._closing:
             netlog("ignoring new connection during shutdown")
             return False
-        socktype = self.socket_types.get(listener)
         socket_info = self.socket_info.get(listener)
         assert socktype, "cannot find socket type for %s" % listener
         #TODO: just like add_listen_socket above, this needs refactoring
