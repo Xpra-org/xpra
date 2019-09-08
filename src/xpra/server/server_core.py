@@ -25,6 +25,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.common import may_log_packet
+from xpra.net.socket_util import hosts, mdns_publish, add_listen_socket
 from xpra.net.bytestreams import (
     SocketConnection, SSLSocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT,
@@ -749,7 +750,6 @@ class ServerCore(object):
     def mdns_publish(self):
         if not self.mdns:
             return
-        from xpra.net.socket_util import hosts
         #find all the records we want to publish:
         mdns_recs = {}
         for socktype, _, info, _ in self._socket_info:
@@ -770,7 +770,6 @@ class ServerCore(object):
                     if rec not in recs:
                         recs.append(rec)
                 mdnslog("mdns_publish() recs[%s]=%s", st, recs)
-        from xpra.net.socket_util import mdns_publish
         mdns_info = self.get_mdns_info()
         self.mdns_publishers = {}
         for mdns_mode, listen_on in mdns_recs.items():
@@ -917,31 +916,13 @@ class ServerCore(object):
     def add_listen_socket(self, socktype, sock):
         info = self.socket_info.get(sock)
         netlog("add_listen_socket(%s, %s) info=%s", socktype, sock, info)
-        try:
-            #ugly that we have different ways of starting sockets,
-            #TODO: abstract this into the socket class
-            self.socket_types[sock] = socktype
-            if socktype=="named-pipe":
-                #named pipe listener uses a thread:
-                sock.new_connection_cb = self._new_connection
-                sock.start()
-            elif socktype=="udp":
-                #socket_info = self.socket_info.get(sock)
-                from xpra.net.udp_protocol import UDPListener
-                udpl = UDPListener(sock, self.process_udp_packet)
-                self._udp_listeners.append(udpl)
-            else:
-                from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
-                glib = import_glib()
-                sock.listen(5)
-                if is_gtk3():
-                    glib.io_add_watch(sock, glib.PRIORITY_DEFAULT, glib.IO_IN, self._new_connection, sock)
-                else:
-                    glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock, priority=glib.PRIORITY_DEFAULT)
-        except Exception as e:
-            netlog("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
-            netlog.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
-            netlog.error(" %s", e)
+        self.socket_types[sock] = socktype
+        add_listen_socket(socktype, sock, info, self._new_connection, self._new_udp_connection)
+
+    def _new_udp_connection(self, sock):
+        from xpra.net.udp_protocol import UDPListener
+        udpl = UDPListener(sock, self.process_udp_packet)
+        self._udp_listeners.append(udpl)
 
     def _new_connection(self, listener, *args):
         """

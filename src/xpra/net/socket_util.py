@@ -100,6 +100,32 @@ def hosts(host_str):
         return ["0.0.0.0", "::"]
     return [host_str]
 
+def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connection_cb=None):
+    log = get_network_logger()
+    log("add_listen_socket(%s, %s, %s, %s, %s)", socktype, sock, info, new_connection_cb, new_udp_connection_cb)
+    try:
+        #ugly that we have different ways of starting sockets,
+        #TODO: abstract this into the socket class
+        if socktype=="named-pipe":
+            #named pipe listener uses a thread:
+            sock.new_connection_cb = new_connection_cb
+            sock.start()
+        elif socktype=="udp":
+            assert new_udp_connection_cb, "UDP sockets cannot be handled here"
+            new_udp_connection_cb(sock)
+        else:
+            from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
+            glib = import_glib()
+            sock.listen(5)
+            if is_gtk3():
+                glib.io_add_watch(sock, glib.PRIORITY_DEFAULT, glib.IO_IN, new_connection_cb, sock)
+            else:
+                glib.io_add_watch(sock, glib.IO_IN, new_connection_cb, sock, priority=glib.PRIORITY_DEFAULT)
+    except Exception as e:
+        log("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
+        log.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
+        log.error(" %s", e)
+
 def create_sockets(opts, error_cb):
     log = get_network_logger()
 
