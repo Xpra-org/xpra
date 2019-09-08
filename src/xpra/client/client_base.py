@@ -288,18 +288,19 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if conn.socktype=="udp":
             self.add_packet_handler("udp-control", self._process_udp_control, False)
         protocol_class = get_client_protocol_class(conn.socktype)
-        self._protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
+        protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
+        self._protocol = protocol
         for x in (b"keymap-changed", b"server-settings", b"logging", b"input-devices"):
-            self._protocol.large_packets.append(x)
-        self._protocol.set_compression_level(self.compression_level)
-        self._protocol.receive_aliases.update(self._aliases)
-        self._protocol.enable_default_encoder()
-        self._protocol.enable_default_compressor()
+            protocol.large_packets.append(x)
+        protocol.set_compression_level(self.compression_level)
+        protocol.receive_aliases.update(self._aliases)
+        protocol.enable_default_encoder()
+        protocol.enable_default_compressor()
         if self.encryption and ENCRYPT_FIRST_PACKET:
             key = self.get_encryption_key()
-            self._protocol.set_cipher_out(self.encryption,
+            protocol.set_cipher_out(self.encryption,
                                           DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
-        self.have_more = self._protocol.source_has_more
+        self.have_more = protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
         process = getattr(conn, "process", None)        #ie: ssh is handled by another process
