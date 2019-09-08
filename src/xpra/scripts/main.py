@@ -1532,51 +1532,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
         if PYTHON3 and POSIX and os.environ.get("GDK_BACKEND") is None:
             os.environ["GDK_BACKEND"] = "x11"
         if opts.opengl=="probe":
-            from xpra.os_util import pollwait
-            from xpra.platform.paths import get_nodock_command
-            log = Logger("opengl")
-            cmd = get_nodock_command()+["opengl-probe"]
-            env = os.environ.copy()
-            if is_debug_enabled("opengl"):
-                cmd += ["-d", "opengl"]
-            else:
-                env["NOTTY"] = "1"
-            start = monotonic_time()
-            try:
-                kwargs = {}
-                if POSIX:
-                    kwargs["close_fds"] = True
-                try:
-                    from subprocess import DEVNULL
-                except ImportError:
-                    DEVNULL = open(os.devnull, 'wb')
-                proc = Popen(cmd, shell=False, stderr=DEVNULL, env=env, **kwargs)
-            except Exception as e:
-                log.warn("Warning: failed to execute OpenGL probe command")
-                log.warn(" %s", e)
-                opts.opengl = "probe-failed:%s" % e
-            else:
-                r = pollwait(proc)
-                log("OpenGL probe command returned %s for command=%s", r, cmd)
-                end = monotonic_time()
-                log("probe took %ims", 1000*(end-start))
-                if r==0:
-                    opts.opengl = "probe-success"
-                elif r==1:
-                    opts.opengl = "probe-crash"
-                elif r==2:
-                    opts.opengl = "probe-warning"
-                elif r==3:
-                    opts.opengl = "probe-error"
-                else:
-                    if r is None:
-                        msg = "timeout"
-                    elif r>128:
-                        msg = SIGNAMES.get(r-128)
-                    else:
-                        msg = SIGNAMES.get(0-r, 0-r)
-                    log.warn("Warning: OpenGL probe failed: %s", msg)
-                    opts.opengl = "probe-failed:%s" % msg
+            opts.opengl = run_opengl_probe()
         try:
             from xpra.platform.gui import init as gui_init
             gui_init()
@@ -1642,6 +1598,51 @@ def get_client_app(error_cb, opts, extra_args, mode):
             app.cleanup()
             raise
     return app
+
+def run_opengl_probe():
+    from xpra.os_util import pollwait
+    from xpra.platform.paths import get_nodock_command
+    log = Logger("opengl")
+    cmd = get_nodock_command()+["opengl-probe"]
+    env = os.environ.copy()
+    if is_debug_enabled("opengl"):
+        cmd += ["-d", "opengl"]
+    else:
+        env["NOTTY"] = "1"
+    start = monotonic_time()
+    try:
+        kwargs = {}
+        if POSIX:
+            kwargs["close_fds"] = True
+        try:
+            from subprocess import DEVNULL
+        except ImportError:
+            DEVNULL = open(os.devnull, 'wb')
+        proc = Popen(cmd, shell=False, stderr=DEVNULL, env=env, **kwargs)
+    except Exception as e:
+        log.warn("Warning: failed to execute OpenGL probe command")
+        log.warn(" %s", e)
+        return "probe-failed:%s" % e
+    r = pollwait(proc)
+    log("OpenGL probe command returned %s for command=%s", r, cmd)
+    end = monotonic_time()
+    log("probe took %ims", 1000*(end-start))
+    if r==0:
+        return "probe-success"
+    if r==1:
+        return "probe-crash"
+    if r==2:
+        return "probe-warning"
+    if r==3:
+        return "probe-error"
+    if r is None:
+        msg = "timeout"
+    elif r>128:
+        msg = SIGNAMES.get(r-128)
+    else:
+        msg = SIGNAMES.get(0-r, 0-r)
+    log.warn("Warning: OpenGL probe failed: %s", msg)
+    return "probe-failed:%s" % msg
 
 def make_client(error_cb, opts):
     from xpra.scripts.config import FALSE_OPTIONS, OFF_OPTIONS
