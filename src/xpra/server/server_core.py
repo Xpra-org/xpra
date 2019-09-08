@@ -25,7 +25,10 @@ from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.common import may_log_packet
-from xpra.net.socket_util import hosts, mdns_publish, add_listen_socket
+from xpra.net.socket_util import (
+    hosts, mdns_publish,
+    add_listen_socket, accept_connection,
+    )
 from xpra.net.bytestreams import (
     SocketConnection, SSLSocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT,
@@ -38,7 +41,7 @@ from xpra.platform.paths import get_app_dir
 from xpra.os_util import (
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
-    getuid, monotonic_time, get_peercred, hexstr,
+    getuid, monotonic_time, hexstr,
     WIN32, POSIX, PYTHON3, BITS,
     )
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
@@ -928,7 +931,7 @@ class ServerCore(object):
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log.warn("_new_connection%s", [listener, socktype]+list(args))
+        log("_new_connection%s", (listener, socktype, args))
         if self._closing:
             netlog("ignoring new connection during shutdown")
             return False
@@ -942,33 +945,18 @@ class ServerCore(object):
             netlog.info("New %s connection received on %s", socktype, conn.target)
             return self.make_protocol(socktype, conn)
 
-        try:
-            sock, address = listener.accept()
-        except socket.error as e:
-            netlog("rejecting new connection on %s", listener, exc_info=True)
-            netlog.error("Error: cannot accept new connection:")
-            netlog.error(" %s", e)
+        conn = accept_connection(socktype, listener, self._socket_timeout)
+        if conn is None:
             return True
-        netlog("peer: %s", get_peercred(sock))
-        try:
-            peername = sock.getpeername()
-        except (OSError, IOError):
-            peername = address
         #limit number of concurrent network connections:
         if socktype not in ("unix-domain", ) and len(self._potential_protocols)>=self._max_connections:
             netlog.error("Error: too many connections (%i)", len(self._potential_protocols))
-            netlog.error(" ignoring new one: %s", peername)
-            sock.close()
+            netlog.error(" ignoring new one: %s", conn.endpoint)
+            conn.close()
             return True
-        sockname = sock.getsockname()
-        sock.settimeout(self._socket_timeout)
-        netlog("new_connection(%s) sock=%s, socket_info=%s, timeout=%s, address=%s, peername=%s. timeout=%s",
-               args, sock, socket_info, self._socket_timeout, address, peername, self._socket_timeout)
-        conn = SocketConnection(sock, sockname, address, peername, socktype)
-
         #from here on, we run in a thread, so we can poll (peek does)
         start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True,
-                     args=(conn, sock, address, socktype, peername, socket_info))
+                     args=(conn, conn._socket, conn.remote, socktype, conn.endpoint, socket_info))
         return True
 
     def peek_connection(self, conn, timeout=PEEK_TIMEOUT_MS):

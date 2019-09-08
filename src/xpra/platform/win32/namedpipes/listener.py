@@ -167,7 +167,7 @@ class NamedPipeListener(Thread):
                     break
             #from now on, the pipe_handle will be managed elsewhere:
             if pipe_handle:
-                self.new_connection_cb(self, pipe_handle)
+                self.new_connection_cb("named-pipe", self, pipe_handle)
                 pipe_handle = None
         if pipe_handle:
             self.close_handle(pipe_handle)

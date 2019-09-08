@@ -10,6 +10,7 @@ from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
+    get_peercred,
     )
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 
@@ -128,6 +129,28 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connectio
         log("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
         log.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
         log.error(" %s", e)
+
+
+def accept_connection(socktype, listener, timeout=None):
+    log = get_network_logger()
+    try:
+        sock, address = listener.accept()
+    except socket.error as e:
+        log("rejecting new connection on %s", listener, exc_info=True)
+        log.error("Error: cannot accept new connection:")
+        log.error(" %s", e)
+        return None
+    log("peer: %s", get_peercred(sock))
+    try:
+        peername = sock.getpeername()
+    except (OSError, IOError):
+        peername = address
+    sock.settimeout(timeout)
+    sockname = sock.getsockname()
+    from xpra.net.bytestreams import SocketConnection
+    conn = SocketConnection(sock, sockname, address, peername, socktype)
+    log("accept_connection(%s, %s)=%s", listener, socktype, conn)
+    return conn
 
 def create_sockets(opts, error_cb):
     log = get_network_logger()
