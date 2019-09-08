@@ -749,7 +749,7 @@ class ServerCore(object):
     def mdns_publish(self):
         if not self.mdns:
             return
-        from xpra.scripts.server import hosts
+        from xpra.net.socket_util import hosts
         #find all the records we want to publish:
         mdns_recs = {}
         for socktype, _, info, _ in self._socket_info:
@@ -770,7 +770,7 @@ class ServerCore(object):
                     if rec not in recs:
                         recs.append(rec)
                 mdnslog("mdns_publish() recs[%s]=%s", st, recs)
-        from xpra.server.socket_util import mdns_publish
+        from xpra.net.socket_util import mdns_publish
         mdns_info = self.get_mdns_info()
         self.mdns_publishers = {}
         for mdns_mode, listen_on in mdns_recs.items():

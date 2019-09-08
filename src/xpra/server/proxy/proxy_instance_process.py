@@ -26,7 +26,7 @@ from xpra.queue_scheduler import QueueScheduler
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
 from xpra.version_util import full_version_str
-from xpra.server.socket_util import create_unix_domain_socket
+from xpra.net.socket_util import create_unix_domain_socket
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.log import Logger

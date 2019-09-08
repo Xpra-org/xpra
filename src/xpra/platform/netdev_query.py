@@ -51,7 +51,7 @@ def main():
                                 }[addr]
                             print(" * %s:     %s" % (stype, ip))
                             if POSIX:
-                                from xpra.server.socket_util import create_tcp_socket
+                                from xpra.net.socket_util import create_tcp_socket
                                 try:
                                     sock = create_tcp_socket(ip, 0)
                                     sockfd = sock.fileno()

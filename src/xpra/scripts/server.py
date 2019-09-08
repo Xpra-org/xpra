@@ -598,7 +598,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
-    from xpra.server.socket_util import get_network_logger, setup_local_sockets, create_sockets
+    from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
     sockets = create_sockets(opts, error_cb)
 
     sanitize_env()

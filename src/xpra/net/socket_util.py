@@ -12,7 +12,6 @@ from xpra.os_util import (
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
-from xpra.platform.dotxpra import DotXpra, norm_makepath
 
 #what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
@@ -122,14 +121,14 @@ def create_sockets(opts, error_cb):
         for host in hosts(host_str):
             sock = setup_tcp_socket(host, iport, socktype)
             host, iport = sock[2]
-            sockets.append(socket)
+            sockets.append(sock)
     def add_udp_socket(socktype, host_str, iport):
         if iport!=0 and iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
         for host in hosts(host_str):
             sock = setup_udp_socket(host, iport, socktype)
             host, iport = sock[2]
-            sockets.append(socket)
+            sockets.append(sock)
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
@@ -334,6 +333,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
             socket_dirs = [""]
         else:
             raise InitException("at least one socket directory must be set to use unix domain sockets")
+    from xpra.platform.dotxpra import DotXpra, norm_makepath
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None:
         display_name = normalize_local_display_name(display_name)
