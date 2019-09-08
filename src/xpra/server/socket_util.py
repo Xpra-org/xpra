@@ -92,6 +92,100 @@ def has_dual_stack():
     except socket.error:
         return False
 
+def hosts(host_str):
+    if host_str=="*":
+        if has_dual_stack():
+            #IPv6 will also listen for IPv4:
+            return ["::"]
+        #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
+        return ["0.0.0.0", "::"]
+    return [host_str]
+
+def create_sockets(opts, error_cb):
+    log = get_network_logger()
+
+    bind_tcp = parse_bind_ip(opts.bind_tcp)
+    bind_udp = parse_bind_ip(opts.bind_udp)
+    bind_ssl = parse_bind_ip(opts.bind_ssl)
+    bind_ssh = parse_bind_ip(opts.bind_ssh)
+    bind_ws  = parse_bind_ip(opts.bind_ws)
+    bind_wss = parse_bind_ip(opts.bind_wss)
+    bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
+    bind_vsock = parse_bind_vsock(opts.bind_vsock)
+
+    sockets = []
+
+    min_port = int(opts.min_port)
+    def add_tcp_socket(socktype, host_str, iport):
+        if iport!=0 and iport<min_port:
+            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
+        for host in hosts(host_str):
+            sock = setup_tcp_socket(host, iport, socktype)
+            host, iport = sock[2]
+            sockets.append(socket)
+    def add_udp_socket(socktype, host_str, iport):
+        if iport!=0 and iport<min_port:
+            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
+        for host in hosts(host_str):
+            sock = setup_udp_socket(host, iport, socktype)
+            host, iport = sock[2]
+            sockets.append(socket)
+    # Initialize the TCP sockets before the display,
+    # That way, errors won't make us kill the Xvfb
+    # (which may not be ours to kill at that point)
+    ssh_upgrades = opts.ssh_upgrade
+    if ssh_upgrades:
+        try:
+            from xpra.net.ssh import nogssapi_context
+            with nogssapi_context():
+                import paramiko
+            assert paramiko
+        except ImportError as e:
+            from xpra.log import Logger
+            sshlog = Logger("ssh")
+            sshlog("import paramiko", exc_info=True)
+            sshlog.error("Error: cannot enable SSH socket upgrades:")
+            sshlog.error(" %s", e)
+    log("setting up SSL sockets: %s", csv(bind_ssl))
+    for host, iport in bind_ssl:
+        add_tcp_socket("ssl", host, iport)
+    log("setting up SSH sockets: %s", csv(bind_ssh))
+    for host, iport in bind_ssh:
+        add_tcp_socket("ssh", host, iport)
+    log("setting up https / wss (secure websockets): %s", csv(bind_wss))
+    for host, iport in bind_wss:
+        add_tcp_socket("wss", host, iport)
+    log("setting up TCP sockets: %s", csv(bind_tcp))
+    for host, iport in bind_tcp:
+        add_tcp_socket("tcp", host, iport)
+    log("setting up UDP sockets: %s", csv(bind_udp))
+    for host, iport in bind_udp:
+        add_udp_socket("udp", host, iport)
+    log("setting up http / ws (websockets): %s", csv(bind_ws))
+    for host, iport in bind_ws:
+        add_tcp_socket("ws", host, iport)
+    log("setting up rfb sockets: %s", csv(bind_rfb))
+    for host, iport in bind_rfb:
+        add_tcp_socket("rfb", host, iport)
+    log("setting up vsock sockets: %s", csv(bind_vsock))
+    for cid, iport in bind_vsock:
+        sock = setup_vsock_socket(cid, iport)
+        sockets.append(sock)
+
+    # systemd socket activation:
+    if POSIX:
+        try:
+            from xpra.platform.xposix.sd_listen import get_sd_listen_sockets
+        except ImportError as e:
+            log("no systemd socket activation: %s", e)
+        else:
+            sd_sockets = get_sd_listen_sockets()
+            log("systemd sockets: %s", sd_sockets)
+            for stype, sock, addr in sd_sockets:
+                sockets.append(setup_sd_listen_socket(stype, sock, addr))
+                log("%s : %s", (stype, [addr]), sock)
+    return sockets
+
 def create_tcp_socket(host, iport):
     log = get_network_logger()
     if host.find(":")<0:
@@ -231,7 +325,8 @@ def normalize_local_display_name(local_display_name):
     return local_display_name
 
 
-def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
+def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
+                        mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
     if not bind:
         return []
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
@@ -240,7 +335,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
         else:
             raise InitException("at least one socket directory must be set to use unix domain sockets")
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
-    display_name = normalize_local_display_name(display_name)
+    if display_name is not None:
+        display_name = normalize_local_display_name(display_name)
     log = get_network_logger()
     defs = []
     try:
@@ -248,14 +344,16 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
         log("setup_local_sockets: bind=%s", bind)
         for b in bind:
             sockpath = b
-            if b=="none" or b=="":
+            if b in ("none", ""):
                 continue
             elif b=="auto":
+                assert display_name is not None
                 sockpaths += dotxpra.norm_socket_paths(display_name)
                 log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, uid, gid)
             else:
                 sockpath = dotxpra.osexpand(b)
                 if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
+                    assert display_name is not None
                     sockpath = os.path.abspath(sockpath)
                     if not os.path.exists(sockpath):
                         os.makedirs(sockpath)

@@ -23,7 +23,7 @@ from xpra.os_util import (
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand,
     )
-from xpra.util import envbool, csv
+from xpra.util import envbool
 from xpra.platform.dotxpra import DotXpra
 
 
@@ -339,106 +339,6 @@ def make_proxy_server():
     return ProxyServer()
 
 
-def hosts(host_str):
-    if host_str=="*":
-        from xpra.server.socket_util import has_dual_stack
-        if has_dual_stack():
-            #IPv6 will also listen for IPv4:
-            return ["::"]
-        #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
-        return ["0.0.0.0", "::"]
-    return [host_str]
-
-
-def create_sockets(opts, error_cb):
-    from xpra.server.socket_util import (
-        parse_bind_ip, parse_bind_vsock, get_network_logger,
-        setup_tcp_socket, setup_udp_socket, setup_vsock_socket, setup_sd_listen_socket,
-        )
-    log = get_network_logger()
-
-    bind_tcp = parse_bind_ip(opts.bind_tcp)
-    bind_udp = parse_bind_ip(opts.bind_udp)
-    bind_ssl = parse_bind_ip(opts.bind_ssl)
-    bind_ssh = parse_bind_ip(opts.bind_ssh)
-    bind_ws  = parse_bind_ip(opts.bind_ws)
-    bind_wss = parse_bind_ip(opts.bind_wss)
-    bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
-    bind_vsock = parse_bind_vsock(opts.bind_vsock)
-
-    sockets = []
-
-    min_port = int(opts.min_port)
-    def add_tcp_socket(socktype, host_str, iport):
-        if iport!=0 and iport<min_port:
-            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
-        for host in hosts(host_str):
-            socket = setup_tcp_socket(host, iport, socktype)
-            host, iport = socket[2]
-            sockets.append(socket)
-    def add_udp_socket(socktype, host_str, iport):
-        if iport!=0 and iport<min_port:
-            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
-        for host in hosts(host_str):
-            socket = setup_udp_socket(host, iport, socktype)
-            host, iport = socket[2]
-            sockets.append(socket)
-    # Initialize the TCP sockets before the display,
-    # That way, errors won't make us kill the Xvfb
-    # (which may not be ours to kill at that point)
-    ssh_upgrades = opts.ssh_upgrade
-    if ssh_upgrades:
-        try:
-            from xpra.net.ssh import nogssapi_context
-            with nogssapi_context():
-                import paramiko
-            assert paramiko
-        except ImportError as e:
-            from xpra.log import Logger
-            sshlog = Logger("ssh")
-            sshlog("import paramiko", exc_info=True)
-            sshlog.error("Error: cannot enable SSH socket upgrades:")
-            sshlog.error(" %s", e)
-    log("setting up SSL sockets: %s", csv(bind_ssl))
-    for host, iport in bind_ssl:
-        add_tcp_socket("ssl", host, iport)
-    log("setting up SSH sockets: %s", csv(bind_ssh))
-    for host, iport in bind_ssh:
-        add_tcp_socket("ssh", host, iport)
-    log("setting up https / wss (secure websockets): %s", csv(bind_wss))
-    for host, iport in bind_wss:
-        add_tcp_socket("wss", host, iport)
-    log("setting up TCP sockets: %s", csv(bind_tcp))
-    for host, iport in bind_tcp:
-        add_tcp_socket("tcp", host, iport)
-    log("setting up UDP sockets: %s", csv(bind_udp))
-    for host, iport in bind_udp:
-        add_udp_socket("udp", host, iport)
-    log("setting up http / ws (websockets): %s", csv(bind_ws))
-    for host, iport in bind_ws:
-        add_tcp_socket("ws", host, iport)
-    log("setting up rfb sockets: %s", csv(bind_rfb))
-    for host, iport in bind_rfb:
-        add_tcp_socket("rfb", host, iport)
-    log("setting up vsock sockets: %s", csv(bind_vsock))
-    for cid, iport in bind_vsock:
-        socket = setup_vsock_socket(cid, iport)
-        sockets.append(socket)
-
-    # systemd socket activation:
-    if POSIX:
-        try:
-            from xpra.platform.xposix.sd_listen import get_sd_listen_sockets
-        except ImportError as e:
-            log("no systemd socket activation: %s", e)
-        else:
-            sd_sockets = get_sd_listen_sockets()
-            log("systemd sockets: %s", sd_sockets)
-            for stype, socket, addr in sd_sockets:
-                sockets.append(setup_sd_listen_socket(stype, socket, addr))
-                log("%s : %s", (stype, [addr]), socket)
-    return sockets
-
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     #add finally hook to ensure we will run the cleanups
     #even if we exit because of an exception:
@@ -698,6 +598,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
+    from xpra.server.socket_util import get_network_logger, setup_local_sockets, create_sockets
     sockets = create_sockets(opts, error_cb)
 
     sanitize_env()
@@ -739,7 +640,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing:
             from xpra.os_util import get_rand_chars
             uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
-        xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid)
+        xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd,
+                                                  uid, gid, username, xauth_data, uinput_uuid)
         for f in cleanups:
             add_cleanup(f)
         xvfb_pid = xvfb.pid
@@ -883,7 +785,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         gui_init()
 
     #setup unix domain socket:
-    from xpra.server.socket_util import get_network_logger, setup_local_sockets
     netlog = get_network_logger()
     if not opts.socket_dir and not opts.socket_dirs:
         #we always need at least one valid socket dir
