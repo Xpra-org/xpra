@@ -302,7 +302,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.have_more = self._protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
-        process = getattr(conn, "process", None)        #ie: ssh is handled by anotherprocess
+        process = getattr(conn, "process", None)        #ie: ssh is handled by another process
         if process:
             proc, name, command = process
             if proc:
