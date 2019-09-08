@@ -142,7 +142,7 @@ class ProxyServer(ServerCore):
     def handle_stop_command(self, *args):
         display = args[0]
         log("stop command: will try to find proxy process for display %s", display)
-        for instance, v in self.instances.items():
+        for instance, v in dict(self.instances).items():
             _, disp, _ = v
             if disp==display:
                 log.info("stop command: found matching process %s with pid %i for display %s",
@@ -154,7 +154,7 @@ class ProxyServer(ServerCore):
     def stop_all_proxies(self):
         instances = self.instances
         log("stop_all_proxies() will stop proxy instances: %s", instances)
-        for instance in instances:
+        for instance in tuple(instances.keys()):
             self.stop_proxy(instance)
         self.instances = {}
         log("stop_all_proxies() done")
@@ -164,13 +164,17 @@ class ProxyServer(ServerCore):
         if not v:
             log.error("Error: proxy instance not found for %s", instance)
             return
+        log("stop_proxy(%s) is_alive=%s", instance, instance.is_alive())
+        if not instance.is_alive():
+            return
         isprocess, _, mq = v
         log("stop_proxy(%s) %s", instance, v)
+        #different ways of stopping for process vs threaded implementations:
         if isprocess:
-            if not instance.is_alive():
-                return
+            #send message:
             mq.put("stop")
         else:
+            #direct method call:
             instance.stop(None, "proxy server request")
 
 
@@ -414,6 +418,7 @@ class ProxyServer(ServerCore):
             pit = ProxyInstanceThread(session_options, self.video_encoders,
                                       client_proto, server_conn,
                                       disp_desc, cipher, encryption_key, c)
+            pit.stopped = self.reap
             pit.run()
             self.instances[pit] = (False, display, None)
             return
@@ -554,10 +559,7 @@ class ProxyServer(ServerCore):
     def reap(self, *args):
         log("reap%s", args)
         dead = []
-        for instance, descr in dict(self.instances).items():
-            isprocess, _, mq = descr
-            if not isprocess:
-                continue
+        for instance in tuple(self.instances.keys()):
             #instance is a process
             if not instance.is_alive():
                 dead.append(instance)
@@ -584,19 +586,21 @@ class ProxyServer(ServerCore):
                     self.reap()
                     i = 0
                     instances = dict(self.instances)
-                    for p, v in instances.items():
+                    instances_info = {}
+                    for proxy_instance, v in instances.items():
                         isprocess, d, _ = v
                         iinfo = {
                             "display"    : d,
+                            "live"       : proxy_instance.is_alive(),
                             }
                         if isprocess:
                             iinfo.update({
-                                "live"       : p.is_alive(),
-                                "pid"        : p.pid,
+                                "pid"        : proxy_instance.pid,
                                 })
                         else:
-                            iinfo.update(p.get_info())
-                        info[i] = iinfo
+                            iinfo.update(proxy_instance.get_info())
+                        instances_info[i] = iinfo
                         i += 1
+                    info["instances"] = instances_info
                     info["proxies"] = len(instances)
         return info

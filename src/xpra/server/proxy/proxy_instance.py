@@ -69,6 +69,8 @@ class ProxyInstance(object):
         self.video_encoder_types = None
         self.video_helper = None
 
+    def is_alive(self):
+        return not self.exit
 
     def run(self):
         log.info("started %s", self)
@@ -140,6 +142,10 @@ class ProxyInstance(object):
         self.stop_encode_thread()
         self.close_connections(skip_proto, *reasons)
         log.info("stopped %s", self)
+        self.stopped()
+
+    def stopped(self):
+        pass
 
 
     ################################################################################

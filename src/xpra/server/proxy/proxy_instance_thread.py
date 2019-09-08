@@ -74,9 +74,10 @@ class ProxyInstanceThread(ProxyInstance):
 
     def get_info(self):
         info = {}
+        cinfo = info.setdefault("connection", {})
         def add_protocol_info(prefix, proto):
             pinfo = proto.get_info()
-            info[prefix] = pinfo.get("thread", ())
+            cinfo[prefix] = pinfo.get("thread", ())
         add_protocol_info("client", self.client_protocol)
         add_protocol_info("server", self.server_protocol)
         return info
