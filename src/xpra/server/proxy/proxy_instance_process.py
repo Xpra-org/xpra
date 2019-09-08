@@ -8,7 +8,6 @@ import os
 import signal
 from multiprocessing import Process
 
-from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.server.proxy.proxy_instance import ProxyInstance
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol_classes import get_client_protocol_class, get_server_protocol_class
@@ -23,6 +22,7 @@ from xpra.util import (
     repr_ellipsized,
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT
     )
+from xpra.queue_scheduler import QueueScheduler
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
 from xpra.version_util import full_version_str
