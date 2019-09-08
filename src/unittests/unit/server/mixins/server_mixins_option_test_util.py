@@ -121,7 +121,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             cmd = ["info"]+connect_args
             client = self.run_xpra(cmd)
             r = pollwait(client, 20)
-            assert r==0, "info client failed and returned %i: '%s' for server with args=%s" % \
+            assert r==0, "info client failed and returned %s: '%s' for server with args=%s" % \
                 (r, EXIT_STR.get(r, r), args)
 
             client_kwargs = {}
