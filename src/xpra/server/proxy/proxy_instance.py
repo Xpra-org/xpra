@@ -111,15 +111,26 @@ class ProxyInstance(object):
                 log("sending disconnect to %s", proto)
                 proto.send_disconnect([SERVER_SHUTDOWN]+list(reasons))
         #wait for connections to close down cleanly before we exit
+        cp = self.client_protocol
+        sp = self.server_protocol
         for i in range(10):
-            if self.client_protocol.is_closed() and self.server_protocol.is_closed():
+            if cp.is_closed() and sp.is_closed():
                 break
             if i==0:
+                log("waiting for network connections to close")
+            elif i==1:
                 log.info("waiting for network connections to close")
             else:
                 log("still waiting %i/10 - client.closed=%s, server.closed=%s",
-                    i+1, self.client_protocol.is_closed(), self.server_protocol.is_closed())
+                    i+1, cp.is_closed(), sp.is_closed())
             sleep(0.1)
+        if not cp.is_closed():
+            log.warn("Warning: proxy instance client connection has not been closed yet:")
+            log.warn(" %s", cp)
+        if not sp.is_closed():
+            log.warn("Warning: proxy instance server connection has not been closed yet:")
+            log.warn(" %s", sp)
+
 
     def send_disconnect(self, proto, *reasons):
         log("send_disconnect(%s, %s)", proto, reasons)
@@ -139,9 +150,9 @@ class ProxyInstance(object):
             for x in reasons:
                 log.info(" %s", x)
             self.exit = True
+            log.info("stopping %s", self)
         self.stop_encode_thread()
         self.close_connections(skip_proto, *reasons)
-        log.info("stopped %s", self)
         self.stopped()
 
     def stopped(self):
