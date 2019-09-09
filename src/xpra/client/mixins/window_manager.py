@@ -108,19 +108,25 @@ class WindowClient(StubClientMixin):
         self.server_is_desktop = False
         self.server_window_states = []
         self.server_window_signals = ()
+        self.server_window_filters = False
+        self.window_buffer_refresh = False
+        self.window_configure_pointer = False
 
         self.server_input_devices = None
         self.server_precise_wheel = False
         self.server_pointer_relative = False
+
         self.input_devices = "auto"
 
         self.overlay_image = None
 
+        self.server_cursors = False
         self.client_supports_system_tray = False
         self.client_supports_cursors = False
         self.client_supports_bell = False
         self.cursors_enabled = False
         self.default_cursor_data = None
+        self.server_bell = False
         self.bell_enabled = False
 
         self.border = None
