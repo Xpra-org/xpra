@@ -74,22 +74,27 @@ class DotXpra(object):
 
     def get_server_state(self, sockpath, timeout=5):
         if not os.path.exists(sockpath):
-            return self.DEAD
+            return DotXpra.DEAD
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(timeout)
         try:
             sock.connect(sockpath)
-            return self.LIVE
+            return DotXpra.LIVE
         except socket.error as e:
-            debug("get_server_state: connect(%s)=%s", sockpath, e)
+            debug("get_server_state: connect(%s)=%s (timeout=%s)", sockpath, e, timeout)
             err = e.args[0]
             if err==errno.EACCES:
-                return self.INACCESSIBLE
+                return DotXpra.INACCESSIBLE
             if err==errno.ECONNREFUSED:
                 #could be the server is starting up
-                return self.UNKNOWN
-            if err in (errno.EWOULDBLOCK, errno.ENOENT):
-                return self.DEAD
+                debug("ECONNREFUSED")
+                return DotXpra.UNKNOWN
+            if err==errno.EWOULDBLOCK:
+                debug("EWOULDBLOCK")
+                return DotXpra.DEAD
+            if err==errno.ENOENT:
+                debug("ENOENT")
+                return DotXpra.DEAD
             return self.UNKNOWN
         finally:
             try:
@@ -104,7 +109,8 @@ class DotXpra(object):
     #this is imported by winswitch, so we can't change the method signature
     def sockets(self, check_uid=0, matching_state=None):
         #flatten the dictionnary into a list:
-        return list(set((v[0], v[1]) for details_values in self.socket_details(check_uid, matching_state).values() for v in details_values))
+        return list(set((v[0], v[1]) for details_values in
+                        self.socket_details(check_uid, matching_state).values() for v in details_values))
 
     def socket_paths(self, check_uid=0, matching_state=None, matching_display=None):
         paths = []
