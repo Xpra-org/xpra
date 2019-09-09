@@ -939,13 +939,13 @@ class ServerCore(object):
         udpl = UDPListener(sock, self.process_udp_packet)
         self._udp_listeners.append(udpl)
 
-    def _new_connection(self, socktype, listener, *args):
+    def _new_connection(self, socktype, listener, handle=0):
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log("_new_connection%s", (listener, socktype, args))
+        log("_new_connection%s", (listener, socktype, handle))
         if self._closing:
             netlog("ignoring new connection during shutdown")
             return False
@@ -953,9 +953,8 @@ class ServerCore(object):
         assert socktype, "cannot find socket type for %s" % listener
         #TODO: just like add_listen_socket above, this needs refactoring
         if socktype=="named-pipe":
-            pipe_handle = args[0]
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-            conn = NamedPipeConnection(listener.pipe_name, pipe_handle)
+            conn = NamedPipeConnection(listener.pipe_name, handle)
             netlog.info("New %s connection received on %s", socktype, conn.target)
             return self.make_protocol(socktype, conn)
 
@@ -970,7 +969,7 @@ class ServerCore(object):
             return True
         #from here on, we run in a thread, so we can poll (peek does)
         start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True,
-                     args=(conn, conn._socket, conn.remote, socktype, conn.endpoint, socket_info))
+                     args=(conn, socket_info))
         return True
 
     def peek_connection(self, conn, timeout=PEEK_TIMEOUT_MS):
@@ -1027,11 +1026,16 @@ class ServerCore(object):
         except (OSError, IOError):
             log("close_connection()", exc_info=True)
 
-    def handle_new_connection(self, conn, sock, address, socktype, peername, socket_info):
+    def handle_new_connection(self, conn, socket_info):
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
         """
+        sock = conn._socket
+        address = conn.remote
+        socktype = conn.socktype
+        peername = conn.endpoint
+
         sockname = sock.getsockname()
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
