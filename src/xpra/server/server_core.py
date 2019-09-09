@@ -47,6 +47,7 @@ from xpra.os_util import (
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.make_thread import start_thread
 from xpra.util import (
+    first_time,
     csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
     repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
@@ -869,6 +870,12 @@ class ServerCore(object):
     def touch_sockets(self):
         netlog("touch_sockets() unix socket paths=%s", self.unix_socket_paths)
         for sockpath in self.unix_socket_paths:
+            if not os.path.exists(sockpath):
+                if first_time("missing-socket-%s" % sockpath):
+                    log.warn("Warning: the unix domain socket cannot be found:")
+                    log.warn(" '%s'", sockpath)
+                    log.warn(" was it deleted by mistake?")
+                continue
             try:
                 os.utime(sockpath, None)
             except Exception:
