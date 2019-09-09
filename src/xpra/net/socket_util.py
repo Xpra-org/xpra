@@ -110,24 +110,28 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connectio
             #named pipe listener uses a thread:
             sock.new_connection_cb = new_connection_cb
             sock.start()
-        elif socktype=="udp":
+            return None
+        if socktype=="udp":
             assert new_udp_connection_cb, "UDP sockets cannot be handled here"
             new_udp_connection_cb(sock)
-        else:
-            from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
-            glib = import_glib()
-            sock.listen(5)
-            def io_callback(sock, flags):
-                log("io_callback(%s, %s)", sock, flags)
-                new_connection_cb(socktype, sock)
-            if is_gtk3():
-                glib.io_add_watch(sock, glib.PRIORITY_DEFAULT, glib.IO_IN, io_callback)
-            else:
-                glib.io_add_watch(sock, glib.IO_IN, io_callback, priority=glib.PRIORITY_DEFAULT)
+            return None
+        from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
+        glib = import_glib()
+        sock.listen(5)
+        def io_callback(sock, flags):
+            log("io_callback(%s, %s)", sock, flags)
+            return new_connection_cb(socktype, sock)
+        if is_gtk3():
+            source = glib.io_add_watch(sock, glib.PRIORITY_DEFAULT, glib.IO_IN, io_callback)
+        source = glib.io_add_watch(sock, glib.IO_IN, io_callback, priority=glib.PRIORITY_DEFAULT)
+        def cleanup():
+            glib.source_remove(source)
+        return cleanup
     except Exception as e:
         log("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
         log.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
         log.error(" %s", e)
+        return None
 
 
 def accept_connection(socktype, listener, timeout=None):

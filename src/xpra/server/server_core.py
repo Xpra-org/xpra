@@ -219,6 +219,7 @@ class ServerCore(object):
         self._http_headers_dir = None
         self._aliases = {}
         self.socket_info = {}
+        self.socket_cleanup = []
         self.socket_verify_timer = WeakKeyDictionary()
         self.socket_rfb_upgrade_timer = WeakKeyDictionary()
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
@@ -464,6 +465,10 @@ class ServerCore(object):
 
 
     def cleanup_sockets(self):
+        #stop listening for IO events:
+        for sc in self.socket_cleanup:
+            sc()
+        #actually close the socket:
         si = self._socket_info
         self._socket_info = ()
         for socktype, _, info, cleanup in si:
@@ -925,7 +930,9 @@ class ServerCore(object):
     def add_listen_socket(self, socktype, sock):
         info = self.socket_info.get(sock)
         netlog("add_listen_socket(%s, %s) info=%s", socktype, sock, info)
-        add_listen_socket(socktype, sock, info, self._new_connection, self._new_udp_connection)
+        cleanup = add_listen_socket(socktype, sock, info, self._new_connection, self._new_udp_connection)
+        if cleanup:
+            self.socket_cleanup.append(cleanup)
 
     def _new_udp_connection(self, sock):
         from xpra.net.udp_protocol import UDPListener
