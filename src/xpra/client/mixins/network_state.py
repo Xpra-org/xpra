@@ -23,7 +23,7 @@ PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
-assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
+assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
 """
@@ -64,7 +64,7 @@ class NetworkState(StubClientMixin):
         self.ping_echo_timeout_timer = None
 
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts, _extra_args=()):
         self.pings = opts.pings
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
         self.bandwidth_detection = opts.bandwidth_detection
@@ -113,6 +113,7 @@ class NetworkState(StubClientMixin):
         if bandwidth_limit>0:
             caps["bandwidth-limit"] = bandwidth_limit
         caps["bandwidth-detection"] = self.bandwidth_detection
+        caps["ping-echo-sourceid"] = True
         return caps
 
     def parse_server_capabilities(self):
@@ -186,7 +187,8 @@ class NetworkState(StubClientMixin):
             self._server_ok = self.last_ping_echoed_time>=ping_sent_time
         if not self._server_ok:
             if not self.ping_echo_timeout_timer:
-                self.ping_echo_timeout_timer = self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, ping_sent_time)
+                self.ping_echo_timeout_timer = self.timeout_add(PING_TIMEOUT*1000,
+                                                                self.check_echo_timeout, ping_sent_time)
         else:
             self.cancel_ping_echo_timeout_timer()
         log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)",
@@ -240,6 +242,9 @@ class NetworkState(StubClientMixin):
     def _process_ping(self, packet):
         echotime = packet[1]
         l1,l2,l3 = 0,0,0
+        sid = ""
+        if len(packet)>=4:
+            sid = packet[3]
         if POSIX:
             try:
                 (fl1, fl2, fl3) = os.getloadavg()
@@ -250,7 +255,7 @@ class NetworkState(StubClientMixin):
             sl = self.server_ping_latency[-1][1]
         except IndexError:
             sl = -1
-        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
+        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl), sid)
 
 
     ######################################################################

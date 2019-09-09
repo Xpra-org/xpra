@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -184,9 +184,12 @@ class NetworkStateServer(StubServerMixin):
 
     def _process_ping(self, proto, packet):
         time_to_echo = packet[1]
+        sid = ""
+        if len(packet)>=4:
+            sid = packet[3]
         ss = self.get_server_source(proto)
         if ss:
-            ss.process_ping(time_to_echo)
+            ss.process_ping(time_to_echo, sid)
 
 
     def init_packet_handlers(self):

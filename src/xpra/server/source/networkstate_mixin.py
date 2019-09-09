@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,6 +29,9 @@ class NetworkStateMixin(StubSourceMixin):
     def cleanup(self):
         self.cancel_ping_echo_timers()
         self.cancel_ping_timer()
+
+    def get_caps(self):
+        return {"ping-echo-sourceid" : True}
 
     def get_info(self):
         lpe = 0
@@ -68,7 +71,7 @@ class NetworkStateMixin(StubSourceMixin):
         for t in timers:
             self.source_remove(t)
 
-    def process_ping(self, time_to_echo):
+    def process_ping(self, time_to_echo, sid):
         l1,l2,l3 = 0,0,0
         cl = -1
         if PING_DETAILS:
@@ -81,7 +84,7 @@ class NetworkStateMixin(StubSourceMixin):
             if stats and stats.client_ping_latency:
                 _, cl = stats.client_ping_latency[-1]
                 cl = int(1000.0*cl)
-        self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, will_have_more=False)
+        self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, sid, will_have_more=False)
         #if the client is pinging us, ping it too:
         if not self.ping_timer:
             self.ping_timer = self.timeout_add(500, self.ping)

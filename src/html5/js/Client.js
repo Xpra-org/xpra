@@ -1043,6 +1043,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"bencode"					: true,
 		"yaml"						: false,
 		"open-url"					: this.open_url,
+		"ping-echo-sourceid"		: true,
 	});
 	if (this.bandwidth_limit>0) {
 		this._update_capabilities({
@@ -2003,9 +2004,13 @@ XpraClient.prototype._process_ping = function(packet, ctx) {
 		//prefer system time (packet[1] is monotonic)
 		ctx.last_ping_server_time = packet[2];
 	}
+	var sid = "";
+	if (packet.length>=4) {
+		sid = packet[3];
+	}
 	ctx.last_ping_local_time = new Date().getTime();
 	var l1=0, l2=0, l3=0;
-	ctx.send(["ping_echo", echotime, l1, l2, l3, 0]);
+	ctx.send(["ping_echo", echotime, l1, l2, l3, 0, sid]);
 }
 
 XpraClient.prototype._process_ping_echo = function(packet, ctx) {
