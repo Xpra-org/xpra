@@ -140,7 +140,7 @@ def accept_connection(socktype, listener, timeout=None):
         log.error("Error: cannot accept new connection:")
         log.error(" %s", e)
         return None
-    log("peer: %s", get_peercred(sock))
+    #log("peercred(%s)=%s", sock, get_peercred(sock))
     try:
         peername = sock.getpeername()
     except (OSError, IOError):
@@ -149,7 +149,7 @@ def accept_connection(socktype, listener, timeout=None):
     sockname = sock.getsockname()
     from xpra.net.bytestreams import SocketConnection
     conn = SocketConnection(sock, sockname, address, peername, socktype)
-    log("accept_connection(%s, %s)=%s", listener, socktype, conn)
+    log("accept_connection(%s, %s, %s)=%s", listener, socktype, timeout, conn)
     return conn
 
 def create_sockets(opts, error_cb):
@@ -224,7 +224,7 @@ def create_sockets(opts, error_cb):
         sockets.append(sock)
 
     # systemd socket activation:
-    if POSIX:
+    if POSIX and not OSX:
         try:
             from xpra.platform.xposix.sd_listen import get_sd_listen_sockets
         except ImportError as e:
