@@ -1303,7 +1303,10 @@ def fixup_video_all_or_none(options):
 def fixup_socketdirs(options, defaults):
     if not options.socket_dirs:
         from xpra.platform.paths import get_socket_dirs
-        options.socket_dirs = getattr(defaults, "socket_dirs", get_socket_dirs())
+        if defaults:
+            options.socket_dirs = getattr(defaults, "socket_dirs", get_socket_dirs())
+        else:
+            options.socket_dirs = get_socket_dirs()
     elif isinstance(options.socket_dirs, str):
         options.socket_dirs = options.socket_dirs.split(os.path.pathsep)
     else:
@@ -1421,7 +1424,7 @@ def abs_paths(options):
                 continue
             setattr(options, f, os.path.abspath(v))
 
-def fixup_options(options, defaults={}):
+def fixup_options(options, defaults=None):
     fixup_pings(options)
     fixup_encodings(options)
     fixup_compression(options)
