@@ -10,7 +10,6 @@ from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
-    get_peercred,
     )
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 
