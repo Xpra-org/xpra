@@ -95,31 +95,31 @@ cdef extern from "X11/Xlib.h":
     int ConfigureNotify
 
     int NoEventMask
-    int KeyPressMask  
+    int KeyPressMask
     int KeyReleaseMask
-    int ButtonPressMask  
-    int ButtonReleaseMask  
-    int EnterWindowMask  
-    int LeaveWindowMask  
-    int PointerMotionMask  
-    int PointerMotionHintMask  
-    int Button1MotionMask  
-    int Button2MotionMask  
-    int Button3MotionMask 
-    int Button4MotionMask 
-    int Button5MotionMask 
-    int ButtonMotionMask 
+    int ButtonPressMask
+    int ButtonReleaseMask
+    int EnterWindowMask
+    int LeaveWindowMask
+    int PointerMotionMask
+    int PointerMotionHintMask
+    int Button1MotionMask
+    int Button2MotionMask
+    int Button3MotionMask
+    int Button4MotionMask
+    int Button5MotionMask
+    int ButtonMotionMask
     int KeymapStateMask
-    int ExposureMask 
-    int VisibilityChangeMask 
-    int StructureNotifyMask 
-    int ResizeRedirectMask 
-    int SubstructureNotifyMask 
-    int SubstructureRedirectMask 
-    int FocusChangeMask 
-    int PropertyChangeMask 
-    int ColormapChangeMask 
-    int OwnerGrabButtonMask 
+    int ExposureMask
+    int VisibilityChangeMask
+    int StructureNotifyMask
+    int ResizeRedirectMask
+    int SubstructureNotifyMask
+    int SubstructureRedirectMask
+    int FocusChangeMask
+    int PropertyChangeMask
+    int ColormapChangeMask
+    int OwnerGrabButtonMask
 
     int CWBorderWidth
     int CWSibling
