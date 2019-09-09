@@ -654,6 +654,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         from xpra.platform.win32.dotxpra import PIPE_PREFIX
     else:
         PIPE_PREFIX = None
+    if display_name.startswith("/") and POSIX:
+        display_name = "socket://"+display_name
     desc = {"display_name" : display_name}
     display_name, proxy_attrs = parse_proxy_attributes(display_name)
     desc.update(proxy_attrs)
