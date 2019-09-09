@@ -14,6 +14,7 @@ from xpra.net.protocol_classes import get_client_protocol_class, get_server_prot
 from xpra.net.protocol import Protocol
 from xpra.os_util import (
     SIGNAMES, POSIX,
+    bytestostr,
     Queue, osexpand,
     getuid, getgid, get_username_for_uid, setuidgid,
     )
@@ -270,7 +271,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def do_process_control_packet(self, proto, packet):
         log("process_control_packet(%s, %s)", proto, packet)
-        packet_type = packet[0]
+        packet_type = bytestostr(packet[0])
         if packet_type==Protocol.CONNECTION_LOST:
             log.info("Connection lost")
             if proto in self.potential_protocols:
@@ -298,6 +299,11 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 proto.send_now(("hello", {"version" : version}))
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "version sent")
                 return
+            log.warn("Warning: invalid hello packet,")
+            log.warn(" not a supported control channel request")
+        else:
+            log.warn("Warning: invalid packet type for control channel")
+            log.warn(" '%s' is not supported, only 'hello' is", packet_type)
         self.send_disconnect(proto, CONTROL_COMMAND_ERROR,
                              "this socket only handles 'info', 'version' and 'stop' requests")
 
