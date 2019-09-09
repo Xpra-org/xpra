@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,7 +8,7 @@ import os
 import sys
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 
-from xpra.gtk_common.gobject_compat import import_glib, import_gobject
+from xpra.gtk_common.gobject_compat import import_glib
 from xpra.util import (
     LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR,
     repr_ellipsized, print_nested_dict, csv, envfloat, envbool, envint, typedict,
@@ -30,7 +30,6 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 glib = import_glib()
-gobject = import_gobject()
 
 freeze_support()
 
