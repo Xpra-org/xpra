@@ -12,6 +12,8 @@ log = Logger("network")
 class ConnectionClosedException(Exception):
     pass
 
+SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "udp")
+
 #this is used for generating aliases:
 PACKET_TYPES = [
     "hello", "info",

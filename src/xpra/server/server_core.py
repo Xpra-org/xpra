@@ -24,7 +24,7 @@ from xpra.version_util import (
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.net.common import may_log_packet
+from xpra.net.common import may_log_packet, SOCKET_TYPES
 from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection,
     add_listen_socket, accept_connection,
@@ -606,7 +606,7 @@ class ServerCore(object):
             self.auth_classes["named-pipe"] = auth
         else:
             self.auth_classes["unix-domain"] = auth
-        for x in ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "udp"):
+        for x in SOCKET_TYPES:
             opts_value = getattr(opts, "%s_auth" % x)
             self.auth_classes[x] = self.get_auth_modules(x, opts_value, opts)
         authlog("init_auth(..) auth=%s", self.auth_classes)
