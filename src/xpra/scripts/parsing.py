@@ -1039,8 +1039,8 @@ def do_parse_cmdline(cmdline, defaults):
                       help="How often to synchronize the virtual framebuffer used for X11 seamless servers "
                       +"(0 to disable)."
                       +" Default: %s." % defaults.sync_xvfb)
-    group.add_option("--socket-dirs", action="append",
-                      dest="socket_dirs", default=[],
+    group.add_option("--socket-dirs", action="store",
+                      dest="socket_dirs", default=defaults.socket_dirs,
                       help="Directories to look for the socket files in."
                       +" Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.socket_dirs))
     default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or the first valid directory in socket-dirs"
@@ -1253,7 +1253,7 @@ def do_parse_cmdline(cmdline, defaults):
 
     #special case for things stored as lists, but command line option is a CSV string:
     #and may have "none" or "all" special values
-    fixup_options(options, defaults)
+    fixup_options(options)
 
     try:
         options.dpi = int(options.dpi)

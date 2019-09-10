@@ -829,7 +829,7 @@ def get_defaults():
         OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS,
         DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
         )
-    from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts
+    from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts, get_socket_dirs
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -1015,7 +1015,7 @@ def get_defaults():
                     "bandwidth-detection" : True,
                     "ssh-upgrade"       : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
-                    "socket-dirs"       : [],
+                    "socket-dirs"       : get_socket_dirs(),
                     "remote-xpra"       : get_remote_run_xpra_scripts(),
                     "encodings"         : ["all"],
                     "proxy-video-encoders" : [],
@@ -1300,14 +1300,8 @@ def fixup_video_all_or_none(options):
     options.video_decoders  = getlist(vdstr,    "video decoders",   "ALL_VIDEO_DECODER_OPTIONS")
     options.proxy_video_encoders = getlist(pvestr, "proxy video encoders", "HARDWARE_ENCODER_OPTIONS")
 
-def fixup_socketdirs(options, defaults):
-    if not options.socket_dirs:
-        from xpra.platform.paths import get_socket_dirs
-        if defaults:
-            options.socket_dirs = getattr(defaults, "socket_dirs", get_socket_dirs())
-        else:
-            options.socket_dirs = get_socket_dirs()
-    elif isinstance(options.socket_dirs, str):
+def fixup_socketdirs(options):
+    if isinstance(options.socket_dirs, str):
         options.socket_dirs = options.socket_dirs.split(os.path.pathsep)
     else:
         assert isinstance(options.socket_dirs, (list, tuple))
@@ -1424,13 +1418,13 @@ def abs_paths(options):
                 continue
             setattr(options, f, os.path.abspath(v))
 
-def fixup_options(options, defaults=None):
+def fixup_options(options):
     fixup_pings(options)
     fixup_encodings(options)
     fixup_compression(options)
     fixup_packetencoding(options)
     fixup_video_all_or_none(options)
-    fixup_socketdirs(options, defaults)
+    fixup_socketdirs(options)
     fixup_clipboard(options)
     fixup_keyboard(options)
     abs_paths(options)
