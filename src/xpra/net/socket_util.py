@@ -5,17 +5,25 @@
 
 import os.path
 import socket
+from time import sleep
 
 from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.os_util import (
+    bytestostr, hexstr,
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
     )
-from xpra.util import envint, envbool, csv, DEFAULT_PORT
+from xpra.util import (
+    envint, envbool, csv,
+    repr_ellipsized,
+    DEFAULT_PORT,
+    )
 
 #what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 GROUP = os.environ.get("XPRA_GROUP", "xpra")
+PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
+PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 
 
 network_logger = None
@@ -158,6 +166,32 @@ def accept_connection(socktype, listener, timeout=None):
     conn = SocketConnection(sock, sockname, address, peername, socktype)
     log("accept_connection(%s, %s, %s)=%s", listener, socktype, timeout, conn)
     return conn
+
+def peek_connection(conn, timeout=PEEK_TIMEOUT_MS):
+    log = get_network_logger()
+    log("peek_connection(%s, %i)", conn, timeout)
+    PEEK_SIZE = 8192
+    start = monotonic_time()
+    peek_data = b""
+    while not peek_data and int(1000*(monotonic_time()-start))<timeout:
+        try:
+            peek_data = conn.peek(PEEK_SIZE)
+        except (OSError, IOError):
+            pass
+        except ValueError:
+            log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
+            break
+        if not peek_data:
+            sleep(timeout/4000.0)
+    line1 = b""
+    log("socket %s peek: got %i bytes", conn, len(peek_data))
+    if peek_data:
+        line1 = peek_data.splitlines()[0]
+        log("socket peek=%s", repr_ellipsized(peek_data, limit=512))
+        log("socket peek hex=%s", hexstr(peek_data[:128]))
+        log("socket peek line1=%s", repr_ellipsized(bytestostr(line1)))
+    return peek_data, line1
+
 
 def create_sockets(opts, error_cb):
     log = get_network_logger()

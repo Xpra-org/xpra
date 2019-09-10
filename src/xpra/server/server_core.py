@@ -26,7 +26,7 @@ from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.common import may_log_packet
 from xpra.net.socket_util import (
-    hosts, mdns_publish,
+    hosts, mdns_publish, peek_connection,
     add_listen_socket, accept_connection,
     )
 from xpra.net.bytestreams import (
@@ -73,8 +73,6 @@ MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
 SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
-PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
-PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 
@@ -972,30 +970,6 @@ class ServerCore(object):
                      args=(conn, socket_info))
         return True
 
-    def peek_connection(self, conn, timeout=PEEK_TIMEOUT_MS):
-        log("peek_connection(%s, %i)", conn, timeout)
-        PEEK_SIZE = 8192
-        start = monotonic_time()
-        peek_data = b""
-        while not peek_data and int(1000*(monotonic_time()-start))<timeout:
-            try:
-                peek_data = conn.peek(PEEK_SIZE)
-            except (OSError, IOError):
-                pass
-            except ValueError:
-                log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
-                break
-            if not peek_data:
-                sleep(timeout/4000.0)
-        line1 = b""
-        netlog("socket %s peek: got %i bytes", conn, len(peek_data))
-        if peek_data:
-            line1 = peek_data.splitlines()[0]
-            netlog("socket peek=%s", repr_ellipsized(peek_data, limit=512))
-            netlog("socket peek hex=%s", hexstr(peek_data[:128]))
-            netlog("socket peek line1=%s", repr_ellipsized(bytestostr(line1)))
-        return peek_data, line1
-
     def new_conn_err(self, conn, sock, socktype, socket_info, network_protocol,
                      msg="invalid packet format, not an xpra client?"):
         #not an xpra client
@@ -1047,7 +1021,7 @@ class ServerCore(object):
         peek_data, line1 = None, None
         #rfb does not send any data, waits for a server packet
         if socktype!="rfb":
-            peek_data, line1 = self.peek_connection(conn)
+            peek_data, line1 = peek_connection(conn)
 
         def ssl_wrap():
             if not self._ssl_wrap_socket:
@@ -1088,7 +1062,7 @@ class ServerCore(object):
                     http = True
                 else:
                     ssl_conn.enable_peek()
-                    peek_data, line1 = self.peek_connection(ssl_conn)
+                    peek_data, line1 = peek_connection(ssl_conn)
                     http = line1.find(b"HTTP/")>0
             if http and self._html:
                 self.start_http_socket(socktype, ssl_conn, True, peek_data)
@@ -1307,7 +1281,7 @@ class ServerCore(object):
                     http = True
                 else:
                     conn.enable_peek()
-                    peek_data, line1 = self.peek_connection(conn)
+                    peek_data, line1 = peek_connection(conn)
                     http = line1.find(b"HTTP/")>0
             is_ssl = True
         else:
