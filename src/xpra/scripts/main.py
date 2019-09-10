@@ -21,7 +21,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, repr_ellipsized, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
-    get_util_logger, getuid, getgid, register_SIGUSR_signals,
+    get_util_logger, getuid, getgid,
     monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON2, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
@@ -147,7 +147,7 @@ def main(script_file, cmdline):
 
 def configure_logging(options, mode):
     if mode in (
-        "showconfig", "info", "id", "attach", "launcher", "stop", "print",
+        "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-mdns", "sessions", "mdns-gui", "bug-report",
         "opengl", "opengl-probe", "test-connect",
         ):
@@ -171,14 +171,15 @@ def configure_logging(options, mode):
     setloghandler(logging.StreamHandler(to))
     if mode in (
         "start", "start-desktop", "upgrade", "upgrade-desktop",
-        "attach", "shadow", "proxy",
+        "attach", "listen", "shadow", "proxy",
         "_sound_record", "_sound_play",
         "stop", "print", "showconfig",
         "request-start", "request-start-desktop", "request-shadow",
         "_dialog", "_pass",
         ):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
-            codec_help = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
+            server_mode = mode not in ("attach", "listen")
+            codec_help = show_sound_codec_help(server_mode, options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(codec_help))
         fmt = LOG_FORMAT
         if mode in ("stop", "showconfig"):
@@ -258,8 +259,7 @@ def systemd_run_wrap(mode, args, systemd_run_args):
             pass
     try:
         p = Popen(cmd)
-        p.wait()
-        return p.returncode
+        return p.wait()
     except KeyboardInterrupt:
         return 128+signal.SIGINT
 
@@ -312,13 +312,13 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
         #"attach" does it when it received the session name from the server
-        if mode not in ("attach", "start", "start-desktop", "upgrade", "upgrade-desktop", "proxy", "shadow"):
+        if mode not in ("attach", "listen", "start", "start-desktop", "upgrade", "upgrade-desktop", "proxy", "shadow"):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     if mode in (
         "start", "start-desktop",
-        "shadow", "attach",
+        "shadow", "attach", "listen",
         "request-start", "request-start-desktop", "request-shadow",
         ):
         options.encodings = validated_encodings(options.encodings)
@@ -425,9 +425,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)
+            print("run_mode 6")
             return run_server(error_cb, options, mode, script_file, args, current_display)
         elif mode in (
-            "attach", "detach",
+            "attach", "listen", "detach",
             "screenshot", "version", "info", "id",
             "control", "_monitor", "top", "print",
             "connect-test", "request-start", "request-start-desktop", "request-shadow",
@@ -1544,6 +1545,10 @@ def get_client_app(error_cb, opts, extra_args, mode):
                                (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
         def handshake_complete(*_args):
             log = get_util_logger()
+            try:
+                conn = app._protocol._conn
+            except AttributeError:
+                return
             log.info("Attached to %s", conn.target)
             log.info(" (press Control-C to detach)\n")
         if hasattr(app, "after_handshake"):
@@ -1560,14 +1565,57 @@ def get_client_app(error_cb, opts, extra_args, mode):
             app.start_child_new_commands = []
             app.start_new_commands = []
         try:
-            conn, display_desc = connect()
-            #UGLY warning: connect will parse the display string,
-            #which may change the username and password..
-            app.username = opts.username
-            app.password = opts.password
-            app.display = opts.display
-            app.display_desc = display_desc
-            app.setup_connection(conn)
+            if mode=="listen":
+                if extra_args:
+                    raise InitException("cannot specify extra arguments with 'listen' mode")
+                from xpra.platform import get_username
+                from xpra.net.socket_util import (
+                    get_network_logger, setup_local_sockets,
+                    create_sockets, add_listen_socket, accept_connection,
+                    )
+                sockets = create_sockets(opts, error_cb)
+                #we don't have a display,
+                #so we can't automatically create sockets:
+                if "auto" in opts.bind:
+                    opts.bind.remove("auto")
+                local_sockets = setup_local_sockets(opts.bind,
+                                                    opts.socket_dir, opts.socket_dirs,
+                                                    None, False,
+                                                    opts.mmap_group, opts.socket_permissions,
+                                                    get_username(), getuid, getgid)
+                sockets += local_sockets
+                listen_cleanup = []
+                socket_cleanup = []
+                def new_connection(socktype, sock, handle=0):
+                    netlog = get_network_logger()
+                    netlog("new_connection%s", (socktype, sock, handle))
+                    conn = accept_connection(socktype, sock)
+                    app.setup_connection(conn)
+                    protocol = app._protocol
+                    protocol.start()
+                    app.send_hello()
+                    #stop listening for new connections:
+                    for cleanup in listen_cleanup:
+                        cleanup()
+                    listen_cleanup[:] = []
+                    #close the sockets:
+                    for cleanup in socket_cleanup:
+                        cleanup()
+                    socket_cleanup[:] = []
+                for socktype, sock, sinfo, cleanup_socket in sockets:
+                    socket_cleanup.append(cleanup_socket)
+                    cleanup = add_listen_socket(socktype, sock, sinfo, new_connection)
+                    if cleanup:
+                        listen_cleanup.append(cleanup)
+            else:
+                conn, display_desc = connect()
+                app.display_desc = display_desc
+                #UGLY warning: connect will parse the display string,
+                #which may change the username and password..
+                app.username = opts.username
+                app.password = opts.password
+                app.display = opts.display
+                app.setup_connection(conn)
         except Exception as e:
             may_notify = getattr(app, "may_notify", None)
             if may_notify:

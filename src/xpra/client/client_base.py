@@ -325,6 +325,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return self.password or self.password_file or os.environ.get('XPRA_PASSWORD')
 
     def send_hello(self, challenge_response=None, client_salt=None):
+        if not self._protocol:
+            log("send_hello(..) skipped, no protocol (listen mode?)")
+            return
         try:
             hello = self.make_hello_base()
             if self.has_password() and not challenge_response:
@@ -536,7 +539,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         register_SIGUSR_signals(glib.idle_add)
 
     def run(self):
-        self._protocol.start()
+        #protocol may be None in "listen" mode
+        if self._protocol:
+            self._protocol.start()
 
     def quit(self, exit_code=0):
         raise Exception("override me!")

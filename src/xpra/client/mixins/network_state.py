@@ -265,8 +265,9 @@ class NetworkState(StubClientMixin):
         self.send_deflate_level()
 
     def send_deflate_level(self):
-        self._protocol.set_compression_level(self.compression_level)
-        self.send("set_deflate", self.compression_level)
+        if self._protocol:
+            self._protocol.set_compression_level(self.compression_level)
+            self.send("set_deflate", self.compression_level)
 
 
     def send_bandwidth_limit(self):
