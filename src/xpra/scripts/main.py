@@ -204,13 +204,6 @@ def configure_logging(options, mode):
     #always log debug level, we just use it selectively (see above)
     logging.root.setLevel(logging.INFO)
 
-    #register posix signals for debugging:
-    if POSIX:
-        def idle_add(fn, *args):
-            from xpra.gtk_common.gobject_compat import import_glib
-            glib = import_glib()
-            glib.idle_add(fn, *args)
-        register_SIGUSR_signals(idle_add)
 
 def configure_network(options):
     from xpra.net import compression, packet_encoding

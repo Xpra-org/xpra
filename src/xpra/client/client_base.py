@@ -27,7 +27,7 @@ from xpra.net.crypto import (
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import (
-    get_machine_id, get_user_uuid,
+    get_machine_id, get_user_uuid, register_SIGUSR_signals,
     load_binary_file, force_quit,
     SIGNAMES, PYTHON3, BITS,
     strtobytes, bytestostr, hexstr, monotonic_time, use_tty,
@@ -532,7 +532,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def glib_init(self):
         #this will take care of calling threads_init if needed:
         from xpra.gtk_common.gobject_compat import import_glib
-        import_glib()
+        glib = import_glib()
+        register_SIGUSR_signals(glib.idle_add)
 
     def run(self):
         self._protocol.start()

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ from xpra.sound.gstreamer_util import import_gst
 gst = import_gst()
 
 from xpra.util import envint
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, register_SIGUSR_signals
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
 from xpra.log import Logger
@@ -169,6 +169,7 @@ class SoundPipeline(gobject.GObject):
         if not self.pipeline:
             log.error("cannot start")
             return
+        register_SIGUSR_signals(self.idle_add)
         log("SoundPipeline.start() codec=%s", self.codec)
         self.idle_emit("new-stream", self.codec)
         self.update_state("active")

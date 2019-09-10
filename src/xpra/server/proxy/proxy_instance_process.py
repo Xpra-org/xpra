@@ -17,6 +17,7 @@ from xpra.os_util import (
     bytestostr,
     Queue, osexpand,
     getuid, getgid, get_username_for_uid, setuidgid,
+    register_SIGUSR_signals,
     )
 from xpra.util import (
     typedict,
@@ -124,6 +125,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     ################################################################################
 
     def run(self):
+        register_SIGUSR_signals(self.idle_add)
         log.info("started %s", self)
         log.info(" for client %s", self.client_conn)
         log.info(" and server %s", self.server_conn)

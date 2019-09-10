@@ -10,7 +10,7 @@ import sys
 import os.path
 
 from xpra.util import flatten_dict, envbool
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, register_SIGUSR_signals
 from xpra.gtk_common.gobject_compat import (
     import_gdk, import_glib, is_gtk3,
     register_os_signals,
@@ -64,6 +64,7 @@ class GTKServerBase(ServerBase):
 
     def install_signal_handlers(self, callback):
         register_os_signals(callback)
+        register_SIGUSR_signals(glib.idle_add)
 
     def signal_quit(self, signum, frame=None):
         gtk_main_quit_on_fatal_exceptions_disable()
