@@ -94,10 +94,12 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
 
     def server_message_queue(self):
-        while True:
+        while not self.exit:
             log("waiting for server message on %s", self.message_queue)
             m = self.message_queue.get()
             log("received proxy server message: %s", m)
+            if m is None:
+                break
             if m=="stop":
                 self.stop(None, "proxy server request")
                 return
@@ -113,6 +115,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         log.info("")
         log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
         QueueScheduler.stop(self)
+        self.message_queue.put(None, False)
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(None, SIGNAMES.get(signum, signum))
