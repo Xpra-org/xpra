@@ -61,10 +61,10 @@ def set_blocking(conn):
 class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def __init__(self, uid, gid, env_options, session_options, socket_dir,
-                 video_encoder_modules,
+                 video_encoder_modules, pings,
                  client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps, message_queue):
         ProxyInstance.__init__(self, session_options,
-                               video_encoder_modules,
+                               video_encoder_modules, pings,
                                disp_desc, cipher, encryption_key, caps)
         QueueScheduler.__init__(self)
         Process.__init__(self, name=str(client_conn))

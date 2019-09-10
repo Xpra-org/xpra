@@ -76,6 +76,9 @@ class ProxyServer(ServerCore):
         #proxy servers may have to connect to remote servers,
         #or even start them, so allow more time before timing out:
         self._accept_timeout += 10
+        self.pings = 0
+        self.video_encoders = ()
+        self._start_sessions = False
         #keep track of the proxy process instances
         #the display they're on and the message queue we can
         # use to communicate with them
@@ -91,6 +94,7 @@ class ProxyServer(ServerCore):
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
+        self.pings = int(opts.pings)
         self.video_encoders = opts.proxy_video_encoders
         self._start_sessions = opts.proxy_start_sessions
         ServerCore.init(self, opts)
@@ -416,7 +420,7 @@ class ProxyServer(ServerCore):
             if env_options:
                 log.warn("environment options are ignored in threaded mode")
             from xpra.server.proxy.proxy_instance_thread import ProxyInstanceThread
-            pit = ProxyInstanceThread(session_options, self.video_encoders,
+            pit = ProxyInstanceThread(session_options, self.video_encoders, self.pings,
                                       client_proto, server_conn,
                                       disp_desc, cipher, encryption_key, c)
             pit.stopped = self.reap
@@ -449,7 +453,7 @@ class ProxyServer(ServerCore):
                 client_conn.set_active(True)
                 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
-                                               self.video_encoders,
+                                               self.video_encoders, self.pings,
                                                client_conn, disp_desc, client_state,
                                                cipher, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())

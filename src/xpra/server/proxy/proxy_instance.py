@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
-from time import sleep
+from time import sleep, time
 
 from xpra.net import compression
 from xpra.net.net_util import get_network_caps
@@ -15,7 +15,10 @@ from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, parse_bool
-from xpra.os_util import Queue, monotonic_time, bytestostr, strtobytes
+from xpra.os_util import (
+    Queue, get_hex_uuid,
+    monotonic_time, bytestostr, strtobytes,
+    )
 from xpra.util import (
     flatten_dict, typedict, updict, repr_ellipsized, envint, envbool,
     csv, first_time, SERVER_SHUTDOWN,
@@ -36,6 +39,8 @@ VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idl
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 PASSTHROUGH_AUTH = envbool("XPRA_PASSTHROUGH_AUTH", True)
 
+PING_INTERVAL = max(1, envint("XPRA_PROXY_PING_INTERVAL", 5))*1000
+
 CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 
@@ -43,10 +48,11 @@ CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "l
 class ProxyInstance(object):
 
     def __init__(self, session_options,
-                 video_encoder_modules,
+                 video_encoder_modules, pings,
                  disp_desc, cipher, encryption_key, caps):
         self.session_options = session_options
         self.video_encoder_modules = video_encoder_modules
+        self.pings = pings
         self.disp_desc = disp_desc
         self.cipher = cipher
         self.encryption_key = encryption_key
@@ -56,8 +62,17 @@ class ProxyInstance(object):
             video_encoder_modules,
             disp_desc, cipher, encryption_key,
             "%s: %s.." % (type(caps), repr_ellipsized(str(caps)))))
+        self.uuid = get_hex_uuid()
         self.client_protocol = None
         self.server_protocol = None
+        self.client_last_ping = 0
+        self.server_last_ping = 0
+        self.client_last_ping_echo = 0
+        self.server_last_ping_echo = 0
+        self.client_last_ping_latency = 0
+        self.server_last_ping_latency = 0
+        self.client_ping_timer = None
+        self.server_ping_timer = None
         self.client_challenge_packet = None
         self.exit = False
         self.lost_windows = None
@@ -96,6 +111,8 @@ class ProxyInstance(object):
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
         self.start_network_threads()
+        if self.caps.boolget("ping-echo-sourceid"):
+            self.schedule_client_ping()
 
         self.send_hello()
 
@@ -151,6 +168,8 @@ class ProxyInstance(object):
                 log.info(" %s", x)
             self.exit = True
             log.info("stopping %s", self)
+        self.cancel_client_ping_timer()
+        self.cancel_server_ping_timer()
         self.stop_encode_thread()
         self.close_connections(skip_proto, *reasons)
         self.stopped()
@@ -165,10 +184,16 @@ class ProxyInstance(object):
         sinfo = {}
         sinfo.update(get_server_info())
         sinfo.update(get_thread_info(proto))
+        linfo = {}
+        if self.client_last_ping_latency:
+            linfo["client"] = int(self.client_last_ping_latency)
+        if self.server_last_ping_latency:
+            linfo["server"] = int(self.server_last_ping_latency)
         return {
             "proxy" : {
                 "version"    : XPRA_VERSION,
                 ""           : sinfo,
+                "latency"    : linfo,
                 },
             "window" : self.get_window_info(),
             }
@@ -299,6 +324,12 @@ class ProxyInstance(object):
             hello = self.filter_client_caps(self.caps, CLIENT_REMOVE_CAPS_CHALLENGE)
             self.queue_server_packet(("hello", hello))
             return
+        if packet_type=="ping_echo" and self.client_ping_timer and len(packet)>=7 and packet[6]==strtobytes(self.uuid):
+            #this is one of our ping packets:
+            self.client_last_ping_echo = packet[1]
+            self.client_last_ping_latency = 1000*monotonic_time()-self.client_last_ping_echo
+            log("ping-echo: client latency=%.1fms", self.client_last_ping_latency)
+            return
         #the packet types below are forwarded:
         if packet_type=="disconnect":
             reason = bytestostr(packet[1])
@@ -345,6 +376,48 @@ class ProxyInstance(object):
                 #prevent warnings about large uncompressed data
                 packet[index] = Compressed("raw %s" % name, data, can_inline=True)
 
+
+    def cancel_server_ping_timer(self):
+        spt = self.server_ping_timer
+        if spt:
+            self.server_ping_timer = None
+            self.source_remove(spt)
+
+    def cancel_client_ping_timer(self):
+        cpt = self.client_ping_timer
+        if cpt:
+            self.client_ping_timer = None
+            self.source_remove(cpt)
+
+    def schedule_server_ping(self):
+        self.cancel_server_ping_timer()
+        self.server_ping_timer = self.timeout_add(PING_INTERVAL, self.send_server_ping)
+
+    def schedule_client_ping(self):
+        self.cancel_client_ping_timer()
+        self.client_ping_timer = self.timeout_add(PING_INTERVAL, self.send_client_ping)
+
+    def send_server_ping(self):
+        #if we've already sent one, check for the echo:
+        if self.server_last_ping:
+            if not self.server_last_ping_echo or (self.server_last_ping-self.server_last_ping_echo)>5:
+                log.warn("Warning: late server ping")
+        now = monotonic_time()
+        self.server_last_ping = now
+        self.queue_server_packet(("ping", int(now*1000), int(time()*1000), self.uuid))
+        return True
+
+    def send_client_ping(self):
+        #if we've already sent one, check for the echo:
+        if self.client_last_ping:
+            if not self.client_last_ping_echo or (self.client_last_ping-self.client_last_ping_echo)>5:
+                log.warn("Warning: late client ping")
+        now = monotonic_time()
+        self.client_last_ping = now
+        self.queue_client_packet(("ping", int(now*1000), int(time()*1000), self.uuid))
+        return True
+
+
     def process_server_packet(self, proto, packet):
         packet_type = bytestostr(packet[0])
         log("process_server_packet: %s", packet_type)
@@ -360,6 +433,8 @@ class ProxyInstance(object):
                 self.stop(None, "disconnect from server", reason)
         elif packet_type=="hello":
             c = typedict(packet[1])
+            if c.boolget("ping-echo-sourceid"):
+                self.schedule_server_ping()
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
             caps = self.filter_server_caps(c)
             #add new encryption caps:
@@ -377,6 +452,12 @@ class ProxyInstance(object):
             self.client_protocol.max_packet_size = max(self.client_protocol.max_packet_size, file_max_packet_size)
             self.server_protocol.max_packet_size = max(self.server_protocol.max_packet_size, file_max_packet_size)
             packet = ("hello", caps)
+        elif packet_type=="ping_echo" and self.server_ping_timer and len(packet)>=7 and packet[6]==strtobytes(self.uuid):
+            #this is one of our ping packets:
+            self.server_last_ping_echo = packet[1]
+            self.server_last_ping_latency = 1000*monotonic_time()-self.server_last_ping_echo
+            log("ping-echo: server latency=%.1fms", self.server_last_ping_latency)
+            return
         elif packet_type=="info-response":
             #adds proxy info:
             #note: this is only seen by the client application
