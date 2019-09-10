@@ -433,6 +433,22 @@ def force_quit(status=1):
     os._exit(status)  #pylint: disable=protected-access
 
 
+def register_SIGUSR_signals(idle_add):
+    if not os.name=="posix":
+        return
+    from xpra.util import dump_all_frames, dump_gc_frames
+    def sigusr1(*_args):
+        log = get_util_logger().info
+        log("SIGUSR1")
+        idle_add(dump_all_frames, log)
+    def sigusr2(*_args):
+        log = get_util_logger().info
+        log("SIGUSR2")
+        idle_add(dump_gc_frames, log)
+    signal.signal(signal.SIGUSR1, sigusr1)
+    signal.signal(signal.SIGUSR2, sigusr2)
+
+
 def livefds():
     live = set()
     try:

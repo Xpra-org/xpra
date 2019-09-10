@@ -21,7 +21,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, repr_ellipsized, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
-    get_util_logger, getuid, getgid,
+    get_util_logger, getuid, getgid, register_SIGUSR_signals,
     monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON2, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
@@ -206,21 +206,11 @@ def configure_logging(options, mode):
 
     #register posix signals for debugging:
     if POSIX:
-        from xpra.util import dump_all_frames, dump_gc_frames
         def idle_add(fn, *args):
             from xpra.gtk_common.gobject_compat import import_glib
             glib = import_glib()
             glib.idle_add(fn, *args)
-        def sigusr1(*_args):
-            log = get_util_logger().info
-            log("SIGUSR1")
-            idle_add(dump_all_frames, log)
-        def sigusr2(*_args):
-            log = get_util_logger().info
-            log("SIGUSR2")
-            idle_add(dump_gc_frames, log)
-        signal.signal(signal.SIGUSR1, sigusr1)
-        signal.signal(signal.SIGUSR2, sigusr2)
+        register_SIGUSR_signals(idle_add)
 
 def configure_network(options):
     from xpra.net import compression, packet_encoding
