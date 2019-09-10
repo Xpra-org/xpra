@@ -373,6 +373,7 @@ external_excludes = [
                     "curses", "pdb",
                     "tty",
                     "setuptools", "doctest"
+                    "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
                     ]
 if not PYTHON3:
     external_excludes.append("cpuinfo")
