@@ -1564,13 +1564,25 @@ def get_client_app(error_cb, opts, extra_args, mode):
             #we have consumed the start[-child] options
             app.start_child_new_commands = []
             app.start_new_commands = []
+
+        def connect_to_server():
+            conn, display_desc = connect()
+            app.display_desc = display_desc
+            #UGLY warning: connect will parse the display string,
+            #which may change the username and password..
+            app.username = opts.username
+            app.password = opts.password
+            app.display = opts.display
+            app.setup_connection(conn)
+            return conn
+
         try:
             if mode=="listen":
                 if extra_args:
                     raise InitException("cannot specify extra arguments with 'listen' mode")
                 from xpra.platform import get_username
                 from xpra.net.socket_util import (
-                    get_network_logger, setup_local_sockets,
+                    get_network_logger, setup_local_sockets, peek_connection,
                     create_sockets, add_listen_socket, accept_connection,
                     )
                 sockets = create_sockets(opts, error_cb)
@@ -1587,14 +1599,39 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 listen_cleanup = []
                 socket_cleanup = []
                 def new_connection(socktype, sock, handle=0):
+                    from xpra.make_thread import start_thread
                     netlog = get_network_logger()
                     netlog("new_connection%s", (socktype, sock, handle))
                     conn = accept_connection(socktype, sock)
+                    #start a thread so we can sleep in peek_connection:
+                    start_thread(handle_new_connection, "handle new connection: %s" % conn, daemon=True, args=(conn, ))
+                    return True
+                def handle_new_connection(conn):
+                    #see if this is a redirection:
+                    netlog = get_network_logger()
+                    peek_data, line1 = peek_connection(conn)
+                    netlog("handle_new_connection(%s) line1=%s", conn, line1)
+                    if line1:
+                        from xpra.net.common import SOCKET_TYPES
+                        uri = bytestostr(line1)
+                        for socktype in SOCKET_TYPES:
+                            if uri.startswith("%s://" % socktype):
+                                run_socket_cleanups()
+                                netlog.info("connecting to %s", uri)
+                                extra_args[:] = [uri, ]
+                                conn = connect_to_server()
+                                app._protocol.start()
+                                app.idle_add(app.send_hello)
+                                return
+                    app.idle_add(do_handle_connection, conn)
+                def do_handle_connection(conn):
                     app.setup_connection(conn)
                     protocol = app._protocol
                     protocol.start()
                     app.send_hello()
                     #stop listening for new connections:
+                    run_socket_cleanups()
+                def run_socket_cleanups():
                     for cleanup in listen_cleanup:
                         cleanup()
                     listen_cleanup[:] = []
@@ -1608,14 +1645,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                     if cleanup:
                         listen_cleanup.append(cleanup)
             else:
-                conn, display_desc = connect()
-                app.display_desc = display_desc
-                #UGLY warning: connect will parse the display string,
-                #which may change the username and password..
-                app.username = opts.username
-                app.password = opts.password
-                app.display = opts.display
-                app.setup_connection(conn)
+                connect_to_server()
         except Exception as e:
             may_notify = getattr(app, "may_notify", None)
             if may_notify:
