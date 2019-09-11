@@ -188,7 +188,7 @@ def configure_imsettings_env(input_method):
     elif im=="keep":
         #do nothing and keep whatever is already set, hoping for the best
         pass
-    elif im in ("xim", "IBus", "SCIM", "uim"):
+    elif im in ("xim", "ibus", "scim", "uim"):
         #ie: (False, "ibus", "ibus", "IBus", "@im=ibus")
         imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=%s" % im.lower())
     else:
