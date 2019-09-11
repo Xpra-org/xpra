@@ -40,6 +40,8 @@ LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 PASSTHROUGH_AUTH = envbool("XPRA_PASSTHROUGH_AUTH", True)
 
 PING_INTERVAL = max(1, envint("XPRA_PROXY_PING_INTERVAL", 5))*1000
+PING_WARNING = max(5, envint("XPRA_PROXY_PING_WARNING", 5))
+PING_TIMEOUT = max(5, envint("XPRA_PROXY_PING_TIMEOUT", 90))
 
 CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
@@ -65,6 +67,7 @@ class ProxyInstance(object):
         self.uuid = get_hex_uuid()
         self.client_protocol = None
         self.server_protocol = None
+        #ping handling:
         self.client_last_ping = 0
         self.server_last_ping = 0
         self.client_last_ping_echo = 0
@@ -391,17 +394,24 @@ class ProxyInstance(object):
 
     def schedule_server_ping(self):
         self.cancel_server_ping_timer()
+        self.server_last_ping_echo = monotonic_time()
         self.server_ping_timer = self.timeout_add(PING_INTERVAL, self.send_server_ping)
 
     def schedule_client_ping(self):
         self.cancel_client_ping_timer()
+        self.client_last_ping_echo = monotonic_time()
         self.client_ping_timer = self.timeout_add(PING_INTERVAL, self.send_client_ping)
 
     def send_server_ping(self):
         #if we've already sent one, check for the echo:
         if self.server_last_ping:
-            if not self.server_last_ping_echo or (self.server_last_ping-self.server_last_ping_echo)>5:
-                log.warn("Warning: late server ping")
+            delta = self.server_last_ping-self.server_last_ping_echo
+            if delta>PING_WARNING:
+                log.warn("Warning: late server ping, %i seconds", delta)
+            if delta>PING_TIMEOUT:
+                log.error("Error: server ping timeout, %i seconds", delta)
+                self.stop(None, "proxy to server ping timeout")
+                return False
         now = monotonic_time()
         self.server_last_ping = now
         self.queue_server_packet(("ping", int(now*1000), int(time()*1000), self.uuid))
@@ -410,8 +420,13 @@ class ProxyInstance(object):
     def send_client_ping(self):
         #if we've already sent one, check for the echo:
         if self.client_last_ping:
-            if not self.client_last_ping_echo or (self.client_last_ping-self.client_last_ping_echo)>5:
-                log.warn("Warning: late client ping")
+            delta = self.client_last_ping-self.client_last_ping_echo
+            if delta>PING_WARNING:
+                log.warn("Warning: late client ping, %i seconds", delta)
+            if delta>PING_TIMEOUT:
+                log.error("Error: client ping timeout, %i seconds", delta)
+                self.stop(None, "proxy to client ping timeout")
+                return False
         now = monotonic_time()
         self.client_last_ping = now
         self.queue_client_packet(("ping", int(now*1000), int(time()*1000), self.uuid))

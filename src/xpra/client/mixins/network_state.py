@@ -9,7 +9,7 @@ import re
 from collections import deque
 
 from xpra.os_util import monotonic_time, POSIX
-from xpra.util import envint, csv
+from xpra.util import envint, envbool, csv
 from xpra.exit_codes import EXIT_TIMEOUT
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
@@ -20,6 +20,7 @@ bandwidthlog = Logger("bandwidth")
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
+SWALLOW_PINGS = envbool("XPRA_SWALLOW_PINGS", False)
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
@@ -255,6 +256,8 @@ class NetworkState(StubClientMixin):
             sl = self.server_ping_latency[-1][1]
         except IndexError:
             sl = -1
+        if SWALLOW_PINGS>0:
+            return
         self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl), sid)
 
 
