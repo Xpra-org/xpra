@@ -425,7 +425,6 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)
-            print("run_mode 6")
             return run_server(error_cb, options, mode, script_file, args, current_display)
         elif mode in (
             "attach", "listen", "detach",
