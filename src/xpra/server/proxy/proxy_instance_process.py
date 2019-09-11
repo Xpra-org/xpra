@@ -455,8 +455,8 @@ class ProxyInstanceProcess(Process):
             fn, args, kwargs = v
             log("run_queue() %s%s%s", fn, args, kwargs)
             try:
-                v = fn(*args, **kwargs)
-                if bool(v):
+                r = fn(*args, **kwargs)
+                if bool(r):
                     #re-run it
                     self.main_queue.put(v)
             except:
