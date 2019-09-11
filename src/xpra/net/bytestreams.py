@@ -610,14 +610,15 @@ def log_new_connection(conn, socket_info=""):
         conn, socket_info, type(conn), sock, sockname, address, peername)
     if peername:
         frominfo = pretty_socket(peername)
-        info_msg = "New %s connection received from %s" % (socktype, frominfo)
+        log.info("New %s connection received", socktype)
+        log.info(" from '%s'", frominfo)
         if socket_info:
-            info_msg += " on %s" % (pretty_socket(socket_info),)
+            log.info(" on %s", pretty_socket(socket_info))
     elif socktype=="unix-domain":
         frominfo = sockname
-        info_msg = "New %s connection received on %s" % (socktype, frominfo)
+        log.info("New %s connection received", socktype)
+        log.info(" on '%s'", frominfo)
     else:
-        info_msg = "New %s connection received"
+        log.info("New %s connection received")
         if socket_info:
-            info_msg += " on %s" % (pretty_socket(socket_info),)
-    log.info(info_msg)
+            log.info(" on %s", pretty_socket(socket_info))
