@@ -73,7 +73,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
         delpath = sockpath
         log("cleanup_socket '%s', original inode=%s, new inode=%s", sockpath, inode, cur_inode)
         if cur_inode==inode:
-            log.info("removing socket %s", delpath)
+            log.info("removing socket '%s'", delpath)
             try:
                 os.unlink(delpath)
             except (OSError, IOError):
@@ -304,7 +304,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         log("create_tcp_socket%s", (host, iport), exc_info=True)
         raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
     def cleanup_tcp_socket():
-        log.info("closing %s socket %s:%s", socktype.lower(), host, iport)
+        log.info("closing %s socket '%s:%s'", socktype.lower(), host, iport)
         try:
             tcp_socket.close()
         except (OSError, IOError):
@@ -313,6 +313,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         iport = tcp_socket.getsockname()[1]
         log.info("allocated %s port %i on %s", socktype, iport, host)
     log("%s: %s:%s : %s", socktype, host, iport, socket)
+    log.info("created %s socket '%s:%s'", socktype, host, iport)
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
 
 def create_udp_socket(host, iport):
@@ -471,7 +472,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
             from xpra.platform.win32.namedpipes.listener import NamedPipeListener
             for sockpath in sockpaths:
                 npl = NamedPipeListener(sockpath)
-                log.info("created named pipe: %s", sockpath)
+                log.info("created named pipe '%s'", sockpath)
                 defs.append(("named-pipe", npl, sockpath, npl.stop))
         else:
             def checkstate(sockpath, state):
@@ -569,7 +570,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     #create it:
                     try:
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
-                        log.info("created unix domain socket: %s", sockpath)
+                        log.info("created unix domain socket '%s'", sockpath)
                         defs.append(("unix-domain", sock, sockpath, cleanup_socket))
                     except Exception as e:
                         handle_socket_error(sockpath, sperms, e)
