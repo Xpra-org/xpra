@@ -233,15 +233,26 @@ class AudioServer(StubServerMixin):
                 log.warn(" '%s'", self.pulseaudio_private_socket)
                 log.warn(" the private pulseaudio directory containing it will not be removed")
             else:
+                import glob
                 pulse = os.path.join(self.pulseaudio_private_dir, "pulse")
                 native = os.path.join(pulse, "native")
+                dirs = []
+                dbus_dirs = glob.glob("%s/dbus-*" % self.pulseaudio_private_dir)
+                if len(dbus_dirs)==1:
+                    dbus_dir = dbus_dirs[0]
+                    if os.path.isdir(dbus_dir):
+                        services_dir = os.path.join(dbus_dir, "services")
+                        dirs.append(services_dir)
+                        dirs.append(dbus_dir)
+                dirs += [native, pulse, self.pulseaudio_private_dir]
                 path = None
                 try:
-                    for d in (native, pulse, self.pulseaudio_private_dir):
+                    for d in dirs:
                         path = os.path.abspath(d)
                         soundlog("removing private directory '%s'", path)
                         if os.path.exists(path) and os.path.isdir(path):
                             os.rmdir(path)
+                    log.info("removing private directory '%s'", self.pulseaudio_private_dir)
                 except OSError as e:
                     soundlog("cleanup_pulseaudio() error removing '%s'", path, exc_info=True)
                     soundlog.error("Error: failed to cleanup the pulseaudio private directory")
@@ -254,7 +265,7 @@ class AudioServer(StubServerMixin):
                             for f in files:
                                 soundlog.error(" - '%s'", f)
                     except OSError:
-                        pass
+                        soundlog.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
 
 
     def init_sound_options(self):
