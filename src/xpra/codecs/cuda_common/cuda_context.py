@@ -104,8 +104,9 @@ def get_prefs():
                             continue
                         name = props[0].strip()
                         value = props[1].strip()
-                        if name in ("blacklist", ):
-                            c_prefs.setdefault(name, []).append(value)
+                        if name in ("blacklist", "enabled-devices", "disabled-devices"):
+                            for v in value.split(","):
+                                c_prefs.setdefault(name, []).append(v.strip())
                         elif name in ("device-id", "device-name"):
                             c_prefs[name] = value
             except Exception as e:
@@ -116,13 +117,31 @@ def get_prefs():
     return PREFS
 
 def get_pref(name):
-    assert name in ("blacklist", "device-id", "device-name")
+    assert name in ("blacklist", "device-id", "device-name", "enabled-devices", "disabled-devices")
     #ie: env_name("device-id")="XPRA_CUDA_DEVICE_ID"
     env_name = "XPRA_CUDA_%s" % str(name).upper().replace("-", "_")
     env_value = os.environ.get(env_name)
     if env_value is not None:
+        if name in ("blacklist", "enabled-devices", "disabled-devices"):
+            return env_value.split(",")
         return env_value
     return get_prefs().get(name)
+
+def get_gpu_list(list_type):
+    v = get_pref(list_type)
+    log("get_gpu_list(%s) pref=%s", list_type, v)
+    if not v:
+        return None
+    if "all" in v:
+        return True
+    if "none" in v:
+        return []
+    try:
+        return [int(x.strip()) for x in v]
+    except ValueError:
+        log("get_gpu_list(%s)", list_type, exc_info=True)
+        log.error("Error: invalid value for '%s' CUDA preference", list_type)
+        return None
 
 
 DEVICES = None
@@ -130,9 +149,15 @@ def init_all_devices():
     global DEVICES, DEVICE_INFO, DEVICE_NAME
     if DEVICES is not None:
         return DEVICES
-    log.info("CUDA initialization (this may take a few seconds)")
     DEVICES = []
     DEVICE_INFO = {}
+    enabled_gpus = get_gpu_list("enabled-devices")
+    disabled_gpus = get_gpu_list("disabled-devices")
+    if disabled_gpus is True or enabled_gpus==[]:
+        log("all devices are disabled!")
+        return DEVICES
+    log.info("CUDA initialization (this may take a few seconds)")
+    log("enabled: %s, disabled: %s", csv(enabled_gpus), csv(disabled_gpus))
     try:
         driver.init()
     except Exception as e:
@@ -149,6 +174,12 @@ def init_all_devices():
     da = driver.device_attribute
     cf = driver.ctx_flags
     for i in range(ngpus):
+        if enabled_gpus not in (None, True) and i not in enabled_gpus:
+            log("device %i is not in the list of enabled gpus, skipped", i)
+            continue
+        if disabled_gpus is not None and i in disabled_gpus:
+            log("device %i is in the list of disabled gpus, skipped", i)
+            continue
         device = None
         context = None
         devinfo = "gpu %i" % i
