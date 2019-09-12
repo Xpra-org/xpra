@@ -95,6 +95,7 @@ def get_prefs():
                 log("get_prefs() '%s' is not a file!", conf_file)
                 continue
             try:
+                c_prefs = {}
                 with open(conf_file, "rb") as f:
                     for line in f:
                         sline = bytestostr(line.strip().rstrip(b'\r\n').strip())
@@ -104,12 +105,14 @@ def get_prefs():
                         name = props[0].strip()
                         value = props[1].strip()
                         if name in ("blacklist", ):
-                            PREFS.setdefault(name, []).append(value)
+                            c_prefs.setdefault(name, []).append(value)
                         elif name in ("device-id", "device-name"):
-                            PREFS[name] = value
+                            c_prefs[name] = value
             except Exception as e:
                 log.error("Error: cannot read cuda configuration file '%s':", conf_file)
                 log.error(" %s", e)
+            log("get_prefs() '%s' : %s", conf_file, c_prefs)
+            PREFS.update(c_prefs)
     return PREFS
 
 def get_pref(name):
