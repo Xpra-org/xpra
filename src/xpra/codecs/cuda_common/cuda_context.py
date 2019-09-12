@@ -225,17 +225,26 @@ def reset_state():
     DEVICE_STATE = {}
 
 
-def select_device(preferred_device_id=-1, preferred_device_name=None, min_compute=0):
-    if preferred_device_name is None:
-        preferred_device_name = get_pref("device-name")
-    if preferred_device_id<0:
-        device_id = get_pref("device-id")
+def select_device(preferred_device_id=-1, min_compute=0):
+    log("select_device(%s, %s)", preferred_device_id, min_compute)
+    for device_id in (preferred_device_id, get_pref("device-id")):
         if device_id is not None and device_id>=0:
-            preferred_device_id = device_id
+            #try to honour the device specified:
+            try:
+                device, context, compute, tpct = load_device(device_id)
+            finally:
+                context.pop()
+                context.detach()
+            if compute<min_compute:
+                log.warn("Warning: GPU device %i only supports compute %#x", device_id, compute)
+            if tpct<MIN_FREE_MEMORY:
+                log.warn("Warning: GPU device %i is low on memory: %i%%", device_id, tpct)
+            return device_id, device
+    #load preferences:
+    preferred_device_name = get_pref("device-name")
     devices = init_all_devices()
     global DEVICE_STATE
     free_pct = 0
-    cf = driver.ctx_flags
     #split device list according to device state:
     ok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is True]
     nok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is not True]
@@ -246,25 +255,10 @@ def select_device(preferred_device_id=-1, preferred_device_name=None, min_comput
         for device_id in device_list:
             context = None
             try:
-                log("device %i", device_id)
-                device = driver.Device(device_id)
-                log("select_device: testing device %s: %s", device_id, device_info(device))
-                context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
-                log("created context=%s", context)
-                free, total = driver.mem_get_info()
-                log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
-                tpct = 100*free/total
-                SMmajor, SMminor = device.compute_capability()
-                compute = (SMmajor<<4) + SMminor
+                device, context, compute, tpct = load_device(device_id)
                 if compute<min_compute:
                     log("ignoring device %s: compute capability %#x (minimum %#x required)",
                         device_info(device), compute, min_compute)
-                elif device_id==preferred_device_id:
-                    l = log
-                    if len(device_list)>1:
-                        l = log.info
-                    l("device matches preferred device id %s: %s", preferred_device_id, device_info(device))
-                    return device_id, device
                 elif preferred_device_name and device_info(device).find(preferred_device_name)>=0:
                     log("device matches preferred device name: %s", preferred_device_name)
                     return device_id, device
@@ -285,6 +279,21 @@ def select_device(preferred_device_id=-1, preferred_device_name=None, min_comput
             l("selected device %s: %s", device_id, device_info(device))
             return selected_device_id, selected_device
     return -1, None
+
+def load_device(device_id):
+    log("load_device(%i)", device_id)
+    device = driver.Device(device_id)
+    log("select_device: testing device %s: %s", device_id, device_info(device))
+    cf = driver.ctx_flags
+    context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
+    log("created context=%s", context)
+    free, total = driver.mem_get_info()
+    log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
+    tpct = 100*free/total
+    SMmajor, SMminor = device.compute_capability()
+    compute = (SMmajor<<4) + SMminor
+    return device, context, compute, tpct
+
 
 
 CUDA_ERRORS_INFO = {

@@ -2839,6 +2839,7 @@ def init_module():
             LOSSLESS_ENABLED = False
     #check NVENC availibility by creating a context:
     device_warnings = OrderedDict()
+    log("init_module() will try keys: %s", try_keys)
     for client_key in try_keys:
         if client_key:
             #this will set the global key object used by all encoder contexts:
