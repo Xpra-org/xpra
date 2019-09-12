@@ -10,7 +10,7 @@ import os
 import pycuda               #@UnresolvedImport
 from pycuda import driver   #@UnresolvedImport
 
-from xpra.util import engs, print_nested_dict, envbool, envint
+from xpra.util import engs, print_nested_dict, envbool, envint, csv
 from xpra.os_util import monotonic_time, bytestostr, PYTHON2
 from xpra.log import Logger
 
