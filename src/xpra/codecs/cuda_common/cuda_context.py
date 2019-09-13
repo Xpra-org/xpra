@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ from xpra.util import engs, print_nested_dict, envbool, envint, csv
 from xpra.os_util import monotonic_time, bytestostr, PYTHON2
 from xpra.log import Logger
 
-log = Logger("csc", "cuda")
+log = Logger("cuda")
 
 IGNORE_BLACKLIST = envbool("XPRA_CUDA_IGNORE_BLACKLIST", False)
 MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
