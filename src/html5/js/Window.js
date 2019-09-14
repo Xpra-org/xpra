@@ -192,6 +192,13 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		}
 		// adjust top offset
 		this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
+		// stop propagation if we're over the window:
+		jQuery(this.div).mousedown(function (e) {
+			e.stopPropagation();
+		});
+		jQuery(this.div).mouseup(function (e) {
+			e.stopPropagation();
+		});
 		// assign some interesting callbacks
 		jQuery(this.d_header).click(function() {
 			me.set_focus_cb(me);
