@@ -1737,7 +1737,8 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 					}
 				}
 			}
-			if (ctx.audio_enabled) {
+			//with Firefox, we have to wait for a user event..
+			if (ctx.audio_enabled && !Utilities.isFirefox()) {
 				ctx._sound_start_receiving();
 			}
 		}
