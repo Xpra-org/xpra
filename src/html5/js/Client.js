@@ -3054,6 +3054,19 @@ XpraClient.prototype._audio_ready = function() {
 XpraClient.prototype.push_audio_buffer = function(buf) {
 	if (this.audio_framework=="mediasource") {
 		this.audio_source_buffer.appendBuffer(buf);
+		var b = this.audio_source_buffer.buffered;
+		if (b && b.length>=1) {
+			//for (var i=0; i<b.length;i++) {
+			//	this.clog("buffered[", i, "]=", b.start(i), b.end(i));
+			//}
+			var p = this.audio.played;
+			//for (var i=0; i<p.length;i++) {
+			//	this.clog("played[", i, "]=", p.start(i), p.end(i));
+			//}
+			var e = b.end(0)
+			var buf_size = Math.round(1000*(e - this.audio.currentTime));
+			this.debug("audio", "buffer size=", buf_size, "ms, currentTime=", this.audio.currentTime);
+		}
 	}
 	else {
 		this.audio_aurora_ctx.asset.source._on_data(buf);
