@@ -2934,7 +2934,6 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 
 		if (options["start-of-stream"] == 1) {
 			ctx._audio_start_stream();
-			return;
 		}
 
 		if (buf && buf.length>0) {
