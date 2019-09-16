@@ -2962,6 +2962,7 @@ XpraClient.prototype.on_audio_state_change = function(newstate, details) {
 XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 	var MIN_START_BUFFERS = 4;
 	var MAX_BUFFERS = 250;
+	var CONCAT = true;
 	this.debug("audio", "sound-data: ", codec, ", ", buf.length, "bytes");
 	if (this.audio_buffers.length>=MAX_BUFFERS) {
 		this.warn("audio queue overflowing: "+this.audio_buffers.length+", stopping");
@@ -2984,29 +2985,37 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 	}
 	var ab = this.audio_buffers;
 	if (this._audio_ready() && (this.audio_buffers_count>0 || ab.length >= MIN_START_BUFFERS)) {
-		if (ab.length==1) {
-			//shortcut
-			buf = ab[0];
-		}
-		else {
-			//concatenate all pending buffers into one:
-			var size = 0;
-			for (var i=0,j=ab.length;i<j;++i) {
-				size += ab[i].length;
+		if (CONCAT) {
+			if (ab.length==1) {
+				//shortcut
+				buf = ab[0];
 			}
-			buf = new Uint8Array(size);
-			size = 0;
-			for (var i=0,j=ab.length;i<j;++i) {
-				var v = ab[i];
-				if (v.length>0) {
-					buf.set(v, size);
-					size += v.length;
+			else {
+				//concatenate all pending buffers into one:
+				var size = 0;
+				for (var i=0,j=ab.length;i<j;++i) {
+					size += ab[i].length;
+				}
+				buf = new Uint8Array(size);
+				size = 0;
+				for (var i=0,j=ab.length;i<j;++i) {
+					var v = ab[i];
+					if (v.length>0) {
+						buf.set(v, size);
+						size += v.length;
+					}
 				}
 			}
+			this.audio_buffers_count += 1;
+			this.push_audio_buffer(buf);
 		}
-		this.audio_buffers_count += 1;
+		else {
+			this.audio_buffers_count += ab.length;
+			for (var i=0,j=ab.length;i<j;++i) {
+				this.push_audio_buffer(ab[i]);
+			}
+		}
 		this.audio_buffers = [];
-		this.push_audio_buffer(buf);
 	}
 }
 
