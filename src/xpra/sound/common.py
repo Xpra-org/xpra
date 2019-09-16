@@ -22,6 +22,7 @@ WAVPACK = "wavpack"
 OGG = "ogg"
 MKA = "mka"
 MPEG4 = "mpeg4"
+ID3V2 = "id3v2"
 #RTP = "rtp"
 RAW = "raw"
 
@@ -40,6 +41,7 @@ AAC_MPEG4   = AAC+"+"+MPEG4
 WAV_LZ4     = WAV+"+"+LZ4
 WAV_LZO     = WAV+"+"+LZO
 MP3_MPEG4   = MP3+"+"+MPEG4
+MP3_ID3V2   = MP3+"+"+ID3V2
 
 
 #used for parsing codec names specified on the command line:

@@ -10,7 +10,7 @@ import os
 from xpra.sound.common import (
     FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
     AAC_MPEG4, WAV_LZ4, WAV_LZO, \
-    VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, \
+    VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, MP3_ID3V2, \
     MPEG4, MKA, OGG,
     )
 from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, bytestostr
@@ -96,6 +96,7 @@ CODEC_OPTIONS = [
         (FLAC       , "flacenc",        None,           "flacparse ! flacdec",          None),
         (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux"),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",         None),
+        (MP3_ID3V2  , "lamemp3enc",     "id3v2mux",     "mpegaudioparse ! mpg123audiodec", None),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mpg123audiodec", None),
         (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mpegaudioparse ! mad",         "qtdemux"),
         (WAV        , "wavenc",         None,           "wavparse",                     None),
@@ -203,7 +204,7 @@ ENCODER_LATENCY = {
 
 CODEC_ORDER = [
     OPUS, OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS,
-    MP3, FLAC_OGG, AAC_MPEG4,
+    MP3, MP3_ID3V2, FLAC_OGG, AAC_MPEG4,
     WAV_LZ4, WAV_LZO, WAV, WAVPACK,
     SPEEX_OGG, VORBIS, OPUS_MKA, FLAC, MP3_MPEG4,
     ]
