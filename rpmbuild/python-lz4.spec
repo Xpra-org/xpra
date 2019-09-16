@@ -1,7 +1,7 @@
 #
 # spec file for package python-lz4
 #
-# Copyright (c) 2013-2018
+# Copyright (c) 2013-2019
 #
 
 #this spec file is for both Fedora and CentOS
@@ -17,13 +17,13 @@
 
 
 Name:           python2-lz4
-Version:        2.1.6
+Version:        2.2.1
 Release:        1.xpra1%{?dist}
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
-Source:         https://files.pythonhosted.org/packages/b3/48/ef32029fc6ae23fb37568972216646deeaaf9f833c237afdf37c0d975bff/lz4-%{version}.tar.gz
+Source:         https://files.pythonhosted.org/packages/98/52/94bb31d416e52c3c9cc432e26b7a30b4b5a3c853e81df2906ce4bbc59437/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -90,6 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Sep 16 2019 Antoine Martin <antoine@xpra.org> - 2.2.1-1
+- New upstream release
+
 * Thu Jan 10 2019 Antoine Martin <antoine@xpra.org> - 2.1.6-1
 - New upstream release
 
