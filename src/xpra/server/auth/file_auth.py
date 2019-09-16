@@ -32,5 +32,14 @@ class Authenticator(FileAuthenticatorBase):
             return False
         return True
 
+    def get_password(self):
+        password = FileAuthenticatorBase.get_password(self)
+        if not password:
+            return password
+        if password.find(b"\n") or password.find(b"\r"):
+            log.warn("Warning: newline found in password data")
+            log.warn(" this is usually a mistake")
+        return password
+
     def __repr__(self):
         return "password file"
