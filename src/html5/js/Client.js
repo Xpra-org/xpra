@@ -2877,7 +2877,14 @@ XpraClient.prototype._close_audio_httpstream = function() {
 
 XpraClient.prototype._close_audio_aurora = function() {
 	if(this.audio_aurora_ctx) {
-		//this.audio_aurora_ctx.close();
+		if (this.audio_aurora_ctx.context) {
+			try {
+				this.audio_aurora_ctx.context.close();
+			}
+			catch (e) {
+				this.debug("audio", "error closing context", e);
+			}
+		}
 		this.audio_aurora_ctx = null;
 	}
 }
