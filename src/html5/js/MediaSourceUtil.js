@@ -11,6 +11,7 @@ var MediaSourceConstants = {
 				"mp4a"			: 'mpeg4: aac',
 				"aac+mpeg4"		: 'mpeg4: aac',
 				"mp3"			: 'mp3',
+				"mp3+id3v2"		: 'mp3',
 				"mp3+mpeg4"		: 'mpeg4: mp3',
 				"wav"			: 'wav',
 				"wave"			: 'wave',
@@ -51,7 +52,7 @@ var MediaSourceConstants = {
 			"opus", "vorbis",
 			"speex+ogg", "flac+ogg",
 			"aac+mpeg4", "mp3+mpeg4",
-			"mp3", "flac", "wav", "wave",
+			"mp3", "mp3+id3v2", "flac", "wav", "wave",
 		],
 
 		H264_PROFILE_CODE : {
@@ -93,7 +94,7 @@ var MediaSourceConstants = {
 
 		AURORA_CODECS : {
 			"wav"	: "lpcm",
-			"mp3"	: "mp3",
+			"mp3+id3v2"	: "mp3",
 			"flac"	: "flac",
 			"aac+mpeg4"	: "mp4a",
 		}
