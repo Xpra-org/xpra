@@ -145,10 +145,6 @@ def disconnect_is_an_error(reason):
     return reason.find("error")>=0 or (reason.find("timeout")>=0 and reason!=IDLE_TIMEOUT)
 
 
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
-
-
 def dump_exc():
     """Call this from a except: clause to print a nice traceback."""
     print("".join(traceback.format_exception(*sys.exc_info())))
@@ -301,7 +297,7 @@ class typedict(dict):
 
     def capsget(self, key, default=None):
         v = self.rawget(key, default)
-        if sys.version >= '3' and isinstance(v, bytes):
+        if isinstance(v, bytes):
             from xpra.os_util import bytestostr
             v = bytestostr(v)
         return v
@@ -382,11 +378,11 @@ class typedict(dict):
         aslist = list(v)
         if item_type:
             for i, x in enumerate(aslist):
-                if sys.version_info[0]>=3 and isinstance(x, bytes) and item_type==str:
+                if isinstance(x, bytes) and item_type==str:
                     from xpra.os_util import bytestostr
                     x = bytestostr(x)
                     aslist[i] = x
-                elif isinstance(x, unicode) and item_type==str:
+                elif isinstance(x, str) and item_type==str:
                     x = str(x)
                     aslist[i] = x
                 if not isinstance(x, item_type):
@@ -656,7 +652,7 @@ def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
 
 
 def repr_ellipsized(obj, limit=100):
-    if isinstance(obj, (str, unicode)) and len(obj) > limit:
+    if isinstance(obj, str) and len(obj) > limit:
         try:
             s = repr(obj)
         except ValueError:
@@ -741,7 +737,7 @@ def pver(v, numsep=".", strsep=", "):
         types = list(set(type(x) for x in v))
         if len(types)==1 and types[0]==int:
             return numsep.join(str(x) for x in v)
-        if len(types)==1 and types[0] in (str, unicode):
+        if len(types)==1 and types[0]==str:
             return strsep.join(str(x) for x in v)
     from xpra.os_util import bytestostr
     return bytestostr(v)

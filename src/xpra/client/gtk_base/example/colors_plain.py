@@ -5,7 +5,7 @@
 
 import cairo
 
-from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
 gtk = import_gtk()
@@ -19,10 +19,7 @@ class ColorPlainWindow(gtk.Window):
         self.set_default_size(320, 320)
         self.set_app_paintable(True)
         self.set_events(KEY_PRESS_MASK)
-        if is_gtk3():
-            self.connect("draw", self.area_draw)
-        else:
-            self.connect("expose-event", self.do_expose_event)
+        self.connect("draw", self.area_draw)
         self.connect("destroy", gtk.main_quit)
         self.show_all()
 

@@ -13,7 +13,7 @@ import datetime
 from collections import deque
 from time import sleep, time
 
-from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
+from xpra.gtk_common.gobject_compat import import_glib
 from xpra.platform.gui import (
     get_vrefresh, get_window_min_size, get_window_max_size,
     get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
@@ -24,7 +24,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import make_thread
 from xpra.os_util import (
     Queue, bytestostr, monotonic_time, memoryview_to_bytes,
-    OSX, POSIX, PYTHON3, is_Ubuntu,
+    OSX, POSIX, is_Ubuntu,
     )
 from xpra.util import iround, envint, envbool, typedict, make_instance, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -70,7 +70,7 @@ ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
-SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", PYTHON3)
+SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", True)
 
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
@@ -825,10 +825,7 @@ class WindowClient(StubClientMixin):
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=watcher_terminated)
                 log("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
-                if is_gtk3():
-                    proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.PRIORITY_DEFAULT, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
-                else:
-                    proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
+                proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.PRIORITY_DEFAULT, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
         if proc:
             self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
             return proc.pid

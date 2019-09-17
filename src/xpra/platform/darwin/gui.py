@@ -32,7 +32,6 @@ from Foundation import (
     NSUserNotificationDefaultSoundName,             #@UnresolvedImport
     )
 
-from xpra.os_util import PYTHON2
 from xpra.util import envbool, envint, roundup
 from xpra.notifications.notifier_base import NotifierBase
 from xpra.log import Logger
@@ -86,8 +85,10 @@ macapp = None
 def get_OSXApplication():
     global macapp
     if macapp is None:
-        from xpra.gtk_common.gobject_compat import import_gtkosx_application
-        gtkosx_application = import_gtkosx_application()
+        import gi
+        gi.require_version('GtkosxApplication', '1.0')
+        from gi.repository import GtkosxApplication #@UnresolvedImport
+        gtkosx_application = GtkosxApplication()
         macapp = gtkosx_application.Application()
         macapp.connect("NSApplicationWillTerminate", quit_handler)
     return macapp
@@ -461,24 +462,10 @@ def get_info():
 VIEW_TO_WINDOW = weakref.WeakValueDictionary()
 
 def add_window_hooks(window):
-    if WHEEL and PYTHON2:
-        global VIEW_TO_WINDOW
-        try:
-            gdkwin = window.get_window()
-            VIEW_TO_WINDOW[gdkwin.nsview] = window
-        except:
-            log("add_window_hooks(%s)", window, exc_info=True)
-            log.error("Error: failed to associate window %s with its nsview", window, exc_info=True)
+    pass
 
 def remove_window_hooks(window):
-    if WHEEL and PYTHON2:
-        global VIEW_TO_WINDOW
-        #this should be redundant as we use weak references:
-        try:
-            gdkwin = window.get_window()
-            del VIEW_TO_WINDOW[gdkwin.nsview]
-        except:
-            pass
+    pass
 
 
 def get_CG_imagewrapper(rect=None):
@@ -607,10 +594,6 @@ class Delegate(NSObject):
         log("applicationDidFinishLaunching_(%s)", notification)
         if SLEEP_HANDLER:
             self.register_sleep_handlers()
-        if WHEEL and PYTHON2:
-            from xpra.platform.darwin.gdk_bindings import init_quartz_filter, set_wheel_event_handler   #@UnresolvedImport
-            set_wheel_event_handler(self.wheel_event_handler)
-            init_quartz_filter()
 
     @objc.python_method
     def wheel_event_handler(self, nsview, deltax, deltay, precise):

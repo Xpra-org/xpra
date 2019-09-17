@@ -56,15 +56,9 @@ def get_sd_listen_sockets():
 def get_sd_listen_socket(int fd):
     #re-wrapping the socket gives us a more proper socket object,
     #so we can then wrap it with ssl
-    from xpra.os_util import PYTHON2
-    if PYTHON2:
-        def fromfd(family, type, proto=0):
-            sock = socket.fromfd(fd, family, type, proto)
-            return socket.socket(_sock=sock)
-    else:
-        def fromfd(family, type, proto=0):      #@DuplicatedSignature
-            #python3 does not need re-wrapping?
-            return socket.socket(family, type, 0, fd)
+    def fromfd(family, type, proto=0):      #@DuplicatedSignature
+        #python3 does not need re-wrapping?
+        return socket.socket(family, type, 0, fd)
     if sd_is_socket_unix(fd, socket.SOCK_STREAM, 1, NULL, 0)>0:
         sock = fromfd(socket.AF_UNIX, socket.SOCK_STREAM)
         sockpath = sock.getsockname()

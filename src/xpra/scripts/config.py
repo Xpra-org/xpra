@@ -13,7 +13,7 @@ import platform as python_platform
 assert python_platform
 from xpra.util import csv
 from xpra.os_util import (
-    WIN32, OSX, PYTHON2, POSIX,
+    WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
     is_CentOS, is_RedHat, is_Fedora, is_Debian, is_Ubuntu, getUbuntuVersion,
     )
@@ -272,11 +272,7 @@ def read_config(conf_file):
     if not os.path.isfile(conf_file):
         debug("read_config(%s) is not a file!", conf_file)
         return d
-    if PYTHON2:
-        mode = "rU"
-    else:
-        mode = "r"
-    with open(conf_file, mode) as f:
+    with open(conf_file, "r") as f:
         lines = []
         no = 0
         for line in f:
@@ -863,8 +859,6 @@ def get_defaults():
         bind_dirs = ["auto"]
 
     ssl_protocol = "TLSv1_2"
-    if sys.version_info<(2, 7, 9):
-        ssl_protocol = "SSLv23"
 
     if POSIX and not OSX:
         from xpra.x11.fakeXinerama import find_libfakeXinerama

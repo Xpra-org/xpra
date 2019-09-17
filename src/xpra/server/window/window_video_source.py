@@ -9,6 +9,7 @@ import time
 import operator
 import threading
 from math import sqrt
+from functools import reduce
 from collections import OrderedDict
 
 from xpra.net.compression import Compressed, LargeStructure
@@ -23,10 +24,8 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time
-from xpra.os_util import monotonic_time, bytestostr, PYTHON3
+from xpra.os_util import monotonic_time, bytestostr
 from xpra.log import Logger
-if PYTHON3:
-    from functools import reduce
 
 log = Logger("encoding")
 csclog = Logger("csc")

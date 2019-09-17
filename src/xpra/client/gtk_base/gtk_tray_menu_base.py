@@ -7,7 +7,7 @@
 import os
 import re
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.gtk_common.gtk_util import (
@@ -1628,7 +1628,8 @@ class GTKTrayMenuBase(object):
         if not pixbuf and icondata:
             #gtk pixbuf loader:
             try:
-                loader = import_pixbufloader()()
+                from gi.repository import GdkPixbuf
+                loader = GdkPixbuf.PixbufLoader()
                 loader.write(icondata)
                 loader.close()
                 pixbuf = loader.get_pixbuf()

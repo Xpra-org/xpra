@@ -12,7 +12,7 @@ import socket
 import xpra
 from xpra.scripts.config import python_platform
 from xpra.util import updict, envbool, get_util_logger
-from xpra.os_util import get_linux_distribution, PYTHON3, BITS, POSIX, WIN32
+from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
@@ -176,10 +176,7 @@ def get_platform_info():
 def get_version_from_url(url):
     e = None
     try:
-        if PYTHON3:
-            from urllib.request import urlopen
-        else:
-            from urllib2 import urlopen
+        from urllib.request import urlopen
     except ImportError:
         log("get_version_from_url(%s) urllib2 not found: %s", url, e)
         return None

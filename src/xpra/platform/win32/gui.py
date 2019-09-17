@@ -35,7 +35,7 @@ from xpra.platform.win32.common import (
     user32,
     )
 from xpra.util import AdHocStruct, csv, envint, envbool, typedict
-from xpra.os_util import PYTHON2, PYTHON3, get_util_logger, strtobytes
+from xpra.os_util import get_util_logger, strtobytes
 
 from xpra.log import Logger
 
@@ -52,15 +52,14 @@ SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY",
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 
 
-if PYTHON3:
-    from ctypes import CDLL, pythonapi, c_void_p, py_object
-    from ctypes.util import find_library
-    PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
-    PyCapsule_GetPointer.restype = c_void_p
-    PyCapsule_GetPointer.argtypes = [py_object]
-    log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
-    gdkdll = CDLL(find_library("libgdk-3-0.dll"))
-    log("gdkdll=%s", gdkdll)
+from ctypes import CDLL, pythonapi, c_void_p, py_object
+from ctypes.util import find_library
+PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
+PyCapsule_GetPointer.restype = c_void_p
+PyCapsule_GetPointer.argtypes = [py_object]
+log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
+gdkdll = CDLL(find_library("libgdk-3-0.dll"))
+log("gdkdll=%s", gdkdll)
 
 
 shell32 = WinDLL("shell32", use_last_error=True)
@@ -87,8 +86,7 @@ GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)
 UNDECORATED_STYLE = WINDOW_HOOKS and envbool("XPRA_WIN32_UNDECORATED_STYLE", True)
 CLIP_CURSOR = WINDOW_HOOKS and envbool("XPRA_WIN32_CLIP_CURSOR", True)
 #GTK3 is fixed, so we don't need this hook:
-DEFAULT_MAX_SIZE_HINT = PYTHON2
-MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", DEFAULT_MAX_SIZE_HINT)
+MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", False)
 GEOMETRY = WINDOW_HOOKS and envbool("XPRA_WIN32_GEOMETRY", True)
 LANGCHANGE = WINDOW_HOOKS and envbool("XPRA_WIN32_LANGCHANGE", True)
 
@@ -247,8 +245,6 @@ def get_window_handle(window):
         pass
     if not gdk_window:
         return 0
-    if PYTHON2:
-        return gdk_window.handle
     gpointer =  PyCapsule_GetPointer(gdk_window.__gpointer__, None)
     hwnd = gdkdll.gdk_win32_window_get_handle(gpointer)
     #log("get_window_handle(%s) gpointer=%#x, hwnd=%#x", gpointer, hwnd)

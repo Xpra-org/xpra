@@ -12,7 +12,7 @@ from xpra.gtk_common.gtk_util import (
     ICON_SIZE_BUTTON,
     )
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_pango, import_glib,
+    import_gtk, import_glib,
     register_os_signals,
     )
 from xpra.platform.paths import get_icon_dir
@@ -21,8 +21,8 @@ from xpra.log import Logger
 log = Logger("util")
 
 gtk = import_gtk()
-pango = import_pango()
 glib = import_glib()
+from gi.repository import Pango
 
 
 class AuthDialog(gtk.Window):
@@ -45,11 +45,11 @@ class AuthDialog(gtk.Window):
         self.add(self.vbox)
 
         title_label = gtk.Label(title)
-        title_label.modify_font(pango.FontDescription("sans 14"))
+        title_label.modify_font(Pango.FontDescription("sans 14"))
         self.vbox.add(title_label)
 
         info_label = gtk.Label(info)
-        info_label.modify_font(pango.FontDescription("sans 12"))
+        info_label.modify_font(Pango.FontDescription("sans 12"))
         self.vbox.add(info_label)
 
         if self.timeout>0:

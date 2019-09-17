@@ -5,7 +5,7 @@
 
 import cairo
 
-from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
 gtk = import_gtk()
@@ -19,23 +19,13 @@ class TransparentWindow(gtk.Window):
         self.set_default_size(320, 320)
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
-        if is_gtk3():
-            if visual and screen.is_composited():
-                self.set_visual(visual)
-            else:
-                print("transparency not available!")
+        if visual and screen.is_composited():
+            self.set_visual(visual)
         else:
-            colormap = screen.get_rgba_colormap()
-            if colormap:
-                self.set_colormap(colormap)
-            else:
-                print("transparency not available!")
+            print("transparency not available!")
         self.set_app_paintable(True)
         self.set_events(KEY_PRESS_MASK)
-        if is_gtk3():
-            self.connect("draw", self.area_draw)
-        else:
-            self.connect("expose-event", self.do_expose_event)
+        self.connect("draw", self.area_draw)
         self.connect("destroy", gtk.main_quit)
         self.show_all()
 

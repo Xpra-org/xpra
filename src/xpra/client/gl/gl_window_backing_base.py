@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -53,7 +53,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 
 from xpra.os_util import (
     monotonic_time, strtobytes, hexstr,
-    POSIX, PYTHON2, OSX,
+    POSIX, OSX,
     DummyContextManager,
     )
 from xpra.util import envint, envbool, repr_ellipsized
@@ -956,9 +956,6 @@ class GLWindowBackingBase(WindowBackingBase):
         if isinstance(img_data, bytes) and zerocopy_upload:
             #we can zerocopy if we wrap it:
             return "zerocopy:bytes-as-memoryview", memoryview(img_data)
-        if PYTHON2 and isinstance(img_data, buffer) and zerocopy_upload:    #@UndefinedVariable
-            #we can zerocopy if we wrap it:
-            return "zerocopy:buffer-as-memoryview", memoryview(img_data)
         if isinstance(img_data, bytes):
             return "copy:bytes", img_data
         if hasattr(img_data, "raw"):

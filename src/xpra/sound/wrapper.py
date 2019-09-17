@@ -141,8 +141,6 @@ def run_sound(mode, error_cb, options, args):
     """ this function just parses command line arguments to feed into the sound subprocess class,
         which in turn just feeds them into the sound pipeline class (sink.py or src.py)
     """
-    from xpra.gtk_common.gobject_compat import want_gtk3
-    want_gtk3(True)
     gst = import_gst()
     if not gst:
         return 1

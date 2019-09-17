@@ -17,7 +17,7 @@ from ctypes import cdll as loader, POINTER
 from threading import Lock
 from pycuda import driver
 
-from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr, strtobytes
+from xpra.os_util import WIN32, OSX, LINUX, bytestostr, strtobytes
 from xpra.make_thread import start_thread
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time
 from xpra.codecs.cuda_common.cuda_context import (
@@ -1089,10 +1089,6 @@ def init_nvencode_library():
     log("init_nvencode_library() NvEncodeAPICreateInstance=%s", NvEncodeAPICreateInstance)
     #NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
 
-def atob(a):
-    if PYTHON3:
-        return a.tobytes()
-    return a.tostring()
 
 cdef guidstr(GUID guid):
     #really ugly! (surely there's a way using struct.unpack ?)

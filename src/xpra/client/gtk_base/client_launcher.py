@@ -17,7 +17,7 @@ import sys
 import traceback
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_gobject, import_pango, import_glib,
+    import_gtk, import_gdk, import_gobject, import_glib,
     register_os_signals,
     )
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
@@ -25,18 +25,15 @@ from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse,
-    OptionMenu, choose_file, set_use_tray_workaround, window_defaults, imagebutton,
+    OptionMenu, choose_file, window_defaults, imagebutton,
     WIN_POS_CENTER, STATE_NORMAL,
     DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE,
     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN,
     )
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
-from xpra.os_util import WIN32, OSX, PYTHON3
+from xpra.os_util import WIN32, OSX
 from xpra.make_thread import start_thread
-from xpra.client.gtk_base.gtk_tray_menu_base import (
-    make_min_auto_menu, make_encodingsmenu,
-    MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS,
-    )
+from xpra.client.gtk_base.gtk_tray_menu_base import make_encodingsmenu
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (
     connect_to, make_client, configure_network, is_local,
@@ -52,7 +49,7 @@ gobject = import_gobject()
 glib = import_glib()
 gtk = import_gtk()
 gdk = import_gdk()
-pango = import_pango()
+from gi.repository import Pango
 
 #what we save in the config file:
 SAVED_FIELDS = [
@@ -180,12 +177,7 @@ class ApplicationWindow:
         return imagebutton(label, icon, tooltip, clicked_cb, icon_size=None)
 
     def create_window_with_config(self):
-        #suspend tray workaround for our window widgets:
-        try:
-            set_use_tray_workaround(False)
-            self.do_create_window()
-        finally:
-            set_use_tray_workaround(True)
+        self.do_create_window()
         self.update_gui_from_config()
 
     def do_create_window(self):
@@ -239,7 +231,7 @@ class ApplicationWindow:
 
         # Title
         label = gtk.Label("Connect to xpra server")
-        label.modify_font(pango.FontDescription("sans 14"))
+        label.modify_font(Pango.FontDescription("sans 14"))
         hbox.pack_start(label, expand=True, fill=True)
         vbox.pack_start(hbox)
 
@@ -423,53 +415,6 @@ class ApplicationWindow:
         hbox.pack_start(self.encoding_combo)
         self.advanced_box.pack_start(hbox)
         self.set_new_encoding(self.config.encoding)
-        if not PYTHON3:
-            self.encoding_combo.connect("changed", self.encoding_changed)
-        #quality and speed options are not implemented for gtk3,
-        #where we can't use set_menu()...
-        if not PYTHON3:
-            # Quality
-            hbox = gtk.HBox(False, 20)
-            hbox.set_spacing(20)
-            self.quality_label = gtk.Label("Quality: ")
-            hbox.pack_start(self.quality_label)
-            self.quality_combo = OptionMenu()
-            def set_min_quality(q):
-                self.config.min_quality = q
-            def set_quality(q):
-                self.config.quality = q
-            def get_min_quality():
-                return self.config.min_quality
-            def get_quality():
-                return self.config.quality
-            sq = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
-                                       get_min_quality, get_quality, set_min_quality, set_quality)
-            self.quality_combo.set_menu(sq)
-            set_history_from_active(self.quality_combo)
-            hbox.pack_start(self.quality_combo)
-            self.advanced_box.pack_start(hbox)
-
-            # Speed
-            hbox = gtk.HBox(False, 20)
-            hbox.set_spacing(20)
-            self.speed_label = gtk.Label("Speed: ")
-            hbox.pack_start(self.speed_label)
-            self.speed_combo = OptionMenu()
-            def set_min_speed(s):
-                self.config.min_speed = s
-            def set_speed(s):
-                self.config.speed = s
-            def get_min_speed():
-                return self.config.min_speed
-            def get_speed():
-                return self.config.speed
-            ss = make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
-                                       get_min_speed, get_speed, set_min_speed, set_speed)
-            self.speed_combo.set_menu(ss)
-            set_history_from_active(self.speed_combo)
-            hbox.pack_start(self.speed_combo)
-            self.advanced_box.pack_start(hbox)
-            self.advanced_box.hide()
         # Sharing:
         self.sharing = gtk.CheckButton("Sharing")
         self.sharing.set_active(self.config.sharing)
@@ -667,10 +612,7 @@ class ApplicationWindow:
         return self.config.encoding
 
     def set_new_encoding(self, e):
-        if PYTHON3:
-            self.encoding_combo.set_label(e)
-        else:
-            set_history_from_active(self.encoding_combo)
+        self.encoding_combo.set_label(e)
         self.config.encoding = e
 
     def get_selected_encoding(self, *_args):
@@ -1029,17 +971,7 @@ class ApplicationWindow:
                 break
         self.mode_combo.set_active(active)
         if self.config.encoding and self.encoding_combo:
-            if PYTHON3:
-                self.set_new_encoding(self.config.encoding)
-            else:
-                index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
-                log("setting encoding combo to %s / %s", self.config.encoding, index)
-                #make sure the right one is the only one selected:
-                for i,item in enumerate(self.encoding_combo.get_menu().get_children()):
-                    item.set_active(i==index)
-                #then select it in the combo:
-                if index>=0:
-                    self.encoding_combo.set_history(index)
+            self.set_new_encoding(self.config.encoding)
         self.username_entry.set_text(self.config.username)
         self.password_entry.set_text(self.config.password)
         self.host_entry.set_text(self.config.host)

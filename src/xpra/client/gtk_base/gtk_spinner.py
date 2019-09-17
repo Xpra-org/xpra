@@ -9,12 +9,13 @@
 
 import math
 
+import cairo
+
 from xpra.client.spinner import cv
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_cairo
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 
 gtk     = import_gtk()
 glib    = import_glib()
-cairo   = import_cairo()
 
 
 class Example(gtk.Window):

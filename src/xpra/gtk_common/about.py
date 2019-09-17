@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2009-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 
-from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.version_util import XPRA_VERSION
 from xpra.scripts.config import get_build_info
 from xpra.gtk_common.gtk_util import add_close_accel
@@ -43,17 +43,6 @@ def about(on_close=None):
     from xpra.platform.paths import get_icon
     xpra_icon = get_icon("xpra.png")
     dialog = gtk.AboutDialog()
-    if not is_gtk3():
-        import webbrowser
-        def on_website_hook(*_args):
-            ''' called when the website item is selected '''
-            webbrowser.open(SITE_URL)
-        def on_email_hook(*_args):
-            webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
-        gtk.about_dialog_set_url_hook(on_website_hook)
-        gtk.about_dialog_set_email_hook(on_email_hook)
-        if xpra_icon:
-            dialog.set_icon(xpra_icon)
     dialog.set_name("Xpra")
     dialog.set_version(XPRA_VERSION)
     dialog.set_authors(('Antoine Martin <antoine@xpra.org>',

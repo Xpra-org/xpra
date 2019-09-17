@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 gtk = import_gtk()
 gdk = import_gdk()
 from xpra.gtk_common.gtk_util import (get_xwindow,
@@ -47,8 +47,7 @@ def main():
 		send_maximized_wm_state(2)	#REMOVE
 
 	add_buttons("maximize", window.maximize, "unmaximize", window.unmaximize)
-	if not is_gtk3():
-		add_buttons("maximize X11", maximize_X11, "unmaximize X11", unmaximize_X11)
+	add_buttons("maximize X11", maximize_X11, "unmaximize X11", unmaximize_X11)
 	add_buttons("fullscreen", window.fullscreen, "unfullscreen", window.unfullscreen)
 
 	def window_state(widget, event):

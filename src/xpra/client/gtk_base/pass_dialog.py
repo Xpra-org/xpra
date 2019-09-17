@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,13 +9,13 @@ import os.path
 import sys
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_pango, import_glib,
+    import_gtk, import_glib,
     register_os_signals,
     )
 from xpra.os_util import get_util_logger
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, pixbuf_new_from_file, window_defaults,
-    WIN_POS_CENTER, WINDOW_TOPLEVEL, is_gtk3,
+    WIN_POS_CENTER, WINDOW_TOPLEVEL,
     )
 from xpra.platform.paths import get_icon_dir
 
@@ -23,16 +23,13 @@ log = get_util_logger()
 
 gtk = import_gtk()
 glib = import_glib()
-pango = import_pango()
+from gi.repository import Pango
 
 
 class PasswordInputDialogWindow(object):
 
     def __init__(self, title="Title", prompt="", icon=""):
-        if is_gtk3():
-            self.window = gtk.Window(type=WINDOW_TOPLEVEL)
-        else:
-            self.window = gtk.Window(WINDOW_TOPLEVEL)
+        self.window = gtk.Window(type=WINDOW_TOPLEVEL)
         window_defaults(self.window)
         self.window.set_position(WIN_POS_CENTER)
         self.window.connect("destroy", self.quit)

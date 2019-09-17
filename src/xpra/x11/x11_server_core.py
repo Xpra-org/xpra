@@ -22,7 +22,7 @@ from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.x11.common import MAX_WINDOW_SIZE
-from xpra.os_util import monotonic_time, strtobytes, bytestostr, PYTHON3
+from xpra.os_util import monotonic_time, strtobytes, bytestostr
 from xpra.util import engs, csv, typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
@@ -37,9 +37,6 @@ RandR = RandRBindings()
 X11Keyboard = X11KeyboardBindings()
 X11Core = X11CoreBindings()
 X11Window = X11WindowBindings()
-
-if PYTHON3:
-    unicode = str           #@ReservedAssignment
 
 
 log = Logger("x11", "server")
@@ -334,7 +331,7 @@ class X11ServerCore(GTKServerBase):
         return get_uuid()
 
     def save_uuid(self):
-        save_uuid(unicode(self.uuid))
+        save_uuid(str(self.uuid))
 
     def set_keyboard_repeat(self, key_repeat):
         if key_repeat:

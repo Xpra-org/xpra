@@ -12,20 +12,14 @@ from Cocoa import (
     )
 
 from xpra.gtk_common.gtk_util import make_temp_window
-from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.log import Logger
 
 log = Logger("opengl")
 
-if is_gtk3():
-    from xpra.platform.darwin.gdk3_bindings import (    #@UnresolvedImport
-        get_nsview_ptr, enable_transparency,            #@UnresolvedImport
-        )
-else:
-    enable_transparency = None
-    def get_nsview_ptr(window):
-        return window.nsview
+from xpra.platform.darwin.gdk3_bindings import (    #@UnresolvedImport
+    get_nsview_ptr, enable_transparency,            #@UnresolvedImport
+    )
 
 
 class AGLWindowContext(object):

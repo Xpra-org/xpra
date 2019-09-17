@@ -8,7 +8,7 @@
 import os
 import weakref
 
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_pango, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
 from xpra.util import (
@@ -17,7 +17,7 @@ from xpra.util import (
     )
 from xpra.os_util import (
     bytestostr, strtobytes, hexstr, monotonic_time,
-    WIN32, OSX, POSIX, PYTHON3, is_Wayland,
+    WIN32, OSX, POSIX, is_Wayland,
     )
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
@@ -250,9 +250,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             a.add(widget)
             a.set_padding(padding, padding, padding, padding)
             dialog.vbox.pack_start(a)
-        pango = import_pango()
+        from gi.repository import Pango
         title = gtk.Label("Server Authentication")
-        title.modify_font(pango.FontDescription("sans 14"))
+        title.modify_font(Pango.FontDescription("sans 14"))
         add(title, 16)
         add(gtk.Label(self.get_challenge_prompt(prompt)), 10)
         password_input = gtk.Entry()
@@ -886,17 +886,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #this requires the "DisplayClient" mixin:
         if not hasattr(self, "screen_size_changed"):
             return
-        display = display_get_default()
-        if is_gtk3():
-            #always one screen per display:
-            screen = gdk.Screen.get_default()
-            screen.connect("size-changed", self.screen_size_changed)
-        else:
-            i=0
-            while i<display.get_n_screens():
-                screen = display.get_screen(i)
-                screen.connect("size-changed", self.screen_size_changed)
-                i += 1
+        #always one screen per display:
+        screen = gdk.Screen.get_default()
+        screen.connect("size-changed", self.screen_size_changed)
 
 
     def window_grab(self, window):
@@ -1094,10 +1086,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             #win32 opengl doesn't do alpha (not sure why):
             if override_redirect:
                 return (self.ClientWindowClass,)
-            if metadata.boolget("has-alpha", False):
-                return (self.ClientWindowClass,)
-        if OSX and not PYTHON3:
-            #GTK2 on OSX doesn't do alpha:
             if metadata.boolget("has-alpha", False):
                 return (self.ClientWindowClass,)
         return (self.GLClientWindowClass, self.ClientWindowClass)

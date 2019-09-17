@@ -12,40 +12,29 @@
 __version__ = (b"Python", 2, 5)
 
 import sys
-if sys.version_info[0] >= 3:
-    long = int              #@ReservedAssignment
-    #idiotic py3k unicode mess makes us reinvent the wheel again:
-    def strindex(s, char, start):
-        i = start
-        while s[i] != ord(char):
-            i += 1
-            if i>=len(s):
-                return -1
-        return i
-    #the values end up being ints..
-    def cv(x):
-        return ord(x)
-    import codecs
-    def b(x):
-        if isinstance(x, bytes):
-            return x
-        return codecs.latin_1_encode(x)[0]
-else:
-    def strindex(s, char, start):
-        return s.index(char, start)
-    def cv(x):
+import codecs
+
+#idiotic py3k unicode mess makes us reinvent the wheel again:
+def strindex(s, char, start):
+    i = start
+    while s[i] != ord(char):
+        i += 1
+        if i>=len(s):
+            return -1
+    return i
+#the values end up being ints..
+def cv(x):
+    return ord(x)
+def b(x):
+    if isinstance(x, bytes):
         return x
-    def b(x):               #@DuplicatedSignature
-        return x
+    return codecs.latin_1_encode(x)[0]
 
 
 def decode_int(x, f):
     f += 1
     newf = strindex(x, 'e', f)
-    try:
-        n = int(x[f:newf])
-    except (OverflowError, ValueError):
-        n = long(x[f:newf])
+    n = int(x[f:newf])
     if x[f] == cv('-'):
         if x[f + 1] == cv('0'):
             raise ValueError
@@ -56,10 +45,7 @@ def decode_int(x, f):
 def decode_string(x, f):
     colon = strindex(x, ':', f)
     assert colon>=0
-    try:
-        n = int(x[f:colon])
-    except (OverflowError, ValueError):
-        n = long(x[f:colon])
+    n = int(x[f:colon])
     if x[f] == cv('0') and colon != f+1:
         raise ValueError
     colon += 1
@@ -121,7 +107,7 @@ def bdecode(x):
 
 def encode_int(x, r):
     # Explicit cast, because bool.__str__ is annoying.
-    r.extend(('i', str(long(x)), 'e'))
+    r.extend(('i', str(int(x)), 'e'))
 
 def encode_string(x, r):
     r.extend((str(len(x)), ':', x))
@@ -145,28 +131,15 @@ def encode_dict(x,r):
     r.append('e')
 
 
-encode_func = {}
-if sys.version_info[0] < 3:
-    from types import (     #pylint: disable=no-name-in-module
-        StringType, UnicodeType, IntType, LongType, DictType, ListType, #@UnresolvedImport
-        TupleType, BooleanType,                                         #@UnresolvedImport
-        )
-    encode_func[IntType] = encode_int
-    encode_func[LongType] = encode_int
-    encode_func[StringType] = encode_string
-    encode_func[UnicodeType] = encode_unicode
-    encode_func[ListType] = encode_list
-    encode_func[TupleType] = encode_list
-    encode_func[DictType] = encode_dict
-    encode_func[BooleanType] = encode_int
-else:
-    encode_func[int] = encode_int
-    encode_func[str] = encode_string
-    encode_func[list] = encode_list
-    encode_func[tuple] = encode_list
-    encode_func[dict] = encode_dict
-    encode_func[bool] = encode_int
-    encode_func[bytes] = encode_string
+encode_func = {
+    int     : encode_int,
+    str     : encode_string,
+    list    : encode_list,
+    tuple   : encode_list,
+    dict    : encode_dict,
+    bool    : encode_int,
+    bytes   : encode_string,
+    }
 
 def bencode(x):
     r = []

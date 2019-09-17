@@ -13,7 +13,7 @@ from xpra.gtk_common.gtk_util import (
     window_defaults, WIN_POS_CENTER,
     )
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_gobject, import_pango, import_glib,
+    import_gtk, import_gdk, import_gobject, import_glib,
     register_os_signals,
     )
 from xpra.platform.paths import get_icon_dir
@@ -26,7 +26,7 @@ glib = import_glib()
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
-pango = import_pango()
+from gi.repository import Pango
 
 
 _instance = None
@@ -78,7 +78,7 @@ class StartNewCommand(object):
             self.category_changed()
         #always show the command as text so it can be edited:
         entry_label = gtk.Label("Command to run:")
-        entry_label.modify_font(pango.FontDescription("sans 14"))
+        entry_label.modify_font(Pango.FontDescription("sans 14"))
         entry_al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         entry_al.add(entry_label)
         vbox.add(entry_al)

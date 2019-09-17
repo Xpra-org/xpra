@@ -22,12 +22,6 @@ def b(x):
     if type(x)==bytes:
         return x
     return codecs.latin_1_encode(x)[0]
-import sys
-if sys.version_info[0]==2:
-    LongType = long
-else:
-    LongType = int
-    unicode = str
 
 
 cdef int find(const unsigned char *p, char c, unsigned int start, size_t len):
@@ -68,7 +62,7 @@ cdef decode_string(const unsigned char *x, unsigned int f, int l):
         slen = int(lenstr)
     except (OverflowError, ValueError):
         try:
-            slen = LongType(lenstr)
+            slen = int(lenstr)
         except:
             raise ValueError("cannot parse length '%s' (f=%s, colon=%s, string=%s)" % (lenstr, f, ucolon, x))
     if x[f] == b'0' and ucolon != f+1:
@@ -169,11 +163,9 @@ cdef int encode(object v, r) except -1:
     cdef object t = type(v)
     if t==int:
         return encode_int(v, r)
-    elif t==LongType:
-        return encode_int(v, r)
     elif t==bytes:
         return encode_string(v, r)
-    elif t in (str, unicode):
+    elif t==str:
         return encode_unicode(v, r)
     elif t==list:
         return encode_list(v, r)

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #test application for tray and menu
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 from xpra.gtk_common.gtk_util import scaled_image, pixbuf_new_from_file
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
 from xpra.platform.paths import get_icon_filename
@@ -68,10 +68,7 @@ class FakeApplication:
         self.quality = 80
         self.speed = 50
         try:
-            if is_gtk3():
-                from xpra.client.gtk3.tray_menu import GTK3TrayMenu as GTKTrayMenu
-            else:
-                from xpra.client.gtk2.tray_menu import GTK2TrayMenu as GTKTrayMenu
+            from xpra.client.gtk3.tray_menu import GTK3TrayMenu as GTKTrayMenu
         except ImportError as e:
             log.warn("failed to load GTK tray menu class: %s", e)
         for x in (get_native_tray_menu_helper_class(), GTKTrayMenu):

@@ -8,14 +8,12 @@ import cairo
 
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_glib, import_pango, import_pangocairo,
-    is_gtk3,
+    import_gtk, import_glib,
     )
 
 gtk = import_gtk()
 gLib = import_glib()
-pango = import_pango()
-pangocairo = import_pangocairo()
+from gi.repository import PangoCairo
 
 FONT = "Serif 27"
 PATTERN = "%f"
@@ -37,10 +35,7 @@ class FontWindow(gtk.Window):
         self.set_position(WIN_POS_CENTER)
         self.set_default_size(1600, 1200)
         self.set_app_paintable(True)
-        if is_gtk3():
-            self.connect("draw", self.area_draw)
-        else:
-            self.connect("expose-event", self.do_expose_event)
+        self.connect("draw", self.area_draw)
         self.connect("destroy", gtk.main_quit)
         self.show_all()
 
@@ -49,30 +44,15 @@ class FontWindow(gtk.Window):
         self.area_draw(self, cr)
 
     def area_draw(self, widget, cr):
-        if is_gtk3():
-            layout = pangocairo.create_layout(cr)
-            pctx = layout.get_context()
-        else:
-            pctx = pangocairo.CairoContext(cr)
+        layout = pangocairo.create_layout(cr)
+        pctx = layout.get_context()
         print("PangoContext: %s (%s)" % (pctx, type(pctx)))
         print("PangoContext: %s" % dir(pctx))
-        if is_gtk3():
-            print(" font map=%s" % pctx.get_font_map())
-            print(" families=%s" % pctx.list_families())
-            print(" font description=%s" % pctx.get_font_description())
-            print(" language=%s" % pctx.get_language())
-            print(" get_base_dir=%s" % pctx.get_base_dir())
-        else:
-            for x in ("get_antialias", "get_font_face", "get_font_matrix", "get_scaled_font"):
-                fn = getattr(pctx, x, None)
-                if fn:
-                    print("PangoContext.%s: %s" % (x, fn()))
-            fo = pctx.get_font_options()
-            for x in ("get_antialias", "get_hint_metrics", "get_hint_style", "get_subpixel_order"):
-                fn = getattr(fo, x, None)
-                if fn:
-                    print("FontOptions.%s: %s" % (x, fn()))
-            pctx.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
+        print(" font map=%s" % pctx.get_font_map())
+        print(" families=%s" % pctx.list_families())
+        print(" font description=%s" % pctx.get_font_description())
+        print(" language=%s" % pctx.get_language())
+        print(" get_base_dir=%s" % pctx.get_base_dir())
 
         for y in range(2):
             for x in range(2):

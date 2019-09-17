@@ -12,7 +12,6 @@ from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
-from xpra.os_util import PYTHON3
 from xpra.util import envint, envbool, DONE
 from xpra.log import Logger
 
@@ -85,9 +84,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         log("get_wm_name()=%s", self.session_name)
 
     def get_server_mode(self):
-        if PYTHON3:
-            return "GTK3 shadow"
-        return "GTK2 shadow"
+        return "GTK3 shadow"
 
     def print_screen_info(self):
         if not server_features.display:

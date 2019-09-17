@@ -12,7 +12,9 @@ try:
 except ImportError:
     from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
 
-from xpra.os_util import bytestostr, is_X11, monotonic_time, WIN32, OSX, POSIX, PYTHON3
+import cairo
+
+from xpra.os_util import bytestostr, is_X11, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import (
     AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
@@ -22,11 +24,11 @@ from xpra.util import (
     MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
     MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE,
     )
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_xwindow, get_pixbuf_from_data, get_default_root_window,
-    is_realized, display_get_default, drag_status,
+    is_realized, drag_status,
     newTargetEntry, drag_context_targets, drag_context_actions,
     drag_dest_window, drag_widget_get_data,
     enable_alpha,
@@ -61,7 +63,6 @@ alphalog = Logger("alpha")
 
 gtk     = import_gtk()
 gdk     = import_gdk()
-cairo   = import_cairo()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
@@ -109,7 +110,6 @@ BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
-HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX) and not is_gtk3()
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
 
@@ -175,10 +175,6 @@ GDK_SCROLL_MAP = {
     SCROLL_LEFT     : 6,
     SCROLL_RIGHT    : 7,
     }
-
-
-if PYTHON3:
-    unicode = str           #@ReservedAssignment
 
 
 def wn(w):
@@ -570,16 +566,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             type_hint = self.get_type_hint()
             if transient_for is not None and type_hint in self.OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
-        #preserve screen:
-        if HONOUR_SCREEN_MAPPING:
-            display = display_get_default()
-            screen_num = self._client_properties.get("screen", -1)
-            n = display.get_n_screens()
-            log("setup_window%s screen=%s, nscreens=%s", args, screen_num, n)
-            if screen_num>=0 and screen_num<n:
-                screen = display.get_screen(screen_num)
-                if screen:
-                    self.set_screen(screen)
 
         self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
@@ -916,7 +902,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not HAS_X11_BINDINGS:
             return
         v = command
-        if not isinstance(command, unicode):
+        if not isinstance(command, str):
             try:
                 v = v.decode("utf8")
             except UnicodeDecodeError:
@@ -1671,10 +1657,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #context.rectangle(area)
         #because those would be unscaled dimensions
         #it's easier and safer to repaint the whole window:
-        if is_gtk3():
-            context.rectangle(0, 0, w, h)
-        else:
-            context.rectangle(gdk.Rectangle(0, 0, w, h))
+        context.rectangle(0, 0, w, h)
         context.fill()
         #add spinner:
         dim = min(w/3.0, h/3.0, 100.0)
@@ -1717,13 +1700,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state = {}
         self.cancel_window_state_timer()
         workspace = self.get_window_workspace()
-        if not is_gtk3():
-            screen = self.get_screen().get_number()
-            workspacelog("process_map_event() wid=%i, workspace=%s, screen=%i, been_mapped=%s",
-                         self._id, workspace, screen, self._been_mapped)
-            if screen!=self._screen:
-                props["screen"] = screen
-                self._screen = screen
         if self._been_mapped:
             if workspace is None:
                 #not set, so assume it is on the current workspace:
@@ -1812,11 +1788,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state = {}
         self.cancel_window_state_timer()
         if self._been_mapped:
-            if not is_gtk3():
-                screen = self.get_screen().get_number()
-                if screen!=self._screen:
-                    props["screen"] = screen
-                    self._screen = screen
             #if the window has been mapped already, the workspace should be set:
             workspace = self.get_window_workspace()
             if self._window_workspace!=workspace and workspace is not None:

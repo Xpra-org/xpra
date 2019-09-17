@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,14 +13,11 @@ from xpra.sound.common import (
     VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, MP3_ID3V2, \
     MPEG4, MKA, OGG,
     )
-from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, bytestostr
+from xpra.os_util import WIN32, OSX, POSIX, bytestostr
 from xpra.util import csv, engs, parse_simple_dict, reverse_dict, envint, envbool
 from xpra.log import Logger
 
 log = Logger("sound", "gstreamer")
-
-if PYTHON3:
-    unicode = str           #@ReservedAssignment
 
 
 #used on the server (reversed):
@@ -497,7 +494,7 @@ def plugin_str(plugin, options):
     s = "%s" % plugin
     def qstr(v):
         #only quote strings
-        if isinstance(v, (str, unicode)):
+        if isinstance(v, str):
             return "\"%s\"" % v
         return v
     if options:

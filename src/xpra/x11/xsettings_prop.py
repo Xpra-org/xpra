@@ -19,17 +19,12 @@ import struct
 
 from xpra.log import Logger
 from xpra.util import envbool
-from xpra.os_util import PYTHON3, strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr
 
 
 log = Logger("x11", "xsettings")
 
 DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
-
-
-if PYTHON3:
-    long = int              #@ReservedAssignment
-    unicode = str           #@ReservedAssignment
 
 
 #undocumented XSETTINGS endianess values:
@@ -129,7 +124,7 @@ def set_settings(disp, d):
             x += b'\0'*pad_len
             x += struct.pack(b"=I", last_change_serial)
             if setting_type==XSettingsTypeInteger:
-                assert isinstance(value, (int, long)), "invalid value type (int or long wanted): %s" % type(value)
+                assert isinstance(value, int), "invalid value type (int or long wanted): %s" % type(value)
                 x += struct.pack(b"=I", int(value))
             elif setting_type==XSettingsTypeString:
                 value = strtobytes(value)

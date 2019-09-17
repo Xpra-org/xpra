@@ -24,7 +24,7 @@ from xpra.gtk_common.gtk_util import (
     FILE_CHOOSER_ACTION_SAVE,
     )
 from xpra.net.net_util import get_network_caps
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
 from xpra.log import Logger
 
 log = Logger("info")
@@ -468,8 +468,6 @@ class SessionInfo(gtk.Window):
 
         self.set_border_width(15)
         self.add(self.tab_box)
-        if not is_gtk3():
-            self.set_geometry_hints(self.tab_box)
         def window_deleted(*_args):
             self.is_closed = True
         self.connect('delete_event', window_deleted)
@@ -558,10 +556,7 @@ class SessionInfo(gtk.Window):
     def add_graph_button(self, tooltip, click_cb):
         button = gtk.EventBox()
         def set_cursor(widget):
-            if is_gtk3():
-                cursor = gdk.Cursor.new(gdk.CursorType.BASED_ARROW_DOWN)
-            else:
-                cursor = gdk.Cursor(gdk.BASED_ARROW_DOWN)
+            cursor = gdk.Cursor.new(gdk.CursorType.BASED_ARROW_DOWN)
             widget.get_window().set_cursor(cursor)
         button.connect("realize", set_cursor)
         graph = gtk.Image()
@@ -738,7 +733,7 @@ class SessionInfo(gtk.Window):
             renderers.setdefault(window.get_backing_class(), []).append(wid)
         for bclass, windows in renderers.items():
             wr.append("%s (%i)" % (bclass.__name__.replace("Backing", ""), len(windows)))
-        self.window_rendering.set_text("GTK%s: %s" % (["2","3"][is_gtk3()], csv(wr)))
+        self.window_rendering.set_text("GTK3: %s" % csv(wr))
 
     def populate_features(self):
         size_info = ""
@@ -1083,14 +1078,7 @@ class SessionInfo(gtk.Window):
         h = surface.get_height()
         graph.set_size_request(w, h)
         graph.surface = surface
-        if is_gtk3():
-            graph.set_from_surface(surface)
-        else:
-            pixmap = gdk.Pixmap(None, w, h, 24)
-            context = pixmap.cairo_create()
-            context.set_source_surface(surface)
-            context.paint()
-            graph.set_from_pixmap(pixmap, None)
+        graph.set_from_surface(surface)
 
     def populate_graphs(self, *_args):
         #older servers have 'batch' at top level,

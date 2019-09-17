@@ -9,12 +9,12 @@ import os.path
 import sys
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_pango, import_glib,
+    import_gtk, import_glib,
     register_os_signals,
     )
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
-    window_defaults, color_parse, is_gtk3,
+    window_defaults, color_parse,
     WIN_POS_CENTER, WINDOW_POPUP, STATE_NORMAL,
     )
 from xpra.platform.paths import get_icon_dir
@@ -24,16 +24,13 @@ log = get_util_logger()
 
 gtk = import_gtk()
 glib = import_glib()
-pango = import_pango()
+from gi.repository import Pango
 
 
 class ConfirmDialogWindow(object):
 
     def __init__(self, title="Title", prompt="", info=(), icon="", buttons=()):
-        if is_gtk3():
-            self.window = gtk.Window(type=WINDOW_POPUP)
-        else:
-            self.window = gtk.Window(WINDOW_POPUP)
+        self.window = gtk.Window(type=WINDOW_POPUP)
         window_defaults(self.window)
         self.window.set_position(WIN_POS_CENTER)
         self.window.connect("destroy", self.quit)
@@ -51,7 +48,7 @@ class ConfirmDialogWindow(object):
 
         def al(label, font="sans 14", xalign=0):
             l = gtk.Label(label)
-            l.modify_font(pango.FontDescription(font))
+            l.modify_font(Pango.FontDescription(font))
             if label.startswith("WARNING"):
                 red = color_parse("red")
                 l.modify_fg(STATE_NORMAL, red)

@@ -8,7 +8,7 @@ import os.path
 import sys
 import time
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.gtk_common.gtk_util import (
     window_defaults, gtk_main, add_close_accel, scaled_image,
     pixbuf_new_from_file, get_display_info, get_default_root_window,
@@ -23,7 +23,7 @@ log = Logger("util")
 
 gtk = import_gtk()
 gdk = import_gdk()
-pango = import_pango()
+from gi.repository import Pango
 
 STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 
@@ -68,7 +68,7 @@ class BugReport(object):
             hbox.pack_start(logo_button, expand=False, fill=False)
 
         label = gtk.Label("Xpra Bug Report Tool")
-        label.modify_font(pango.FontDescription("sans 14"))
+        label.modify_font(Pango.FontDescription("sans 14"))
         hbox.pack_start(label, expand=True, fill=True)
         vbox.pack_start(hbox)
 
@@ -212,9 +212,8 @@ class BugReport(object):
             hbox.pack_start(btn)
             return btn
 
-        if not is_gtk3():
-            #clipboard does not work in gtk3..
-            btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
+        #clipboard does not work in gtk3..
+        #btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
         btn("Save", "Save Bug Report", self.save_clicked, "download.png")
         btn("Cancel", "", self.close, "quit.png")
 

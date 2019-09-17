@@ -4,13 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import unittest
 
 from xpra.util import AtomicInteger, MutableInteger, typedict, log_screen_sizes, updict, pver, std, alnum, nonl, xor
-
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
 
 
 class TestIntegerClasses(unittest.TestCase):
@@ -98,7 +94,7 @@ class TestTypeDict(unittest.TestCase):
     def test_strget(self):
         d = typedict({b"bytekey"    : b"bytevalue",
                       u"unicodekey" : u"unicodevalue"})
-        self._test_values_type(d, d.strget, [str, unicode])
+        self._test_values_type(d, d.strget, [str, ])
 
     def test_intget(self):
         d = typedict({b"bytekey"    : "1",

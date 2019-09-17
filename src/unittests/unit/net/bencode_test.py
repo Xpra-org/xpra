@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@
 import unittest
 import binascii
 
-from xpra.os_util import strtobytes, bytestostr, PYTHON2
+from xpra.os_util import strtobytes, bytestostr
 from xpra.util import repr_ellipsized
 from xpra.net.bencode.bencode import bencode, bdecode
 from xpra.net.bencode import cython_bencode   #@UnresolvedImport
@@ -127,9 +127,7 @@ def _cmp(o, r):
             assert rv is not None, "restored dict is missing %s: %s" % (k, r)
             _cmp(ov, rv)
         return
-    if PYTHON2 and isinstance(o, unicode) and isinstance(r, str):   #@UndefinedVariable
-        o = o.encode("utf-8")
-    elif isinstance(o, bytes) and isinstance(r, str):
+    if isinstance(o, bytes) and isinstance(r, str):
         o = o.decode("utf-8")
     elif isinstance(o, str) and isinstance(r, bytes):
         r = r.decode("utf-8")

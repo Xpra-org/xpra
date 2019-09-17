@@ -12,7 +12,7 @@ import os
 from socket import error as socket_error
 from threading import Lock, Event
 
-from xpra.os_util import PYTHON3, Queue, memoryview_to_bytes, strtobytes, bytestostr, hexstr
+from xpra.os_util import Queue, memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
@@ -33,14 +33,6 @@ from xpra.log import Logger
 
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
-
-
-#stupid python version breakage:
-JOIN_TYPES = (str, bytes)
-if PYTHON3:
-    long = int              #@ReservedAssignment
-    unicode = str           #@ReservedAssignment
-    JOIN_TYPES = (bytes, )
 
 
 USE_ALIASES = envbool("XPRA_USE_ALIASES", True)
@@ -111,7 +103,7 @@ def do_verify_packet(tree, packet):
                 r = False
             if not do_verify_packet(new_tree("value for key='%s'" % str(k)), v):
                 r = False
-    elif isinstance(packet, (int, bool, str, bytes, unicode)):
+    elif isinstance(packet, (int, bool, str, bytes)):
         pass
     else:
         err("unsupported type: %s" % type(packet))
@@ -432,7 +424,7 @@ class Protocol(object):
                 #(WebSocketProtocol may also add a websocket header too)
                 header = self.make_chunk_header(packet_type, proto_flags, level, index, actual_size)
                 if actual_size<PACKET_JOIN_SIZE:
-                    if not isinstance(data, JOIN_TYPES):
+                    if not isinstance(data, bytes):
                         data = memoryview_to_bytes(data)
                     items.append(header+data)
                 else:
@@ -443,7 +435,7 @@ class Protocol(object):
         if frame_header:
             item0 = items[0]
             if len(item0)<PACKET_JOIN_SIZE:
-                if not isinstance(item0, JOIN_TYPES):
+                if not isinstance(item0, bytes):
                     item0 = memoryview_to_bytes(item0)
                 items[0] = frame_header + item0
             else:
@@ -516,15 +508,11 @@ class Protocol(object):
 
     def noencode(self, data):
         #just send data as a string for clients that don't understand xpra packet format:
-        if PYTHON3:
-            import codecs
-            def b(x):
-                if isinstance(x, bytes):
-                    return x
-                return codecs.latin_1_encode(x)[0]
-        else:
-            def b(x):               #@DuplicatedSignature
+        import codecs
+        def b(x):
+            if isinstance(x, bytes):
                 return x
+            return codecs.latin_1_encode(x)[0]
         return b(": ".join(str(x) for x in data)+"\n"), FLAGS_NOHEADER
 
 
@@ -552,7 +540,7 @@ class Protocol(object):
             if item is None:
                 raise TypeError("invalid None value in %s packet at index %s" % (packet[0], i))
             ti = type(item)
-            if ti in (int, long, bool, dict, list, tuple):
+            if ti in (int, bool, dict, list, tuple):
                 continue
             try:
                 l = len(item)

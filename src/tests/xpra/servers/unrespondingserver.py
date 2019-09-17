@@ -5,13 +5,12 @@
 # later version. See the file COPYING for details.
 
 import sys
+from gi.repository import GLib
 
 from xpra.log import Logger
 log = Logger()
 
 from xpra.server.server_core import ServerCore
-from xpra.gtk_common.gobject_compat import import_glib
-glib = import_glib()
 
 
 class UnrespondingServer(ServerCore):
@@ -19,12 +18,12 @@ class UnrespondingServer(ServerCore):
     def __init__(self):
         ServerCore.__init__(self)
         self.main_loop = None
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
 
     def do_run(self):
-        self.main_loop = glib.MainLoop()
+        self.main_loop = GLib.MainLoop()
         self.main_loop.run()
 
     def do_quit(self):
@@ -32,7 +31,7 @@ class UnrespondingServer(ServerCore):
 
     def add_listen_socket(self, socktype, sock):
         sock.listen(5)
-        glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
+        GLib.io_add_watch(sock, GLib.IO_IN, self._new_connection, sock)
 
     def send_version_info(self, proto):
         #we just ignore it!
@@ -53,7 +52,7 @@ class UnrespondingServer(ServerCore):
 
     def hello_oked(self, proto, packet, c, auth_caps):
         log.info("client should be accepted - but we'll just ignore it!")
-        glib.timeout_add(10*1000, self.verify_client_has_timedout, proto)
+        GLib.timeout_add(10*1000, self.verify_client_has_timedout, proto)
 
 
 def main():

@@ -14,15 +14,15 @@ from xpra.gtk_common.gtk_util import (
     window_defaults, WIN_POS_CENTER,
     )
 from xpra.platform.paths import get_icon_dir
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("util")
 
 gtk = import_gtk()
 gdk = import_gdk()
-pango = import_pango()
 glib = import_glib()
+from gi.repository import Pango
 
 
 _instance = None
@@ -53,7 +53,7 @@ class UpdateStatusWindow(object):
         # Label:
         self.progress = 0
         self.label = gtk.Label("Version Check")
-        self.label.modify_font(pango.FontDescription("sans 14"))
+        self.label.modify_font(Pango.FontDescription("sans 14"))
         al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.label)
         vbox.add(al)

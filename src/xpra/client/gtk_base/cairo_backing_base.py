@@ -4,7 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_cairo, import_glib
+import cairo
+
+from xpra.gtk_common.gobject_compat import import_gdk, import_glib
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
@@ -16,8 +18,6 @@ from xpra.log import Logger
 log = Logger("paint", "cairo")
 
 gdk             = import_gdk()
-gobject         = import_gobject()
-cairo           = import_cairo()
 glib            = import_glib()
 
 

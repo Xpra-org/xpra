@@ -9,7 +9,7 @@
 import os
 from time import time
 
-from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, monotonic_time
+from xpra.os_util import WIN32, OSX, POSIX, monotonic_time
 from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.client.tray_base import TrayBase, log
@@ -170,22 +170,8 @@ class GTKStatusIconTray(TrayBase):
         h = tray_icon.get_height()
         log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
         if tw!=w or th!=h:
-            if tw!=th and not PYTHON3:
-                #paste the scaled icon in the middle of the rectangle:
-                minsize = min(tw, th)
-                new_icon = get_pixbuf_from_data(b"\0"*tw*th*4, True, tw, th, tw*4)
-                scaled_w, scaled_h = minsize, minsize
-                if tw==24 and th==64:
-                    #special case for the gnome-shell dimensions - stretch height..
-                    scaled_w, scaled_h = 24, 48
-                tray_icon = tray_icon.scale_simple(scaled_w, scaled_h, INTERP_HYPER)
-                tray_icon.copy_area(0, 0, scaled_w, scaled_h, new_icon, (tw-scaled_w)//2, (th-scaled_h)//2)
-                log("tray icon scaled to %ix%i and pasted into the middle of %ix%i blank icon",
-                    scaled_w, scaled_h, tw, th)
-                tray_icon = new_icon
-            else:
-                tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
-                log("tray icon scaled to %ix%i", tw, th)
+            tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
+            log("tray icon scaled to %ix%i", tw, th)
         if SAVE:
             filename = "./statusicon-%s.png" % time()
             tray_icon.save(filename, "png")

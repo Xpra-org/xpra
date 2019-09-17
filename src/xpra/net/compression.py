@@ -7,7 +7,6 @@
 
 import struct
 
-from xpra.os_util import PYTHON3
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG, BROTLI_FLAG
 
 
@@ -94,35 +93,22 @@ try:
     from zlib import compress as zlib_compress, decompress as zlib_decompress
     from zlib import __version__ as zlib_version
     has_zlib = True
-    #stupid python version breakage:
-    if PYTHON3:
-        def zcompress(packet, level):
-            if isinstance(packet, memoryview):
-                packet = packet.tobytes()
-            elif not isinstance(packet, bytes):
-                packet = bytes(packet, 'UTF-8')
-            return level + ZLIB_FLAG, zlib_compress(packet, level)
-    else:
-        def zcompress(packet, level):
-            if isinstance(packet, memoryview):
-                packet = packet.tobytes()
-            else:
-                packet = str(packet)
-            return level + ZLIB_FLAG, zlib_compress(packet, level)
+    def zcompress(packet, level):
+        if isinstance(packet, memoryview):
+            packet = packet.tobytes()
+        elif not isinstance(packet, bytes):
+            packet = bytes(packet, 'UTF-8')
+        return level + ZLIB_FLAG, zlib_compress(packet, level)
 except ImportError:
     has_zlib = False
     def zcompress(packet, level):
         raise Exception("zlib is not supported!")
 
 
-if PYTHON3:
-    def nocompress(packet, _level):
-        if not isinstance(packet, bytes):
-            packet = bytes(packet, 'UTF-8')
-        return 0, packet
-else:
-    def nocompress(packet, _level):
-        return 0, packet
+def nocompress(packet, _level):
+    if not isinstance(packet, bytes):
+        packet = bytes(packet, 'UTF-8')
+    return 0, packet
 
 
 #defaults to True if available:

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-import sys
 
 from xpra.log import Logger
 from xpra.os_util import strtobytes
@@ -15,9 +13,6 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings     #@Unresolved
 
 window_bindings = X11WindowBindings()
 log = Logger("x11", "filters")
-
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
 
 
 def get_x11_window_value(prop, window):
@@ -34,7 +29,7 @@ def get_x11_window_value(prop, window):
         assert ptype, "type '%s' is not handled!" % x11type
         v = prop_get(window, prop, ptype)
         log("prop_get(%s, %s, %s)=%s", window, prop, ptype, v)
-        if v and isinstance(v, (str, unicode)):
+        if v and isinstance(v, str):
             v = strtobytes(v).replace("\0", "")
     else:
         v = None

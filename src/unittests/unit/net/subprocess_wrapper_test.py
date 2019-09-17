@@ -5,19 +5,16 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from gi.repository import GObject, GLib               #@UnresolvedImport
 
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.net.protocol import Protocol
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
 from xpra.net.bytestreams import Connection
 from xpra.os_util import Queue
-from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 from xpra.log import Logger
 
 log = Logger("test")
-
-gobject = import_gobject()
-glib = import_glib()
 
 TEST_TIMEOUT = 10*1000
 
@@ -56,7 +53,7 @@ class loopback_connection(Connection):
 
 def loopback_protocol(process_packet_cb, get_packet_cb):
     conn = loopback_connection("fake", "fake")
-    protocol = Protocol(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
+    protocol = Protocol(GLib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
     protocol.enable_encoder("rencode")
     protocol.enable_compressor("none")
     return protocol
@@ -76,18 +73,18 @@ class loopback_callee(subprocess_callee):
         return loopback_protocol(self.process_packet, self.get_packet)
 
 
-class TestCallee(gobject.GObject):
+class TestCallee(GObject.GObject):
     __gsignals__ = {
         "test-signal": one_arg_signal,
         }
 
-gobject.type_register(TestCallee)
+GObject.type_register(TestCallee)
 
 
 class SubprocessWrapperTest(unittest.TestCase):
 
     def test_loopback_caller(self):
-        mainloop = glib.MainLoop()
+        mainloop = GLib.MainLoop()
         lp = loopback_process()
         readback = []
         def record_packet(self, *args):
@@ -97,7 +94,7 @@ class SubprocessWrapperTest(unittest.TestCase):
             #this may deadlock on win32..
             lp.stop_protocol()
             lp.stop_process()
-            glib.idle_add(mainloop.quit)
+            GLib.idle_add(mainloop.quit)
         def end(*_args):
             stop()
         lp.connect("end", end)
@@ -105,11 +102,11 @@ class SubprocessWrapperTest(unittest.TestCase):
         def timeout_error():
             self.timeout = True
             stop()
-        glib.timeout_add(TEST_TIMEOUT, timeout_error)
+        GLib.timeout_add(TEST_TIMEOUT, timeout_error)
         sent_str = b"hello foo"
-        glib.idle_add(lp.send, "foo", sent_str)
-        glib.idle_add(lp.send, "bar", b"hello bar")
-        glib.idle_add(lp.send, "end")
+        GLib.idle_add(lp.send, "foo", sent_str)
+        GLib.idle_add(lp.send, "bar", b"hello bar")
+        GLib.idle_add(lp.send, "end")
         lp.stop = stop
         #run!
         lp.start()
@@ -120,7 +117,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         assert self.timeout is False, "the test did not exit cleanly (not received the 'end' packet?)"
 
     def test_loopback_callee(self):
-        mainloop = glib.MainLoop()
+        mainloop = GLib.MainLoop()
         callee = TestCallee()
         lc = loopback_callee(wrapped_object=callee, method_whitelist=["test_signal", "loop_stop", "unused"])
         #this will cause the "test-signal" to be sent via the loopback connection
@@ -129,7 +126,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         def test_signal_function(*args):
             log("test_signal_function%s", args)
             readback.append(args)
-            glib.idle_add(lc.send, "loop_stop")
+            GLib.idle_add(lc.send, "loop_stop")
         #hook up a function which will be called when the wrapper converts the packet into a method call:
         callee.test_signal = test_signal_function
         #lc.connect_export("test-signal", hello)
@@ -138,18 +135,18 @@ class SubprocessWrapperTest(unittest.TestCase):
         def loop_stop(*args):
             log("loop_stop%s timeout_fn=%s", args, callee.timeout_fn)
             if callee.timeout_fn:
-                glib.source_remove(callee.timeout_fn)
+                GLib.source_remove(callee.timeout_fn)
                 callee.timeout_fn = None
             lc.stop()
-            glib.idle_add(mainloop.quit)
+            GLib.idle_add(mainloop.quit)
         def timeout_error():
             log.warn("timeout_error")
             callee.timeout_fn = None
             self.timeout = True
             loop_stop()
-        callee.timeout_fn = glib.timeout_add(TEST_TIMEOUT, timeout_error)
+        callee.timeout_fn = GLib.timeout_add(TEST_TIMEOUT, timeout_error)
         signal_string = b"hello foo"
-        glib.idle_add(callee.emit, "test-signal", signal_string)
+        GLib.idle_add(callee.emit, "test-signal", signal_string)
         #hook up a stop function call which ends this test cleanly
         callee.loop_stop = loop_stop
         #run!

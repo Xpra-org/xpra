@@ -12,7 +12,7 @@ from threading import Thread
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
 from xpra.net.common import may_log_packet
-from xpra.os_util import monotonic_time, bytestostr, strtobytes, WIN32, PYTHON3
+from xpra.os_util import monotonic_time, bytestostr, strtobytes, WIN32
 from xpra.util import (
     typedict, flatten_dict, updict, merge_dicts, envbool, envint,
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
@@ -354,7 +354,7 @@ class ServerBase(ServerBaseClass):
 
         self.accept_client(proto, c)
         #use blocking sockets from now on:
-        if not (PYTHON3 and WIN32):
+        if not WIN32:
             set_socket_timeout(proto._conn, None)
 
         def drop_client(reason="unknown", *args):

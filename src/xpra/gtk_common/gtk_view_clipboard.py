@@ -6,15 +6,15 @@ import re
 import sys
 from collections import deque
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject
 from xpra.gtk_common.gtk_util import TableBuilder, label, get_xwindow, GetClipboard
 from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
 
 gtk = import_gtk()
 gdk = import_gdk()
-pango = import_pango()
 gobject = import_gobject()
+from gi.repository import Pango
 
 
 class ClipboardInstance(object):
@@ -158,13 +158,6 @@ class ClipboardInstance(object):
         self.clipboard.set_text(self.ellipsis(self.value_entry.get_text()))
 
     def owner_changed(self, _cb, event):
-        r = {}
-        if not is_gtk3():
-            r = {
-                gtk.gdk.OWNER_CHANGE_CLOSE      : "close",
-                gtk.gdk.OWNER_CHANGE_DESTROY    : "destroy",
-                gtk.gdk.OWNER_CHANGE_NEW_OWNER  : "new owner",
-                }
         owner = self.clipboard.get_owner()
         #print("xid=%s, owner=%s" % (self.value_entry.get_window().xid, event.owner))
         weownit = (owner is not None)
@@ -173,7 +166,7 @@ class ClipboardInstance(object):
         else:
             owner_info = hex(event.owner)
         self.log("Owner changed, reason: %s, new owner=%s" % (
-                        r.get(event.reason, event.reason), owner_info))
+                        event.reason, owner_info))
 
 
 
@@ -193,7 +186,7 @@ class ClipboardStateInfoWindow(object):
         for x in range(25):
             self.log.append("")
         self.events = gtk.Label()
-        fixed = pango.FontDescription('monospace 9')
+        fixed = Pango.FontDescription('monospace 9')
         self.events.modify_font(fixed)
 
         #how many clipboards to show:

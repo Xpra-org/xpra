@@ -4,15 +4,10 @@
 # later version. See the file COPYING for details.
 
 
-try:
-    #new recommended way of using the glib main loop:
-    from dbus.mainloop.glib import DBusGMainLoop
-    DBusGMainLoop(set_as_default=True)
-except:
-    #beware: this import has side-effects:
-    import dbus.glib
-    assert dbus.glib
-import dbus #@Reimport
+#new recommended way of using the glib main loop:
+from dbus.mainloop.glib import DBusGMainLoop
+DBusGMainLoop(set_as_default=True)
+import dbus
 
 
 #NAME = "org.freedesktop.ScreenSaver"

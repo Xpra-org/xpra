@@ -9,7 +9,7 @@ import os.path
 from collections import OrderedDict
 
 from xpra.util import repr_ellipsized
-from xpra.os_util import load_binary_file, PYTHON2, OSX, POSIX, LINUX
+from xpra.os_util import load_binary_file, OSX, POSIX, LINUX
 from xpra.platform.paths import get_app_dir, get_user_conf_dirs
 from xpra.log import Logger
 
@@ -68,11 +68,7 @@ def load_content_type_dir(d):
                     log.error(" %s", e)
 
 def load_content_type_file(ct_file):
-    if PYTHON2:
-        mode = "rU"
-    else:
-        mode = "r"
-    with open(ct_file, mode) as f:
+    with open(ct_file, "r") as f:
         l = 0
         for line in f:
             if not process_content_type_entry(line):
@@ -168,12 +164,8 @@ def load_categories_to_type():
     log("load_categories_to_type()=%s", categories_to_type)
     return categories_to_type
 def load_content_categories_file(cc_file):
-    if PYTHON2:
-        mode = "rU"
-    else:
-        mode = "r"
     d = {}
-    with open(cc_file, mode) as f:
+    with open(cc_file, "r") as f:
         l = 0
         for line in f:
             l += 1

@@ -12,7 +12,7 @@ import socket
 
 from xpra.net.common import ConnectionClosedException
 from xpra.util import envint, envbool, csv
-from xpra.os_util import WIN32, PYTHON2, POSIX, LINUX
+from xpra.os_util import WIN32, POSIX, LINUX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
 from xpra.log import Logger
 
@@ -48,23 +48,6 @@ ABORT = {
          errno.EPIPE            : "EPIPE",
          }
 continue_wait = 0
-
-#default to using os.read and os.write for both tty devices and regular streams
-#(but overriden for win32 below for tty devices to workaround an OS "feature")
-OS_READ = os.read
-OS_WRITE = os.write
-TTY_READ = os.read
-TTY_WRITE = os.write
-if WIN32 and PYTHON2:
-    #win32 has problems writing more than 32767 characters to stdout!
-    #see: http://bugs.python.org/issue11395
-    #(this is fixed in python 3.2 and we don't care about 3.0 or 3.1)
-    def win32ttywrite(fd, buf):
-        #this awful limitation only applies to tty devices:
-        if len(buf)>32767:
-            buf = buf[:32767]
-        return os.write(fd, buf)
-    TTY_WRITE = win32ttywrite
 
 
 PROTOCOL_STR = {}
@@ -232,14 +215,6 @@ class TwoFileConnection(Connection):
         self._readable = readable
         self._read_fd = self._readable.fileno()
         self._write_fd = self._writeable.fileno()
-        if os.isatty(self._read_fd):
-            self._osread = TTY_READ
-        else:
-            self._osread = OS_READ
-        if os.isatty(self._write_fd):
-            self._oswrite = TTY_WRITE
-        else:
-            self._oswrite = OS_WRITE
         self._abort_test = abort_test
         self._close_cb = close_cb
 
@@ -250,11 +225,11 @@ class TwoFileConnection(Connection):
 
     def read(self, n):
         self.may_abort("read")
-        return self._read(self._osread, self._read_fd, n)
+        return self._read(os.read, self._read_fd, n)
 
     def write(self, buf):
         self.may_abort("write")
-        return self._write(self._oswrite, self._write_fd, buf)
+        return self._write(os.write, self._write_fd, buf)
 
     def close(self):
         log("%s.close() close callback=%s, readable=%s, writeable=%s",

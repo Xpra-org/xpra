@@ -9,7 +9,7 @@
 import socket
 import sys
 
-from xpra.os_util import WIN32, OSX, PYTHON3
+from xpra.os_util import WIN32, OSX
 from xpra.log import Logger
 
 log = Logger("network", "util")
@@ -222,47 +222,13 @@ if WIN32:
         except (TypeError, ValueError):
             return None
     if_nametoindex = int_if_nametoindex
-elif PYTHON3:
+else:
     if_nametoindex = socket.if_nametoindex
     def socket_if_indextoname(index):
         if index<0:
             return None
         return socket.if_indextoname(index)
     if_indextoname = socket_if_indextoname
-
-else:
-    library = "libc.so.6"
-    if OSX:
-        library = "/usr/lib/libc.dylib"
-    elif sys.platform.startswith("sunos"):
-        library = "libsocket.so.1"
-    elif sys.platform.startswith("freebsd"):
-        library = "/lib/libc.so.7"
-    elif sys.platform.startswith("openbsd"):
-        library = "libc.so"
-    try:
-        from ctypes import CDLL, c_char_p, c_uint, create_string_buffer
-        #cdll.LoadLibrary(library)
-        from ctypes.util import find_library
-        #<CDLL 'libc.so.6', handle 7fcac419b000 at 7fcac1ab0c10>
-        _libc = CDLL(find_library(library))
-        log("successfully loaded socket C library from %s", library)
-    except ImportError as e:
-        log.error("library %s not found: %s", library, e)
-    except OSError as e:
-        log.error("error loading %s: %s", library, e)
-    else:
-        _libc.if_indextoname.restype = c_char_p
-        _libc.if_indextoname.argtypes = [c_uint, c_char_p]
-        _libc.if_nametoindex.restype = c_uint
-        _libc.if_nametoindex.argtypes = [c_char_p]
-        def libc_if_nametoindex(interfaceName):
-            return _libc.if_nametoindex(create_string_buffer(interfaceName.encode()))
-        def libc_if_indextoname(index):
-            s = create_string_buffer(b'\000' * 256)
-            return _libc.if_indextoname(c_uint(index), s)
-        if_nametoindex = libc_if_nametoindex
-        if_indextoname = libc_if_indextoname
 
 
 net_sys_config = None

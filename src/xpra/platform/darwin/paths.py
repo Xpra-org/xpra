@@ -24,8 +24,10 @@ def do_get_resources_dir():
     #and in some cases we don't want that.. so use the env var XPRA_SKIP_UI as workaround for such cases:
     if not envbool("XPRA_SKIP_UI", False):
         try:
-            from xpra.gtk_common.gobject_compat import import_gtkosx_application
-            gtkosx_application = import_gtkosx_application()
+            import gi
+            gi.require_version('GtkosxApplication', '1.0')
+            from gi.repository import GtkosxApplication #@UnresolvedImport
+            gtkosx_application = GtkosxApplication()
             try:
                 rsc = gtkosx_application.gtkosx_application_get_resource_path()
                 debug("get_resources_dir() gtkosx_application_get_resource_path=%s", rsc)

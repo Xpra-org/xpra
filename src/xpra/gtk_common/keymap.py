@@ -21,7 +21,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
         by adding the keyval_name.
         We can also ignore some keys
     """
-    from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, import_gdk, is_gtk3
+    from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, import_gdk
     gdk = import_gdk()
     display = display_get_default()
     if not display:
@@ -35,26 +35,17 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
         log("get_entries_for_keycode(%s)=%s", i, entries)
         if not entries:
             continue
-        if is_gtk3():
-            found, keys, keyvals = entries
-            if not found:
-                continue
-            for j, key in enumerate(keys):
-                keyval = keyvals[j]
-                keycode = key.keycode
-                name = gdk.keyval_name(keyval)
-                name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
-                group = key.group or 0
-                if name not in ignore_keys:
-                    keycodes.append((keyval or 0, name or "", keycode or 0, group, key.level or 0))
-        else:
-            #gtk2:
-            for keyval, keycode, group, level in entries:
-                #assert keycode==i
-                name = gdk.keyval_name(keyval)
-                name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
-                if name not in ignore_keys:
-                    keycodes.append((keyval or 0, name or "", keycode or 0, group or 0, level or 0))
+        found, keys, keyvals = entries
+        if not found:
+            continue
+        for j, key in enumerate(keys):
+            keyval = keyvals[j]
+            keycode = key.keycode
+            name = gdk.keyval_name(keyval)
+            name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
+            group = key.group or 0
+            if name not in ignore_keys:
+                keycodes.append((keyval or 0, name or "", keycode or 0, group, key.level or 0))
     log("get_gtk_keymap(%s)=%s (keymap=%s)", ignore_keys, keycodes, keymap)
     return keycodes
 

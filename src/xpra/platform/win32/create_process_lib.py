@@ -392,31 +392,17 @@ class Popen(subprocess.Popen):
         self._child_started = False
         super(Popen, self).__init__(*args, **kwds)
 
-    if sys.version_info[0] == 2:
-
-        def _execute_child(self, args, executable, preexec_fn, close_fds,
-                           cwd, env, universal_newlines, startupinfo,
-                           creationflags, shell, to_close, p2cread, p2cwrite,
-                           c2pread, c2pwrite, errread, errwrite):
-            """Execute program (MS Windows version)"""
-            commandline = (args if isinstance(args, types.StringTypes) else  #@UndefinedVariable, pylint: disable=no-member
-                           subprocess.list2cmdline(args))
-            self._common_execute_child(executable, commandline, shell,
-                    close_fds, creationflags, env, cwd,
-                    startupinfo, p2cread, c2pwrite, errwrite, to_close)
-    else:
-
-        def _execute_child(self, args, executable, preexec_fn, close_fds,
-                           pass_fds, cwd, env, startupinfo, creationflags,
-                           shell, p2cread, p2cwrite, c2pread, c2pwrite, errread,
-                           errwrite, restore_signals, start_new_session):
-            """Execute program (MS Windows version)"""
-            assert not pass_fds, "pass_fds not supported on Windows."
-            commandline = (args if isinstance(args, str) else
-                           subprocess.list2cmdline(args))
-            self._common_execute_child(executable, commandline, shell,
-                    close_fds, creationflags, env, cwd,
-                    startupinfo, p2cread, c2pwrite, errwrite)
+    def _execute_child(self, args, executable, preexec_fn, close_fds,
+                       pass_fds, cwd, env, startupinfo, creationflags,
+                       shell, p2cread, p2cwrite, c2pread, c2pwrite, errread,
+                       errwrite, restore_signals, start_new_session):
+        """Execute program (MS Windows version)"""
+        assert not pass_fds, "pass_fds not supported on Windows."
+        commandline = (args if isinstance(args, str) else
+                       subprocess.list2cmdline(args))
+        self._common_execute_child(executable, commandline, shell,
+                close_fds, creationflags, env, cwd,
+                startupinfo, p2cread, c2pwrite, errwrite)
 
     def _common_execute_child(self, executable, commandline, shell,
                               close_fds, creationflags, env, cwd,
@@ -443,7 +429,7 @@ class Popen(subprocess.Popen):
             startupinfo = STARTUPINFO()
         si = self._startupinfo = startupinfo
 
-        default = None if sys.version_info[0] == 2 else -1
+        default = -1
         if default not in (p2cread, c2pwrite, errwrite):
             si.dwFlags |= STARTF_USESTDHANDLES
             si.hStdInput  = int( p2cread)
@@ -453,25 +439,14 @@ class Popen(subprocess.Popen):
         try:
             pi = create_process(creationinfo=ci, startupinfo=si)
         finally:
-            if sys.version_info[0] == 2:
-                if p2cread is not None:
-                    p2cread.Close()
-                    to_close.remove(p2cread)
-                if c2pwrite is not None:
-                    c2pwrite.Close()
-                    to_close.remove(c2pwrite)
-                if errwrite is not None:
-                    errwrite.Close()
-                    to_close.remove(errwrite)
-            else:
-                if p2cread != -1:
-                    p2cread.Close()
-                if c2pwrite != -1:
-                    c2pwrite.Close()
-                if errwrite != -1:
-                    errwrite.Close()
-                if hasattr(self, '_devnull'):
-                    os.close(self._devnull)  #pylint: disable=no-member
+            if p2cread != -1:
+                p2cread.Close()
+            if c2pwrite != -1:
+                c2pwrite.Close()
+            if errwrite != -1:
+                errwrite.Close()
+            if hasattr(self, '_devnull'):
+                os.close(self._devnull)  #pylint: disable=no-member
 
         if not ci.dwCreationFlags & CREATE_SUSPENDED:
             self._child_started = True

@@ -1,22 +1,6 @@
 #!/usr/bin/python3
 
-import os
 import sys
-try:
-    import xpra
-    assert xpra
-except ImportError as e:
-    sys.stderr.write("xpra for python %s is not installed\n" % (".".join(str(x) for x in sys.version_info[:2])))
-    if not os.environ.get("XPRA_ALT_PYTHON_RETRY"):
-        major = sys.version_info[0]
-        other_option = 2+int(major==2)
-        env = os.environ.copy()
-        env["XPRA_ALT_PYTHON_RETRY"] = "1"
-        py_exe = "python%i" % other_option
-        argv = [py_exe]+sys.argv
-        sys.stderr.write(" retrying with %s\n" % py_exe)
-        os.execvpe(py_exe, argv, env)
-    sys.exit(1)
 
 from xpra.platform import init, set_default_name
 set_default_name("Xpra")

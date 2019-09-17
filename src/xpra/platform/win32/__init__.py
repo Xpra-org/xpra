@@ -15,7 +15,6 @@ from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
 from xpra.util import envbool
-from xpra.os_util import PYTHON2, PYTHON3
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
     GetStdHandle,
@@ -59,8 +58,11 @@ if frozen:
     os.environ['GI_TYPELIB_PATH'] = jedir('lib', 'girepository-1.0')
     os.environ["PATH"] = os.pathsep.join(PATH)
 
-#don't know why this breaks with Python 3 yet...
-FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", not REDIRECT_OUTPUT and PYTHON2)
+if REDIRECT_OUTPUT:
+    FIX_UNICODE_OUT = False
+else:
+    #don't know why this breaks with Python 3 yet...
+    FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", False)
 
 
 def is_wine():
@@ -83,9 +85,6 @@ def set_prgname(name):
     prg_name = name
     try:
         SetConsoleTitleA(name)
-        if PYTHON2:
-            import glib     #@UnresolvedImport
-            glib.set_prgname(name)
     except:
         pass
 
@@ -96,10 +95,6 @@ def not_a_console(handle):
             or GetConsoleMode(handle, byref(DWORD())) == 0)
 
 def fix_unicode_out():
-    if PYTHON3:
-        _unicode = str
-    else:
-        _unicode = unicode  #@UndefinedVariable
     #code found here:
     #http://stackoverflow.com/a/3259271/428751
     import codecs
@@ -191,11 +186,11 @@ def fix_unicode_out():
                 def write(self, text):
                     try:
                         if self._hConsole is None:
-                            if isinstance(text, _unicode):
+                            if isinstance(text, str):
                                 text = text.encode('utf-8')
                             self._stream.write(text)
                         else:
-                            if not isinstance(text, _unicode):
+                            if not isinstance(text, str):
                                 text = str(text).decode('utf-8')
                             remaining = len(text)
                             while remaining:

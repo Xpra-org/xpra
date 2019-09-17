@@ -12,7 +12,7 @@ import os.path
 from xpra.util import flatten_dict, envbool
 from xpra.os_util import monotonic_time, register_SIGUSR_signals
 from xpra.gtk_common.gobject_compat import (
-    import_gdk, import_glib, is_gtk3,
+    import_gdk, import_glib,
     register_os_signals,
     )
 from xpra.gtk_common.quit import (
@@ -88,14 +88,11 @@ class GTKServerBase(ServerBase):
         # (if gtk has been loaded)
         gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
         #bug 2328: python3 shadow server segfault on Ubuntu 16.04
-        from xpra.os_util import getUbuntuVersion, is_Ubuntu, PYTHON2
-        safe_close = PYTHON2 or self.session_type!="shadow" or not is_Ubuntu() or getUbuntuVersion()>(16, 4)
+        from xpra.os_util import getUbuntuVersion, is_Ubuntu
+        safe_close = self.session_type!="shadow" or not is_Ubuntu() or getUbuntuVersion()>(16, 4)
         close = envbool("XPRA_CLOSE_GTK_DISPLAY", safe_close)
         if close and gdk_mod:
-            if is_gtk3():
-                displays = gdk.DisplayManager.get().list_displays()
-            else:
-                displays = gdk.display_manager_get().list_displays()
+            displays = gdk.DisplayManager.get().list_displays()
             for d in displays:
                 d.close()
 
@@ -231,11 +228,8 @@ class GTKServerBase(ServerBase):
                     display_workarea.width = work_w
                     display_workarea.height = work_h
                     screenlog("calculate_workarea() found %s for display %s", display_workarea, display[0])
-                    if is_gtk3():
-                        success, workarea = workarea.intersect(display_workarea)
-                        assert success
-                    else:
-                        workarea = workarea.intersect(display_workarea)
+                    success, workarea = workarea.intersect(display_workarea)
+                    assert success
         #sanity checks:
         screenlog("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
         if workarea.width==0 or workarea.height==0:

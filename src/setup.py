@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -23,14 +23,12 @@ from distutils.command.install_data import install_data
 import xpra
 from xpra.os_util import (
     get_status_output, getUbuntuVersion,
-    PYTHON3, BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
+    BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
     is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS, is_RedHat,
     )
 
-if sys.version<'2.7':
-    raise Exception("xpra no longer supports Python 2 versions older than 2.7")
-if sys.version[0]=='3' and sys.version<'3.4':
-    raise Exception("xpra no longer supports Python 3 versions older than 3.4")
+if sys.version<'3.6':
+    raise Exception("xpra no longer supports Python versions older than 3.6")
 #we don't support versions of Python without the new ssl code:
 if not hasattr(ssl, "SSLContext"):
     print("Warning: xpra requires a Python version with ssl.SSLContext support")
@@ -156,8 +154,7 @@ xinput_ENABLED = x11_ENABLED
 uinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
-gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
-gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
+gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = DEFAULT
 html5_gzip_ENABLED = DEFAULT
@@ -231,7 +228,7 @@ SWITCHES = [
     "scripts",
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
     "gtk_x11", "service",
-    "gtk2", "gtk3", "example",
+    "gtk3", "example",
     "html5", "minify", "html5_gzip", "html5_brotli",
     "pam", "xdg_open",
     "sound", "opengl", "printing", "webcam", "notifications", "keyboard",
@@ -309,7 +306,7 @@ if "clean" not in sys.argv:
         nvenc_ENABLED or OSX or x11_ENABLED):
         assert cython_ENABLED
     #sanity check the flags:
-    if clipboard_ENABLED and not server_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
+    if clipboard_ENABLED and not server_ENABLED and not gtk3_ENABLED:
         print("Warning: clipboard can only be used with the server or one of the gtk clients!")
         clipboard_ENABLED = False
     if x11_ENABLED and WIN32:
@@ -317,7 +314,7 @@ if "clean" not in sys.argv:
     if gtk_x11_ENABLED and not x11_ENABLED:
         print("Error: you must enable x11 to support gtk_x11!")
         exit(1)
-    if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
+    if client_ENABLED and not gtk3_ENABLED:
         print("Warning: client is enabled but none of the client toolkits are!?")
     if DEFAULT and (not client_ENABLED and not server_ENABLED):
         print("Warning: you probably want to build at least the client or server!")
@@ -357,10 +354,8 @@ external_includes = ["hashlib",
                      "ctypes", "platform"]
 
 
-if gtk3_ENABLED or (sound_ENABLED and PYTHON3):
+if gtk3_ENABLED or sound_ENABLED:
     external_includes += ["gi"]
-elif gtk2_ENABLED or x11_ENABLED:
-    external_includes += "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms"
 
 external_excludes = [
                     #Tcl/Tk
@@ -375,8 +370,6 @@ external_excludes = [
                     "setuptools", "doctest"
                     "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
                     ]
-if not PYTHON3:
-    external_excludes.append("cpuinfo")
 if not html5_ENABLED and not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
 if not html5_ENABLED:
@@ -545,12 +538,6 @@ def checkdirs(*dirs):
             raise Exception("cannot find a directory which is required for building: '%s'" % d)
 
 PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
-#override the pkgconfig file,
-#we don't need to link against any of these:
-gtk2_ignored_tokens=[("-l%s" % x) for x in
-                     ["fontconfig", "freetype", "cairo",
-                      "atk-1.0", "pangoft2-1.0", "pango-1.0", "pangocairo-1.0",
-                      "gio-2.0", "gdk_pixbuf-2.0"]]
 
 GCC_VERSION = []
 def get_gcc_version():
@@ -901,12 +888,8 @@ def clean():
     CLEAN_FILES = [
                    "xpra/build_info.py",
                    "xpra/monotonic_time.c",
-                   "xpra/gtk_common/gtk2/gdk_atoms.c",
-                   "xpra/gtk_common/gtk2/gdk_bindings.c",
                    "xpra/gtk_common/gtk3/gdk_atoms.c",
                    "xpra/gtk_common/gtk3/gdk_bindings.c",
-                   "xpra/x11/gtk2/gdk_bindings.c",
-                   "xpra/x11/gtk2/gdk_display_source.c",
                    "xpra/x11/gtk3/gdk_bindings.c",
                    "xpra/x11/gtk3/gdk_display_source.c",
                    "xpra/x11/bindings/wait_for_x_server.c",
@@ -1197,22 +1180,6 @@ if WIN32:
             if opengl_ENABLED:
                 add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
             add_DLLs('visual', 'curl', 'soup', 'openjpeg')
-        if server_ENABLED and not PYTHON3:
-            add_DLLs('sqlite3')
-
-        if gtk2_ENABLED:
-            add_dir('lib',      {
-                "gdk-pixbuf-2.0":    {
-                    "2.10.0"    :   {
-                        "loaders"   :
-                            ["libpixbufloader-%s.dll" % x for x in ("ico", "jpeg", "svg", "bmp", "png",)]
-                        },
-                    },
-                })
-            if opengl_ENABLED:
-                add_DLLs("gtkglext-win32", "gdkglext-win32")
-            add_DLLs("gtk-win32", "gdk-win32",
-                     "gdk_pixbuf", "pyglib-2.0-python2")
 
         if client_ENABLED:
             #svg pixbuf loader:
@@ -1259,20 +1226,16 @@ if WIN32:
             external_includes += [
                                   "ftplib", "fileinput",
                                   ]
-            if PYTHON3:
-                external_includes += ["urllib", "http.cookiejar", "http.client"]
-            else:
-                external_includes += ["urllib2", "cookielib", "httplib"]
+            external_includes += ["urllib", "http.cookiejar", "http.client"]
 
-        if PYTHON3:
-            #hopefully, cx_Freeze will fix this horror:
-            #(we shouldn't have to deal with DLL dependencies)
-            import site
-            lib_python = os.path.dirname(site.getsitepackages()[0])
-            lib_dynload_dir = os.path.join(lib_python, "lib-dynload")
-            add_data_files('', glob.glob("%s/zlib*dll" % lib_dynload_dir))
-            for x in ("io", "codecs", "abc", "_weakrefset", "encodings"):
-                add_data_files("lib/", glob.glob("%s/%s*" % (lib_python, x)))
+        #hopefully, cx_Freeze will fix this horror:
+        #(we shouldn't have to deal with DLL dependencies)
+        import site
+        lib_python = os.path.dirname(site.getsitepackages()[0])
+        lib_dynload_dir = os.path.join(lib_python, "lib-dynload")
+        add_data_files('', glob.glob("%s/zlib*dll" % lib_dynload_dir))
+        for x in ("io", "codecs", "abc", "_weakrefset", "encodings"):
+            add_data_files("lib/", glob.glob("%s/%s*" % (lib_python, x)))
         #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
         bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
@@ -1310,7 +1273,7 @@ if WIN32:
             add_exe(script, icon, base_name, base="Win32Service")
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
-        if (client_ENABLED or server_ENABLED) and (gtk2_ENABLED or gtk3_ENABLED):
+        if (client_ENABLED or server_ENABLED) and gtk3_ENABLED:
             add_gui_exe("scripts/xpra",                         "xpra.ico",         "Xpra")
             add_gui_exe("win32/service/shadow_server.py",       "server-notconnected.ico",    "Xpra-Shadow")
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
@@ -1320,16 +1283,13 @@ if WIN32:
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
             add_gui_exe("scripts/auth_dialog",                  "authentication.ico", "Auth_Dialog")
-        if gtk2_ENABLED:
-            #these need porting..
-            add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
-        if mdns_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
+        if mdns_ENABLED and gtk3_ENABLED:
             add_gui_exe("xpra/client/gtk_base/mdns_gui.py",     "mdns.ico",         "Xpra_Browser")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
         add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
-        if gtk2_ENABLED or gtk3_ENABLED:
+        if gtk3_ENABLED:
             add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
             add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
             add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
@@ -1360,10 +1320,7 @@ if WIN32:
             #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
             #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
-            if PYTHON3:
-                add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
-            else:
-                add_console_exe("xpra/client/gl/gtk_base/gtkgl_check.py", "opengl.ico", "OpenGL_check")
+            add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
         if webcam_ENABLED:
             add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
             add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
@@ -1381,8 +1338,6 @@ if WIN32:
         if example_ENABLED:
             add_gui_exe("xpra/client/gtk_base/example/colors.py",               "encoding.ico",     "Colors")
             add_gui_exe("xpra/client/gtk_base/example/colors_gradient.py",      "encoding.ico",     "Colors-Gradient")
-            if not PYTHON3:
-                add_gui_exe("xpra/client/gtk_base/example/gl_colors_gradient.py",   "encoding.ico",     "OpenGL-Colors-Gradient")
             add_gui_exe("xpra/client/gtk_base/example/colors_plain.py",         "encoding.ico",     "Colors-Plain")
             add_gui_exe("xpra/client/gtk_base/example/bell.py",                 "bell.ico",         "Bell")
             add_gui_exe("xpra/client/gtk_base/example/transparent_colors.py",   "transparent.ico",  "Transparent-Colors")
@@ -1605,16 +1560,10 @@ else:
         #pyobjc needs email.parser
         external_includes += ["email", "uu", "urllib", "objc", "cups", "six"]
         external_includes += ["kerberos", "future", "pyu2f", "paramiko", "nacl"]
-        if not PYTHON3:
-            external_includes += ["urllib2"]
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
         remove_packages("xpra.platform.win32", "xpra.platform.xposix")
-        #for u2f on python2:
-        if not PYTHON3:
-            modules.append("UserList")
-            modules.append("UserString")
         #to support GStreamer 1.x we need this:
         modules.append("importlib")
     else:
@@ -1716,10 +1665,6 @@ if html5_ENABLED:
         external_includes.append("numpy")
         external_includes.append("ssl")
         external_includes.append("_ssl")
-        if not PYTHON3:
-            external_includes.append("mimetypes")
-            external_includes.append("mimetools")
-            external_includes.append("BaseHTTPServer")
 
 
 if annotate_ENABLED:
@@ -1759,31 +1704,17 @@ if dbus_ENABLED and server_ENABLED:
     add_packages("xpra.server.dbus")
 
 if OSX:
-    if PYTHON3:
-        quartz_pkgconfig = pkgconfig("gtk+-3.0", "pygobject-3.0")
-        add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
-                    "-ObjC",
-                    "-framework", "AppKit",
-                    "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/",
-                    "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/")
-        cython_add(Extension("xpra.platform.darwin.gdk3_bindings",
-                ["xpra/platform/darwin/gdk3_bindings.pyx", "xpra/platform/darwin/transparency_glue.m"],
-                language="objc",
-                **quartz_pkgconfig
-                ))
-    else:
-        quartz_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
-        add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
-                    '-mmacosx-version-min=10.10',
-                    '-framework', 'Foundation',
-                    '-framework', 'AppKit',
-                    '-ObjC',
-                    "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/")
-        cython_add(Extension("xpra.platform.darwin.gdk_bindings",
-                ["xpra/platform/darwin/gdk_bindings.pyx", "xpra/platform/darwin/nsevent_glue.m"],
-                language="objc",
-                **quartz_pkgconfig
-                ))
+    quartz_pkgconfig = pkgconfig("gtk+-3.0", "pygobject-3.0")
+    add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
+                "-ObjC",
+                "-framework", "AppKit",
+                "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/",
+                "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/")
+    cython_add(Extension("xpra.platform.darwin.gdk3_bindings",
+            ["xpra/platform/darwin/gdk3_bindings.pyx", "xpra/platform/darwin/transparency_glue.m"],
+            language="objc",
+            **quartz_pkgconfig
+            ))
 
 if cython_ENABLED:
     monotonic_time_pkgconfig = pkgconfig()
@@ -1840,38 +1771,16 @@ if xinput_ENABLED:
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models")
 if gtk_x11_ENABLED:
-    toggle_packages(PYTHON3, "xpra.x11.gtk3")
-    toggle_packages(not PYTHON3, "xpra.x11.gtk2")
-    if PYTHON3:
-        #GTK3 display source:
-        cython_add(Extension("xpra.x11.gtk3.gdk_display_source",
-                    ["xpra/x11/gtk3/gdk_display_source.pyx"],
-                    **pkgconfig("gdk-3.0")
-                    ))
-        cython_add(Extension("xpra.x11.gtk3.gdk_bindings",
-                    ["xpra/x11/gtk3/gdk_bindings.pyx", "xpra/x11/gtk3/gdk_x11_macros.c"],
-                    **pkgconfig("gdk-3.0")
-                    ))
-
-    else:
-        #GTK2:
-        cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
-                    ["xpra/x11/gtk2/gdk_display_source.pyx"],
-                    **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
-                    ))
-        GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
-        cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
-                    ["xpra/x11/gtk2/gdk_bindings.pyx"],
-                    **pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
-                    ))
-
-toggle_packages(not PYTHON3 and (gtk2_ENABLED or gtk_x11_ENABLED), "xpra.gtk_common.gtk2")
-if gtk2_ENABLED or (gtk_x11_ENABLED and not PYTHON3):
-    cython_add(Extension("xpra.gtk_common.gtk2.gdk_bindings",
-                ["xpra/gtk_common/gtk2/gdk_bindings.pyx"],
-                **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+    add_packages("xpra.x11.gtk3")
+    #GTK3 display source:
+    cython_add(Extension("xpra.x11.gtk3.gdk_display_source",
+                ["xpra/x11/gtk3/gdk_display_source.pyx"],
+                **pkgconfig("gdk-3.0")
                 ))
-elif gtk3_ENABLED or (gtk_x11_ENABLED and PYTHON3):
+    cython_add(Extension("xpra.x11.gtk3.gdk_bindings",
+                ["xpra/x11/gtk3/gdk_bindings.pyx", "xpra/x11/gtk3/gdk_x11_macros.c"],
+                **pkgconfig("gdk-3.0")
+                ))
     cython_add(Extension("xpra.gtk_common.gtk3.gdk_bindings",
                 ["xpra/gtk_common/gtk3/gdk_bindings.pyx"],
                 **pkgconfig("gtk+-3.0", "pygobject-3.0")
@@ -1927,16 +1836,14 @@ if client_ENABLED:
     add_packages("xpra.client.mixins", "xpra.client.auth")
     add_modules("xpra.scripts.gtk_info")
     add_modules("xpra.scripts.show_webcam")
-if gtk2_ENABLED or gtk3_ENABLED:
+if gtk3_ENABLED:
     add_modules("xpra.scripts.bug_report")
-toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
-toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or sound_ENABLED or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 and (MINGW_PREFIX or PYTHON3)), "gi")
-toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
-toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 and MINGW_PREFIX), "gi")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
-toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED) and example_ENABLED, "xpra.client.gtk_base.example")
+toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.client.gtk_base.example")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     propsys_pkgconfig = pkgconfig()
     if debug_ENABLED:
@@ -1960,7 +1867,7 @@ if client_ENABLED or server_ENABLED:
         )
 if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
-if WIN32 and client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
+if WIN32 and client_ENABLED and gtk3_ENABLED:
     add_modules("xpra.scripts.gtk_info")
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
@@ -1971,7 +1878,7 @@ for x in (
     "gl_colorspace_conversions", "gl_window_backing_base", "window_backend",
     ):
     toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl.%s" % x)
-toggle_packages(client_ENABLED and opengl_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gl.gtk_base")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk_base")
 
 
 toggle_modules(sound_ENABLED, "xpra.sound")
@@ -1979,16 +1886,10 @@ toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
-    if PYTHON3:
-        cython_add(Extension("xpra.gtk_common.gtk3.gdk_atoms",
-                             ["xpra/gtk_common/gtk3/gdk_atoms.pyx"],
-                             **pkgconfig("gtk+-3.0")
-                             ))
-    else:
-        cython_add(Extension("xpra.gtk_common.gtk2.gdk_atoms",
-                             ["xpra/gtk_common/gtk2/gdk_atoms.pyx"],
-                             **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
-                             ))
+    cython_add(Extension("xpra.gtk_common.gtk3.gdk_atoms",
+                         ["xpra/gtk_common/gtk3/gdk_atoms.pyx"],
+                         **pkgconfig("gtk+-3.0")
+                         ))
 
 O3_pkgconfig = pkgconfig(optimize=3)
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")

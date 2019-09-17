@@ -12,15 +12,12 @@ Functions for converting to and from X11 properties.
 
 import struct
 
-from xpra.os_util import hexstr, PYTHON3
+from xpra.os_util import hexstr
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.log import Logger
 
 log = Logger("x11", "window")
 
-if PYTHON3:
-    long = int              #@ReservedAssignment
-    unicode = str           #@ReservedAssignment
 
 USPosition      = constants["USPosition"]
 PPosition       = constants["PPosition"]
@@ -257,20 +254,20 @@ def _from_utf8(_disp, v):
 PROP_TYPES = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list
     # terminator
-    "utf8": (unicode, "UTF8_STRING", 8, _to_utf8, _from_utf8, b"\0"),
+    "utf8": (str, "UTF8_STRING", 8, _to_utf8, _from_utf8, b"\0"),
     # In theory, there should be something clever about COMPOUND_TEXT here.  I
     # am not sufficiently clever to deal with COMPOUNT_TEXT.  Even knowing
     # that Xutf8TextPropertyToTextList exists.
-    "latin1": (unicode, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
-    "state": ((int, long), "WM_STATE", 32,
+    "latin1": (str, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
+    "state": (int, "WM_STATE", 32,
             lambda _disp, c: struct.pack(b"@L", c),
             lambda _disp, d: struct.unpack(b"@L", d)[0],
             b""),
-    "u32": ((int, long), "CARDINAL", 32,
+    "u32": (int, "CARDINAL", 32,
             lambda _disp, c: struct.pack(b"@L", c),
             lambda _disp, d: struct.unpack(b"@L", d)[0],
             b""),
-    "integer": ((int, long), "INTEGER", 32,
+    "integer": (int, "INTEGER", 32,
             lambda _disp, c: struct.pack(b"@L", c),
             lambda _disp, d: struct.unpack(b"@L", d)[0],
             b""),

@@ -5,7 +5,7 @@
 
 import cairo
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
 gtk = import_gtk()
@@ -22,10 +22,7 @@ class AnimatedColorWindow(gtk.Window):
         self.set_events(KEY_PRESS_MASK)
         self.counter = 0
         self.increase = False
-        if is_gtk3():
-            self.connect("draw", self.area_draw)
-        else:
-            self.connect("expose-event", self.do_expose_event)
+        self.connect("draw", self.area_draw)
         self.connect("destroy", gtk.main_quit)
         self.connect("key_press_event", self.on_key_press)
         self.show_all()

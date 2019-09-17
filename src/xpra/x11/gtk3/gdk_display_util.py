@@ -5,8 +5,8 @@
 
 def verify_gdk_display(display_name):
     # Now we can safely load gtk and connect:
-    from xpra.gtk_common.gobject_compat import import_gdk3
-    gdk = import_gdk3()
+    from xpra.gtk_common.gobject_compat import import_gdk
+    gdk = import_gdk()
     display = gdk.Display.open(display_name)
     if not display:
         from xpra.scripts.config import InitException

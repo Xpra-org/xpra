@@ -8,7 +8,7 @@ import os.path
 import sys
 import ctypes
 
-from xpra.os_util import get_util_logger, PYTHON3
+from xpra.os_util import get_util_logger
 
 shell32 = ctypes.WinDLL("shell32", use_last_error=True)
 SHGetFolderPath = shell32.SHGetFolderPathW
@@ -168,20 +168,14 @@ def do_get_socket_dirs():
 APP_DIR = None
 if getattr(sys, 'frozen', False) is True:
     #cx_freeze = sys.frozen == True
-    if PYTHON3:
-        APP_DIR = os.path.dirname(sys.executable)
-    else:
-        APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding())) #@UndefinedVariable
+    APP_DIR = os.path.dirname(sys.executable)
     if len(APP_DIR)>3 and APP_DIR[1]==":" and APP_DIR[2]=="/":
         #it seems that mingw builds can get confused about the correct value for os.pathsep:
         APP_DIR = APP_DIR.replace("/", "\\")
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
     #so we can easily load DLLs with ctypes:
-    if PYTHON3:
-        os.environ['PATH'] = APP_DIR + os.pathsep + os.environ['PATH']
-    else:
-        os.environ['PATH'] = APP_DIR.encode('utf8') + os.pathsep + os.environ['PATH']
+    os.environ['PATH'] = APP_DIR + os.pathsep + os.environ['PATH']
 
 
 def do_get_app_dir():
@@ -223,7 +217,7 @@ def _get_xpra_exe_command(*cmd_options):
             return [script]
         if mingw:
             #the python interpreter to use with the scripts:
-            py = os.path.join(mingw, "bin", "python%i.exe" % sys.version_info[0])
+            py = os.path.join(mingw, "bin", "python3.exe")
             if os.path.exists(py):
                 #ie: /e/Xpra/trunk/src/dist/scripts/xpra
                 script = os.path.join(os.getcwd(), "scripts", cmd.lower())

@@ -5,13 +5,13 @@
 import sys
 from collections import deque
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
 from xpra.platform.paths import get_icon
 
 gtk = import_gtk()
 gdk = import_gdk()
-pango = import_pango()
 glib = import_glib()
+from gi.repository import Pango
 
 
 class KeyboardStateInfoWindow:
@@ -28,7 +28,7 @@ class KeyboardStateInfoWindow:
         vbox = gtk.VBox(False, 0)
         vbox.set_spacing(15)
         label = gtk.Label("Keyboard State")
-        label.modify_font(pango.FontDescription("sans 13"))
+        label.modify_font(Pango.FontDescription("sans 13"))
         vbox.pack_start(label)
 
         self.modifiers = gtk.Label()
@@ -38,7 +38,7 @@ class KeyboardStateInfoWindow:
         vbox.add(self.mouse)
 
         self.keys = gtk.Label()
-        fixed = pango.FontDescription('monospace 9')
+        fixed = Pango.FontDescription('monospace 9')
         self.keys.modify_font(fixed)
         vbox.add(self.keys)
 
@@ -49,8 +49,6 @@ class KeyboardStateInfoWindow:
         self.key_events = deque(maxlen=35)
         self.window.connect("key-press-event", self.key_press)
         self.window.connect("key-release-event", self.key_release)
-        if not is_gtk3():
-            self.window.window.set_cursor(gdk.Cursor(gdk.HAND2))
 
         icon = get_icon("keyboard.png")
         if icon:

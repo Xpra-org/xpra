@@ -10,8 +10,6 @@ import site
 
 from xpra.util import envbool
 
-SOUND_PYTHON3 = envbool("XPRA_SOUND_PYTHON3", False)
-
 #removed in 2.3:
 # we no longer use "~/.xpra" on posix systems to store files or sockets,
 # but we still load config files from there if present
@@ -176,13 +174,11 @@ def do_get_default_log_dirs():
 
 def do_get_sound_command():
     from xpra.platform.paths import get_xpra_command
-    if SOUND_PYTHON3:
-        return ["python3"]+get_xpra_command()
     return get_xpra_command()
 
 def do_get_xpra_command():
     #try to use the same "xpra" executable that launched this server,
     #whilst also preserving the python interpreter version:
     if sys.argv and sys.argv[0].lower().endswith("/xpra"):
-        return ["python%i" % sys.version_info[0], sys.argv[0]]
+        return ["python3", sys.argv[0]]
     return ["xpra"]

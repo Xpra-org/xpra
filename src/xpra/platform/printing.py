@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,15 +9,12 @@ import sys
 
 #default implementation uses pycups
 from xpra.util import envbool, print_nested_dict
-from xpra.os_util import WIN32, PYTHON3
+from xpra.os_util import WIN32
 from xpra.log import Logger
 
 log = Logger("printing")
 
 RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
-
-if PYTHON3:
-    unicode = str       #@ReservedAssignment
 
 
 def err(*args, **kwargs):
@@ -134,7 +131,7 @@ def main():
         try:
             for pk,pv in d.items():
                 try:
-                    if isinstance(pv, unicode):
+                    if isinstance(pv, str):
                         sv = pv.encode("utf8")
                     else:
                         sv = nonl(pver(pv))

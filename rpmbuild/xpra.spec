@@ -1,13 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0
+%define version 4.0
 
-%{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
-%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 %define CFLAGS -O2
@@ -15,7 +13,6 @@
 
 %{!?update_firewall: %define update_firewall 1}
 %{!?run_tests: %define run_tests 1}
-%{!?with_python3: %define with_python3 1}
 %{!?with_selinux: %define with_selinux 1}
 #we only enable CUDA / NVENC with 64-bit builds:
 %ifarch x86_64
@@ -30,32 +27,14 @@
 %endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
-%define Suggests Suggests
-%define Recommends Recommends
 #we never want to depend on proprietary nvidia bits:
 %global __requires_exclude ^libnvidia-.*\\.so.*$
 
-# Python permits the !/usr/bin/python shebang for scripts that are cross
-# compatible between python2 and python3, but Fedora 28 does not.  Fedora
-# wants us to choose python3 for cross-compatible scripts.  Since we want
-# to support python2 and python3 users, exclude our scripts from Fedora 28's
-# RPM build check, so that we don't get a bunch of build warnings.
-%global __brp_mangle_shebangs_exclude_from xpraforwarder|auth_dialog|xdg-open
 
-
-# centos / rhel 7.2 onwards
+# no support for centos / rhel 7:
 %if 0%{?el7}
-%define Suggests Requires
-%define Recommends Requires
-%define with_python3 0
-%if "%{?dist}"==".el7_0"
-echo CentOS 7.0 is no longer supported
+echo CentOS 7.x is no longer supported
 exit 1
-%endif
-%if "%{?dist}"==".el7_1"
-echo CentOS 7.1 is no longer supported
-exit 1
-%endif
 %endif
 
 
@@ -72,32 +51,19 @@ Source:				xpra-%{version}.tar.bz2
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
-%if 0%{?el7}
-Patch0:				centos7-oldsystemd.patch
-Patch1:				selinux-nomap.patch
-Patch2:				centos7-oldturbojpeg.patch
-%endif
 Requires:			xpra-common = %{version}-%{release}
 Requires:			xpra-html5
-%if 0%{?fedora}%{?el8}
 Requires:			python3-xpra-client = %{version}-%{release}
 Requires:			python3-xpra-server = %{version}-%{release}
-%endif
 %if 0%{?fedora}
 Requires:			python3-xpra-audio = %{version}-%{release}
-%endif
-%if 0%{?el7}
-Requires:			python2-xpra-client = %{version}-%{release}
-Requires:			python2-xpra-server = %{version}-%{release}
-#no audio by default on centos7:
-#Requires:			python2-xpra-audio = %{version}-%{release}
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
 So basically it's screen for remote X apps.
 
-This metapackage installs both the python2 and python3 versions of xpra in full, including the python client, server and HTML5 client.
+This metapackage installs the python3 version of xpra in full, including the python client, server and HTML5 client.
 
 
 %package common
@@ -122,9 +88,6 @@ Requires(postun):	desktop-file-utils
 %if 0%{?el8}
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
-%if 0%{?fedora}
-Recommends:			python2-appindicator
-%endif
 %description common-client
 This package contains the files which are shared between all the xpra client packages.
 
@@ -141,14 +104,12 @@ Requires(post):		openssl
 Requires(post):		systemd-units
 Requires(preun):	systemd-units
 Requires(postun):	systemd-units
-%{Recommends}:		which
-%{Recommends}:		libfakeXinerama
-%{Recommends}:		gtk2-immodule-xim
-%{Recommends}:		mesa-dri-drivers
-%if 0%{?fedora}%{?el8}
+Recommends:		which
+Recommends:		libfakeXinerama
+Recommends:		gtk2-immodule-xim
+Recommends:		mesa-dri-drivers
 #allows the server to use software opengl:
-%{Recommends}:		mesa-libOSMesa
-%endif
+Recommends:		mesa-libOSMesa
 BuildRequires:		systemd-devel
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
@@ -168,183 +129,19 @@ Summary:			Xpra HTML5 client
 Group:				Networking
 BuildArch:			noarch
 Conflicts:			xpra < 2.1
-%if 0%{?fedora}%{?el8}
 BuildRequires:		uglify-js
 BuildRequires:		js-jquery
 BuildRequires:		desktop-backgrounds-compat
 Requires:			js-jquery
-%{Recommends}:		desktop-backgrounds-compat
-%endif
-%if 0%{?el7}%{?el8}
+Recommends:		    desktop-backgrounds-compat
 #don't depend on this package,
 #so we can also install on a pure RHEL distro:
+%if 0%{?el8}
 BuildRequires:		centos-logos
 %endif
 %description html5
 This package contains Xpra's HTML5 client.
 
-%package -n python2-xpra
-Summary:			python2 build of xpra
-Group:				Networking
-Requires:			python2
-Requires:			xpra-common = %{version}-%{release}
-Requires:			python2-lz4
-Requires:			python2-rencode
-Requires:			python2-pillow
-%if 0%{?el7}
-Requires:			libvpx-xpra
-%else
-Requires:			libvpx
-Conflicts:			libvpx-xpra
-Obsoletes:          libvpx-xpra
-%endif
-Requires:			x264-xpra
-Requires:			ffmpeg-xpra
-Requires:			turbojpeg
-Requires:			libyuv
-%if 0%{?fedora}%{?el8}
-Requires:			python2-numpy
-%if 0%{?run_tests}
-BuildRequires:		python2-numpy
-%endif
-Recommends:			python2-paramiko
-Recommends:			python2-dns
-#Recommends:			python2-lzo
-Recommends:         python2-kerberos
-Recommends:         python2-gssapi
-#webcam:
-Recommends:			python2-inotify
-Recommends:			python2-opencv
-Recommends:			python2-avahi
-Recommends:         python2-ldap
-Recommends:         python2-ldap3
-Recommends:			python2-dbus
-%endif
-%{Recommends}:		python2-netifaces
-%{Suggests}:		python2-cryptography
-BuildRequires:		pkgconfig
-BuildRequires:		gcc
-BuildRequires:		gcc-c++
-BuildRequires:		python2-Cython
-BuildRequires:		python2
-%if 0%{?fedora}%{?el8}
-Requires:			libwebp
-BuildRequires:		libwebp-devel
-BuildRequires:		python2-setuptools
-%endif
-%if 0%{?el7}
-Requires:			numpy
-%if 0%{?run_tests}
-BuildRequires:		numpy
-%endif
-Requires:			dbus-python
-Requires:			libwebp-xpra
-BuildRequires:		libwebp-xpra-devel
-BuildRequires:		python-setuptools
-%endif
-BuildRequires:		libxkbfile-devel
-BuildRequires:		libXtst-devel
-BuildRequires:		libXfixes-devel
-BuildRequires:		libXcomposite-devel
-BuildRequires:		libXdamage-devel
-BuildRequires:		libXrandr-devel
-BuildRequires:		libXext-devel
-BuildRequires:		pygtk2-devel
-BuildRequires:		pygobject2-devel
-BuildRequires:		turbojpeg-devel
-BuildRequires:		x264-xpra-devel
-BuildRequires:		ffmpeg-xpra-devel
-%if 0%{?run_tests}
-BuildRequires:		python2-rencode
-BuildRequires:		python2-cryptography
-%endif
-%description -n python2-xpra
-This package contains the python2 common build of xpra.
-
-%package -n python2-xpra-audio
-Summary:			python2 build of xpra audio support
-Group:				Networking
-Requires:			python2-xpra = %{version}-%{release}
-%if 0%{?fedora}
-#EL7 requires 3rd party repos like "media.librelamp.com"
-Requires:			python2-gstreamer1
-Recommends:			gstreamer1-plugins-ugly
-Recommends:			gstreamer1-plugins-ugly-free
-%endif
-Requires:			gstreamer1
-Requires:			gstreamer1-plugins-base
-Requires:			gstreamer1-plugins-good
-%{Recommends}:		gstreamer1-plugin-timestamp
-%{Recommends}:		pulseaudio
-%{Recommends}:		pulseaudio-utils
-%if 0%{?run_tests}
-Requires:			python2-gstreamer1
-BuildRequires:		gstreamer1
-BuildRequires:		gstreamer1-plugins-good
-BuildRequires:		pulseaudio
-BuildRequires:		pulseaudio-utils
-%endif
-%description -n python2-xpra-audio
-This package contains audio support for python2 builds of xpra.
-
-%package -n python2-xpra-client
-Summary:			python2 build of xpra client
-Group:				Networking
-Conflicts:			xpra < 2.1
-Requires:			xpra-common-client = %{version}-%{release}
-Requires:			python2-xpra = %{version}-%{release}
-Requires:			pygtk2
-Requires:			python2-pyopengl
-Requires:			pygtkglext
-%{Recommends}:		python2-pyu2f
-#no longer available in Fedora 30:
-#BuildRequires:		python2-cups
-%if 0%{?fedora}%{?el8}
-BuildRequires:		python2-pyxdg
-Recommends:         python2-xdg
-Recommends:			python2-xpra-audio
-Recommends:			python2-cups
-Suggests:			sshpass
-%if 0%{?run_tests}
-BuildRequires:		xclip
-%endif
-%endif
-%if 0%{?el7}
-Requires:			python-cups
-%endif
-%description -n python2-xpra-client
-This package contains the python2 xpra client.
-
-%package -n python2-xpra-server
-Summary:			python2 build of xpra server
-Group:				Networking
-Requires:			xpra-common-server = %{version}-%{release}
-Requires:			python2-xpra = %{version}-%{release}
-Requires:			pygtk2
-%{Recommends}:		cups-filters
-%{Recommends}:		dbus-x11
-%if %{with_cuda}
-%{Recommends}:		python2-pycuda
-%{Recommends}:		python2-pynvml
-%endif
-%if 0%{?el7}
-Requires:			python-cups
-Requires:			python-setproctitle
-%else
-Recommends:			python2-xpra-audio
-Recommends:			cups-pdf
-Recommends:			python2-cups
-Recommends:			python2-uinput
-Recommends:			python2-setproctitle
-%endif
-BuildRequires:		pam-devel
-BuildRequires:		gcc
-BuildRequires:		python2-Cython
-%description -n python2-xpra-server
-This package contains the python2 xpra server.
-
-#optional python3 packages:
-%if %{with_python3}
 %package -n python3-xpra
 Summary:			Xpra gives you "persistent remote applications" for X. Python3 build.
 Group:				Networking
@@ -470,50 +267,24 @@ BuildRequires:		python3-Cython
 #Recommends:		python3-uinput
 %description -n python3-xpra-server
 This package contains the python3 xpra server.
-%endif
 
 
 %prep
-rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
+rm -rf $RPM_BUILD_DIR/xpra-%{version}
 bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
-pushd $RPM_BUILD_DIR/xpra-%{version}
-%if 0%{?el7}
-#remove some systemd configuration options:
-%patch0 -p1
-%patch1 -p1
-#missing definitions in turbojpeg headers:
-%patch2 -p1
-%endif
-
-
-popd
-mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python2
-%if %{with_python3}
-rm -rf $RPM_BUILD_DIR/xpra-%{version}-python3 $RPM_BUILD_DIR/xpra-%{version}
-bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
-mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
-%endif
 
 
 %debug_package
 
 
 %build
-%if %{with_python3}
-pushd xpra-%{version}-python3
+pushd xpra-%{version}
 rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
 	%{build_args} \
 	--without-html5 --without-printing --without-cuda_kernels
-popd
-%endif
 
-pushd xpra-%{version}-python2
-rm -rf build install
-# set pkg_config_path for xpra video libs
-CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python2} setup.py build \
-	%{build_args}
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -532,16 +303,8 @@ popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%if %{with_python3}
-pushd xpra-%{version}-python3
+pushd xpra-%{version}
 %{__python3} setup.py install \
-	%{build_args} \
-	--without-html5 --without-printing --without-cuda_kernels \
-	--prefix /usr --skip-build --root %{buildroot}
-popd
-%endif
-pushd xpra-%{version}-python2
-%{__python2} setup.py install \
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}
 %if 0%{?with_selinux}
@@ -558,17 +321,13 @@ done
 popd
 
 #fix permissions on shared objects
-find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
-%if 0%{?fedora}
 find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
-%endif
 
 # Ensure all .js files are not executeable
 find %{buildroot}%{_datadir}/xpra/www/js -name '*.js' -exec chmod 0644 {} \;
 
 #remove the tests, not meant to be installed in the first place
 #(but I can't get distutils to play nice: I want them built, not installed)
-rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unittests
 rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 
 
@@ -649,33 +408,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/selinux/*/*.pp
 %endif
 
-%files -n python2-xpra
-%{python2_sitearch}/xpra/buffers
-%{python2_sitearch}/xpra/clipboard
-%{python2_sitearch}/xpra/notifications
-%{python2_sitearch}/xpra/codecs
-%{python2_sitearch}/xpra/dbus
-%{python2_sitearch}/xpra/gtk_common
-%{python2_sitearch}/xpra/keyboard
-%{python2_sitearch}/xpra/net
-%{python2_sitearch}/xpra/platform
-%{python2_sitearch}/xpra/scripts
-%{python2_sitearch}/xpra/x11
-%{python2_sitearch}/xpra/monotonic_time.so
-%{python2_sitearch}/xpra/rectangle.so
-%{python2_sitearch}/xpra/*.py*
-%{python2_sitearch}/xpra-*.egg-info
-
-%files -n python2-xpra-audio
-%{python2_sitearch}/xpra/sound
-
-%files -n python2-xpra-client
-%{python2_sitearch}/xpra/client
-
-%files -n python2-xpra-server
-%{python2_sitearch}/xpra/server
-
-%if %{with_python3}
 %files -n python3-xpra
 %{python3_sitearch}/xpra/__pycache__
 %{python3_sitearch}/xpra/buffers
@@ -703,7 +435,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n python3-xpra-server
 %{python3_sitearch}/xpra/server
-%endif
 
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-launcher.desktop
@@ -717,27 +448,18 @@ export XPRA_TEST_DEBUG=1
 %endif
 
 %if 0%{?run_tests}
-pushd xpra-%{version}-python2/unittests
-rm -fr unit/client unit/server/*server*py
-PYTHONPATH="%{buildroot}%{python2_sitearch}:." PATH="`pwd`/../scripts/:$PATH" XPRA_COMMAND="%{__python2} `pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python2} ./unit/run.py
-popd
-
-%if 0%{?with_python3}
-pushd xpra-%{version}-python3/unittests
+pushd xpra-%{version}/unittests
 rm -fr unit/client unit/server/*server*py
 PYTHONPATH="%{buildroot}%{python3_sitearch}:." PATH="%{__python3} `pwd`/../scripts/:$PATH" XPRA_COMMAND="`pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python3} ./unit/run.py
 popd
 %endif
-%endif
 
 
 %post common-server
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
 %sysusers_create xpra.conf
-%else
-getent group xpra > /dev/null || groupadd -r xpra
 %endif
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 	umask=`umask`
@@ -851,6 +573,9 @@ fi
 
 
 %changelog
+* Wed Sep 18 2019 Antoine Martin <antoine@xpra.org> 4.0-1
+- TODO
+
 * Tue Mar 19 2019 Antoine Martin <antoine@xpra.org> 3.0-1
 - TODO
 

@@ -43,10 +43,7 @@ DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = [
                                          ]
 
 
-if sys.version<'3':
-    CLIENT_MODULES = ["xpra.client.gtk2.client"]
-else:
-    CLIENT_MODULES = ["xpra.client.gtk3.client"]
+CLIENT_MODULES = ["xpra.client.gtk3.client"]
 
 
 SOCKET_OPTIONS = (

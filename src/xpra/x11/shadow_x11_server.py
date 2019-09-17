@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time, is_Wayland
 from xpra.util import envbool, envint
-from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
+from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
@@ -166,7 +166,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def get_info(self, proto, *_args):
         info = X11ServerCore.get_info(self, proto)
         info.setdefault("features", {})["shadow"] = True
-        info.setdefault("server", {})["type"] = "Python/gtk%i/x11-shadow" % (2+is_gtk3())
+        info.setdefault("server", {})["type"] = "Python/gtk3/x11-shadow"
         return info
 
     def do_make_screenshot_packet(self):

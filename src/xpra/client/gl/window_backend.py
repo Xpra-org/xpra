@@ -7,7 +7,7 @@
 import sys
 
 from xpra.util import typedict, AdHocStruct
-from xpra.os_util import PYTHON3, WIN32
+from xpra.os_util import WIN32
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")
@@ -21,15 +21,13 @@ def get_opengl_backends(option_str):
         backend_str = option_str
     if backend_str in ("native", "gtk") or backend_str.find(",")>0:
         return backend_str.split(",")
-    if PYTHON3:
-        return ("native", )
-    return ("native", "gtk")
+    return ("native", )
 
 def get_gl_client_window_module(backends, force_enable=False):
     gl_client_window_module = None
     for impl in backends:
         log("attempting to load '%s' OpenGL backend", impl)
-        GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.%sgl_client_window" % (sys.version_info[0], impl)
+        GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk3.%sgl_client_window" % (impl,)
         log("importing %s", GL_CLIENT_WINDOW_MODULE)
         try:
             gl_client_window_module = __import__(GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow", "check_support"])

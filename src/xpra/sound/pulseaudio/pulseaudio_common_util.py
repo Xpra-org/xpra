@@ -48,7 +48,7 @@ def get_x11_property(atom_name):
                 return b""
     except Exception:
         log.error("Error: cannot get X11 property '%s'", atom_name, exc_info=True)
-        log.error(" for python %s", sys.version_info)
+        log.error(" for python 3")
         log.error(" xpra command=%s", sys.argv)
     return b""
 

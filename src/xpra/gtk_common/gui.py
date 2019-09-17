@@ -9,7 +9,7 @@ import os.path
 import subprocess
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_pango, import_glib,
+    import_gtk, import_gdk, import_glib,
     register_os_signals,
     )
 from xpra.gtk_common.gtk_util import (
@@ -25,8 +25,8 @@ log = Logger("client", "util")
 
 gtk = import_gtk()
 gdk = import_gdk()
-pango = import_pango()
 glib = import_glib()
+from gi.repository import Pango
 
 try:
     from xpra import client
@@ -89,7 +89,7 @@ class GUI(gtk.Window):
         #title_label.modify_font(pango.FontDescription("sans 14"))
         #self.vbox.add(title_label)
         self.widgets = []
-        label_font = pango.FontDescription("sans 16")
+        label_font = Pango.FontDescription("sans 16")
         if has_client:
             icon = get_pixbuf("browse.png")
             self.browse_button = imagebutton("Browse", icon,
@@ -264,7 +264,7 @@ class StartSession(gtk.Window):
 
         # Label:
         self.entry_label = gtk.Label("Command to run:")
-        self.entry_label.modify_font(pango.FontDescription("sans 14"))
+        self.entry_label.modify_font(Pango.FontDescription("sans 14"))
         self.entry_al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         self.entry_al.add(self.entry_label)
         vbox.add(self.entry_al)

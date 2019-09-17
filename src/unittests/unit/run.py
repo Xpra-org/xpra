@@ -36,7 +36,7 @@ def main():
         #ie: "unit.version_util_test"
         name = p[len(unittests_dir)+1:-3].replace(os.path.sep, ".")
         write("running %s\n" % name)
-        cmd = ["python%s" % sys.version_info[0], p]
+        cmd = ["python3", p]
         try:
             proc = subprocess.Popen(cmd)
         except OSError:

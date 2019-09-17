@@ -6,7 +6,7 @@
 import sys
 
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
-from xpra.gtk_common.gobject_compat import import_glib, import_gtk, gtk_version
+from xpra.gtk_common.gobject_compat import import_glib, import_gtk
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.platform.gl_context import GLContext
 from xpra.log import Logger
@@ -23,7 +23,7 @@ gtk = import_gtk()
 class GLDrawingArea(GLWindowBackingBase):
 
     def __repr__(self):
-        return "gtk%i.GLDrawingArea(%s, %s, %s)" % (gtk_version(), self.wid, self.size, self.pixel_format)
+        return "gtk3.GLDrawingArea(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
     def idle_add(self, *args, **kwargs):
         glib.idle_add(*args, **kwargs)

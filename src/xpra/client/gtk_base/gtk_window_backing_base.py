@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import envbool
-from xpra.os_util import WIN32, PYTHON3
+from xpra.os_util import WIN32
 
 #transparency with GTK is not supported on MS Windows with PYGTK:
-DEFAULT_HAS_ALPHA = not WIN32 or PYTHON3
+DEFAULT_HAS_ALPHA = not WIN32
 GTK_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", DEFAULT_HAS_ALPHA)

@@ -29,7 +29,7 @@ from xpra.platform.info import get_name
 from xpra.os_util import (
     get_machine_id, get_user_uuid, register_SIGUSR_signals,
     load_binary_file, force_quit,
-    SIGNAMES, PYTHON3, BITS,
+    SIGNAMES, BITS,
     strtobytes, bytestostr, hexstr, monotonic_time, use_tty,
     )
 from xpra.util import (
@@ -805,7 +805,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def capsget(self, capabilities, key, default):
         v = capabilities.get(strtobytes(key), default)
-        if PYTHON3 and isinstance(v, bytes):
+        if isinstance(v, bytes):
             v = bytestostr(v)
         return v
 

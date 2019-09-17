@@ -26,12 +26,11 @@ from xpra.gtk_common.gtk_util import (
     pixbuf_new_from_file, STATE_NORMAL, RELIEF_NORMAL,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_gdk, import_pixbufloader
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_gdk
 
 gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
-pixbuf_loader = import_pixbufloader()
 
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
@@ -138,7 +137,8 @@ class GTK_Notifier(NotifierBase):
         image = None
         if icon and icon[0]=="png":
             img_data = icon[3]
-            loader = pixbuf_loader()
+            from gi.repository import GdkPixbuf
+            loader = GdkPixbuf.PixbufLoader()
             loader.write(img_data)
             loader.close()
             image = loader.get_pixbuf()

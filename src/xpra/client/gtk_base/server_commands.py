@@ -8,7 +8,7 @@ import sys
 import os.path
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_glib, import_pango,
+    import_gtk, import_gdk, import_glib,
     register_os_signals,
     )
 from xpra.os_util import monotonic_time
@@ -25,7 +25,6 @@ log = Logger("util")
 gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
-pango = import_pango()
 
 
 _instance = None

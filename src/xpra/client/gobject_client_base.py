@@ -10,7 +10,7 @@ from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict,
     disconnect_is_an_error, repr_ellipsized, DONE, first_time,
     )
-from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX, OSX
+from xpra.os_util import bytestostr, get_hex_uuid, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (
     EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
@@ -60,7 +60,7 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
 
     def client_type(self):
         #overriden in subclasses!
-        return "Python%s/GObject" % sys.version_info[0]
+        return "Python3/GObject"
 
     def timeout(self, *_args):
         log.warn("timeout!")
@@ -252,23 +252,22 @@ class InfoXpraClient(CommandConnectClient):
                 c = flatten_dict(self.server_capabilities)
                 for k in sorted_nicely(c.keys()):
                     v = c.get(k)
-                    if PYTHON3:
-                        #FIXME: this is a nasty and horrible python3 workaround (yet again)
-                        #we want to print bytes as strings without the ugly 'b' prefix..
-                        #it assumes that all the strings are raw or in (possibly nested) lists or tuples only
-                        #we assume that all strings we get are utf-8,
-                        #and fallback to the bytestostr hack if that fails
-                        def fixvalue(w):
-                            if isinstance(w, bytes):
-                                try:
-                                    return w.decode("utf-8")
-                                except:
-                                    return bytestostr(w)
-                            elif isinstance(w, (tuple,list)):
-                                return type(w)([fixvalue(x) for x in w])
-                            return w
-                        v = fixvalue(v)
-                        k = fixvalue(k)
+                    #FIXME: this is a nasty and horrible python3 workaround (yet again)
+                    #we want to print bytes as strings without the ugly 'b' prefix..
+                    #it assumes that all the strings are raw or in (possibly nested) lists or tuples only
+                    #we assume that all strings we get are utf-8,
+                    #and fallback to the bytestostr hack if that fails
+                    def fixvalue(w):
+                        if isinstance(w, bytes):
+                            try:
+                                return w.decode("utf-8")
+                            except:
+                                return bytestostr(w)
+                        elif isinstance(w, (tuple,list)):
+                            return type(w)([fixvalue(x) for x in w])
+                        return w
+                    v = fixvalue(v)
+                    k = fixvalue(k)
                     log.info("%s=%s", k, nonl(v))
             else:
                 print_nested_dict(self.server_capabilities)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import sys
 import logging
 
 from xpra.util import envbool, envint, csv
-from xpra.os_util import POSIX, OSX, WIN32, PYTHON3, bytestostr
+from xpra.os_util import POSIX, OSX, WIN32, bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST, OpenGLFatalError
 
@@ -26,8 +26,7 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 #    GREYLIST.setdefault("vendor", []).append("NVIDIA Corporation")
 
 
-#alpha requires gtk3 or *nix only for gtk2:
-DEFAULT_ALPHA = PYTHON3 or (not WIN32 and not OSX)
+DEFAULT_ALPHA = True
 GL_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", DEFAULT_ALPHA)
 #not working with gtk3 yet?
 CAN_DOUBLE_BUFFER = True

@@ -9,7 +9,7 @@ import os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.os_util import bytestostr, PYTHON2, PYTHON3, OSX, WIN32, is_Wayland
+from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
 from xpra.util import typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
@@ -307,7 +307,7 @@ class ClientWindowBase(ClientWidgetBase):
             new_alpha = metadata.boolget("has-alpha")
             if new_alpha!=self._has_alpha:
                 l = alphalog
-                if PYTHON3 and not WIN32:
+                if not WIN32:
                     #win32 without opengl can't do transparency,
                     #so it triggers too many warnings
                     l = log.warn
@@ -508,7 +508,7 @@ class ClientWindowBase(ClientWidgetBase):
                     pass
             #bug 2214: GTK3 on win32 gets confused if we specify a large max-size
             # and it will mess up maximizing the window
-            if not WIN32 or PYTHON2 or (maxw<32000 or maxh<32000):
+            if not WIN32 or (maxw<32000 or maxh<32000):
                 hints[b"max_width"] = maxw
                 hints[b"max_height"] = maxh
         try:

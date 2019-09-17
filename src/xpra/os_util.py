@@ -15,11 +15,7 @@ import struct
 import binascii
 
 #hide some ugly python3 compat:
-try:
-    import _thread as thread            #@UnresolvedImport @UnusedImport (python3)
-except ImportError:
-    import thread                       #@Reimport @UnusedImport
-assert thread
+import _thread as thread            #@UnresolvedImport @UnusedImport (python3)
 
 try:
     from queue import Queue             #@UnresolvedImport @UnusedImport (python3)
@@ -48,30 +44,20 @@ OPENBSD = sys.platform.startswith("openbsd")
 FREEBSD  = sys.platform.startswith("freebsd")
 
 POSIX = os.name=="posix"
-PYTHON2 = sys.version_info[0]==2
-PYTHON3 = sys.version_info[0]==3
 
 BITS = struct.calcsize(b"P")*8
 
 
-if PYTHON2:
-    def strtobytes(x):
-        return str(x)
-    def bytestostr(x):
-        return str(x)
-    def hexstr(v):
-        return binascii.hexlify(str(v))
-else:
-    def strtobytes(x):
-        if isinstance(x, bytes):
-            return x
-        return str(x).encode("latin1")
-    def bytestostr(x):
-        if isinstance(x, bytes):
-            return x.decode("latin1")
-        return str(x)
-    def hexstr(v):
-        return bytestostr(binascii.hexlify(strtobytes(v)))
+def strtobytes(x):
+    if isinstance(x, bytes):
+        return x
+    return str(x).encode("latin1")
+def bytestostr(x):
+    if isinstance(x, bytes):
+        return x.decode("latin1")
+    return str(x)
+def hexstr(v):
+    return bytestostr(binascii.hexlify(strtobytes(v)))
 
 
 util_logger = None
@@ -157,11 +143,8 @@ def platform_release(release):
         SYSTEMVERSION_PLIST = "/System/Library/CoreServices/SystemVersion.plist"
         try:
             import plistlib
-            if PYTHON2:
-                pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist') #pylint: disable=deprecated-method
-            else:
-                with open(SYSTEMVERSION_PLIST, "rb") as f:
-                    pl = plistlib.load(f)           #@UndefinedVariable
+            with open(SYSTEMVERSION_PLIST, "rb") as f:
+                pl = plistlib.load(f)           #@UndefinedVariable
             return pl['ProductUserVisibleVersion']
         except Exception as e:
             get_util_logger().debug("platform_release(%s)", release, exc_info=True)
@@ -254,8 +237,6 @@ except (ImportError, AssertionError):
 def is_X11():
     if OSX or WIN32:
         return False
-    if PYTHON2:
-        return True
     try:
         from xpra.x11.gtk3.gdk_bindings import is_X11_Display   #@UnresolvedImport
         return is_X11_Display()

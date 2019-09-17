@@ -13,7 +13,7 @@ import shlex
 from threading import Lock
 import cups
 
-from xpra.os_util import OSX, PYTHON3, bytestostr
+from xpra.os_util import OSX, bytestostr
 from xpra.util import engs, envint, envbool, parse_simple_dict
 from xpra.log import Logger
 
@@ -148,11 +148,10 @@ def get_lpinfo_drv(make_and_model):
         log.warn("Warning: lpinfo command failed and returned %s", proc.returncode)
         log.warn(" command used: '%s'", " ".join(command))
         return None
-    if PYTHON3:
-        try:
-            out = out.decode()
-        except:
-            out = str(out)
+    try:
+        out = out.decode()
+    except:
+        out = str(out)
     log("lpinfo out=%s", nonl(out))
     log("lpinfo err=%s", nonl(err))
     if err:

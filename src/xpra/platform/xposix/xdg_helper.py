@@ -12,9 +12,10 @@ import os
 import sys
 import glob
 from io import BytesIO
+from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
 
 from xpra.util import envbool, envint, print_nested_dict, first_time
-from xpra.os_util import load_binary_file, OSEnvContext, PYTHON3
+from xpra.os_util import load_binary_file, OSEnvContext
 from xpra.log import Logger, add_debug_category
 
 log = Logger("exec", "menu")
@@ -23,11 +24,6 @@ LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", True)
 EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
 MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 65536)
 DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
-if PYTHON3:
-    unicode = str           #@ReservedAssignment
-    from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
-else:
-    from types import GeneratorType as generator    #@Reimport
 
 
 def isvalidtype(v):
@@ -35,7 +31,7 @@ def isvalidtype(v):
         if not v:
             return True
         return all(isvalidtype(x) for x in v)
-    return isinstance(v, (bytes, str, unicode, bool, int))
+    return isinstance(v, (bytes, str, bool, int))
 
 def export(entry, properties):
     name = entry.getName()
@@ -76,10 +72,10 @@ def load_icon_from_file(filename):
     log("load_icon_from_file(%s)", filename)
     if filename.endswith("xpm"):
         try:
-            from xpra.gtk_common.gobject_compat import import_pixbufloader
             from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
             data = load_binary_file(filename)
-            loader = import_pixbufloader()()
+            from gi.repository import GdkPixbuf
+            loader = GdkPixbuf.PixbufLoader()
             loader.write(data)
             loader.close()
             pixbuf = loader.get_pixbuf()

@@ -23,7 +23,7 @@ from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
     get_util_logger, getuid, getgid,
     monotonic_time, setsid, bytestostr, use_tty,
-    WIN32, OSX, POSIX, PYTHON2, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
+    WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
 from xpra.scripts.parsing import (
     info, warn, error,
@@ -90,11 +90,6 @@ def main(script_file, cmdline):
         hashlib.algorithms_available.remove("md5")
         hashlib.md5 = nomd5
 
-    if OSX and PYTHON2 and any(x in cmdline for x in ("_sound_record", "_sound_play", "_sound_query")):
-        #bug 2365: force gi bindings early on macos
-        from xpra.gtk_common.gobject_compat import want_gtk3
-        want_gtk3(True)
-
     def debug_exc(msg="run_mode error"):
         get_util_logger().debug(msg, exc_info=True)
 
@@ -155,16 +150,15 @@ def configure_logging(options, mode):
     else:
         s = sys.stderr
     to = s
-    if PYTHON3:
-        try:
-            import codecs
-            #print("locale.getpreferredencoding()=%s" % (locale.getpreferredencoding(),))
-            #python3 has a buffer attribute,
-            #which we must use if we want to be able to write bytes:
-            sbuf = getattr(s, "buffer", s)
-            to = codecs.getwriter("utf-8")(sbuf, "replace")
-        except:
-            pass
+    try:
+        import codecs
+        #print("locale.getpreferredencoding()=%s" % (locale.getpreferredencoding(),))
+        #python3 has a buffer attribute,
+        #which we must use if we want to be able to write bytes:
+        sbuf = getattr(s, "buffer", s)
+        to = codecs.getwriter("utf-8")(sbuf, "replace")
+    except:
+        pass
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
     from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
@@ -295,7 +289,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 #inject it into the command line if we have to:
                 argv = list(sys.argv)
                 if argv[0].find("python")<0:
-                    argv.insert(0, "python%i" % sys.version_info[0])
+                    argv.insert(0, "python3")
                 return systemd_run_wrap(mode, argv, options.systemd_run_args)
 
     configure_env(options.env)
@@ -1323,7 +1317,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             #we still hit the following errors that we need to retry:
             from xpra.net import bytestreams
             bytestreams.CAN_RETRY_EXCEPTIONS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
-        if not WIN32 or not PYTHON3:
+        if not WIN32:
             tcp_socket.setblocking(True)
         try:
             ssl_sock = wrap_socket(tcp_socket, **kwargs)
@@ -1514,7 +1508,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
         app.hello_extra = {"connect" : False}
         app.start_new_session = sns
     else:
-        if PYTHON3 and POSIX and os.environ.get("GDK_BACKEND") is None:
+        if POSIX and os.environ.get("GDK_BACKEND") is None:
             os.environ["GDK_BACKEND"] = "x11"
         if opts.opengl=="probe":
             opts.opengl = run_opengl_probe()
@@ -1928,10 +1922,6 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
 
 
 def no_gtk():
-    if OSX and PYTHON2:
-        #on macos, we may have loaded the bindings already
-        #and this is not a problem there
-        return
     gtk = sys.modules.get("gtk") or sys.modules.get("gi.repository.Gtk")
     if gtk is None:
         #all good, not loaded
@@ -2117,12 +2107,11 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                 close_fds = False
                 def no_close_pipes():
                     from xpra.os_util import close_fds as osclose_fds
-                    if PYTHON3:
-                        try:
-                            for fd in (r_pipe, w_pipe):
-                                os.set_inheritable(fd, True)
-                        except:
-                            log.error("no_close_pipes()", exc_info=True)
+                    try:
+                        for fd in (r_pipe, w_pipe):
+                            os.set_inheritable(fd, True)
+                    except:
+                        log.error("no_close_pipes()", exc_info=True)
                     osclose_fds([0, 1, 2, r_pipe, w_pipe])
                 preexec_fn = no_close_pipes
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))

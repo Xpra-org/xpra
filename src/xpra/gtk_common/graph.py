@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import math
 
-from xpra.gtk_common.gobject_compat import import_gdk, import_cairo
+import cairo
+
+from xpra.gtk_common.gobject_compat import import_gdk
 
 gdk = import_gdk()
-cairo = import_cairo()
 
 DEFAULT_COLOURS = ((0.8, 0, 0), (0, 0, 0.8), (0.1, 0.65, 0.1), (0, 0.6, 0.6), (0.1, 0.1, 0.1))
 

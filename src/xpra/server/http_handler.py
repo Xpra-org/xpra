@@ -7,17 +7,10 @@ import os
 import glob
 import posixpath
 import mimetypes
-try:
-    from urllib import unquote          #python2 @UnusedImport
-except ImportError:
-    from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
-try:
-    from BaseHTTPServer import BaseHTTPRequestHandler   #python2 @UnusedImport
-except ImportError:
-    from http.server import BaseHTTPRequestHandler      #python3 @Reimport @UnresolvedImport
+from urllib.parse import unquote
+from http.server import BaseHTTPRequestHandler
 
 from xpra.util import envbool, std, csv, AdHocStruct
-from xpra.os_util import PYTHON2
 from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
 
@@ -143,16 +136,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if mtime<=cls.http_headers_time.get(http_headers_dir, -1):
             #no change
             return cls.http_headers_cache.get(http_headers_dir, {})
-        if PYTHON2:
-            mode = "rU"
-        else:
-            mode = "r"
         headers = {}
         for f in sorted(os.listdir(http_headers_dir)):
             header_file = os.path.join(http_headers_dir, f)
             if os.path.isfile(header_file):
                 log("may_reload_headers() loading from '%s'", header_file)
-                with open(header_file, mode) as f:
+                with open(header_file, "r") as f:
                     for line in f:
                         sline = line.strip().rstrip('\r\n').strip()
                         if sline.startswith("#") or sline=='':

@@ -17,7 +17,7 @@ import traceback
 from xpra.scripts.main import info, warn, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, FALSE_OPTIONS
 from xpra.os_util import (
-    SIGNAMES, POSIX, WIN32, OSX, PYTHON3,
+    SIGNAMES, POSIX, WIN32, OSX,
     FDChangeCaptureContext,
     force_quit,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
@@ -382,7 +382,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     clobber   = upgrading or upgrading_desktop or opts.use_display
     start_vfb = not (shadowing or proxying or clobber)
 
-    if not proxying and PYTHON3 and POSIX and not OSX:
+    if not proxying and POSIX and not OSX:
         #we don't support wayland servers,
         #so make sure GDK will use the X11 backend:
         os.environ["GDK_BACKEND"] = "x11"

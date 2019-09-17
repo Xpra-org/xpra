@@ -1,21 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import dbus
 
 from xpra.log import Logger
-
-log = Logger("dbus")
-
-PY3 = sys.version_info[0]==3
-if PY3:
-    long = int          #@ReservedAssignment
-    basestring = str    #@ReservedAssignment
-    unicode = str       #@ReservedAssignment
 
 
 def dbus_to_native(value):
@@ -24,14 +15,12 @@ def dbus_to_native(value):
         return None
     if isinstance(value, int):
         return int(value)
-    if isinstance(value, long):
-        return long(value)
     if isinstance(value, dict):
         d = {}
         for k,v in value.items():
             d[dbus_to_native(k)] = dbus_to_native(v)
         return d
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         return str(value)
     if isinstance(value, float):
         return float(value)
@@ -46,11 +35,7 @@ def native_to_dbus(value):
         return None
     if isinstance(value, int):
         return dbus.types.Int64(value)
-    if isinstance(value, long):
-        return dbus.types.Int64(value)
-    if isinstance(value, unicode):
-        return dbus.types.String(value)
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         return dbus.types.String(value)
     if isinstance(value, float):
         return dbus.types.Double(value)
@@ -64,8 +49,6 @@ def native_to_dbus(value):
             keytype = tuple(keytypes)[0]
             if keytype is int:
                 sig = "i"
-            if keytype is long:
-                sig = "x"
             elif keytype is bool:
                 sig = "b"
             elif keytype is float:
@@ -87,8 +70,6 @@ def native_to_dbus(value):
             keytype = tuple(keytypes)[0]
             if keytype is int:
                 sig = "i"
-            if keytype is long:
-                sig = "x"
             elif keytype is bool:
                 sig = "b"
             elif keytype is float:
@@ -117,6 +98,7 @@ class DBusHelper(object):
 
 
     def call_function(self, bus_name, path, interface, function, args, ok_cb, err_cb):
+        log = Logger("dbus")
         try:
             #remote_object = self.bus.get_object("com.example.SampleService","/SomeObject")
             obj = self.bus.get_object(bus_name, path)

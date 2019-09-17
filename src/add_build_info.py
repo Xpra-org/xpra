@@ -15,15 +15,11 @@ import os.path
 import re
 import sys
 
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
-    def bytestostr(x):
-        if isinstance(x, bytes):
-            return x.decode("latin1")
-        return str(x)
-else:
-    def bytestostr(x):
-        return str(x)
+
+def bytestostr(x):
+    if isinstance(x, bytes):
+        return x.decode("latin1")
+    return str(x)
 
 
 def update_properties(props, filename):

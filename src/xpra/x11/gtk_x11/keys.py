@@ -6,7 +6,7 @@
 
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
-from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.gtk_common.gtk_util import keymap_get_for_display
 
 gdk = import_gdk()
@@ -42,13 +42,9 @@ def grok_modifier_map(display, meanings):
                 if entries is None:
                     # This keycode has no entry in the keymap:
                     continue
-                if is_gtk3():
-                    found, _, keyvals = entries
-                    if not found:
-                        continue
-                else:
-                    #(keyval, _, _, _) in entries
-                    keyvals = [x[0] for x in entries]
+                found, _, keyvals = entries
+                if not found:
+                    continue
                 for keyval in keyvals:
                     keyval_name = gdk.keyval_name(keyval)
                     modifier = meanings.get(keyval_name)

@@ -42,7 +42,7 @@ from xpra.os_util import (
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
     getuid, monotonic_time, hexstr,
-    WIN32, POSIX, PYTHON3, BITS,
+    WIN32, POSIX, BITS,
     )
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.make_thread import start_thread
@@ -1116,7 +1116,7 @@ class ServerCore(object):
             return
 
         #not sure why python3 fails to set the timeout here:
-        if not PYTHON3 or conn.socktype!="ssl":
+        if conn.socktype!="ssl":
             sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
         proto = self.make_protocol(socktype, conn)

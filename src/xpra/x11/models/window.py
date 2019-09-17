@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import cairo
 
 from xpra.util import envint, envbool, typedict
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
@@ -27,12 +28,11 @@ from xpra.gtk_common.gtk_util import (
     GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
     PARAM_READABLE, PARAM_READWRITE,
     )
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.log import Logger
 
 gtk = import_gtk()
 gdk = import_gdk()
-cairo = import_cairo()
 
 log = Logger("x11", "window")
 workspacelog = Logger("x11", "window", "workspace")

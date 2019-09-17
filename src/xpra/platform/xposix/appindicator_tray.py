@@ -15,7 +15,7 @@ import os
 import sys
 
 from xpra.util import envbool
-from xpra.os_util import monotonic_time, osexpand, PYTHON2
+from xpra.os_util import monotonic_time, osexpand
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
@@ -24,21 +24,15 @@ log = Logger("tray", "posix")
 
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 
-if PYTHON2:
-    import appindicator                     #@UnresolvedImport
-    PASSIVE = appindicator.STATUS_PASSIVE
-    ACTIVE = appindicator.STATUS_ACTIVE
-    APPLICATION_STATUS = appindicator.CATEGORY_APPLICATION_STATUS
-    Indicator = appindicator.Indicator
-else:
-    import gi
-    gi.require_version('AppIndicator3', '0.1')
-    from gi.repository import AppIndicator3 #@UnresolvedImport @Reimport
-    PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
-    ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
-    APPLICATION_STATUS = AppIndicator3.IndicatorCategory.APPLICATION_STATUS
-    def Indicator(tooltip, filename, status):
-        return AppIndicator3.Indicator.new(tooltip, filename, status)
+import gi
+gi.require_version('AppIndicator3', '0.1')
+from gi.repository import AppIndicator3 #@UnresolvedImport @Reimport
+
+PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
+ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
+APPLICATION_STATUS = AppIndicator3.IndicatorCategory.APPLICATION_STATUS
+def Indicator(tooltip, filename, status):
+    return AppIndicator3.Indicator.new(tooltip, filename, status)
 
 
 class AppindicatorTray(TrayBase):

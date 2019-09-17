@@ -22,10 +22,9 @@ def main():
 				pass
 			#c._process_clipboard_token(["clipboard-token", "CLIPBOARD", ])
 			#_process_clipboard_contents(self, packet):
-			from xpra.gtk_common.gobject_compat import import_glib
-			glib = import_glib()
-			main_loop = glib.MainLoop()
-			glib.timeout_add(1000, set_contents)
+			from gi.repository import GLib				  #@UnresolvedImport
+			main_loop = GLib.MainLoop()
+			GLib.timeout_add(1000, set_contents)
 			log("main loop=%s", main_loop)
 			main_loop.run()
 		except:

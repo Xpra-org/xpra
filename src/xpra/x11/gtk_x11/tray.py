@@ -7,7 +7,7 @@ from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_glib, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_glib
 from xpra.gtk_common.gtk_util import (
     display_get_default, get_default_root_window, get_xwindow, GDKWindow, x11_foreign_new,
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
@@ -147,33 +147,21 @@ class SystemTray(gobject.GObject):
         log("setup tray: current selection owner=%#x", owner)
         if owner!=XNone:
             raise Exception("%s already owned by %s" % (SELECTION, owner))
-        kwargs = {}
         visual = screen.get_system_visual()
         if TRANSPARENCY:
             visual = screen.get_rgba_visual()
             if visual is None:
                 log.warn("setup tray: using rgb visual fallback")
                 visual = screen.get_rgb_visual()
-        #only GTK2 uses colormap:
-        if not is_gtk3():
-            if TRANSPARENCY:
-                colormap = screen.get_rgba_colormap()
-            else:
-                colormap = screen.get_rgb_colormap()
-            kwargs["colormap"] = colormap
         assert visual is not None, "failed to obtain visual"
         self.tray_window = GDKWindow(root, width=1, height=1,
                                   title="Xpra-SystemTray",
-                                  visual=visual,
-                                  **kwargs)
+                                  visual=visual)
         xtray = get_xwindow(self.tray_window)
         set_tray_visual(self.tray_window, visual)
         set_tray_orientation(self.tray_window, TRAY_ORIENTATION_HORZ)
         log("setup tray: tray window %#x", xtray)
-        if is_gtk3():
-            display.request_selection_notification(gdk.Atom.intern(SELECTION, False))
-        else:
-            display.request_selection_notification(SELECTION)
+        display.request_selection_notification(gdk.Atom.intern(SELECTION, False))
         try:
             with xsync:
                 setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
@@ -255,20 +243,13 @@ class SystemTray(gobject.GObject):
         xid = get_xwindow(root)
         log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s",
             xid, xid, window.get_geometry(), title)
-        kwargs = {}
-        if not is_gtk3():
-            colormap = window.get_colormap()
-            if colormap:
-                kwargs["colormap"] = colormap
         visual = window.get_visual()
-        if visual:
-            kwargs["visual"] = visual
         tray_window = GDKWindow(root, width=w, height=h,
                                            event_mask = event_mask,
                                            title=title,
                                            x=-200, y=-200,
                                            override_redirect=True,
-                                           **kwargs)
+                                           visual=visual)
         log("dock_tray(%#x) setting tray properties", xid)
         set_tray_window(tray_window, window)
         tray_window.show()

@@ -317,10 +317,6 @@ class SoundPipeline(gobject.GObject):
                 self.gstlogwarn(" %s: %s", type(e), e)
         elif t == gst.MessageType.STREAM_STATUS:
             gstlog("stream status: %s", message)
-            try:
-                gstlog("stream status: %s", message.get_stream_status_object().get_state())
-            except Exception:
-                gstlog("error querying stream status", exc_info=True)
         elif t == gst.MessageType.STREAM_START:
             log("stream start: %s", message)
             #with gstreamer 1.x, we don't always get the "audio-codec" message..

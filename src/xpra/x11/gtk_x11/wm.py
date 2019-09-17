@@ -7,7 +7,6 @@
 import os
 
 from xpra.util import envbool
-from xpra.os_util import PYTHON2
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.window_info import window_name, window_info
@@ -28,7 +27,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.gtk_common.gobject_compat import import_gobject, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -152,11 +151,6 @@ if FRAME_EXTENTS:
 
 NET_SUPPORTED = [x for x in DEFAULT_NET_SUPPORTED if x not in NO_NET_SUPPORTED]
 
-def u(s):
-    if PYTHON2:
-        return s.decode("utf8")
-    return s
-
 DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
 
@@ -233,10 +227,6 @@ class Wm(gobject.GObject):
 
         # Load up our full-screen widget
         self._world_window = None
-        if not is_gtk3():
-            self._world_window = WorldWindow(self._display.get_default_screen())
-            self.notify("toplevel")
-            self._world_window.show_all()
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
@@ -471,7 +461,7 @@ class Wm(gobject.GObject):
     def set_desktop_list(self, desktops):
         log("set_desktop_list(%s)", desktops)
         self.root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
-        self.root_set("_NET_DESKTOP_NAMES", ["utf8"], [u(d) for d in desktops])
+        self.root_set("_NET_DESKTOP_NAMES", ["utf8"], desktops)
 
     def set_current_desktop(self, index):
         self.root_set("_NET_CURRENT_DESKTOP", "u32", index)
@@ -493,7 +483,7 @@ class Wm(gobject.GObject):
         prop_set(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
         self.root_set("_NET_SUPPORTING_WM_CHECK", "window", self._ewmh_window)
-        self.root_set("_NET_WM_NAME", "utf8", u(self._wm_name))
+        self.root_set("_NET_WM_NAME", "utf8", self._wm_name)
 
     def get_net_wm_name(self):
         try:

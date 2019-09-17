@@ -3,7 +3,7 @@
 import sys
 
 from xpra.util import envbool
-from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk
 gtk = import_gtk()
 
 
@@ -58,10 +58,7 @@ class StatusIcon:
         notify_menu.connect("activate", self.notify)
         menu.append(notify_menu)
         menu.show_all()
-        if is_gtk3():
-            menu.popup(None, None, gtk.StatusIcon.position_menu, self.statusicon, button, time)
-        else:
-            menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon)
+        menu.popup(None, None, gtk.StatusIcon.position_menu, self.statusicon, button, time)
 
     def notification_closed(self, nid, reason, text):
         print("notification_closed(%i, %i, %s)" % (nid, reason, text))

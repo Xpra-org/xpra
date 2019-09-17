@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
-from xpra.os_util import PYTHON3
 from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE
 from xpra.util import envbool
 
@@ -72,12 +71,9 @@ def init_yaml():
     try:
         #json messes with strings and unicode (makes it unusable for us)
         import yaml
-        if PYTHON3:
-            def yaml_encode_py3(v):
-                return yaml.dump(v).encode("latin1")
-            yaml_encode = yaml_encode_py3
-        else:
-            yaml_encode = yaml.dump
+        def yaml_encode_py3(v):
+            return yaml.dump(v).encode("latin1")
+        yaml_encode = yaml_encode_py3
         yaml_decode = yaml.load
         yaml_version = yaml.__version__
     except ImportError:

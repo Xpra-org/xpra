@@ -19,7 +19,7 @@ from xpra.gtk_common.gtk_util import (
     imagebutton, STATE_NORMAL, WIN_POS_CENTER,
     )
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_pango, import_glib,
+    import_gtk, import_gdk, import_glib,
     register_os_signals,
     )
 from xpra.net.net_util import if_indextoname
@@ -31,8 +31,8 @@ log = Logger("client", "util")
 
 gtk = import_gtk()
 gdk = import_gdk()
-pango = import_pango()
 glib = import_glib()
+from gi.repository import Pango
 
 
 class SessionsGUI(gtk.Window):
@@ -60,7 +60,7 @@ class SessionsGUI(gtk.Window):
         self.add(self.vbox)
 
         title_label = gtk.Label(title)
-        title_label.modify_font(pango.FontDescription("sans 14"))
+        title_label.modify_font(Pango.FontDescription("sans 14"))
         title_label.show()
         self.vbox.add(title_label)
 

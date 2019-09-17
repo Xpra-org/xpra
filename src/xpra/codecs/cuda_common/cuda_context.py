@@ -11,7 +11,7 @@ import pycuda               #@UnresolvedImport
 from pycuda import driver   #@UnresolvedImport
 
 from xpra.util import engs, print_nested_dict, envbool, envint, csv
-from xpra.os_util import monotonic_time, bytestostr, PYTHON2
+from xpra.os_util import monotonic_time, bytestostr
 from xpra.log import Logger
 
 log = Logger("cuda")
@@ -424,8 +424,6 @@ def get_CUDA_function(device_id, function_name):
     log("get_CUDA_function(%s, %s) module=%s", device_id, function_name, mod)
     try:
         fn = function_name
-        if PYTHON2:
-            fn = function_name.encode()
         CUDA_function = mod.get_function(fn)
     except driver.LogicError as e:
         raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e))

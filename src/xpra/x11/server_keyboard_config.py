@@ -11,7 +11,7 @@ from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, get_default_root_window
 from xpra.gtk_common.error import xsync, xlog
-from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.gtk_x11.keys import grok_modifier_map
@@ -234,11 +234,8 @@ class KeyboardConfig(KeyboardConfigBase):
                     entries = keymap.get_entries_for_keyval(keyval)
                     if entries:
                         keycodes = []
-                        if is_gtk3():
-                            if entries[0] is True:
-                                keycodes = [entry.keycode for entry in entries[1]]
-                        else:
-                            keycodes = [entry[0] for entry in entries]
+                        if entries[0] is True:
+                            keycodes = [entry.keycode for entry in entries[1]]
                         for keycode in keycodes:
                             l = self.keycodes_for_modifier_keynames.setdefault(keyname, [])
                             if keycode not in l:
