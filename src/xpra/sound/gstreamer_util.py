@@ -96,7 +96,7 @@ CODEC_OPTIONS = [
         (FLAC       , "flacenc",        None,           "flacparse ! flacdec",          None),
         (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux"),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",         None),
-        (MP3_ID3V2  , "lamemp3enc",     "id3v2mux",     "mpegaudioparse ! mpg123audiodec", None),
+        (MP3_ID3V2  , "lamemp3enc",     "id3v2mux",     "mpegaudioparse ! mpg123audiodec", "id3demux"),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mpg123audiodec", None),
         (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mpegaudioparse ! mad",         "qtdemux"),
         (WAV        , "wavenc",         None,           "wavparse",                     None),
