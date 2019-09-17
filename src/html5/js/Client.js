@@ -3078,6 +3078,19 @@ XpraClient.prototype.push_audio_buffer = function(buf) {
 	}
 	else {
 		this.audio_aurora_ctx.asset.source._on_data(buf);
+		this.debug("audio", "playing=", this.audio_aurora_ctx.playing,
+							"buffered=", this.audio_aurora_ctx.buffered,
+							"currentTime=", this.audio_aurora_ctx.currentTime,
+							"duration=", this.audio_aurora_ctx.duration);
+		if (this.audio_aurora_ctx.format) {
+			this.debug("audio", "formatID=", this.audio_aurora_ctx.format.formatID,
+								"sampleRate=", this.audio_aurora_ctx.format.sampleRate);
+		}
+		this.debug("audio", "active=", this.audio_aurora_ctx.asset.active,
+							"decoder=", this.audio_aurora_ctx.asset.decoder,
+							"demuxer=", this.audio_aurora_ctx.demuxer);
+							//"source=", this.audio_aurora_ctx.asset.source,
+							//"events=", this.audio_aurora_ctx.asset.source.events);
 	}
 	this.on_audio_state_change("playing", "");
 }
