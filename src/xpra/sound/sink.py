@@ -21,7 +21,8 @@ from xpra.sound.gstreamer_util import (
 from xpra.net.compression import decompress_by_name
 from xpra.scripts.config import InitExit
 from xpra.util import csv, envint, envbool
-from xpra.os_util import thread, monotonic_time
+from xpra.os_util import monotonic_time
+from xpra.make_thread import start_thread
 from xpra.log import Logger
 
 log = Logger("sound")
@@ -514,7 +515,7 @@ def main():
             qtime = ss.queue.get_property("current-level-time")//MS_TO_NS
             if qtime<=0:
                 log.info("underrun (end of stream)")
-                thread.start_new_thread(ss.stop, ())        #@UndefinedVariable
+                start_thread(ss.stop, "stop", daemon=True)
                 GLib.timeout_add(500, glib_mainloop.quit)
                 return False
             return True

@@ -14,9 +14,6 @@ import time
 import struct
 import binascii
 
-#hide some ugly python3 compat:
-import _thread as thread            #@UnresolvedImport @UnusedImport (python3)
-
 SIGNAMES = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
     SIGNAMES[getattr(signal, signame)] = signame

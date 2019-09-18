@@ -7,8 +7,9 @@
 
 import os.path
 
-from xpra.os_util import thread, OSX, POSIX
+from xpra.os_util import OSX, POSIX
 from xpra.util import repr_ellipsized
+from xpra.make_thread import start_thread
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -34,7 +35,7 @@ class NotificationForwarder(StubServerMixin):
         nf = self.notifications_forwarder
         if nf:
             self.notifications_forwarder = None
-            thread.start_new_thread(nf.release, ())     #@UndefinedVariable
+            start_thread(nf.release, "notifier-release", daemon=True)
 
     def get_info(self, _source=None):
         if not self.notifications_forwarder:
