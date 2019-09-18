@@ -15,15 +15,15 @@ This is a simple GUI for starting the xpra client.
 import os.path
 import sys
 import traceback
-from gi.repository import Pango, GLib, Gtk, Gdk
+from gi.repository import Pango, GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import (
-    gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse,
-    OptionMenu, choose_file, window_defaults, imagebutton,
+    add_close_accel, scaled_image, color_parse,
+    OptionMenu, choose_file, imagebutton,
     WIN_POS_CENTER, STATE_NORMAL,
     DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE,
     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN,
@@ -174,7 +174,7 @@ class ApplicationWindow:
 
     def do_create_window(self):
         self.window = Gtk.Window()
-        window_defaults(self.window)
+        self.window.set_border_width(20)
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(400, 260)
         self.window.set_title("Xpra Launcher")
@@ -522,12 +522,12 @@ class ApplicationWindow:
         self.connect_btn.grab_focus()
 
     def run(self):
-        gtk_main()
+        Gtk.main()
 
     def get_icon(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return pixbuf_new_from_file(icon_filename)
+            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         return None
 
     def mode_changed(self, *_args):
@@ -1070,7 +1070,7 @@ def exception_dialog(title):
         gtk_main_quit_really()
     md.connect("response", close_dialog)
     md.connect("close", close_dialog)
-    gtk_main()
+    Gtk.main()
 
 
 def main(argv):

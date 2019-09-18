@@ -5,11 +5,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GLib
+from gi.repository import GLib, Gdk
 
 from xpra.client.keyboard_helper import KeyboardHelper, log
 from xpra.gtk_common.keymap import get_gtk_keymap
-from xpra.gtk_common.gtk_util import display_get_default, keymap_get_for_display
+from xpra.gtk_common.gtk_util import display_get_default
 from xpra.os_util import is_X11
 
 
@@ -24,7 +24,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         self._keymap = None
         display = display_get_default()
         if display:
-            self._keymap = keymap_get_for_display(display)
+            self._keymap = Gdk.Keymap.get_for_display(display)
         self.update()
         if self._keymap:
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
@@ -35,7 +35,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             self._keymap.disconnect(self._keymap_change_handler_id)
             self._keymap_change_handler_id = None
         display = display_get_default()
-        self._keymap = keymap_get_for_display(display)
+        self._keymap = Gdk.Keymap.get_for_display(display)
         if self._keymap_changing:
             #timer due already
             return

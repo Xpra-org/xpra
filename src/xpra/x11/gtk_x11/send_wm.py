@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
@@ -18,7 +17,7 @@ SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
 
 def send_wm_take_focus(target, timestamp):
-    xid = get_xwindow(target)
+    xid = target.get_xid()
     log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", xid, timestamp)
     if timestamp<0:
         timestamp = CurrentTime    #better than nothing...
@@ -35,7 +34,7 @@ def send_wm_take_focus(target, timestamp):
                       "WM_TAKE_FOCUS", timestamp)
 
 def send_wm_delete_window(target):
-    xid = get_xwindow(target)
+    xid = target.get_xid()
     log("sending WM_DELETE_WINDOW to %#x", xid)
     X11Window.sendClientMessage(xid, xid, False, 0,
                       "WM_PROTOCOLS",
@@ -44,12 +43,12 @@ def send_wm_delete_window(target):
 
 def send_wm_workspace(root, win, workspace=0):
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-    X11Window.sendClientMessage(get_xwindow(root), get_xwindow(win), False, event_mask,
+    X11Window.sendClientMessage(root.get_xid(), win.get_xid(), False, event_mask,
                       "_NET_WM_DESKTOP",
                       workspace, CurrentTime)
 
 def send_wm_request_frame_extents(root, win):
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-    X11Window.sendClientMessage(get_xwindow(root), get_xwindow(win), False, event_mask,
+    X11Window.sendClientMessage(root.get_xid(), win.get_xid(), False, event_mask,
               "_NET_REQUEST_FRAME_EXTENTS",
               0, CurrentTime)

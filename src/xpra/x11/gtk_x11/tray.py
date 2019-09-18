@@ -3,14 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gdk
+from gi.repository import GObject, Gdk, GdkX11
 
 from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gtk_util import (
-    display_get_default, get_default_root_window, get_xwindow, GDKWindow, x11_foreign_new,
+    display_get_default, get_default_root_window, GDKWindow,
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -80,7 +80,7 @@ def get_tray_window(tray_window):
     return getattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, None)
 
 def set_tray_window(tray_window, window):
-    setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, get_xwindow(window))
+    setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, window.get_xid())
 
 def set_tray_visual(tray_window, gdk_visual):
     prop_set(tray_window, TRAY_VISUAL, "visual", gdk_visual)
@@ -113,13 +113,13 @@ class SystemTray(GObject.GObject):
         root = get_default_root_window()
         def undock(window):
             log("undocking %s", window)
-            wxid = get_xwindow(window)
-            rxid = get_xwindow(root)
+            wxid = window.get_xid()
+            rxid = root.get_xid()
             X11Window.Unmap(wxid)
             X11Window.Reparent(wxid, rxid, 0, 0)
         with xlog:
             owner = X11Window.XGetSelectionOwner(SELECTION)
-            if owner==get_xwindow(self.tray_window):
+            if owner==self.tray_window.get_xid():
                 X11Window.XSetSelectionOwner(0, SELECTION)
                 log("SystemTray.cleanup() reset %s selection owner to %#x",
                     SELECTION, X11Window.XGetSelectionOwner(SELECTION))
@@ -154,7 +154,7 @@ class SystemTray(GObject.GObject):
         self.tray_window = GDKWindow(root, width=1, height=1,
                                   title="Xpra-SystemTray",
                                   visual=visual)
-        xtray = get_xwindow(self.tray_window)
+        xtray = self.tray_window.get_xid()
         set_tray_visual(self.tray_window, visual)
         set_tray_orientation(self.tray_window, TRAY_ORIENTATION_HORZ)
         log("setup tray: tray window %#x", xtray)
@@ -166,7 +166,7 @@ class SystemTray(GObject.GObject):
                     setsel, X11Window.XGetSelectionOwner(SELECTION))
                 event_mask = StructureNotifyMask
                 log("setup tray: sending client message")
-                xid = get_xwindow(root)
+                xid = root.get_xid()
                 X11Window.sendClientMessage(xid, xid, False, event_mask, "MANAGER",
                                   CurrentTime, SELECTION, xtray)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
@@ -184,7 +184,7 @@ class SystemTray(GObject.GObject):
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
                 log("tray docking request from %#x", xid)
-                window = x11_foreign_new(event.display, xid)
+                window = GdkX11.X11Window.foreign_new_for_display(event.display, xid)
                 log("tray docking window %s", window)
                 if window:
                     from gi.repository import GLib
@@ -218,7 +218,7 @@ class SystemTray(GObject.GObject):
 
     def do_dock_tray(self, xid):
         root = get_default_root_window()
-        window = x11_foreign_new(root.get_display(), xid)
+        window = GdkX11.X11Window.foreign_new_for_display(root.get_display(), xid)
         if window is None:
             log.warn("could not find gdk window for tray window %#x", xid)
             return
@@ -238,7 +238,7 @@ class SystemTray(GObject.GObject):
             title = prop_get(window, "WM_NAME", "latin1", ignore_errors=True)
         if title is None:
             title = ""
-        xid = get_xwindow(root)
+        xid = root.get_xid()
         log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s",
             xid, xid, window.get_geometry(), title)
         visual = window.get_visual()
@@ -255,8 +255,8 @@ class SystemTray(GObject.GObject):
         self.window_trays[tray_window] = window
         log("dock_tray(%#x) resizing and reparenting", xid)
         window.resize(w, h)
-        xwin = get_xwindow(window)
-        xtray = get_xwindow(tray_window)
+        xwin = window.get_xid()
+        xtray = tray_window.get_xid()
         X11Window.Withdraw(xwin)
         X11Window.Reparent(xwin, xtray, 0, 0)
         X11Window.MapRaised(xwin)

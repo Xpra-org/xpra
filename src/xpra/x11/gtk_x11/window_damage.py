@@ -13,7 +13,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
             )
 from xpra.gtk_common.error import trap, xsync, xswallow, XError
 from xpra.x11.common import Unmanageable
-from xpra.gtk_common.gtk_util import get_xwindow
 
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -44,7 +43,7 @@ class WindowDamageHandler(object):
     # This may raise XError.
     def __init__(self, client_window, use_xshm=USE_XSHM):
         self.client_window = client_window
-        self.xid = get_xwindow(client_window)
+        self.xid = client_window.get_xid()
         log("WindowDamageHandler.__init__(%#x, %s)", self.xid, use_xshm)
         self._use_xshm = use_xshm
         self._damage_handle = None

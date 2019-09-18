@@ -9,7 +9,7 @@
 from xpra.util import csv, nonl, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
-from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, get_default_root_window
+from xpra.gtk_common.gtk_util import display_get_default, get_default_root_window
 from xpra.gtk_common.error import xsync, xlog
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
@@ -219,7 +219,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycodes_for_modifier_keynames = {}
         self.xkbmap_mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
         display = display_get_default()
-        keymap = keymap_get_for_display(display)
+        keymap = Gdk.Keymap.get_for_display(display)
         from gi.repository import Gdk
         if self.keynames_for_mod:
             for modifier, keynames in self.keynames_for_mod.items():

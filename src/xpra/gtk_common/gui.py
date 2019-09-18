@@ -7,13 +7,13 @@
 import sys
 import os.path
 import subprocess
-from gi.repository import GLib, Pango, Gtk
+from gi.repository import GLib, Pango, Gtk, Gdk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
-    gtk_main, set_tooltip_text, add_close_accel,
-    pixbuf_new_from_file, add_window_accel, imagebutton,
-    window_defaults, scaled_image, WIN_POS_CENTER,
+    set_tooltip_text, add_close_accel,
+    add_window_accel, imagebutton,
+    scaled_image, WIN_POS_CENTER,
     )
 from xpra.platform.paths import get_icon_dir, get_xpra_command
 from xpra.os_util import OSX, WIN32, platform_name
@@ -52,7 +52,7 @@ def exec_command(cmd):
 def get_pixbuf(icon_name):
     icon_filename = os.path.join(get_icon_dir(), icon_name)
     if os.path.exists(icon_filename):
-        return pixbuf_new_from_file(icon_filename)
+        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
     return None
 
 
@@ -153,9 +153,9 @@ class GUI(Gtk.Window):
         from xpra.gtk_common.cursor_names import cursor_types
         watch = cursor_types.get("WATCH")
         if watch:
-            from xpra.gtk_common.gtk_util import display_get_default, new_Cursor_for_display
+            from xpra.gtk_common.gtk_util import display_get_default
             display = display_get_default()
-            cursor = new_Cursor_for_display(display, watch)
+            cursor = Gdk.Cursor.new_for_display(display, watch)
             widget.get_window().set_cursor(cursor)
             GLib.timeout_add(5*1000, self.reset_cursors)
 
@@ -228,7 +228,7 @@ class StartSession(Gtk.Window):
     def __init__(self):
         assert not WIN32 and not OSX
         Gtk.Window.__init__(self)
-        window_defaults(self)
+        self.set_border_width(20)
         self.set_title("Start Xpra Session")
         self.set_position(WIN_POS_CENTER)
         self.set_size_request(640, 300)
@@ -480,7 +480,7 @@ def main():
             wait_for_open_handlers(gui.show, gui.open_file, gui.open_url)
         else:
             gui.show()
-        gtk_main()
+        Gtk.main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return 0
 

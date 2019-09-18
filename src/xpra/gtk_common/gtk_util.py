@@ -83,13 +83,6 @@ def pixbuf_save_to_memory(pixbuf, fmt="png"):
     return b"".join(buf)
 
 
-def is_realized(widget):
-    return widget.get_realized()
-
-def x11_foreign_new(display, xid):
-    from gi.repository import GdkX11
-    return GdkX11.X11Window.foreign_new_for_display(display, xid)
-
 def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVEL,
               event_mask=0, wclass=Gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
               x=None, y=None, override_redirect=False, visual=None, **kwargs):
@@ -157,12 +150,6 @@ def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
 
 get_pixbuf_from_window = Gdk.pixbuf_get_from_window
 
-def get_preferred_size(widget):
-    #ignore "min", we only care about "natural":
-    _, w = widget.get_preferred_width()
-    _, h = widget.get_preferred_height()
-    return w, h
-
 def color_parse(*args):
     try:
         v = Gdk.RGBA()
@@ -175,8 +162,6 @@ def color_parse(*args):
     if not ok:
         return None
     return v
-def get_xwindow(w):
-    return w.get_xid()
 def get_default_root_window():
     screen = Gdk.Screen.get_default()
     if screen is None:
@@ -204,28 +189,11 @@ def get_root_size():
             log.warn(" using %ix%i instead", w, h)
     return w, h
 
-keymap_get_for_display  = Gdk.Keymap.get_for_display
-
 def get_default_cursor():
     display = Gdk.Display.get_default()
     return Gdk.Cursor.new_from_name(display, "default")
-new_Cursor_for_display  = Gdk.Cursor.new_for_display
-new_Cursor_from_pixbuf  = Gdk.Cursor.new_from_pixbuf
-image_new_from_pixbuf   = Gtk.Image.new_from_pixbuf
-pixbuf_new_from_file    = GdkPixbuf.Pixbuf.new_from_file
-window_set_default_icon = Gtk.Window.set_default_icon
-icon_theme_get_default  = Gtk.IconTheme.get_default
-image_new_from_stock    = Gtk.Image.new_from_stock
-
-def gdk_cairo_context(cairo_context):
-    return cairo_context
-def pixbuf_new_from_data(*args):
-    args = list(args)+[None, None]
-    return GdkPixbuf.Pixbuf.new_from_data(*args)
 display_get_default     = Gdk.Display.get_default
 screen_get_default      = Gdk.Screen.get_default
-cairo_set_source_pixbuf = Gdk.cairo_set_source_pixbuf
-COLORSPACE_RGB          = GdkPixbuf.Colorspace.RGB
 INTERP_HYPER    = GdkPixbuf.InterpType.HYPER
 INTERP_BILINEAR = GdkPixbuf.InterpType.BILINEAR
 RELIEF_NONE     = Gtk.ReliefStyle.NONE
@@ -424,11 +392,6 @@ class OptionMenu(Gtk.MenuButton):
         return self.get_popup()
 
 gdk_window_process_all_updates = Gdk.Window.process_all_updates
-gtk_main = Gtk.main
-
-def popup_menu_workaround(*args):
-    #only implemented with GTK2 on win32 below
-    pass
 
 def gio_File(path):
     from gi.repository import Gio   #@UnresolvedImport
@@ -456,13 +419,6 @@ def wait_for_contents(clipboard, target):
 
 PARAM_READABLE = GObject.ParamFlags.READABLE
 PARAM_READWRITE = GObject.ParamFlags.READWRITE
-
-
-#no idea why, but trying to use the threads_init / threads_enter
-#causes deadlocks on win32:
-if WIN32:
-    gtk_main = Gtk.main
-gtk_main_quit = Gtk.main_quit
 
 GRAB_STATUS_STRING = {
                       GRAB_SUCCESS          : "SUCCESS",
@@ -542,10 +498,6 @@ class TrayImageMenuItem(Gtk.ImageMenuItem):
                 #not essential since we'll clear it before calling recheck again:
                 self._activated = False
         GLib.idle_add(recheck)
-
-
-def CheckMenuItem(label):
-    return Gtk.CheckMenuItem(label=label)
 
 
 def get_screens_info():
@@ -847,7 +799,7 @@ def scaled_image(pixbuf, icon_size=None):
         return None
     if icon_size:
         pixbuf = pixbuf.scale_simple(icon_size, icon_size, INTERP_BILINEAR)
-    return image_new_from_pixbuf(pixbuf)
+    return Gtk.Image.new_from_pixbuf(pixbuf)
 
 
 
@@ -967,11 +919,6 @@ def title_box(label_str):
     eb.add(al)
     eb.modify_bg(STATE_NORMAL, Gdk.Color(red=219*256, green=226*256, blue=242*256))
     return eb
-
-
-def window_defaults(window):
-    window.set_border_width(20)
-    #window.modify_bg(STATE_NORMAL, Gdk.Color(red=65535, green=65535, blue=65535))
 
 
 #utility method to ensure there is always only one CheckMenuItem

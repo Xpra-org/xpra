@@ -11,7 +11,7 @@ from gi.repository import GLib, GObject
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
 from xpra.gtk_common.gtk_util import (
-    get_default_root_window, get_xwindow, GDKWindow,
+    get_default_root_window, GDKWindow,
     PROPERTY_CHANGE_MASK, CLASS_INPUT_ONLY,
     )
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -88,7 +88,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         root = get_default_root_window()
         self.window = GDKWindow(root, width=1, height=1, title="Xpra-Clipboard", wclass=CLASS_INPUT_ONLY)
         self.window.set_events(PROPERTY_CHANGE_MASK | self.window.get_events())
-        xid = get_xwindow(self.window)
+        xid = self.window.get_xid()
         with xsync:
             X11Window.selectSelectionInput(xid)
         add_event_receiver(self.window, self)
@@ -108,7 +108,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         self.cleanup_window()
 
     def make_proxy(self, selection):
-        xid = get_xwindow(self.window)
+        xid = self.window.get_xid()
         proxy = ClipboardProxy(xid, selection)
         proxy.set_want_targets(self._want_targets)
         proxy.set_direction(self.can_send, self.can_receive)
@@ -146,7 +146,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         if message_type=="_GTK_LOAD_ICONTHEMES":
             log("ignored clipboard client message: %s", message_type)
             return
-        log.info("clipboard X11 window %#x received a client message", get_xwindow(self.window))
+        log.info("clipboard X11 window %#x received a client message", self.window.get_xid())
         log.info(" %s", event)
 
     def do_xpra_property_notify_event(self, event):
@@ -285,7 +285,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 else:
                     #send announcement:
                     root = get_default_root_window()
-                    root_xid = get_xwindow(root)
+                    root_xid = root.get_xid()
                     X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER",
                                       CurrentTime, self._selection, self.xid)
                 log("claim_selection: done, owned=%s", self.owned)
@@ -297,7 +297,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if event.message_type=="_GTK_LOAD_ICONTHEMES":
             #ignore this crap
             return
-        log.info("clipboard window %#x received an X11 message", get_xwindow(self.window))
+        log.info("clipboard window %#x received an X11 message", self.window.get_xid())
         log.info(" %s", event)
 
 
@@ -332,11 +332,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         log("do_selection_request_event(%s)", event)
         requestor = event.requestor
         assert requestor
-        wininfo = self.get_wininfo(get_xwindow(requestor))
+        wininfo = self.get_wininfo(requestor.get_xid())
         prop = event.property
         target = str(event.target)
         log("clipboard request for %s from window %#x: %s, target=%s, prop=%s",
-            self._selection, get_xwindow(requestor), wininfo, target, prop)
+            self._selection, requestor.get_xid(), wininfo, target, prop)
         def nodata():
             self.set_selection_response(requestor, target, prop, "STRING", 8, b"", time=event.time)
         if not self._enabled:
@@ -406,7 +406,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             requestor, target, prop, dtype, dformat, repr_ellipsized(str(data)), time)
         #answer the selection request:
         with xsync:
-            xid = get_xwindow(requestor)
+            xid = requestor.get_xid()
             if data is not None:
                 X11Window.XChangeProperty(xid, prop, dtype, dformat, data)
             else:
@@ -428,7 +428,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         for requestor, prop, time in pending:
             if log.is_debug_enabled():
                 log("setting response %s to property %s of window %s as %s",
-                     repr_ellipsized(bytestostr(data)), prop, self.get_wininfo(get_xwindow(requestor)), dtype)
+                     repr_ellipsized(bytestostr(data)), prop, self.get_wininfo(requestor.get_xid()), dtype)
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, time)
 
 
@@ -437,7 +437,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     ############################################################################
     def do_selection_notify_event(self, event):
         owned = self.owned
-        self.owned = event.owner and get_xwindow(event.owner)==self.xid
+        self.owned = event.owner and event.owner.get_xid()==self.xid
         log("do_selection_notify_event(%s) owned=%s, was %s, enabled=%s, can-send=%s",
             event, self.owned, owned, self._enabled, self._can_send)
         if not self._enabled:

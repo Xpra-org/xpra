@@ -10,7 +10,7 @@ import os
 import signal
 import math
 from collections import deque, namedtuple
-from gi.repository import GObject, Gtk, Gdk
+from gi.repository import GObject, Gtk, Gdk, GdkPixbuf
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint, typedict
@@ -18,7 +18,7 @@ from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import (
-    get_default_root_window, get_xwindow, pixbuf_new_from_data, is_realized,
+    get_default_root_window,
     SUBSTRUCTURE_MASK, GDKWINDOW_TEMP,
     )
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
@@ -151,7 +151,7 @@ class DesktopManager(Gtk.Widget):
 
     def take_window(self, _model, window):
         #log.info("take_window(%s, %s)", model, window)
-        if not is_realized(self):
+        if not self.get_realized():
             #with GTK3, the widget is never realized??
             return
         gdkwin = self.get_window()
@@ -242,7 +242,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         prop_set(root, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
-            xid = get_xwindow(root)
+            xid = root.get_xid()
             try:
                 with xsync:
                     self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
@@ -450,7 +450,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         root = get_default_root_window()
         with xsync:
             for window in get_children(root):
-                xid = get_xwindow(window)
+                xid = window.get_xid()
                 if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
                     self._add_new_or_window(window)
 
@@ -463,14 +463,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
         log("get_transient_for window=%s, transient_for=%s", window, transient_for)
         if transient_for is None:
             return 0
-        xid = get_xwindow(transient_for)
+        xid = transient_for.get_xid()
         log("transient_for.xid=%#x", xid)
         for w,wid in self._window_to_id.items():
             if w.get_property("xid")==xid:
                 log("found match, window id=%s", wid)
                 return wid
         root = get_default_root_window()
-        if get_xwindow(root)==xid:
+        if root.get_xid()==xid:
             log("transient-for using root")
             return -1       #-1 is the backwards compatible marker for root...
         log("not found transient_for=%s, xid=%#x", transient_for, xid)
@@ -619,7 +619,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, raw_window):
-        xid = get_xwindow(raw_window)
+        xid = raw_window.get_xid()
         if self.root_overlay and self.root_overlay==xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
@@ -1157,7 +1157,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
         if has_alpha:
             import cairo
-            pixbuf = pixbuf_new_from_data(img_data, Gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_data(img_data, GdkPixbuf.Colorspace.RGB, True, 8, width, height, rowstride, None, None)
             cr = overlaywin.cairo_create()
             cr.new_path()
             cr.rectangle(wx+x, wy+y, width, height)

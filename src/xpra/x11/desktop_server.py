@@ -17,7 +17,6 @@ from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.error import XError
 from xpra.gtk_common.gtk_util import (
     get_screen_sizes, get_root_size,
-    get_xwindow,
     display_get_default,
     PARAM_READABLE, PARAM_READWRITE,
     )
@@ -94,7 +93,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         self.resize_exact = resize_exact
 
     def __repr__(self):
-        return "DesktopModel(%#x)" % get_xwindow(self.client_window)
+        return "DesktopModel(%#x)" % self.client_window.get_xid()
 
 
     def setup(self):
@@ -102,7 +101,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         screen = self.client_window.get_screen()
         screen.connect("size-changed", self._screen_size_changed)
         self.update_size_hints(screen)
-        self._depth = X11Window.get_depth(get_xwindow(self.client_window))
+        self._depth = X11Window.get_depth(self.client_window.get_xid())
         self._managed = True
         self._setup_done = True
 
@@ -169,7 +168,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
 
     def get_property(self, prop):
         if prop=="xid":
-            return int(get_xwindow(self.client_window))
+            return int(self.client_window.get_xid())
         if prop=="depth":
             return self._depth
         if prop=="title":

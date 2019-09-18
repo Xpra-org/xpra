@@ -7,12 +7,12 @@
 
 import os.path
 import sys
-from gi.repository import GLib, Pango, Gtk
+from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import get_util_logger
 from xpra.gtk_common.gtk_util import (
-    gtk_main, add_close_accel, pixbuf_new_from_file, window_defaults,
+    add_close_accel,
     WIN_POS_CENTER, WINDOW_TOPLEVEL,
     )
 from xpra.platform.paths import get_icon_dir
@@ -24,7 +24,7 @@ class PasswordInputDialogWindow(object):
 
     def __init__(self, title="Title", prompt="", icon=""):
         self.window = Gtk.Window(type=WINDOW_TOPLEVEL)
-        window_defaults(self.window)
+        self.window.set_border_width(20)
         self.window.set_position(WIN_POS_CENTER)
         self.window.connect("destroy", self.quit)
         self.window.set_default_size(400, 150)
@@ -101,8 +101,8 @@ class PasswordInputDialogWindow(object):
 
     def run(self):
         log("run()")
-        gtk_main()
-        log("run() gtk_main done")
+        Gtk.main()
+        log("run() Gtk.main done")
         return self.exit_code
 
     def quit(self, *args):
@@ -124,7 +124,7 @@ class PasswordInputDialogWindow(object):
     def get_icon(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return pixbuf_new_from_file(icon_filename)
+            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         return None
 
 

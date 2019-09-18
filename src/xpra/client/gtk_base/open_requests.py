@@ -7,14 +7,14 @@
 
 import os.path
 import sys
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import monotonic_time, bytestostr, get_util_logger
 from xpra.simple_stats import std_unit_dec
 from xpra.gtk_common.gtk_util import (
-    gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
-    TableBuilder, WIN_POS_CENTER, window_defaults,
+    add_close_accel, scaled_image,
+    TableBuilder, WIN_POS_CENTER,
     )
 from xpra.platform.paths import get_icon_dir
 
@@ -38,7 +38,7 @@ class OpenRequestsWindow(object):
         self.requests = []
         self.expire_labels = {}
         self.window = Gtk.Window()
-        window_defaults(self.window)
+        self.window.set_border_width(20)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 150)
         self.window.set_title("Transfers")
@@ -203,8 +203,8 @@ class OpenRequestsWindow(object):
 
     def run(self):
         log("run()")
-        gtk_main()
-        log("run() gtk_main done")
+        Gtk.main()
+        log("run() Gtk.main done")
 
     def quit(self, *args):
         log("quit%s", args)
@@ -215,7 +215,7 @@ class OpenRequestsWindow(object):
     def get_icon(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return pixbuf_new_from_file(icon_filename)
+            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         return None
 
 

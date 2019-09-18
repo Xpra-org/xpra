@@ -8,7 +8,7 @@
 
 import sys
 import os.path
-from gi.repository import GLib, Gdk
+from gi.repository import GLib, Gdk, Gtk
 
 from xpra.util import flatten_dict, envbool
 from xpra.os_util import monotonic_time, register_SIGUSR_signals
@@ -21,8 +21,8 @@ from xpra.gtk_common.quit import (
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import (
-    get_gtk_version_info, gtk_main, display_get_default, get_root_size,
-    keymap_get_for_display, icon_theme_get_default, ICON_SIZE_BUTTON,
+    get_gtk_version_info, display_get_default, get_root_size,
+    ICON_SIZE_BUTTON,
     )
 from xpra.log import Logger
 
@@ -54,7 +54,7 @@ class GTKServerBase(ServerBase):
     def watch_keymap_changes(self):
         ### Set up keymap change notification:
         display = display_get_default()
-        keymap = keymap_get_for_display(display)
+        keymap = Gdk.Keymap.get_for_display(display)
         keymap.connect("keys-changed", self._keys_changed)
 
     def install_signal_handlers(self, callback):
@@ -106,8 +106,8 @@ class GTKServerBase(ServerBase):
                 screen.connect("monitors-changed", self._monitors_changed)
                 i += 1
         gtk_main_quit_on_fatal_exceptions_enable()
-        log("do_run() calling %s", gtk_main)
-        gtk_main()
+        log("do_run() calling %s", Gtk.main)
+        Gtk.main()
         log("do_run() end of gtk.main()")
 
 
@@ -281,7 +281,7 @@ class GTKServerBase(ServerBase):
                 w, h = img.size
         else:
             #try to find it in the theme:
-            theme = icon_theme_get_default()
+            theme = Gtk.IconTheme.get_default()
             if theme:
                 try:
                     icon = theme.load_icon(icon_string, ICON_SIZE_BUTTON, 0)

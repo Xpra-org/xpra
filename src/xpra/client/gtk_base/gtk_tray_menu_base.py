@@ -6,12 +6,12 @@
 
 import os
 import re
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk, GdkPixbuf
 
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.gtk_common.gtk_util import (
-    ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem,
+    ensure_item_selected, menuitem,
     get_pixbuf_from_data, scaled_image,
     MESSAGE_QUESTION, BUTTONS_NONE,
     )
@@ -143,7 +143,7 @@ def make_min_auto_menu(title, min_options, options,
             options[value] = "%s%%" % value
         for s in sorted(options.keys()):
             t = options.get(s)
-            qi = CheckMenuItem(t)
+            qi = Gtk.CheckMenuItem(label=t)
             qi.set_draw_as_radio(True)
             candidate_match = s>=max(0, value)
             qi.set_active(not found_match and candidate_match)
@@ -227,7 +227,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
         name = get_encoding_name(encoding)
         descr = get_encoding_help(encoding)
         NAME_TO_ENCODING[name] = encoding
-        encoding_item = CheckMenuItem(label=name)
+        encoding_item = Gtk.CheckMenuItem(label=name)
         if descr:
             if encoding not in server_encodings:
                 descr += "\n(not available on this server)"
@@ -322,7 +322,6 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_disconnectmenuitem())
         if show_close:
             menu.append(self.make_closemenuitem())
-        self.popup_menu_workaround(menu)
         menu.connect("deactivate", self.menu_deactivated)
         menu.show_all()
         log("setup_menu(%s) done", show_close)
@@ -377,7 +376,7 @@ class GTKTrayMenuBase(object):
 
     def checkitem(self, title, cb=None, active=False):
         """ Utility method for easily creating a CheckMenuItem """
-        check_item = CheckMenuItem(title)
+        check_item = Gtk.CheckMenuItem(label=title)
         check_item.set_active(active)
         if cb:
             check_item.connect("toggled", cb)
@@ -389,7 +388,6 @@ class GTKTrayMenuBase(object):
         info_menu_item = self.menuitem("Information", "information.png")
         menu = Gtk.Menu()
         info_menu_item.set_submenu(menu)
-        self.popup_menu_workaround(menu)
         menu.append(self.make_aboutmenuitem())
         menu.append(self.make_sessioninfomenuitem())
         if SHOW_VERSION_CHECK:
@@ -428,7 +426,6 @@ class GTKTrayMenuBase(object):
         menu = Gtk.Menu()
         self.append_featuresmenuitems(menu)
         features_menu_item.set_submenu(menu)
-        self.popup_menu_workaround(menu)
         features_menu_item.show_all()
         return features_menu_item
 
@@ -638,10 +635,9 @@ class GTKTrayMenuBase(object):
         selection_menu = self.menuitem("Selection", None, "Choose which remote clipboard to connect to")
         selection_submenu = Gtk.Menu()
         selection_menu.set_submenu(selection_submenu)
-        self.popup_menu_workaround(selection_submenu)
         for label in CLIPBOARD_LABELS:
             remote_clipboard = CLIPBOARD_LABEL_TO_NAME[label]
-            selection_item = CheckMenuItem(label)
+            selection_item = Gtk.CheckMenuItem(label=label)
             active = getattr(ch, "remote_clipboard", "CLIPBOARD")==remote_clipboard
             selection_item.set_active(active)
             selection_item.set_draw_as_radio(True)
@@ -689,7 +685,6 @@ class GTKTrayMenuBase(object):
             ch = self.client.clipboard_helper
             clipboard_submenu = Gtk.Menu()
             self.clipboard_menuitem.set_submenu(clipboard_submenu)
-            self.popup_menu_workaround(clipboard_submenu)
             if WIN32 or OSX:
                 #add a submenu to change the selection we synchronize with
                 #since this platform only has a single clipboard
@@ -702,7 +697,7 @@ class GTKTrayMenuBase(object):
                     clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
             items = []
             for label in CLIPBOARD_DIRECTION_LABELS:
-                direction_item = CheckMenuItem(label)
+                direction_item = Gtk.CheckMenuItem(label=label)
                 d = CLIPBOARD_DIRECTION_LABEL_TO_NAME.get(label)
                 direction_item.set_active(d==self.client.client_clipboard_direction)
                 clipboard_submenu.append(direction_item)
@@ -782,7 +777,6 @@ class GTKTrayMenuBase(object):
         picture_menu_item = self.handshake_menuitem("Picture", "picture.png")
         menu = Gtk.Menu()
         picture_menu_item.set_submenu(menu)
-        self.popup_menu_workaround(menu)
         menu.append(self.make_bandwidthlimitmenuitem())
         if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())
@@ -796,7 +790,6 @@ class GTKTrayMenuBase(object):
     def make_bandwidthlimitmenuitem(self):
         bandwidth_limit_menu_item = self.menuitem("Bandwidth Limit", "bandwidth_limit.png")
         menu = Gtk.Menu()
-        self.popup_menu_workaround(menu)
         menuitems = {}
 
         def bwitem(bwlimit):
@@ -851,7 +844,7 @@ class GTKTrayMenuBase(object):
             label = "%iMbps" % (bwlimit//(1000*1000))
         else:
             label = "%sbps" % std_unit_dec(bwlimit)
-        c = CheckMenuItem(label)
+        c = Gtk.CheckMenuItem(label=label)
         c.set_draw_as_radio(True)
         c.set_active(False)
         set_sensitive(c, False)
@@ -896,7 +889,6 @@ class GTKTrayMenuBase(object):
         encodings_submenu = make_encodingsmenu(self.get_current_encoding,
                                                self.set_current_encoding,
                                                encodings, server_encodings)
-        self.popup_menu_workaround(encodings_submenu)
         return encodings_submenu
 
     def get_current_encoding(self):
@@ -926,7 +918,6 @@ class GTKTrayMenuBase(object):
     def make_scalingmenu(self):
         scaling_submenu = Gtk.Menu()
         scaling_submenu.updating = False
-        self.popup_menu_workaround(scaling_submenu)
         from xpra.client.mixins.display import SCALING_OPTIONS
         for x in SCALING_OPTIONS:
             scaling_submenu.append(self.make_scalingvaluemenuitem(scaling_submenu, x))
@@ -949,7 +940,7 @@ class GTKTrayMenuBase(object):
             return abs(self.client.xscale-v)<0.1
         pct = iround(100.0*scalingvalue)
         label = {100 : "None"}.get(pct, "%i%%" % pct)
-        c = CheckMenuItem(label)
+        c = Gtk.CheckMenuItem(label=label)
         c.scalingvalue = scalingvalue
         c.set_draw_as_radio(True)
         c.set_active(False)
@@ -980,7 +971,6 @@ class GTKTrayMenuBase(object):
         quality_submenu = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
                                            self.get_min_quality, self.get_quality,
                                            self.set_min_quality, self.set_quality)
-        self.popup_menu_workaround(quality_submenu)
         quality_submenu.show_all()
         return quality_submenu
 
@@ -1030,7 +1020,6 @@ class GTKTrayMenuBase(object):
     def make_speedsubmenu(self):
         speed_submenu = make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
                                            self.get_min_speed, self.get_speed, self.set_min_speed, self.set_speed)
-        self.popup_menu_workaround(speed_submenu)
         return speed_submenu
 
     def get_min_speed(self):
@@ -1066,7 +1055,6 @@ class GTKTrayMenuBase(object):
         audio_menu_item = self.handshake_menuitem("Audio", "audio.png")
         menu = Gtk.Menu()
         audio_menu_item.set_submenu(menu)
-        self.popup_menu_workaround(menu)
         menu.append(self.make_speakermenuitem())
         menu.append(self.make_microphonemenuitem())
         menu.append(self.make_avsyncmenuitem())
@@ -1138,7 +1126,7 @@ class GTKTrayMenuBase(object):
         menu = Gtk.Menu()
         menu.ignore_events = False
         def onoffitem(label, active, cb):
-            c = CheckMenuItem(label)
+            c = Gtk.CheckMenuItem(label=label)
             c.set_draw_as_radio(True)
             c.set_active(active)
             set_sensitive(c, True)
@@ -1164,19 +1152,17 @@ class GTKTrayMenuBase(object):
             menu.ignore_events = False
         self.client.connect(client_signal, update_soundsubmenu_state)
         self.client.after_handshake(update_soundsubmenu_state)
-        self.popup_menu_workaround(menu)
         menu.show_all()
         return menu
 
     def make_avsyncmenuitem(self):
         sync = self.menuitem("Video Sync", "video.png", "Synchronize audio and video", None)
         menu = Gtk.Menu()
-        self.popup_menu_workaround(menu)
         current_value = 0
         if not self.client.av_sync:
             current_value = None
         def syncitem(label, delta=0):
-            c = CheckMenuItem(label)
+            c = Gtk.CheckMenuItem(label=label)
             c.set_draw_as_radio(True)
             c.set_active(current_value==delta)
             def activate_cb(item, *_args):
@@ -1229,11 +1215,10 @@ class GTKTrayMenuBase(object):
             )
         #TODO: register remove_video_device_change_callback for cleanup
         menu = Gtk.Menu()
-        self.popup_menu_workaround(menu)
         #so we can toggle the menu items without causing yet more events and infinite loops:
         menu.ignore_events = False
         def deviceitem(label, cb, device_no=0):
-            c = CheckMenuItem(label)
+            c = Gtk.CheckMenuItem(label=label)
             c.set_draw_as_radio(True)
             c.set_active(get_active_device_no()==device_no)
             c.device_no = device_no
@@ -1329,7 +1314,6 @@ class GTKTrayMenuBase(object):
         set_sensitive(keyboard, False)
         self.layout_submenu = Gtk.Menu()
         keyboard.set_submenu(self.layout_submenu)
-        self.popup_menu_workaround(self.layout_submenu)
         def kbitem(title, layout, variant, active=False):
             def set_layout(item):
                 """ this callback updates the client (and server) if needed """
@@ -1403,7 +1387,6 @@ class GTKTrayMenuBase(object):
                     variant = self.menuitem(name, tooltip=layout)
                     variant_submenu = Gtk.Menu()
                     variant.set_submenu(variant_submenu)
-                    self.popup_menu_workaround(variant_submenu)
                     self.layout_submenu.append(variant)
                     variant_submenu.append(kbitem("%s - Default" % layout, layout, None))
                     for v in variants:
@@ -1428,7 +1411,6 @@ class GTKTrayMenuBase(object):
         windows_menu_item = self.handshake_menuitem("Windows", "windows.png")
         menu = Gtk.Menu()
         windows_menu_item.set_submenu(menu)
-        self.popup_menu_workaround(menu)
         menu.append(self.make_raisewindowsmenuitem())
         menu.append(self.make_minimizewindowsmenuitem())
         menu.append(self.make_refreshmenuitem())
@@ -1470,7 +1452,6 @@ class GTKTrayMenuBase(object):
         server_menu_item = self.handshake_menuitem("Server", "server.png")
         menu = Gtk.Menu()
         server_menu_item.set_submenu(menu)
-        self.popup_menu_workaround(menu)
         if RUNCOMMAND_MENU:
             menu.append(self.make_runcommandmenuitem())
         if SHOW_SERVER_COMMANDS:
@@ -1591,7 +1572,6 @@ class GTKTrayMenuBase(object):
 
     def build_start_menu(self):
         menu = Gtk.Menu()
-        self.popup_menu_workaround(menu)
         log("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
         for category, category_props in sorted(self.client.server_xdg_menu.items()):
             log("build_start_menu() category: %s", category)
@@ -1605,7 +1585,6 @@ class GTKTrayMenuBase(object):
             category_menu_item = self.start_menuitem(category.decode("utf-8"), icondata)
             cat_menu = Gtk.Menu()
             category_menu_item.set_submenu(cat_menu)
-            self.popup_menu_workaround(cat_menu)
             menu.append(category_menu_item)
             for app_name, command_props in sorted(entries.items()):
                 log("build_start_menu() app_name=%s", app_name)
@@ -1620,8 +1599,7 @@ class GTKTrayMenuBase(object):
             #try to load from our icons:
             icon_filename = os.path.join(get_icon_dir(), "%s.png" % app_name.decode("utf-8").lower())
             if os.path.exists(icon_filename):
-                from xpra.gtk_common.gtk_util import pixbuf_new_from_file
-                pixbuf = pixbuf_new_from_file(icon_filename)
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         if not pixbuf and icondata:
             #gtk pixbuf loader:
             try:
@@ -1684,7 +1662,3 @@ class GTKTrayMenuBase(object):
 
     def make_closemenuitem(self):
         return self.menuitem("Close Menu", "close.png", None, self.close_menu)
-
-
-    def popup_menu_workaround(self, menu):
-        popup_menu_workaround(menu, self.close_menu)

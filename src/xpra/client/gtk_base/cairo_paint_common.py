@@ -1,17 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import cairo
+from gi.repository import Gdk, GdkPixbuf
 
 from xpra.os_util import monotonic_time, memoryview_to_bytes
 from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
-from xpra.gtk_common.gtk_util import (
-    pixbuf_new_from_data, cairo_set_source_pixbuf,
-    COLORSPACE_RGB,
-    )
 from xpra.log import Logger
 
 log = Logger("paint", "mouse")
@@ -44,7 +41,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px, py, start_time):
     context.rectangle(0, 0, cw, ch)
     argb = unpremultiply_argb(pixels)
     img_data = memoryview_to_bytes(argb)
-    pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, True, 8, cw, ch, cw*4)
+    pixbuf = GdkPixbuf.Pixbuf.new_from_data(img_data, GdkPixbuf.Colorspace.RGB, True, 8, cw, ch, cw*4, None, None)
     context.set_operator(cairo.OPERATOR_OVER)
-    cairo_set_source_pixbuf(context, pixbuf, 0, 0)
+    Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
     context.paint()

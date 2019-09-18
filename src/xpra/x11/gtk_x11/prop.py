@@ -22,7 +22,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_pywindow,               #@UnresolvedImport
     get_xvisual,                #@UnresolvedImport
     )
-from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
     X11WindowBindings,
     PropertyError,
@@ -97,7 +96,7 @@ def _to_visual(disp, c):
     return struct.pack(b"@L", get_xvisual(disp, c))
 
 def _to_window(_disp, w):
-    return struct.pack(b"@L", get_xwindow(w))
+    return struct.pack(b"@L", w.get_xid())
 
 def get_window(disp, w):
     return get_pywindow(disp, struct.unpack(b"@L", w)[0])
@@ -123,12 +122,12 @@ PROP_TYPES.update({
 def prop_set(target, key, etype, value):
     with xsync:
         dtype, dformat, data = prop_encode(target, etype, value)
-        X11WindowBindings().XChangeProperty(get_xwindow(target), key, dtype, dformat, data)
+        X11WindowBindings().XChangeProperty(target.get_xid(), key, dtype, dformat, data)
 
 
 def prop_type_get(target, key):
     try:
-        return X11WindowBindings().GetWindowPropertyType(get_xwindow(target), key)
+        return X11WindowBindings().GetWindowPropertyType(target.get_xid(), key)
     except XError:
         return None
 
@@ -147,7 +146,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     try:
         buffer_size = PROP_SIZES.get(scalar_type, 64*1024)
         with XSyncContext():
-            data = X11WindowBindings().XGetWindowProperty(get_xwindow(target), key, atom, etype, buffer_size)
+            data = X11WindowBindings().XGetWindowProperty(target.get_xid(), key, atom, etype, buffer_size)
         if data is None:
             if not ignore_errors:
                 log("Missing property %s (%s)", key, etype)
@@ -182,4 +181,4 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
 
 def prop_del(target, key):
     with xsync:
-        X11WindowBindings().XDeleteProperty(get_xwindow(target), key)
+        X11WindowBindings().XDeleteProperty(target.get_xid(), key)

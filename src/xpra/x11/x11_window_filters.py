@@ -6,7 +6,6 @@
 
 from xpra.log import Logger
 from xpra.os_util import strtobytes
-from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.gtk_common.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get, get_python_type
 from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
@@ -18,7 +17,7 @@ log = Logger("x11", "filters")
 def get_x11_window_value(prop, window):
     try:
         with xsync:
-            xid = get_xwindow(window)
+            xid = window.get_xid()
             x11type = window_bindings.GetWindowPropertyType(xid, prop)[0]
     except Exception:
         log("get_x11_window_value(%s, %s)", prop, window, exc_info=True)

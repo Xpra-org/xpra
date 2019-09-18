@@ -5,10 +5,10 @@
 
 import sys
 import os.path
-from gi.repository import GLib, Pango, Gtk
+from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, pixbuf_new_from_file, gtk_main, image_new_from_stock,
+    add_close_accel,
     ICON_SIZE_BUTTON,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
@@ -69,7 +69,7 @@ class AuthDialog(Gtk.Window):
         settings.set_property('gtk-button-images', True)
         btn.connect("clicked", callback)
         if stock_icon:
-            image = image_new_from_stock(stock_icon, ICON_SIZE_BUTTON)
+            image = Gtk.Image.new_from_stock(stock_icon, ICON_SIZE_BUTTON)
             if image:
                 btn.set_image(image)
         return btn
@@ -109,7 +109,7 @@ class AuthDialog(Gtk.Window):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
             try:
-                return pixbuf_new_from_file(icon_filename)
+                return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
             except Exception as e:
                 log("pixbuf_new_from_file(%s) failed: %s", icon_filename, e)
         return None
@@ -129,7 +129,7 @@ def main():
         else:
             timeout = 600
         w = AuthDialog(info=info, timeout=timeout)
-        gtk_main()
+        Gtk.main()
         return w.exit_code
 
 

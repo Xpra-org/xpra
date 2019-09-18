@@ -8,7 +8,6 @@ from gi.repository import GObject
 
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
-from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,             #@UnresolvedImport
     remove_event_receiver,          #@UnresolvedImport
@@ -101,7 +100,7 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, GObject.GObject
                 # corral window selection masks, and those don't deserve
                 # clobbering.  They are our friends!  X is driving me
                 # slowly mad.
-                xid = get_xwindow(win)
+                xid = win.get_xid()
                 X11Window.addXSelectInput(xid, StructureNotifyMask)
                 add_event_receiver(win, self, max_receivers=-1)
                 listening.append(win)

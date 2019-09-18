@@ -5,9 +5,8 @@
 # later version. See the file COPYING for details.
 
 import cairo
-from gi.repository import GLib
+from gi.repository import GLib, Gdk
 
-from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
 from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
@@ -69,7 +68,7 @@ class CairoBackingBase(WindowBackingBase):
         """ must be called from UI thread """
         log("source pixbuf: %s", pixbuf)
         w, h = pixbuf.get_width(), pixbuf.get_height()
-        self.cairo_paint_from_source(cairo_set_source_pixbuf, pixbuf, x, y, w, h, options)
+        self.cairo_paint_from_source(Gdk.cairo_set_source_pixbuf, pixbuf, x, y, w, h, options)
 
     def cairo_paint_surface(self, img_surface, x, y, options):
         w, h = img_surface.get_width(), img_surface.get_height()
@@ -83,7 +82,7 @@ class CairoBackingBase(WindowBackingBase):
         """ must be called from UI thread """
         log("cairo_paint_surface(%s, %s, %s, %s, %s, %s, %s) backing=%s, paint box line width=%i",
             set_source_fn, source, x, y, w, h, options, self._backing, self.paint_box_line_width)
-        gc = gdk_cairo_context(cairo.Context(self._backing))
+        gc = cairo.Context(self._backing)
         if self.paint_box_line_width:
             gc.save()
 
@@ -139,7 +138,7 @@ class CairoBackingBase(WindowBackingBase):
         w, h = self.size
         ww, wh = self.render_size
         self.init(ww, wh, w, h)
-        gc = gdk_cairo_context(cairo.Context(self._backing))
+        gc = cairo.Context(self._backing)
         gc.set_operator(cairo.OPERATOR_SOURCE)
         for sx,sy,sw,sh,xdelta,ydelta in scrolls:
             gc.set_source_surface(old_backing, xdelta, ydelta)
@@ -168,7 +167,7 @@ class CairoBackingBase(WindowBackingBase):
             raise Exception("failed to parse raw %s data as %s to %s: %s" % (rgb_format, src_format, oformat, e))
         #This is insane, the code below should work, but it doesn't:
         # img_data = bytearray(img.tostring('raw', oformat, 0, 1))
-        # pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, rowstride)
+        # pixbuf = new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, rowstride)
         # success = self.cairo_paint_pixbuf(pixbuf, x, y)
         #So we still rountrip via PNG:
         from io import BytesIO

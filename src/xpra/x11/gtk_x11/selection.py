@@ -10,10 +10,9 @@
 # else steals it, then we should exit.
 
 from struct import pack, unpack, calcsize
-from gi.repository import GObject
+from gi.repository import GObject, Gtk
 
 from xpra.gtk_common.gtk_util import (
-    gtk_main, gtk_main_quit, get_xwindow,
     selectiondata_get_data, set_clipboard_data, wait_for_contents, GetClipboard,
     STRUCTURE_MASK,
     )
@@ -108,7 +107,7 @@ class ManagerSelection(GObject.GObject):
         self._xwindow = X11WindowBindings().XGetSelectionOwner(self.atom)
 
         root = self.clipboard.get_display().get_default_screen().get_root_window()
-        xid = get_xwindow(root)
+        xid = root.get_xid()
         X11WindowBindings().sendClientMessage(xid, xid, False, StructureNotifyMask,
                           "MANAGER",
                           ts_num, selection_xatom, self._xwindow)
@@ -126,14 +125,14 @@ class ManagerSelection(GObject.GObject):
             else:
                 log("Waiting for previous owner to exit...")
                 add_event_receiver(window, self)
-                gtk_main()
+                Gtk.main()
                 log("...they did.")
         window = get_pywindow(self.clipboard, self._xwindow)
         window.set_title("Xpra-ManagerSelection")
 
     def do_xpra_destroy_event(self, event):
         remove_event_receiver(event.window, self)
-        gtk_main_quit()
+        Gtk.main_quit()
 
     def _get(self, _clipboard, outdata, _which, _userdata):
         # We are compliant with ICCCM version 2.0 (see section 4.3)

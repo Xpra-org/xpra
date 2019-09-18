@@ -19,12 +19,12 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk, GdkPixbuf
 
 from xpra.os_util import OSX, bytestostr
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, display_get_default, color_parse, get_preferred_size,
-    pixbuf_new_from_file, STATE_NORMAL, RELIEF_NORMAL,
+    add_close_accel, display_get_default, color_parse,
+    STATE_NORMAL, RELIEF_NORMAL,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
 
@@ -43,7 +43,7 @@ def get_pixbuf(icon_name):
     from xpra.platform.paths import get_icon_dir
     icon_filename = os.path.join(get_icon_dir(), icon_name)
     if os.path.exists(icon_filename):
-        return pixbuf_new_from_file(icon_filename)
+        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
     return None
 
 class GTK_Notifier(NotifierBase):
@@ -245,7 +245,8 @@ class Popup(Gtk.Window):
         self.show_timeout = show_timeout
         self.hover = False
         self.show_all()
-        self.w, self.h = get_preferred_size(self)
+        self.w = self.get_preferred_width()
+        self.h = self.get_preferred_height()
         self.move(self.get_x(self.w), self.get_y(self.h))
         self.wait_timer = None
         self.fade_out_timer = None

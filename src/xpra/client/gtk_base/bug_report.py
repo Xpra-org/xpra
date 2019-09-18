@@ -10,8 +10,8 @@ import time
 from gi.repository import Pango, Gtk, Gdk
 
 from xpra.gtk_common.gtk_util import (
-    window_defaults, gtk_main, add_close_accel, scaled_image,
-    pixbuf_new_from_file, get_display_info, get_default_root_window,
+    add_close_accel, scaled_image,
+    get_display_info, get_default_root_window,
     choose_file, get_gtk_version_info,
     JUSTIFY_LEFT, WIN_POS_CENTER, FILE_CHOOSER_ACTION_SAVE,
     )
@@ -35,7 +35,7 @@ class BugReport(object):
 
     def setup_window(self):
         self.window = Gtk.Window()
-        window_defaults(self.window)
+        self.window.set_border_width(20)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 300)
         self.window.set_title("Xpra Bug Report")
@@ -241,8 +241,8 @@ class BugReport(object):
 
     def run(self):
         log("run()")
-        gtk_main()
-        log("run() gtk_main done")
+        Gtk.main()
+        log("run() Gtk.main done")
 
     def quit(self, *args):
         log("quit%s", args)
@@ -254,7 +254,7 @@ class BugReport(object):
         from xpra.platform.paths import get_icon_dir
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return pixbuf_new_from_file(icon_filename)
+            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         return None
 
 

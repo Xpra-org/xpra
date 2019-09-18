@@ -19,7 +19,7 @@ from xpra.scripts.config import python_platform
 from xpra.client import mixin_features
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label, title_box,
-    TableBuilder, imagebutton, get_preferred_size, get_gtk_version_info,
+    TableBuilder, imagebutton, get_gtk_version_info,
     RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER,
     RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_CLOSE, RESPONSE_DELETE_EVENT,
     FILE_CHOOSER_ACTION_SAVE,
@@ -765,7 +765,7 @@ class SessionInfo(Gtk.Window):
 
     def populate_codecs(self):
         #clamp the large labels so they will overflow vertically:
-        w = get_preferred_size(self.tab_box)[0]
+        w = self.tab_box.get_preferred_width()
         lw = max(200, int(w//2.5))
         self.client_encodings_label.set_size_request(lw, -1)
         self.server_encodings_label.set_size_request(lw, -1)
@@ -1081,8 +1081,8 @@ class SessionInfo(Gtk.Window):
         #newer servers store it under client
         self.client.send_info_request("network", "damage", "state", "batch", "client")
         box = self.tab_box
-        h = get_preferred_size(box)[1]
-        bh = get_preferred_size(self.tab_button_box)[1]
+        h = box.get_preferred_height()
+        bh = self.tab_button_box.get_preferred_height()
         if h<=0:
             return True
         start_x_offset = min(1.0, (monotonic_time()-self.last_populate_time)*0.95)

@@ -7,7 +7,7 @@
 
 import os
 import weakref
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
@@ -24,10 +24,9 @@ from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (
-    get_gtk_version_info, scaled_image, get_default_cursor, color_parse, gtk_main,
-    new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default,
-    pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data,
-    get_default_root_window, get_root_size, get_xwindow, image_new_from_stock,
+    get_gtk_version_info, scaled_image, get_default_cursor, color_parse,
+    display_get_default, screen_get_default, get_pixbuf_from_data,
+    get_default_root_window, get_root_size,
     get_screen_sizes, load_contents_async, load_contents_finish, GDKWindow,
     FILE_CHOOSER_ACTION_OPEN,
     CLASS_INPUT_ONLY,
@@ -128,7 +127,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.frame_request_window.realize()
         with xsync:
             win = self.frame_request_window.get_window()
-            framelog("setup_frame_request_windows() window=%#x", get_xwindow(win))
+            framelog("setup_frame_request_windows() window=%#x", win.get_xid())
             send_wm_request_frame_extents(root, win)
 
     def run(self):
@@ -142,8 +141,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return  self.exit_code
 
     def gtk_main(self):
-        log("GTKXpraClient.gtk_main() calling %s", gtk_main)
-        gtk_main()
+        log("GTKXpraClient.gtk_main() calling %s", Gtk.main)
+        Gtk.main()
         log("GTKXpraClient.gtk_main() ended")
 
 
@@ -418,7 +417,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.file_size_dialog = Gtk.MessageDialog(parent, DESTROY_WITH_PARENT, MESSAGE_INFO,
                                                   BUTTONS_CLOSE, "\n".join(msgs))
         try:
-            image = image_new_from_stock(Gtk.STOCK_DIALOG_WARNING, ICON_SIZE_BUTTON)
+            image = Gtk.Image.new_from_stock(Gtk.STOCK_DIALOG_WARNING, ICON_SIZE_BUTTON)
             self.file_size_dialog.set_image(image)
         except Exception as e:
             log.warn("Warning: failed to set dialog image: %s", e)
@@ -541,7 +540,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             icon_filename = get_icon_filename(icon_name)
             log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
             if icon_filename:
-                return pixbuf_new_from_file(icon_filename)
+                return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         except Exception:
             log.error("get_pixbuf(%s)", icon_name, exc_info=True)
         return None
@@ -565,7 +564,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         root = self.get_root_window()
         with xsync:
             win = window.get_window()
-            framelog("request_frame_extents(%s) xid=%#x", window, get_xwindow(win))
+            framelog("request_frame_extents(%s) xid=%#x", window, win.get_xid())
             send_wm_request_frame_extents(root, win)
 
     def get_frame_extents(self, window):
@@ -664,7 +663,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if EXPORT_ICON_DATA:
             #tell the server which icons GTK can use
             #so it knows when it should supply one as fallback
-            it = icon_theme_get_default()
+            it = Gtk.IconTheme.get_default()
             if it:
                 #this would add our bundled icon directory
                 #to the search path, but I don't think we have
@@ -789,7 +788,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 if gdk_cursor is not None:
                     cursorlog("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
                     try:
-                        return new_Cursor_for_display(display, gdk_cursor)
+                        return Gdk.Cursor.new_for_display(display, gdk_cursor)
                     except TypeError as e:
                         log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
                         if first_time("cursor:%s" % cursor_name.upper()):
@@ -868,7 +867,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         x = max(0, min(x, w-1))
         y = max(0, min(y, h-1))
         try:
-            c = new_Cursor_from_pixbuf(display, cursor_pixbuf, x, y)
+            c = Gdk.Cursor.new_from_pixbuf(display, cursor_pixbuf, x, y)
         except RuntimeError as e:
             log.error("Error: failed to create cursor:")
             log.error(" %s", e)

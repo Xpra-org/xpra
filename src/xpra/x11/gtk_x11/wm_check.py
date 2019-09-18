@@ -7,7 +7,7 @@
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get
-from xpra.gtk_common.gtk_util import get_xwindow, display_get_default
+from xpra.gtk_common.gtk_util import display_get_default
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
@@ -34,7 +34,7 @@ def wm_check(wm_name, upgrading=False):
             ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
             def xid(w):
                 if w:
-                    return "%#x" % get_xwindow(w)
+                    return "%#x" % w.get_xid()
                 return None
             log("_NET_SUPPORTING_WM_CHECK for screen %i: %s (root=%s)", i, xid(ewmh_wm), xid(root))
             if not ewmh_wm:
@@ -44,7 +44,7 @@ def wm_check(wm_name, upgrading=False):
                 log.info("found previous Xpra instance")
             else:
                 log.warn("Warning: found an existing window manager")
-                log.warn(" on screen %s using window %#x: %s", i, get_xwindow(ewmh_wm), name or "unknown")
+                log.warn(" on screen %s using window %#x: %s", i, ewmh_wm.get_xid(), name or "unknown")
             if (wm_so is None or wm_so==0) and (cwm_so is None or cwm_so==0):
                 if FORCE_REPLACE_WM:
                     log.warn("XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")

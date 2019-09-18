@@ -421,7 +421,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 return  None
             if size:
                 return scaled_image(pixbuf, size)
-            return gtk.image_new_from_pixbuf(pixbuf)
+            return Gtk.Image.new_from_pixbuf(pixbuf)
         except Exception:
             log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
             return  None

@@ -14,7 +14,7 @@ from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.gtk_common.error import XError, xswallow, xsync, xlog, trap, verify_sync
-from xpra.gtk_common.gtk_util import get_xwindow, display_get_default, get_default_root_window
+from xpra.gtk_common.gtk_util import display_get_default, get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
@@ -835,7 +835,7 @@ class X11ServerCore(GTKServerBase):
 
 
     def _bell_signaled(self, wm, event):
-        log("bell signaled on window %#x", get_xwindow(event.window))
+        log("bell signaled on window %#x", event.window.get_xid())
         if not self.bell:
             return
         wid = 0

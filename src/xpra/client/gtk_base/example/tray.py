@@ -4,9 +4,9 @@
 # later version. See the file COPYING for details.
 
 #test application for tray and menu
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk, GdkPixbuf
 
-from xpra.gtk_common.gtk_util import scaled_image, pixbuf_new_from_file
+from xpra.gtk_common.gtk_util import scaled_image
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
@@ -125,7 +125,7 @@ class FakeApplication:
             icon_filename = get_icon_filename(icon_name)
             if not icon_filename:
                 return None
-            pixbuf = pixbuf_new_from_file(icon_filename)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)

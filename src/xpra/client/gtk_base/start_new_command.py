@@ -7,11 +7,11 @@
 
 import sys
 import os.path
-from gi.repository import Pango, Gtk
+from gi.repository import Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gtk_util import (
-    gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
-    window_defaults, WIN_POS_CENTER,
+    add_close_accel, scaled_image,
+    WIN_POS_CENTER,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.platform.paths import get_icon_dir
@@ -35,7 +35,7 @@ class StartNewCommand(object):
         self.run_callback = run_callback
         self.xdg_menu = typedict(xdg_menu or {})
         self.window = Gtk.Window()
-        window_defaults(self.window)
+        self.window.set_border_width(20)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 150)
         self.window.set_title("Start New Command")
@@ -157,8 +157,8 @@ class StartNewCommand(object):
 
     def run(self):
         log("run()")
-        gtk_main()
-        log("run() gtk_main done")
+        Gtk.main()
+        log("run() Gtk.main done")
 
     def quit(self, *args):
         log("quit%s", args)
@@ -169,7 +169,7 @@ class StartNewCommand(object):
     def get_icon(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return pixbuf_new_from_file(icon_filename)
+            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         return None
 
 

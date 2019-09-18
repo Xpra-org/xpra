@@ -172,9 +172,6 @@ class ClientWindowBase(ClientWidgetBase):
     def update_icon(self, img):
         raise NotImplementedError("override me!")
 
-    def is_realized(self):
-        raise NotImplementedError("override me!")
-
     def apply_transient_for(self, wid):
         raise NotImplementedError("override me!")
 

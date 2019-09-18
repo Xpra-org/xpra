@@ -24,8 +24,8 @@ from xpra.util import (
     )
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
-    get_xwindow, get_pixbuf_from_data, get_default_root_window,
-    is_realized, drag_status,
+    get_pixbuf_from_data, get_default_root_window,
+    drag_status,
     newTargetEntry, drag_context_targets, drag_context_actions,
     drag_dest_window, drag_widget_get_data,
     enable_alpha,
@@ -295,7 +295,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #TODO: use a generic window handle function
             #this only used for debugging for now
             if w and POSIX:
-                return get_xwindow(w)
+                return w.get_xid()
             return 0
         dest_window = xid(drag_dest_window(context))
         source_window = xid(context.get_source_window())
@@ -707,7 +707,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return dx, dy
 
     def when_realized(self, identifier, callback, *args):
-        if self.is_realized():
+        if self.get_realized():
             callback(*args)
         else:
             self.on_realize_cb[identifier] = callback, args
@@ -741,14 +741,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #and if the backing class can support it:
         bc = self.get_backing_class()
         alphalog("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s",
-                self._has_alpha, bc, bc.HAS_ALPHA, self.is_realized())
+                self._has_alpha, bc, bc.HAS_ALPHA, self.get_realized())
         #by default, only RGB (no transparency):
         #rgb_formats = tuple(BACKING_CLASS.RGB_MODES)
         self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
         if not self._has_alpha or not bc.HAS_ALPHA:
             self._client_properties["encoding.transparency"] = False
             return
-        if self._has_alpha and not self.is_realized():
+        if self._has_alpha and not self.get_realized():
             if enable_alpha(self):
                 self._client_properties["encodings.rgb_formats"] = ["RGBA", "RGB", "RGBX"]
                 self._window_alpha = True
@@ -920,13 +920,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         prop_set(gdk_window, prop_name, dtype, value)
 
     def set_class_instance(self, wmclass_name, wmclass_class):
-        if not self.is_realized():
+        if not self.get_realized():
             #Warning: window managers may ignore the icons we try to set
             #if the wm_class value is set and matches something somewhere undocumented
             #(if the default is used, you cannot override the window icon)
             self.set_wmclass(wmclass_name, wmclass_class)
         elif HAS_X11_BINDINGS:
-            xid = get_xwindow(self.get_window())
+            xid = self.get_window().get_xid()
             with xlog:
                 X11Window.setClassHint(xid, wmclass_class, wmclass_name)
                 log("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
@@ -936,7 +936,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not HAS_X11_BINDINGS or not XSHAPE:
             return
         def do_set_shape():
-            xid = get_xwindow(self.get_window())
+            xid = self.get_window().get_xid()
             x_off, y_off = shape.get("x", 0), shape.get("y", 0)
             for kind, name in SHAPE_KIND.items():       #@UndefinedVariable
                 rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
@@ -1104,9 +1104,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def xset_u32_property(self, target, name, value):
         prop_set(target, name, "u32", value)
 
-    def is_realized(self):
-        return is_realized(self)
-
 
     def property_changed(self, widget, event):
         atom = str(event.atom)
@@ -1244,7 +1241,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         desktop = self.get_desktop_workspace()
         ndesktops = self.get_workspace_count()
         current = self.get_window_workspace()
-        workspacelog("set_workspace(%s) realized=%s", wn(workspace), self.is_realized())
+        workspacelog("set_workspace(%s) realized=%s", wn(workspace), self.get_realized())
         workspacelog(" current workspace=%s, detected=%s, desktop workspace=%s, ndesktops=%s",
                      wn(self._window_workspace), wn(current), wn(desktop), ndesktops)
         if not self._can_set_workspace or ndesktops is None:
@@ -1269,7 +1266,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         gdkwin = self.get_window()
         workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s",
-                     get_xwindow(gdkwin), self.is_mapped(), gdkwin.is_visible())
+                     gdkwin.get_xid(), self.is_mapped(), gdkwin.is_visible())
         root = get_default_root_window()
         with xlog:
             send_wm_workspace(root, gdkwin, workspace)
@@ -1295,10 +1292,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return default_value        #window is not realized yet
         value = self.xget_u32_property(target, prop)
         if value is not None:
-            workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), get_xwindow(target))
+            workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), target.get_xid())
             return value
         workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s",
-                     prop, get_xwindow(target), wn(default_value))
+                     prop, target.get_xid(), wn(default_value))
         return  default_value
 
 
@@ -1576,8 +1573,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                   button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
         root = self.get_window().get_screen().get_root_window()
-        root_xid = get_xwindow(root)
-        xwin = get_xwindow(self.get_window())
+        root_xid = root.get_xid()
+        xwin = self.get_window().get_xid()
         with xlog:
             X11Core.UngrabPointer()
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
@@ -1891,7 +1888,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         #we have to move:
         mw, mh = self._client.get_root_size()
-        if not self.is_realized():
+        if not self.get_realized():
             geomlog("window was not realized yet")
             self.realize()
         #adjust for window frame:

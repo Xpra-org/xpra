@@ -59,10 +59,6 @@ XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
 DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
 
-def get_xwindow(win):
-    from xpra.gtk_common.gtk_util import get_xwindow as _get_xwindow
-    return _get_xwindow(win)
-
 def gl_check():
     if not is_X11() and is_Wayland():
         return "disabled under wayland with GTK3 (buggy)"
@@ -451,7 +447,7 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
             #try to load it:
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings       #@UnresolvedImport
             device_bell = X11KeyboardBindings().device_bell
-        device_bell(get_xwindow(window), device, bell_class, bell_id, percent, bell_name)
+        device_bell(window.get_xid(), device, bell_class, bell_id, percent, bell_name)
     try:
         from xpra.gtk_common.error import xlog
         with xlog:
@@ -471,7 +467,7 @@ def _send_client_message(window, message_type, *values):
         X11Window = X11WindowBindings()
         root_xid = X11Window.getDefaultRootWindow()
         if window:
-            xid = get_xwindow(window)
+            xid = window.get_xid()
         else:
             xid = root_xid
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
@@ -544,7 +540,7 @@ class XI2_Window(object):
         self.XI2 = X11XI2Bindings()
         self.X11Window = X11WindowBindings()
         self.window = window
-        self.xid = get_xwindow(window.get_window())
+        self.xid = window.get_window().get_xid()
         self.windows = ()
         self.motion_valuators = {}
         window.connect("configure-event", self.configured)

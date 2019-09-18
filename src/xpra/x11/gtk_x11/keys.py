@@ -8,7 +8,6 @@ from gi.repository import Gdk
 
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
-from xpra.gtk_common.gtk_util import keymap_get_for_display
 
 X11Keyboard = X11KeyboardBindings()
 
@@ -32,7 +31,7 @@ def grok_modifier_map(display, meanings):
 
     (max_keypermod, keycodes) = X11Keyboard.get_modifier_map()
     assert len(keycodes) == 8 * max_keypermod
-    keymap = keymap_get_for_display(display)
+    keymap = Gdk.Keymap.get_for_display(display)
     for i in range(8):
         for j in range(max_keypermod):
             keycode = keycodes[i * max_keypermod + j]

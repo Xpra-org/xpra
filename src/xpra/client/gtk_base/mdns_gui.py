@@ -8,7 +8,6 @@ import sys
 from gi.repository import GLib, Gtk
 
 from xpra.client.gtk_base.sessions_gui import SessionsGUI
-from xpra.gtk_common.gtk_util import gtk_main
 from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
 from xpra.util import envbool
 from xpra.log import Logger
@@ -120,7 +119,7 @@ def do_main(opts):
             mdns = check_mdns(gui)
         else:
             gui = SessionsGUI(opts)
-        gtk_main()
+        Gtk.main()
         return gui.exit_code
 
 def main():

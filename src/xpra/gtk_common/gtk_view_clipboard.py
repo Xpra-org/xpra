@@ -7,7 +7,7 @@ import sys
 from collections import deque
 from gi.repository import Pango, Gtk
 
-from xpra.gtk_common.gtk_util import TableBuilder, label, get_xwindow, GetClipboard
+from xpra.gtk_common.gtk_util import TableBuilder, label, GetClipboard
 from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
 
@@ -211,7 +211,7 @@ class ClipboardStateInfoWindow(object):
         if icon:
             self.window.set_icon(icon)
         try:
-            self.add_event("ALL", "window=%s, xid=%#x" % (self.window, get_xwindow(self.window.get_window())))
+            self.add_event("ALL", "window=%s, xid=%#x" % (self.window, self.window.get_window().get_xid()))
         except Exception:
             self.add_event("ALL", "window=%s" % self.window)
 

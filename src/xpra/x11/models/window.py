@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject, Gtk
 
 from xpra.util import envint, envbool, typedict
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
@@ -24,7 +24,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     x11_get_server_time,
     )
 from xpra.gtk_common.gtk_util import (
-    get_default_root_window, get_xwindow, icon_theme_get_default,
+    get_default_root_window,
     GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
     PARAM_READABLE, PARAM_READWRITE,
     )
@@ -185,7 +185,7 @@ class WindowModel(BaseWindowModel):
                                         window_type=GDKWINDOW_CHILD,
                                         event_mask=PROPERTY_CHANGE_MASK,
                                         title = "CorralWindow-%#x" % self.xid)
-        cxid = get_xwindow(self.corral_window)
+        cxid = self.corral_window.get_xid()
         log("setup() corral_window=%#x", cxid)
         prop_set(self.corral_window, "_NET_WM_NAME", "utf8", u"Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(cxid)
@@ -344,8 +344,8 @@ class WindowModel(BaseWindowModel):
     #########################################
 
     def raise_window(self):
-        X11Window.XRaiseWindow(get_xwindow(self.corral_window))
-        X11Window.XRaiseWindow(get_xwindow(self.client_window))
+        X11Window.XRaiseWindow(self.corral_window.get_xid())
+        X11Window.XRaiseWindow(self.client_window.get_xid())
 
     def unmap(self):
         with xsync:
@@ -476,7 +476,7 @@ class WindowModel(BaseWindowModel):
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):
-        cxid = get_xwindow(self.corral_window)
+        cxid = self.corral_window.get_xid()
         geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s",
                 event, cxid, self.xid, self._managed)
         if not self._managed:
@@ -488,7 +488,7 @@ class WindowModel(BaseWindowModel):
         if event.window!=self.client_window:
             #we only care about events on the client window
             geomlog("WindowModel.do_xpra_configure_event: event is not on the client window but on %#x, ignored",
-                    get_xwindow(event.window))
+                    event.window.get_xid())
             return
         if self.corral_window is None or not self.corral_window.is_visible():
             geomlog("WindowModel.do_xpra_configure_event: corral window is not visible")
@@ -511,7 +511,7 @@ class WindowModel(BaseWindowModel):
         ww, wh = self.client_window.get_geometry()[2:4]
         children = []
         for w in get_children(self.client_window):
-            xid = get_xwindow(w)
+            xid = w.get_xid()
             if X11Window.is_inputonly(xid):
                 continue
             geom = X11Window.getGeometry(xid)
@@ -556,7 +556,7 @@ class WindowModel(BaseWindowModel):
             self._updateprop("geometry", (x, y, cw, ch))
 
     def do_child_configure_request_event(self, event):
-        cxid = get_xwindow(self.corral_window)
+        cxid = self.corral_window.get_xid()
         hints = self.get_property("size-hints")
         geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s",
                 event, self.xid, cxid, configure_bits(event.value_mask), hints)
@@ -760,7 +760,7 @@ class WindowModel(BaseWindowModel):
         wmclass_name = c_i[0]
         if not wmclass_name:
             return None
-        it = icon_theme_get_default()
+        it = Gtk.IconTheme.get_default()
         pixbuf = None
         iconlog("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
         for icon_name in (

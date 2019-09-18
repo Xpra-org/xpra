@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from gi.repository import Gtk, GdkPixbuf
 
 from xpra.util import envbool, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
@@ -205,7 +206,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             return
         try:
             from gi.repository import Gtk
-            from xpra.gtk_common.gtk_util import popup_menu_workaround
             #menu:
             label = u"Xpra Shadow Server"
             display = os.environ.get("DISPLAY")
@@ -234,7 +234,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             #maybe add: session info, clipboard, sharing, etc
             #control: disconnect clients
             self.tray_menu.connect("deactivate", self.tray_menu_deactivated)
-            popup_menu_workaround(self.tray_menu, self.close_tray_menu)
             self.tray_widget = self.make_tray_widget()
             self.set_tray_icon(self.tray_icon  or "server-notconnected")
         except ImportError as e:
@@ -291,8 +290,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return menuitem(title, image, tooltip, cb)
 
     def checkitem(self, title, cb=None, active=False):
-        from xpra.gtk_common.gtk_util import CheckMenuItem
-        check_item = CheckMenuItem(title)
+        check_item = Gtk.CheckMenuItem(label=title)
         check_item.set_active(active)
         if cb:
             check_item.connect("toggled", cb)
@@ -301,7 +299,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def get_pixbuf(self, icon_name):
         from xpra.platform.paths import get_icon_filename
-        from xpra.gtk_common.gtk_util import pixbuf_new_from_file
         try:
             if not icon_name:
                 traylog("get_pixbuf(%s)=None", icon_name)
@@ -309,7 +306,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             icon_filename = get_icon_filename(icon_name)
             traylog("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
             if icon_filename:
-                return pixbuf_new_from_file(icon_filename)
+                return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         except Exception:
             traylog.error("get_pixbuf(%s)", icon_name, exc_info=True)
         return  None

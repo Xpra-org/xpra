@@ -9,14 +9,14 @@ import os.path
 import socket
 import subprocess
 from collections import OrderedDict
-from gi.repository import Pango, GLib, Gtk
+from gi.repository import Pango, GLib, Gtk, GdkPixbuf
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
 from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import (
-    gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse,
+    add_close_accel, TableBuilder, scaled_image, color_parse,
     imagebutton, STATE_NORMAL, WIN_POS_CENTER,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
@@ -439,7 +439,7 @@ class SessionsGUI(Gtk.Window):
     def get_pixbuf(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return pixbuf_new_from_file(icon_filename)
+            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         return None
 
 
@@ -450,7 +450,7 @@ def do_main(opts):
         enable_color()
         gui = SessionsGUI(opts)
         register_os_signals(gui.app_signal)
-        gtk_main()
+        Gtk.main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code
 

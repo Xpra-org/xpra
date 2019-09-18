@@ -8,7 +8,6 @@
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time, is_Wayland
 from xpra.util import envbool, envint
-from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
@@ -117,7 +116,7 @@ def setup_capture(window):
             log("not using %s: %s", capture, e)
             capture = None
     if not capture and XImage.has_XShm() and USE_XSHM:
-        capture = XImageCapture(get_xwindow(window))
+        capture = XImageCapture(window.get_xid())
     if not capture:
         capture = GTKImageCapture(window)
     log("setup_capture(%s)=%s", window, capture)

@@ -13,7 +13,6 @@ from xpra.os_util import bytestostr
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import (
-    get_xwindow,
     STRUCTURE_MASK, PROPERTY_CHANGE_MASK, FOCUS_CHANGE_MASK, POINTER_MOTION_MASK,
     PARAM_READABLE, PARAM_READWRITE,
     )
@@ -205,7 +204,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def __init__(self, client_window):
         super(CoreX11WindowModel, self).__init__()
-        self.xid = get_xwindow(client_window)
+        self.xid = client_window.get_xid()
         log("new window %#x", self.xid)
         self.client_window = client_window
         self.client_window_saved_events = self.client_window.get_events()
@@ -720,7 +719,7 @@ class CoreX11WindowModel(WindowModelStub):
     ################################
 
     def raise_window(self):
-        X11Window.XRaiseWindow(get_xwindow(self.client_window))
+        X11Window.XRaiseWindow(self.client_window.get_xid())
 
     def set_active(self):
         root = self.client_window.get_screen().get_root_window()

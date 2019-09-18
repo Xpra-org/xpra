@@ -6,14 +6,14 @@
 
 import sys
 import os.path
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import monotonic_time
 from xpra.util import AdHocStruct, typedict
 from xpra.gtk_common.gtk_util import (
-    gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
-    get_pixbuf_from_data, window_defaults, TableBuilder, WIN_POS_CENTER,
+    add_close_accel, scaled_image,
+    get_pixbuf_from_data, TableBuilder, WIN_POS_CENTER,
     )
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
@@ -38,7 +38,7 @@ class ServerCommandsWindow(object):
         self.commands_info = {}
         self.table = None
         self.window = Gtk.Window()
-        window_defaults(self.window)
+        self.window.set_border_width(20)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 150)
         self.window.set_title("Server Commands")
@@ -195,8 +195,8 @@ class ServerCommandsWindow(object):
 
     def run(self):
         log("run()")
-        gtk_main()
-        log("run() gtk_main done")
+        Gtk.main()
+        log("run() Gtk.main done")
 
     def quit(self, *args):
         log("quit%s", args)
@@ -207,7 +207,7 @@ class ServerCommandsWindow(object):
     def get_icon(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return pixbuf_new_from_file(icon_filename)
+            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         return None
 
 
