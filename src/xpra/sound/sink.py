@@ -7,9 +7,10 @@
 import sys
 from collections import deque
 from threading import Lock
+from gi.repository import GObject
 
 from xpra.sound.sound_pipeline import SoundPipeline
-from xpra.gtk_common.gobject_util import one_arg_signal, gobject
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.sound.gstreamer_util import (
     plugin_str, get_decoder_elements,
     get_queue_time, normv, get_decoders,
@@ -443,7 +444,7 @@ class SoundSink(SoundPipeline):
             return 0
         return 1
 
-gobject.type_register(SoundSink)
+GObject.type_register(SoundSink)
 
 
 def main():

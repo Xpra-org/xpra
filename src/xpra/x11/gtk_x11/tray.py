@@ -3,11 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import GObject
+
 from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.gtk_common.gtk_util import (
     display_get_default, get_default_root_window, get_xwindow, GDKWindow, x11_foreign_new,
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
@@ -22,7 +24,6 @@ from xpra.log import Logger
 X11Window = X11WindowBindings()
 
 gdk = import_gdk()
-gobject = import_gobject()
 
 log = Logger("x11", "tray")
 
@@ -91,7 +92,7 @@ def set_tray_orientation(tray_window, orientation):
     prop_set(tray_window, TRAY_ORIENTATION, "u32", orientation)
 
 
-class SystemTray(gobject.GObject):
+class SystemTray(GObject.GObject):
     """ This is an X11 system tray area,
         owning the "_NET_SYSTEM_TRAY_S0" selection,
         X11 client applications can request to embed their tray icon in it,
@@ -104,7 +105,7 @@ class SystemTray(gobject.GObject):
         }
 
     def __init__(self):
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         self.tray_window = None
         self.window_trays = {}
         self.tray_windows = {}
@@ -281,4 +282,4 @@ class SystemTray(gobject.GObject):
             del self.tray_windows[event.window]
             del self.window_trays[tray_window]
 
-gobject.type_register(SystemTray)
+GObject.type_register(SystemTray)

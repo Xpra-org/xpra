@@ -10,6 +10,7 @@
 # else steals it, then we should exit.
 
 from struct import pack, unpack, calcsize
+from gi.repository import GObject
 
 from xpra.gtk_common.gtk_util import (
     gtk_main, gtk_main_quit, get_xwindow,
@@ -25,13 +26,12 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,         #@UnresolvedImport
     remove_event_receiver,      #@UnresolvedImport
     )
-from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.log import Logger
 
 log = Logger("x11", "util")
 
 gtk = import_gtk()
-gobject = import_gobject()
 
 StructureNotifyMask = constants["StructureNotifyMask"]
 XNone = constants["XNone"]
@@ -40,7 +40,7 @@ XNone = constants["XNone"]
 class AlreadyOwned(Exception):
     pass
 
-class ManagerSelection(gobject.GObject):
+class ManagerSelection(GObject.GObject):
     __gsignals__ = {
         "selection-lost": no_arg_signal,
 
@@ -51,7 +51,7 @@ class ManagerSelection(gobject.GObject):
         return "ManagerSelection(%s)" % self.atom
 
     def __init__(self, selection):
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         self.atom = selection
         self.clipboard = GetClipboard(selection)
         self._xwindow = None
@@ -151,4 +151,4 @@ class ManagerSelection(gobject.GObject):
             return None
         return get_pywindow(self.clipboard, self._xwindow)
 
-gobject.type_register(ManagerSelection)
+GObject.type_register(ManagerSelection)

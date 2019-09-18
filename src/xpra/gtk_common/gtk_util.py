@@ -10,6 +10,7 @@ import cairo
 from gi.repository import GLib
 from gi.repository import GdkPixbuf     #@UnresolvedImport
 from gi.repository import Pango
+from gi.repository import GObject
 
 from xpra.util import iround, first_time
 from xpra.os_util import (
@@ -18,7 +19,6 @@ from xpra.os_util import (
     )
 from xpra.gtk_common.gobject_compat import (
     import_gtk, import_gdk,
-    import_gobject,
     )
 from xpra.log import Logger
 
@@ -29,7 +29,6 @@ alphalog = Logger("gtk", "alpha")
 
 gtk     = import_gtk()
 gdk     = import_gdk()
-gobject = import_gobject()
 
 SHOW_ALL_VISUALS = False
 
@@ -48,7 +47,7 @@ def get_gtk_version_info():
         return False
 
     if not GTK_VERSION_INFO:
-        V("gobject",    gobject,    "pygobject_version")
+        V("gobject",    GObject,    "pygobject_version")
 
         #this isn't the actual version, (only shows as "3.0")
         #but still better than nothing:
@@ -56,7 +55,7 @@ def get_gtk_version_info():
         V("gi",         gi,         "__version__")
         V("gtk",        gtk,        "_version")
         V("gdk",        gdk,        "_version")
-        V("gobject",    gobject,    "_version")
+        V("gobject",    GObject,    "_version")
         V("pixbuf",     GdkPixbuf,     "_version")
 
         av("pygtk", "n/a")
@@ -464,8 +463,8 @@ def wait_for_contents(clipboard, target):
     atom = gdk.Atom.intern(target, False)
     return clipboard.wait_for_contents(atom)
 
-PARAM_READABLE = gobject.ParamFlags.READABLE
-PARAM_READWRITE = gobject.ParamFlags.READWRITE
+PARAM_READABLE = GObject.ParamFlags.READABLE
+PARAM_READWRITE = GObject.ParamFlags.READWRITE
 
 
 #no idea why, but trying to use the threads_init / threads_enter
@@ -778,8 +777,8 @@ def get_screen_info(display, screen):
     #gtk.settings
     def get_setting(key):
         #try string first, then int
-        for t in (gobject.TYPE_STRING, gobject.TYPE_INT):
-            v = gobject.Value()
+        for t in (GObject.TYPE_STRING, GObject.TYPE_INT):
+            v = GObject.Value()
             v.init(t)
             if screen.get_setting(key, v):
                 return v.get_value()

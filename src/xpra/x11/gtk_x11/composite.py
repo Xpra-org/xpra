@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import GObject
 
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
@@ -17,12 +18,9 @@ from xpra.gtk_common.error import trap
 from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
-from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
 log = Logger("x11", "window")
-
-gobject = import_gobject()
 
 XImage = XImageBindings()
 X11Window = X11WindowBindings()
@@ -31,7 +29,7 @@ X11Window.ensure_XComposite_support()
 StructureNotifyMask = constants["StructureNotifyMask"]
 
 
-class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject):
+class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, GObject.GObject):
 
     __gsignals__ = WindowDamageHandler.__common_gsignals__.copy()
     __gsignals__.update({
@@ -43,7 +41,7 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
     def __init__(self, window):
         WindowDamageHandler.__init__(self, window)
         AutoPropGObjectMixin.__init__(self)
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         self._listening_to = None
 
     def __repr__(self):
@@ -131,4 +129,4 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
         event.y += self._border_width
         self.emit("contents-changed", event)
 
-gobject.type_register(CompositeHelper)
+GObject.type_register(CompositeHelper)

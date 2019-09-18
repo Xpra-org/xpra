@@ -5,16 +5,15 @@
 import re
 import sys
 from collections import deque
+from gi.repository import Pango
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.gtk_common.gtk_util import TableBuilder, label, get_xwindow, GetClipboard
 from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
 
 gtk = import_gtk()
 gdk = import_gdk()
-gobject = import_gobject()
-from gi.repository import Pango
 
 
 class ClipboardInstance(object):

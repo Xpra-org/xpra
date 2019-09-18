@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,6 +10,7 @@ import os
 import signal
 import math
 from collections import deque, namedtuple
+from gi.repository import GObject
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint, typedict
@@ -31,7 +32,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.gtk_common.error import xsync, xswallow, xlog, XError
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.log import Logger
 
 log = Logger("server")
@@ -51,7 +52,6 @@ X11Keyboard = X11KeyboardBindings()
 
 gtk = import_gtk()
 gdk = import_gdk()
-gobject = import_gobject()
 
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
@@ -178,10 +178,10 @@ class DesktopManager(gtk.Widget):
                      "%sx%s vs %sx%s", w0, h0, w, h)
         return x, y
 
-gobject.type_register(DesktopManager)
+GObject.type_register(DesktopManager)
 
 
-class XpraServer(gobject.GObject, X11ServerBase):
+class XpraServer(GObject.GObject, X11ServerBase):
     __gsignals__ = {
         "xpra-child-map-event"  : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
@@ -198,7 +198,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm = None
         self.last_raised = None
         self.system_tray = False
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         X11ServerBase.__init__(self, clobber)
         self.session_type = "seamless"
 
@@ -1339,4 +1339,4 @@ class XpraServer(gobject.GObject, X11ServerBase):
         return X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
 
-gobject.type_register(XpraServer)
+GObject.type_register(XpraServer)

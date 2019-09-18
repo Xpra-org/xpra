@@ -4,13 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import GObject
+
 from xpra.gtk_common.error import trap
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import x11_get_server_time
 from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default, get_xwindow, is_realized
-from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -18,8 +20,6 @@ focuslog = Logger("x11", "window", "focus")
 
 
 gtk = import_gtk()
-gobject = import_gobject()
-
 
 XNone = constants["XNone"]
 CurrentTime = constants["CurrentTime"]
@@ -205,4 +205,4 @@ class WorldWindow(gtk.Window):
         if self.get_focus() is not None:
             self.reset_x_focus()
 
-gobject.type_register(WorldWindow)
+GObject.type_register(WorldWindow)

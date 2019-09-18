@@ -4,7 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.models.core import CoreX11WindowModel, gobject
+from gi.repository import GObject
+
+from xpra.x11.models.core import CoreX11WindowModel
 from xpra.gtk_common.gtk_util import PARAM_READABLE
 from xpra.util import AdHocStruct
 from xpra.log import Logger
@@ -15,7 +17,7 @@ log = Logger("x11", "window", "tray")
 class SystemTrayWindowModel(CoreX11WindowModel):
     __gproperties__ = CoreX11WindowModel.__common_properties__.copy()
     __gproperties__.update({
-        "tray": (gobject.TYPE_BOOLEAN,
+        "tray": (GObject.TYPE_BOOLEAN,
                  "Is the window a system tray icon", "",
                  False,
                  PARAM_READABLE),
@@ -46,4 +48,4 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         event.width , event.height = self.get_dimensions()
         self.emit("client-contents-changed", event)
 
-gobject.type_register(SystemTrayWindowModel)
+GObject.type_register(SystemTrayWindowModel)

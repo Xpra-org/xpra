@@ -6,6 +6,7 @@
 
 import os
 import signal
+from gi.repository import GObject
 
 from xpra.util import envbool
 from xpra.os_util import bytestostr
@@ -23,10 +24,7 @@ from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_type_get, PYTHON_TYPES
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
-from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
-
-gobject = import_gobject()
 
 log = Logger("x11", "window")
 metalog = Logger("x11", "window", "metadata")
@@ -94,67 +92,67 @@ class CoreX11WindowModel(WindowModelStub):
     """
     __common_properties__ = {
         #the actual X11 client window
-        "client-window": (gobject.TYPE_PYOBJECT,
+        "client-window": (GObject.TYPE_PYOBJECT,
                 "gtk.gdk.Window representing the client toplevel", "",
                 PARAM_READABLE),
         #the X11 window id
-        "xid": (gobject.TYPE_INT,
+        "xid": (GObject.TYPE_INT,
                 "X11 window id", "",
                 -1, 65535, -1,
                 PARAM_READABLE),
         #FIXME: this is an ugly virtual property
-        "geometry": (gobject.TYPE_PYOBJECT,
+        "geometry": (GObject.TYPE_PYOBJECT,
                 "current coordinates (x, y, w, h, border) for the window", "",
                 PARAM_READABLE),
         #bits per pixel
-        "depth": (gobject.TYPE_INT,
+        "depth": (GObject.TYPE_INT,
                 "window bit depth", "",
                 -1, 64, -1,
                 PARAM_READABLE),
         #if the window depth is 32 bit
-        "has-alpha": (gobject.TYPE_BOOLEAN,
+        "has-alpha": (GObject.TYPE_BOOLEAN,
                 "Does the window use transparency", "",
                 False,
                 PARAM_READABLE),
         #from WM_CLIENT_MACHINE
-        "client-machine": (gobject.TYPE_PYOBJECT,
+        "client-machine": (GObject.TYPE_PYOBJECT,
                 "Host where client process is running", "",
                 PARAM_READABLE),
         #from _NET_WM_PID
-        "pid": (gobject.TYPE_INT,
+        "pid": (GObject.TYPE_INT,
                 "PID of owning process", "",
                 -1, 65535, -1,
                 PARAM_READABLE),
         #from _NET_WM_NAME or WM_NAME
-        "title": (gobject.TYPE_PYOBJECT,
+        "title": (GObject.TYPE_PYOBJECT,
                 "Window title (unicode or None)", "",
                 PARAM_READABLE),
         #from WM_WINDOW_ROLE
-        "role" : (gobject.TYPE_PYOBJECT,
+        "role" : (GObject.TYPE_PYOBJECT,
                 "The window's role (ICCCM session management)", "",
                 PARAM_READABLE),
         #from WM_PROTOCOLS via XGetWMProtocols
-        "protocols": (gobject.TYPE_PYOBJECT,
+        "protocols": (GObject.TYPE_PYOBJECT,
                 "Supported WM protocols", "",
                 PARAM_READABLE),
         #from WM_COMMAND
-        "command": (gobject.TYPE_PYOBJECT,
+        "command": (GObject.TYPE_PYOBJECT,
                 "Command used to start or restart the client", "",
                 PARAM_READABLE),
         #from WM_CLASS via getClassHint
-        "class-instance": (gobject.TYPE_PYOBJECT,
+        "class-instance": (GObject.TYPE_PYOBJECT,
                 "Classic X 'class' and 'instance'", "",
                 PARAM_READABLE),
         #ShapeNotify events will populate this using XShapeQueryExtents
-        "shape": (gobject.TYPE_PYOBJECT,
+        "shape": (GObject.TYPE_PYOBJECT,
                 "Window XShape data", "",
                 PARAM_READABLE),
         #synced to "_NET_FRAME_EXTENTS"
-        "frame": (gobject.TYPE_PYOBJECT,
+        "frame": (GObject.TYPE_PYOBJECT,
                 "Size of the window frame, as per _NET_FRAME_EXTENTS", "",
                 PARAM_READWRITE),
         #synced to "_NET_WM_ALLOWED_ACTIONS"
-        "allowed-actions": (gobject.TYPE_PYOBJECT,
+        "allowed-actions": (GObject.TYPE_PYOBJECT,
                 "Supported WM actions", "",
                 PARAM_READWRITE),
            }

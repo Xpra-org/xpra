@@ -8,7 +8,6 @@
 import sys
 
 __all__ = [
-    "import_gobject",
     "import_gtk",
     "import_gdk",
     ]
@@ -38,16 +37,6 @@ def try_import_GdkX11():
             pass
     return None
 
-
-def import_gobject():
-    from gi.repository import GObject               #@UnresolvedImport
-    #silence a GTK3 warning about threads_init not beeing needed:
-    v = getattr(GObject, "pygobject_version", (0))
-    if v>=(3,10):
-        def noop(*_args):
-            pass
-        GObject.threads_init = noop
-    return GObject
 
 def import_gtk():
     gi_gtk()

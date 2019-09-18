@@ -15,9 +15,11 @@ This is a simple GUI for starting the xpra client.
 import os.path
 import sys
 import traceback
+from gi.repository import Pango
+from gi.repository import GLib
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_gobject,
+    import_gtk, import_gdk,
     register_os_signals,
     )
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
@@ -45,11 +47,8 @@ from xpra.log import Logger, enable_debug_for
 
 log = Logger("launcher")
 
-gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
-from gi.repository import Pango
-from gi.repository import GLib
 
 #what we save in the config file:
 SAVED_FIELDS = [

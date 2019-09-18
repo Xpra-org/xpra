@@ -8,7 +8,7 @@
 import os
 import weakref
 
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
 from xpra.util import (
@@ -49,7 +49,6 @@ from xpra.platform.gui import (
     )
 from xpra.log import Logger
 
-gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
 

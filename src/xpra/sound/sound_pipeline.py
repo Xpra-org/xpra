@@ -5,13 +5,13 @@
 
 #must be done before importing gobject!
 #pylint: disable=wrong-import-position
-from gi.repository import GLib
 from xpra.sound.gstreamer_util import import_gst
 gst = import_gst()
+from gi.repository import GLib, GObject
 
 from xpra.util import envint
 from xpra.os_util import monotonic_time, register_SIGUSR_signals
-from xpra.gtk_common.gobject_util import one_arg_signal, gobject
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.log import Logger
 
 log = Logger("sound")
@@ -35,7 +35,7 @@ def inject_fault():
     return (_counter % FAULT_RATE)==0
 
 
-class SoundPipeline(gobject.GObject):
+class SoundPipeline(GObject.GObject):
 
     __generic_signals__ = {
         "state-changed"     : one_arg_signal,
@@ -45,7 +45,7 @@ class SoundPipeline(gobject.GObject):
         }
 
     def __init__(self, codec):
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         self.stream_compressor = None
         self.codec = codec
         self.codec_description = ""

@@ -1,10 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from gi.repository import GObject
 
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync, xswallow
@@ -18,7 +19,6 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.selection import ManagerSelection
-from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                              #@UnresolvedImport
@@ -27,12 +27,9 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
 log = Logger("x11", "window")
-
-gobject = import_gobject()
 
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
@@ -154,13 +151,13 @@ NET_SUPPORTED = [x for x in DEFAULT_NET_SUPPORTED if x not in NO_NET_SUPPORTED]
 DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
 
-class Wm(gobject.GObject):
+class Wm(GObject.GObject):
 
     __gproperties__ = {
-        "windows": (gobject.TYPE_PYOBJECT,
+        "windows": (GObject.TYPE_PYOBJECT,
                     "Set of managed windows (as WindowModels)", "",
                     PARAM_READABLE),
-        "toplevel": (gobject.TYPE_PYOBJECT,
+        "toplevel": (GObject.TYPE_PYOBJECT,
                      "Toplevel container widget for the display", "",
                      PARAM_READABLE),
         }
@@ -184,7 +181,7 @@ class Wm(gobject.GObject):
         }
 
     def __init__(self, replace_other_wm, wm_name, display=None):
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
 
         if display is None:
             display = display_get_default()
@@ -491,4 +488,4 @@ class Wm(gobject.GObject):
         except Exception as e:
             log.error("error querying _NET_WM_NAME: %s", e)
 
-gobject.type_register(Wm)
+GObject.type_register(Wm)

@@ -6,11 +6,11 @@
 import os
 import struct
 from io import BytesIO
-from gi.repository import GLib
+from gi.repository import GLib, GObject
 
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow, GDKWindow,
     PROPERTY_CHANGE_MASK, CLASS_INPUT_ONLY,
@@ -35,7 +35,6 @@ from xpra.util import csv, repr_ellipsized, first_time, envbool
 from xpra.log import Logger
 
 gdk = import_gdk()
-gobject = import_gobject()
 
 X11Window = X11WindowBindings()
 
@@ -66,7 +65,7 @@ def strings_to_xatoms(data):
     return struct.pack(b"@"+b"L"*len(atom_array), *atom_array)
 
 
-class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
+class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
 
     #handle signals from the X11 bindings,
     #and dispatch them to the proxy handling the selection specified:
@@ -79,7 +78,7 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
         }
 
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         self.init_window()
         init_x11_filter()
         self.x11_filter = True
@@ -188,10 +187,10 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
             return strings_to_xatoms(_filter_targets(data))
         return ClipboardProtocolHelperCore._munge_wire_selection_to_raw(self, encoding, dtype, dformat, data)
 
-gobject.type_register(X11Clipboard)
+GObject.type_register(X11Clipboard)
 
 
-class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
+class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     __gsignals__ = {
         "xpra-client-message-event"             : one_arg_signal,
@@ -206,7 +205,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
 
     def __init__(self, xid, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         self.xid = xid
         self.owned = False
         self._want_targets = False
@@ -689,4 +688,4 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         self.incr_data_chunks = None
         self.incr_data_timer = None
 
-gobject.type_register(ClipboardProxy)
+GObject.type_register(ClipboardProxy)

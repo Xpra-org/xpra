@@ -6,11 +6,12 @@
 
 import sys
 import os.path
+from gi.repository import GObject
 
 from xpra.os_util import SIGNAMES, Queue, monotonic_time
 from xpra.util import csv, envint, envbool, envfloat, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
-from xpra.gtk_common.gobject_util import n_arg_signal, gobject
+from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.sound.gstreamer_util import (
     get_source_plugins, plugin_str, get_encoder_elements,
     get_encoder_default_options, normv,
@@ -354,8 +355,7 @@ class SoundSource(SoundPipeline):
         self.emit_info()
         return 0
 
-
-gobject.type_register(SoundSource)
+GObject.type_register(SoundSource)
 
 
 def main():

@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import cairo
+from gi.repository import GObject
 
 from xpra.util import envint, envbool, typedict
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
@@ -16,7 +16,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.models.base import BaseWindowModel, constants
-from xpra.x11.models.core import sanestr, gobject, xswallow, xsync
+from xpra.x11.models.core import sanestr, xswallow, xsync
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
     get_children,
@@ -88,18 +88,18 @@ class WindowModel(BaseWindowModel):
 
     __gproperties__ = dict(BaseWindowModel.__common_properties__)
     __gproperties__.update({
-        "owner": (gobject.TYPE_PYOBJECT,
+        "owner": (GObject.TYPE_PYOBJECT,
                   "Owner", "",
                   PARAM_READABLE),
         # Interesting properties of the client window, that will be
         # automatically kept up to date:
-        "requested-position": (gobject.TYPE_PYOBJECT,
+        "requested-position": (GObject.TYPE_PYOBJECT,
                                "Client-requested position on screen", "",
                                PARAM_READABLE),
-        "requested-size": (gobject.TYPE_PYOBJECT,
+        "requested-size": (GObject.TYPE_PYOBJECT,
                            "Client-requested size on screen", "",
                            PARAM_READABLE),
-        "set-initial-position": (gobject.TYPE_BOOLEAN,
+        "set-initial-position": (GObject.TYPE_BOOLEAN,
                                  "Should the requested position be honoured?", "",
                                  False,
                                  PARAM_READWRITE),
@@ -107,34 +107,34 @@ class WindowModel(BaseWindowModel):
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
         # whether or not the window is iconified.
-        "iconic": (gobject.TYPE_BOOLEAN,
+        "iconic": (GObject.TYPE_BOOLEAN,
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
                    PARAM_READWRITE),
         #from WM_NORMAL_HINTS
-        "size-hints": (gobject.TYPE_PYOBJECT,
+        "size-hints": (GObject.TYPE_PYOBJECT,
                        "Client hints on constraining its size", "",
                        PARAM_READABLE),
         #from _NET_WM_ICON_NAME or WM_ICON_NAME
-        "icon-title": (gobject.TYPE_PYOBJECT,
+        "icon-title": (GObject.TYPE_PYOBJECT,
                        "Icon title (unicode or None)", "",
                        PARAM_READABLE),
         #from _NET_WM_ICON
-        "icons": (gobject.TYPE_PYOBJECT,
+        "icons": (GObject.TYPE_PYOBJECT,
                  "Icons in raw RGBA format, by size", "",
                  PARAM_READABLE),
         #from _MOTIF_WM_HINTS.decorations
-        "decorations": (gobject.TYPE_INT,
+        "decorations": (GObject.TYPE_INT,
                        "Should the window decorations be shown", "",
                        -1, 65535, -1,
                        PARAM_READABLE),
-        "children" : (gobject.TYPE_PYOBJECT,
+        "children" : (GObject.TYPE_PYOBJECT,
                         "Sub-windows", None,
                         PARAM_READABLE),
         })
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__.update({
-        "ownership-election"            : (SIGNAL_RUN_LAST, gobject.TYPE_PYOBJECT, (), non_none_list_accumulator),
+        "ownership-election"            : (SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (), non_none_list_accumulator),
         "child-map-request-event"       : one_arg_signal,
         "child-configure-request-event" : one_arg_signal,
         "xpra-destroy-event"            : one_arg_signal,
@@ -843,4 +843,4 @@ class WindowModel(BaseWindowModel):
         self.set_active()
 
 
-gobject.type_register(WindowModel)
+GObject.type_register(WindowModel)

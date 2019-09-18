@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import GObject
+
 from xpra.gtk_common.gtk_util import GetClipboard
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xlog, XError
@@ -15,10 +17,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     get_pywindow,                #@UnresolvedImport
     get_xatom,                   #@UnresolvedImport
     )
-from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
-
-gobject = import_gobject()
 
 log = Logger("x11", "xsettings")
 
@@ -86,7 +85,7 @@ class XSettingsHelper(object):
             return None
 
 
-class XSettingsWatcher(XSettingsHelper, gobject.GObject):
+class XSettingsWatcher(XSettingsHelper, GObject.GObject):
     __gsignals__ = {
         "xsettings-changed": no_arg_signal,
 
@@ -94,7 +93,7 @@ class XSettingsWatcher(XSettingsHelper, gobject.GObject):
         "xpra-client-message-event": one_arg_signal,
         }
     def __init__(self, screen_number=0):
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         XSettingsHelper.__init__(self, screen_number)
         self._root = self._clipboard.get_display().get_default_screen().get_root_window()
         add_event_receiver(self._root, self)
@@ -121,7 +120,7 @@ class XSettingsWatcher(XSettingsHelper, gobject.GObject):
             log("XSettings property value changed")
             self.emit("xsettings-changed")
 
-gobject.type_register(XSettingsWatcher)
+GObject.type_register(XSettingsWatcher)
 
 
 def main():

@@ -1210,11 +1210,10 @@ def main():
             log.enable_debug()
             win32_event_logger.enable_debug()
 
-        from xpra.gtk_common.gobject_compat import import_gobject
-        gobject = import_gobject()
+        from gi.repository import GLib
 
         log.info("Event loop is running")
-        loop = gobject.MainLoop()
+        loop = GLib.MainLoop()
 
         def suspend():
             log.info("suspend event")

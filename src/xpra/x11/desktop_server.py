@@ -6,6 +6,7 @@
 
 import os
 import socket
+from gi.repository import GObject
 
 from xpra.os_util import get_generic_os_name, load_binary_file
 from xpra.util import updict, log_screen_sizes
@@ -32,12 +33,9 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.gtk_common.error import xsync, xlog
-from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
 log = Logger("server")
-
-gobject = import_gobject()
 
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
@@ -60,21 +58,21 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                          })
 
     __gproperties__ = {
-        "iconic": (gobject.TYPE_BOOLEAN,
+        "iconic": (GObject.TYPE_BOOLEAN,
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
                    PARAM_READWRITE),
-        "focused": (gobject.TYPE_BOOLEAN,
+        "focused": (GObject.TYPE_BOOLEAN,
                        "Is the window focused", "",
                        False,
                        PARAM_READWRITE),
-        "size-hints": (gobject.TYPE_PYOBJECT,
+        "size-hints": (GObject.TYPE_PYOBJECT,
                        "Client hints on constraining its size", "",
                        PARAM_READABLE),
-        "wm-name": (gobject.TYPE_PYOBJECT,
+        "wm-name": (GObject.TYPE_PYOBJECT,
                        "The name of the window manager or session manager", "",
                        PARAM_READABLE),
-        "icons": (gobject.TYPE_PYOBJECT,
+        "icons": (GObject.TYPE_PYOBJECT,
                        "The icon of the window manager or session manager", "",
                        PARAM_READABLE),
         }
@@ -184,7 +182,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             return True
         if prop=="class-instance":
             return ("xpra-desktop", "Xpra-Desktop")
-        return gobject.GObject.get_property(self, prop)
+        return GObject.GObject.get_property(self, prop)
 
     def _screen_size_changed(self, screen):
         w, h = screen.get_width(), screen.get_height()
@@ -262,11 +260,11 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def do_xpra_damage_event(self, event):
         self.emit("client-contents-changed", event)
 
-gobject.type_register(DesktopModel)
+GObject.type_register(DesktopModel)
 
 
 
-DESKTOPSERVER_BASES = [gobject.GObject]
+DESKTOPSERVER_BASES = [GObject.GObject]
 if server_features.rfb:
     from xpra.server.rfb.rfb_server import RFBServer
     DESKTOPSERVER_BASES.append(RFBServer)
@@ -298,7 +296,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def init(self, opts):
         for c in DESKTOPSERVER_BASES:
-            if c!=gobject.GObject:
+            if c!=GObject.GObject:
                 c.init(self, opts)
 
     def server_init(self):
@@ -650,4 +648,4 @@ class XpraDesktopServer(DesktopServerBaseClass):
             offset_y += 0
         return self.make_screenshot_packet_from_regions(regions)
 
-gobject.type_register(XpraDesktopServer)
+GObject.type_register(XpraDesktopServer)

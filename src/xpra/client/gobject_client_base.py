@@ -6,6 +6,7 @@
 
 import sys
 from gi.repository import GLib
+from gi.repository import GObject
 
 from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict,
@@ -17,12 +18,9 @@ from xpra.exit_codes import (
     EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
     EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG,
     )
-from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
-
-gobject = import_gobject()
 
 FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", 1)
 
@@ -35,7 +33,7 @@ def errwrite(msg):
         pass
 
 
-class GObjectXpraClient(gobject.GObject, XpraClientBase):
+class GObjectXpraClient(GObject.GObject, XpraClientBase):
     """
         Utility superclass for GObject clients
     """
@@ -45,7 +43,7 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         XpraClientBase.__init__(self)
 
     def init(self, opts):

@@ -4,10 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import GObject
 
 from xpra.gtk_common.gtk_util import PARAM_READABLE
 from xpra.x11.common import Unmanageable
-from xpra.x11.models.base import BaseWindowModel, gobject
+from xpra.x11.models.base import BaseWindowModel
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 
 X11Window = X11WindowBindings()
@@ -17,7 +18,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gproperties__ = dict(BaseWindowModel.__common_properties__)
     __gproperties__.update({
-        "override-redirect": (gobject.TYPE_BOOLEAN,
+        "override-redirect": (GObject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        True,
                        PARAM_READABLE),
@@ -41,4 +42,4 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         if ch is None:
             raise Unmanageable("failed to get damage handle")
 
-gobject.type_register(OverrideRedirectWindowModel)
+GObject.type_register(OverrideRedirectWindowModel)

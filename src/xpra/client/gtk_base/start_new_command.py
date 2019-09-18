@@ -13,7 +13,7 @@ from xpra.gtk_common.gtk_util import (
     window_defaults, WIN_POS_CENTER,
     )
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_gobject,
+    import_gtk, import_gdk,
     register_os_signals,
     )
 from xpra.platform.paths import get_icon_dir
@@ -24,7 +24,6 @@ log = Logger("exec")
 
 gtk = import_gtk()
 gdk = import_gdk()
-gobject = import_gobject()
 
 
 _instance = None

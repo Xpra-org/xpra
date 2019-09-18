@@ -5,12 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os
+from gi.repository import GObject
 
 from xpra.gtk_common.gobject_util import AutoPropGObjectMixin
-from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
-
-gobject = import_gobject()
 
 log = Logger("x11", "window")
 metalog = Logger("x11", "window", "metadata")
@@ -18,7 +16,7 @@ metalog = Logger("x11", "window", "metadata")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
-class WindowModelStub(AutoPropGObjectMixin, gobject.GObject):
+class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     """
         Stub for all window models
     """
@@ -32,7 +30,7 @@ class WindowModelStub(AutoPropGObjectMixin, gobject.GObject):
 
     def __init__(self):
         AutoPropGObjectMixin.__init__(self)
-        gobject.GObject.__init__(self)
+        GObject.GObject.__init__(self)
         self._setup_done = False            #so we can ignore notify() events during setup
         self._managed = False
         self._managed_handlers = []
