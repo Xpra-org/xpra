@@ -13,7 +13,7 @@ from xpra.os_util import monotonic_time
 from xpra.util import AdHocStruct, typedict
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
-    get_pixbuf_from_data, TableBuilder, WIN_POS_CENTER,
+    get_pixbuf_from_data, TableBuilder,
     )
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
@@ -46,7 +46,7 @@ class ServerCommandsWindow(object):
         icon_pixbuf = self.get_icon("list.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
-        self.window.set_position(WIN_POS_CENTER)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
 
         vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(10)
@@ -146,7 +146,7 @@ class ServerCommandsWindow(object):
 
     def signal_button(self, pid):
         hbox = Gtk.HBox()
-        combo = Gtk.combo_box_new_text()
+        combo = Gtk.ComboBoxText()
         for x in self.client.server_commands_signals:
             combo.append_text(x)
         def send(*_args):

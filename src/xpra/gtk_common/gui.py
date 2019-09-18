@@ -13,7 +13,7 @@ from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
     set_tooltip_text, add_close_accel,
     add_window_accel, imagebutton,
-    scaled_image, WIN_POS_CENTER,
+    scaled_image,
     )
 from xpra.platform.paths import get_icon_dir, get_xpra_command
 from xpra.os_util import OSX, WIN32, platform_name
@@ -66,7 +66,7 @@ class GUI(Gtk.Window):
         self.set_border_width(10)
         self.set_resizable(True)
         self.set_decorated(True)
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         icon = get_pixbuf("xpra")
         if icon:
             self.set_icon(icon)
@@ -230,7 +230,7 @@ class StartSession(Gtk.Window):
         Gtk.Window.__init__(self)
         self.set_border_width(20)
         self.set_title("Start Xpra Session")
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(640, 300)
         icon = get_pixbuf("xpra")
         if icon:
@@ -274,7 +274,7 @@ class StartSession(Gtk.Window):
         vbox.add(hbox)
         self.category_box = hbox
         self.category_label = Gtk.Label("Category:")
-        self.category_combo = Gtk.combo_box_new_text()
+        self.category_combo = Gtk.ComboBoxText()
         hbox.add(self.category_label)
         hbox.add(self.category_combo)
         self.category_combo.connect("changed", self.category_changed)
@@ -284,7 +284,7 @@ class StartSession(Gtk.Window):
         vbox.add(hbox)
         self.command_box = hbox
         self.command_label = Gtk.Label("Command:")
-        self.command_combo = Gtk.combo_box_new_text()
+        self.command_combo = Gtk.ComboBoxText()
         hbox.pack_start(self.command_label)
         hbox.pack_start(self.command_combo)
         self.command_combo.connect("changed", self.command_changed)

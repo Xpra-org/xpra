@@ -10,8 +10,7 @@ from Cocoa import (
     NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,    #@UnresolvedImport
     NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, NSOpenGLCPSurfaceOpacity, #@UnresolvedImport
     )
-
-from xpra.gtk_common.gtk_util import make_temp_window
+from xpra.gtk_common.gtk_util import GDKWindow
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.log import Logger
 
@@ -116,7 +115,8 @@ class AGLContext(object):
                     conv, const_val = vdef              #ie (bool, NSOpenGLPFAAlphaSize)
                     v = self._get_pfa(const_val, screen)#ie: NSOpenGLPFAAlphaSize=8
                     si[name] = conv(v)                   #ie: bool(8)
-        tmp = make_temp_window("tmp-opengl-check")
+        from gi.repository import Gdk
+        tmp = GDKWindow("tmp-opengl-check", Gdk.WindowType.TEMP)
         with self.get_paint_context(tmp):
             i.update(check_PyOpenGL_support(force_enable))
         tmp.destroy()

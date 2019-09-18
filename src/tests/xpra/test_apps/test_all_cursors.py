@@ -10,7 +10,7 @@ def main():
 	window.set_size_request(width, height)
 	window.connect("delete_event", Gtk.main_quit)
 
-	cursor_combo = Gtk.combo_box_new_text()
+	cursor_combo = Gtk.ComboBoxText()
 	cursor_combo.append_text("")
 	for name in sorted(cursor_types.keys()):
 		cursor_combo.append_text(name)

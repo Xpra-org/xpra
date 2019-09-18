@@ -115,9 +115,6 @@ def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVE
     mask = Gdk.WindowAttributesType(attributes_mask)
     return Gdk.Window(parent, attributes, mask)
 
-def make_temp_window(title, window_type=Gdk.WindowType.TEMP):
-    return GDKWindow(title=title, window_type=window_type)
-
 def enable_alpha(window):
     screen = window.get_screen()
     visual = screen.get_rgba_visual()
@@ -147,8 +144,6 @@ def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
                                      has_alpha, 8, w, h, rowstride,
                                      None, None)
 
-
-get_pixbuf_from_window = Gdk.pixbuf_get_from_window
 
 def color_parse(*args):
     try:
@@ -194,14 +189,9 @@ def get_default_cursor():
     return Gdk.Cursor.new_from_name(display, "default")
 display_get_default     = Gdk.Display.get_default
 screen_get_default      = Gdk.Screen.get_default
-INTERP_HYPER    = GdkPixbuf.InterpType.HYPER
-INTERP_BILINEAR = GdkPixbuf.InterpType.BILINEAR
-RELIEF_NONE     = Gtk.ReliefStyle.NONE
-RELIEF_NORMAL   = Gtk.ReliefStyle.NORMAL
 FILL            = Gtk.AttachOptions.FILL
 EXPAND          = Gtk.AttachOptions.EXPAND
 STATE_NORMAL    = Gtk.StateType.NORMAL
-WIN_POS_CENTER  = Gtk.WindowPosition.CENTER
 RESPONSE_CANCEL = Gtk.ResponseType.CANCEL
 RESPONSE_OK     = Gtk.ResponseType.OK
 RESPONSE_REJECT = Gtk.ResponseType.REJECT
@@ -328,7 +318,6 @@ DEST_DEFAULT_HIGHLIGHT  = Gtk.DestDefaults.HIGHLIGHT
 DEST_DEFAULT_DROP       = Gtk.DestDefaults.DROP
 DEST_DEFAULT_ALL        = Gtk.DestDefaults.ALL
 ACTION_COPY = Gdk.DragAction.COPY
-newTargetEntry = Gtk.TargetEntry.new
 def drag_status(context, action, time):
     Gdk.drag_status(context, action, time)
 def drag_context_targets(context):
@@ -346,30 +335,6 @@ def GetClipboard(selection):
     sstr = bytestostr(selection)
     atom = getattr(Gdk, "SELECTION_%s" % sstr, None) or Gdk.Atom.intern(sstr, False)
     return Clipboard.get(atom)
-def clipboard_request_contents(clipboard, target, unpack):
-    target_atom = Gdk.Atom.intern(bytestostr(target), False)
-    clipboard.request_contents(target_atom, unpack)
-
-def selection_owner_set(widget, selection, time=0):
-    selection_atom = Gdk.Atom.intern(bytestostr(selection), False)
-    return Gtk.selection_owner_set(widget, selection_atom, time)
-def selection_add_target(widget, selection, target, info=0):
-    selection_atom = Gdk.Atom.intern(bytestostr(selection), False)
-    target_atom = Gdk.Atom.intern(bytestostr(target), False)
-    Gtk.selection_add_target(widget, selection_atom, target_atom, info)
-def selectiondata_get_selection(selectiondata):
-    return selectiondata.get_selection().name()
-def selectiondata_get_target(selectiondata):
-    return selectiondata.get_target().name()
-def selectiondata_get_data_type(selectiondata):
-    return selectiondata.get_data_type()
-def selectiondata_get_format(selectiondata):
-    return selectiondata.get_format()
-def selectiondata_get_data(selectiondata):
-    return selectiondata.get_data()
-def selectiondata_set(selectiondata, dtype, dformat, data):
-    type_atom = Gdk.Atom.intern(bytestostr(dtype), False)
-    return selectiondata.set(type_atom, dformat, data)
 
 def atom_intern(atom_name, only_if_exits=False):
     return Gdk.Atom.intern(bytestostr(atom_name), only_if_exits)
@@ -383,19 +348,12 @@ orig_pack_start = Gtk.Box.pack_start
 def pack_start(self, child, expand=True, fill=True, padding=0):
     orig_pack_start(self, child, expand, fill, padding)
 Gtk.Box.pack_start = pack_start
-Gtk.combo_box_new_text = Gtk.ComboBoxText
 
 class OptionMenu(Gtk.MenuButton):
     def set_menu(self, menu):
         return self.set_popup(menu)
     def get_menu(self):
         return self.get_popup()
-
-gdk_window_process_all_updates = Gdk.Window.process_all_updates
-
-def gio_File(path):
-    from gi.repository import Gio   #@UnresolvedImport
-    return Gio.File.new_for_path(path)
 
 def query_info_async(gfile, attributes, callback, flags=0, cancellable=None):
     G_PRIORITY_DEFAULT = 0
@@ -407,11 +365,6 @@ def load_contents_async(gfile, callback, cancellable=None, user_data=None):
 def load_contents_finish(gfile, res):
     _, data, etag = gfile.load_contents_finish(res)
     return data, len(data), etag
-
-def set_clipboard_data(clipboard, thevalue, _vtype="STRING"):
-    #only strings with GTK3?
-    thestring = str(thevalue)
-    clipboard.set_text(thestring, len(thestring))
 
 def wait_for_contents(clipboard, target):
     atom = Gdk.Atom.intern(target, False)
@@ -798,7 +751,7 @@ def scaled_image(pixbuf, icon_size=None):
     if not pixbuf:
         return None
     if icon_size:
-        pixbuf = pixbuf.scale_simple(icon_size, icon_size, INTERP_BILINEAR)
+        pixbuf = pixbuf.scale_simple(icon_size, icon_size, GdkPixbuf.InterpType.BILINEAR)
     return Gtk.Image.new_from_pixbuf(pixbuf)
 
 

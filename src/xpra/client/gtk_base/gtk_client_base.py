@@ -31,7 +31,7 @@ from xpra.gtk_common.gtk_util import (
     FILE_CHOOSER_ACTION_OPEN,
     CLASS_INPUT_ONLY,
     RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_ACCEPT, RESPONSE_REJECT,
-    INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO,
+    WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO,
     BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING,
     BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK,
     ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK,
@@ -832,7 +832,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 cursor_pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
             else:
                 cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
-                cursor_pixbuf = pixbuf.scale_simple(fw, fh, INTERP_BILINEAR)
+                cursor_pixbuf = pixbuf.scale_simple(fw, fh, GdkPixbuf.InterpType.BILINEAR)
                 xratio, yratio = float(w)/fw, float(h)/fh
                 x, y = iround(x/xratio), iround(y/yratio)
         else:
@@ -855,7 +855,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if sw!=w or sh!=h:
                 cursorlog("scaling cursor from %ix%i hotspot at %ix%i to %ix%i hotspot at %ix%i",
                           w, h, x, y, sw, sh, sx, sy)
-                cursor_pixbuf = pixbuf.scale_simple(sw, sh, INTERP_BILINEAR)
+                cursor_pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
                 x, y = sx, sy
             else:
                 cursor_pixbuf = pixbuf

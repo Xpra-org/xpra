@@ -13,7 +13,7 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
     get_display_info, get_default_root_window,
     choose_file, get_gtk_version_info,
-    JUSTIFY_LEFT, WIN_POS_CENTER, FILE_CHOOSER_ACTION_SAVE,
+    JUSTIFY_LEFT, FILE_CHOOSER_ACTION_SAVE,
     )
 from xpra.util import nonl, envint, repr_ellipsized
 from xpra.os_util import strtobytes
@@ -43,7 +43,7 @@ class BugReport(object):
         icon_pixbuf = self.get_icon("bugs.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
-        self.window.set_position(WIN_POS_CENTER)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
 
         vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(15)

@@ -8,7 +8,7 @@
 import math
 import os.path
 from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, Gio
 
 import cairo
 
@@ -26,10 +26,10 @@ from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_pixbuf_from_data, get_default_root_window,
     drag_status,
-    newTargetEntry, drag_context_targets, drag_context_actions,
+    drag_context_targets, drag_context_actions,
     drag_dest_window, drag_widget_get_data,
     enable_alpha,
-    gio_File, query_info_async, load_contents_async, load_contents_finish,
+    query_info_async, load_contents_async, load_contents_finish,
     WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS,
     SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
     DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY,
@@ -259,7 +259,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     # drag and drop:
     def init_dragndrop(self):
         targets = [
-            newTargetEntry("text/uri-list", 0, 80),
+            Gtk.TargetEntry.new("text/uri-list", 0, 80),
             ]
         flags = DEST_DEFAULT_MOTION | DEST_DEFAULT_HIGHLIGHT
         actions = ACTION_COPY   # | Gdk.ACTION_LINK
@@ -359,7 +359,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     self._client.send_file(filename, "", data, filesize=filesize, openit=openit)
                 load_contents_async(gfile, got_file_data, user_data=(filename, True))
             try:
-                gfile = gio_File(filename)
+                gfile = Gio.File.new_for_path(filename)
                 #basename = gf.get_basename()
                 FILE_QUERY_INFO_NONE = 0
                 query_info_async(gfile, "standard::*", got_file_info, flags=FILE_QUERY_INFO_NONE)

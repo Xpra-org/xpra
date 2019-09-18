@@ -4,9 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import Gdk
+
 from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.gtk_common.gtk_util import get_pixbuf_from_window, pixbuf_save_to_memory
+from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -30,7 +32,7 @@ def get_rgb_rawdata(window, x, y, width, height):
         height = pixmap_h - y
     if width <= 0 or height <= 0:
         return None
-    pixbuf = get_pixbuf_from_window(window, x, y, width, height)
+    pixbuf = Gdk.pixbuf_get_from_window(window, x, y, width, height)
     log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", int(1000*(monotonic_time()-start)))
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
@@ -39,7 +41,7 @@ def get_rgb_rawdata(window, x, y, width, height):
 def take_png_screenshot(window):
     log("grabbing screenshot")
     w,h = window.get_geometry()[2:4]
-    pixbuf = get_pixbuf_from_window(window, 0, 0, w, h)
+    pixbuf = Gdk.pixbuf_get_from_window(window, 0, 0, w, h)
     data = pixbuf_save_to_memory(pixbuf, "png")
     rowstride = w*3
     return w, h, "png", rowstride, data

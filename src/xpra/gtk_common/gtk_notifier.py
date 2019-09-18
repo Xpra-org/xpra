@@ -24,7 +24,7 @@ from gi.repository import GLib, Gtk, GdkPixbuf
 from xpra.os_util import OSX, bytestostr
 from xpra.gtk_common.gtk_util import (
     add_close_accel, display_get_default, color_parse,
-    STATE_NORMAL, RELIEF_NORMAL,
+    STATE_NORMAL,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
 
@@ -262,7 +262,7 @@ class Popup(Gtk.Window):
             button = Gtk.Button(action_text.decode("utf-8"))
         except Exception:
             button = Gtk.Button(bytestostr(action_text))
-        button.set_relief(RELIEF_NORMAL)
+        button.set_relief(Gtk.ReliefStyle.NORMAL)
         def popup_cb_clicked(*args):
             self.hide_notification()
             log("popup_cb_clicked%s for action_id=%s, action_text=%s", args, action_id, action_text)

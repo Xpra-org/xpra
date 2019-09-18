@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.os_util import POSIX
 if POSIX:
     from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
@@ -15,7 +15,7 @@ from gi.repository import Gtk
 class BellWindow(Gtk.Window):
     def __init__(self):
         super(BellWindow, self).__init__()
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 120)
         self.set_title("Test System Bell")
         self.connect("destroy", Gtk.main_quit)

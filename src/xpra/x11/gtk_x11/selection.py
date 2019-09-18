@@ -13,7 +13,7 @@ from struct import pack, unpack, calcsize
 from gi.repository import GObject, Gtk
 
 from xpra.gtk_common.gtk_util import (
-    selectiondata_get_data, set_clipboard_data, wait_for_contents, GetClipboard,
+    wait_for_contents, GetClipboard,
     STRUCTURE_MASK,
     )
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
@@ -73,7 +73,9 @@ class ManagerSelection(GObject.GObject):
         if when is self.IF_UNOWNED and old_owner != XNone:
             raise AlreadyOwned
 
-        set_clipboard_data(self.clipboard, "VERSION")
+        #only strings with GTK3?
+        thestring = "VERSION"
+        self.clipboard.set_text(thestring, len(thestring))
 
         # Having acquired the selection, we have to announce our existence
         # (ICCCM 2.8, still).  The details here probably don't matter too
@@ -91,7 +93,7 @@ class ManagerSelection(GObject.GObject):
 
         # Ask ourselves when we acquired the selection:
         contents = wait_for_contents(self.clipboard, "TIMESTAMP")
-        ts_data = selectiondata_get_data(contents)
+        ts_data = contents.get_data()
 
         #data is a timestamp, X11 datatype is Time which is CARD32,
         #(which is 64 bits on 64-bit systems!)

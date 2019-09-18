@@ -8,14 +8,14 @@
 
 import os
 from time import time
-from gi.repository import Gtk
+from gi.repository import Gtk, GdkPixbuf
 
 from xpra.os_util import WIN32, OSX, POSIX, monotonic_time
 from xpra.util import envbool
 from xpra.client.tray_base import TrayBase, log
 from xpra.gtk_common.gtk_util import (
     get_icon_from_file, get_pixbuf_from_data, get_default_root_window,
-    INTERP_HYPER, SHIFT_MASK, ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL,
+    SHIFT_MASK, ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL,
     )
 
 ORIENTATION = {
@@ -167,7 +167,7 @@ class GTKStatusIconTray(TrayBase):
         h = tray_icon.get_height()
         log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
         if tw!=w or th!=h:
-            tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
+            tray_icon = tray_icon.scale_simple(tw, th, GdkPixbuf.InterpType.HYPER)
             log("tray icon scaled to %ix%i", tw, th)
         if SAVE:
             filename = "./statusicon-%s.png" % time()

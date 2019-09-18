@@ -6,14 +6,14 @@
 import cairo
 from gi.repository import Gtk
 
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
+from xpra.gtk_common.gtk_util import KEY_PRESS_MASK, add_close_accel
 
 
 class TransparentColorWindow(Gtk.Window):
 
     def __init__(self):
         super(TransparentColorWindow, self).__init__()
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 320)
         screen = self.get_screen()
         visual = screen.get_rgba_visual()

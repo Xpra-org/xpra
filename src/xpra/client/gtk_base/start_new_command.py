@@ -11,7 +11,6 @@ from gi.repository import Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
-    WIN_POS_CENTER,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.platform.paths import get_icon_dir
@@ -43,7 +42,7 @@ class StartNewCommand(object):
         icon_pixbuf = self.get_icon("forward.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
-        self.window.set_position(WIN_POS_CENTER)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
 
         vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(0)
@@ -53,7 +52,7 @@ class StartNewCommand(object):
             hbox = Gtk.HBox(False, 20)
             vbox.add(hbox)
             hbox.add(Gtk.Label("Category:"))
-            self.category_combo = Gtk.combo_box_new_text()
+            self.category_combo = Gtk.ComboBoxText()
             hbox.add(self.category_combo)
             for name in sorted(xdg_menu.keys()):
                 self.category_combo.append_text(name.decode("utf-8"))
@@ -62,7 +61,7 @@ class StartNewCommand(object):
 
             hbox = Gtk.HBox(False, 20)
             vbox.add(hbox)
-            self.command_combo = Gtk.combo_box_new_text()
+            self.command_combo = Gtk.ComboBoxText()
             hbox.pack_start(Gtk.Label("Command:"))
             hbox.pack_start(self.command_combo)
             self.command_combo.connect("changed", self.command_changed)

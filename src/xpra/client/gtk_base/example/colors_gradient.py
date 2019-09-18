@@ -6,7 +6,7 @@
 import cairo
 
 from xpra.gtk_common.gtk_util import (
-    WIN_POS_CENTER, KEY_PRESS_MASK,
+    KEY_PRESS_MASK,
     add_close_accel,
     )
 
@@ -18,7 +18,7 @@ class ColorGradientWindow(Gtk.Window):
     def __init__(self):
         super(ColorGradientWindow, self).__init__()
         self.set_title("Color Gradient")
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(1024, 768)
         self.set_app_paintable(True)
         self.set_events(KEY_PRESS_MASK)

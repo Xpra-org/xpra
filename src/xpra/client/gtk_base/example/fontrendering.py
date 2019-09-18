@@ -7,7 +7,7 @@ from collections import OrderedDict
 import cairo
 from gi.repository import PangoCairo, Gtk
 
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel
 
 FONT = "Serif 27"
 PATTERN = "%f"
@@ -26,7 +26,7 @@ class FontWindow(Gtk.Window):
 
     def __init__(self):
         super(FontWindow, self).__init__()
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(1600, 1200)
         self.set_app_paintable(True)
         self.connect("draw", self.area_draw)

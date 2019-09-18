@@ -14,7 +14,7 @@ from xpra.os_util import monotonic_time, bytestostr, get_util_logger
 from xpra.simple_stats import std_unit_dec
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
-    TableBuilder, WIN_POS_CENTER,
+    TableBuilder,
     )
 from xpra.platform.paths import get_icon_dir
 
@@ -46,7 +46,7 @@ class OpenRequestsWindow(object):
         icon_pixbuf = self.get_icon("download.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
-        self.window.set_position(WIN_POS_CENTER)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
 
         vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(10)

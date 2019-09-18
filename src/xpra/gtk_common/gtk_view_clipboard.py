@@ -18,10 +18,10 @@ class ClipboardInstance(object):
         self.selection = selection
         self._log = _log
         self.owned_label = label()
-        self.get_targets = Gtk.combo_box_new_text()
+        self.get_targets = Gtk.ComboBoxText()
         self.get_targets.set_sensitive(False)
         self.get_targets.connect("changed", self.get_target_changed)
-        self.set_targets = Gtk.combo_box_new_text()
+        self.set_targets = Gtk.ComboBoxText()
         self.set_targets.append_text("STRING")
         self.set_targets.append_text("UTF8_STRING")
         self.set_targets.set_active(0)

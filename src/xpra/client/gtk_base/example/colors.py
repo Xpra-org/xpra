@@ -6,14 +6,14 @@
 import cairo
 from gi.repository import GLib, Gtk
 
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
+from xpra.gtk_common.gtk_util import KEY_PRESS_MASK, add_close_accel
 
 
 class AnimatedColorWindow(Gtk.Window):
 
     def __init__(self):
         super(AnimatedColorWindow, self).__init__()
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 320)
         self.set_app_paintable(True)
         self.set_events(KEY_PRESS_MASK)

@@ -13,7 +13,7 @@ from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
     color_parse,
-    WIN_POS_CENTER, WINDOW_POPUP, STATE_NORMAL,
+    WINDOW_POPUP, STATE_NORMAL,
     )
 from xpra.platform.paths import get_icon_dir
 from xpra.os_util import get_util_logger
@@ -26,7 +26,7 @@ class ConfirmDialogWindow(object):
     def __init__(self, title="Title", prompt="", info=(), icon="", buttons=()):
         self.window = Gtk.Window(type=WINDOW_POPUP)
         self.window.set_border_width(20)
-        self.window.set_position(WIN_POS_CENTER)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.connect("destroy", self.quit)
         self.window.set_default_size(400, 150)
         self.window.set_title(title)

@@ -11,7 +11,6 @@ from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 from xpra.platform.gui import init as gui_init
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
-    WIN_POS_CENTER,
     )
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
@@ -39,7 +38,7 @@ class UpdateStatusWindow(object):
         icon = self.get_icon("update.png")
         if icon:
             self.window.set_icon(icon)
-        self.window.set_position(WIN_POS_CENTER)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
 
         vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(0)

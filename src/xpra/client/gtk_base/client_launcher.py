@@ -24,7 +24,7 @@ from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, color_parse,
     OptionMenu, choose_file, imagebutton,
-    WIN_POS_CENTER, STATE_NORMAL,
+    STATE_NORMAL,
     DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE,
     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN,
     )
@@ -179,7 +179,7 @@ class ApplicationWindow:
         self.window.set_default_size(400, 260)
         self.window.set_title("Xpra Launcher")
 
-        self.window.set_position(WIN_POS_CENTER)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
 
         vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(15)
@@ -229,7 +229,7 @@ class ApplicationWindow:
 
         # Mode:
         hbox = Gtk.HBox(False, 5)
-        self.mode_combo = Gtk.combo_box_new_text()
+        self.mode_combo = Gtk.ComboBoxText()
         for x in self.get_connection_modes():
             self.mode_combo.append_text(x.upper())
         self.mode_combo.connect("changed", self.mode_changed)

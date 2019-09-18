@@ -20,7 +20,7 @@ from xpra.client import mixin_features
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label, title_box,
     TableBuilder, imagebutton, get_gtk_version_info,
-    RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER,
+    EXPAND, FILL,
     RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_CLOSE, RESPONSE_DELETE_EVENT,
     FILE_CHOOSER_ACTION_SAVE,
     )
@@ -129,7 +129,7 @@ class SessionInfo(Gtk.Window):
         self.set_decorated(True)
         if window_icon_pixbuf:
             self.set_icon(window_icon_pixbuf)
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
 
         #tables on the left in a vbox with buttons at the top:
         self.tab_box = Gtk.VBox(False, 0)
@@ -500,7 +500,7 @@ class SessionInfo(Gtk.Window):
             self.show_tab(contents)
         button = imagebutton(title, icon, clicked_callback=show_tab)
         button.connect("clicked", show_tab)
-        button.set_relief(RELIEF_NONE)
+        button.set_relief(Gtk.ReliefStyle.NONE)
         self.tab_button_box.add(button)
         self.tabs.append((title, button, contents, populate_cb))
 
@@ -509,11 +509,11 @@ class SessionInfo(Gtk.Window):
         for _, b, t, p_cb in self.tabs:
             if t==table:
                 button = b
-                b.set_relief(RELIEF_NORMAL)
+                b.set_relief(Gtk.ReliefStyle.NORMAL)
                 b.grab_focus()
                 self.populate_cb = p_cb
             else:
-                b.set_relief(RELIEF_NONE)
+                b.set_relief(Gtk.ReliefStyle.NONE)
         assert button
         for x in self.tab_box.get_children():
             if x!=self.tab_button_box:

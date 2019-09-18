@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk
-gtk = import_gtk()
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
 
 def change_callback(self, window, entry):
@@ -16,19 +14,19 @@ def make_window(OR=False):
 	state.counter = 0
 	state.width = 400-OR*100
 	state.height = 200-OR*50
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = Gtk.Window(Gtk.WINDOW_TOPLEVEL)
 	window.set_size_request(state.width, state.height)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", Gtk.mainquit)
 	window.set_title("OR=%s" % OR)
-	window.set_position(gtk.WIN_POS_CENTER)
-	vbox = gtk.VBox()
-	hbox = gtk.HBox()
-	w_e = gtk.Entry(max=64)
+	window.set_position(Gtk.WindowPosition.CENTER)
+	vbox = Gtk.VBox()
+	hbox = Gtk.HBox()
+	w_e = Gtk.Entry(max=64)
 	hbox.add(w_e)
-	hbox.add(gtk.Label("x"))
-	h_e = gtk.Entry(max=64)
+	hbox.add(Gtk.Label("x"))
+	h_e = Gtk.Entry(max=64)
 	hbox.add(h_e)
-	set_size_btn = gtk.Button("set size")
+	set_size_btn = Gtk.Button("set size")
 	def set_size(*args):
 		w = int(w_e.get_text())
 		h = int(h_e.get_text())
@@ -38,7 +36,7 @@ def make_window(OR=False):
 	hbox.add(set_size_btn)
 	vbox.add(hbox)
 
-	btn = gtk.Button("auto resize me")
+	btn = Gtk.Button("auto resize me")
 	def resize(*args):
 		state.width = max(200, (state.width+20) % 600)
 		state.height = max(200, (state.height+20) % 400)
@@ -47,7 +45,7 @@ def make_window(OR=False):
 	btn.connect('clicked', resize)
 	vbox.add(btn)
 
-	btn = gtk.Button("fast resize")
+	btn = Gtk.Button("fast resize")
 	def do_resize_fast():
 		width = max(200, (state.width+1) % 600)
 		height = max(200, (state.height+1) % 400)
@@ -69,7 +67,7 @@ def make_window(OR=False):
 def main():
 	make_window(False)
 	make_window(True)
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

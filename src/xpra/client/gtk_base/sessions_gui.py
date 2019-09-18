@@ -17,7 +17,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import (
     add_close_accel, TableBuilder, scaled_image, color_parse,
-    imagebutton, STATE_NORMAL, WIN_POS_CENTER,
+    imagebutton, STATE_NORMAL,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.net.net_util import if_indextoname
@@ -38,7 +38,7 @@ class SessionsGUI(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_size_request(440, 200)
-        self.set_position(WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         icon = self.get_pixbuf("xpra")
         if icon:
             self.set_icon(icon)
@@ -384,7 +384,7 @@ class SessionsGUI(Gtk.Window):
             return Gtk.Label(uri), btn, bopen
 
         #multiple modes / uris
-        uri_menu = Gtk.combo_box_new_text()
+        uri_menu = Gtk.ComboBoxText()
         uri_menu.set_size_request(340, 48)
         #sort by protocol so TCP comes first
         order = {"socket" : 0, "ssh" : 1, "ssl" :2, "wss" : 3, "tcp" : 4, "ws" : 8}
