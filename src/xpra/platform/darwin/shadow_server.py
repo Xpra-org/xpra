@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
 from xpra.util import envbool
-from xpra.os_util import memoryview_to_bytes, _buffer
+from xpra.os_util import memoryview_to_bytes
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
@@ -29,7 +29,7 @@ ALPHA = {
          CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
    }
 
-BTYPES = tuple(x for x in (str, bytes, memoryview, _buffer, bytearray) if x is not None)
+BTYPES = tuple(str, bytes, memoryview, bytearray)
 
 #ensure that picture_encode can deal with pixels as NSCFData:
 def patch_picture_encode():

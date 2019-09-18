@@ -6,7 +6,7 @@
 
 
 from threading import Thread, Lock
-from xpra.os_util import Queue
+from queue import Queue
 
 from xpra.log import Logger
 log = Logger("util")

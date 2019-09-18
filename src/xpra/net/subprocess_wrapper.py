@@ -6,13 +6,14 @@
 import os
 import sys
 import subprocess
+from queue import Queue
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException
 from xpra.net.protocol import Protocol
-from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr, hexstr, WIN32, POSIX
+from xpra.os_util import setbinarymode, SIGNAMES, bytestostr, hexstr, WIN32, POSIX
 from xpra.child_reaper import getChildReaper
 from xpra.log import Logger
 

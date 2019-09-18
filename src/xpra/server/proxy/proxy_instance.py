@@ -6,6 +6,7 @@
 
 import socket
 from time import sleep, time
+from queue import Queue
 
 from xpra.net import compression
 from xpra.net.net_util import get_network_caps
@@ -16,7 +17,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.os_util import (
-    Queue, get_hex_uuid,
+    get_hex_uuid,
     monotonic_time, bytestostr, strtobytes,
     )
 from xpra.util import (

@@ -9,9 +9,10 @@
 from time import sleep
 from threading import Event
 from collections import deque
+from queue import Queue
 
 from xpra.make_thread import start_thread
-from xpra.os_util import Queue, monotonic_time
+from xpra.os_util import monotonic_time
 from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, typedict, AtomicInteger
 from xpra.net.compression import compressed_wrapper, Compressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics

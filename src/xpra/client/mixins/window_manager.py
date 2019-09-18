@@ -12,6 +12,7 @@ import signal
 import datetime
 from collections import deque
 from time import sleep, time
+from queue import Queue
 from gi.repository import GLib
 
 from xpra.platform.gui import (
@@ -23,7 +24,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import make_thread
 from xpra.os_util import (
-    Queue, bytestostr, monotonic_time, memoryview_to_bytes,
+    bytestostr, monotonic_time, memoryview_to_bytes,
     OSX, POSIX, is_Ubuntu,
     )
 from xpra.util import iround, envint, envbool, typedict, make_instance, updict

@@ -6,6 +6,7 @@
 
 import os
 import signal
+from queue import Queue
 from multiprocessing import Process
 
 from xpra.server.proxy.proxy_instance import ProxyInstance
@@ -15,7 +16,7 @@ from xpra.net.protocol import Protocol
 from xpra.os_util import (
     SIGNAMES, POSIX,
     bytestostr,
-    Queue, osexpand,
+    osexpand,
     getuid, getgid, get_username_for_uid, setuidgid,
     register_SIGUSR_signals,
     )

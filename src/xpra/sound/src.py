@@ -7,8 +7,9 @@
 import sys
 import os.path
 from gi.repository import GObject
+from queue import Queue
 
-from xpra.os_util import SIGNAMES, Queue, monotonic_time
+from xpra.os_util import SIGNAMES, monotonic_time
 from xpra.util import csv, envint, envbool, envfloat, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal

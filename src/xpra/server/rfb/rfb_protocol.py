@@ -5,8 +5,9 @@
 
 import struct
 from socket import error as socket_error
+from queue import Queue
 
-from xpra.os_util import Queue, hexstr, strtobytes
+from xpra.os_util import hexstr, strtobytes
 from xpra.util import repr_ellipsized, envint, nonl
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue

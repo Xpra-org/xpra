@@ -12,7 +12,7 @@ from xpra.net import compression
 from xpra.util import typedict, csv, envint, envbool, repr_ellipsized, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
-from xpra.os_util import bytestostr, _buffer
+from xpra.os_util import bytestostr
 try:
     from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 except ImportError:
@@ -311,7 +311,7 @@ class WindowBackingBase(object):
 
     def unpremultiply(self, img_data):
         from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
-        if type(img_data) not in (str, _buffer):
+        if not isinstance(img_data, str):
             try:
                 unpremultiply_argb_in_place(img_data)
                 return img_data

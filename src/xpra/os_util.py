@@ -17,20 +17,6 @@ import binascii
 #hide some ugly python3 compat:
 import _thread as thread            #@UnresolvedImport @UnusedImport (python3)
 
-try:
-    from queue import Queue             #@UnresolvedImport @UnusedImport (python3)
-except ImportError:
-    from Queue import Queue             #@Reimport @UnusedImport
-assert Queue
-
-try:
-    import builtins                     #@UnresolvedImport @UnusedImport (python3)
-except ImportError:
-    import __builtin__ as builtins      #@Reimport @UnusedImport
-assert builtins
-_buffer = builtins.__dict__.get("buffer")
-
-
 SIGNAMES = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
     SIGNAMES[getattr(signal, signame)] = signame
@@ -73,8 +59,6 @@ def memoryview_to_bytes(v):
         return v
     if isinstance(v, memoryview):
         return v.tobytes()
-    if _buffer and isinstance(v, _buffer):
-        return bytes(v)
     if isinstance(v, bytearray):
         return bytes(v)
     return strtobytes(v)

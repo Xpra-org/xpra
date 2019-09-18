@@ -11,8 +11,9 @@
 import os
 from socket import error as socket_error
 from threading import Lock, Event
+from queue import Queue
 
-from xpra.os_util import Queue, memoryview_to_bytes, strtobytes, bytestostr, hexstr
+from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
