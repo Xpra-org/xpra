@@ -5,13 +5,13 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from queue import Queue
 from gi.repository import GObject, GLib               #@UnresolvedImport
 
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.net.protocol import Protocol
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
 from xpra.net.bytestreams import Connection
-from xpra.os_util import Queue
 from xpra.log import Logger
 
 log = Logger("test")
