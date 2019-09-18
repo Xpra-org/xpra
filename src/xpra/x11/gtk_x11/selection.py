@@ -12,7 +12,7 @@
 from struct import pack, unpack, calcsize
 from gi.repository import GObject, Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import wait_for_contents, GetClipboard
+from xpra.gtk_common.gtk_util import GetClipboard
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -89,7 +89,11 @@ class ManagerSelection(GObject.GObject):
         # some weird tricks to get at these.
 
         # Ask ourselves when we acquired the selection:
-        contents = wait_for_contents(self.clipboard, "TIMESTAMP")
+        def wait_for_contents(clipboard, target):
+            atom = Gdk.Atom.intern(target, False)
+            return clipboard.wait_for_contents(atom)
+        timestamp_atom = Gdk.Atom.intern("TIMESTAMP", False)
+        contents = self.clipboard.wait_for_contents(timestamp_atom)
         ts_data = contents.get_data()
 
         #data is a timestamp, X11 datatype is Time which is CARD32,

@@ -230,11 +230,6 @@ def GetClipboard(selection):
 def atom_intern(atom_name, only_if_exits=False):
     return Gdk.Atom.intern(bytestostr(atom_name), only_if_exits)
 
-#copied from pygtkcompat - I wished I had found this earlier..
-orig_pack_end = Gtk.Box.pack_end
-def pack_end(self, child, expand=True, fill=True, padding=0):
-    orig_pack_end(self, child, expand, fill, padding)
-Gtk.Box.pack_end = pack_end
 orig_pack_start = Gtk.Box.pack_start
 def pack_start(self, child, expand=True, fill=True, padding=0):
     orig_pack_start(self, child, expand, fill, padding)
@@ -245,21 +240,6 @@ class OptionMenu(Gtk.MenuButton):
         return self.set_popup(menu)
     def get_menu(self):
         return self.get_popup()
-
-def query_info_async(gfile, attributes, callback, flags=0, cancellable=None):
-    G_PRIORITY_DEFAULT = 0
-    gfile.query_info_async(attributes, flags, G_PRIORITY_DEFAULT, cancellable, callback, None)
-
-def load_contents_async(gfile, callback, cancellable=None, user_data=None):
-    gfile.load_contents_async(cancellable, callback, user_data)
-
-def load_contents_finish(gfile, res):
-    _, data, etag = gfile.load_contents_finish(res)
-    return data, len(data), etag
-
-def wait_for_contents(clipboard, target):
-    atom = Gdk.Atom.intern(target, False)
-    return clipboard.wait_for_contents(atom)
 
 GRAB_STATUS_STRING = {
     Gdk.GrabStatus.SUCCESS          : "SUCCESS",

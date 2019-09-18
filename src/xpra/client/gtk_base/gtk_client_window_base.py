@@ -26,7 +26,6 @@ from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_pixbuf_from_data, get_default_root_window,
     enable_alpha,
-    query_info_async, load_contents_async, load_contents_finish,
     BUTTON_MASK,
     GRAB_STATUS_STRING,
     WINDOW_EVENT_MASK,
@@ -345,18 +344,23 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 size = file_info.get_size()
                 draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
                 def got_file_data(gfile, result, user_data=None):
-                    data, filesize, entity = load_contents_finish(gfile, result)
+                    _, data, entity = gfile.load_contents_finish(result)
+                    filesize = len(data)
                     draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
                     file_done(filename)
                     openit = self._client.remote_open_files
                     draglog.info("sending file %s (%i bytes)", basename, filesize)
                     self._client.send_file(filename, "", data, filesize=filesize, openit=openit)
-                load_contents_async(gfile, got_file_data, user_data=(filename, True))
+                cancellable = None
+                user_data = (filename, True)
+                gfile.load_contents_async(cancellable, got_file_data, user_data)
             try:
                 gfile = Gio.File.new_for_path(filename)
                 #basename = gf.get_basename()
                 FILE_QUERY_INFO_NONE = 0
-                query_info_async(gfile, "standard::*", got_file_info, flags=FILE_QUERY_INFO_NONE)
+                G_PRIORITY_DEFAULT = 0
+                cancellable = None
+                gfile.query_info_async("standard::*", FILE_QUERY_INFO_NONE, G_PRIORITY_DEFAULT, cancellable, got_file_info, None)
             except Exception as e:
                 draglog("file upload for %s:", filename, exc_info=True)
                 draglog.error("Error: cannot upload '%s':", filename)

@@ -198,7 +198,7 @@ class Popup(Gtk.Window):
             close_window.connect("button-press-event", self.user_closed)
             close_window.add(close_button)
             close_window.set_size_request(icon.get_width(), icon.get_height())
-            header_box.pack_end(close_window, False, False)
+            header_box.pack_end(close_window, False, False, 0)
         main_box.pack_start(header_box)
 
         body_box = Gtk.HBox()
