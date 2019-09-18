@@ -24,7 +24,6 @@ from gi.repository import GLib, Gtk, GdkPixbuf
 from xpra.os_util import OSX, bytestostr
 from xpra.gtk_common.gtk_util import (
     add_close_accel, display_get_default, color_parse,
-    STATE_NORMAL,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
 
@@ -237,11 +236,11 @@ class Popup(Gtk.Window):
             main_box.pack_start(alignment)
         self.add(main_box)
         if stack.bg_color is not None:
-            self.modify_bg(STATE_NORMAL, stack.bg_color)
+            self.modify_bg(Gtk.StateType.NORMAL, stack.bg_color)
         if stack.fg_color is not None:
-            self.message.modify_fg(STATE_NORMAL, stack.fg_color)
-            self.header.modify_fg(STATE_NORMAL, stack.fg_color)
-            self.counter.modify_fg(STATE_NORMAL, stack.fg_color)
+            self.message.modify_fg(Gtk.StateType.NORMAL, stack.fg_color)
+            self.header.modify_fg(Gtk.StateType.NORMAL, stack.fg_color)
+            self.counter.modify_fg(Gtk.StateType.NORMAL, stack.fg_color)
         self.show_timeout = show_timeout
         self.hover = False
         self.show_all()

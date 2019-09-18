@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import GObject
+from gi.repository import GObject, Gdk
 
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync, xswallow
@@ -14,8 +14,7 @@ from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, display_get_default,
-    GDKWINDOW_FOREIGN, CLASS_INPUT_ONLY, GDKWindow,
-    PARAM_READABLE,
+    GDKWindow,
     )
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.selection import ManagerSelection
@@ -156,10 +155,10 @@ class Wm(GObject.GObject):
     __gproperties__ = {
         "windows": (GObject.TYPE_PYOBJECT,
                     "Set of managed windows (as WindowModels)", "",
-                    PARAM_READABLE),
+                    GObject.ParamFlags.READABLE),
         "toplevel": (GObject.TYPE_PYOBJECT,
                      "Toplevel container widget for the display", "",
-                     PARAM_READABLE),
+                     GObject.ParamFlags.READABLE),
         }
     __gsignals__ = {
         # Public use:
@@ -241,7 +240,7 @@ class Wm(GObject.GObject):
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.
             xid = w.get_xid()
-            if (w.get_window_type() == GDKWINDOW_FOREIGN
+            if (w.get_window_type() == Gdk.WindowType.FOREIGN
                 and not X11Window.is_override_redirect(xid)
                 and X11Window.is_mapped(xid)):
                 log("Wm managing pre-existing child window %#x", xid)
@@ -476,7 +475,7 @@ class Wm(GObject.GObject):
         # clobber any XSelectInput calls that *we* might have wanted to make
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
-        self._ewmh_window = GDKWindow(self._root, wclass=CLASS_INPUT_ONLY, title=self._wm_name)
+        self._ewmh_window = GDKWindow(self._root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
         prop_set(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
         self.root_set("_NET_SUPPORTING_WM_CHECK", "window", self._ewmh_window)

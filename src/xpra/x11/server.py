@@ -17,10 +17,7 @@ from xpra.util import updict, rindex, envbool, envint, typedict
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.gtk_util import (
-    get_default_root_window,
-    SUBSTRUCTURE_MASK, GDKWINDOW_TEMP,
-    )
+from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
@@ -238,7 +235,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
         root = get_default_root_window()
-        root.set_events(root.get_events() | SUBSTRUCTURE_MASK)
+        root.set_events(root.get_events() | Gdk.EventMask.SUBSTRUCTURE_MASK)
         prop_set(root, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
@@ -623,7 +620,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if self.root_overlay and self.root_overlay==xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
-        if raw_window.get_window_type()==GDKWINDOW_TEMP:
+        if raw_window.get_window_type()==Gdk.WindowType.TEMP:
             #ignoring one of gtk's temporary windows
             #all the windows we manage should be Gdk.WINDOW_FOREIGN
             windowlog("ignoring TEMP window %#x", xid)

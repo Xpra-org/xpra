@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from gi.repository import Gdk
 
 from xpra.util import AdHocStruct
 from xpra.client.keyboard_helper import KeyboardHelper
@@ -15,18 +16,17 @@ class KeyboardHelperTest(unittest.TestCase):
 
 	def test_modifier(self):
 		kh = KeyboardHelper(None)
-		from xpra.gtk_common.gtk_util import SHIFT_MASK, LOCK_MASK, CONTROL_MASK, META_MASK	#, SUPER_MASK, HYPER_MASK
 		def checkmask(mask, *modifiers):
 			#print("checkmask(%s, %s)", mask, modifiers)
 			mods = kh.mask_to_names(mask)
 			assert set(mods)==set(modifiers), "expected %s got %s" % (modifiers, mods)
-		checkmask(SHIFT_MASK, "shift")
-		checkmask(LOCK_MASK, "lock")
+		checkmask(Gdk.ModifierType.SHIFT_MASK, "shift")
+		checkmask(Gdk.ModifierType.LOCK_MASK, "lock")
 		if getattr(kh.keyboard, "swap_keys", False):
-			checkmask(SHIFT_MASK | META_MASK, "shift", "control")
+			checkmask(Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.META_MASK, "shift", "control")
 			#turn swap off and run again:
 			kh.keyboard.swap_keys = False
-		checkmask(SHIFT_MASK | CONTROL_MASK, "shift", "control")
+		checkmask(Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.CONTROL_MASK, "shift", "control")
 		kh.cleanup()
 
 	def test_keymap_properties(self):

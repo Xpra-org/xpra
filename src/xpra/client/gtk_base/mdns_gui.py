@@ -75,13 +75,11 @@ def check_mdns(gui):
 
 def win32_bonjour_download_warning(gui):
     from gi.repository import Pango
-    from xpra.gtk_common.gtk_util import DIALOG_MODAL, DESTROY_WITH_PARENT
     dialog = Gtk.Dialog("Bonjour not found",
            gui,
-           DIALOG_MODAL | DESTROY_WITH_PARENT)
-    RESPONSE_CANCEL = 1
+           Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT)
     RESPONSE_DOWNLOAD = 2
-    dialog.add_button(Gtk.STOCK_CANCEL,     RESPONSE_CANCEL)
+    dialog.add_button(Gtk.STOCK_CANCEL,     Gtk.ResponseType.CANCEL)
     dialog.add_button("Download Bonjour",   RESPONSE_DOWNLOAD)
     def add(widget, padding=0):
         a = Gtk.Alignment()
@@ -89,10 +87,10 @@ def win32_bonjour_download_warning(gui):
         a.add(widget)
         a.set_padding(padding, padding, padding, padding)
         dialog.vbox.pack_start(a)
-    title = gtk.Label("Bonjour support not found")
+    title = Gtk.Label("Bonjour support not found")
     title.modify_font(Pango.FontDescription("sans 14"))
     add(title, 16)
-    info = gtk.Label("To automatically discover xpra sessions via mDNS,\n"+
+    info = Gtk.Label("To automatically discover xpra sessions via mDNS,\n"+
                      "you can install 'Bonjour'.\n\n")
     add(info, 10)
     dialog.vbox.show_all()

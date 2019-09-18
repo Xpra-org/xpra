@@ -10,12 +10,9 @@
 # else steals it, then we should exit.
 
 from struct import pack, unpack, calcsize
-from gi.repository import GObject, Gtk
+from gi.repository import GObject, Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import (
-    wait_for_contents, GetClipboard,
-    STRUCTURE_MASK,
-    )
+from xpra.gtk_common.gtk_util import wait_for_contents, GetClipboard
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -120,7 +117,7 @@ class ManagerSelection(GObject.GObject):
             try:
                 with xsync:
                     window = get_pywindow(self.clipboard, old_owner)
-                    window.set_events(window.get_events() | STRUCTURE_MASK)
+                    window.set_events(window.get_events() | Gdk.EventMask.STRUCTURE_MASK)
                 log("got window")
             except XError:
                 log("Previous owner is already gone, not blocking")

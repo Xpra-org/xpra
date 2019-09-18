@@ -11,7 +11,6 @@ from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gtk_util import (
     display_get_default, get_default_root_window, GDKWindow,
-    STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -228,7 +227,8 @@ class SystemTray(GObject.GObject):
         if w==0 and h==0:
             log("dock_tray: invalid tray geometry, ignoring this request")
             return
-        event_mask = STRUCTURE_MASK | EXPOSURE_MASK | PROPERTY_CHANGE_MASK
+        em = Gdk.EventMask
+        event_mask = em.STRUCTURE_MASK | em.EXPOSURE_MASK | em.PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
         add_event_receiver(window, self)
         w = max(1, min(MAX_TRAY_SIZE, w))

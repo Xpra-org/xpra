@@ -11,9 +11,7 @@ from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image,
-    color_parse,
-    WINDOW_POPUP, STATE_NORMAL,
+    add_close_accel, scaled_image, color_parse,
     )
 from xpra.platform.paths import get_icon_dir
 from xpra.os_util import get_util_logger
@@ -45,7 +43,7 @@ class ConfirmDialogWindow(object):
             l.modify_font(Pango.FontDescription(font))
             if label.startswith("WARNING"):
                 red = color_parse("red")
-                l.modify_fg(STATE_NORMAL, red)
+                l.modify_fg(Gtk.StateType.NORMAL, red)
             al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
             vbox.add(al)

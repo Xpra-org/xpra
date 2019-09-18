@@ -4,13 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject, Gdk
 
 from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
     )
-from xpra.gtk_common.gtk_util import PROPERTY_CHANGE_MASK
 from xpra.log import Logger
 
 log = Logger("x11", "util")
@@ -27,7 +26,7 @@ class XRootPropWatcher(GObject.GObject):
         self._props = props
         self._root = root_window
         self._saved_event_mask = self._root.get_events()
-        self._root.set_events(self._saved_event_mask | PROPERTY_CHANGE_MASK)
+        self._root.set_events(self._saved_event_mask | Gdk.EventMask.PROPERTY_CHANGE_MASK)
         add_event_receiver(self._root, self)
 
     def cleanup(self):

@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import (WINDOW_TOPLEVEL,
-	WINDOW_STATE_WITHDRAWN, WINDOW_STATE_ICONIFIED, WINDOW_STATE_MAXIMIZED, WINDOW_STATE_STICKY,
-	WINDOW_STATE_FULLSCREEN, WINDOW_STATE_ABOVE, WINDOW_STATE_BELOW)
+from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
 
 
 def main():
@@ -87,13 +85,13 @@ def main():
 
 	def window_state(widget, event):
 		STATES = {
-				WINDOW_STATE_WITHDRAWN	: "withdrawn",
-				WINDOW_STATE_ICONIFIED	: "iconified",
-				WINDOW_STATE_MAXIMIZED	: "maximized",
-				WINDOW_STATE_STICKY		: "sticky",
-				WINDOW_STATE_FULLSCREEN	: "fullscreen",
-				WINDOW_STATE_ABOVE		: "above",
-				WINDOW_STATE_BELOW		: "below",
+				Gdk.WindowState.WITHDRAWN	: "withdrawn",
+				Gdk.WindowState.ICONIFIED	: "iconified",
+				Gdk.WindowState.MAXIMIZED	: "maximized",
+				Gdk.WindowState.STICKY		: "sticky",
+				Gdk.WindowState.FULLSCREEN	: "fullscreen",
+				Gdk.WindowState.ABOVE		: "above",
+				Gdk.WindowState.BELOW		: "below",
 				}
 		print("window_state(%s, %s)" % (widget, event))
 		print("flags: %s" % [STATES[x] for x in STATES.keys() if x & event.new_window_state])

@@ -25,16 +25,10 @@ from xpra.util import (
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_pixbuf_from_data, get_default_root_window,
-    drag_status,
-    drag_context_targets, drag_context_actions,
-    drag_dest_window, drag_widget_get_data,
     enable_alpha,
     query_info_async, load_contents_async, load_contents_finish,
-    WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS,
-    SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
-    DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY,
-    BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
-    POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK,
+    BUTTON_MASK,
+    GRAB_STATUS_STRING,
     WINDOW_EVENT_MASK,
     )
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
@@ -129,7 +123,6 @@ def parse_padding_colors(colors_str):
     return padding_colors
 PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS"))
 
-
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS = set((
                     #"DIALOG",
@@ -164,10 +157,10 @@ UNDECORATED_TYPE_HINTS = set((
                     "DND"))
 
 GDK_SCROLL_MAP = {
-    SCROLL_UP       : 4,
-    SCROLL_DOWN     : 5,
-    SCROLL_LEFT     : 6,
-    SCROLL_RIGHT    : 7,
+    Gdk.ScrollDirection.UP       : 4,
+    Gdk.ScrollDirection.DOWN     : 5,
+    Gdk.ScrollDirection.LEFT     : 6,
+    Gdk.ScrollDirection.RIGHT    : 7,
     }
 
 
@@ -199,9 +192,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def init_window(self, metadata):
         self.init_max_window_size()
         if self._is_popup(metadata):
-            window_type = WINDOW_POPUP
+            window_type = Gtk.WindowType.POPUP
         else:
-            window_type = WINDOW_TOPLEVEL
+            window_type = Gtk.WindowType.TOPLEVEL
         self.on_realize_cb = {}
         self.do_init_window(window_type)
         self.init_drawing_area()
@@ -261,15 +254,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         targets = [
             Gtk.TargetEntry.new("text/uri-list", 0, 80),
             ]
-        flags = DEST_DEFAULT_MOTION | DEST_DEFAULT_HIGHLIGHT
-        actions = ACTION_COPY   # | Gdk.ACTION_LINK
+        flags = Gtk.DestDefaults.MOTION | Gtk.DestDefaults.HIGHLIGHT
+        actions = Gdk.DragAction.COPY   # | Gdk.ACTION_LINK
         self.drag_dest_set(flags, targets, actions)
         self.connect('drag_drop', self.drag_drop_cb)
         self.connect('drag_motion', self.drag_motion_cb)
         self.connect('drag_data_received', self.drag_got_data_cb)
 
     def drag_drop_cb(self, widget, context, x, y, time):
-        targets = drag_context_targets(context)
+        targets = list(x.name() for x in context.list_targets())
         draglog("drag_drop_cb%s targets=%s", (widget, context, x, y, time), targets)
         if not targets:
             #this happens on macos, but we can still get the data..
@@ -278,26 +271,27 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             draglog("Warning: cannot handle targets:")
             draglog(" %s", csv(targets))
             return
-        drag_widget_get_data(self, context, "text/uri-list", time)
+        atom = Gdk.Atom.intern("text/uri-list", False)
+        widget.drag_get_data(context, atom, time)        
 
     def drag_motion_cb(self, wid, context, x, y, time):
         draglog("drag_motion_cb%s", (wid, context, x, y, time))
-        drag_status(context, ACTION_COPY, time)
+        Gdk.drag_status(context, Gdk.DragAction.COPY, time)
         return True #accept this data
 
     def drag_got_data_cb(self, wid, context, x, y, selection, info, time):
         draglog("drag_got_data_cb%s", (wid, context, x, y, selection, info, time))
         #draglog("%s: %s", type(selection), dir(selection))
         #draglog("%s: %s", type(context), dir(context))
-        targets = drag_context_targets(context)
-        actions = drag_context_actions(context)
+        targets = list(x.name() for x in context.list_targets())
+        actions = context.get_actions()
         def xid(w):
             #TODO: use a generic window handle function
             #this only used for debugging for now
             if w and POSIX:
                 return w.get_xid()
             return 0
-        dest_window = xid(drag_dest_window(context))
+        dest_window = xid(context.get_dest_window())
         source_window = xid(context.get_source_window())
         suggested_action = context.get_suggested_action()
         draglog("drag_got_data_cb context: source_window=%#x, dest_window=%#x",
@@ -782,23 +776,23 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         statelog("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s",
                  self, widget, repr(event), event.changed_mask, event.new_window_state)
         state_updates = {}
-        if event.changed_mask & self.WINDOW_STATE_FULLSCREEN:
-            state_updates["fullscreen"] = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
-        if event.changed_mask & self.WINDOW_STATE_ABOVE:
-            state_updates["above"] = bool(event.new_window_state & self.WINDOW_STATE_ABOVE)
-        if event.changed_mask & self.WINDOW_STATE_BELOW:
-            state_updates["below"] = bool(event.new_window_state & self.WINDOW_STATE_BELOW)
-        if event.changed_mask & self.WINDOW_STATE_STICKY:
-            state_updates["sticky"] = bool(event.new_window_state & self.WINDOW_STATE_STICKY)
-        if event.changed_mask & self.WINDOW_STATE_ICONIFIED:
-            state_updates["iconified"] = bool(event.new_window_state & self.WINDOW_STATE_ICONIFIED)
-        if event.changed_mask & self.WINDOW_STATE_MAXIMIZED:
+        if event.changed_mask & Gdk.WindowState.FULLSCREEN:
+            state_updates["fullscreen"] = bool(event.new_window_state & Gdk.WindowState.FULLSCREEN)
+        if event.changed_mask & Gdk.WindowState.ABOVE:
+            state_updates["above"] = bool(event.new_window_state & Gdk.WindowState.ABOVE)
+        if event.changed_mask & Gdk.WindowState.BELOW:
+            state_updates["below"] = bool(event.new_window_state & Gdk.WindowState.BELOW)
+        if event.changed_mask & Gdk.WindowState.STICKY:
+            state_updates["sticky"] = bool(event.new_window_state & Gdk.WindowState.STICKY)
+        if event.changed_mask & Gdk.WindowState.ICONIFIED:
+            state_updates["iconified"] = bool(event.new_window_state & Gdk.WindowState.ICONIFIED)
+        if event.changed_mask & Gdk.WindowState.MAXIMIZED:
             #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
             #or when we get the configure event - which should come straight after
             #if we're changing the maximized state
-            state_updates["maximized"] = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
-        if event.changed_mask & self.WINDOW_STATE_FOCUSED:
-            state_updates["focused"] = bool(event.new_window_state & self.WINDOW_STATE_FOCUSED)
+            state_updates["maximized"] = bool(event.new_window_state & Gdk.WindowState.MAXIMIZED)
+        if event.changed_mask & Gdk.WindowState.FOCUSED:
+            state_updates["focused"] = bool(event.new_window_state & Gdk.WindowState.FOCUSED)
         self.update_window_state(state_updates)
 
     def update_window_state(self, state_updates):
@@ -1312,7 +1306,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def keyboard_grab(self, *args):
         grablog("keyboard_grab%s", args)
         r = Gdk.keyboard_grab(self.get_window(), True, 0)
-        self._client.keyboard_grabbed = r==GRAB_SUCCESS
+        self._client.keyboard_grabbed = r==Gdk.GrabStatus.SUCCESS
         grablog("keyboard_grab%s Gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s",
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
 
@@ -1326,14 +1320,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def pointer_grab(self, *args):
         gdkwin = self.get_window()
-        event_mask = (BUTTON_PRESS_MASK |
-                      BUTTON_RELEASE_MASK |
-                      POINTER_MOTION_MASK  |
-                      POINTER_MOTION_HINT_MASK |
-                      ENTER_NOTIFY_MASK |
-                      LEAVE_NOTIFY_MASK)
+        em = Gdk.EventMask
+        event_mask = (em.BUTTON_PRESS_MASK |
+                      em.BUTTON_RELEASE_MASK |
+                      em.POINTER_MOTION_MASK  |
+                      em.POINTER_MOTION_HINT_MASK |
+                      em.ENTER_NOTIFY_MASK |
+                      em.LEAVE_NOTIFY_MASK)
         r = Gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, 0)
-        self._client.pointer_grabbed = r==GRAB_SUCCESS
+        self._client.pointer_grabbed = r==Gdk.GrabStatus.SUCCESS
         grablog("pointer_grab%s Gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
 
@@ -1987,7 +1982,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return v
 
     def _event_buttons(self, event):
-        return [button for mask, button in self.BUTTON_MASK.items() if event.state & mask]
+        return [button for mask, button in BUTTON_MASK.items() if event.state & mask]
 
     def parse_key_event(self, event, pressed):
         keyval = event.keyval

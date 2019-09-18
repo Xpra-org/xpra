@@ -4,7 +4,7 @@
 
 import sys
 from collections import deque
-from gi.repository import GLib, Pango, Gtk
+from gi.repository import GLib, Pango, Gtk, Gdk
 
 from xpra.platform.paths import get_icon
 
@@ -50,30 +50,26 @@ class KeyboardStateInfoWindow:
             self.window.set_icon(icon)
 
     def init_constants(self):
-        from xpra.gtk_common.gtk_util import (
-            SHIFT_MASK, LOCK_MASK, CONTROL_MASK,
-            MOD1_MASK, MOD2_MASK, MOD3_MASK, MOD4_MASK, MOD5_MASK,
-            )
         self.modifier_names = {
-                          SHIFT_MASK        : "Shift",
-                          LOCK_MASK         : "Lock",
-                          CONTROL_MASK      : "Control",
-                          MOD1_MASK         : "mod1",
-                          MOD2_MASK         : "mod2",
-                          MOD3_MASK         : "mod3",
-                          MOD4_MASK         : "mod4",
-                          MOD5_MASK         : "mod5"
-                          }
+            Gdk.ModifierType.SHIFT_MASK        : "Shift",
+            Gdk.ModifierType.LOCK_MASK         : "Lock",
+            Gdk.ModifierType.CONTROL_MASK      : "Control",
+            Gdk.ModifierType.MOD1_MASK         : "mod1",
+            Gdk.ModifierType.MOD2_MASK         : "mod2",
+            Gdk.ModifierType.MOD3_MASK         : "mod3",
+            Gdk.ModifierType.MOD4_MASK         : "mod4",
+            Gdk.ModifierType.MOD5_MASK         : "mod5"
+        }
         self.short_modifier_names = {
-                          SHIFT_MASK        : "S",
-                          LOCK_MASK         : "L",
-                          CONTROL_MASK      : "C",
-                          MOD1_MASK         : "1",
-                          MOD2_MASK         : "2",
-                          MOD3_MASK         : "3",
-                          MOD4_MASK         : "4",
-                          MOD5_MASK         : "5"
-                          }
+            Gdk.ModifierType.SHIFT_MASK        : "S",
+            Gdk.ModifierType.LOCK_MASK         : "L",
+            Gdk.ModifierType.CONTROL_MASK      : "C",
+            Gdk.ModifierType.MOD1_MASK         : "1",
+            Gdk.ModifierType.MOD2_MASK         : "2",
+            Gdk.ModifierType.MOD3_MASK         : "3",
+            Gdk.ModifierType.MOD4_MASK         : "4",
+            Gdk.ModifierType.MOD5_MASK         : "5"
+        }
 
     def populate_modifiers(self, *_args):
         (x, y, current_mask) = self.window.get_root_window().get_pointer()[-3:]
@@ -97,7 +93,7 @@ class KeyboardStateInfoWindow:
 
     def add_key_event(self, etype, event):
         modifiers = self.mask_to_names(event.state, self.short_modifier_names)
-        name = gdk.keyval_name(event.keyval)
+        name = Gdk.keyval_name(event.keyval)
         text = ""
         for v,l in ((etype, 5), (name, 24), (event.string, 4),
                     (event.keyval, 10), (event.hardware_keycode, 10),

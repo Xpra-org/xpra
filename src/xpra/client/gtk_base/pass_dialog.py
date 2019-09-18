@@ -11,10 +11,7 @@ from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import get_util_logger
-from xpra.gtk_common.gtk_util import (
-    add_close_accel,
-    WINDOW_TOPLEVEL,
-    )
+from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.platform.paths import get_icon_dir
 
 log = get_util_logger()
@@ -23,7 +20,7 @@ log = get_util_logger()
 class PasswordInputDialogWindow(object):
 
     def __init__(self, title="Title", prompt="", icon=""):
-        self.window = Gtk.Window(type=WINDOW_TOPLEVEL)
+        self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.window.set_border_width(20)
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.connect("destroy", self.quit)

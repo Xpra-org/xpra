@@ -11,7 +11,7 @@ from xpra.x11.models.core import CoreX11WindowModel, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.gtk_util import atom_intern, PARAM_READABLE, PARAM_READWRITE
+from xpra.gtk_common.gtk_util import atom_intern
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -60,118 +60,118 @@ class BaseWindowModel(CoreX11WindowModel):
         #from WM_TRANSIENT_FOR
         "transient-for": (GObject.TYPE_PYOBJECT,
                           "Transient for (or None)", "",
-                          PARAM_READABLE),
+                          GObject.ParamFlags.READABLE),
         #from _NET_WM_WINDOW_OPACITY
         "opacity": (GObject.TYPE_INT64,
                 "Opacity", "",
                 -1, 0xffffffff, -1,
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from WM_HINTS.window_group
         "group-leader": (GObject.TYPE_PYOBJECT,
                          "Window group leader as a pair: (xid, gdk window)", "",
-                         PARAM_READABLE),
+                         GObject.ParamFlags.READABLE),
         #from WM_HINTS.urgency or _NET_WM_STATE
         "attention-requested": (GObject.TYPE_BOOLEAN,
                                 "Urgency hint from client, or us", "",
                                 False,
-                                PARAM_READWRITE),
+                                GObject.ParamFlags.READWRITE),
         #from WM_HINTS.input or WM_TAKE_FOCUS
         "can-focus": (GObject.TYPE_BOOLEAN,
                       "Does this window ever accept keyboard input?", "",
                       True,
-                      PARAM_READWRITE),
+                      GObject.ParamFlags.READWRITE),
         #from _NET_WM_BYPASS_COMPOSITOR
         "bypass-compositor": (GObject.TYPE_INT,
                        "hint that the window would benefit from running uncomposited ", "",
                        0, 2, 0,
-                       PARAM_READABLE),
+                       GObject.ParamFlags.READABLE),
         #from _NET_WM_FULLSCREEN_MONITORS
         "fullscreen-monitors": (GObject.TYPE_PYOBJECT,
                          "List of 4 monitor indices indicating the top, bottom, left, and right edges"+
                          " of the window when the fullscreen state is enabled", "",
-                         PARAM_READABLE),
+                         GObject.ParamFlags.READABLE),
         #from _NET_WM_STRUT_PARTIAL or _NET_WM_STRUT
         "strut": (GObject.TYPE_PYOBJECT,
                   "Struts requested by window, or None", "",
-                  PARAM_READABLE),
+                  GObject.ParamFlags.READABLE),
         #for our own use:
         "content-type": (GObject.TYPE_PYOBJECT,
                   "What type of content is shown in this window", "",
-                  PARAM_READABLE),
+                  GObject.ParamFlags.READABLE),
         #from _XPRA_QUALITY
         "quality": (GObject.TYPE_INT,
                 "Quality", "",
                 -1, 100, -1,
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from _XPRA_SPEED
         "speed": (GObject.TYPE_INT,
                 "Speed", "",
                 -1, 100, -1,
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from _XPRA_ENCODING
         "encoding": (GObject.TYPE_PYOBJECT,
                 "Encoding", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from _NET_WM_DESKTOP
         "workspace": (GObject.TYPE_UINT,
                 "The workspace this window is on", "",
                 0, 2**32-1, WORKSPACE_UNSET,
-                PARAM_READWRITE),
+                GObject.ParamFlags.READWRITE),
         #set initially only by the window model class
         #(derived from XGetWindowAttributes.override_redirect)
         "override-redirect": (GObject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        False,
-                       PARAM_READABLE),
+                       GObject.ParamFlags.READABLE),
         #from _NET_WM_WINDOW_TYPE
         "window-type": (GObject.TYPE_PYOBJECT,
                         "Window type",
                         "NB, most preferred comes first, then fallbacks",
-                        PARAM_READABLE),
+                        GObject.ParamFlags.READABLE),
         #this value is synced to "_NET_WM_STATE":
         "state": (GObject.TYPE_PYOBJECT,
                   "State, as per _NET_WM_STATE", "",
-                  PARAM_READABLE),
+                  GObject.ParamFlags.READABLE),
         #all the attributes below are virtual attributes from WM_STATE:
         "modal": (GObject.TYPE_PYOBJECT,
                           "Modal", "",
-                          PARAM_READWRITE),
+                          GObject.ParamFlags.READWRITE),
         "fullscreen": (GObject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         "focused": (GObject.TYPE_BOOLEAN,
                        "Is the window focused", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         "maximized": (GObject.TYPE_BOOLEAN,
                        "Is the window maximized", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         "above": (GObject.TYPE_BOOLEAN,
                        "Is the window on top of most windows", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         "below": (GObject.TYPE_BOOLEAN,
                        "Is the window below most windows", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         "shaded": (GObject.TYPE_BOOLEAN,
                        "Is the window shaded", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         "skip-taskbar": (GObject.TYPE_BOOLEAN,
                        "Should the window be included on a taskbar", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         "skip-pager": (GObject.TYPE_BOOLEAN,
                        "Should the window be included on a pager", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         "sticky": (GObject.TYPE_BOOLEAN,
                        "Is the window's position fixed on the screen", "",
                        False,
-                       PARAM_READWRITE),
+                       GObject.ParamFlags.READWRITE),
         })
     _property_names = CoreX11WindowModel._property_names + [
                       "transient-for", "fullscreen-monitors", "bypass-compositor",

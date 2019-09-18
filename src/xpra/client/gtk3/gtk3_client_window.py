@@ -8,7 +8,7 @@
 from gi.repository import Gtk, Gdk
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
-from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, BUTTON_MASK
+from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 
@@ -36,18 +36,8 @@ GTK3 version of the ClientWindow class
 """
 class GTK3ClientWindow(GTKClientWindowBase):
 
-    BUTTON_MASK         = BUTTON_MASK
     OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
-
-    WINDOW_STATE_FULLSCREEN = Gdk.WindowState.FULLSCREEN
-    WINDOW_STATE_MAXIMIZED  = Gdk.WindowState.MAXIMIZED
-    WINDOW_STATE_ICONIFIED  = Gdk.WindowState.ICONIFIED
-    WINDOW_STATE_ABOVE      = Gdk.WindowState.ABOVE
-    WINDOW_STATE_BELOW      = Gdk.WindowState.BELOW
-    WINDOW_STATE_STICKY     = Gdk.WindowState.STICKY
-    WINDOW_STATE_FOCUSED    = Gdk.WindowState.FOCUSED
-
 
     def do_init_window(self, window_type):
         Gtk.Window.__init__(self, type = window_type)

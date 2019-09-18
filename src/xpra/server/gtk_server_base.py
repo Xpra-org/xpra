@@ -22,7 +22,6 @@ from xpra.server import server_features
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import (
     get_gtk_version_info, display_get_default, get_root_size,
-    ICON_SIZE_BUTTON,
     )
 from xpra.log import Logger
 
@@ -284,7 +283,7 @@ class GTKServerBase(ServerBase):
             theme = Gtk.IconTheme.get_default()
             if theme:
                 try:
-                    icon = theme.load_icon(icon_string, ICON_SIZE_BUTTON, 0)
+                    icon = theme.load_icon(icon_string, Gtk.IconSize.BUTTON, 0)
                 except Exception as e:
                     notifylog("failed to load icon '%s' from default theme: %s", icon_string, e)
                 else:

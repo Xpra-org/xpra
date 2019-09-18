@@ -4,10 +4,9 @@
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk, Gdk
 
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
-from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.platform.gl_context import GLContext
 from xpra.log import Logger
 
@@ -39,7 +38,7 @@ class GLDrawingArea(GLWindowBackingBase):
         #double-buffering is enabled by default anyway, so this is redundant:
         #da.set_double_buffered(True)
         da.set_size_request(*self.size)
-        da.set_events(da.get_events() | POINTER_MOTION_MASK | POINTER_MOTION_HINT_MASK)
+        da.set_events(da.get_events() | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK)
         da.show()
         self._backing = da
 

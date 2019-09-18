@@ -6,16 +6,12 @@
 
 import os
 import signal
-from gi.repository import GObject
+from gi.repository import GObject, Gdk, GLib
 
 from xpra.util import envbool
 from xpra.os_util import bytestostr
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.gtk_util import (
-    STRUCTURE_MASK, PROPERTY_CHANGE_MASK, FOCUS_CHANGE_MASK, POINTER_MOTION_MASK,
-    PARAM_READABLE, PARAM_READWRITE,
-    )
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
 from xpra.x11.models.model_stub import WindowModelStub
@@ -34,7 +30,8 @@ geomlog = Logger("x11", "window", "geometry")
 
 
 X11Window = X11WindowBindings()
-ADDMASK = STRUCTURE_MASK | PROPERTY_CHANGE_MASK | FOCUS_CHANGE_MASK | POINTER_MOTION_MASK
+em = Gdk.EventMask
+ADDMASK = em.STRUCTURE_MASK | em.PROPERTY_CHANGE_MASK | em.FOCUS_CHANGE_MASK | em.POINTER_MOTION_MASK
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
@@ -93,67 +90,67 @@ class CoreX11WindowModel(WindowModelStub):
         #the actual X11 client window
         "client-window": (GObject.TYPE_PYOBJECT,
                 "gtk.gdk.Window representing the client toplevel", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #the X11 window id
         "xid": (GObject.TYPE_INT,
                 "X11 window id", "",
                 -1, 65535, -1,
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #FIXME: this is an ugly virtual property
         "geometry": (GObject.TYPE_PYOBJECT,
                 "current coordinates (x, y, w, h, border) for the window", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #bits per pixel
         "depth": (GObject.TYPE_INT,
                 "window bit depth", "",
                 -1, 64, -1,
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #if the window depth is 32 bit
         "has-alpha": (GObject.TYPE_BOOLEAN,
                 "Does the window use transparency", "",
                 False,
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from WM_CLIENT_MACHINE
         "client-machine": (GObject.TYPE_PYOBJECT,
                 "Host where client process is running", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from _NET_WM_PID
         "pid": (GObject.TYPE_INT,
                 "PID of owning process", "",
                 -1, 65535, -1,
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from _NET_WM_NAME or WM_NAME
         "title": (GObject.TYPE_PYOBJECT,
                 "Window title (unicode or None)", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from WM_WINDOW_ROLE
         "role" : (GObject.TYPE_PYOBJECT,
                 "The window's role (ICCCM session management)", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from WM_PROTOCOLS via XGetWMProtocols
         "protocols": (GObject.TYPE_PYOBJECT,
                 "Supported WM protocols", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from WM_COMMAND
         "command": (GObject.TYPE_PYOBJECT,
                 "Command used to start or restart the client", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #from WM_CLASS via getClassHint
         "class-instance": (GObject.TYPE_PYOBJECT,
                 "Classic X 'class' and 'instance'", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #ShapeNotify events will populate this using XShapeQueryExtents
         "shape": (GObject.TYPE_PYOBJECT,
                 "Window XShape data", "",
-                PARAM_READABLE),
+                GObject.ParamFlags.READABLE),
         #synced to "_NET_FRAME_EXTENTS"
         "frame": (GObject.TYPE_PYOBJECT,
                 "Size of the window frame, as per _NET_FRAME_EXTENTS", "",
-                PARAM_READWRITE),
+                GObject.ParamFlags.READWRITE),
         #synced to "_NET_WM_ALLOWED_ACTIONS"
         "allowed-actions": (GObject.TYPE_PYOBJECT,
                 "Supported WM actions", "",
-                PARAM_READWRITE),
+                GObject.ParamFlags.READWRITE),
            }
 
     __common_signals__ = {
@@ -302,7 +299,6 @@ class CoreX11WindowModel(WindowModelStub):
         log("%s.do_unmanaged(%s) damage_forward_handle=%s, composite=%s",
             self._MODELTYPE, wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.client_window, self)
-        from gi.repository import GLib
         GLib.idle_add(self.managed_disconnect)
         if self._composite:
             if self._damage_forward_handle:

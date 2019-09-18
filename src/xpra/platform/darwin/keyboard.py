@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 import os
+from gi.repository import Gdk
 
-from xpra.gtk_common.gtk_util import SHIFT_MASK, LOCK_MASK, META_MASK, CONTROL_MASK, SUPER_MASK, HYPER_MASK
 from xpra.platform.keyboard_base import KeyboardBase, log
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
@@ -199,12 +199,12 @@ class Keyboard(KeyboardBase):
             meta = self.meta_modifier
             control = self.control_modifier
         modmap = {
-            SHIFT_MASK      : "shift",
-            LOCK_MASK       : "lock",
-            SUPER_MASK      : self.super_modifier,
-            HYPER_MASK      : self.hyper_modifier,
-            META_MASK       : meta,
-            CONTROL_MASK    : control,
+            Gdk.ModifierType.SHIFT_MASK      : "shift",
+            Gdk.ModifierType.LOCK_MASK       : "lock",
+            Gdk.ModifierType.SUPER_MASK      : self.super_modifier,
+            Gdk.ModifierType.HYPER_MASK      : self.hyper_modifier,
+            Gdk.ModifierType.META_MASK       : meta,
+            Gdk.ModifierType.CONTROL_MASK    : control,
             }
         names = []
         for modmask, modname in modmap.items():

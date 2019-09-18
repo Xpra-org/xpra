@@ -7,7 +7,6 @@
 from gi.repository import GObject
 
 from xpra.x11.models.core import CoreX11WindowModel
-from xpra.gtk_common.gtk_util import PARAM_READABLE
 from xpra.util import AdHocStruct
 from xpra.log import Logger
 
@@ -20,7 +19,7 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         "tray": (GObject.TYPE_BOOLEAN,
                  "Is the window a system tray icon", "",
                  False,
-                 PARAM_READABLE),
+                 GObject.ParamFlags.READABLE),
                 })
     __gsignals__ = CoreX11WindowModel.__common_signals__.copy()
     _property_names = CoreX11WindowModel._property_names + ["tray"]

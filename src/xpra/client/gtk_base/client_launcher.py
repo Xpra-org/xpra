@@ -24,9 +24,6 @@ from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, color_parse,
     OptionMenu, choose_file, imagebutton,
-    STATE_NORMAL,
-    DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE,
-    FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN,
     )
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX
@@ -380,7 +377,7 @@ class ApplicationWindow:
         self.info = Gtk.Label()
         self.info.set_line_wrap(True)
         self.info.set_size_request(360, -1)
-        self.info.modify_fg(STATE_NORMAL, red)
+        self.info.modify_fg(Gtk.StateType.NORMAL, red)
         vbox.pack_start(self.info)
 
         hbox = Gtk.HBox(False, 0)
@@ -668,7 +665,7 @@ class ApplicationWindow:
             if os.path.splitext(filename)[-1]!=".ppk":
                 filename += ".ppk"
             self.proxy_key_entry.set_text(filename)
-        self.choose_pkey_file("Choose SSH private key", FILE_CHOOSER_ACTION_OPEN, Gtk.STOCK_OPEN, do_choose)
+        self.choose_pkey_file("Choose SSH private key", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, do_choose)
 
     def connect_clicked(self, *args):
         log("connect_clicked%s", args)
@@ -899,10 +896,10 @@ class ApplicationWindow:
 
 
     def password_ok(self, *_args):
-        self.password_entry.modify_text(STATE_NORMAL, black)
+        self.password_entry.modify_text(Gtk.StateType.NORMAL, black)
 
     def password_warning(self, *_args):
-        self.password_entry.modify_text(STATE_NORMAL, red)
+        self.password_entry.modify_text(Gtk.StateType.NORMAL, red)
         self.password_entry.grab_focus()
 
     def set_widget_bg_color(self, widget, is_error=False):
@@ -911,7 +908,7 @@ class ApplicationWindow:
         else:
             color_obj = white
         if color_obj:
-            GLib.idle_add(widget.modify_base, STATE_NORMAL, color_obj)
+            GLib.idle_add(widget.modify_base, Gtk.StateType.NORMAL, color_obj)
 
     def set_widget_fg_color(self, widget, is_error=False):
         if is_error:
@@ -919,7 +916,7 @@ class ApplicationWindow:
         else:
             color_obj = black
         if color_obj:
-            GLib.idle_add(widget.modify_fg, STATE_NORMAL, color_obj)
+            GLib.idle_add(widget.modify_fg, Gtk.StateType.NORMAL, color_obj)
 
 
     def update_options_from_gui(self):
@@ -1050,19 +1047,19 @@ class ApplicationWindow:
             if os.path.splitext(filename)[-1]!=".xpra":
                 filename += ".xpra"
             save_config(filename, self.config, self.config_keys, extras_types=LAUNCHER_OPTION_TYPES)
-        self.choose_session_file("Save session settings to file", FILE_CHOOSER_ACTION_SAVE, Gtk.STOCK_SAVE, do_save)
+        self.choose_session_file("Save session settings to file", Gtk.FileChooserAction.SAVE, Gtk.STOCK_SAVE, do_save)
 
     def load_clicked(self, *_args):
         def do_load(filename):
             self.update_options_from_file(filename)
             self.update_gui_from_config()
-        self.choose_session_file("Load session settings from file", FILE_CHOOSER_ACTION_OPEN, Gtk.STOCK_OPEN, do_load)
+        self.choose_session_file("Load session settings from file", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, do_load)
 
 
 #on some platforms like win32, we don't have stdout
 #and this is a GUI application, so show a dialog with the error instead
 def exception_dialog(title):
-    md = Gtk.MessageDialog(None, DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, title)
+    md = Gtk.MessageDialog(None, Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.INFO, Gtk.ButtonsType.CLOSE, title)
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
     def close_dialog(*_args):

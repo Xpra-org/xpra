@@ -28,13 +28,7 @@ from xpra.gtk_common.gtk_util import (
     display_get_default, screen_get_default, get_pixbuf_from_data,
     get_default_root_window, get_root_size,
     get_screen_sizes, load_contents_async, load_contents_finish, GDKWindow,
-    FILE_CHOOSER_ACTION_OPEN,
-    CLASS_INPUT_ONLY,
-    RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_ACCEPT, RESPONSE_REJECT,
-    WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO,
-    BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING,
-    BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK,
-    ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK,
+    GRAB_STATUS_STRING,
     )
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.ui_client_base import UIXpraClient
@@ -121,7 +115,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #query the window manager to get the frame size:
         from xpra.gtk_common.error import xsync
         from xpra.x11.gtk_x11.send_wm import send_wm_request_frame_extents
-        self.frame_request_window = Gtk.Window(type=WINDOW_TOPLEVEL)
+        self.frame_request_window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
         root = self.get_root_window()
         self.frame_request_window.realize()
@@ -236,9 +230,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def do_process_challenge_prompt(self, packet, prompt="password"):
         dialog = Gtk.Dialog("Server Authentication",
                None,
-               DIALOG_MODAL | DESTROY_WITH_PARENT)
-        dialog.add_button(Gtk.STOCK_CANCEL, RESPONSE_REJECT)
-        dialog.add_button(Gtk.STOCK_OK,     RESPONSE_ACCEPT)
+               Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT)
+        dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.REJECT)
+        dialog.add_button(Gtk.STOCK_OK,     Gtk.ResponseType.ACCEPT)
         def add(widget, padding=0):
             a = Gtk.Alignment()
             a.set(0.5, 0.5, 1, 1)
@@ -264,12 +258,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             password = dialog.password_input.get_text()
             dialog.hide()
             dialog.destroy()
-            if response!=RESPONSE_ACCEPT or not password:
+            if response!=Gtk.ResponseType.ACCEPT or not password:
                 self.quit(EXIT_PASSWORD_REQUIRED)
                 return
             self.send_challenge_reply(packet, password)
         def password_activate(*_args):
-            handle_response(dialog, RESPONSE_ACCEPT)
+            handle_response(dialog, Gtk.ResponseType.ACCEPT)
         password_input.connect("activate", password_activate)
         dialog.connect("response", handle_response)
         if OSX:
@@ -414,10 +408,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 "this file is too large: %sB" % std_unit(filesize, unit=1024),
                 "the %s file size limit is %iMB" % (location, limit),
                 )
-        self.file_size_dialog = Gtk.MessageDialog(parent, DESTROY_WITH_PARENT, MESSAGE_INFO,
-                                                  BUTTONS_CLOSE, "\n".join(msgs))
+        self.file_size_dialog = Gtk.MessageDialog(parent, Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.INFO,
+                                                  Gtk.ButtonsType.CLOSE, "\n".join(msgs))
         try:
-            image = Gtk.Image.new_from_stock(Gtk.STOCK_DIALOG_WARNING, ICON_SIZE_BUTTON)
+            image = Gtk.Image.new_from_stock(Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.BUTTON)
             self.file_size_dialog.set_image(image)
         except Exception as e:
             log.warn("Warning: failed to set dialog image: %s", e)
@@ -435,16 +429,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_dialog.present()
             return
         filelog("show_file_upload%s can open=%s", args, self.remote_open_files)
-        buttons = [Gtk.STOCK_CANCEL,    RESPONSE_CANCEL]
+        buttons = [Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL]
         if self.remote_open_files:
-            buttons += [Gtk.STOCK_OPEN,      RESPONSE_ACCEPT]
-        buttons += [Gtk.STOCK_OK,        RESPONSE_OK]
+            buttons += [Gtk.STOCK_OPEN,      Gtk.ResponseType.ACCEPT]
+        buttons += [Gtk.STOCK_OK,        Gtk.ResponseType.OK]
         self.file_dialog = Gtk.FileChooserDialog(
             "File to upload",
             parent=None,
-            action=FILE_CHOOSER_ACTION_OPEN,
+            action=Gtk.FileChooserAction.OPEN,
             buttons=tuple(buttons))
-        self.file_dialog.set_default_response(RESPONSE_OK)
+        self.file_dialog.set_default_response(Gtk.ResponseType.OK)
         self.file_dialog.connect("response", self.file_upload_dialog_response)
         self.file_dialog.show()
 
@@ -455,7 +449,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_dialog = None
 
     def file_upload_dialog_response(self, dialog, v):
-        if v not in (RESPONSE_OK, RESPONSE_ACCEPT):
+        if v not in (Gtk.ResponseType.OK, Gtk.ResponseType.ACCEPT):
             filelog("dialog response code %s", v)
             self.close_file_upload_dialog()
             return
@@ -472,7 +466,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         gfile = dialog.get_file()
         self.close_file_upload_dialog()
         filelog("load_contents: filename=%s, response=%s", filename, v)
-        load_contents_async(gfile, self.file_upload_ready, user_data=(filename, v==RESPONSE_ACCEPT))
+        load_contents_async(gfile, self.file_upload_ready, user_data=(filename, v==Gtk.ResponseType.ACCEPT))
 
     def file_upload_ready(self, gfile, result, user_data):
         filelog("file_upload_ready%s", (gfile, result, user_data))
@@ -887,12 +881,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def window_grab(self, window):
-        event_mask = (BUTTON_PRESS_MASK |
-                      BUTTON_RELEASE_MASK |
-                      POINTER_MOTION_MASK  |
-                      POINTER_MOTION_HINT_MASK |
-                      ENTER_NOTIFY_MASK |
-                      LEAVE_NOTIFY_MASK)
+        em = Gdk.EventMask
+        event_mask = (em.BUTTON_PRESS_MASK |
+                      em.BUTTON_RELEASE_MASK |
+                      em.POINTER_MOTION_MASK  |
+                      em.POINTER_MOTION_HINT_MASK |
+                      em.ENTER_NOTIFY_MASK |
+                      em.LEAVE_NOTIFY_MASK)
         confine_to = None
         cursor = None
         r = Gdk.pointer_grab(window.get_window(), True, event_mask, confine_to, cursor, 0)
@@ -1141,9 +1136,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return group_leader_window
         #we need to create one:
         title = u"%s group leader for %s" % (self.session_name or u"Xpra", pid)
-        #group_leader_window = Gdk.Window(None, 1, 1, Gdk.WINDOW_TOPLEVEL, 0, Gdk.INPUT_ONLY, title)
+        #group_leader_window = Gdk.Window(None, 1, 1, Gtk.WindowType.TOPLEVEL, 0, Gdk.INPUT_ONLY, title)
         #static new(parent, attributes, attributes_mask)
-        group_leader_window = GDKWindow(wclass=CLASS_INPUT_ONLY, title=title)
+        group_leader_window = GDKWindow(wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=title)
         self._ref_to_group_leader[refkey] = group_leader_window
         #avoid warning on win32...
         if not WIN32:

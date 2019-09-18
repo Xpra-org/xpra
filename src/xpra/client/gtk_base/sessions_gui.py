@@ -17,7 +17,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import (
     add_close_accel, TableBuilder, scaled_image, color_parse,
-    imagebutton, STATE_NORMAL,
+    imagebutton,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.net.net_util import if_indextoname
@@ -59,7 +59,7 @@ class SessionsGUI(Gtk.Window):
 
         self.warning = Gtk.Label(" ")
         red = color_parse("red")
-        self.warning.modify_fg(STATE_NORMAL, red)
+        self.warning.modify_fg(Gtk.StateType.NORMAL, red)
         self.warning.show()
         self.vbox.add(self.warning)
 

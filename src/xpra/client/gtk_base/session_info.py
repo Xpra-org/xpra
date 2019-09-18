@@ -20,9 +20,6 @@ from xpra.client import mixin_features
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label, title_box,
     TableBuilder, imagebutton, get_gtk_version_info,
-    EXPAND, FILL,
-    RESPONSE_CANCEL, RESPONSE_OK, RESPONSE_CLOSE, RESPONSE_DELETE_EVENT,
-    FILE_CHOOSER_ACTION_SAVE,
     )
 from xpra.net.net_util import get_network_caps
 from xpra.log import Logger
@@ -141,9 +138,10 @@ class SessionInfo(Gtk.Window):
         #Package Table:
         tb = self.table_tab("package.png", "Software", self.populate_package)[0]
         #title row:
-        tb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("Client"), 1, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("Server"), 2, xoptions=EXPAND|FILL, xpadding=0)
+        fillexpand = Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND
+        tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("Client"), 1, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("Server"), 2, xoptions=fillexpand, xpadding=0)
         tb.inc()
 
         def make_os_str(sys_platform, platform_release, platform_platform, platform_linux_distribution):
@@ -281,9 +279,9 @@ class SessionInfo(Gtk.Window):
         al.add(table)
         vbox.pack_start(al, expand=True, fill=False, padding=10)
         #table headings:
-        tb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("Client"), 1, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("Server"), 2, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("Client"), 1, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("Server"), 2, xoptions=fillexpand, xpadding=0)
         tb.inc()
         #table contents:
         self.client_encodings_label = slabel()
@@ -292,33 +290,33 @@ class SessionInfo(Gtk.Window):
         self.server_encodings_label.set_line_wrap(True)
         tb.new_row("Picture Encodings",
                    self.client_encodings_label, self.server_encodings_label,
-                   xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
+                   xoptions=fillexpand, yoptions=fillexpand)
         self.client_speaker_codecs_label = slabel()
         self.client_speaker_codecs_label.set_line_wrap(True)
         self.server_speaker_codecs_label = slabel()
         self.server_speaker_codecs_label.set_line_wrap(True)
         tb.new_row("Speaker Codecs",
                    self.client_speaker_codecs_label, self.server_speaker_codecs_label,
-                   xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
+                   xoptions=fillexpand, yoptions=fillexpand)
         self.client_microphone_codecs_label = slabel()
         self.client_microphone_codecs_label.set_line_wrap(True)
         self.server_microphone_codecs_label = slabel()
         self.server_microphone_codecs_label.set_line_wrap(True)
         tb.new_row("Microphone Codecs",
                    self.client_microphone_codecs_label, self.server_microphone_codecs_label,
-                   xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
+                   xoptions=fillexpand, yoptions=fillexpand)
         self.client_packet_encoders_label = slabel()
         self.client_packet_encoders_label.set_line_wrap(True)
         self.server_packet_encoders_label = slabel()
         self.server_packet_encoders_label.set_line_wrap(True)
         tb.new_row("Packet Encoders",
                    self.client_packet_encoders_label, self.server_packet_encoders_label,
-                   xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
+                   xoptions=fillexpand, yoptions=fillexpand)
         self.client_packet_compressors_label = slabel()
         self.server_packet_compressors_label = slabel()
         tb.new_row("Packet Compressors",
                    self.client_packet_compressors_label, self.server_packet_compressors_label,
-                   xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
+                   xoptions=fillexpand, yoptions=fillexpand)
 
         # Connection Table:
         tb = self.table_tab("connect.png", "Connection", self.populate_connection)[0]
@@ -363,12 +361,12 @@ class SessionInfo(Gtk.Window):
         # Details:
         tb, stats_box = self.table_tab("browse.png", "Statistics", self.populate_statistics)
         tb.widget_xalign = 1.0
-        tb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("Latest"), 1, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("Minimum"), 2, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("Average"), 3, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("90 percentile"), 4, xoptions=EXPAND|FILL, xpadding=0)
-        tb.attach(title_box("Maximum"), 5, xoptions=EXPAND|FILL, xpadding=0)
+        tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("Latest"), 1, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("Minimum"), 2, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("Average"), 3, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("90 percentile"), 4, xoptions=fillexpand, xpadding=0)
+        tb.attach(title_box("Maximum"), 5, xoptions=fillexpand, xpadding=0)
         tb.inc()
 
         def maths_labels():
@@ -416,15 +414,15 @@ class SessionInfo(Gtk.Window):
             wtb = TableBuilder()
             stats_box.add(wtb.get_table())
             #title row:
-            wtb.attach(title_box(""), 0, xoptions=EXPAND|FILL, xpadding=0)
-            wtb.attach(title_box("Regular"), 1, xoptions=EXPAND|FILL, xpadding=0)
-            wtb.attach(title_box("Transient"), 2, xoptions=EXPAND|FILL, xpadding=0)
-            wtb.attach(title_box("Trays"), 3, xoptions=EXPAND|FILL, xpadding=0)
+            wtb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
+            wtb.attach(title_box("Regular"), 1, xoptions=fillexpand, xpadding=0)
+            wtb.attach(title_box("Transient"), 2, xoptions=fillexpand, xpadding=0)
+            wtb.attach(title_box("Trays"), 3, xoptions=fillexpand, xpadding=0)
             if self.client.client_supports_opengl:
-                wtb.attach(title_box("OpenGL"), 4, xoptions=EXPAND|FILL, xpadding=0)
+                wtb.attach(title_box("OpenGL"), 4, xoptions=fillexpand, xpadding=0)
             wtb.inc()
 
-            wtb.attach(slabel("Windows:"), 0, xoptions=EXPAND|FILL, xpadding=0)
+            wtb.attach(slabel("Windows:"), 0, xoptions=fillexpand, xpadding=0)
             self.windows_managed_label = slabel()
             wtb.attach(self.windows_managed_label, 1)
             self.transient_managed_label = slabel()
@@ -1185,10 +1183,10 @@ class SessionInfo(Gtk.Window):
     def save_graph(self, _ebox, btn, graph):
         log("save_graph%s", (btn, graph))
         chooser = Gtk.FileChooserDialog("Save graph as a PNG image",
-                                    parent=self, action=FILE_CHOOSER_ACTION_SAVE,
-                                    buttons=(Gtk.STOCK_CANCEL, RESPONSE_CANCEL, Gtk.STOCK_SAVE, RESPONSE_OK))
+                                    parent=self, action=Gtk.FileChooserAction.SAVE,
+                                    buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
         chooser.set_select_multiple(False)
-        chooser.set_default_response(RESPONSE_OK)
+        chooser.set_default_response(Gtk.ResponseType.OK)
         file_filter = Gtk.FileFilter()
         file_filter.set_name("PNG")
         file_filter.add_pattern("*.png")
@@ -1197,14 +1195,14 @@ class SessionInfo(Gtk.Window):
         filenames = chooser.get_filenames()
         chooser.hide()
         chooser.destroy()
-        if response == RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
             if len(filenames)==1:
                 filename = filenames[0]
                 surface = graph.surface
                 log("saving surface %s to %s", surface, filename)
                 with open(filename, "wb") as f:
                     surface.write_to_png(f)
-        elif response in (RESPONSE_CANCEL, RESPONSE_CLOSE, RESPONSE_DELETE_EVENT):
+        elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.CLOSE, Gtk.ResponseType.DELETE_EVENT):
             log("closed/cancelled")
         else:
             log.warn("unknown chooser response: %d" % response)

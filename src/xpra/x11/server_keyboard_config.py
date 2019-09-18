@@ -219,8 +219,8 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycodes_for_modifier_keynames = {}
         self.xkbmap_mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
         display = display_get_default()
-        keymap = Gdk.Keymap.get_for_display(display)
         from gi.repository import Gdk
+        keymap = Gdk.Keymap.get_for_display(display)
         if self.keynames_for_mod:
             for modifier, keynames in self.keynames_for_mod.items():
                 for keyname in keynames:

@@ -23,10 +23,9 @@ def main():
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
         if not use_tty():
             from gi.repository import GLib, Gtk
-            from xpra.gtk_common.gtk_util import MESSAGE_INFO, MESSAGE_ERROR, BUTTONS_CLOSE
             def show_dialog(mode, *msgs):
                 dialog = Gtk.MessageDialog(None, 0, mode,
-                              BUTTONS_CLOSE, "\n".join(msgs))
+                              Gtk.ButtonsType.CLOSE, "\n".join(msgs))
                 dialog.set_title("Xpra U2F Registration Tool")
                 v = dialog.run()
                 dialog.destroy()
@@ -35,9 +34,9 @@ def main():
                 Gtk.main()
                 return v
             def error(*msgs):
-                return show_dialog(MESSAGE_ERROR, *msgs)
+                return show_dialog(Gtk.MessageType.ERROR, *msgs)
             def info(*msgs):
-                return show_dialog(MESSAGE_INFO, *msgs)
+                return show_dialog(Gtk.MessageType.INFO, *msgs)
         else:
             print("U2F Registration Tool")
             def printmsgs(*msgs):

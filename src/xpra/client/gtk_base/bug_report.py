@@ -13,7 +13,6 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
     get_display_info, get_default_root_window,
     choose_file, get_gtk_version_info,
-    JUSTIFY_LEFT, FILE_CHOOSER_ACTION_SAVE,
     )
 from xpra.util import nonl, envint, repr_ellipsized
 from xpra.os_util import strtobytes
@@ -81,10 +80,10 @@ class BugReport(object):
         #self.description.set_width_chars(40)
         self.description = Gtk.TextView()
         self.description.set_accepts_tab(True)
-        self.description.set_justification(JUSTIFY_LEFT)
+        self.description.set_justification(Gtk.Justification.LEFT)
         self.description.set_border_width(2)
         self.description.set_size_request(300, 80)
-        #self.description.modify_bg(STATE_NORMAL, Gdk.Color(red=32768, green=32768, blue=32768))
+        #self.description.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=32768, green=32768, blue=32768))
         ibox.pack_start(self.description, expand=False, fill=False)
 
         # Toggles:
@@ -311,7 +310,7 @@ class BugReport(object):
         file_filter = Gtk.FileFilter()
         file_filter.set_name("ZIP")
         file_filter.add_pattern("*.zip")
-        choose_file(self.window, "Save Bug Report Data", FILE_CHOOSER_ACTION_SAVE, Gtk.STOCK_SAVE, self.do_save)
+        choose_file(self.window, "Save Bug Report Data",  Gtk.FileChooserAction.SAVE, Gtk.STOCK_SAVE, self.do_save)
 
     def do_save(self, filename):
         log("do_save(%s)", filename)

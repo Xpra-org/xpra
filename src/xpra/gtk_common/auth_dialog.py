@@ -7,10 +7,7 @@ import sys
 import os.path
 from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 
-from xpra.gtk_common.gtk_util import (
-    add_close_accel,
-    ICON_SIZE_BUTTON,
-    )
+from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
@@ -69,7 +66,7 @@ class AuthDialog(Gtk.Window):
         settings.set_property('gtk-button-images', True)
         btn.connect("clicked", callback)
         if stock_icon:
-            image = Gtk.Image.new_from_stock(stock_icon, ICON_SIZE_BUTTON)
+            image = Gtk.Image.new_from_stock(stock_icon, Gtk.IconSize.BUTTON)
             if image:
                 btn.set_image(image)
         return btn

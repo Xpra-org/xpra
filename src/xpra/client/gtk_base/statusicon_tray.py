@@ -8,19 +8,18 @@
 
 import os
 from time import time
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from xpra.os_util import WIN32, OSX, POSIX, monotonic_time
 from xpra.util import envbool
 from xpra.client.tray_base import TrayBase, log
 from xpra.gtk_common.gtk_util import (
     get_icon_from_file, get_pixbuf_from_data, get_default_root_window,
-    SHIFT_MASK, ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL,
     )
 
 ORIENTATION = {
-    ORIENTATION_HORIZONTAL  : "HORIZONTAL",
-    ORIENTATION_VERTICAL    : "VERTICAL",
+    Gtk.Orientation.HORIZONTAL  : "HORIZONTAL",
+    Gtk.Orientation.VERTICAL    : "VERTICAL",
     }
 
 GUESS_GEOMETRY = WIN32 or OSX
@@ -53,7 +52,7 @@ class GTKStatusIconTray(TrayBase):
     def activate_menu(self, widget):
         modifiers_mask = get_default_root_window().get_pointer()[-1]
         log("activate_menu(%s) modifiers_mask=%s", widget, modifiers_mask)
-        if (modifiers_mask & SHIFT_MASK) ^ OSX:
+        if (modifiers_mask & Gdk.ModifierType.SHIFT_MASK) ^ OSX:
             self.handle_click(2)
         else:
             self.handle_click(1)
@@ -61,7 +60,7 @@ class GTKStatusIconTray(TrayBase):
     def popup_menu(self, widget, button, event_time, *args):
         modifiers_mask = get_default_root_window().get_pointer()[-1]
         log("popup_menu(%s, %s, %s, %s) modifiers_mask=%s", widget, button, event_time, args, modifiers_mask)
-        if (modifiers_mask & SHIFT_MASK) ^ OSX:
+        if (modifiers_mask & Gdk.ModifierType.SHIFT_MASK) ^ OSX:
             self.handle_click(1)
         else:
             self.handle_click(2)

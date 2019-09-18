@@ -6,14 +6,11 @@
 import os
 import struct
 from io import BytesIO
-from gi.repository import GLib, GObject
+from gi.repository import GLib, GObject, Gdk
 
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
-from xpra.gtk_common.gtk_util import (
-    get_default_root_window, GDKWindow,
-    PROPERTY_CHANGE_MASK, CLASS_INPUT_ONLY,
-    )
+from xpra.gtk_common.gtk_util import get_default_root_window, GDKWindow
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                          #@UnresolvedImport
     remove_event_receiver,                       #@UnresolvedImport
@@ -86,8 +83,8 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
 
     def init_window(self):
         root = get_default_root_window()
-        self.window = GDKWindow(root, width=1, height=1, title="Xpra-Clipboard", wclass=CLASS_INPUT_ONLY)
-        self.window.set_events(PROPERTY_CHANGE_MASK | self.window.get_events())
+        self.window = GDKWindow(root, width=1, height=1, title="Xpra-Clipboard", wclass=Gdk.WindowWindowClass.INPUT_ONLY)
+        self.window.set_events(Gdk.EventMask.PROPERTY_CHANGE_MASK | self.window.get_events())
         xid = self.window.get_xid()
         with xsync:
             X11Window.selectSelectionInput(xid)

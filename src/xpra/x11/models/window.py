@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gtk
+from gi.repository import GObject, Gtk, Gdk
 
 from xpra.util import envint, envbool, typedict
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
@@ -25,8 +25,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     )
 from xpra.gtk_common.gtk_util import (
     get_default_root_window,
-    GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
-    PARAM_READABLE, PARAM_READWRITE,
+    GDKWindow,
     )
 from xpra.log import Logger
 
@@ -86,19 +85,19 @@ class WindowModel(BaseWindowModel):
     __gproperties__.update({
         "owner": (GObject.TYPE_PYOBJECT,
                   "Owner", "",
-                  PARAM_READABLE),
+                  GObject.ParamFlags.READABLE),
         # Interesting properties of the client window, that will be
         # automatically kept up to date:
         "requested-position": (GObject.TYPE_PYOBJECT,
                                "Client-requested position on screen", "",
-                               PARAM_READABLE),
+                               GObject.ParamFlags.READABLE),
         "requested-size": (GObject.TYPE_PYOBJECT,
                            "Client-requested size on screen", "",
-                           PARAM_READABLE),
+                           GObject.ParamFlags.READABLE),
         "set-initial-position": (GObject.TYPE_BOOLEAN,
                                  "Should the requested position be honoured?", "",
                                  False,
-                                 PARAM_READWRITE),
+                                 GObject.ParamFlags.READWRITE),
         # Toggling this property does not actually make the window iconified,
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
@@ -106,27 +105,27 @@ class WindowModel(BaseWindowModel):
         "iconic": (GObject.TYPE_BOOLEAN,
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
-                   PARAM_READWRITE),
+                   GObject.ParamFlags.READWRITE),
         #from WM_NORMAL_HINTS
         "size-hints": (GObject.TYPE_PYOBJECT,
                        "Client hints on constraining its size", "",
-                       PARAM_READABLE),
+                       GObject.ParamFlags.READABLE),
         #from _NET_WM_ICON_NAME or WM_ICON_NAME
         "icon-title": (GObject.TYPE_PYOBJECT,
                        "Icon title (unicode or None)", "",
-                       PARAM_READABLE),
+                       GObject.ParamFlags.READABLE),
         #from _NET_WM_ICON
         "icons": (GObject.TYPE_PYOBJECT,
                  "Icons in raw RGBA format, by size", "",
-                 PARAM_READABLE),
+                 GObject.ParamFlags.READABLE),
         #from _MOTIF_WM_HINTS.decorations
         "decorations": (GObject.TYPE_INT,
                        "Should the window decorations be shown", "",
                        -1, 65535, -1,
-                       PARAM_READABLE),
+                       GObject.ParamFlags.READABLE),
         "children" : (GObject.TYPE_PYOBJECT,
                         "Sub-windows", None,
-                        PARAM_READABLE),
+                        GObject.ParamFlags.READABLE),
         })
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__.update({
@@ -182,8 +181,8 @@ class WindowModel(BaseWindowModel):
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
         self.corral_window = GDKWindow(self.parking_window,
                                         x=x, y=y, width=ow, height=oh,
-                                        window_type=GDKWINDOW_CHILD,
-                                        event_mask=PROPERTY_CHANGE_MASK,
+                                        window_type=Gdk.WindowType.CHILD,
+                                        event_mask=Gdk.EventMask.PROPERTY_CHANGE_MASK,
                                         title = "CorralWindow-%#x" % self.xid)
         cxid = self.corral_window.get_xid()
         log("setup() corral_window=%#x", cxid)

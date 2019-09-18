@@ -16,9 +16,10 @@ class MapResizeWindow(Gtk.Window):
 		self.height = HEIGHT
 		self.step = 0
 		self.set_app_paintable(True)
-		WINDOW_EVENT_MASK = Gdk.STRUCTURE_MASK | Gdk.KEY_PRESS_MASK | Gdk.KEY_RELEASE_MASK \
-			| Gdk.POINTER_MOTION_MASK | Gdk.BUTTON_PRESS_MASK | Gdk.BUTTON_RELEASE_MASK \
-			| Gdk.PROPERTY_CHANGE_MASK
+		em = Gdk.EventMask
+		WINDOW_EVENT_MASK = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
+			| em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
+			| em.BUTTON_PRESS_MASK
 		self.add_events(WINDOW_EVENT_MASK)
 		self.set_size_request(self.width, self.height)
 		self.connect("delete_event", Gtk.mainquit)
