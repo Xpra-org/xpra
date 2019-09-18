@@ -11,6 +11,7 @@
 
 import os
 import signal
+from gi.repository import GLib
 
 from xpra.util import envint, envbool
 from xpra.os_util import POSIX
@@ -74,13 +75,11 @@ class ChildReaper(object):
     #note: the quit callback will fire only once!
     def __init__(self, quit_cb=None):
         log("ChildReaper(%s)", quit_cb)
-        from xpra.gtk_common.gobject_compat import import_glib
-        self.glib = import_glib()
         self._quit = quit_cb
         self._proc_info = []
         if USE_PROCESS_POLLING:
             log("using process polling every %s seconds", POLL_DELAY)
-            self.glib.timeout_add(POLL_DELAY*1000, self.poll)
+            GLib.timeout_add(POLL_DELAY*1000, self.poll)
         else:
             signal.signal(signal.SIGCHLD, self.sigchld)
             # Check once after the mainloop is running, just in case the exit
@@ -89,7 +88,7 @@ class ChildReaper(object):
             def check_once():
                 self.check()
                 return False # Only call once
-            self.glib.timeout_add(0, check_once)
+            GLib.timeout_add(0, check_once)
 
     def cleanup(self):
         self.reap()
@@ -147,7 +146,7 @@ class ChildReaper(object):
     def sigchld(self, signum, frame):
         #we risk race conditions if doing anything in the signal handler,
         #better run in the main thread asap:
-        self.glib.idle_add(self._sigchld, signum, str(frame))
+        GLib.idle_add(self._sigchld, signum, str(frame))
 
     def _sigchld(self, signum, frame_str):
         log("sigchld(%s, %s)", signum, frame_str)
@@ -183,7 +182,7 @@ class ChildReaper(object):
             return
         if process and cb:
             procinfo.callback = None
-            self.glib.idle_add(cb, process)
+            GLib.idle_add(cb, process)
         #once it's dead, clear the reference to the process:
         #this should free up some resources
         #and also help to ensure we don't end up here again

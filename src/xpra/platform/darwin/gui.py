@@ -31,6 +31,7 @@ from Foundation import (
     NSUserNotification, NSUserNotificationCenter,   #@UnresolvedImport
     NSUserNotificationDefaultSoundName,             #@UnresolvedImport
     )
+from gi.repository import GLib
 
 from xpra.util import envbool, envint, roundup
 from xpra.notifications.notifier_base import NotifierBase
@@ -509,11 +510,9 @@ def take_screenshot():
     return w, h, "png", image.get_rowstride(), data
 
 def show_with_focus_workaround(show_cb):
-    from xpra.gtk_common.gobject_compat import import_glib
-    glib = import_glib()
     enable_focus_workaround()
     show_cb()
-    glib.timeout_add(500, disable_focus_workaround)
+    GLib.timeout_add(500, disable_focus_workaround)
 
 
 __osx_open_signal = False
@@ -525,9 +524,7 @@ def add_open_handlers(open_file_cb, open_url_cb):
     assert open_file_cb and open_url_cb
 
     def idle_add(fn, *args):
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
-        glib.idle_add(fn, *args)
+        GLib.idle_add(fn, *args)
 
     def open_URL(url):
         global __osx_open_signal
@@ -547,8 +544,6 @@ def add_open_handlers(open_file_cb, open_url_cb):
 
 def wait_for_open_handlers(show_cb, open_file_cb, open_url_cb, delay=OPEN_SIGNAL_WAIT):
     assert show_cb and open_file_cb and open_url_cb
-    from xpra.gtk_common.gobject_compat import import_glib
-    glib = import_glib()
 
     add_open_handlers(open_file_cb, open_url_cb)
     def may_show():
@@ -556,7 +551,7 @@ def wait_for_open_handlers(show_cb, open_file_cb, open_url_cb, delay=OPEN_SIGNAL
         log("may_show() osx open signal=%s", __osx_open_signal)
         if not __osx_open_signal:
             show_with_focus_workaround(show_cb)
-    glib.timeout_add(delay, may_show)
+    GLib.timeout_add(delay, may_show)
 
 def register_file_handler(handler):
     log("register_file_handler(%s)", handler)

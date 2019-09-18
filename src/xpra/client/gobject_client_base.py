@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from gi.repository import GLib
 
 from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict,
@@ -16,13 +17,12 @@ from xpra.exit_codes import (
     EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
     EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG,
     )
-from xpra.gtk_common.gobject_compat import import_gobject, import_glib
+from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
 
 gobject = import_gobject()
-glib = import_glib()
 
 FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", 1)
 
@@ -42,9 +42,9 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
     INSTALL_SIGNAL_HANDLERS = True
 
     def __init__(self):
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
         gobject.GObject.__init__(self)
         XpraClientBase.__init__(self)
 
@@ -55,7 +55,7 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
         self.glib_init()
 
     def get_scheduler(self):
-        return glib
+        return GLib
 
 
     def client_type(self):
@@ -83,7 +83,7 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
 
     def run(self):
         XpraClientBase.run(self)
-        self.glib_mainloop = glib.MainLoop()
+        self.glib_mainloop = GLib.MainLoop()
         self.glib_mainloop.run()
         return self.exit_code
 
@@ -97,7 +97,7 @@ class GObjectXpraClient(gobject.GObject, XpraClientBase):
         if self.exit_code is None:
             self.exit_code = exit_code
         self.cleanup()
-        glib.timeout_add(50, self.glib_mainloop.quit)
+        GLib.timeout_add(50, self.glib_mainloop.quit)
 
 
 
@@ -127,8 +127,8 @@ class CommandConnectClient(GObjectXpraClient):
     def connect_with_timeout(self, conn):
         self.setup_connection(conn)
         if conn.timeout>0:
-            glib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
-        glib.idle_add(self.send_hello)
+            GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
+        GLib.idle_add(self.send_hello)
 
     def _process_connection_lost(self, _packet):
         #override so we don't log a warning

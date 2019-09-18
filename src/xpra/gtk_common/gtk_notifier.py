@@ -19,6 +19,7 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from gi.repository import GLib
 
 from xpra.os_util import OSX, bytestostr
 from xpra.gtk_common.gtk_util import (
@@ -26,11 +27,10 @@ from xpra.gtk_common.gtk_util import (
     pixbuf_new_from_file, STATE_NORMAL, RELIEF_NORMAL,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_gdk
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
 
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
@@ -253,7 +253,7 @@ class Popup(gtk.Window):
         self.move(self.get_x(self.w), self.get_y(self.h))
         self.wait_timer = None
         self.fade_out_timer = None
-        self.fade_in_timer = glib.timeout_add(100, self.fade_in)
+        self.fade_in_timer = GLib.timeout_add(100, self.fade_in)
         #ensure we dont show it in the taskbar:
         self.realize()
         self.get_window().set_skip_taskbar_hint(True)
@@ -304,7 +304,7 @@ class Popup(gtk.Window):
         opacity = self.get_opacity()
         opacity += 0.15
         if opacity >= 1:
-            self.wait_timer = glib.timeout_add(1000, self.wait)
+            self.wait_timer = GLib.timeout_add(1000, self.wait)
             self.fade_in_timer = None
             return False
         self.set_opacity(opacity)
@@ -316,7 +316,7 @@ class Popup(gtk.Window):
         if self.show_timeout:
             self.counter.set_markup(str("<b>%s</b>" % max(0, self.timeout)))
         if self.timeout <= 0:
-            self.fade_out_timer = glib.timeout_add(100, self.fade_out)
+            self.fade_out_timer = GLib.timeout_add(100, self.fade_out)
             self.wait_timer = None
             return False
         return True
@@ -349,7 +349,7 @@ class Popup(gtk.Window):
             v = getattr(self, timer)
             if v:
                 setattr(self, timer, None)
-                glib.source_remove(v)
+                GLib.source_remove(v)
         self.destroy()
         self.destroy_cb(self)
 
@@ -377,8 +377,8 @@ def main():
         gtk.main_quit()
 
     notifier = GTK_Notifier(timeout=6)
-    glib.timeout_add(4000, notify_factory)
-    glib.timeout_add(20000, gtk_main_quit)
+    GLib.timeout_add(4000, notify_factory)
+    GLib.timeout_add(20000, gtk_main_quit)
     gtk.main()
 
 if __name__ == "__main__":

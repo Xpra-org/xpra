@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL, get_default_root_window
 
 gtk = import_gtk()
-glib = import_glib()
+from gi.repository import GLib
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
 
 	btn = gtk.Button("Create Transient (with 5 second delay)")
 	def delayed_transient(*args):
-		glib.timeout_add(5000, create_transient)
+		GLib.timeout_add(5000, create_transient)
 	btn.connect('clicked', delayed_transient)
 	vbox.pack_start(btn, expand=False, fill=False, padding=10)
 

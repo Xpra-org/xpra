@@ -6,7 +6,7 @@
 
 import os
 import sys
-
+from gi.repository import GLib
 
 try:
     import encodings
@@ -89,14 +89,10 @@ def set_name(prgname=None, appname=None):
         set_prgname(prgname or _prgname)
         set_application_name(appname or _appname)
 
-def _glib():
-    from xpra.gtk_common.gobject_compat import import_glib
-    return import_glib()
-
 #platforms can override this
 def set_prgname(name):
     try:
-        _glib().set_prgname(name)
+        GLib.set_prgname(name)
     except Exception:
         pass
 
@@ -108,7 +104,7 @@ def get_prgname():
 #platforms can override this
 def set_application_name(name):
     try:
-        _glib().set_application_name(name)
+        GLib.set_application_name(name)
     except Exception:
         pass
 

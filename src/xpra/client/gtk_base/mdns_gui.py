@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 import sys
+from gi.repository import GLib
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.client.gtk_base.sessions_gui import SessionsGUI
 from xpra.gtk_common.gtk_util import gtk_main
 from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
@@ -14,8 +15,6 @@ from xpra.util import envbool
 from xpra.log import Logger
 
 log = Logger("mdns", "util")
-
-glib = import_glib()
 
 HIDE_IPV6 = envbool("XPRA_HIDE_IPV6", False)
 
@@ -49,7 +48,7 @@ class mdns_sessions(SessionsGUI):
                             stype!=r_stype or
                             domain!=r_domain)]
         if old_recs!=self.records:
-            glib.idle_add(self.populate_table)
+            GLib.idle_add(self.populate_table)
 
     def mdns_add(self, interface, protocol, name, stype, domain, host, address, port, text):
         log("mdns_add%s", (interface, protocol, name, stype, domain, host, address, port, text))
@@ -57,7 +56,7 @@ class mdns_sessions(SessionsGUI):
             return
         text = text or {}
         self.records.append((interface, protocol, name, stype, domain, host, address, port, text))
-        glib.idle_add(self.populate_table)
+        GLib.idle_add(self.populate_table)
 
 
 def check_mdns(gui):
@@ -73,7 +72,7 @@ def check_mdns(gui):
                 log("check_mdns() found bonjour DLL: %s", dll_file)
                 return True
         #bonjour not found:
-        glib.timeout_add(1000, win32_bonjour_download_warning, gui)
+        GLib.timeout_add(1000, win32_bonjour_download_warning, gui)
     return True
 
 def win32_bonjour_download_warning(gui):

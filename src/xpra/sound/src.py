@@ -420,9 +420,8 @@ def main():
                     f.write(data)
                     f.flush()
 
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
-        glib_mainloop = glib.MainLoop()
+        from gi.repository import GLib
+        glib_mainloop = GLib.MainLoop()
 
         ss.connect("new-buffer", new_buffer)
         ss.start()
@@ -430,8 +429,8 @@ def main():
         import signal
         def deadly_signal(sig, _frame):
             log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
-            glib.idle_add(ss.stop)
-            glib.idle_add(glib_mainloop.quit)
+            GLib.idle_add(ss.stop)
+            GLib.idle_add(glib_mainloop.quit)
             def force_quit(_sig, _frame):
                 sys.exit()
             signal.signal(signal.SIGINT, force_quit)

@@ -37,9 +37,8 @@ def gtk_main_quit_really():
         # unregister ourselves so that it's possible to start the
         # main-loop again if desired:
         return False
-    from xpra.gtk_common.gobject_compat import import_glib
-    glib = import_glib()
-    glib.timeout_add(0, gtk_main_quit_forever)
+    from gi.repository import GLib
+    GLib.timeout_add(0, gtk_main_quit_forever)
 
 # If a user hits control-C, and we are currently executing Python code below
 # the main loop, then the exception will get swallowed up. (If we're just

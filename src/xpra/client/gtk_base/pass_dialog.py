@@ -7,9 +7,11 @@
 
 import os.path
 import sys
+from gi.repository import GLib
+from gi.repository import Pango
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_glib,
+    import_gtk,
     register_os_signals,
     )
 from xpra.os_util import get_util_logger
@@ -22,8 +24,6 @@ from xpra.platform.paths import get_icon_dir
 log = get_util_logger()
 
 gtk = import_gtk()
-glib = import_glib()
-from gi.repository import Pango
 
 
 class PasswordInputDialogWindow(object):
@@ -47,7 +47,7 @@ class PasswordInputDialogWindow(object):
 
         def al(label, font="sans 14", xalign=0):
             l = gtk.Label(label)
-            l.modify_font(pango.FontDescription(font))
+            l.modify_font(Pango.FontDescription(font))
             al = gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
             vbox.add(al)
@@ -96,8 +96,8 @@ class PasswordInputDialogWindow(object):
     def show(self):
         log("show()")
         self.window.show_all()
-        glib.idle_add(self.window.present)
-        glib.idle_add(self.password_input.grab_focus)
+        GLib.idle_add(self.window.present)
+        GLib.idle_add(self.password_input.grab_focus)
 
     def destroy(self, *args):
         log("destroy%s", args)

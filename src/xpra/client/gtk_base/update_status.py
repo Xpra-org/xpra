@@ -14,14 +14,14 @@ from xpra.gtk_common.gtk_util import (
     window_defaults, WIN_POS_CENTER,
     )
 from xpra.platform.paths import get_icon_dir
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("util")
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
+from gi.repository import GLib
 from gi.repository import Pango
 
 
@@ -86,7 +86,7 @@ class UpdateStatusWindow(object):
         if self.progress:
             return
         self.newer_version = None
-        glib.timeout_add(1000, self.update_label)
+        GLib.timeout_add(1000, self.update_label)
         from xpra.make_thread import start_thread
         start_thread(self.do_check, "version check", daemon=True)
 

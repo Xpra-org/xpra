@@ -6,10 +6,11 @@
 import os
 import struct
 from io import BytesIO
+from gi.repository import GLib
 
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_glib
+from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow, GDKWindow,
     PROPERTY_CHANGE_MASK, CLASS_INPUT_ONLY,
@@ -35,7 +36,6 @@ from xpra.log import Logger
 
 gdk = import_gdk()
 gobject = import_gobject()
-glib = import_glib()
 
 X11Window = X11WindowBindings()
 
@@ -539,7 +539,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                 return
             request_id = self.local_request_counter
             self.local_request_counter += 1
-            timer = glib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
+            timer = GLib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
             self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents, time)
             log("requesting local XConvertSelection from %s as '%s' into '%s'", self.get_wininfo(owner), target, prop)
             X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=time)
@@ -554,7 +554,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                 del self.local_requests[target]
         except KeyError:
             return
-        glib.source_remove(timer)
+        GLib.source_remove(timer)
         log.warn("Warning: %s selection request for '%s' timed out", self._selection, target)
         log.warn(" request %i at time=%i", request_id, time)
         if target=="TARGETS":
@@ -625,7 +625,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             if log.is_debug_enabled():
                 log("got_local_contents: calling %s%s, time=%i",
                     got_contents, (dtype, dformat, repr_ellipsized(str(data))), time)
-            glib.source_remove(timer)
+            GLib.source_remove(timer)
             got_contents(dtype, dformat, data)
 
     def filter_data(self, target, dtype=None, dformat=None, data=None):
@@ -670,13 +670,13 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
 
     def reschedule_incr_data_timer(self):
         self.cancel_incr_data_timer()
-        self.incr_data_timer = glib.timeout_add(1*1000, self.incr_data_timeout)
+        self.incr_data_timer = GLib.timeout_add(1*1000, self.incr_data_timeout)
 
     def cancel_incr_data_timer(self):
         idt = self.incr_data_timer
         if idt:
             self.incr_data_timer = None
-            glib.source_remove(idt)
+            GLib.source_remove(idt)
 
     def incr_data_timeout(self):
         self.incr_data_timer = None

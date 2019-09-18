@@ -22,9 +22,9 @@ def main():
     from xpra.platform import program_context
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
         if not use_tty():
-            from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+            from xpra.gtk_common.gobject_compat import import_gtk
             gtk = import_gtk()
-            glib = import_glib()
+            from gi.repository import GLib
             from xpra.gtk_common.gtk_util import MESSAGE_INFO, MESSAGE_ERROR, BUTTONS_CLOSE
             def show_dialog(mode, *msgs):
                 dialog = gtk.MessageDialog(None, 0, mode,
@@ -33,7 +33,7 @@ def main():
                 v = dialog.run()
                 dialog.destroy()
                 #run the main loop long enough to destroy the dialog:
-                glib.idle_add(gtk.main_quit)
+                GLib.idle_add(gtk.main_quit)
                 gtk.main()
                 return v
             def error(*msgs):
@@ -48,7 +48,7 @@ def main():
             error = info = printmsgs
 
         key_handle_filenames = [os.path.join(d, "u2f-keyhandle.hex") for d in get_user_conf_dirs()]
-        assert len(key_handle_filenames)>0
+        assert key_handle_filenames
         for filename in key_handle_filenames:
             p = osexpand(filename)
             key_handle_str = load_binary_file(p)

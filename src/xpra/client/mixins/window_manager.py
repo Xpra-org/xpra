@@ -12,8 +12,8 @@ import signal
 import datetime
 from collections import deque
 from time import sleep, time
+from gi.repository import GLib
 
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.platform.gui import (
     get_vrefresh, get_window_min_size, get_window_max_size,
     get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
@@ -41,8 +41,6 @@ mouselog = Logger("mouse")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 traylog = Logger("client", "tray")
-
-glib = import_glib()
 
 MOUSE_SHOW = envbool("XPRA_MOUSE_SHOW", True)
 
@@ -825,7 +823,7 @@ class WindowClient(StubClientMixin):
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=watcher_terminated)
                 log("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
-                proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.PRIORITY_DEFAULT, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
+                proc.stdout_io_watch = GLib.io_add_watch(proc.stdout, GLib.PRIORITY_DEFAULT, GLib.IO_IN, self.signal_watcher_event, proc, pid, wid)
         if proc:
             self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
             return proc.pid
@@ -833,13 +831,13 @@ class WindowClient(StubClientMixin):
 
     def signal_watcher_event(self, fd, cb_condition, proc, pid, wid):
         log("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
-        if cb_condition==glib.IO_HUP:
+        if cb_condition==GLib.IO_HUP:
             proc.stdout_io_watch = None
             return False
         if proc.stdout_io_watch is None:
             #no longer watched
             return False
-        if cb_condition==glib.IO_IN:
+        if cb_condition==GLib.IO_IN:
             try:
                 signame = bytestostr(proc.stdout.readline()).strip("\n\r")
                 log("signal_watcher_event: %s", signame)

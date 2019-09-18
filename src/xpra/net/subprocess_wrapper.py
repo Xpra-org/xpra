@@ -7,7 +7,7 @@ import os
 import sys
 import subprocess
 
-from xpra.gtk_common.gobject_compat import import_glib, register_os_signals
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException
@@ -89,11 +89,11 @@ class subprocess_callee(object):
         self.setup_mainloop()
 
     def setup_mainloop(self):
-        glib = import_glib()
-        self.mainloop = glib.MainLoop()
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
+        from gi.repository import GLib
+        self.mainloop = GLib.MainLoop()
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
 
 
     def connect_export(self, signal_name, *user_data):
@@ -330,10 +330,10 @@ class subprocess_caller(object):
         #hook a default packet handlers:
         self.connect(Protocol.CONNECTION_LOST, self.connection_lost)
         self.connect(Protocol.GIBBERISH, self.gibberish)
-        glib = import_glib()
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
+        from gi.repository import GLib
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
 
 
     def connect(self, signal, cb, *args):

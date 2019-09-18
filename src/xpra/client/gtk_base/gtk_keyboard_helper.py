@@ -6,13 +6,13 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.keyboard_helper import KeyboardHelper, log
-from xpra.gtk_common.gobject_compat import import_gdk, import_glib
+from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import display_get_default, keymap_get_for_display
 from xpra.os_util import is_X11
 
 gdk = import_gdk()
-glib = import_glib()
+from gi.repository import GLib
 
 
 class GTKKeyboardHelper(KeyboardHelper):
@@ -56,7 +56,7 @@ class GTKKeyboardHelper(KeyboardHelper):
                 if self.xkbmap_layout:
                     self.send_layout()
                 self.send_keymap()
-        glib.timeout_add(500, do_keys_changed)
+        GLib.timeout_add(500, do_keys_changed)
 
     def update(self):
         old_hash = self.hash

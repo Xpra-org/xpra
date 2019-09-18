@@ -8,6 +8,7 @@
 import sys
 import datetime
 from collections import deque
+from gi.repository import GLib
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monotonic_time
@@ -24,14 +25,13 @@ from xpra.gtk_common.gtk_util import (
     FILE_CHOOSER_ACTION_SAVE,
     )
 from xpra.net.net_util import get_network_caps
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.log import Logger
 
 log = Logger("info")
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True
@@ -476,10 +476,10 @@ class SessionInfo(gtk.Window):
         self.init_counters()
         self.populate()
         self.populate_all()
-        glib.timeout_add(1000, self.populate)
-        glib.timeout_add(100, self.populate_tab)
+        GLib.timeout_add(1000, self.populate)
+        GLib.timeout_add(100, self.populate_tab)
         if mixin_features.audio and SHOW_SOUND_STATS:
-            glib.timeout_add(100, self.populate_sound_stats)
+            GLib.timeout_add(100, self.populate_sound_stats)
         add_close_accel(self, self.destroy)
 
 

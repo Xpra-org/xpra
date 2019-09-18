@@ -1,19 +1,16 @@
 #!/usr/bin/env python
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import OrderedDict
 import cairo
+from gi.repository import PangoCairo
 
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_glib,
-    )
+from xpra.gtk_common.gobject_compat import import_gtk
 
 gtk = import_gtk()
-gLib = import_glib()
-from gi.repository import PangoCairo
 
 FONT = "Serif 27"
 PATTERN = "%f"
@@ -44,7 +41,7 @@ class FontWindow(gtk.Window):
         self.area_draw(self, cr)
 
     def area_draw(self, widget, cr):
-        layout = pangocairo.create_layout(cr)
+        layout = PangoCairo.create_layout(cr)
         pctx = layout.get_context()
         print("PangoContext: %s (%s)" % (pctx, type(pctx)))
         print("PangoContext: %s" % dir(pctx))

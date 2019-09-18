@@ -7,8 +7,8 @@
 import os
 import sys
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
+from gi.repository import GLib
 
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.util import (
     LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR,
     repr_ellipsized, print_nested_dict, csv, envfloat, envbool, envint, typedict,
@@ -29,8 +29,6 @@ from xpra.log import Logger
 
 log = Logger("proxy")
 authlog = Logger("proxy", "auth")
-
-glib = import_glib()
 
 freeze_support()
 
@@ -85,12 +83,12 @@ class ProxyServer(ServerCore):
         self.instances = {}
         #connections used exclusively for requests:
         self._requests = set()
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self._ws_timeout = PROXY_WS_TIMEOUT
-        register_SIGUSR_signals(glib.idle_add)
+        register_SIGUSR_signals(GLib.idle_add)
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
@@ -141,7 +139,7 @@ class ProxyServer(ServerCore):
         pass
 
     def do_run(self):
-        self.main_loop = glib.MainLoop()
+        self.main_loop = GLib.MainLoop()
         self.main_loop.run()
 
     def handle_stop_command(self, *args):

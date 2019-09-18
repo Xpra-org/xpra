@@ -12,10 +12,10 @@ import math
 import cairo
 
 from xpra.client.spinner import cv
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk
 
 gtk     = import_gtk()
-glib    = import_glib()
+from gi.repository import GLib
 
 
 class Example(gtk.Window):
@@ -30,7 +30,7 @@ class Example(gtk.Window):
         self.add(self.darea)
 
         self.count = 0
-        glib.timeout_add(cv.SPEED, self.on_timer)
+        GLib.timeout_add(cv.SPEED, self.on_timer)
 
         self.set_title("Waiting")
         self.resize(250, 150)

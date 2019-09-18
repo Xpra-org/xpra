@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_glib, import_gtk, import_gdk
-glib = import_glib()
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 gtk = import_gtk()
 gdk = import_gdk()
 from xpra.gtk_common.gtk_util import gtk_main, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, WINDOW_EVENT_MASK, BUTTON_RELEASE_MASK
 
+from gi.repository import GLib
 
 def main():
 	window = gtk.Window(WINDOW_TOPLEVEL)
@@ -46,9 +46,9 @@ def main():
 			# | gdk.ENTER_NOTIFY_MASK
 			#gdk.ALL_EVENTS_MASK
 			action_label.set_text("pointer_grab() returned %s" % GRAB_STATUS_STRING.get(v, v))
-			glib.timeout_add(10*1000, gdk.pointer_ungrab, 0)
+			GLib.timeout_add(10*1000, gdk.pointer_ungrab, 0)
 		print("will grab in 5 seconds!")
-		glib.timeout_add(5*1000, do_grab)
+		GLib.timeout_add(5*1000, do_grab)
 	grab_pointer_btn.connect('clicked', grab_pointer)
 	hbox.pack_start(grab_pointer_btn, expand=False, fill=False, padding=10)
 
@@ -64,7 +64,7 @@ def main():
 	def grab_keyboard(*_args):
 		v = gdk.keyboard_grab(window.get_window(), True, 0)
 		action_label.set_text("keyboard_grab(..)=%s" % GRAB_STATUS_STRING.get(v, v))
-		glib.timeout_add(10*1000, gdk.keyboard_ungrab, 0)
+		GLib.timeout_add(10*1000, gdk.keyboard_ungrab, 0)
 	grab_keyboard_btn.connect('clicked', grab_keyboard)
 	hbox.pack_start(grab_keyboard_btn, expand=False, fill=False, padding=10)
 

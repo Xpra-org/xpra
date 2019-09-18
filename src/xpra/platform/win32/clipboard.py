@@ -8,6 +8,8 @@ from ctypes import (
     get_last_error, create_string_buffer,
     WinError, FormatError,
     )
+from gi.repository import GLib
+
 from xpra.platform.win32.common import (
     WNDCLASSEX, GetLastError, ERROR_ACCESS_DENIED, WNDPROC, LPCWSTR, LPWSTR,
     DefWindowProcW,
@@ -26,10 +28,6 @@ from xpra.clipboard.clipboard_core import (
     )
 from xpra.util import csv, repr_ellipsized
 from xpra.os_util import bytestostr, strtobytes
-from xpra.gtk_common.gobject_compat import import_glib
-
-glib = import_glib()
-
 
 CP_UTF8 = 65001
 MB_ERR_INVALID_CHARS = 0x00000008
@@ -167,7 +165,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             failure_callback()
             return
         #try again later:
-        glib.timeout_add(delay, self.with_clipboard_lock,
+        GLib.timeout_add(delay, self.with_clipboard_lock,
                          success_callback, failure_callback, retries-1, delay)
 
     def clear(self):
@@ -282,7 +280,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         r = self.do_set_clipboard_text(text)
         if not r:
             if retry>0:
-                glib.timeout_add(5, self.set_clipboard_text, text, retry-1)
+                GLib.timeout_add(5, self.set_clipboard_text, text, retry-1)
             else:
                 self.set_err("failed to set clipboard buffer")
 
@@ -323,7 +321,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         #self.with_clipboard_lock(EmptyClipboard, empty_error)
         def cleanup():
             GlobalFree(buf)
-            glib.idle_add(self.remove_block)
+            GLib.idle_add(self.remove_block)
         ret = [False]
         def do_set_data():
             if not EmptyClipboard():

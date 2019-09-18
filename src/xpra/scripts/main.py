@@ -2419,8 +2419,7 @@ def run_list_mdns(error_cb, extra_args):
         error_cb("sorry, 'list-mdns' is not supported on this platform yet")
     from xpra.net.net_util import if_indextoname
     from xpra.dbus.common import loop_init
-    from xpra.gtk_common.gobject_compat import import_glib
-    glib = import_glib()
+    from gi.repository import GLib
     loop_init()
     import collections
     found = collections.OrderedDict()
@@ -2458,13 +2457,13 @@ def run_list_mdns(error_cb, extra_args):
         username = text.get("username", "")
         uq = text.get("uuid", len(found)), username, host
         found.setdefault(uq, []).append((iface, name, domain, host, address, port, text))
-        glib.timeout_add(1000, show_new_found)
+        GLib.timeout_add(1000, show_new_found)
     listener = AvahiListener(XPRA_MDNS_TYPE, mdns_add=mdns_add)
     print("Looking for xpra services via mdns")
     try:
-        glib.idle_add(listener.start)
-        loop = glib.MainLoop()
-        glib.timeout_add(MDNS_WAIT*1000, loop.quit)
+        GLib.idle_add(listener.start)
+        loop = GLib.MainLoop()
+        GLib.timeout_add(MDNS_WAIT*1000, loop.quit)
         loop.run()
     finally:
         listener.stop()

@@ -13,7 +13,7 @@ from xpra.gtk_common.gtk_util import (
     window_defaults, WIN_POS_CENTER,
     )
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_gobject, import_glib,
+    import_gtk, import_gdk, import_gobject,
     register_os_signals,
     )
 from xpra.platform.paths import get_icon_dir
@@ -22,11 +22,9 @@ from xpra.log import Logger, enable_debug_for
 
 log = Logger("exec")
 
-glib = import_glib()
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
-from gi.repository import Pango
 
 
 _instance = None

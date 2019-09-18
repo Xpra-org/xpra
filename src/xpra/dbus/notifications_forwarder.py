@@ -187,9 +187,8 @@ def register(notify_callback=None, close_callback=None, replace=False):
 
 def main():
     register()
-    from xpra.gtk_common.gobject_compat import import_glib
-    glib = import_glib()
-    mainloop = glib.MainLoop()
+    from gi.repository import GLib
+    mainloop = GLib.MainLoop()
     mainloop.run()
 
 if __name__ == "__main__":

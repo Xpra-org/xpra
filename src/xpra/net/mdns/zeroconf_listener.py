@@ -79,9 +79,8 @@ def main():
     def mdns_remove(*args):
         print("mdns_remove: %s" % (args, ))
 
-    from xpra.gtk_common.gobject_compat import import_glib
-    glib = import_glib()
-    loop = glib.MainLoop()
+    from gi.repository import GLib
+    loop = GLib.MainLoop()
 
     from xpra.platform import program_context
     with program_context("zeroconf-listener", "zeroconf-listener"):

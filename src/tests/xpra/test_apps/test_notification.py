@@ -28,10 +28,9 @@ def main():
     from xpra.platform import program_context
     with program_context(name, name):
         notify()
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
-        glib.timeout_add(60*1000, notify)
-        loop = glib.MainLoop()
+        from gi.repository import GLib
+        GLib.timeout_add(60*1000, notify)
+        loop = GLib.MainLoop()
         loop.run()
 
 

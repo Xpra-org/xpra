@@ -11,7 +11,6 @@ __all__ = [
     "import_gobject",
     "import_gtk",
     "import_gdk",
-    "import_glib",
     ]
 
 
@@ -50,13 +49,6 @@ def import_gobject():
         GObject.threads_init = noop
     return GObject
 
-def import_glib():
-    import gi
-    from gi.repository import GLib                  #@UnresolvedImport
-    if gi.version_info<(3, 11):
-        GLib.threads_init()
-    return GLib
-
 def import_gtk():
     gi_gtk()
     from gi.repository import Gtk                   #@UnresolvedImport
@@ -74,7 +66,7 @@ def import_gdk():
 _glib_unix_signals = {}
 def register_os_signals(callback):
     from xpra.os_util import SIGNAMES, POSIX, get_util_logger
-    glib = import_glib()
+    from gi.repository import GLib
     import signal
     def handle_signal(signum):
         try:
@@ -85,15 +77,15 @@ def register_os_signals(callback):
             pass
         callback(signum)
     def os_signal(signum, _frame):
-        glib.idle_add(handle_signal, signum)
+        GLib.idle_add(handle_signal, signum)
     for signum in (signal.SIGINT, signal.SIGTERM):
         if POSIX:
             #replace the previous definition if we had one:
             global _glib_unix_signals
             current = _glib_unix_signals.get(signum, None)
             if current:
-                glib.source_remove(current)
-            source_id = glib.unix_signal_add(glib.PRIORITY_HIGH, signum, handle_signal, signum)
+                GLib.source_remove(current)
+            source_id = GLib.unix_signal_add(GLib.PRIORITY_HIGH, signum, handle_signal, signum)
             _glib_unix_signals[signum] = source_id
         else:
             signal.signal(signum, os_signal)

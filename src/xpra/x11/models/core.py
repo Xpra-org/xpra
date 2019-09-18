@@ -23,10 +23,9 @@ from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_type_get, PYTHON_TYPES
 from xpra.x11.gtk_x11.send_wm import send_wm_delete_window
 from xpra.x11.gtk_x11.gdk_bindings import add_event_receiver, remove_event_receiver
-from xpra.gtk_common.gobject_compat import import_gobject, import_glib
+from xpra.gtk_common.gobject_compat import import_gobject
 from xpra.log import Logger
 
-glib = import_glib()
 gobject = import_gobject()
 
 log = Logger("x11", "window")
@@ -306,7 +305,8 @@ class CoreX11WindowModel(WindowModelStub):
         log("%s.do_unmanaged(%s) damage_forward_handle=%s, composite=%s",
             self._MODELTYPE, wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.client_window, self)
-        glib.idle_add(self.managed_disconnect)
+        from gi.repository import GLib
+        GLib.idle_add(self.managed_disconnect)
         if self._composite:
             if self._damage_forward_handle:
                 self._composite.disconnect(self._damage_forward_handle)

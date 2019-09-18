@@ -7,7 +7,7 @@
 import os
 import re
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.gtk_common.gtk_util import (
@@ -32,7 +32,7 @@ avsynclog = Logger("menu", "av-sync")
 bandwidthlog = Logger("bandwidth", "network")
 
 gtk = import_gtk()
-glib = import_glib()
+from gi.repository import GLib
 
 HIDE_DISABLED_MENU_ENTRIES = OSX
 
@@ -1300,7 +1300,7 @@ class GTKTrayMenuBase(object):
             #this callback runs in another thread,
             #and we want to wait for the devices to settle
             #so that the file permissions are correct when we try to access it:
-            glib.timeout_add(1000, populate_webcam_menu)
+            GLib.timeout_add(1000, populate_webcam_menu)
         add_video_device_change_callback(video_devices_changed)
 
         webcam.set_submenu(menu)

@@ -8,13 +8,11 @@
 
 import sys
 import os.path
+from gi.repository import GLib
 
 from xpra.util import flatten_dict, envbool
 from xpra.os_util import monotonic_time, register_SIGUSR_signals
-from xpra.gtk_common.gobject_compat import (
-    import_gdk, import_glib,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import import_gdk, register_os_signals
 from xpra.gtk_common.quit import (
     gtk_main_quit_really,
     gtk_main_quit_on_fatal_exceptions_enable,
@@ -35,7 +33,6 @@ screenlog = Logger("server", "screen")
 cursorlog = Logger("server", "cursor")
 notifylog = Logger("notify")
 
-glib = import_glib()
 gdk = import_gdk()
 
 
@@ -49,9 +46,9 @@ class GTKServerBase(ServerBase):
 
     def __init__(self):
         log("GTKServerBase.__init__()")
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
         self.cursor_suspended = False
         self.ui_watcher = None
         ServerBase.__init__(self)
@@ -64,7 +61,7 @@ class GTKServerBase(ServerBase):
 
     def install_signal_handlers(self, callback):
         register_os_signals(callback)
-        register_SIGUSR_signals(glib.idle_add)
+        register_SIGUSR_signals(GLib.idle_add)
 
     def signal_quit(self, signum, frame=None):
         gtk_main_quit_on_fatal_exceptions_disable()
@@ -100,7 +97,7 @@ class GTKServerBase(ServerBase):
     def do_run(self):
         if UI_THREAD_WATCHER:
             from xpra.platform.ui_thread_watcher import get_UI_watcher
-            self.ui_watcher = get_UI_watcher(glib.timeout_add, glib.source_remove)
+            self.ui_watcher = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
             self.ui_watcher.start()
         if server_features.windows:
             display = display_get_default()

@@ -6,8 +6,10 @@
 
 import os.path
 import array
-
 import cairo
+from gi.repository import GLib
+from gi.repository import GdkPixbuf     #@UnresolvedImport
+from gi.repository import Pango
 
 from xpra.util import iround, first_time
 from xpra.os_util import (
@@ -15,7 +17,7 @@ from xpra.os_util import (
     WIN32, OSX, POSIX,
     )
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_glib,
+    import_gtk, import_gdk,
     import_gobject,
     )
 from xpra.log import Logger
@@ -25,12 +27,9 @@ traylog = Logger("gtk", "tray")
 screenlog = Logger("gtk", "screen")
 alphalog = Logger("gtk", "alpha")
 
-from gi.repository import GdkPixbuf     #@UnresolvedImport
-from gi.repository import Pango
 gtk     = import_gtk()
 gdk     = import_gdk()
 gobject = import_gobject()
-glib    = import_glib()
 
 SHOW_ALL_VISUALS = False
 
@@ -69,7 +68,7 @@ def get_gtk_version_info():
             except:
                 pass
         MAJORMICROMINOR("gtk",  gtk)
-        MAJORMICROMINOR("glib", glib)
+        MAJORMICROMINOR("glib", GLib)
 
         #from here on, the code is the same for both GTK2 and GTK3, hooray:
         vi = getattr(cairo, "version_info", None)
@@ -524,7 +523,7 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
             if state is not None and state==self.get_active():
                 #toggle did not fire after the button release, so force it:
                 self.set_active(not state)
-        glib.idle_add(recheck)
+        GLib.idle_add(recheck)
 
 class TrayImageMenuItem(gtk.ImageMenuItem):
     """ We add a button handler to catch clicks that somehow do not
@@ -552,7 +551,7 @@ class TrayImageMenuItem(gtk.ImageMenuItem):
                 self.activate()
                 #not essential since we'll clear it before calling recheck again:
                 self._activated = False
-        glib.idle_add(recheck)
+        GLib.idle_add(recheck)
 
 
 def CheckMenuItem(label):

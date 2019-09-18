@@ -2,11 +2,9 @@
 
 import cairo
 
-from xpra.gtk_common.gobject_compat import import_glib, import_gtk, import_gdk
-glib = import_glib()
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 gtk = import_gtk()
 gdk = import_gdk()
-
 
 WIDTH = 400
 HEIGHT = 200
@@ -59,12 +57,13 @@ class MapResizeWindow(gtk.Window):
 
 
 def main():
+	from gi.repository import GLib
 	w = MapResizeWindow()
-	glib.idle_add(w.realize)
-	glib.idle_add(w.Xresize, WIDTH/2, HEIGHT/2)
+	GLib.idle_add(w.realize)
+	GLib.idle_add(w.Xresize, WIDTH/2, HEIGHT/2)
 	print("window *should* (BUG!) be shown with size=%sx%s" % (WIDTH/2, HEIGHT/2))
-	glib.idle_add(w.show_all)
-	glib.timeout_add(5*1000, w.Xresize, WIDTH*2, HEIGHT*2)
+	GLib.idle_add(w.show_all)
+	GLib.timeout_add(5*1000, w.Xresize, WIDTH*2, HEIGHT*2)
 	print("window should now be shown resized to=%sx%s" % (WIDTH*2, HEIGHT*2))
 	gtk.main()
 	return 0

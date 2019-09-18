@@ -4,14 +4,14 @@
 
 import sys
 from collections import deque
+from gi.repository import GLib
+from gi.repository import Pango
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.platform.paths import get_icon
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
-from gi.repository import Pango
 
 
 class KeyboardStateInfoWindow:
@@ -44,7 +44,7 @@ class KeyboardStateInfoWindow:
 
         self.window.add(vbox)
         self.window.show_all()
-        glib.timeout_add(100, self.populate_modifiers)
+        GLib.timeout_add(100, self.populate_modifiers)
 
         self.key_events = deque(maxlen=35)
         self.window.connect("key-press-event", self.key_press)

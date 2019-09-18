@@ -3,13 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_glib
+from gi.repository import GLib
+
 from xpra.clipboard.clipboard_core import ClipboardProtocolHelperCore
 from xpra.util import repr_ellipsized, envint
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
-
-glib = import_glib()
 
 log = Logger("clipboard")
 
@@ -78,7 +77,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
         log("send_clipboard_request id=%s", request_id)
-        timer = glib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id, selection, target)
+        timer = GLib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id, selection, target)
         self._clipboard_outstanding_requests[request_id] = (timer, selection, target)
         self.progress()
         self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
@@ -107,7 +106,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
             return
         finally:
             self.progress()
-        glib.source_remove(timer)
+        GLib.source_remove(timer)
         proxy = self._get_proxy(selection)
         log("clipboard got contents%s: proxy=%s for selection=%s",
             (request_id, dtype, dformat, repr_ellipsized(str(data))), proxy, selection)

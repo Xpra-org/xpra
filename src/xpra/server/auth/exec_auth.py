@@ -5,15 +5,13 @@
 
 import os
 from subprocess import Popen
+from gi.repository import GLib
 
 from xpra.util import envint
 from xpra.os_util import OSX
 from xpra.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
-from xpra.gtk_common.gobject_compat import import_glib
-
-glib = import_glib()
 
 #will be called when we init the module
 assert init
@@ -63,7 +61,7 @@ class Authenticator(SysAuthenticator):
         log("authenticate(..) Popen(%s)=%s", cmd, proc)
         #if required, make sure we kill the command when it times out:
         if self.timeout>0:
-            self.timer = glib.timeout_add(self.timeout*1000, self.command_timedout)
+            self.timer = GLib.timeout_add(self.timeout*1000, self.command_timedout)
             if not OSX:
                 #python on macos may set a 0 returncode when we use poll()
                 #so we cannot use the ChildReaper on macos,
@@ -80,7 +78,7 @@ class Authenticator(SysAuthenticator):
         log("exec auth.command_ended%s timer=%s", args, t)
         if t:
             self.timer = None
-            glib.source_remove(t)
+            GLib.source_remove(t)
 
     def command_timedout(self):
         proc = self.proc

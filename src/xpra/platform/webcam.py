@@ -50,10 +50,6 @@ def main():
         enable_debug_for("webcam")
         add_debug_category("webcam")
     run = "-r" in sys.argv or "--run" in sys.argv
-    if run:
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
-
     from xpra.util import engs, print_nested_dict
     from xpra.platform import program_context
     with program_context("Webcam Info", "Webcam Info"):
@@ -72,8 +68,9 @@ def main():
                 else:
                     log.info("device change")
             log.info("starting main loop")
-            main_loop = glib.MainLoop()
-            glib.idle_add(add_video_device_change_callback, callback)
+            from gi.repository import GLib
+            main_loop = GLib.MainLoop()
+            GLib.idle_add(add_video_device_change_callback, callback)
             try:
                 main_loop.run()
             except KeyboardInterrupt:

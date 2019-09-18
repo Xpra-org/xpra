@@ -5,12 +5,12 @@
 
 #must be done before importing gobject!
 #pylint: disable=wrong-import-position
+from gi.repository import GLib
 from xpra.sound.gstreamer_util import import_gst
 gst = import_gst()
 
 from xpra.util import envint
 from xpra.os_util import monotonic_time, register_SIGUSR_signals
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
 from xpra.log import Logger
 
@@ -66,10 +66,9 @@ class SoundPipeline(gobject.GObject):
                      "codec"        : self.codec,
                      "state"        : self.state,
                      }
-        glib = import_glib()
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
 
     def idle_emit(self, sig, *args):
         self.idle_add(self.emit, sig, *args)

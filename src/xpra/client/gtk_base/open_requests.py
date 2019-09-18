@@ -7,9 +7,10 @@
 
 import os.path
 import sys
+from gi.repository import GLib
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_glib,
+    import_gtk, import_gdk,
     register_os_signals,
     )
 from xpra.os_util import monotonic_time, bytestostr, get_util_logger
@@ -24,7 +25,6 @@ log = get_util_logger()
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
 
 
 _instance = None
@@ -176,11 +176,11 @@ class OpenRequestsWindow(object):
     def schedule_timer(self):
         if not self.populate_timer and self.expire_labels:
             self.update_expires_label()
-            self.populate_timer = glib.timeout_add(1000, self.update_expires_label)
+            self.populate_timer = GLib.timeout_add(1000, self.update_expires_label)
 
     def cancel_timer(self):
         if self.populate_timer:
-            glib.source_remove(self.populate_timer)
+            GLib.source_remove(self.populate_timer)
             self.populate_timer = 0
 
 

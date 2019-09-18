@@ -1105,12 +1105,11 @@ class ClientExtras(object):
             keylog("init_keyboard_listener: GetMessage()=%s", ret)
             if ret==-1:
                 raise ctypes.WinError(ctypes.get_last_error())
-            elif ret==0:
+            if ret==0:
                 keylog("GetMessage()=0, exiting loop")
                 return
-            else:
-                TranslateMessage(lpmsg)
-                DispatchMessageA(lpmsg)
+            TranslateMessage(lpmsg)
+            DispatchMessageA(lpmsg)
 
 
     def wm_move(self, wParam, lParam):
@@ -1134,9 +1133,8 @@ class ClientExtras(object):
             log("will unfreeze all the windows")
             #don't unfreeze directly from here,
             #as the system may not be fully usable yet (see #997)
-            from xpra.gtk_common.gobject_compat import import_glib
-            glib = import_glib()
-            glib.idle_add(c.unfreeze)
+            from gi.repository import GLib
+            GLib.idle_add(c.unfreeze)
 
 
     def inputlangchange(self, wParam, lParam):

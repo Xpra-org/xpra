@@ -239,8 +239,7 @@ class AvahiPublisher(object):
 
 
 def main():
-    from xpra.gtk_common.gobject_compat import import_glib
-    glib = import_glib()
+    from gi.repository import GLib
     import random
     import signal
     port = int(20000*random.random())+10000
@@ -251,12 +250,12 @@ def main():
     assert publisher
     def update_rec():
         publisher.update_txt({b"hello" : b"world"})
-    glib.timeout_add(5*1000, update_rec)
+    GLib.timeout_add(5*1000, update_rec)
     def start():
         publisher.start()
-    glib.idle_add(start)
+    GLib.idle_add(start)
     signal.signal(signal.SIGTERM, exit)
-    glib.MainLoop().run()
+    GLib.MainLoop().run()
 
 
 if __name__ == "__main__":

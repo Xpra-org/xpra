@@ -1,14 +1,8 @@
 #!/usr/bin/env python
 
-import os
 import cairo
 
-GTK3 = os.environ.get("GTK3", "1")=="1"
-if GTK3:
-    from gi.repository import Gtk as gtk, GLib as glib   #@UnresolvedImport @UnusedImport
-else:
-    import gtk, glib            #@Reimport @UnresolvedImport
-    from gtk import gdk         #@UnresolvedImport
+from gi.repository import Gtk as gtk, GLib as glib   #@UnresolvedImport @UnusedImport
 
 
 WIDTH, HEIGHT = 640, 640
@@ -20,10 +14,7 @@ class FPSWindow(gtk.Window):
         self.set_default_size(WIDTH, HEIGHT)
         self.set_app_paintable(True)
         self.counter = 0
-        if GTK3:
-            self.connect("draw", self.draw)
-        else:
-            self.connect("expose-event", self.do_expose_event)
+        self.connect("draw", self.draw)
         self.connect("destroy", gtk.main_quit)
         glib.timeout_add(10, self.repaint)
 
@@ -33,11 +24,7 @@ class FPSWindow(gtk.Window):
 
     def repaint(self):
         self.counter += 1
-        if GTK3:
-            self.queue_draw()
-        else:
-            window = self.get_window()
-            window.invalidate_rect(gdk.Rectangle(0, 0, WIDTH, HEIGHT), False)
+        self.queue_draw()
         return True
 
     def do_expose_event(self, widget, event):

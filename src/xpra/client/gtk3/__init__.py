@@ -3,7 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import gi
+
 from xpra.os_util import is_X11
+
+gi.require_version('Gdk', '3.0')                #@UndefinedVariable
+
 if is_X11():
     try:
         from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source

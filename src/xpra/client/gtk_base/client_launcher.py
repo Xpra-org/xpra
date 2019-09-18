@@ -17,7 +17,7 @@ import sys
 import traceback
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_gobject, import_glib,
+    import_gtk, import_gdk, import_gobject,
     register_os_signals,
     )
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
@@ -46,10 +46,10 @@ from xpra.log import Logger, enable_debug_for
 log = Logger("launcher")
 
 gobject = import_gobject()
-glib = import_glib()
 gtk = import_gtk()
 gdk = import_gdk()
 from gi.repository import Pango
+from gi.repository import GLib
 
 #what we save in the config file:
 SAVED_FIELDS = [
@@ -654,14 +654,14 @@ class ApplicationWindow:
 
     def set_info_text(self, text):
         if self.info:
-            glib.idle_add(self.info.set_text, text)
+            GLib.idle_add(self.info.set_text, text)
 
     def set_info_color(self, is_error=False):
         self.set_widget_fg_color(self.info, is_error)
 
 
     def set_sensitive(self, s):
-        glib.idle_add(self.window.set_sensitive, s)
+        GLib.idle_add(self.window.set_sensitive, s)
 
     def choose_pkey_file(self, title, action, action_button, callback):
         file_filter = gtk.FileFilter()
@@ -710,7 +710,7 @@ class ApplicationWindow:
                 self.set_info_text(t)
             self.window.show()
             self.window.present()
-        glib.idle_add(ui_handle_exception)
+        GLib.idle_add(ui_handle_exception)
 
     def do_connect(self):
         try:
@@ -823,7 +823,7 @@ class ApplicationWindow:
             self.handle_exception(e)
             return
         log("connect_to(..)=%s, hiding launcher window, starting client", conn)
-        glib.idle_add(self.start_XpraClient, conn, display_desc)
+        GLib.idle_add(self.start_XpraClient, conn, display_desc)
 
 
     def start_XpraClient(self, conn, display_desc):
@@ -857,11 +857,11 @@ class ApplicationWindow:
             self.clean_client()
             if exit_launcher:
                 #give time for the main loop to run once after calling cleanup
-                glib.timeout_add(100, do_quit)
+                GLib.timeout_add(100, do_quit)
             else:
                 if w:
                     self.set_sensitive(True)
-                    glib.idle_add(w.show)
+                    GLib.idle_add(w.show)
 
         def warn_and_quit_override(exit_code, warning):
             log("warn_and_quit_override(%s, %s)", exit_code, warning)
@@ -919,7 +919,7 @@ class ApplicationWindow:
         else:
             color_obj = white
         if color_obj:
-            glib.idle_add(widget.modify_base, STATE_NORMAL, color_obj)
+            GLib.idle_add(widget.modify_base, STATE_NORMAL, color_obj)
 
     def set_widget_fg_color(self, widget, is_error=False):
         if is_error:
@@ -927,7 +927,7 @@ class ApplicationWindow:
         else:
             color_obj = black
         if color_obj:
-            glib.idle_add(widget.modify_fg, STATE_NORMAL, color_obj)
+            GLib.idle_add(widget.modify_fg, STATE_NORMAL, color_obj)
 
 
     def update_options_from_gui(self):
@@ -1123,8 +1123,8 @@ def do_main(argv):
             client = app.client
             if client:
                 client.cleanup()
-            glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
-            glib.timeout_add(1000, app.set_info_color, True)
+            GLib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+            GLib.timeout_add(1000, app.set_info_color, True)
         register_os_signals(handle_signal)
         has_file = len(args) == 1
         if has_file:
@@ -1144,7 +1144,7 @@ def do_main(argv):
         if app.config.autoconnect:
             #file says we should connect,
             #do that only (not showing UI unless something goes wrong):
-            glib.idle_add(app.do_connect)
+            GLib.idle_add(app.do_connect)
         if not has_file:
             app.reset_errors()
         if not app.config.autoconnect or app.config.debug:
@@ -1159,7 +1159,7 @@ def do_main(argv):
                     app.update_gui_from_config()
                     if app.config.autoconnect:
                         app.__osx_open_signal = True
-                        glib.idle_add(app.do_connect)
+                        GLib.idle_add(app.do_connect)
                     else:
                         show_with_focus_workaround(app.show)
                 def open_URL(url):
@@ -1170,7 +1170,7 @@ def do_main(argv):
                     #so apply them now:
                     configure_network(app.config)
                     app.update_gui_from_config()
-                    glib.idle_add(app.do_connect)
+                    GLib.idle_add(app.do_connect)
                 wait_for_open_handlers(app.show, open_file, open_URL)
             else:
                 app.show()

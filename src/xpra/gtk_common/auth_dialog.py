@@ -1,28 +1,24 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-import os.path
 import sys
+import os.path
+from gi.repository import GLib
+from gi.repository import Pango
 
 from xpra.gtk_common.gtk_util import (
     add_close_accel, pixbuf_new_from_file, gtk_main, image_new_from_stock,
     ICON_SIZE_BUTTON,
     )
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_glib,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import import_gtk, register_os_signals
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 
 log = Logger("util")
 
 gtk = import_gtk()
-glib = import_glib()
-from gi.repository import Pango
 
 
 class AuthDialog(gtk.Window):
@@ -56,7 +52,7 @@ class AuthDialog(gtk.Window):
             self.timeout_label = gtk.Label()
             self.update_timeout()
             self.vbox.add(self.timeout_label)
-            glib.timeout_add(1000, self.update_timeout)
+            GLib.timeout_add(1000, self.update_timeout)
 
         #buttons:
         al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)

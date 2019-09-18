@@ -186,9 +186,8 @@ class Keyboard(KeyboardBase):
                     if rmenu in (0, 1):
                         self.delayed_event = (send_key_action_cb, wid, key_event)
                         #needed for altgr emulation timeouts:
-                        from xpra.gtk_common.gobject_compat import import_glib
-                        glib = import_glib()
-                        glib.timeout_add(EMULATE_ALTGR_CONTROL_KEY_DELAY, self.send_delayed_key)
+                        from gi.repository import GLib
+                        GLib.timeout_add(EMULATE_ALTGR_CONTROL_KEY_DELAY, self.send_delayed_key)
                     return
                 if not key_event.pressed and rmenu not in (0, 1):
                     #unpressed: could just skip it?

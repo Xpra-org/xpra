@@ -4,9 +4,10 @@
 # later version. See the file COPYING for details.
 
 import sys
+from gi.repository import GLib
 
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
-from xpra.gtk_common.gobject_compat import import_glib, import_gtk
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.platform.gl_context import GLContext
 from xpra.log import Logger
@@ -16,7 +17,6 @@ if not GLContext:
 
 log = Logger("opengl", "paint")
 
-glib = import_glib()
 gtk = import_gtk()
 
 
@@ -26,7 +26,7 @@ class GLDrawingArea(GLWindowBackingBase):
         return "gtk3.GLDrawingArea(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
     def idle_add(self, *args, **kwargs):
-        glib.idle_add(*args, **kwargs)
+        GLib.idle_add(*args, **kwargs)
 
     def init_gl_config(self, window_alpha):
         self.context = GLContext(window_alpha)  #pylint: disable=not-callable

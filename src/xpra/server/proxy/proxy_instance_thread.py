@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_glib
+from gi.repository import GLib
 
 from xpra.net.protocol_classes import get_server_protocol_class
 from xpra.server.proxy.proxy_instance import ProxyInstance
@@ -11,8 +11,6 @@ from xpra.codecs.video_helper import getVideoHelper
 from xpra.log import Logger
 
 log = Logger("proxy")
-
-glib = import_glib()
 
 
 class ProxyInstanceThread(ProxyInstance):
@@ -46,13 +44,13 @@ class ProxyInstanceThread(ProxyInstance):
 
 
     def idle_add(self, fn, *args, **kwargs):
-        return glib.idle_add(fn, *args, **kwargs)
+        return GLib.idle_add(fn, *args, **kwargs)
 
     def timeout_add(self, timeout, fn, *args, **kwargs):
-        return glib.timeout_add(timeout, fn, *args, **kwargs)
+        return GLib.timeout_add(timeout, fn, *args, **kwargs)
 
     def source_remove(self, tid):
-        return glib.source_remove(tid)
+        return GLib.source_remove(tid)
 
 
     def run(self):

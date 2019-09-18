@@ -114,10 +114,9 @@ def main():
     loop_init()
     listener = AvahiListener(XPRA_MDNS_TYPE, mdns_found, mdns_add, mdns_remove)
     try:
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
-        glib.idle_add(listener.start)
-        glib.MainLoop().run()
+        from gi.repository import GLib
+        GLib.idle_add(listener.start)
+        GLib.MainLoop().run()
     finally:
         listener.stop()
 

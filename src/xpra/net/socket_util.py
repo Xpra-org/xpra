@@ -123,17 +123,16 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connectio
             assert new_udp_connection_cb, "UDP sockets cannot be handled here"
             new_udp_connection_cb(sock)
             return None
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
+        from gi.repository import GLib
         sock.listen(5)
         def io_in_cb(sock, flags):
             log("io_in_cb(%s, %s)", sock, flags)
             return new_connection_cb(socktype, sock)
-        source = glib.io_add_watch(sock, glib.PRIORITY_DEFAULT, glib.IO_IN, io_in_cb)
+        source = GLib.io_add_watch(sock, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
         sources = [source]
         def cleanup():
             for source in tuple(sources):
-                glib.source_remove(source)
+                GLib.source_remove(source)
                 sources.remove(source)
         return cleanup
     except Exception as e:

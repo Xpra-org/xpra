@@ -4,20 +4,18 @@
 # later version. See the file COPYING for details.
 
 from AppKit import NSStringPboardType, NSPasteboard     #@UnresolvedImport
+from gi.repository import GLib
 
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
 from xpra.clipboard.clipboard_core import (
     _filter_targets, ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.platform.ui_thread_watcher import get_UI_watcher
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.util import csv
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 
 log = Logger("clipboard", "osx")
-
-glib = import_glib()
 
 TARGET_TRANS = {
     NSStringPboardType : "STRING",
@@ -71,7 +69,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         ClipboardProxyCore.__init__(self, selection)
         self.update_change_count()
         #setup clipboard counter watcher:
-        w = get_UI_watcher(glib.timeout_add, glib.source_remove)
+        w = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
         if w is None:
             log.warn("Warning: no UI watcher instance available")
             log.warn(" cannot detect clipboard change events")
@@ -186,7 +184,7 @@ def main():
         #init UI watcher with gobject (required by pasteboard monitoring code)
         from xpra.gtk_common.gtk_util import import_gtk
         gtk = import_gtk()
-        get_UI_watcher(glib.timeout_add, glib.source_remove)
+        get_UI_watcher(GLib.timeout_add, GLib.source_remove)
 
         def noop(*_args):
             pass

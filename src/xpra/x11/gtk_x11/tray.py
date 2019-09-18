@@ -7,7 +7,7 @@ from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_glib
+from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
 from xpra.gtk_common.gtk_util import (
     display_get_default, get_default_root_window, get_xwindow, GDKWindow, x11_foreign_new,
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
@@ -23,7 +23,6 @@ X11Window = X11WindowBindings()
 
 gdk = import_gdk()
 gobject = import_gobject()
-glib = import_glib()
 
 log = Logger("x11", "tray")
 
@@ -190,7 +189,8 @@ class SystemTray(gobject.GObject):
                 window = x11_foreign_new(event.display, xid)
                 log("tray docking window %s", window)
                 if window:
-                    glib.idle_add(self.dock_tray, xid)
+                    from gi.repository import GLib
+                    GLib.idle_add(self.dock_tray, xid)
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]
                 mlen = event.data[3]

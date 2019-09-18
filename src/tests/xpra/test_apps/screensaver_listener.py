@@ -22,9 +22,8 @@ def main():
         def active_changed(active):
             print("screensaver active status changed: %s" % (active, ))
         dbus_session.add_signal_receiver(active_changed, "ActiveChanged", NAME, path=PATH)
-        from xpra.gtk_common.gobject_compat import import_glib
-        glib = import_glib()
-        loop = glib.MainLoop()
+        from gi.repository import GLib
+        loop = GLib.MainLoop()
         loop.run()
 
 

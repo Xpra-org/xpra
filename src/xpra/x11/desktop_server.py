@@ -13,7 +13,6 @@ from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.error import XError
 from xpra.gtk_common.gtk_util import (
     get_screen_sizes, get_root_size,
@@ -39,7 +38,6 @@ from xpra.log import Logger
 log = Logger("server")
 
 gobject = import_gobject()
-glib = import_glib()
 
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
@@ -374,7 +372,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         rt = self.resize_timer
         if rt:
             self.resize_timer = None
-            glib.source_remove(rt)
+            self.source_remove(rt)
 
     def resize(self, w, h):
         geomlog("resize(%i, %i)", w, h)
@@ -386,7 +384,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         #at the same time as he resizes the window..
         self.resize_value = (w, h)
         if not self.resize_timer:
-            self.resize_timer = glib.timeout_add(250, self.do_resize)
+            self.resize_timer = self.timeout_add(250, self.do_resize)
 
     def do_resize(self):
         self.resize_timer = None

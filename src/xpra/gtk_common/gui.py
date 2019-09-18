@@ -7,9 +7,11 @@
 import sys
 import os.path
 import subprocess
+from gi.repository import GLib
+from gi.repository import Pango
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_glib,
+    import_gtk, import_gdk,
     register_os_signals,
     )
 from xpra.gtk_common.gtk_util import (
@@ -25,8 +27,6 @@ log = Logger("client", "util")
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
-from gi.repository import Pango
 
 try:
     from xpra import client
@@ -164,7 +164,7 @@ class GUI(gtk.Window):
             display = display_get_default()
             cursor = new_Cursor_for_display(display, watch)
             widget.get_window().set_cursor(cursor)
-            glib.timeout_add(5*1000, self.reset_cursors)
+            GLib.timeout_add(5*1000, self.reset_cursors)
 
 
     def show_about(self, *_args):
@@ -227,7 +227,7 @@ class GUI(gtk.Window):
             #don't ask me why,
             #but on macos we can get file descriptor errors
             #if we exit immediately after we spawn the attach command
-            glib.timeout_add(2000, may_exit)
+            GLib.timeout_add(2000, may_exit)
 
 
 class StartSession(gtk.Window):

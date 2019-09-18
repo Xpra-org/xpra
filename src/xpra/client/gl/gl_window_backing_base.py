@@ -361,9 +361,8 @@ class GLWindowBackingBase(WindowBackingBase):
             #and we can re-initialize it with the correct size:
             mag_filter = self.get_init_magfilter()
             self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
-            #no idea why, but we have to wait a bit to show it:
-            from xpra.gtk_common.gobject_compat import import_glib
-            glib = import_glib()
+        #no idea why, but we have to wait a bit to show it:
+        from gi.repository import GLib
         del context
         def redraw():
             context = self.gl_context()
@@ -372,7 +371,7 @@ class GLWindowBackingBase(WindowBackingBase):
             with context:
                 self.pending_fbo_paint = ((0, 0, bw, bh), )
                 self.do_present_fbo()
-        glib.timeout_add(FBO_RESIZE_DELAY, redraw)
+        GLib.timeout_add(FBO_RESIZE_DELAY, redraw)
 
     def gl_marker(self, *msg):
         log(*msg)

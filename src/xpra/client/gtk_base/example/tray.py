@@ -4,8 +4,9 @@
 # later version. See the file COPYING for details.
 
 #test application for tray and menu
+from gi.repository import GLib
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import scaled_image, pixbuf_new_from_file
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
 from xpra.platform.paths import get_icon_filename
@@ -14,15 +15,14 @@ from xpra.log import Logger
 log = Logger("client")
 
 gtk = import_gtk()
-glib = import_glib()
 
 
 class FakeApplication:
 
     def __init__(self):
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
+        self.idle_add = GLib.idle_add
+        self.timeout_add = GLib.timeout_add
+        self.source_remove = GLib.source_remove
         self.session_name = "Test System Tray"
         self.mmap_enabled = False
         self.windows_enabled = True

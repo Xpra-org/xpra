@@ -9,6 +9,8 @@ import os.path
 import socket
 import subprocess
 from collections import OrderedDict
+from gi.repository import Pango
+from gi.repository import GLib
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
@@ -19,7 +21,7 @@ from xpra.gtk_common.gtk_util import (
     imagebutton, STATE_NORMAL, WIN_POS_CENTER,
     )
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_glib,
+    import_gtk, import_gdk,
     register_os_signals,
     )
 from xpra.net.net_util import if_indextoname
@@ -31,8 +33,6 @@ log = Logger("client", "util")
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
-from gi.repository import Pango
 
 
 class SessionsGUI(gtk.Window):
@@ -99,7 +99,7 @@ class SessionsGUI(gtk.Window):
         self.dotxpra = DotXpra(options.socket_dir, options.socket_dirs, username)
         self.poll_local_sessions()
         self.populate()
-        glib.timeout_add(5*1000, self.update)
+        GLib.timeout_add(5*1000, self.update)
         self.vbox.show()
         self.show()
 
@@ -338,7 +338,7 @@ class SessionsGUI(gtk.Window):
                 def update():
                     self.update()
                     self.populate()
-                glib.idle_add(update)
+                GLib.idle_add(update)
         self.child_reaper.add_process(proc, "client-%s" % uri, cmd, True, True, proc_exit)
         self.clients[key] = proc
         self.populate()

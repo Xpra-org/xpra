@@ -4,17 +4,15 @@
 # later version. See the file COPYING for details.
 
 from time import time
+from gi.repository import GLib
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.client.window_backing_base import WindowBackingBase
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.os_util import memoryview_to_bytes, _buffer
 from xpra.util import envbool
 from xpra.log import Logger
 
 log = Logger("tray")
-
-glib = import_glib()
 
 SAVE = envbool("XPRA_SAVE_SYSTRAY", False)
 
@@ -218,7 +216,7 @@ class TrayBacking(WindowBackingBase):
             }
 
     def idle_add(self, *args, **kwargs):
-        return glib.idle_add(*args, **kwargs)
+        return GLib.idle_add(*args, **kwargs)
 
     def paint_scroll(self, _img_data, _options, callbacks):
         raise Exception("scroll should not be used with tray icons")

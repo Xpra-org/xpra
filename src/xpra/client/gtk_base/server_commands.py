@@ -6,9 +6,10 @@
 
 import sys
 import os.path
+from gi.repository import GLib
 
 from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk, import_glib,
+    import_gtk, import_gdk,
     register_os_signals,
     )
 from xpra.os_util import monotonic_time
@@ -24,7 +25,6 @@ log = Logger("util")
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
 
 
 _instance = None
@@ -168,11 +168,11 @@ class ServerCommandsWindow(object):
     def schedule_timer(self):
         if not self.populate_timer:
             self.populate_table()
-            self.populate_timer = glib.timeout_add(1000, self.populate_table)
+            self.populate_timer = GLib.timeout_add(1000, self.populate_table)
 
     def cancel_timer(self):
         if self.populate_timer:
-            glib.source_remove(self.populate_timer)
+            GLib.source_remove(self.populate_timer)
             self.populate_timer = None
 
 

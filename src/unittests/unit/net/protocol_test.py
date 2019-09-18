@@ -7,16 +7,14 @@
 import os
 import time
 import unittest
+from gi.repository import GLib
 
 from xpra.util import csv, envint, envbool
 from xpra.os_util import monotonic_time
 from xpra.net.protocol import Protocol
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.log import Logger
-
-glib = import_glib()
 
 log = Logger("network")
 
@@ -111,9 +109,9 @@ class ProtocolTest(unittest.TestCase):
             if protocol.input_raw_packetcount==0:
                 errs.append("not read any raw packets")
             loop.quit()
-        loop = glib.MainLoop()
-        glib.timeout_add(500, check_failed)
-        glib.timeout_add(TIMEOUT*1000, loop.quit)
+        loop = GLib.MainLoop()
+        GLib.timeout_add(500, check_failed)
+        GLib.timeout_add(TIMEOUT*1000, loop.quit)
         protocol.start()
         loop.run()
         assert not errs, "%s" % csv(errs)
@@ -170,8 +168,8 @@ class ProtocolTest(unittest.TestCase):
             else:
                 parsed_packets.append(packet[0])
         #run the protocol on this data:
-        loop = glib.MainLoop()
-        glib.timeout_add(TIMEOUT*1000, loop.quit)
+        loop = GLib.MainLoop()
+        GLib.timeout_add(TIMEOUT*1000, loop.quit)
         protocol = self.make_memory_protocol(ldata, read_buffer_size=65536, process_packet_cb=process_packet_cb)
         start = monotonic_time()
         protocol.start()
@@ -214,11 +212,11 @@ class ProtocolTest(unittest.TestCase):
                 return (None, )
         def process_packet_cb(proto, packet):
             if packet[0]==Protocol.CONNECTION_LOST:
-                glib.timeout_add(1000, loop.quit)
+                GLib.timeout_add(1000, loop.quit)
         protocol = self.make_memory_protocol(None, process_packet_cb=process_packet_cb, get_packet_cb=get_packet_cb)
         conn = protocol._conn
-        loop = glib.MainLoop()
-        glib.timeout_add(TIMEOUT*1000, loop.quit)
+        loop = GLib.MainLoop()
+        GLib.timeout_add(TIMEOUT*1000, loop.quit)
         protocol.enable_compressor("lz4")
         protocol.enable_encoder("rencode")
         protocol.start()

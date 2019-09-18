@@ -4,12 +4,12 @@
 # later version. See the file COPYING for details.
 
 import cairo
+from gi.repository import GLib
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
 gtk = import_gtk()
-gLib = import_glib()
 
 
 class AnimatedColorWindow(gtk.Window):
@@ -26,7 +26,7 @@ class AnimatedColorWindow(gtk.Window):
         self.connect("destroy", gtk.main_quit)
         self.connect("key_press_event", self.on_key_press)
         self.show_all()
-        gLib.timeout_add(50, self.repaint)
+        GLib.timeout_add(50, self.repaint)
 
     def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()

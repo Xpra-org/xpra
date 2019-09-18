@@ -187,15 +187,14 @@ def main():
     host_ports = [(host, port)]
     service_name = "test %s" % int(random.random()*100000)
     publisher = ZeroconfPublishers(host_ports, service_name, XPRA_MDNS_TYPE, {"somename":"somevalue"})
-    from xpra.gtk_common.gobject_compat import import_glib
-    glib = import_glib()
-    glib.idle_add(publisher.start)
-    loop = glib.MainLoop()
+    from gi.repository import GLib
+    GLib.idle_add(publisher.start)
+    loop = GLib.MainLoop()
     log.info("python-zeroconf version %s", zeroconf_version)
     def update_rec():
         publisher.update_txt({"somename": "someothervalue"})
         return False
-    glib.timeout_add(10*1000, update_rec)
+    GLib.timeout_add(10*1000, update_rec)
     try:
         loop.run()
     except KeyboardInterrupt:

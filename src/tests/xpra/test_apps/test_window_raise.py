@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from gi.repository import GLib
+
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
 
 gtk = import_gtk()
-glib = import_glib()
 
 width = 400
 height = 200
@@ -26,12 +27,12 @@ def main():
 		vbox.pack_start(hbox, expand=False, fill=False, padding=10)
 		btn = gtk.Button(title)
 		hbox.pack_start(btn, expand=False, fill=False, padding=10)
-		def on_clicked(*args):
+		def on_clicked(*_args):
 			def after_delay():
 				print("**********************************************\nCALLING %s" % callback)
 				callback()
 				print("DONE\n**********************************************")
-			glib.timeout_add(5*1000, after_delay)
+			GLib.timeout_add(5*1000, after_delay)
 		btn.connect("clicked", on_clicked)
 	add_button("raise Main in 5 seconds", window.present)
 	add_button("raise Other in 5 seconds", other.present)

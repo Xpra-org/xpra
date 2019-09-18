@@ -31,7 +31,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.gtk_common.error import xsync, xswallow, xlog, XError
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject
 from xpra.log import Logger
 
 log = Logger("server")
@@ -51,7 +51,6 @@ X11Keyboard = X11KeyboardBindings()
 
 gtk = import_gtk()
 gdk = import_gdk()
-glib = import_glib()
 gobject = import_gobject()
 
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
@@ -596,12 +595,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.size_notify_clients(window)
             return
         if self.snc_timer>0:
-            glib.source_remove(self.snc_timer)
+            self.source_remove(self.snc_timer)
         #TODO: find a better way to choose the timer delay:
         #for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
         #(lcce should always be in the past, so min(..) should be redundant here)
         delay = max(100, min(250, 250 + 1000 * (lcce-monotonic_time())))
-        self.snc_timer = glib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
+        self.snc_timer = self.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def size_notify_clients(self, window, lcce=-1):
         geomlog("size_notify_clients(%s, %s) last_client_configure_event=%s",

@@ -7,17 +7,15 @@
 import os
 import struct
 import re
+from gi.repository import GLib
 
 from xpra.net.compression import Compressible
 from xpra.os_util import POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid
 from xpra.util import csv, envint, envbool, repr_ellipsized, typedict
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("clipboard")
-
-glib = import_glib()
 
 MIN_CLIPBOARD_COMPRESS_SIZE = envint("XPRA_MIN_CLIPBOARD_COMPRESS_SIZE", 512)
 MAX_CLIPBOARD_PACKET_SIZE = 16*1024*1024
@@ -619,7 +617,7 @@ class ClipboardProxyCore(object):
         if self._have_token or (self._greedy_client and self._can_send):
             if self._have_token or DELAY_SEND_TOKEN<0:
                 #token ownership will change or told not to wait
-                glib.idle_add(self.emit_token)
+                GLib.idle_add(self.emit_token)
             elif not self._emit_token_timer:
                 #we had it already, this can wait:
                 #TODO: don't throttle clients without "want-targets" attribute
@@ -629,7 +627,7 @@ class ClipboardProxyCore(object):
     def schedule_emit_token(self):
         if self._have_token or DELAY_SEND_TOKEN<0:
             #token ownership will change or told not to wait
-            glib.idle_add(self.emit_token)
+            GLib.idle_add(self.emit_token)
         elif not self._emit_token_timer:
             #we had it already, this can wait:
             #TODO: don't throttle clients without "want-targets" attribute
@@ -644,7 +642,7 @@ class ClipboardProxyCore(object):
             #enough time has passed
             self.emit_token()
         else:
-            self._emit_token_timer = glib.timeout_add(DELAY_SEND_TOKEN-elapsed, self.emit_token)
+            self._emit_token_timer = GLib.timeout_add(DELAY_SEND_TOKEN-elapsed, self.emit_token)
 
     def emit_token(self):
         self._emit_token_timer = None
@@ -655,7 +653,7 @@ class ClipboardProxyCore(object):
         self.do_emit_token()
         self._sent_token_events += 1
         if boc is False:
-            glib.idle_add(self.remove_block)
+            GLib.idle_add(self.remove_block)
 
     def do_emit_token(self):
         #self.emit("send-clipboard-token")
@@ -665,7 +663,7 @@ class ClipboardProxyCore(object):
         ett = self._emit_token_timer
         if ett:
             self._emit_token_timer = None
-            glib.source_remove(ett)
+            GLib.source_remove(ett)
 
 
     #def do_selection_request_event(self, event):

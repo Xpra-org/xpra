@@ -66,7 +66,7 @@ def main():
                 vbox.add(label)
                 window.add(vbox)
                 label.set_text(str(get_frame_extents(win)))
-                import glib
+                from gi.repository import GLib
                 def refresh_label():
                     v = get_frame_extents(win)
                     label.set_text(str(v))
@@ -74,8 +74,8 @@ def main():
                     return True
                 window.realize()
                 request_frame_extents()
-                glib.timeout_add(5000, window.show_all)
-                glib.timeout_add(1000, refresh_label)
+                GLib.timeout_add(5000, window.show_all)
+                GLib.timeout_add(1000, refresh_label)
                 gtk.main()
 
 

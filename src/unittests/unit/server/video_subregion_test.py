@@ -6,17 +6,15 @@
 
 import unittest
 from collections import deque
+from gi.repository import GLib
 
 from xpra.os_util import monotonic_time
-from xpra.gtk_common.gobject_compat import import_glib
 try:
     from xpra.server.window import video_subregion
     from xpra import rectangle
 except ImportError:
     video_subregion = None
     rectangle = None
-
-glib = import_glib()
 
 
 class TestVersionUtilModule(unittest.TestCase):
@@ -26,7 +24,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
         def refresh_cb(window, regions):
             log("refresh_cb(%s, %s)", window, regions)
-        r = video_subregion.VideoSubregion(glib.timeout_add, glib.source_remove, refresh_cb, 150, True)
+        r = video_subregion.VideoSubregion(GLib.timeout_add, GLib.source_remove, refresh_cb, 150, True)
 
         ww = 1024
         wh = 768

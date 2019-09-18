@@ -1,7 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from gi.repository import GLib
 
 from xpra.util import envbool, csv
 from xpra.gtk_common.gtk_util import scaled_image
@@ -15,15 +17,13 @@ from xpra.client.gtk_base.gtk_tray_menu_base import (
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
 from xpra.client import mixin_features
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.log import Logger
 
 log = Logger("osx", "tray", "menu")
 clipboardlog = Logger("osx", "menu", "clipboard")
 
 gtk = import_gtk()
-glib = import_glib()
-
 
 #control which menus are shown in the OSX global menu:
 SHOW_FEATURES_MENU = True
@@ -272,7 +272,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             return
         remote_clipboard = CLIPBOARD_LABEL_TO_NAME[label]
         clipboardlog("will select clipboard menu item with label=%s, for remote_clipboard=%s", label, remote_clipboard)
-        glib.timeout_add(0, self._do_clipboard_change, remote_clipboard)
+        GLib.timeout_add(0, self._do_clipboard_change, remote_clipboard)
 
     def _do_clipboard_change(self, remote_clipboard):
         #why do we look it up again when we could just pass it in

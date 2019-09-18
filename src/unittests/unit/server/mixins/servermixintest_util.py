@@ -5,9 +5,9 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from gi.repository import GLib
 
 from xpra.util import typedict, AdHocStruct
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 
@@ -16,7 +16,7 @@ class ServerMixinTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super(ServerMixinTest, cls).setUpClass()
-        cls.glib = import_glib()
+        cls.glib = GLib
         cls.main_loop = cls.glib.MainLoop()
 
     def setUp(self):

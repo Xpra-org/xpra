@@ -8,10 +8,7 @@
 import os.path
 import sys
 
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_glib,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import import_gtk, register_os_signals
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
     window_defaults, color_parse,
@@ -23,7 +20,7 @@ from xpra.os_util import get_util_logger
 log = get_util_logger()
 
 gtk = import_gtk()
-glib = import_glib()
+from gi.repository import GLib
 from gi.repository import Pango
 
 
@@ -103,7 +100,7 @@ class ConfirmDialogWindow(object):
     def show(self):
         log("show()")
         self.window.show_all()
-        glib.idle_add(self.window.present)
+        GLib.idle_add(self.window.present)
 
     def destroy(self, *args):
         log("destroy%s", args)

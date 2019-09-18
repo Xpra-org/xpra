@@ -3,11 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=wrong-import-position
-
-import gi
-
-gi.require_version('Gdk', '3.0')                #@UndefinedVariable
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gdk                   #@UnresolvedImport
 
@@ -40,8 +35,8 @@ class XpraClient(GTKXpraClient):
         #only register the glib signal handler
         #once the main loop is running,
         #before that we just trigger a KeyboardInterrupt
-        from xpra.gtk_common.gobject_compat import import_glib
-        import_glib().idle_add(register_os_signals, self.handle_app_signal)
+        from gi.repository import GLib
+        GLib.idle_add(register_os_signals, self.handle_app_signal)
 
     def get_notifier_classes(self):
         ncs = GTKXpraClient.get_notifier_classes(self)
