@@ -28,11 +28,7 @@ from xpra.gtk_common.gtk_util import (
     GDKWindow, GDKWINDOW_CHILD, PROPERTY_CHANGE_MASK,
     PARAM_READABLE, PARAM_READWRITE,
     )
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.log import Logger
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 log = Logger("x11", "window")
 workspacelog = Logger("x11", "window", "workspace")

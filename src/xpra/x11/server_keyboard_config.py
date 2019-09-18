@@ -11,7 +11,6 @@ from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, get_default_root_window
 from xpra.gtk_common.error import xsync, xlog
-from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.gtk_x11.keys import grok_modifier_map
@@ -221,13 +220,13 @@ class KeyboardConfig(KeyboardConfigBase):
         self.xkbmap_mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
         display = display_get_default()
         keymap = keymap_get_for_display(display)
-        gdk = import_gdk()
+        from gi.repository import Gdk
         if self.keynames_for_mod:
             for modifier, keynames in self.keynames_for_mod.items():
                 for keyname in keynames:
                     if keyname in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
                         self.xkbmap_mod_nuisance.add(modifier)
-                    keyval = gdk.keyval_from_name(bytestostr(keyname))
+                    keyval = Gdk.keyval_from_name(bytestostr(keyname))
                     if keyval==0:
                         log.error("Error: no keyval found for keyname '%s' (modifier '%s')", keyname, modifier)
                         return  []

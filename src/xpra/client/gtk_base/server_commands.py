@@ -6,12 +6,9 @@
 
 import sys
 import os.path
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import monotonic_time
 from xpra.util import AdHocStruct, typedict
 from xpra.gtk_common.gtk_util import (
@@ -22,9 +19,6 @@ from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("util")
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 
 _instance = None
@@ -43,7 +37,7 @@ class ServerCommandsWindow(object):
         self.populate_timer = None
         self.commands_info = {}
         self.table = None
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 150)
@@ -54,14 +48,14 @@ class ServerCommandsWindow(object):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(WIN_POS_CENTER)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(10)
 
-        self.alignment = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
+        self.alignment = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
         vbox.pack_start(self.alignment, expand=True, fill=True)
 
         # Buttons:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             b = self.btn(label, tooltip, callback, icon_name)
@@ -78,7 +72,7 @@ class ServerCommandsWindow(object):
         self.window.add(vbox)
 
     def btn(self, label, tooltip, callback, icon_name=None):
-        btn = gtk.Button(label)
+        btn = Gtk.Button(label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.set_tooltip_text(tooltip)
@@ -98,9 +92,9 @@ class ServerCommandsWindow(object):
                 self.alignment.remove(self.table)
             tb = TableBuilder(rows=1, columns=2, row_spacings=15)
             self.table = tb.get_table()
-            headers = [gtk.Label(""), gtk.Label("PID"), gtk.Label("Command"), gtk.Label("Exit Code")]
+            headers = [Gtk.Label(""), Gtk.Label("PID"), Gtk.Label("Command"), Gtk.Label("Exit Code")]
             if self.client.server_commands_signals:
-                headers.append(gtk.Label("Send Signal"))
+                headers.append(Gtk.Label("Send Signal"))
             tb.add_row(*headers)
             for procinfo in self.commands_info.values():
                 if not isinstance(procinfo, dict):
@@ -121,7 +115,7 @@ class ServerCommandsWindow(object):
                     if mixin_features.windows:
                         windows = tuple(w for w in self.client._id_to_window.values() if getattr(w, "_metadata", {}).get("pid")==pid)
                         log("windows matching pid=%i: %s", pid, windows)
-                    icon = gtk.Label()
+                    icon = Gtk.Label()
                     if windows:
                         try:
                             icons = tuple(getattr(w, "_current_icon", None) for w in windows)
@@ -134,16 +128,16 @@ class ServerCommandsWindow(object):
                                 width, height = img.size
                                 rowstride = width * (3+int(has_alpha))
                                 pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
-                                icon = gtk.Image()
+                                icon = Gtk.Image()
                                 icon.set_from_pixbuf(pixbuf)
                         except Exception:
                             log("failed to get window icon", exc_info=True)
-                    items = [icon, gtk.Label("%s" % pid), gtk.Label(cmd_str), gtk.Label(rstr)]
+                    items = [icon, Gtk.Label("%s" % pid), Gtk.Label(cmd_str), Gtk.Label(rstr)]
                     if self.client.server_commands_signals:
                         if returncode is None:
                             items.append(self.signal_button(pid))
                         else:
-                            items.append(gtk.Label(""))
+                            items.append(Gtk.Label(""))
                     tb.add_row(*items)
             self.alignment.add(self.table)
             self.table.show_all()
@@ -151,8 +145,8 @@ class ServerCommandsWindow(object):
         return True
 
     def signal_button(self, pid):
-        hbox = gtk.HBox()
-        combo = gtk.combo_box_new_text()
+        hbox = Gtk.HBox()
+        combo = Gtk.combo_box_new_text()
         for x in self.client.server_commands_signals:
             combo.append_text(x)
         def send(*_args):
@@ -207,7 +201,7 @@ class ServerCommandsWindow(object):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
     def get_icon(self, icon_name):

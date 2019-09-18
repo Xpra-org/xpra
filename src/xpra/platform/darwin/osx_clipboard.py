@@ -182,17 +182,16 @@ def main():
         log.enable_debug()
 
         #init UI watcher with gobject (required by pasteboard monitoring code)
-        from xpra.gtk_common.gtk_util import import_gtk
-        gtk = import_gtk()
         get_UI_watcher(GLib.timeout_add, GLib.source_remove)
 
         def noop(*_args):
             pass
         log.info("testing pasteboard")
+        from gi.repository import Gtk
         pasteboard = NSPasteboard.generalPasteboard()
         proxy = OSXClipboardProxy("CLIPBOARD", pasteboard, noop, noop)
         log.info("current change count=%s", proxy.change_count)
-        clipboard = gtk.Clipboard(selection="CLIPBOARD")
+        clipboard = Gtk.Clipboard(selection="CLIPBOARD")
         log.info("changing clipboard %s contents", clipboard)
         clipboard.set_text("HELLO WORLD %s" % time.time())
         proxy.update_change_count()

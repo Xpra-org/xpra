@@ -19,7 +19,7 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
 from xpra.os_util import OSX, bytestostr
 from xpra.gtk_common.gtk_util import (
@@ -27,10 +27,6 @@ from xpra.gtk_common.gtk_util import (
     pixbuf_new_from_file, STATE_NORMAL, RELIEF_NORMAL,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
@@ -166,12 +162,12 @@ class GTK_Notifier(NotifierBase):
 
 
 
-class Popup(gtk.Window):
+class Popup(Gtk.Window):
     def __init__(self, stack, nid, title, message, actions, image, timeout=5, show_timeout=False):
         log("Popup%s", (stack, nid, title, message, actions, image, timeout, show_timeout))
         self.stack = stack
         self.nid = nid
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
 
         self.set_size_request(stack.size_x, -1)
         self.set_decorated(False)
@@ -186,19 +182,19 @@ class Popup(gtk.Window):
         self.popup_closed = stack.popup_closed
         self.action_cb = stack.popup_action
 
-        main_box = gtk.VBox()
-        header_box = gtk.HBox()
-        self.header = gtk.Label()
+        main_box = Gtk.VBox()
+        header_box = Gtk.HBox()
+        self.header = Gtk.Label()
         self.header.set_markup("<b>%s</b>" % title)
         self.header.set_padding(3, 3)
         self.header.set_alignment(0, 0)
         header_box.pack_start(self.header, True, True, 5)
         icon = get_pixbuf("close.png")
         if icon:
-            close_button = gtk.Image()
+            close_button = Gtk.Image()
             close_button.set_from_pixbuf(icon)
             close_button.set_padding(3, 3)
-            close_window = gtk.EventBox()
+            close_window = Gtk.EventBox()
             close_window.set_visible_window(False)
             close_window.connect("button-press-event", self.user_closed)
             close_window.add(close_button)
@@ -206,21 +202,21 @@ class Popup(gtk.Window):
             header_box.pack_end(close_window, False, False)
         main_box.pack_start(header_box)
 
-        body_box = gtk.HBox()
+        body_box = Gtk.HBox()
         if image is not None:
-            self.image = gtk.Image()
+            self.image = Gtk.Image()
             self.image.set_size_request(70, 70)
             self.image.set_alignment(0, 0)
             self.image.set_from_pixbuf(image)
             body_box.pack_start(self.image, False, False, 5)
-        self.message = gtk.Label()
+        self.message = Gtk.Label()
         self.message.set_max_width_chars(80)
         self.message.set_size_request(stack.size_x - 90, -1)
         self.message.set_line_wrap(True)
         self.message.set_alignment(0, 0)
         self.message.set_padding(5, 10)
         self.message.set_text(message)
-        self.counter = gtk.Label()
+        self.counter = Gtk.Label()
         self.counter.set_alignment(1, 1)
         self.counter.set_padding(3, 3)
         self.timeout = timeout
@@ -230,13 +226,13 @@ class Popup(gtk.Window):
         main_box.pack_start(body_box, False, False, 5)
 
         if len(actions)>=2:
-            buttons_box = gtk.HBox(True)
+            buttons_box = Gtk.HBox(True)
             while len(actions)>=2:
                 action_id, action_text = actions[:2]
                 actions = actions[2:]
                 button = self.action_button(action_id, action_text)
                 buttons_box.add(button)
-            alignment = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
+            alignment = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
             alignment.add(buttons_box)
             main_box.pack_start(alignment)
         self.add(main_box)
@@ -262,9 +258,9 @@ class Popup(gtk.Window):
 
     def action_button(self, action_id, action_text):
         try:
-            button = gtk.Button(action_text.decode("utf-8"))
+            button = Gtk.Button(action_text.decode("utf-8"))
         except Exception:
-            button = gtk.Button(bytestostr(action_text))
+            button = Gtk.Button(bytestostr(action_text))
         button.set_relief(RELIEF_NORMAL)
         def popup_cb_clicked(*args):
             self.hide_notification()
@@ -374,12 +370,12 @@ def main():
         return True
     def gtk_main_quit():
         print("quitting")
-        gtk.main_quit()
+        Gtk.main_quit()
 
     notifier = GTK_Notifier(timeout=6)
     GLib.timeout_add(4000, notify_factory)
     GLib.timeout_add(20000, gtk_main_quit)
-    gtk.main()
+    Gtk.main()
 
 if __name__ == "__main__":
     main()

@@ -4,10 +4,9 @@
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.platform.gl_context import GLContext
 from xpra.log import Logger
@@ -16,8 +15,6 @@ if not GLContext:
     raise ImportError("no OpenGL context implementation for %s" % sys.platform)
 
 log = Logger("opengl", "paint")
-
-gtk = import_gtk()
 
 
 class GLDrawingArea(GLWindowBackingBase):
@@ -36,7 +33,7 @@ class GLDrawingArea(GLWindowBackingBase):
         return self.context.is_double_buffered()
 
     def init_backing(self):
-        da = gtk.DrawingArea()
+        da = Gtk.DrawingArea()
         #da.connect('configure_event', self.on_configure_event)
         #da.connect('draw', self.on_draw)
         #double-buffering is enabled by default anyway, so this is redundant:

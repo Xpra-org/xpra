@@ -3,11 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gdk
+from gi.repository import Gdk
 
 cursor_names = {}
 cursor_types = {}
-gdk = import_gdk()
 
 for x in (
     "X_CURSOR", "ARROW", "BASED_ARROW_DOWN", "BASED_ARROW_UP", "BOAT", "BOGOSITY", "BOTTOM_LEFT_CORNER",
@@ -21,9 +20,9 @@ for x in (
     "TARGET", "TCROSS", "TOP_LEFT_ARROW", "TOP_LEFT_CORNER", "TOP_RIGHT_CORNER", "TOP_SIDE", "TOP_TEE", "TREK",
     "UL_ANGLE", "UMBRELLA", "UR_ANGLE", "WATCH", "XTERM",
     ):
-    if hasattr(gdk.CursorType, x):
-        v = getattr(gdk.CursorType, x)
+    if hasattr(Gdk.CursorType, x):
+        v = getattr(Gdk.CursorType, x)
         cursor_names[v] = x
         cursor_types[x] = v
     else:
-        print("cannot find %s in %s" % (x, gdk.CursorType))
+        print("cannot find %s in %s" % (x, Gdk.CursorType))

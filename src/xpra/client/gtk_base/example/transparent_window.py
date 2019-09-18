@@ -4,14 +4,12 @@
 # later version. See the file COPYING for details.
 
 import cairo
+from gi.repository import Gtk
 
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
-gtk = import_gtk()
 
-
-class TransparentWindow(gtk.Window):
+class TransparentWindow(Gtk.Window):
 
     def __init__(self):
         super(TransparentWindow, self).__init__()
@@ -26,7 +24,7 @@ class TransparentWindow(gtk.Window):
         self.set_app_paintable(True)
         self.set_events(KEY_PRESS_MASK)
         self.connect("draw", self.area_draw)
-        self.connect("destroy", gtk.main_quit)
+        self.connect("destroy", Gtk.main_quit)
         self.show_all()
 
     def do_expose_event(self, *_args):
@@ -56,11 +54,11 @@ class TransparentWindow(gtk.Window):
 def main():
     import signal
     def signal_handler(*_args):
-        gtk.main_quit()
+        Gtk.main_quit()
     signal.signal(signal.SIGINT, signal_handler)
     w = TransparentWindow()
-    add_close_accel(w, gtk.main_quit)
-    gtk.main()
+    add_close_accel(w, Gtk.main_quit)
+    Gtk.main()
 
 
 if __name__ == "__main__":

@@ -9,7 +9,6 @@
 import os
 import threading
 
-from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.x11.bindings.core_bindings import set_context_check, X11CoreBindings     #@UnresolvedImport
 from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -29,8 +28,6 @@ from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
-
-gdk = import_gdk()
 
 set_context_check(verify_sync)
 RandR = RandRBindings()

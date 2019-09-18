@@ -3,11 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import try_import_GdkX11
 from xpra.os_util import POSIX, OSX, WIN32
 if POSIX and (not OSX or WIN32):
-    gdkx11 = try_import_GdkX11()
-    x11_get_server_time = gdkx11.x11_get_server_time
+    from gi.repository import GdkX11  #pylint: disable=wrong-import-position
+    x11_get_server_time = GdkX11.x11_get_server_time
 else:
     x11_get_server_time = None
 from xpra.x11.gtk3 import gdk_bindings  #@UnresolvedImport, @UnusedImport
@@ -33,7 +32,6 @@ add_x_event_signal          = gdk_bindings.add_x_event_signal
 add_x_event_type_name       = gdk_bindings.add_x_event_type_name
 
 
-try_import_GdkX11()
 from xpra.gtk_common.gtk3 import gdk_bindings   #@UnresolvedImport, @UnusedImport, @Reimport
 
 get_display_for             = gdk_bindings.get_display_for

@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject, Gtk
 
 from xpra.gtk_common.error import trap
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
@@ -12,14 +12,10 @@ from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import x11_get_server_time
 from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default, get_xwindow, is_realized
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.log import Logger
 
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
-
-
-gtk = import_gtk()
 
 XNone = constants["XNone"]
 CurrentTime = constants["CurrentTime"]
@@ -94,7 +90,7 @@ def get_world_window():
     global world_window
     return world_window
 
-class WorldWindow(gtk.Window):
+class WorldWindow(Gtk.Window):
     def __init__(self, screen=screen_get_default()):
         global world_window
         assert world_window is None, "a world window already exists! (%s)" % world_window
@@ -153,7 +149,7 @@ class WorldWindow(gtk.Window):
     #         this time, though, so then give it to whoever should
     #   -- and finally ignore all subsequent focus-in-events
     def do_map(self, *args):
-        gtk.Window.do_map(self, *args)
+        Gtk.Window.do_map(self, *args)
 
         # We are being mapped, so we can focus ourselves.
         # Check for the property, just in case this is the second time we are
@@ -171,7 +167,7 @@ class WorldWindow(gtk.Window):
         focuslog("world window got focus: %s, has-toplevel-focus=%s", event, htf)
         if not htf:
             #super(WorldWindow, self).do_focus_in_event(*args)
-            gtk.Window.do_focus_in_event(self, event)
+            Gtk.Window.do_focus_in_event(self, event)
             self.reset_x_focus()
 
     def do_focus_out_event(self, event):

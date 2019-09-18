@@ -3,13 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject, Gdk
 
 from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.gtk_common.gtk_util import (
     display_get_default, get_default_root_window, get_xwindow, GDKWindow, x11_foreign_new,
     STRUCTURE_MASK, EXPOSURE_MASK, PROPERTY_CHANGE_MASK,
@@ -22,8 +21,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.log import Logger
 
 X11Window = X11WindowBindings()
-
-gdk = import_gdk()
 
 log = Logger("x11", "tray")
 
@@ -161,7 +158,7 @@ class SystemTray(GObject.GObject):
         set_tray_visual(self.tray_window, visual)
         set_tray_orientation(self.tray_window, TRAY_ORIENTATION_HORZ)
         log("setup tray: tray window %#x", xtray)
-        display.request_selection_notification(gdk.Atom.intern(SELECTION, False))
+        display.request_selection_notification(Gdk.Atom.intern(SELECTION, False))
         try:
             with xsync:
                 setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
@@ -264,7 +261,7 @@ class SystemTray(GObject.GObject):
         X11Window.Reparent(xwin, xtray, 0, 0)
         X11Window.MapRaised(xwin)
         log("dock_tray(%#x) new tray container window %#x", xid, xtray)
-        tray_window.invalidate_rect(gdk.Rectangle(width=w, height=h), True)
+        tray_window.invalidate_rect(Gdk.Rectangle(width=w, height=h), True)
         X11Window.send_xembed_message(xwin, XEMBED_EMBEDDED_NOTIFY, 0, xtray, XEMBED_VERSION)
 
     def move_resize(self, window, x, y, w, h):

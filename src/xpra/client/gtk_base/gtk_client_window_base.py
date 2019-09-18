@@ -7,10 +7,8 @@
 
 import math
 import os.path
-try:
-    from urllib import unquote          #python2 @UnusedImport @UnresolvedImport
-except ImportError:
-    from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
+from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
+from gi.repository import Gtk, Gdk
 
 import cairo
 
@@ -24,7 +22,6 @@ from xpra.util import (
     MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
     MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE,
     )
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_xwindow, get_pixbuf_from_data, get_default_root_window,
@@ -60,9 +57,6 @@ geomlog = Logger("geometry")
 grablog = Logger("grab")
 draglog = Logger("dragndrop")
 alphalog = Logger("alpha")
-
-gtk     = import_gtk()
-gdk     = import_gdk()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
@@ -185,7 +179,7 @@ class GTKKeyEvent(AdHocStruct):
     pass
 
 
-class GTKClientWindowBase(ClientWindowBase, gtk.Window):
+class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     __common_gsignals__ = {
         "state-updated"         : no_arg_signal,
@@ -200,7 +194,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def __init__(self, *args, **kwargs):
         ClientWindowBase.__init__(self, *args, **kwargs)
-        #gtk.Window.__init__() is called from do_init_window()
+        #Gtk.Window.__init__() is called from do_init_window()
 
     def init_window(self, metadata):
         self.init_max_window_size()
@@ -235,7 +229,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ClientWindowBase.init_window(self, metadata)
 
     def init_drawing_area(self):
-        widget = gtk.DrawingArea()
+        widget = Gtk.DrawingArea()
         widget.show()
         self.drawing_area = widget
         self.init_widget_events(widget)
@@ -268,7 +262,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             newTargetEntry("text/uri-list", 0, 80),
             ]
         flags = DEST_DEFAULT_MOTION | DEST_DEFAULT_HIGHLIGHT
-        actions = ACTION_COPY   # | gdk.ACTION_LINK
+        actions = ACTION_COPY   # | Gdk.ACTION_LINK
         self.drag_dest_set(flags, targets, actions)
         self.connect('drag_drop', self.drag_drop_cb)
         self.connect('drag_motion', self.drag_motion_cb)
@@ -540,7 +534,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #calling set_decorated(False) would cause it to get unmapped! (why?)
             pass
         else:
-            gtk.Window.set_decorated(self, decorated)
+            Gtk.Window.set_decorated(self, decorated)
         if WIN32:
             #workaround for new window offsets:
             #keep the window contents where they were and adjust the frame
@@ -554,7 +548,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     nx, ny = normal
                     fx, fy = fixed
                     x, y = self.get_position()
-                    gtk.Window.move(self, max(0, x-nx+fx), max(0, y-ny+fy))
+                    Gtk.Window.move(self, max(0, x-nx+fx), max(0, y-ny+fy))
 
 
     def setup_window(self, *args):
@@ -781,7 +775,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def show(self):
-        gtk.Window.show(self)
+        Gtk.Window.show(self)
 
 
     def window_state_updated(self, widget, event):
@@ -1048,7 +1042,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #from the command line and the system tray:
         mw = self._client.modal_windows
         log("set_modal(%s) modal_windows=%s", modal, mw)
-        gtk.Window.set_modal(self, modal and mw)
+        Gtk.Window.set_modal(self, modal and mw)
 
 
     def set_fullscreen_monitors(self, fsm):
@@ -1320,9 +1314,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def keyboard_grab(self, *args):
         grablog("keyboard_grab%s", args)
-        r = gdk.keyboard_grab(self.get_window(), True, 0)
+        r = Gdk.keyboard_grab(self.get_window(), True, 0)
         self._client.keyboard_grabbed = r==GRAB_SUCCESS
-        grablog("keyboard_grab%s gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s",
+        grablog("keyboard_grab%s Gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s",
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
 
     def toggle_keyboard_grab(self):
@@ -1341,9 +1335,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                       POINTER_MOTION_HINT_MASK |
                       ENTER_NOTIFY_MASK |
                       LEAVE_NOTIFY_MASK)
-        r = gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, 0)
+        r = Gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, 0)
         self._client.pointer_grabbed = r==GRAB_SUCCESS
-        grablog("pointer_grab%s gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
+        grablog("pointer_grab%s Gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
 
     def pointer_ungrab(self, *args):
@@ -1447,18 +1441,18 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def _do_button_press_event(self, event):
-        #gtk.Window.do_button_press_event(self, event)
+        #Gtk.Window.do_button_press_event(self, event)
         self._button_action(event.button, event, True)
 
     def _do_button_release_event(self, event):
-        #gtk.Window.do_button_release_event(self, event)
+        #Gtk.Window.do_button_release_event(self, event)
         self._button_action(event.button, event, False)
 
     ######################################################################
     # pointer motion
 
     def _do_motion_notify_event(self, event):
-        #gtk.Window.do_motion_notify_event(self, event)
+        #Gtk.Window.do_motion_notify_event(self, event)
         if self.moveresize_event:
             self.motion_moveresize(event)
         ClientWindowBase._do_motion_notify_event(self, event)
@@ -1623,7 +1617,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         for x, y, w, h in borders:
             if w<=0 or h<=0:
                 continue
-            r = gdk.Rectangle()
+            r = Gdk.Rectangle()
             r.x = x
             r.y = y
             r.width = w
@@ -1685,7 +1679,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_map_event(self, event):
         log("%s.do_map_event(%s) OR=%s", self, event, self._override_redirect)
-        gtk.Window.do_map_event(self, event)
+        Gtk.Window.do_map_event(self, event)
         if not self._override_redirect:
             #we can get a map event for an iconified window on win32:
             if self._iconified:
@@ -1750,7 +1744,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_configure_event(self, event):
         eventslog("%s.do_configure_event(%s) OR=%s, iconified=%s",
                   self, event, self._override_redirect, self._iconified)
-        gtk.Window.do_configure_event(self, event)
+        Gtk.Window.do_configure_event(self, event)
         if not self._override_redirect and not self._iconified:
             self.process_configure_event()
 
@@ -1824,7 +1818,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.queue_draw_area(0, 0, w, h)
             return
         if not self._fullscreen and not self._maximized:
-            gtk.Window.resize(self, w, h)
+            Gtk.Window.resize(self, w, h)
             ww, wh = w, h
             self._backing.offsets = 0, 0, 0, 0
         else:
@@ -1947,7 +1941,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.source_remove(mrt)
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
-        gtk.Window.destroy(self)
+        Gtk.Window.destroy(self)
         self._unfocus()
         self.destroy = self.noop_destroy
 
@@ -1958,12 +1952,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not self._override_redirect:
             self.send("unmap-window", self._id, False)
         try:
-            gtk.Window.do_unmap_event(self, event)
+            Gtk.Window.do_unmap_event(self, event)
         except Exception:
             log.error("Error handling unmap event", exc_info=True)
 
     def do_delete_event(self, event):
-        #gtk.Window.do_delete_event(self, event)
+        #Gtk.Window.do_delete_event(self, event)
         eventslog("do_delete_event(%s)", event)
         self._client.window_close_event(self._id)
         return True
@@ -2001,7 +1995,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def parse_key_event(self, event, pressed):
         keyval = event.keyval
         keycode = event.hardware_keycode
-        keyname = gdk.keyval_name(keyval)
+        keyname = Gdk.keyval_name(keyval)
         keyname = KEY_TRANSLATIONS.get((keyname, keyval, keycode), keyname)
         key_event = GTKKeyEvent()
         key_event.modifiers = self._client.mask_to_names(event.state)

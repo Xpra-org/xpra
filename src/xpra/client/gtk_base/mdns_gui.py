@@ -5,9 +5,8 @@
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.client.gtk_base.sessions_gui import SessionsGUI
 from xpra.gtk_common.gtk_util import gtk_main
 from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
@@ -78,16 +77,15 @@ def check_mdns(gui):
 def win32_bonjour_download_warning(gui):
     from gi.repository import Pango
     from xpra.gtk_common.gtk_util import DIALOG_MODAL, DESTROY_WITH_PARENT
-    gtk = import_gtk()
-    dialog = gtk.Dialog("Bonjour not found",
+    dialog = Gtk.Dialog("Bonjour not found",
            gui,
            DIALOG_MODAL | DESTROY_WITH_PARENT)
     RESPONSE_CANCEL = 1
     RESPONSE_DOWNLOAD = 2
-    dialog.add_button(gtk.STOCK_CANCEL,     RESPONSE_CANCEL)
+    dialog.add_button(Gtk.STOCK_CANCEL,     RESPONSE_CANCEL)
     dialog.add_button("Download Bonjour",   RESPONSE_DOWNLOAD)
     def add(widget, padding=0):
-        a = gtk.Alignment()
+        a = Gtk.Alignment()
         a.set(0.5, 0.5, 1, 1)
         a.add(widget)
         a.set_padding(padding, padding, padding, padding)

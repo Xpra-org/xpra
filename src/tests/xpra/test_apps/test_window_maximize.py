@@ -1,26 +1,25 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
-gtk = import_gtk()
-gdk = import_gdk()
+from gi.repository import Gtk
+
 from xpra.gtk_common.gtk_util import (get_xwindow,
     WINDOW_TOPLEVEL, WINDOW_STATE_WITHDRAWN, WINDOW_STATE_ICONIFIED, WINDOW_STATE_MAXIMIZED, WINDOW_STATE_STICKY,
 	WINDOW_STATE_FULLSCREEN, WINDOW_STATE_ABOVE, WINDOW_STATE_BELOW)
 
 def main():
-	window = gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(220, 120)
-	window.connect("delete_event", gtk.main_quit)
-	vbox = gtk.VBox(False, 0)
+	window.connect("delete_event", Gtk.main_quit)
+	vbox = Gtk.VBox(False, 0)
 
 	def add_buttons(t1, cb1, t2, cb2):
-		hbox = gtk.HBox(True, 10)
-		b1 = gtk.Button(t1)
+		hbox = Gtk.HBox(True, 10)
+		b1 = Gtk.Button(t1)
 		def vcb1(*args):
 			cb1()
 		b1.connect('clicked', vcb1)
 		hbox.pack_start(b1, expand=True, fill=False, padding=5)
-		b2 = gtk.Button(t2)
+		b2 = Gtk.Button(t2)
 		def vcb2(*args):
 			cb2()
 		b2.connect('clicked', vcb2)
@@ -66,7 +65,7 @@ def main():
 
 	window.add(vbox)
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

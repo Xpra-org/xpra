@@ -5,12 +5,9 @@
 
 from collections import OrderedDict
 import cairo
-from gi.repository import PangoCairo
+from gi.repository import PangoCairo, Gtk
 
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
-from xpra.gtk_common.gobject_compat import import_gtk
-
-gtk = import_gtk()
 
 FONT = "Serif 27"
 PATTERN = "%f"
@@ -25,7 +22,7 @@ WHITE = (1, 1, 1)
 BLACK = (0, 0, 0)
 
 
-class FontWindow(gtk.Window):
+class FontWindow(Gtk.Window):
 
     def __init__(self):
         super(FontWindow, self).__init__()
@@ -33,7 +30,7 @@ class FontWindow(gtk.Window):
         self.set_default_size(1600, 1200)
         self.set_app_paintable(True)
         self.connect("draw", self.area_draw)
-        self.connect("destroy", gtk.main_quit)
+        self.connect("destroy", Gtk.main_quit)
         self.show_all()
 
     def do_expose_event(self, *_args):
@@ -133,11 +130,11 @@ class FontWindow(gtk.Window):
 def main():
     import signal
     def signal_handler(*_args):
-        gtk.main_quit()
+        Gtk.main_quit()
     signal.signal(signal.SIGINT, signal_handler)
     w = FontWindow()
-    add_close_accel(w, gtk.main_quit)
-    gtk.main()
+    add_close_accel(w, Gtk.main_quit)
+    Gtk.main()
 
 
 if __name__ == "__main__":

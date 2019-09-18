@@ -7,7 +7,6 @@
 import cairo
 from gi.repository import GLib
 
-from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
@@ -17,9 +16,6 @@ from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.log import Logger
 
 log = Logger("paint", "cairo")
-
-gdk             = import_gdk()
-
 
 FORMATS = {-1   : "INVALID"}
 for attr in dir(cairo):

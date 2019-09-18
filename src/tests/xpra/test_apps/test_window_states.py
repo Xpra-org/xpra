@@ -1,28 +1,26 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
+from gi.repository import Gtk
+
 from xpra.gtk_common.gtk_util import (WINDOW_TOPLEVEL,
 	WINDOW_STATE_WITHDRAWN, WINDOW_STATE_ICONIFIED, WINDOW_STATE_MAXIMIZED, WINDOW_STATE_STICKY,
 	WINDOW_STATE_FULLSCREEN, WINDOW_STATE_ABOVE, WINDOW_STATE_BELOW)
 
-gtk = import_gtk()
-gdk = import_gdk()
-
 
 def main():
-	window = gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(320, 500)
-	window.connect("delete_event", gtk.main_quit)
-	vbox = gtk.VBox(False, 0)
+	window.connect("delete_event", Gtk.main_quit)
+	vbox = Gtk.VBox(False, 0)
 
 	def add_buttons(t1, cb1, t2, cb2):
-		hbox = gtk.HBox(True, 10)
-		b1 = gtk.Button(t1)
+		hbox = Gtk.HBox(True, 10)
+		b1 = Gtk.Button(t1)
 		def vcb1(*args):
 			cb1()
 		b1.connect('clicked', vcb1)
 		hbox.pack_start(b1, expand=True, fill=False, padding=5)
-		b2 = gtk.Button(t2)
+		b2 = Gtk.Button(t2)
 		def vcb2(*args):
 			cb2()
 		b2.connect('clicked', vcb2)
@@ -31,8 +29,8 @@ def main():
 
 	add_buttons("maximize", window.maximize, "unmaximize", window.unmaximize)
 	#fullscreen-monitors:
-	hbox = gtk.HBox()
-	fsm_entry = gtk.Entry()
+	hbox = Gtk.HBox()
+	fsm_entry = Gtk.Entry()
 	fsm_entry.set_text("0,0,0,0")
 	hbox.add(fsm_entry)
 	def set_fsm(*args):
@@ -42,7 +40,7 @@ def main():
 		monitors = [int(x) for x in strs]
 		from xpra.platform.gui import set_fullscreen_monitors
 		set_fullscreen_monitors(window.get_window(), monitors)
-	set_fsm_btn = gtk.Button("Set Fullscreen Monitors")
+	set_fsm_btn = Gtk.Button("Set Fullscreen Monitors")
 	set_fsm_btn.connect("clicked", set_fsm)
 	hbox.add(set_fsm_btn)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=2)

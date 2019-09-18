@@ -15,13 +15,9 @@ This is a simple GUI for starting the xpra client.
 import os.path
 import sys
 import traceback
-from gi.repository import Pango
-from gi.repository import GLib
+from gi.repository import Pango, GLib, Gtk, Gdk
 
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.quit import gtk_main_quit_really
@@ -46,9 +42,6 @@ from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("launcher")
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 #what we save in the config file:
 SAVED_FIELDS = [
@@ -171,7 +164,7 @@ class ApplicationWindow:
 
 
     def image_button(self, label="", tooltip="", icon_pixbuf=None, clicked_cb=None):
-        icon = gtk.Image()
+        icon = Gtk.Image()
         icon.set_from_pixbuf(icon_pixbuf)
         return imagebutton(label, icon, tooltip, clicked_cb, icon_size=None)
 
@@ -180,7 +173,7 @@ class ApplicationWindow:
         self.update_gui_from_config()
 
     def do_create_window(self):
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(400, 260)
@@ -188,11 +181,11 @@ class ApplicationWindow:
 
         self.window.set_position(WIN_POS_CENTER)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(15)
 
         #top row:
-        hbox = gtk.HBox(False, 0)
+        hbox = Gtk.HBox(False, 0)
         # About dialog (and window icon):
         icon_pixbuf = self.get_icon("xpra.png")
         if icon_pixbuf:
@@ -229,56 +222,56 @@ class ApplicationWindow:
             hbox.pack_start(mdns_button, expand=False, fill=False)
 
         # Title
-        label = gtk.Label("Connect to xpra server")
+        label = Gtk.Label("Connect to xpra server")
         label.modify_font(Pango.FontDescription("sans 14"))
         hbox.pack_start(label, expand=True, fill=True)
         vbox.pack_start(hbox)
 
         # Mode:
-        hbox = gtk.HBox(False, 5)
-        self.mode_combo = gtk.combo_box_new_text()
+        hbox = Gtk.HBox(False, 5)
+        self.mode_combo = Gtk.combo_box_new_text()
         for x in self.get_connection_modes():
             self.mode_combo.append_text(x.upper())
         self.mode_combo.connect("changed", self.mode_changed)
-        hbox.pack_start(gtk.Label("Mode: "), False, False)
+        hbox.pack_start(Gtk.Label("Mode: "), False, False)
         hbox.pack_start(self.mode_combo, False, False)
-        align_hbox = gtk.Alignment(xalign = .5)
+        align_hbox = Gtk.Alignment(xalign = .5)
         align_hbox.add(hbox)
         vbox.pack_start(align_hbox)
 
         # Username@Host:Port (ssh -> ssh, proxy)
-        vbox_proxy = gtk.VBox(False, 15)
-        hbox = gtk.HBox(False, 5)
+        vbox_proxy = Gtk.VBox(False, 15)
+        hbox = Gtk.HBox(False, 5)
         self.proxy_vbox = vbox_proxy
-        self.proxy_username_entry = gtk.Entry()
+        self.proxy_username_entry = Gtk.Entry()
         self.proxy_username_entry.set_max_length(128)
         self.proxy_username_entry.set_width_chars(16)
         self.proxy_username_entry.connect("changed", self.validate)
         self.proxy_username_entry.connect("activate", self.connect_clicked)
         self.proxy_username_entry.set_tooltip_text("username")
-        self.proxy_host_entry = gtk.Entry()
+        self.proxy_host_entry = Gtk.Entry()
         self.proxy_host_entry.set_max_length(128)
         self.proxy_host_entry.set_width_chars(24)
         self.proxy_host_entry.connect("changed", self.validate)
         self.proxy_host_entry.connect("activate", self.connect_clicked)
         self.proxy_host_entry.set_tooltip_text("hostname")
-        self.proxy_port_entry = gtk.Entry()
+        self.proxy_port_entry = Gtk.Entry()
         self.proxy_port_entry.set_max_length(5)
         self.proxy_port_entry.set_width_chars(5)
         self.proxy_port_entry.connect("changed", self.validate)
         self.proxy_port_entry.connect("activate", self.connect_clicked)
         self.proxy_port_entry.set_tooltip_text("SSH port")
-        hbox.pack_start(gtk.Label("Proxy: "), False, False)
+        hbox.pack_start(Gtk.Label("Proxy: "), False, False)
         hbox.pack_start(self.proxy_username_entry, True, True)
-        hbox.pack_start(gtk.Label("@"), False, False)
+        hbox.pack_start(Gtk.Label("@"), False, False)
         hbox.pack_start(self.proxy_host_entry, True, True)
         hbox.pack_start(self.proxy_port_entry, False, False)
         vbox_proxy.pack_start(hbox)
 
         # Password
-        hbox = gtk.HBox(False, 5)
+        hbox = Gtk.HBox(False, 5)
         self.proxy_password_hbox = hbox
-        self.proxy_password_entry = gtk.Entry()
+        self.proxy_password_entry = Gtk.Entry()
         self.proxy_password_entry.set_max_length(128)
         self.proxy_password_entry.set_width_chars(30)
         self.proxy_password_entry.set_text("")
@@ -286,16 +279,16 @@ class ApplicationWindow:
         self.proxy_password_entry.connect("changed", self.password_ok)
         self.proxy_password_entry.connect("changed", self.validate)
         self.proxy_password_entry.connect("activate", self.connect_clicked)
-        hbox.pack_start(gtk.Label("Proxy Password"), False, False)
+        hbox.pack_start(Gtk.Label("Proxy Password"), False, False)
         hbox.pack_start(self.proxy_password_entry, True, True)
         vbox_proxy.pack_start(hbox)
 
         # Private key
-        hbox = gtk.HBox(False,  5)
+        hbox = Gtk.HBox(False,  5)
         self.pkey_hbox = hbox
-        self.proxy_key_label = gtk.Label("Proxy private key path (PPK):")
-        self.proxy_key_entry = gtk.Entry()
-        self.proxy_key_browse = gtk.Button("Browse")
+        self.proxy_key_label = Gtk.Label("Proxy private key path (PPK):")
+        self.proxy_key_entry = Gtk.Entry()
+        self.proxy_key_browse = Gtk.Button("Browse")
         self.proxy_key_browse.connect("clicked", self.proxy_key_browse_clicked)
         hbox.pack_start(self.proxy_key_label, False, False)
         hbox.pack_start(self.proxy_key_entry, True, True)
@@ -303,19 +296,19 @@ class ApplicationWindow:
         vbox_proxy.pack_start(hbox)
 
         # Check boxes
-        hbox = gtk.HBox(False, 5)
+        hbox = Gtk.HBox(False, 5)
         self.check_boxes_hbox = hbox
-        self.password_scb = gtk.CheckButton("Server password same as proxy")
+        self.password_scb = Gtk.CheckButton("Server password same as proxy")
         self.password_scb.set_mode(True)
         self.password_scb.set_active(True)
         self.password_scb.connect("toggled", self.validate)
-        align_password_scb = gtk.Alignment(xalign = 1.0)
+        align_password_scb = Gtk.Alignment(xalign = 1.0)
         align_password_scb.add(self.password_scb)
-        self.username_scb = gtk.CheckButton("Server username same as proxy")
+        self.username_scb = Gtk.CheckButton("Server username same as proxy")
         self.username_scb.set_mode(True)
         self.username_scb.set_active(True)
         self.username_scb.connect("toggled", self.validate)
-        align_username_scb = gtk.Alignment(xalign = 0.0)
+        align_username_scb = Gtk.Alignment(xalign = 0.0)
         align_username_scb.add(self.username_scb)
         hbox.pack_start(align_username_scb, True, True)
         hbox.pack_start(align_password_scb, True, True)
@@ -325,44 +318,44 @@ class ApplicationWindow:
         vbox.pack_start(vbox_proxy)
 
         # Username@Host:Port (main)
-        hbox = gtk.HBox(False, 5)
-        self.username_entry = gtk.Entry()
+        hbox = Gtk.HBox(False, 5)
+        self.username_entry = Gtk.Entry()
         self.username_entry.set_max_length(128)
         self.username_entry.set_width_chars(16)
         self.username_entry.connect("changed", self.validate)
         self.username_entry.connect("activate", self.connect_clicked)
         self.username_entry.set_tooltip_text("username")
-        self.host_entry = gtk.Entry()
+        self.host_entry = Gtk.Entry()
         self.host_entry.set_max_length(128)
         self.host_entry.set_width_chars(24)
         self.host_entry.connect("changed", self.validate)
         self.host_entry.connect("activate", self.connect_clicked)
         self.host_entry.set_tooltip_text("hostname")
-        self.ssh_port_entry = gtk.Entry()
+        self.ssh_port_entry = Gtk.Entry()
         self.ssh_port_entry.set_max_length(5)
         self.ssh_port_entry.set_width_chars(5)
         self.ssh_port_entry.connect("changed", self.validate)
         self.ssh_port_entry.connect("activate", self.connect_clicked)
         self.ssh_port_entry.set_tooltip_text("SSH port")
-        self.port_entry = gtk.Entry()
+        self.port_entry = Gtk.Entry()
         self.port_entry.set_max_length(5)
         self.port_entry.set_width_chars(5)
         self.port_entry.connect("changed", self.validate)
         self.port_entry.connect("activate", self.connect_clicked)
         self.port_entry.set_tooltip_text("port/display")
-        hbox.pack_start(gtk.Label("Server:"), False, False)
+        hbox.pack_start(Gtk.Label("Server:"), False, False)
         hbox.pack_start(self.username_entry, True, True)
-        hbox.pack_start(gtk.Label("@"), False, False)
+        hbox.pack_start(Gtk.Label("@"), False, False)
         hbox.pack_start(self.host_entry, True, True)
         hbox.pack_start(self.ssh_port_entry, False, False)
-        hbox.pack_start(gtk.Label(":"), False, False)
+        hbox.pack_start(Gtk.Label(":"), False, False)
         hbox.pack_start(self.port_entry, False, False)
         vbox.pack_start(hbox)
 
         # Password
-        hbox = gtk.HBox(False, 5)
+        hbox = Gtk.HBox(False, 5)
         self.password_hbox = hbox
-        self.password_entry = gtk.Entry()
+        self.password_entry = Gtk.Entry()
         self.password_entry.set_max_length(128)
         self.password_entry.set_width_chars(30)
         self.password_entry.set_text("")
@@ -370,42 +363,42 @@ class ApplicationWindow:
         self.password_entry.connect("changed", self.password_ok)
         self.password_entry.connect("changed", self.validate)
         self.password_entry.connect("activate", self.connect_clicked)
-        hbox.pack_start(gtk.Label("Server Password:"), False, False)
+        hbox.pack_start(Gtk.Label("Server Password:"), False, False)
         hbox.pack_start(self.password_entry, True, True)
         vbox.pack_start(hbox)
 
         #strict host key check for SSL and SSH
-        hbox = gtk.HBox(False, 5)
-        self.nostrict_host_check = gtk.CheckButton("Disable Strict Host Key Check")
+        hbox = Gtk.HBox(False, 5)
+        self.nostrict_host_check = Gtk.CheckButton("Disable Strict Host Key Check")
         self.nostrict_host_check.set_active(False)
-        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.nostrict_host_check)
         hbox.pack_start(al)
         vbox.pack_start(hbox)
 
         # Info Label
-        self.info = gtk.Label()
+        self.info = Gtk.Label()
         self.info.set_line_wrap(True)
         self.info.set_size_request(360, -1)
         self.info.modify_fg(STATE_NORMAL, red)
         vbox.pack_start(self.info)
 
-        hbox = gtk.HBox(False, 0)
+        hbox = Gtk.HBox(False, 0)
         hbox.set_spacing(20)
-        self.advanced_options_check = gtk.CheckButton("Advanced Options")
+        self.advanced_options_check = Gtk.CheckButton("Advanced Options")
         self.advanced_options_check.connect("toggled", self.advanced_options_toggled)
         self.advanced_options_check.set_active(False)
-        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.advanced_options_check)
         hbox.pack_start(al)
         vbox.pack_start(hbox)
-        self.advanced_box = gtk.VBox()
+        self.advanced_box = Gtk.VBox()
         vbox.pack_start(self.advanced_box)
 
         # Encoding:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         hbox.set_spacing(20)
-        hbox.pack_start(gtk.Label("Encoding: "))
+        hbox.pack_start(Gtk.Label("Encoding: "))
         self.encoding_combo = OptionMenu()
         encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER]
         server_encodings = encodings
@@ -415,28 +408,28 @@ class ApplicationWindow:
         self.advanced_box.pack_start(hbox)
         self.set_new_encoding(self.config.encoding)
         # Sharing:
-        self.sharing = gtk.CheckButton("Sharing")
+        self.sharing = Gtk.CheckButton("Sharing")
         self.sharing.set_active(self.config.sharing)
         self.sharing.set_tooltip_text("allow multiple concurrent users to connect")
-        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.sharing)
         self.advanced_box.pack_start(al)
 
         # Buttons:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.pack_start(hbox)
         #Save:
-        self.save_btn = gtk.Button("Save")
+        self.save_btn = Gtk.Button("Save")
         self.save_btn.set_tooltip_text("Save settings to a session file")
         self.save_btn.connect("clicked", self.save_clicked)
         hbox.pack_start(self.save_btn)
         #Load:
-        self.load_btn = gtk.Button("Load")
+        self.load_btn = Gtk.Button("Load")
         self.load_btn.set_tooltip_text("Load settings from a session file")
         self.load_btn.connect("clicked", self.load_clicked)
         hbox.pack_start(self.load_btn)
         # Connect button:
-        self.connect_btn = gtk.Button("Connect")
+        self.connect_btn = Gtk.Button("Connect")
         self.connect_btn.connect("clicked", self.connect_clicked)
         connect_icon = self.get_icon("retry.png")
         if connect_icon:
@@ -663,7 +656,7 @@ class ApplicationWindow:
         GLib.idle_add(self.window.set_sensitive, s)
 
     def choose_pkey_file(self, title, action, action_button, callback):
-        file_filter = gtk.FileFilter()
+        file_filter = Gtk.FileFilter()
         file_filter.set_name("All Files")
         file_filter.add_pattern("*")
         choose_file(self.window, title, action, action_button, callback, file_filter)
@@ -675,7 +668,7 @@ class ApplicationWindow:
             if os.path.splitext(filename)[-1]!=".ppk":
                 filename += ".ppk"
             self.proxy_key_entry.set_text(filename)
-        self.choose_pkey_file("Choose SSH private key", FILE_CHOOSER_ACTION_OPEN, gtk.STOCK_OPEN, do_choose)
+        self.choose_pkey_file("Choose SSH private key", FILE_CHOOSER_ACTION_OPEN, Gtk.STOCK_OPEN, do_choose)
 
     def connect_clicked(self, *args):
         log("connect_clicked%s", args)
@@ -1045,7 +1038,7 @@ class ApplicationWindow:
         log("_apply_props(%s) populated config with keys '%s', ssh=%s", props, options.keys(), self.config.ssh)
 
     def choose_session_file(self, title, action, action_button, callback):
-        file_filter = gtk.FileFilter()
+        file_filter = Gtk.FileFilter()
         file_filter.set_name("Xpra")
         file_filter.add_pattern("*.xpra")
         choose_file(self.window, title, action, action_button, callback, file_filter)
@@ -1057,19 +1050,19 @@ class ApplicationWindow:
             if os.path.splitext(filename)[-1]!=".xpra":
                 filename += ".xpra"
             save_config(filename, self.config, self.config_keys, extras_types=LAUNCHER_OPTION_TYPES)
-        self.choose_session_file("Save session settings to file", FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
+        self.choose_session_file("Save session settings to file", FILE_CHOOSER_ACTION_SAVE, Gtk.STOCK_SAVE, do_save)
 
     def load_clicked(self, *_args):
         def do_load(filename):
             self.update_options_from_file(filename)
             self.update_gui_from_config()
-        self.choose_session_file("Load session settings from file", FILE_CHOOSER_ACTION_OPEN, gtk.STOCK_OPEN, do_load)
+        self.choose_session_file("Load session settings from file", FILE_CHOOSER_ACTION_OPEN, Gtk.STOCK_OPEN, do_load)
 
 
 #on some platforms like win32, we don't have stdout
 #and this is a GUI application, so show a dialog with the error instead
 def exception_dialog(title):
-    md = gtk.MessageDialog(None, DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, title)
+    md = Gtk.MessageDialog(None, DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, title)
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
     def close_dialog(*_args):

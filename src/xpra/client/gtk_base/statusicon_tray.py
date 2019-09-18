@@ -4,22 +4,19 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-# A tray implemented using gtk.StatusIcon
+# A tray implemented using Gtk.StatusIcon
 
 import os
 from time import time
+from gi.repository import Gtk
 
 from xpra.os_util import WIN32, OSX, POSIX, monotonic_time
 from xpra.util import envbool
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.client.tray_base import TrayBase, log
 from xpra.gtk_common.gtk_util import (
     get_icon_from_file, get_pixbuf_from_data, get_default_root_window,
     INTERP_HYPER, SHIFT_MASK, ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL,
     )
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 ORIENTATION = {
     ORIENTATION_HORIZONTAL  : "HORIZONTAL",
@@ -36,7 +33,7 @@ class GTKStatusIconTray(TrayBase):
 
     def __init__(self, *args, **kwargs):
         TrayBase.__init__(self, *args, **kwargs)
-        self.tray_widget = gtk.StatusIcon()
+        self.tray_widget = Gtk.StatusIcon()
         self.tray_widget.set_tooltip_text(self.tooltip or "Xpra")
         self.tray_widget.connect('activate', self.activate_menu)
         self.tray_widget.connect('popup-menu', self.popup_menu)
@@ -184,11 +181,11 @@ def main():
     log.enable_debug()
     from gi.repository import GLib
     log.enable_debug()
-    s = GTKStatusIconTray(None, None, None, "test", "xpra.png", None, None, None, gtk.main_quit)
+    s = GTKStatusIconTray(None, None, None, "test", "xpra.png", None, None, None, Gtk.main_quit)
     GLib.timeout_add(1000*2, s.set_blinking, True)
     GLib.timeout_add(1000*5, s.set_blinking, False)
-    GLib.timeout_add(1000*30, gtk.main_quit)
-    gtk.main()
+    GLib.timeout_add(1000*30, Gtk.main_quit)
+    Gtk.main()
 
 
 if __name__ == "__main__":

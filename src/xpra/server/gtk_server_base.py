@@ -8,11 +8,11 @@
 
 import sys
 import os.path
-from gi.repository import GLib
+from gi.repository import GLib, Gdk
 
 from xpra.util import flatten_dict, envbool
 from xpra.os_util import monotonic_time, register_SIGUSR_signals
-from xpra.gtk_common.gobject_compat import import_gdk, register_os_signals
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.quit import (
     gtk_main_quit_really,
     gtk_main_quit_on_fatal_exceptions_enable,
@@ -32,8 +32,6 @@ log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 cursorlog = Logger("server", "cursor")
 notifylog = Logger("notify")
-
-gdk = import_gdk()
 
 
 class GTKServerBase(ServerBase):
@@ -89,7 +87,7 @@ class GTKServerBase(ServerBase):
         safe_close = self.session_type!="shadow" or not is_Ubuntu() or getUbuntuVersion()>(16, 4)
         close = envbool("XPRA_CLOSE_GTK_DISPLAY", safe_close)
         if close and gdk_mod:
-            displays = gdk.DisplayManager.get().list_displays()
+            displays = Gdk.DisplayManager.get().list_displays()
             for d in displays:
                 d.close()
 
@@ -204,7 +202,7 @@ class GTKServerBase(ServerBase):
 
     def calculate_workarea(self, maxw, maxh):
         screenlog("calculate_workarea(%s, %s)", maxw, maxh)
-        workarea = gdk.Rectangle()
+        workarea = Gdk.Rectangle()
         workarea.width = maxw
         workarea.height = maxh
         for ss in self._server_sources.values():
@@ -219,7 +217,7 @@ class GTKServerBase(ServerBase):
                 #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
                 if len(display)>=10:
                     work_x, work_y, work_w, work_h = display[6:10]
-                    display_workarea = gdk.Rectangle()
+                    display_workarea = Gdk.Rectangle()
                     display_workarea.x = work_x
                     display_workarea.y = work_y
                     display_workarea.width = work_w
@@ -232,7 +230,7 @@ class GTKServerBase(ServerBase):
         if workarea.width==0 or workarea.height==0:
             screenlog.warn("Warning: failed to calculate a common workarea")
             screenlog.warn(" using the full display area: %ix%i", maxw, maxh)
-            workarea = gdk.Rectangle()
+            workarea = Gdk.Rectangle()
             workarea.width = maxw
             workarea.height = maxh
         self.set_workarea(workarea)

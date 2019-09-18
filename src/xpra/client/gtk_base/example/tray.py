@@ -4,17 +4,14 @@
 # later version. See the file COPYING for details.
 
 #test application for tray and menu
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import scaled_image, pixbuf_new_from_file
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 
 log = Logger("client")
-
-gtk = import_gtk()
 
 
 class FakeApplication:
@@ -149,7 +146,7 @@ class FakeApplication:
 
     def xpra_tray_exit(self, *args):
         log("xpra_tray_exit%s", args)
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def xpra_tray_geometry(self, *args):
         log("xpra_tray_geometry%s geometry=%s", args, self.tray.get_geometry())
@@ -159,10 +156,10 @@ class FakeApplication:
 def main():
     import signal
     def signal_handler(*_args):
-        gtk.main_quit()
+        Gtk.main_quit()
     signal.signal(signal.SIGINT, signal_handler)
     FakeApplication()
-    gtk.main()
+    Gtk.main()
 
 
 if __name__ == "__main__":

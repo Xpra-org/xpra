@@ -26,12 +26,11 @@ def gtk_main_quit_really():
         # the X server (and this process may block, may cause us to later be
         # killed if the X server goes away, etc.), and we don't want to impose
         # that on every user of this function.
-        from xpra.gtk_common.gobject_compat import import_gtk
-        gtk = import_gtk()
+        from gi.repository import Gtk
         # So long as there are more nested main loops, re-register ourselves
         # to be called again:
-        if gtk.main_level() > 0:
-            gtk.main_quit()
+        if Gtk.main_level() > 0:
+            Gtk.main_quit()
             return True
         # But when we've just quit the outermost main loop, then
         # unregister ourselves so that it's possible to start the

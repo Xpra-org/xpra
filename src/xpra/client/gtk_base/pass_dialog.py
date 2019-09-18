@@ -7,13 +7,9 @@
 
 import os.path
 import sys
-from gi.repository import GLib
-from gi.repository import Pango
+from gi.repository import GLib, Pango, Gtk
 
-from xpra.gtk_common.gobject_compat import (
-    import_gtk,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import get_util_logger
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, pixbuf_new_from_file, window_defaults,
@@ -23,13 +19,11 @@ from xpra.platform.paths import get_icon_dir
 
 log = get_util_logger()
 
-gtk = import_gtk()
-
 
 class PasswordInputDialogWindow(object):
 
     def __init__(self, title="Title", prompt="", icon=""):
-        self.window = gtk.Window(type=WINDOW_TOPLEVEL)
+        self.window = Gtk.Window(type=WINDOW_TOPLEVEL)
         window_defaults(self.window)
         self.window.set_position(WIN_POS_CENTER)
         self.window.connect("destroy", self.quit)
@@ -42,20 +36,20 @@ class PasswordInputDialogWindow(object):
             if icon_pixbuf:
                 self.window.set_icon(icon_pixbuf)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(10)
 
         def al(label, font="sans 14", xalign=0):
-            l = gtk.Label(label)
+            l = Gtk.Label(label)
             l.modify_font(Pango.FontDescription(font))
-            al = gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
+            al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
             vbox.add(al)
 
         #window title is visible so this would be redundant:
         #al(title, "sans 18", 0.5)
         al(prompt, "sans 14")
-        self.password_input = gtk.Entry()
+        self.password_input = Gtk.Entry()
         self.password_input.set_max_length(255)
         self.password_input.set_width_chars(32)
         self.password_input.connect('activate', self.activate)
@@ -64,8 +58,8 @@ class PasswordInputDialogWindow(object):
 
         # Buttons:
         self.exit_code = 0
-        hbox = gtk.HBox(False, 0)
-        al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
+        hbox = Gtk.HBox(False, 0)
+        al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
         al.add(hbox)
         vbox.pack_start(al)
         for label, isdefault, cb in (
@@ -80,7 +74,7 @@ class PasswordInputDialogWindow(object):
         self.window.add(vbox)
 
     def btn(self, label, isdefault=False, cb=None):
-        btn = gtk.Button(label)
+        btn = Gtk.Button(label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.set_size_request(100, 48)
@@ -114,7 +108,7 @@ class PasswordInputDialogWindow(object):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def activate(self, *args):
         log("activate%s", args)

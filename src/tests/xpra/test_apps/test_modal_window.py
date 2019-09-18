@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
-from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
+from gi.repository import Gtk
 
-gtk = import_gtk()
-gdk = import_gdk()
+from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
 
 
 def main():
-	window = gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(320, 500)
-	window.connect("delete_event", gtk.main_quit)
-	vbox = gtk.VBox(False, 0)
+	window.connect("delete_event", Gtk.main_quit)
+	vbox = Gtk.VBox(False, 0)
 
-	b = gtk.Button("Modal Window")
+	b = Gtk.Button("Modal Window")
 	def show_modal_window(*args):
-		modal = gtk.Window(WINDOW_TOPLEVEL)
+		modal = Gtk.Window(WINDOW_TOPLEVEL)
 		modal.set_transient_for(window)
 		modal.set_modal(True)
 		modal.show()
@@ -23,7 +21,7 @@ def main():
 	vbox.add(b)
 	window.add(vbox)
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

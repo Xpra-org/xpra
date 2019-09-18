@@ -5,26 +5,23 @@
 
 import sys
 import os.path
-from gi.repository import GLib
-from gi.repository import Pango
+from gi.repository import GLib, Pango, Gtk
 
 from xpra.gtk_common.gtk_util import (
     add_close_accel, pixbuf_new_from_file, gtk_main, image_new_from_stock,
     ICON_SIZE_BUTTON,
     )
-from xpra.gtk_common.gobject_compat import import_gtk, register_os_signals
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 
 log = Logger("util")
 
-gtk = import_gtk()
 
-
-class AuthDialog(gtk.Window):
+class AuthDialog(Gtk.Window):
 
     def __init__(self, title="Session Access Request", info="unknown user from unknown location", timeout=600):
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
         self.timeout = timeout
         self.exit_code = 1
         self.set_title(title)
@@ -37,37 +34,37 @@ class AuthDialog(gtk.Window):
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
 
-        self.vbox = gtk.VBox(False, 20)
+        self.vbox = Gtk.VBox(False, 20)
         self.add(self.vbox)
 
-        title_label = gtk.Label(title)
+        title_label = Gtk.Label(title)
         title_label.modify_font(Pango.FontDescription("sans 14"))
         self.vbox.add(title_label)
 
-        info_label = gtk.Label(info)
+        info_label = Gtk.Label(info)
         info_label.modify_font(Pango.FontDescription("sans 12"))
         self.vbox.add(info_label)
 
         if self.timeout>0:
-            self.timeout_label = gtk.Label()
+            self.timeout_label = Gtk.Label()
             self.update_timeout()
             self.vbox.add(self.timeout_label)
             GLib.timeout_add(1000, self.update_timeout)
 
         #buttons:
-        al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
+        al = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
         al.set_padding(0, 0, 10, 10)
-        hbox = gtk.HBox(False, 10)
+        hbox = Gtk.HBox(False, 10)
         al.add(hbox)
-        hbox.add(self.btn("Cancel", gtk.STOCK_NO, self.cancel))
-        hbox.add(self.btn("Accept", gtk.STOCK_OK, self.accept))
+        hbox.add(self.btn("Cancel", Gtk.STOCK_NO, self.cancel))
+        hbox.add(self.btn("Accept", Gtk.STOCK_OK, self.accept))
         self.vbox.add(al)
 
         register_os_signals(self.app_signal)
         self.show_all()
 
     def btn(self, label, stock_icon, callback):
-        btn = gtk.Button(label)
+        btn = Gtk.Button(label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.connect("clicked", callback)
@@ -100,7 +97,7 @@ class AuthDialog(gtk.Window):
 
     def do_quit(self):
         log("do_quit()")
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def app_signal(self, signum):
         self.exit_code = 128 + signum

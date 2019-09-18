@@ -10,7 +10,6 @@ from gi.repository import GLib, GObject
 
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
-from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow, GDKWindow,
     PROPERTY_CHANGE_MASK, CLASS_INPUT_ONLY,
@@ -33,8 +32,6 @@ from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
 from xpra.os_util import bytestostr
 from xpra.util import csv, repr_ellipsized, first_time, envbool
 from xpra.log import Logger
-
-gdk = import_gdk()
 
 X11Window = X11WindowBindings()
 

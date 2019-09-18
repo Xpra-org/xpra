@@ -7,50 +7,6 @@
 
 import sys
 
-__all__ = [
-    "import_gtk",
-    "import_gdk",
-    ]
-
-
-def gi_gtk():
-    try:
-        from xpra.gtk_common import gi_init
-        assert gi_init
-    except ImportError:
-        pass
-
-
-
-def try_import_GdkX11():
-    from xpra.os_util import OSX, POSIX
-    if POSIX and not OSX:
-        #try to ensure that we can call get_xid() on Gdk windows later,
-        #this is a workaround for this GTK bug:
-        #https://bugzilla.gnome.org/show_bug.cgi?id=656314
-        try:
-            import gi
-            gi.require_version('GdkX11', '3.0')
-            from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
-            return GdkX11
-        except ImportError:
-            pass
-    return None
-
-
-def import_gtk():
-    gi_gtk()
-    from gi.repository import Gtk                   #@UnresolvedImport
-    try_import_GdkX11()
-    Gtk.init()
-    return Gtk
-
-def import_gdk():
-    gi_gtk()
-    from gi.repository import Gdk                   #@UnresolvedImport
-    try_import_GdkX11()
-    return Gdk
-
 
 _glib_unix_signals = {}
 def register_os_signals(callback):

@@ -4,40 +4,35 @@
 
 import sys
 from collections import deque
-from gi.repository import GLib
-from gi.repository import Pango
+from gi.repository import GLib, Pango, Gtk
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.platform.paths import get_icon
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 
 class KeyboardStateInfoWindow:
 
     def    __init__(self):
         self.init_constants()
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(540, 800)
         self.window.set_border_width(20)
         self.window.set_title("Keyboard State Tool")
 
         # Title
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(15)
-        label = gtk.Label("Keyboard State")
+        label = Gtk.Label("Keyboard State")
         label.modify_font(Pango.FontDescription("sans 13"))
         vbox.pack_start(label)
 
-        self.modifiers = gtk.Label()
+        self.modifiers = Gtk.Label()
         vbox.add(self.modifiers)
 
-        self.mouse = gtk.Label()
+        self.mouse = Gtk.Label()
         vbox.add(self.mouse)
 
-        self.keys = gtk.Label()
+        self.keys = Gtk.Label()
         fixed = Pango.FontDescription('monospace 9')
         self.keys.modify_font(fixed)
         vbox.add(self.keys)
@@ -116,7 +111,7 @@ class KeyboardStateInfoWindow:
         self.keys.set_text("\n".join(self.key_events))
 
     def destroy(self, *_args):
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
 def main():
@@ -125,7 +120,7 @@ def main():
     with program_context("Keyboard-Test", "Keyboard Test Tool"):
         enable_color()
         KeyboardStateInfoWindow()
-        gtk.main()
+        Gtk.main()
 
 
 if __name__ == "__main__":

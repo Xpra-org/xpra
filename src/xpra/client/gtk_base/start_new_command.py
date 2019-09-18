@@ -1,29 +1,24 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 
-import os.path
 import sys
+import os.path
+from gi.repository import Pango, Gtk
 
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
     window_defaults, WIN_POS_CENTER,
     )
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.platform.paths import get_icon_dir
 from xpra.util import typedict
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("exec")
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 
 _instance = None
@@ -39,7 +34,7 @@ class StartNewCommand(object):
     def __init__(self, run_callback=None, can_share=False, xdg_menu=None):
         self.run_callback = run_callback
         self.xdg_menu = typedict(xdg_menu or {})
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 150)
@@ -50,44 +45,44 @@ class StartNewCommand(object):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(WIN_POS_CENTER)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(0)
 
         if xdg_menu:
             # or use menus if we have xdg data:
-            hbox = gtk.HBox(False, 20)
+            hbox = Gtk.HBox(False, 20)
             vbox.add(hbox)
-            hbox.add(gtk.Label("Category:"))
-            self.category_combo = gtk.combo_box_new_text()
+            hbox.add(Gtk.Label("Category:"))
+            self.category_combo = Gtk.combo_box_new_text()
             hbox.add(self.category_combo)
             for name in sorted(xdg_menu.keys()):
                 self.category_combo.append_text(name.decode("utf-8"))
             self.category_combo.set_active(0)
             self.category_combo.connect("changed", self.category_changed)
 
-            hbox = gtk.HBox(False, 20)
+            hbox = Gtk.HBox(False, 20)
             vbox.add(hbox)
-            self.command_combo = gtk.combo_box_new_text()
-            hbox.pack_start(gtk.Label("Command:"))
+            self.command_combo = Gtk.combo_box_new_text()
+            hbox.pack_start(Gtk.Label("Command:"))
             hbox.pack_start(self.command_combo)
             self.command_combo.connect("changed", self.command_changed)
             #this will populate the command combo:
             self.category_changed()
         #always show the command as text so it can be edited:
-        entry_label = gtk.Label("Command to run:")
+        entry_label = Gtk.Label("Command to run:")
         entry_label.modify_font(Pango.FontDescription("sans 14"))
-        entry_al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
+        entry_al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         entry_al.add(entry_label)
         vbox.add(entry_al)
         # Actual command:
-        self.entry = gtk.Entry()
+        self.entry = Gtk.Entry()
         self.entry.set_max_length(255)
         self.entry.set_width_chars(32)
         self.entry.connect('activate', self.run_command)
         vbox.add(self.entry)
 
         if can_share:
-            self.share = gtk.CheckButton("Shared", use_underline=False)
+            self.share = Gtk.CheckButton("Shared", use_underline=False)
             #Shared commands will also be shown to other clients
             self.share.set_active(True)
             vbox.add(self.share)
@@ -95,10 +90,10 @@ class StartNewCommand(object):
             self.share = None
 
         # Buttons:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
-            btn = gtk.Button(label)
+            btn = Gtk.Button(label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             if icon_name:
@@ -168,7 +163,7 @@ class StartNewCommand(object):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
     def get_icon(self, icon_name):

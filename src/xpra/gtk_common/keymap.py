@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from gi.repository import Gdk
 
 from xpra.log import Logger
 
@@ -21,8 +23,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
         by adding the keyval_name.
         We can also ignore some keys
     """
-    from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, import_gdk
-    gdk = import_gdk()
+    from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default
     display = display_get_default()
     if not display:
         return ()
@@ -41,7 +42,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
         for j, key in enumerate(keys):
             keyval = keyvals[j]
             keycode = key.keycode
-            name = gdk.keyval_name(keyval)
+            name = Gdk.keyval_name(keyval)
             name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
             group = key.group or 0
             if name not in ignore_keys:

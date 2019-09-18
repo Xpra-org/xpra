@@ -8,7 +8,7 @@
 import sys
 import datetime
 from collections import deque
-from gi.repository import GLib
+from gi.repository import GLib, Gtk, Gdk
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monotonic_time
@@ -25,13 +25,9 @@ from xpra.gtk_common.gtk_util import (
     FILE_CHOOSER_ACTION_SAVE,
     )
 from xpra.net.net_util import get_network_caps
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.log import Logger
 
 log = Logger("info")
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True
@@ -112,10 +108,10 @@ def slabel(text="", tooltip=None, font=None):
     return l
 
 
-class SessionInfo(gtk.Window):
+class SessionInfo(Gtk.Window):
 
     def __init__(self, client, session_name, window_icon_pixbuf, conn, get_pixbuf):
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
         self.client = client
         self.session_name = session_name
         self.connection = conn
@@ -136,8 +132,8 @@ class SessionInfo(gtk.Window):
         self.set_position(WIN_POS_CENTER)
 
         #tables on the left in a vbox with buttons at the top:
-        self.tab_box = gtk.VBox(False, 0)
-        self.tab_button_box = gtk.HBox(True, 0)
+        self.tab_box = Gtk.VBox(False, 0)
+        self.tab_button_box = Gtk.HBox(True, 0)
         self.tabs = []          #pairs of button, table
         self.populate_cb = None
         self.tab_box.pack_start(self.tab_button_box, expand=False, fill=True, padding=0)
@@ -243,22 +239,22 @@ class SessionInfo(gtk.Window):
         #add top table:
         tb = TableBuilder(rows=1, columns=2, row_spacings=15)
         table = tb.get_table()
-        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(table)
         vbox.pack_start(al, expand=True, fill=False, padding=10)
         #top table contents:
-        randr_box = gtk.HBox(False, 20)
+        randr_box = Gtk.HBox(False, 20)
         self.server_randr_label = slabel()
-        self.server_randr_icon = gtk.Image()
+        self.server_randr_icon = Gtk.Image()
         randr_box.add(self.server_randr_icon)
         randr_box.add(self.server_randr_label)
         tb.new_row("RandR Support", randr_box)
         self.client_display = slabel()
         tb.new_row("Client Display", self.client_display)
-        opengl_box = gtk.HBox(False, 20)
+        opengl_box = Gtk.HBox(False, 20)
         self.client_opengl_label = slabel()
         self.client_opengl_label.set_line_wrap(True)
-        self.client_opengl_icon = gtk.Image()
+        self.client_opengl_icon = Gtk.Image()
         opengl_box.add(self.client_opengl_icon)
         opengl_box.add(self.client_opengl_label)
         tb.new_row("Client OpenGL", opengl_box)
@@ -266,22 +262,22 @@ class SessionInfo(gtk.Window):
         tb.new_row("OpenGL Mode", self.opengl_buffering)
         self.window_rendering = slabel()
         tb.new_row("Window Rendering", self.window_rendering)
-        self.server_mmap_icon = gtk.Image()
+        self.server_mmap_icon = Gtk.Image()
         tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
-        self.server_clipboard_icon = gtk.Image()
+        self.server_clipboard_icon = Gtk.Image()
         tb.new_row("Clipboard", self.server_clipboard_icon)
-        self.server_notifications_icon = gtk.Image()
+        self.server_notifications_icon = Gtk.Image()
         tb.new_row("Notifications", self.server_notifications_icon)
-        self.server_bell_icon = gtk.Image()
+        self.server_bell_icon = Gtk.Image()
         tb.new_row("Bell", self.server_bell_icon)
-        self.server_cursors_icon = gtk.Image()
+        self.server_cursors_icon = Gtk.Image()
         tb.new_row("Cursors", self.server_cursors_icon)
 
         # Codecs Table:
         vbox = self.vbox_tab("encoding.png", "Codecs", self.populate_codecs)
         tb = TableBuilder(rows=1, columns=2, col_spacings=0, row_spacings=10)
         table = tb.get_table()
-        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(table)
         vbox.pack_start(al, expand=True, fill=False, padding=10)
         #table headings:
@@ -442,10 +438,10 @@ class SessionInfo(gtk.Window):
             #add encoder info:
             etb = TableBuilder()
             stats_box.add(etb.get_table())
-            self.encoder_info_box = gtk.HBox(spacing=4)
+            self.encoder_info_box = Gtk.HBox(spacing=4)
             etb.new_row("Window Encoders", self.encoder_info_box)
 
-        self.graph_box = gtk.VBox(False, 10)
+        self.graph_box = Gtk.VBox(False, 10)
         self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
         bandwidth_label = "Bandwidth used"
         if SHOW_PIXEL_STATS:
@@ -487,13 +483,13 @@ class SessionInfo(gtk.Window):
         tb = TableBuilder()
         table = tb.get_table()
         vbox = self.vbox_tab(icon_filename, title, populate_cb)
-        al = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(table)
         vbox.pack_start(al, expand=True, fill=True, padding=20)
         return tb, vbox
 
     def vbox_tab(self, icon_filename, title, populate_cb):
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         self.add_tab(icon_filename, title, populate_cb, contents=vbox)
         return vbox
 
@@ -554,12 +550,12 @@ class SessionInfo(gtk.Window):
                 p_cb()
 
     def add_graph_button(self, tooltip, click_cb):
-        button = gtk.EventBox()
+        button = Gtk.EventBox()
         def set_cursor(widget):
-            cursor = gdk.Cursor.new(gdk.CursorType.BASED_ARROW_DOWN)
+            cursor = Gdk.Cursor.new(Gdk.CursorType.BASED_ARROW_DOWN)
             widget.get_window().set_cursor(cursor)
         button.connect("realize", set_cursor)
-        graph = gtk.Image()
+        graph = Gtk.Image()
         graph.set_size_request(0, 0)
         button.connect("button_press_event", click_cb, graph)
         button.add(graph)
@@ -1188,12 +1184,12 @@ class SessionInfo(gtk.Window):
 
     def save_graph(self, _ebox, btn, graph):
         log("save_graph%s", (btn, graph))
-        chooser = gtk.FileChooserDialog("Save graph as a PNG image",
+        chooser = Gtk.FileChooserDialog("Save graph as a PNG image",
                                     parent=self, action=FILE_CHOOSER_ACTION_SAVE,
-                                    buttons=(gtk.STOCK_CANCEL, RESPONSE_CANCEL, gtk.STOCK_SAVE, RESPONSE_OK))
+                                    buttons=(Gtk.STOCK_CANCEL, RESPONSE_CANCEL, Gtk.STOCK_SAVE, RESPONSE_OK))
         chooser.set_select_multiple(False)
         chooser.set_default_response(RESPONSE_OK)
-        file_filter = gtk.FileFilter()
+        file_filter = Gtk.FileFilter()
         file_filter.set_name("PNG")
         file_filter.add_pattern("*.png")
         chooser.add_filter(file_filter)
@@ -1216,5 +1212,5 @@ class SessionInfo(gtk.Window):
     def destroy(self, *args):
         log("SessionInfo.destroy(%s) is_closed=%s", args, self.is_closed)
         self.is_closed = True
-        gtk.Window.destroy(self)
+        Gtk.Window.destroy(self)
         log("SessionInfo.destroy(%s) done", args)

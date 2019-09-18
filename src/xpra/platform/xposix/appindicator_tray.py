@@ -127,17 +127,17 @@ def main():
             from xpra.log import enable_debug_for
             enable_debug_for("tray")
 
-        from xpra.gtk_common.gobject_compat import import_gtk, register_os_signals
-        gtk = import_gtk()
+        from xpra.gtk_common.gobject_compat import register_os_signals
 
-        menu = gtk.Menu()
-        item = gtk.MenuItem("Some Menu Item Here")
+        from gi.repository import Gtk
+        menu = Gtk.Menu()
+        item = Gtk.MenuItem("Some Menu Item Here")
         menu.append(item)
         menu.show_all()
         a = AppindicatorTray(None, None, menu, "test", "xpra.png", None, None, None, gtk.main_quit)
         a.show()
-        register_os_signals(gtk.main_quit)
-        gtk.main()
+        register_os_signals(Gtk.main_quit)
+        Gtk.main()
 
 
 if __name__ == "__main__":

@@ -8,24 +8,20 @@
 # later version. See the file COPYING for details.
 
 import math
-
 import cairo
+from gi.repository import GLib, Gtk
 
 from xpra.client.spinner import cv
-from xpra.gtk_common.gobject_compat import import_gtk
-
-gtk     = import_gtk()
-from gi.repository import GLib
 
 
-class Example(gtk.Window):
+class Example(Gtk.Window):
 
     def __init__(self):
         super(Example, self).__init__()
         self.init_ui()
 
     def init_ui(self):
-        self.darea = gtk.DrawingArea()
+        self.darea = Gtk.DrawingArea()
         self.darea.connect("expose-event", self.expose)
         self.add(self.darea)
 
@@ -34,8 +30,8 @@ class Example(gtk.Window):
 
         self.set_title("Waiting")
         self.resize(250, 150)
-        self.set_position(gtk.WIN_POS_CENTER)
-        self.connect("delete-event", gtk.main_quit)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.connect("delete-event", Gtk.main_quit)
         self.show_all()
 
 
@@ -62,7 +58,7 @@ class Example(gtk.Window):
 
 def main():
     Example()
-    gtk.main()
+    Gtk.main()
 
 
 if __name__ == "__main__":

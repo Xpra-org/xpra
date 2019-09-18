@@ -4,15 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=wrong-import-order
-#pylint: disable=ungrouped-imports
-from xpra.gtk_common import gi_init
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 
 from xpra.client.gtk3.cairo_backing import CairoBacking
 from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
-
-assert gi_init
 
 """
 GTK3 window painted with cairo

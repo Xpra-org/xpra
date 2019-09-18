@@ -5,16 +5,15 @@
 
 import cairo
 
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import (
     WIN_POS_CENTER, KEY_PRESS_MASK,
     add_close_accel,
     )
 
-gtk = import_gtk()
+from gi.repository import Gtk
 
 
-class ColorGradientWindow(gtk.Window):
+class ColorGradientWindow(Gtk.Window):
 
     def __init__(self):
         super(ColorGradientWindow, self).__init__()
@@ -27,7 +26,7 @@ class ColorGradientWindow(gtk.Window):
         self.connect("draw", self.area_draw)
         self.connect("configure_event", self.configure_event)
         #self.connect('resize', changed)
-        self.connect("destroy", gtk.main_quit)
+        self.connect("destroy", Gtk.main_quit)
         self.connect("key_press_event", self.on_key_press)
         self.show_all()
 
@@ -117,11 +116,11 @@ class ColorGradientWindow(gtk.Window):
 def main():
     import signal
     def signal_handler(*_args):
-        gtk.main_quit()
+        Gtk.main_quit()
     signal.signal(signal.SIGINT, signal_handler)
     w = ColorGradientWindow()
-    add_close_accel(w, gtk.main_quit)
-    gtk.main()
+    add_close_accel(w, Gtk.main_quit)
+    Gtk.main()
 
 
 if __name__ == "__main__":

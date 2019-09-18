@@ -5,12 +5,7 @@
 # later version. See the file COPYING for details.
 
 import math
-
 import cairo
-
-from xpra.gtk_common.gobject_compat import import_gdk
-
-gdk = import_gdk()
 
 DEFAULT_COLOURS = ((0.8, 0, 0), (0, 0, 0.8), (0.1, 0.65, 0.1), (0, 0.6, 0.6), (0.1, 0.1, 0.1))
 

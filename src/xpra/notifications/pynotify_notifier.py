@@ -41,16 +41,14 @@ class PyNotify_Notifier(NotifierBase):
 
 
 def main():
-    from xpra.gtk_common.gobject_compat import import_gtk
-    from gi.repository import GLib
-    gtk = import_gtk()
+    from gi.repository import GLib, Gtk
     def show():
         n = PyNotify_Notifier()
         n.show_notify("", None, 0, "Test", 0, "", "Summary", "Body...", ["0", "Hello", "1", "Bye"], {}, 0, "")
         return False
     GLib.idle_add(show)
-    GLib.timeout_add(20000, gtk.main_quit)
-    gtk.main()
+    GLib.timeout_add(20000, Gtk.main_quit)
+    Gtk.main()
 
 
 if __name__ == "__main__":

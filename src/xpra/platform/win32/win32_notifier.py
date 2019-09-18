@@ -6,7 +6,6 @@
 from xpra.util import envbool
 from xpra.notifications.notifier_base import NotifierBase, log
 from xpra.platform.win32.win32_balloon import notify
-from xpra.gtk_common import gtk_notifier
 
 try:
     from xpra.gtk_common.gtk_notifier import GTK_Notifier

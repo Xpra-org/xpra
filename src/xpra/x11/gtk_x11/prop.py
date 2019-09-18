@@ -15,9 +15,9 @@ the conversions for plain python types is found in prop_conv.py
 """
 
 import struct
+from gi.repository import Gdk
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES, PROP_SIZES
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.x11.gtk_x11.gdk_bindings import (
     get_pywindow,               #@UnresolvedImport
     get_xvisual,                #@UnresolvedImport
@@ -32,9 +32,6 @@ from xpra.util import repr_ellipsized
 from xpra.log import Logger
 
 log = Logger("x11", "window")
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 
 def _get_atom(_disp, d):
@@ -108,8 +105,8 @@ def get_window(disp, w):
 #add the GTK / GDK types to the conversion function list:
 PROP_TYPES.update({
     "atom": (str, "ATOM", 32, _to_atom, _get_atom, b""),
-    "visual": (gdk.Visual, "VISUALID", 32, _to_visual, unsupported, b""),
-    "window": (gdk.Window, "WINDOW", 32, _to_window, get_window, b""),
+    "visual": (Gdk.Visual, "VISUALID", 32, _to_visual, unsupported, b""),
+    "window": (Gdk.Window, "WINDOW", 32, _to_window, get_window, b""),
     "xsettings-settings": (tuple, "_XSETTINGS_SETTINGS", 8,
                            set_xsettings,
                            get_xsettings,

@@ -2,32 +2,30 @@
 
 import cairo
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
-gtk = import_gtk()
-gdk = import_gdk()
+from gi.repository import Gtk, Gdk
 
 WIDTH = 400
 HEIGHT = 200
 
 
-class MapResizeWindow(gtk.Window):
+class MapResizeWindow(Gtk.Window):
 
 	def __init__(self):
-		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+		Gtk.Window.__init__(self, Gtk.WINDOW_TOPLEVEL)
 		self.width = WIDTH
 		self.height = HEIGHT
 		self.step = 0
 		self.set_app_paintable(True)
-		WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
-			| gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK \
-			| gdk.PROPERTY_CHANGE_MASK
+		WINDOW_EVENT_MASK = Gdk.STRUCTURE_MASK | Gdk.KEY_PRESS_MASK | Gdk.KEY_RELEASE_MASK \
+			| Gdk.POINTER_MOTION_MASK | Gdk.BUTTON_PRESS_MASK | Gdk.BUTTON_RELEASE_MASK \
+			| Gdk.PROPERTY_CHANGE_MASK
 		self.add_events(WINDOW_EVENT_MASK)
 		self.set_size_request(self.width, self.height)
-		self.connect("delete_event", gtk.mainquit)
+		self.connect("delete_event", Gtk.mainquit)
 
 	def do_expose_event(self, event):
 		print("do_expose_event(%s) area=%s" % (event, event.area))
-		if not (self.flags() & gtk.MAPPED):
+		if not (self.flags() & Gtk.MAPPED):
 			print("do_expose_event(%s) window not mapped yet!")
 			return
 		context = self.window.cairo_create()
@@ -38,13 +36,13 @@ class MapResizeWindow(gtk.Window):
 		context.set_source_rgba(v, 0.8, v, 0.8)
 		context.rectangle(event.area)
 		#w, h = self._size
-		#context.rectangle(gdk.Rectangle(0, 0, w, h))
+		#context.rectangle(Gdk.Rectangle(0, 0, w, h))
 		context.fill()
 
 	def Xdraw(self):
 		print("Xdraw() window=%s, size=%sx%s" % (self.window, self.width, self.height))
 		if self.window:
-			self.window.invalidate_rect(gdk.Rectangle(0, 0, self.width, self.height), False)
+			self.window.invalidate_rect(Gdk.Rectangle(0, 0, self.width, self.height), False)
 
 	def Xresize(self, new_width, new_height):
 		self.step += 1
@@ -65,7 +63,7 @@ def main():
 	GLib.idle_add(w.show_all)
 	GLib.timeout_add(5*1000, w.Xresize, WIDTH*2, HEIGHT*2)
 	print("window should now be shown resized to=%sx%s" % (WIDTH*2, HEIGHT*2))
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

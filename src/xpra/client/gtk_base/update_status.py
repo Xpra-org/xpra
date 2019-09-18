@@ -4,9 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-import os.path
 import sys
+import os.path
+from gi.repository import GLib, Pango, Gtk
 
 from xpra.platform.gui import init as gui_init
 from xpra.gtk_common.gtk_util import (
@@ -14,15 +14,9 @@ from xpra.gtk_common.gtk_util import (
     window_defaults, WIN_POS_CENTER,
     )
 from xpra.platform.paths import get_icon_dir
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("util")
-
-gtk = import_gtk()
-gdk = import_gdk()
-from gi.repository import GLib
-from gi.repository import Pango
 
 
 _instance = None
@@ -36,7 +30,7 @@ def getUpdateStatusWindow():
 class UpdateStatusWindow(object):
 
     def __init__(self):
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 200)
@@ -47,22 +41,22 @@ class UpdateStatusWindow(object):
             self.window.set_icon(icon)
         self.window.set_position(WIN_POS_CENTER)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(0)
 
         # Label:
         self.progress = 0
-        self.label = gtk.Label("Version Check")
+        self.label = Gtk.Label("Version Check")
         self.label.modify_font(Pango.FontDescription("sans 14"))
-        al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
+        al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.label)
         vbox.add(al)
 
         # Buttons:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
-            btn = gtk.Button(label)
+            btn = Gtk.Button(label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             if icon_name:
@@ -138,7 +132,7 @@ class UpdateStatusWindow(object):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
     def get_icon(self, icon_name):

@@ -1,18 +1,16 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import GLib
+
 from xpra.client.keyboard_helper import KeyboardHelper, log
-from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import display_get_default, keymap_get_for_display
 from xpra.os_util import is_X11
-
-gdk = import_gdk()
-from gi.repository import GLib
 
 
 class GTKKeyboardHelper(KeyboardHelper):

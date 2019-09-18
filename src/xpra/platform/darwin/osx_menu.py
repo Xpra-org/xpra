@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
 from xpra.util import envbool, csv
 from xpra.gtk_common.gtk_util import scaled_image
@@ -17,13 +17,10 @@ from xpra.client.gtk_base.gtk_tray_menu_base import (
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
 from xpra.client import mixin_features
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.log import Logger
 
 log = Logger("osx", "tray", "menu")
 clipboardlog = Logger("osx", "menu", "clipboard")
-
-gtk = import_gtk()
 
 #control which menus are shown in the OSX global menu:
 SHOW_FEATURES_MENU = True

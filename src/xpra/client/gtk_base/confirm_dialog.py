@@ -7,8 +7,9 @@
 
 import os.path
 import sys
+from gi.repository import GLib, Pango, Gtk
 
-from xpra.gtk_common.gobject_compat import import_gtk, register_os_signals
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
     window_defaults, color_parse,
@@ -19,15 +20,11 @@ from xpra.os_util import get_util_logger
 
 log = get_util_logger()
 
-gtk = import_gtk()
-from gi.repository import GLib
-from gi.repository import Pango
-
 
 class ConfirmDialogWindow(object):
 
     def __init__(self, title="Title", prompt="", info=(), icon="", buttons=()):
-        self.window = gtk.Window(type=WINDOW_POPUP)
+        self.window = Gtk.Window(type=WINDOW_POPUP)
         window_defaults(self.window)
         self.window.set_position(WIN_POS_CENTER)
         self.window.connect("destroy", self.quit)
@@ -40,16 +37,16 @@ class ConfirmDialogWindow(object):
             if icon_pixbuf:
                 self.window.set_icon(icon_pixbuf)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(10)
 
         def al(label, font="sans 14", xalign=0):
-            l = gtk.Label(label)
+            l = Gtk.Label(label)
             l.modify_font(Pango.FontDescription(font))
             if label.startswith("WARNING"):
                 red = color_parse("red")
                 l.modify_fg(STATE_NORMAL, red)
-            al = gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
+            al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
             vbox.add(al)
 
@@ -60,8 +57,8 @@ class ConfirmDialogWindow(object):
         # Buttons:
         self.exit_code = 0
         if buttons:
-            hbox = gtk.HBox(False, 0)
-            al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
+            hbox = Gtk.HBox(False, 0)
+            al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
             al.add(hbox)
             vbox.pack_start(al)
             for label, code in buttons:
@@ -73,7 +70,7 @@ class ConfirmDialogWindow(object):
         self.window.add(vbox)
 
     def btn(self, label, tooltip, code, icon_name=None):
-        btn = gtk.Button(label)
+        btn = Gtk.Button(label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         if tooltip:
@@ -117,7 +114,7 @@ class ConfirmDialogWindow(object):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
     def get_icon(self, icon_name):

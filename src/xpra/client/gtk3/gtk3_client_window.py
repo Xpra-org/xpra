@@ -5,13 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=ungrouped-imports
-#pylint: disable=wrong-import-order
-
-from xpra.gtk_common import gi_init
-from gi.repository import GObject               #@UnresolvedImport @UnusedImport
-from gi.repository import Gtk                   #@UnresolvedImport @UnusedImport
-from gi.repository import Gdk                   #@UnresolvedImport @UnusedImport
+from gi.repository import Gtk, Gdk
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, BUTTON_MASK
@@ -22,8 +16,6 @@ log = Logger("gtk", "window")
 paintlog = Logger("paint")
 metalog = Logger("metadata")
 
-
-assert gi_init
 GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.MENU,
                       Gdk.WindowTypeHint.TOOLBAR,

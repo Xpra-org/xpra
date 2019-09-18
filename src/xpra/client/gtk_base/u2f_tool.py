@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,19 +22,17 @@ def main():
     from xpra.platform import program_context
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
         if not use_tty():
-            from xpra.gtk_common.gobject_compat import import_gtk
-            gtk = import_gtk()
-            from gi.repository import GLib
+            from gi.repository import GLib, Gtk
             from xpra.gtk_common.gtk_util import MESSAGE_INFO, MESSAGE_ERROR, BUTTONS_CLOSE
             def show_dialog(mode, *msgs):
-                dialog = gtk.MessageDialog(None, 0, mode,
+                dialog = Gtk.MessageDialog(None, 0, mode,
                               BUTTONS_CLOSE, "\n".join(msgs))
                 dialog.set_title("Xpra U2F Registration Tool")
                 v = dialog.run()
                 dialog.destroy()
                 #run the main loop long enough to destroy the dialog:
-                GLib.idle_add(gtk.main_quit)
-                gtk.main()
+                GLib.idle_add(Gtk.main_quit)
+                Gtk.main()
                 return v
             def error(*msgs):
                 return show_dialog(MESSAGE_ERROR, *msgs)

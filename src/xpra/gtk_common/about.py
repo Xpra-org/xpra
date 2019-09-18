@@ -5,16 +5,14 @@
 # later version. See the file COPYING for details.
 
 import os.path
+from gi.repository import Gtk
 
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.version_util import XPRA_VERSION
 from xpra.scripts.config import get_build_info
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.log import Logger
 
 log = Logger("info")
-
-gtk = import_gtk()
 
 APPLICATION_NAME = "Xpra"
 SITE_DOMAIN = "xpra.org"
@@ -42,7 +40,7 @@ def about(on_close=None):
         return
     from xpra.platform.paths import get_icon
     xpra_icon = get_icon("xpra.png")
-    dialog = gtk.AboutDialog()
+    dialog = Gtk.AboutDialog()
     dialog.set_name("Xpra")
     dialog.set_version(XPRA_VERSION)
     dialog.set_authors(('Antoine Martin <antoine@xpra.org>',
@@ -82,8 +80,8 @@ def main():
     from xpra.platform.gui import init as gui_init
     with program_context("About"):
         gui_init()
-    about(on_close=gtk.main_quit)
-    gtk.main()
+    about(on_close=Gtk.main_quit)
+    Gtk.main()
 
 
 if __name__ == "__main__":

@@ -7,8 +7,8 @@
 
 import os
 import weakref
+from gi.repository import Gtk, Gdk
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
 from xpra.util import (
@@ -48,9 +48,6 @@ from xpra.platform.gui import (
     system_bell, get_wm_name, get_fixed_cursor_size,
     )
 from xpra.log import Logger
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
@@ -125,7 +122,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #query the window manager to get the frame size:
         from xpra.gtk_common.error import xsync
         from xpra.x11.gtk_x11.send_wm import send_wm_request_frame_extents
-        self.frame_request_window = gtk.Window(type=WINDOW_TOPLEVEL)
+        self.frame_request_window = Gtk.Window(type=WINDOW_TOPLEVEL)
         self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
         root = self.get_root_window()
         self.frame_request_window.realize()
@@ -154,17 +151,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log("GTKXpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
-        if gtk.main_level()>0:
+        if Gtk.main_level()>0:
             #if for some reason cleanup() hangs, maybe this will fire...
             self.timeout_add(4*1000, self.exit)
             #try harder!:
             self.timeout_add(5*1000, self.force_quit)
         self.cleanup()
         log("GTKXpraClient.quit(%s) cleanup done, main_level=%s",
-            exit_code, gtk.main_level())
-        if gtk.main_level()>0:
+            exit_code, Gtk.main_level())
+        if Gtk.main_level()>0:
             log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout",
-                exit_code, gtk.main_level())
+                exit_code, Gtk.main_level())
             self.timeout_add(500, self.exit)
 
     def force_quit(self):
@@ -234,27 +231,27 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def _process_startup_complete(self, packet):
         UIXpraClient._process_startup_complete(self, packet)
-        gdk.notify_startup_complete()
+        Gdk.notify_startup_complete()
 
 
     def do_process_challenge_prompt(self, packet, prompt="password"):
-        dialog = gtk.Dialog("Server Authentication",
+        dialog = Gtk.Dialog("Server Authentication",
                None,
                DIALOG_MODAL | DESTROY_WITH_PARENT)
-        dialog.add_button(gtk.STOCK_CANCEL, RESPONSE_REJECT)
-        dialog.add_button(gtk.STOCK_OK,     RESPONSE_ACCEPT)
+        dialog.add_button(Gtk.STOCK_CANCEL, RESPONSE_REJECT)
+        dialog.add_button(Gtk.STOCK_OK,     RESPONSE_ACCEPT)
         def add(widget, padding=0):
-            a = gtk.Alignment()
+            a = Gtk.Alignment()
             a.set(0.5, 0.5, 1, 1)
             a.add(widget)
             a.set_padding(padding, padding, padding, padding)
             dialog.vbox.pack_start(a)
         from gi.repository import Pango
-        title = gtk.Label("Server Authentication")
+        title = Gtk.Label("Server Authentication")
         title.modify_font(Pango.FontDescription("sans 14"))
         add(title, 16)
-        add(gtk.Label(self.get_challenge_prompt(prompt)), 10)
-        password_input = gtk.Entry()
+        add(Gtk.Label(self.get_challenge_prompt(prompt)), 10)
+        password_input = Gtk.Entry()
         password_input.set_max_length(255)
         password_input.set_width_chars(32)
         password_input.set_visibility(False)
@@ -418,10 +415,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 "this file is too large: %sB" % std_unit(filesize, unit=1024),
                 "the %s file size limit is %iMB" % (location, limit),
                 )
-        self.file_size_dialog = gtk.MessageDialog(parent, DESTROY_WITH_PARENT, MESSAGE_INFO,
+        self.file_size_dialog = Gtk.MessageDialog(parent, DESTROY_WITH_PARENT, MESSAGE_INFO,
                                                   BUTTONS_CLOSE, "\n".join(msgs))
         try:
-            image = image_new_from_stock(gtk.STOCK_DIALOG_WARNING, ICON_SIZE_BUTTON)
+            image = image_new_from_stock(Gtk.STOCK_DIALOG_WARNING, ICON_SIZE_BUTTON)
             self.file_size_dialog.set_image(image)
         except Exception as e:
             log.warn("Warning: failed to set dialog image: %s", e)
@@ -439,11 +436,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_dialog.present()
             return
         filelog("show_file_upload%s can open=%s", args, self.remote_open_files)
-        buttons = [gtk.STOCK_CANCEL,    RESPONSE_CANCEL]
+        buttons = [Gtk.STOCK_CANCEL,    RESPONSE_CANCEL]
         if self.remote_open_files:
-            buttons += [gtk.STOCK_OPEN,      RESPONSE_ACCEPT]
-        buttons += [gtk.STOCK_OK,        RESPONSE_OK]
-        self.file_dialog = gtk.FileChooserDialog(
+            buttons += [Gtk.STOCK_OPEN,      RESPONSE_ACCEPT]
+        buttons += [Gtk.STOCK_OK,        RESPONSE_OK]
+        self.file_dialog = Gtk.FileChooserDialog(
             "File to upload",
             parent=None,
             action=FILE_CHOOSER_ACTION_OPEN,
@@ -619,7 +616,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def _add_statusicon_tray(self, tray_list):
-        #add gtk.StatusIcon tray:
+        #add Gtk.StatusIcon tray:
         try:
             from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
             tray_list.append(GTKStatusIconTray)
@@ -636,7 +633,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def supports_system_tray(self):
-        #always True: we can always use gtk.StatusIcon as fallback
+        #always True: we can always use Gtk.StatusIcon as fallback
         return True
 
 
@@ -886,7 +883,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if not hasattr(self, "screen_size_changed"):
             return
         #always one screen per display:
-        screen = gdk.Screen.get_default()
+        screen = Gdk.Screen.get_default()
         screen.connect("size-changed", self.screen_size_changed)
 
 
@@ -899,16 +896,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                       LEAVE_NOTIFY_MASK)
         confine_to = None
         cursor = None
-        r = gdk.pointer_grab(window.get_window(), True, event_mask, confine_to, cursor, 0)
+        r = Gdk.pointer_grab(window.get_window(), True, event_mask, confine_to, cursor, 0)
         grablog("pointer_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
         #also grab the keyboard so the user won't Alt-Tab away:
-        r = gdk.keyboard_grab(window.get_window(), False, 0)
+        r = Gdk.keyboard_grab(window.get_window(), False, 0)
         grablog("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
 
     def window_ungrab(self):
         grablog("window_ungrab()")
-        gdk.pointer_ungrab(0)
-        gdk.keyboard_ungrab(0)
+        Gdk.pointer_ungrab(0)
+        Gdk.keyboard_ungrab(0)
 
 
     def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
@@ -920,7 +917,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log("window_bell(..) gdkwindow=%s", gdkwindow)
         if not system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name):
             #fallback to simple beep:
-            gdk.beep()
+            Gdk.beep()
 
 
     def _process_raise_window(self, packet):
@@ -1145,7 +1142,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return group_leader_window
         #we need to create one:
         title = u"%s group leader for %s" % (self.session_name or u"Xpra", pid)
-        #group_leader_window = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_ONLY, title)
+        #group_leader_window = Gdk.Window(None, 1, 1, Gdk.WINDOW_TOPLEVEL, 0, Gdk.INPUT_ONLY, title)
         #static new(parent, attributes, attributes_mask)
         group_leader_window = GDKWindow(wclass=CLASS_INPUT_ONLY, title=title)
         self._ref_to_group_leader[refkey] = group_leader_window

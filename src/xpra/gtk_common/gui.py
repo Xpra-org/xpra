@@ -7,13 +7,9 @@
 import sys
 import os.path
 import subprocess
-from gi.repository import GLib
-from gi.repository import Pango
+from gi.repository import GLib, Pango, Gtk
 
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
     gtk_main, set_tooltip_text, add_close_accel,
     pixbuf_new_from_file, add_window_accel, imagebutton,
@@ -24,9 +20,6 @@ from xpra.os_util import OSX, WIN32, platform_name
 from xpra.log import Logger
 
 log = Logger("client", "util")
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 try:
     from xpra import client
@@ -63,12 +56,12 @@ def get_pixbuf(icon_name):
     return None
 
 
-class GUI(gtk.Window):
+class GUI(Gtk.Window):
 
     def __init__(self, title="Xpra"):
         self.exit_code = 0
         self.start_session = None
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
         self.set_title(title)
         self.set_border_width(10)
         self.set_resizable(True)
@@ -81,11 +74,11 @@ class GUI(gtk.Window):
         add_window_accel(self, 'F1', self.show_about)
         self.connect("delete_event", self.quit)
 
-        self.vbox = gtk.VBox(False, 10)
+        self.vbox = Gtk.VBox(False, 10)
         self.add(self.vbox)
         #with most window managers,
         #the window's title bar already shows "Xpra"
-        #title_label = gtk.Label(title)
+        #title_label = Gtk.Label(title)
         #title_label.modify_font(pango.FontDescription("sans 14"))
         #self.vbox.add(title_label)
         self.widgets = []
@@ -124,7 +117,7 @@ class GUI(gtk.Window):
                 self.start_button.set_sensitive(False)
             self.widgets.append(self.start_button)
         assert len(self.widgets)%2==0
-        table = gtk.Table(len(self.widgets)//2, 2, True)
+        table = Gtk.Table(len(self.widgets)//2, 2, True)
         for i, widget in enumerate(self.widgets):
             table.attach(widget, i%2, i%2+1, i//2, i//2+1, xpadding=10, ypadding=10)
         self.vbox.add(table)
@@ -144,7 +137,7 @@ class GUI(gtk.Window):
 
     def do_quit(self):
         log("do_quit()")
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def app_signal(self, signum):
         self.exit_code = 128 + signum
@@ -230,11 +223,11 @@ class GUI(gtk.Window):
             GLib.timeout_add(2000, may_exit)
 
 
-class StartSession(gtk.Window):
+class StartSession(Gtk.Window):
 
     def __init__(self):
         assert not WIN32 and not OSX
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
         window_defaults(self)
         self.set_title("Start Xpra Session")
         self.set_position(WIN_POS_CENTER)
@@ -245,16 +238,16 @@ class StartSession(gtk.Window):
         self.connect("destroy", self.close)
         add_close_accel(self, self.close)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(0)
 
-        hbox = gtk.HBox(True, 10)
-        self.seamless_btn = gtk.RadioButton(None, "Seamless Session")
+        hbox = Gtk.HBox(True, 10)
+        self.seamless_btn = Gtk.RadioButton(None, "Seamless Session")
         self.seamless_btn.connect("toggled", self.seamless_toggled)
-        al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0.0, yscale=0)
+        al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.seamless_btn)
         hbox.add(al)
-        self.desktop_btn = gtk.RadioButton(self.seamless_btn, "Desktop Session")
+        self.desktop_btn = Gtk.RadioButton(self.seamless_btn, "Desktop Session")
         #since they're radio buttons, both get toggled,
         #so no need to connect to both signals:
         #self.desktop.connect("toggled", self.desktop_toggled)
@@ -263,35 +256,35 @@ class StartSession(gtk.Window):
         vbox.add(hbox)
 
         # Label:
-        self.entry_label = gtk.Label("Command to run:")
+        self.entry_label = Gtk.Label("Command to run:")
         self.entry_label.modify_font(Pango.FontDescription("sans 14"))
-        self.entry_al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
+        self.entry_al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         self.entry_al.add(self.entry_label)
         vbox.add(self.entry_al)
 
         # input command directly as text (if pyxdg is not installed):
-        self.entry = gtk.Entry()
+        self.entry = Gtk.Entry()
         self.entry.set_max_length(255)
         self.entry.set_width_chars(32)
         self.entry.connect('activate', self.run_command)
         vbox.add(self.entry)
 
         # or use menus if we have xdg data:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.add(hbox)
         self.category_box = hbox
-        self.category_label = gtk.Label("Category:")
-        self.category_combo = gtk.combo_box_new_text()
+        self.category_label = Gtk.Label("Category:")
+        self.category_combo = Gtk.combo_box_new_text()
         hbox.add(self.category_label)
         hbox.add(self.category_combo)
         self.category_combo.connect("changed", self.category_changed)
         self.categories = {}
 
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.add(hbox)
         self.command_box = hbox
-        self.command_label = gtk.Label("Command:")
-        self.command_combo = gtk.combo_box_new_text()
+        self.command_label = Gtk.Label("Command:")
+        self.command_combo = Gtk.combo_box_new_text()
         hbox.pack_start(self.command_label)
         hbox.pack_start(self.command_combo)
         self.command_combo.connect("changed", self.command_changed)
@@ -300,15 +293,15 @@ class StartSession(gtk.Window):
         self.desktop_entry = None
 
         # start options:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.add(hbox)
-        self.attach_cb = gtk.CheckButton()
+        self.attach_cb = Gtk.CheckButton()
         self.attach_cb.set_label("attach immediately")
         self.attach_cb.set_active(True)
-        al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0.0, yscale=0)
+        al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.attach_cb)
         hbox.add(al)
-        self.exit_with_children_cb = gtk.CheckButton()
+        self.exit_with_children_cb = Gtk.CheckButton()
         self.exit_with_children_cb.set_label("exit with children")
         hbox.add(self.exit_with_children_cb)
         self.exit_with_children_cb.set_active(True)
@@ -316,10 +309,10 @@ class StartSession(gtk.Window):
         #clipboard, opengl, sharing?
 
         # Action buttons:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.add(hbox)
         def btn(label, tooltip, callback, icon_name=None):
-            btn = gtk.Button(label)
+            btn = Gtk.Button(label)
             set_tooltip_text(btn, tooltip)
             btn.connect("clicked", callback)
             if icon_name:
@@ -337,7 +330,7 @@ class StartSession(gtk.Window):
 
 
     def show(self):
-        gtk.Window.show(self)
+        Gtk.Window.show(self)
         self.populate_menus()
 
 

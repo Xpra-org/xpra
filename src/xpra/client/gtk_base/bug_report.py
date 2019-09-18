@@ -7,8 +7,8 @@
 import os.path
 import sys
 import time
+from gi.repository import Pango, Gtk, Gdk
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.gtk_common.gtk_util import (
     window_defaults, gtk_main, add_close_accel, scaled_image,
     pixbuf_new_from_file, get_display_info, get_default_root_window,
@@ -20,10 +20,6 @@ from xpra.os_util import strtobytes
 from xpra.log import Logger
 
 log = Logger("util")
-
-gtk = import_gtk()
-gdk = import_gdk()
-from gi.repository import Pango
 
 STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 
@@ -38,7 +34,7 @@ class BugReport(object):
         self.setup_window()
 
     def setup_window(self):
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 300)
@@ -49,51 +45,51 @@ class BugReport(object):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(WIN_POS_CENTER)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(15)
 
         # Title
-        hbox = gtk.HBox(False, 0)
+        hbox = Gtk.HBox(False, 0)
         icon_pixbuf = self.get_icon("xpra.png")
         if icon_pixbuf and self.show_about:
             from xpra.gtk_common.about import about
-            logo_button = gtk.Button("")
+            logo_button = Gtk.Button("")
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
             logo_button.connect("clicked", about)
             logo_button.set_tooltip_text("About")
-            image = gtk.Image()
+            image = Gtk.Image()
             image.set_from_pixbuf(icon_pixbuf)
             logo_button.set_image(image)
             hbox.pack_start(logo_button, expand=False, fill=False)
 
-        label = gtk.Label("Xpra Bug Report Tool")
+        label = Gtk.Label("Xpra Bug Report Tool")
         label.modify_font(Pango.FontDescription("sans 14"))
         hbox.pack_start(label, expand=True, fill=True)
         vbox.pack_start(hbox)
 
         #the box containing all the input:
-        ibox = gtk.VBox(False, 0)
+        ibox = Gtk.VBox(False, 0)
         ibox.set_spacing(3)
         vbox.pack_start(ibox)
 
         # Description
-        al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(gtk.Label("Please describe the problem:"))
+        al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
+        al.add(Gtk.Label("Please describe the problem:"))
         ibox.pack_start(al)
-        #self.description = gtk.Entry(max=128)
+        #self.description = Gtk.Entry(max=128)
         #self.description.set_width_chars(40)
-        self.description = gtk.TextView()
+        self.description = Gtk.TextView()
         self.description.set_accepts_tab(True)
         self.description.set_justification(JUSTIFY_LEFT)
         self.description.set_border_width(2)
         self.description.set_size_request(300, 80)
-        #self.description.modify_bg(STATE_NORMAL, gdk.Color(red=32768, green=32768, blue=32768))
+        #self.description.modify_bg(STATE_NORMAL, Gdk.Color(red=32768, green=32768, blue=32768))
         ibox.pack_start(self.description, expand=False, fill=False)
 
         # Toggles:
-        al = gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(gtk.Label("Include:"))
+        al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
+        al.add(Gtk.Label("Include:"))
         ibox.pack_start(al)
         #generic toggles:
         from xpra.gtk_common.keymap import get_gtk_keymap
@@ -186,7 +182,7 @@ class BugReport(object):
                     ""),
                    )
         for name, _, title, value_cb, tooltip in self.toggles:
-            cb = gtk.CheckButton(title+[" (not available)", ""][bool(value_cb)])
+            cb = Gtk.CheckButton(title+[" (not available)", ""][bool(value_cb)])
             cb.set_active(self.includes.get(name, True))
             cb.set_sensitive(bool(value_cb))
             cb.set_tooltip_text(tooltip)
@@ -194,10 +190,10 @@ class BugReport(object):
             setattr(self, name, cb)
 
         # Buttons:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
-            btn = gtk.Button(label)
+            btn = Gtk.Button(label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             if icon_name:
@@ -251,7 +247,7 @@ class BugReport(object):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
     def get_icon(self, icon_name):
@@ -307,15 +303,15 @@ class BugReport(object):
         data = self.get_text_data()
         text = os.linesep.join("%s: %s%s%s%s" % (title, tooltip, os.linesep, v, os.linesep)
                                for (title,tooltip,dtype,v) in data if dtype=="txt")
-        clipboard = gtk.clipboard_get(gdk.SELECTION_CLIPBOARD)
+        clipboard = Gtk.clipboard_get(Gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text)
         log.info("%s characters copied to clipboard", len(text))
 
     def save_clicked(self, *_args):
-        file_filter = gtk.FileFilter()
+        file_filter = Gtk.FileFilter()
         file_filter.set_name("ZIP")
         file_filter.add_pattern("*.zip")
-        choose_file(self.window, "Save Bug Report Data", FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, self.do_save)
+        choose_file(self.window, "Save Bug Report Data", FILE_CHOOSER_ACTION_SAVE, Gtk.STOCK_SAVE, self.do_save)
 
     def do_save(self, filename):
         log("do_save(%s)", filename)

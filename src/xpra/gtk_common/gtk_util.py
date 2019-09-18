@@ -7,18 +7,12 @@
 import os.path
 import array
 import cairo
-from gi.repository import GLib
-from gi.repository import GdkPixbuf     #@UnresolvedImport
-from gi.repository import Pango
-from gi.repository import GObject
+from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
 from xpra.util import iround, first_time
 from xpra.os_util import (
     strtobytes, bytestostr,
     WIN32, OSX, POSIX,
-    )
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk,
     )
 from xpra.log import Logger
 
@@ -26,9 +20,6 @@ log = Logger("gtk", "util")
 traylog = Logger("gtk", "tray")
 screenlog = Logger("gtk", "screen")
 alphalog = Logger("gtk", "alpha")
-
-gtk     = import_gtk()
-gdk     = import_gdk()
 
 SHOW_ALL_VISUALS = False
 
@@ -53,8 +44,8 @@ def get_gtk_version_info():
         #but still better than nothing:
         import gi
         V("gi",         gi,         "__version__")
-        V("gtk",        gtk,        "_version")
-        V("gdk",        gdk,        "_version")
+        V("gtk",        Gtk,        "_version")
+        V("gdk",        Gdk,        "_version")
         V("gobject",    GObject,    "_version")
         V("pixbuf",     GdkPixbuf,     "_version")
 
@@ -66,7 +57,7 @@ def get_gtk_version_info():
                 av(name, ".".join(str(x) for x in v))
             except:
                 pass
-        MAJORMICROMINOR("gtk",  gtk)
+        MAJORMICROMINOR("gtk",  Gtk)
         MAJORMICROMINOR("glib", GLib)
 
         #from here on, the code is the same for both GTK2 and GTK3, hooray:
@@ -99,39 +90,39 @@ def x11_foreign_new(display, xid):
     from gi.repository import GdkX11
     return GdkX11.X11Window.foreign_new_for_display(display, xid)
 
-def GDKWindow(parent=None, width=1, height=1, window_type=gdk.WindowType.TOPLEVEL,
-              event_mask=0, wclass=gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
+def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVEL,
+              event_mask=0, wclass=Gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
               x=None, y=None, override_redirect=False, visual=None, **kwargs):
     attributes_mask = 0
-    attributes = gdk.WindowAttr()
+    attributes = Gdk.WindowAttr()
     if x is not None:
         attributes.x = x
-        attributes_mask |= gdk.WindowAttributesType.X
+        attributes_mask |= Gdk.WindowAttributesType.X
     if y is not None:
         attributes.y = y
-        attributes_mask |= gdk.WindowAttributesType.Y
-    #attributes.type_hint = gdk.WindowTypeHint.NORMAL
-    #attributes_mask |= gdk.WindowAttributesType.TYPE_HINT
+        attributes_mask |= Gdk.WindowAttributesType.Y
+    #attributes.type_hint = Gdk.WindowTypeHint.NORMAL
+    #attributes_mask |= Gdk.WindowAttributesType.TYPE_HINT
     attributes.width = width
     attributes.height = height
     attributes.window_type = window_type
     if title:
         attributes.title = title
-        attributes_mask |= gdk.WindowAttributesType.TITLE
+        attributes_mask |= Gdk.WindowAttributesType.TITLE
     if visual:
         attributes.visual = visual
-        attributes_mask |= gdk.WindowAttributesType.VISUAL
+        attributes_mask |= Gdk.WindowAttributesType.VISUAL
     #OR:
     attributes.override_redirect = override_redirect
-    attributes_mask |= gdk.WindowAttributesType.NOREDIR
+    attributes_mask |= Gdk.WindowAttributesType.NOREDIR
     #events:
     attributes.event_mask = event_mask
     #wclass:
     attributes.wclass = wclass
-    mask = gdk.WindowAttributesType(attributes_mask)
-    return gdk.Window(parent, attributes, mask)
+    mask = Gdk.WindowAttributesType(attributes_mask)
+    return Gdk.Window(parent, attributes, mask)
 
-def make_temp_window(title, window_type=gdk.WindowType.TEMP):
+def make_temp_window(title, window_type=Gdk.WindowType.TEMP):
     return GDKWindow(title=title, window_type=window_type)
 
 def enable_alpha(window):
@@ -164,7 +155,7 @@ def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
                                      None, None)
 
 
-get_pixbuf_from_window = gdk.pixbuf_get_from_window
+get_pixbuf_from_window = Gdk.pixbuf_get_from_window
 
 def get_preferred_size(widget):
     #ignore "min", we only care about "natural":
@@ -174,20 +165,20 @@ def get_preferred_size(widget):
 
 def color_parse(*args):
     try:
-        v = gdk.RGBA()
+        v = Gdk.RGBA()
         ok = v.parse(*args)
         if not ok:
             return None
         return v.to_color()
     except:
-        ok, v = gdk.Color.parse(*args)
+        ok, v = Gdk.Color.parse(*args)
     if not ok:
         return None
     return v
 def get_xwindow(w):
     return w.get_xid()
 def get_default_root_window():
-    screen = gdk.Screen.get_default()
+    screen = Gdk.Screen.get_default()
     if screen is None:
         return None
     return screen.get_root_window()
@@ -197,7 +188,7 @@ def get_root_size():
         #we do it the hard way because the root window geometry is invalid on win32:
         #and even just querying it causes this warning:
         #"GetClientRect failed: Invalid window handle."
-        screen = gdk.Screen.get_default()
+        screen = Gdk.Screen.get_default()
         if screen is None:
             return 1920, 1024
         w = screen.get_width()
@@ -213,108 +204,108 @@ def get_root_size():
             log.warn(" using %ix%i instead", w, h)
     return w, h
 
-keymap_get_for_display  = gdk.Keymap.get_for_display
+keymap_get_for_display  = Gdk.Keymap.get_for_display
 
 def get_default_cursor():
-    display = gdk.Display.get_default()
-    return gdk.Cursor.new_from_name(display, "default")
-new_Cursor_for_display  = gdk.Cursor.new_for_display
-new_Cursor_from_pixbuf  = gdk.Cursor.new_from_pixbuf
-image_new_from_pixbuf   = gtk.Image.new_from_pixbuf
+    display = Gdk.Display.get_default()
+    return Gdk.Cursor.new_from_name(display, "default")
+new_Cursor_for_display  = Gdk.Cursor.new_for_display
+new_Cursor_from_pixbuf  = Gdk.Cursor.new_from_pixbuf
+image_new_from_pixbuf   = Gtk.Image.new_from_pixbuf
 pixbuf_new_from_file    = GdkPixbuf.Pixbuf.new_from_file
-window_set_default_icon = gtk.Window.set_default_icon
-icon_theme_get_default  = gtk.IconTheme.get_default
-image_new_from_stock    = gtk.Image.new_from_stock
+window_set_default_icon = Gtk.Window.set_default_icon
+icon_theme_get_default  = Gtk.IconTheme.get_default
+image_new_from_stock    = Gtk.Image.new_from_stock
 
 def gdk_cairo_context(cairo_context):
     return cairo_context
 def pixbuf_new_from_data(*args):
     args = list(args)+[None, None]
     return GdkPixbuf.Pixbuf.new_from_data(*args)
-display_get_default     = gdk.Display.get_default
-screen_get_default      = gdk.Screen.get_default
-cairo_set_source_pixbuf = gdk.cairo_set_source_pixbuf
+display_get_default     = Gdk.Display.get_default
+screen_get_default      = Gdk.Screen.get_default
+cairo_set_source_pixbuf = Gdk.cairo_set_source_pixbuf
 COLORSPACE_RGB          = GdkPixbuf.Colorspace.RGB
 INTERP_HYPER    = GdkPixbuf.InterpType.HYPER
 INTERP_BILINEAR = GdkPixbuf.InterpType.BILINEAR
-RELIEF_NONE     = gtk.ReliefStyle.NONE
-RELIEF_NORMAL   = gtk.ReliefStyle.NORMAL
-FILL            = gtk.AttachOptions.FILL
-EXPAND          = gtk.AttachOptions.EXPAND
-STATE_NORMAL    = gtk.StateType.NORMAL
-WIN_POS_CENTER  = gtk.WindowPosition.CENTER
-RESPONSE_CANCEL = gtk.ResponseType.CANCEL
-RESPONSE_OK     = gtk.ResponseType.OK
-RESPONSE_REJECT = gtk.ResponseType.REJECT
-RESPONSE_ACCEPT = gtk.ResponseType.ACCEPT
-RESPONSE_CLOSE  = gtk.ResponseType.CLOSE
-RESPONSE_DELETE_EVENT = gtk.ResponseType.DELETE_EVENT
+RELIEF_NONE     = Gtk.ReliefStyle.NONE
+RELIEF_NORMAL   = Gtk.ReliefStyle.NORMAL
+FILL            = Gtk.AttachOptions.FILL
+EXPAND          = Gtk.AttachOptions.EXPAND
+STATE_NORMAL    = Gtk.StateType.NORMAL
+WIN_POS_CENTER  = Gtk.WindowPosition.CENTER
+RESPONSE_CANCEL = Gtk.ResponseType.CANCEL
+RESPONSE_OK     = Gtk.ResponseType.OK
+RESPONSE_REJECT = Gtk.ResponseType.REJECT
+RESPONSE_ACCEPT = Gtk.ResponseType.ACCEPT
+RESPONSE_CLOSE  = Gtk.ResponseType.CLOSE
+RESPONSE_DELETE_EVENT = Gtk.ResponseType.DELETE_EVENT
 
 
-WINDOW_STATE_WITHDRAWN  = gdk.WindowState.WITHDRAWN
-WINDOW_STATE_ICONIFIED  = gdk.WindowState.ICONIFIED
-WINDOW_STATE_MAXIMIZED  = gdk.WindowState.MAXIMIZED
-WINDOW_STATE_STICKY     = gdk.WindowState.STICKY
-WINDOW_STATE_FULLSCREEN = gdk.WindowState.FULLSCREEN
-WINDOW_STATE_ABOVE      = gdk.WindowState.ABOVE
-WINDOW_STATE_BELOW      = gdk.WindowState.BELOW
-FILE_CHOOSER_ACTION_SAVE    = gtk.FileChooserAction.SAVE
-FILE_CHOOSER_ACTION_OPEN    = gtk.FileChooserAction.OPEN
-PROPERTY_CHANGE_MASK = gdk.EventMask.PROPERTY_CHANGE_MASK
-FOCUS_CHANGE_MASK    = gdk.EventMask.FOCUS_CHANGE_MASK
-BUTTON_PRESS_MASK    = gdk.EventMask.BUTTON_PRESS_MASK
-BUTTON_RELEASE_MASK  = gdk.EventMask.BUTTON_RELEASE_MASK
-ENTER_NOTIFY_MASK    = gdk.EventMask.ENTER_NOTIFY_MASK
-LEAVE_NOTIFY_MASK    = gdk.EventMask.LEAVE_NOTIFY_MASK
-SUBSTRUCTURE_MASK    = gdk.EventMask.SUBSTRUCTURE_MASK
-STRUCTURE_MASK       = gdk.EventMask.STRUCTURE_MASK
-EXPOSURE_MASK        = gdk.EventMask.EXPOSURE_MASK
-ACCEL_LOCKED = gtk.AccelFlags.LOCKED
-ACCEL_VISIBLE = gtk.AccelFlags.VISIBLE
-JUSTIFY_LEFT    = gtk.Justification.LEFT
-JUSTIFY_RIGHT   = gtk.Justification.RIGHT
-POINTER_MOTION_MASK         = gdk.EventMask.POINTER_MOTION_MASK
-POINTER_MOTION_HINT_MASK    = gdk.EventMask.POINTER_MOTION_HINT_MASK
-MESSAGE_ERROR   = gtk.MessageType.ERROR
-MESSAGE_INFO    = gtk.MessageType.INFO
-MESSAGE_QUESTION= gtk.MessageType.QUESTION
-BUTTONS_CLOSE   = gtk.ButtonsType.CLOSE
-BUTTONS_OK_CANCEL = gtk.ButtonsType.OK_CANCEL
-BUTTONS_NONE    = gtk.ButtonsType.NONE
-ICON_SIZE_BUTTON = gtk.IconSize.BUTTON
+WINDOW_STATE_WITHDRAWN  = Gdk.WindowState.WITHDRAWN
+WINDOW_STATE_ICONIFIED  = Gdk.WindowState.ICONIFIED
+WINDOW_STATE_MAXIMIZED  = Gdk.WindowState.MAXIMIZED
+WINDOW_STATE_STICKY     = Gdk.WindowState.STICKY
+WINDOW_STATE_FULLSCREEN = Gdk.WindowState.FULLSCREEN
+WINDOW_STATE_ABOVE      = Gdk.WindowState.ABOVE
+WINDOW_STATE_BELOW      = Gdk.WindowState.BELOW
+FILE_CHOOSER_ACTION_SAVE    = Gtk.FileChooserAction.SAVE
+FILE_CHOOSER_ACTION_OPEN    = Gtk.FileChooserAction.OPEN
+PROPERTY_CHANGE_MASK = Gdk.EventMask.PROPERTY_CHANGE_MASK
+FOCUS_CHANGE_MASK    = Gdk.EventMask.FOCUS_CHANGE_MASK
+BUTTON_PRESS_MASK    = Gdk.EventMask.BUTTON_PRESS_MASK
+BUTTON_RELEASE_MASK  = Gdk.EventMask.BUTTON_RELEASE_MASK
+ENTER_NOTIFY_MASK    = Gdk.EventMask.ENTER_NOTIFY_MASK
+LEAVE_NOTIFY_MASK    = Gdk.EventMask.LEAVE_NOTIFY_MASK
+SUBSTRUCTURE_MASK    = Gdk.EventMask.SUBSTRUCTURE_MASK
+STRUCTURE_MASK       = Gdk.EventMask.STRUCTURE_MASK
+EXPOSURE_MASK        = Gdk.EventMask.EXPOSURE_MASK
+ACCEL_LOCKED = Gtk.AccelFlags.LOCKED
+ACCEL_VISIBLE = Gtk.AccelFlags.VISIBLE
+JUSTIFY_LEFT    = Gtk.Justification.LEFT
+JUSTIFY_RIGHT   = Gtk.Justification.RIGHT
+POINTER_MOTION_MASK         = Gdk.EventMask.POINTER_MOTION_MASK
+POINTER_MOTION_HINT_MASK    = Gdk.EventMask.POINTER_MOTION_HINT_MASK
+MESSAGE_ERROR   = Gtk.MessageType.ERROR
+MESSAGE_INFO    = Gtk.MessageType.INFO
+MESSAGE_QUESTION= Gtk.MessageType.QUESTION
+BUTTONS_CLOSE   = Gtk.ButtonsType.CLOSE
+BUTTONS_OK_CANCEL = Gtk.ButtonsType.OK_CANCEL
+BUTTONS_NONE    = Gtk.ButtonsType.NONE
+ICON_SIZE_BUTTON = Gtk.IconSize.BUTTON
 
-WINDOW_POPUP    = gtk.WindowType.POPUP
-WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
+WINDOW_POPUP    = Gtk.WindowType.POPUP
+WINDOW_TOPLEVEL = Gtk.WindowType.TOPLEVEL
 
-GDKWINDOW_TEMP     = gdk.WindowType.TEMP
-GDKWINDOW_TOPLEVEL = gdk.WindowType.TOPLEVEL
-GDKWINDOW_CHILD    = gdk.WindowType.CHILD
-GDKWINDOW_FOREIGN  = gdk.WindowType.FOREIGN
+GDKWINDOW_TEMP     = Gdk.WindowType.TEMP
+GDKWINDOW_TOPLEVEL = Gdk.WindowType.TOPLEVEL
+GDKWINDOW_CHILD    = Gdk.WindowType.CHILD
+GDKWINDOW_FOREIGN  = Gdk.WindowType.FOREIGN
 
-CLASS_INPUT_OUTPUT = gdk.WindowWindowClass.INPUT_OUTPUT
-CLASS_INPUT_ONLY = gdk.WindowWindowClass.INPUT_ONLY
+CLASS_INPUT_OUTPUT = Gdk.WindowWindowClass.INPUT_OUTPUT
+CLASS_INPUT_ONLY = Gdk.WindowWindowClass.INPUT_ONLY
 
-LSB_FIRST       = gdk.ByteOrder.LSB_FIRST
-MSB_FIRST       = gdk.ByteOrder.MSB_FIRST
-STATIC_GRAY     = gdk.VisualType.STATIC_GRAY
-GRAYSCALE       = gdk.VisualType.GRAYSCALE
-STATIC_COLOR    = gdk.VisualType.STATIC_COLOR
-PSEUDO_COLOR    = gdk.VisualType.PSEUDO_COLOR
-TRUE_COLOR      = gdk.VisualType.TRUE_COLOR
-DIRECT_COLOR    = gdk.VisualType.DIRECT_COLOR
+LSB_FIRST       = Gdk.ByteOrder.LSB_FIRST
+MSB_FIRST       = Gdk.ByteOrder.MSB_FIRST
+STATIC_GRAY     = Gdk.VisualType.STATIC_GRAY
+GRAYSCALE       = Gdk.VisualType.GRAYSCALE
+STATIC_COLOR    = Gdk.VisualType.STATIC_COLOR
+PSEUDO_COLOR    = Gdk.VisualType.PSEUDO_COLOR
+TRUE_COLOR      = Gdk.VisualType.TRUE_COLOR
+DIRECT_COLOR    = Gdk.VisualType.DIRECT_COLOR
 
-SCROLL_UP       = gdk.ScrollDirection.UP
-SCROLL_DOWN     = gdk.ScrollDirection.DOWN
-SCROLL_LEFT     = gdk.ScrollDirection.LEFT
-SCROLL_RIGHT    = gdk.ScrollDirection.RIGHT
+SCROLL_UP       = Gdk.ScrollDirection.UP
+SCROLL_DOWN     = Gdk.ScrollDirection.DOWN
+SCROLL_LEFT     = Gdk.ScrollDirection.LEFT
+SCROLL_RIGHT    = Gdk.ScrollDirection.RIGHT
 
-ORIENTATION_HORIZONTAL = gtk.Orientation.HORIZONTAL
-ORIENTATION_VERTICAL = gtk.Orientation.VERTICAL
+ORIENTATION_HORIZONTAL = Gtk.Orientation.HORIZONTAL
+ORIENTATION_VERTICAL = Gtk.Orientation.VERTICAL
 
-DIALOG_MODAL = gtk.DialogFlags.MODAL
-DESTROY_WITH_PARENT = gtk.DialogFlags.DESTROY_WITH_PARENT
+DIALOG_MODAL = Gtk.DialogFlags.MODAL
+DESTROY_WITH_PARENT = Gtk.DialogFlags.DESTROY_WITH_PARENT
 
-mt = gdk.ModifierType
+mt = Gdk.ModifierType
 SHIFT_MASK      = mt.SHIFT_MASK
 LOCK_MASK       = mt.LOCK_MASK
 META_MASK       = mt.META_MASK
@@ -334,7 +325,7 @@ BUTTON_MASK = {mt.BUTTON1_MASK : 1,
                mt.BUTTON5_MASK : 5}
 del mt
 
-em = gdk.EventMask
+em = Gdk.EventMask
 KEY_PRESS_MASK = em.KEY_PRESS_MASK
 WINDOW_EVENT_MASK = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
         | em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
@@ -342,36 +333,36 @@ WINDOW_EVENT_MASK = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK 
 del em
 
 WINDOW_NAME_TO_HINT = {
-            "NORMAL"        : gdk.WindowTypeHint.NORMAL,
-            "DIALOG"        : gdk.WindowTypeHint.DIALOG,
-            "MENU"          : gdk.WindowTypeHint.MENU,
-            "TOOLBAR"       : gdk.WindowTypeHint.TOOLBAR,
-            "SPLASH"        : gdk.WindowTypeHint.SPLASHSCREEN,
-            "UTILITY"       : gdk.WindowTypeHint.UTILITY,
-            "DOCK"          : gdk.WindowTypeHint.DOCK,
-            "DESKTOP"       : gdk.WindowTypeHint.DESKTOP,
-            "DROPDOWN_MENU" : gdk.WindowTypeHint.DROPDOWN_MENU,
-            "POPUP_MENU"    : gdk.WindowTypeHint.POPUP_MENU,
-            "TOOLTIP"       : gdk.WindowTypeHint.TOOLTIP,
-            "NOTIFICATION"  : gdk.WindowTypeHint.NOTIFICATION,
-            "COMBO"         : gdk.WindowTypeHint.COMBO,
-            "DND"           : gdk.WindowTypeHint.DND
+            "NORMAL"        : Gdk.WindowTypeHint.NORMAL,
+            "DIALOG"        : Gdk.WindowTypeHint.DIALOG,
+            "MENU"          : Gdk.WindowTypeHint.MENU,
+            "TOOLBAR"       : Gdk.WindowTypeHint.TOOLBAR,
+            "SPLASH"        : Gdk.WindowTypeHint.SPLASHSCREEN,
+            "UTILITY"       : Gdk.WindowTypeHint.UTILITY,
+            "DOCK"          : Gdk.WindowTypeHint.DOCK,
+            "DESKTOP"       : Gdk.WindowTypeHint.DESKTOP,
+            "DROPDOWN_MENU" : Gdk.WindowTypeHint.DROPDOWN_MENU,
+            "POPUP_MENU"    : Gdk.WindowTypeHint.POPUP_MENU,
+            "TOOLTIP"       : Gdk.WindowTypeHint.TOOLTIP,
+            "NOTIFICATION"  : Gdk.WindowTypeHint.NOTIFICATION,
+            "COMBO"         : Gdk.WindowTypeHint.COMBO,
+            "DND"           : Gdk.WindowTypeHint.DND
             }
 
-GRAB_SUCCESS        = gdk.GrabStatus.SUCCESS
-ALREADY_GRABBED     = gdk.GrabStatus.ALREADY_GRABBED
-GRAB_INVALID_TIME   = gdk.GrabStatus.INVALID_TIME
-GRAB_NOT_VIEWABLE   = gdk.GrabStatus.NOT_VIEWABLE
-GRAB_FROZEN         = gdk.GrabStatus.FROZEN
+GRAB_SUCCESS        = Gdk.GrabStatus.SUCCESS
+ALREADY_GRABBED     = Gdk.GrabStatus.ALREADY_GRABBED
+GRAB_INVALID_TIME   = Gdk.GrabStatus.INVALID_TIME
+GRAB_NOT_VIEWABLE   = Gdk.GrabStatus.NOT_VIEWABLE
+GRAB_FROZEN         = Gdk.GrabStatus.FROZEN
 
-DEST_DEFAULT_MOTION     = gtk.DestDefaults.MOTION
-DEST_DEFAULT_HIGHLIGHT  = gtk.DestDefaults.HIGHLIGHT
-DEST_DEFAULT_DROP       = gtk.DestDefaults.DROP
-DEST_DEFAULT_ALL        = gtk.DestDefaults.ALL
-ACTION_COPY = gdk.DragAction.COPY
-newTargetEntry = gtk.TargetEntry.new
+DEST_DEFAULT_MOTION     = Gtk.DestDefaults.MOTION
+DEST_DEFAULT_HIGHLIGHT  = Gtk.DestDefaults.HIGHLIGHT
+DEST_DEFAULT_DROP       = Gtk.DestDefaults.DROP
+DEST_DEFAULT_ALL        = Gtk.DestDefaults.ALL
+ACTION_COPY = Gdk.DragAction.COPY
+newTargetEntry = Gtk.TargetEntry.new
 def drag_status(context, action, time):
-    gdk.drag_status(context, action, time)
+    Gdk.drag_status(context, action, time)
 def drag_context_targets(context):
     return list(x.name() for x in context.list_targets())
 def drag_context_actions(context):
@@ -379,25 +370,25 @@ def drag_context_actions(context):
 def drag_dest_window(context):
     return context.get_dest_window()
 def drag_widget_get_data(widget, context, target, time):
-    atom = gdk.Atom.intern(target, False)
+    atom = Gdk.Atom.intern(target, False)
     widget.drag_get_data(context, atom, time)
 
 from gi.repository.Gtk import Clipboard     #@UnresolvedImport
 def GetClipboard(selection):
     sstr = bytestostr(selection)
-    atom = getattr(gdk, "SELECTION_%s" % sstr, None) or gdk.Atom.intern(sstr, False)
+    atom = getattr(Gdk, "SELECTION_%s" % sstr, None) or Gdk.Atom.intern(sstr, False)
     return Clipboard.get(atom)
 def clipboard_request_contents(clipboard, target, unpack):
-    target_atom = gdk.Atom.intern(bytestostr(target), False)
+    target_atom = Gdk.Atom.intern(bytestostr(target), False)
     clipboard.request_contents(target_atom, unpack)
 
 def selection_owner_set(widget, selection, time=0):
-    selection_atom = gdk.Atom.intern(bytestostr(selection), False)
-    return gtk.selection_owner_set(widget, selection_atom, time)
+    selection_atom = Gdk.Atom.intern(bytestostr(selection), False)
+    return Gtk.selection_owner_set(widget, selection_atom, time)
 def selection_add_target(widget, selection, target, info=0):
-    selection_atom = gdk.Atom.intern(bytestostr(selection), False)
-    target_atom = gdk.Atom.intern(bytestostr(target), False)
-    gtk.selection_add_target(widget, selection_atom, target_atom, info)
+    selection_atom = Gdk.Atom.intern(bytestostr(selection), False)
+    target_atom = Gdk.Atom.intern(bytestostr(target), False)
+    Gtk.selection_add_target(widget, selection_atom, target_atom, info)
 def selectiondata_get_selection(selectiondata):
     return selectiondata.get_selection().name()
 def selectiondata_get_target(selectiondata):
@@ -409,31 +400,31 @@ def selectiondata_get_format(selectiondata):
 def selectiondata_get_data(selectiondata):
     return selectiondata.get_data()
 def selectiondata_set(selectiondata, dtype, dformat, data):
-    type_atom = gdk.Atom.intern(bytestostr(dtype), False)
+    type_atom = Gdk.Atom.intern(bytestostr(dtype), False)
     return selectiondata.set(type_atom, dformat, data)
 
 def atom_intern(atom_name, only_if_exits=False):
-    return gdk.Atom.intern(bytestostr(atom_name), only_if_exits)
+    return Gdk.Atom.intern(bytestostr(atom_name), only_if_exits)
 
 #copied from pygtkcompat - I wished I had found this earlier..
-orig_pack_end = gtk.Box.pack_end
+orig_pack_end = Gtk.Box.pack_end
 def pack_end(self, child, expand=True, fill=True, padding=0):
     orig_pack_end(self, child, expand, fill, padding)
-gtk.Box.pack_end = pack_end
-orig_pack_start = gtk.Box.pack_start
+Gtk.Box.pack_end = pack_end
+orig_pack_start = Gtk.Box.pack_start
 def pack_start(self, child, expand=True, fill=True, padding=0):
     orig_pack_start(self, child, expand, fill, padding)
-gtk.Box.pack_start = pack_start
-gtk.combo_box_new_text = gtk.ComboBoxText
+Gtk.Box.pack_start = pack_start
+Gtk.combo_box_new_text = Gtk.ComboBoxText
 
-class OptionMenu(gtk.MenuButton):
+class OptionMenu(Gtk.MenuButton):
     def set_menu(self, menu):
         return self.set_popup(menu)
     def get_menu(self):
         return self.get_popup()
 
-gdk_window_process_all_updates = gdk.Window.process_all_updates
-gtk_main = gtk.main
+gdk_window_process_all_updates = Gdk.Window.process_all_updates
+gtk_main = Gtk.main
 
 def popup_menu_workaround(*args):
     #only implemented with GTK2 on win32 below
@@ -460,7 +451,7 @@ def set_clipboard_data(clipboard, thevalue, _vtype="STRING"):
     clipboard.set_text(thestring, len(thestring))
 
 def wait_for_contents(clipboard, target):
-    atom = gdk.Atom.intern(target, False)
+    atom = Gdk.Atom.intern(target, False)
     return clipboard.wait_for_contents(atom)
 
 PARAM_READABLE = GObject.ParamFlags.READABLE
@@ -470,8 +461,8 @@ PARAM_READWRITE = GObject.ParamFlags.READWRITE
 #no idea why, but trying to use the threads_init / threads_enter
 #causes deadlocks on win32:
 if WIN32:
-    gtk_main = gtk.main
-gtk_main_quit = gtk.main_quit
+    gtk_main = Gtk.main
+gtk_main_quit = Gtk.main_quit
 
 GRAB_STATUS_STRING = {
                       GRAB_SUCCESS          : "SUCCESS",
@@ -496,14 +487,14 @@ BYTE_ORDER_NAMES = {
                 }
 
 
-class TrayCheckMenuItem(gtk.CheckMenuItem):
+class TrayCheckMenuItem(Gtk.CheckMenuItem):
     """ We add a button handler to catch clicks that somehow do not
         trigger the "toggled" signal on some platforms (win32?) when we
         show the tray menu with a right click and click on the item with the left click.
         (or the other way around)
     """
     def __init__(self, label, tooltip=None):
-        gtk.CheckMenuItem.__init__(self)
+        Gtk.CheckMenuItem.__init__(self)
         self.set_label(label)
         self.label = label
         if tooltip:
@@ -524,14 +515,14 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
                 self.set_active(not state)
         GLib.idle_add(recheck)
 
-class TrayImageMenuItem(gtk.ImageMenuItem):
+class TrayImageMenuItem(Gtk.ImageMenuItem):
     """ We add a button handler to catch clicks that somehow do not
         trigger the "activate" signal on some platforms (win32?) when we
         show the tray menu with a right click and click on the item with the left click.
         (or the other way around)
     """
     def __init__(self):
-        gtk.ImageMenuItem.__init__(self)
+        Gtk.ImageMenuItem.__init__(self)
         self.add_events(BUTTON_RELEASE_MASK | BUTTON_PRESS_MASK)
         self.connect("button-release-event", self.on_button_release_event)
         self.connect("activate", self.record_activated)
@@ -554,7 +545,7 @@ class TrayImageMenuItem(gtk.ImageMenuItem):
 
 
 def CheckMenuItem(label):
-    return gtk.CheckMenuItem(label=label)
+    return Gtk.CheckMenuItem(label=label)
 
 
 def get_screens_info():
@@ -774,7 +765,7 @@ def get_screen_info(display, screen):
     if SHOW_ALL_VISUALS:
         for i, v in enumerate(screen.list_visuals()):
             visual(i, v)
-    #gtk.settings
+    #Gtk.settings
     def get_setting(key):
         #try string first, then int
         for t in (GObject.TYPE_STRING, GObject.TYPE_INT):
@@ -840,9 +831,9 @@ def get_display_info():
             sinfo[x]  = fn()
     info["screens"] = get_screens_info()
     dm = display.get_device_manager()
-    for dt, name in {gdk.DeviceType.MASTER  : "master",
-                     gdk.DeviceType.SLAVE   : "slave",
-                     gdk.DeviceType.FLOATING: "floating"}.items():
+    for dt, name in {Gdk.DeviceType.MASTER  : "master",
+                     Gdk.DeviceType.SLAVE   : "slave",
+                     Gdk.DeviceType.FLOATING: "floating"}.items():
         dinfo = info.setdefault("device", {})
         dtinfo = dinfo.setdefault(name, {})
         devices = dm.list_devices(dt)
@@ -888,7 +879,7 @@ def set_tooltip_text(widget, text):
 
 def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32,
                 default=False, min_size=None, label_color=None, label_font=None):
-    button = gtk.Button(title)
+    button = Gtk.Button(title)
     settings = button.get_settings()
     settings.set_property('gtk-button-images', True)
     if icon:
@@ -919,7 +910,7 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32,
 
 def menuitem(title, image=None, tooltip=None, cb=None):
     """ Utility method for easily creating an ImageMenuItem """
-    menu_item = gtk.ImageMenuItem()
+    menu_item = Gtk.ImageMenuItem()
     menu_item.set_label(title)
     if image:
         menu_item.set_image(image)
@@ -948,15 +939,15 @@ def add_close_accel(window, callback):
 def add_window_accel(window, accel, callback):
     def connect(ag, *args):
         ag.connect(*args)
-    accel_group = gtk.AccelGroup()
-    key, mod = gtk.accelerator_parse(accel)
+    accel_group = Gtk.AccelGroup()
+    key, mod = Gtk.accelerator_parse(accel)
     connect(accel_group, key, mod, ACCEL_LOCKED, callback)
     window.add_accel_group(accel_group)
     return accel_group
 
 
 def label(text="", tooltip=None, font=None):
-    l = gtk.Label(text)
+    l = Gtk.Label(text)
     if font:
         from gi.repository import Pango
         fontdesc = Pango.FontDescription(font)
@@ -967,26 +958,26 @@ def label(text="", tooltip=None, font=None):
 
 
 def title_box(label_str):
-    eb = gtk.EventBox()
+    eb = Gtk.EventBox()
     l = label(label_str)
-    l.modify_fg(STATE_NORMAL, gdk.Color(red=48*256, green=0, blue=0))
-    al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
+    l.modify_fg(STATE_NORMAL, Gdk.Color(red=48*256, green=0, blue=0))
+    al = Gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
     al.set_padding(0, 0, 10, 10)
     al.add(l)
     eb.add(al)
-    eb.modify_bg(STATE_NORMAL, gdk.Color(red=219*256, green=226*256, blue=242*256))
+    eb.modify_bg(STATE_NORMAL, Gdk.Color(red=219*256, green=226*256, blue=242*256))
     return eb
 
 
 def window_defaults(window):
     window.set_border_width(20)
-    #window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
+    #window.modify_bg(STATE_NORMAL, Gdk.Color(red=65535, green=65535, blue=65535))
 
 
 #utility method to ensure there is always only one CheckMenuItem
 #selected in a submenu:
 def ensure_item_selected(submenu, item, recurse=True):
-    if not isinstance(item, gtk.CheckMenuItem):
+    if not isinstance(item, Gtk.CheckMenuItem):
         return None
     if item.get_active():
         #deactivate all except this one
@@ -994,11 +985,11 @@ def ensure_item_selected(submenu, item, recurse=True):
             for x in items:
                 if x==skip:
                     continue
-                if isinstance(x, gtk.MenuItem):
+                if isinstance(x, Gtk.MenuItem):
                     submenu = x.get_submenu()
                     if submenu and recurse:
                         deactivate(submenu.get_children(), skip)
-                if isinstance(x, gtk.CheckMenuItem):
+                if isinstance(x, Gtk.CheckMenuItem):
                     if x!=item and x.get_active():
                         x.set_active(False)
         deactivate(submenu.get_children(), item)
@@ -1006,13 +997,13 @@ def ensure_item_selected(submenu, item, recurse=True):
     #ensure there is at least one other active item
     def get_active_item(items):
         for x in items:
-            if isinstance(x, gtk.MenuItem):
+            if isinstance(x, Gtk.MenuItem):
                 submenu = x.get_submenu()
                 if submenu:
                     a = get_active_item(submenu.get_children())
                     if a:
                         return a
-            if isinstance(x, gtk.CheckMenuItem):
+            if isinstance(x, Gtk.CheckMenuItem):
                 if x.get_active():
                     return x
         return None
@@ -1027,7 +1018,7 @@ def ensure_item_selected(submenu, item, recurse=True):
 class TableBuilder(object):
 
     def __init__(self, rows=1, columns=2, homogeneous=False, col_spacings=0, row_spacings=0):
-        self.table = gtk.Table(rows, columns, homogeneous)
+        self.table = Gtk.Table(rows, columns, homogeneous)
         self.table.set_col_spacings(col_spacings)
         self.table.set_row_spacings(row_spacings)
         self.row = 0
@@ -1038,14 +1029,14 @@ class TableBuilder(object):
 
     def add_row(self, label, *widgets, **kwargs):
         if label:
-            l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
+            l_al = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
             l_al.add(label)
             self.attach(l_al, 0)
         if widgets:
             i = 1
             for w in widgets:
                 if w:
-                    w_al = gtk.Alignment(xalign=self.widget_xalign, yalign=0.5, xscale=0.0, yscale=0.0)
+                    w_al = Gtk.Alignment(xalign=self.widget_xalign, yalign=0.5, xscale=0.0, yscale=0.0)
                     w_al.add(w)
                     self.attach(w_al, i, **kwargs)
                 i += 1
@@ -1065,9 +1056,9 @@ class TableBuilder(object):
 
 def choose_file(parent_window, title, action, action_button, callback=None, file_filter=None):
     log("choose_file%s", (parent_window, title, action, action_button, callback, file_filter))
-    chooser = gtk.FileChooserDialog(title,
+    chooser = Gtk.FileChooserDialog(title,
                                 parent=parent_window, action=action,
-                                buttons=(gtk.STOCK_CANCEL, RESPONSE_CANCEL, action_button, RESPONSE_OK))
+                                buttons=(Gtk.STOCK_CANCEL, RESPONSE_CANCEL, action_button, RESPONSE_OK))
     chooser.set_select_multiple(False)
     chooser.set_default_response(RESPONSE_OK)
     if file_filter:

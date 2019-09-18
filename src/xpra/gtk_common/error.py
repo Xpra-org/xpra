@@ -29,10 +29,10 @@
 
 import threading
 import traceback
+from gi.repository import Gdk
 
 from xpra.util import envbool
 from xpra.os_util import bytestostr
-from xpra.gtk_common.gobject_compat import import_gdk
 from xpra.log import Logger
 
 __all__ = ["XError", "trap", "xsync", "xswallow"]
@@ -44,9 +44,6 @@ VERIFY_MAIN_THREAD = envbool("XPRA_VERIFY_MAIN_THREAD", True)
 
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
-
-gdk = import_gdk()
-
 
 if not VERIFY_MAIN_THREAD:
     def verify_main_thread():
@@ -107,7 +104,7 @@ class _ErrorManager(object):
     def Xenter(self):
         assert self.depth >= 0
         verify_main_thread()
-        gdk.error_trap_push()
+        Gdk.error_trap_push()
         if XPRA_LOG_SYNC:
             log("X11trap.enter at level %i", self.depth)
         self.depth += 1
@@ -118,9 +115,9 @@ class _ErrorManager(object):
         if XPRA_LOG_SYNC:
             log("X11trap.exit at level %i, need_sync=%s", self.depth, need_sync)
         if self.depth == 0 and need_sync:
-            gdk.flush()
+            Gdk.flush()
         # This is a Xlib error constant (Success == 0)
-        error = gdk.error_trap_pop()
+        error = Gdk.error_trap_pop()
         if error:
             raise XError(get_X_error(error))
 

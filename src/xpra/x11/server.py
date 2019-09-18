@@ -10,7 +10,7 @@ import os
 import signal
 import math
 from collections import deque, namedtuple
-from gi.repository import GObject
+from gi.repository import GObject, Gtk, Gdk
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint, typedict
@@ -32,7 +32,6 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.gtk_common.error import xsync, xswallow, xlog, XError
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 from xpra.log import Logger
 
 log = Logger("server")
@@ -49,9 +48,6 @@ mouselog = Logger("x11", "mouse")
 
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
@@ -70,10 +66,10 @@ class DesktopState(object):
     def __repr__(self):
         return "DesktopState(%s, %i, %s)" % (self.geom, self.resize_counter, self.shown)
 
-class DesktopManager(gtk.Widget):
+class DesktopManager(Gtk.Widget):
     def __init__(self):
         self._models = {}
-        gtk.Widget.__init__(self)
+        Gtk.Widget.__init__(self)
         self.set_property("can-focus", True)
         self.realize()
 
@@ -629,7 +625,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return
         if raw_window.get_window_type()==GDKWINDOW_TEMP:
             #ignoring one of gtk's temporary windows
-            #all the windows we manage should be gdk.WINDOW_FOREIGN
+            #all the windows we manage should be Gdk.WINDOW_FOREIGN
             windowlog("ignoring TEMP window %#x", xid)
             return
         WINDOW_MODEL_KEY = "_xpra_window_model_"
@@ -1138,7 +1134,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     #
 
     def update_root_overlay(self, window, x, y, image):
-        overlaywin = gdk.window_foreign_new(self.root_overlay)
+        overlaywin = Gdk.window_foreign_new(self.root_overlay)
         gc = overlaywin.new_gc()
         wx, wy = window.get_property("geometry")[:2]
         #FIXME: we should paint the root overlay directly
@@ -1161,7 +1157,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
         if has_alpha:
             import cairo
-            pixbuf = pixbuf_new_from_data(img_data, gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
+            pixbuf = pixbuf_new_from_data(img_data, Gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
             cr = overlaywin.cairo_create()
             cr.new_path()
             cr.rectangle(wx+x, wy+y, width, height)
@@ -1170,7 +1166,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             cr.set_operator(cairo.OPERATOR_OVER)
             cr.paint()
         else:
-            overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+            overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, Gdk.RGB_DITHER_NONE, img_data, rowstride)
         image.free()
 
     def repaint_root_overlay(self):
@@ -1191,7 +1187,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def do_repaint_root_overlay(self):
         self.repaint_root_overlay_timer = None
         root_width, root_height = self.get_root_window_size()
-        overlaywin = gdk.window_foreign_new(self.root_overlay)
+        overlaywin = Gdk.window_foreign_new(self.root_overlay)
         log("overlaywin: %s", overlaywin.get_geometry())
         cr = overlaywin.cairo_create()
         def fill_grey_rect(shade, x, y, w, h):

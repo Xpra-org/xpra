@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
-gtk = import_gtk()
-gdk = import_gdk()
+from gi.repository import Gtk, Gdk
 from xpra.gtk_common.cursor_names import cursor_types
 
 width = 400
 height = 200
 def main():
-	window = gtk.Window(gtk.WindowType.TOPLEVEL)
+	window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(width, height)
-	window.connect("delete_event", gtk.main_quit)
+	window.connect("delete_event", Gtk.main_quit)
 
-	cursor_combo = gtk.combo_box_new_text()
+	cursor_combo = Gtk.combo_box_new_text()
 	cursor_combo.append_text("")
 	for name in sorted(cursor_types.keys()):
 		cursor_combo.append_text(name)
@@ -23,7 +21,7 @@ def main():
 		print("new cursor: %s" % name)
 		if name:
 			gdk_cursor = cursor_types.get(name)
-			cursor = gdk.Cursor(gdk_cursor)
+			cursor = Gdk.Cursor(gdk_cursor)
 		else:
 			cursor = None
 		window.get_window().set_cursor(cursor)

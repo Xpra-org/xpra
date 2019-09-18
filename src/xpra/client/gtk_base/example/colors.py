@@ -1,18 +1,15 @@
 #!/usr/bin/env python
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import cairo
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
-gtk = import_gtk()
 
-
-class AnimatedColorWindow(gtk.Window):
+class AnimatedColorWindow(Gtk.Window):
 
     def __init__(self):
         super(AnimatedColorWindow, self).__init__()
@@ -23,7 +20,7 @@ class AnimatedColorWindow(gtk.Window):
         self.counter = 0
         self.increase = False
         self.connect("draw", self.area_draw)
-        self.connect("destroy", gtk.main_quit)
+        self.connect("destroy", Gtk.main_quit)
         self.connect("key_press_event", self.on_key_press)
         self.show_all()
         GLib.timeout_add(50, self.repaint)
@@ -81,11 +78,11 @@ class AnimatedColorWindow(gtk.Window):
 def main():
     import signal
     def signal_handler(*_args):
-        gtk.main_quit()
+        Gtk.main_quit()
     signal.signal(signal.SIGINT, signal_handler)
     w = AnimatedColorWindow()
-    add_close_accel(w, gtk.main_quit)
-    gtk.main()
+    add_close_accel(w, Gtk.main_quit)
+    Gtk.main()
 
 
 if __name__ == "__main__":

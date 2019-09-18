@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 
 import os.path
 import sys
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
-from xpra.gtk_common.gobject_compat import (
-    import_gtk, import_gdk,
-    register_os_signals,
-    )
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import monotonic_time, bytestostr, get_util_logger
 from xpra.simple_stats import std_unit_dec
 from xpra.gtk_common.gtk_util import (
@@ -22,9 +19,6 @@ from xpra.gtk_common.gtk_util import (
 from xpra.platform.paths import get_icon_dir
 
 log = get_util_logger()
-
-gtk = import_gtk()
-gdk = import_gdk()
 
 
 _instance = None
@@ -43,7 +37,7 @@ class OpenRequestsWindow(object):
         self.table = None
         self.requests = []
         self.expire_labels = {}
-        self.window = gtk.Window()
+        self.window = Gtk.Window()
         window_defaults(self.window)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 150)
@@ -54,14 +48,14 @@ class OpenRequestsWindow(object):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(WIN_POS_CENTER)
 
-        vbox = gtk.VBox(False, 0)
+        vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(10)
 
-        self.alignment = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
+        self.alignment = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
         vbox.pack_start(self.alignment, expand=True, fill=True)
 
         # Buttons:
-        hbox = gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             b = self.btn(label, tooltip, callback, icon_name)
@@ -79,7 +73,7 @@ class OpenRequestsWindow(object):
         self.populate_table()
 
     def btn(self, label, tooltip, callback, icon_name=None):
-        btn = gtk.Button(label)
+        btn = Gtk.Button(label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.set_tooltip_text(tooltip)
@@ -124,25 +118,25 @@ class OpenRequestsWindow(object):
         #generate a new table:
         self.table = tb.get_table()
         if not self.requests:
-            tb.add_row(gtk.Label("No requests pending"))
+            tb.add_row(Gtk.Label("No requests pending"))
         else:
-            headers = [gtk.Label("URL / Filename"), gtk.Label(""), gtk.Label("Expires in"), gtk.Label("Action")]
+            headers = [Gtk.Label("URL / Filename"), Gtk.Label(""), Gtk.Label("Expires in"), Gtk.Label("Action")]
             tb.add_row(*headers)
             for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
                 details = u""
                 if dtype==b"file" and filesize>0:
                     details = u"%sB" % std_unit_dec(filesize)
-                expires_label = gtk.Label()
+                expires_label = Gtk.Label()
                 self.expire_labels[expires_label] = expires
                 buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
-                items = (gtk.Label(bytestostr(url)), gtk.Label(details), expires_label, buttons)
+                items = (Gtk.Label(bytestostr(url)), Gtk.Label(details), expires_label, buttons)
                 tb.add_row(*items)
             self.update_expires_label()
         self.alignment.add(self.table)
         self.table.show_all()
 
     def action_buttons(self, cb_answer, send_id, dtype, printit, openit):
-        hbox = gtk.HBox()
+        hbox = Gtk.HBox()
         def remove_entry():
             self.requests = [x for x in self.requests if x[1]!=send_id]
             if not self.requests:
@@ -215,7 +209,7 @@ class OpenRequestsWindow(object):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
     def get_icon(self, icon_name):

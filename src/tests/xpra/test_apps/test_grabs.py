@@ -1,25 +1,27 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
-gtk = import_gtk()
-gdk = import_gdk()
-from xpra.gtk_common.gtk_util import gtk_main, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, WINDOW_EVENT_MASK, BUTTON_RELEASE_MASK
+from gi.repository import Gtk, Gdk
+
+from xpra.gtk_common.gtk_util import (
+    gtk_main,
+    WINDOW_TOPLEVEL, GRAB_STATUS_STRING, WINDOW_EVENT_MASK, BUTTON_RELEASE_MASK,
+    )
 
 from gi.repository import GLib
 
 def main():
-	window = gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(600, 200)
-	window.connect("delete_event", gtk.main_quit)
+	window.connect("delete_event", Gtk.main_quit)
 	window.add_events(WINDOW_EVENT_MASK)
-	vbox = gtk.VBox(False, 0)
-	hbox = gtk.HBox(False, 0)
+	vbox = Gtk.VBox(False, 0)
+	hbox = Gtk.HBox(False, 0)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=10)
 
 	def keyevent_info(event):
 		keyval = event.keyval
 		keycode = event.hardware_keycode
-		keyname = gdk.keyval_name(keyval)
+		keyname = Gdk.keyval_name(keyval)
 		return "%i:%s" % (keycode, keyname)
 
 	def key_pressed(_window, event):
@@ -35,52 +37,52 @@ def main():
 	window.connect("motion-notify-event", motion_notify)
 
 
-	grab_pointer_btn = gtk.Button("grab pointer")
+	grab_pointer_btn = Gtk.Button("grab pointer")
 	def grab_pointer(*args):
 		action_label.set_text("grab_pointer%s" % str(args))
 		def do_grab():
 			event_mask = BUTTON_RELEASE_MASK
-			v = gdk.pointer_grab(window.get_window(), False, event_mask, None, None, 0)
-			#gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK | gdk.KEY_PRESS_MASK \
-			#gdk.KEY_RELEASE_MASK | gdk.ENTER_NOTIFY_MASK)
-			# | gdk.ENTER_NOTIFY_MASK
-			#gdk.ALL_EVENTS_MASK
+			v = Gdk.pointer_grab(window.get_window(), False, event_mask, None, None, 0)
+			#Gdk.BUTTON_PRESS_MASK | Gdk.BUTTON_RELEASE_MASK | Gdk.KEY_PRESS_MASK \
+			#Gdk.KEY_RELEASE_MASK | Gdk.ENTER_NOTIFY_MASK)
+			# | Gdk.ENTER_NOTIFY_MASK
+			#Gdk.ALL_EVENTS_MASK
 			action_label.set_text("pointer_grab() returned %s" % GRAB_STATUS_STRING.get(v, v))
-			GLib.timeout_add(10*1000, gdk.pointer_ungrab, 0)
+			GLib.timeout_add(10*1000, Gdk.pointer_ungrab, 0)
 		print("will grab in 5 seconds!")
 		GLib.timeout_add(5*1000, do_grab)
 	grab_pointer_btn.connect('clicked', grab_pointer)
 	hbox.pack_start(grab_pointer_btn, expand=False, fill=False, padding=10)
 
-	ungrab_pointer_btn = gtk.Button("ungrab pointer")
+	ungrab_pointer_btn = Gtk.Button("ungrab pointer")
 	def ungrab_pointer(*_args):
-		v = gdk.pointer_ungrab(0)
+		v = Gdk.pointer_ungrab(0)
 		action_label.set_text("pointer_ungrab(0)=%s" % GRAB_STATUS_STRING.get(v, v))
 		window.unmaximize()
 	ungrab_pointer_btn.connect('clicked', ungrab_pointer)
 	hbox.pack_start(ungrab_pointer_btn, expand=False, fill=False, padding=10)
 
-	grab_keyboard_btn = gtk.Button("grab keyboard")
+	grab_keyboard_btn = Gtk.Button("grab keyboard")
 	def grab_keyboard(*_args):
-		v = gdk.keyboard_grab(window.get_window(), True, 0)
+		v = Gdk.keyboard_grab(window.get_window(), True, 0)
 		action_label.set_text("keyboard_grab(..)=%s" % GRAB_STATUS_STRING.get(v, v))
-		GLib.timeout_add(10*1000, gdk.keyboard_ungrab, 0)
+		GLib.timeout_add(10*1000, Gdk.keyboard_ungrab, 0)
 	grab_keyboard_btn.connect('clicked', grab_keyboard)
 	hbox.pack_start(grab_keyboard_btn, expand=False, fill=False, padding=10)
 
-	ungrab_keyboard_btn = gtk.Button("ungrab keyboard")
+	ungrab_keyboard_btn = Gtk.Button("ungrab keyboard")
 	def ungrab_keyboard(*_args):
-		v = gdk.keyboard_ungrab(0)
+		v = Gdk.keyboard_ungrab(0)
 		action_label.set_text("keyboard_ungrab(0)=%s" % GRAB_STATUS_STRING.get(v, v))
 	ungrab_keyboard_btn.connect('clicked', ungrab_keyboard)
 	hbox.pack_start(ungrab_keyboard_btn, expand=False, fill=False, padding=10)
 
-	vbox.add(gtk.Label("Last action:"))
-	action_label = gtk.Label("")
+	vbox.add(Gtk.Label("Last action:"))
+	action_label = Gtk.Label("")
 	vbox.add(action_label)
 
-	vbox.add(gtk.Label("Last event:"))
-	event_label = gtk.Label("")
+	vbox.add(Gtk.Label("Last event:"))
+	event_label = Gtk.Label("")
 	vbox.add(event_label)
 
 	window.add(vbox)

@@ -9,12 +9,9 @@ from xpra.gtk_common.gtk_util import pixbuf_new_from_data, pixbuf_new_from_file,
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 from xpra.platform.darwin.gui import set_exit_cb
 from xpra.platform.gui import ready as gui_ready
-from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.log import Logger
 
 log = Logger("tray", "osx")
-
-gtk = import_gtk()
 
 #constants for attention_request:
 CRITICAL_REQUEST = 0
@@ -95,8 +92,9 @@ class OSXTray(TrayBase):
     def set_dock_menu(self):
         #dock menu
         log("OSXTray.set_dock_menu()")
-        self.dock_menu = gtk.Menu()
-        self.disconnect_dock_item = gtk.MenuItem("Disconnect")
+        from gi.repository import Gtk
+        self.dock_menu = Gtk.Menu()
+        self.disconnect_dock_item = Gtk.MenuItem("Disconnect")
         self.disconnect_dock_item.connect("activate", self.quit)
         self.dock_menu.add(self.disconnect_dock_item)
         self.dock_menu.show_all()
