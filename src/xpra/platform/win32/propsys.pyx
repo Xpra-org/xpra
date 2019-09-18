@@ -5,13 +5,11 @@
 
 #cython: language_level=3
 
-from __future__ import absolute_import
-
 import struct
 from xpra.log import Logger
 log = Logger("win32")
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t #pylint: disable=syntax-error
 
 cdef extern from "windows.h":
     ctypedef void *PVOID

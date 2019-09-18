@@ -10,10 +10,8 @@
 
 #cython: language_level=3
 
-from __future__ import absolute_import
 
-
-__version__ = (b"Cython", 3, 0)
+__version__ = (b"Cython", 4, 0)
 
 from xpra.buffers.membuf cimport object_as_buffer  #pylint: disable=syntax-error
 

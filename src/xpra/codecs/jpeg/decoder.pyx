@@ -5,8 +5,6 @@
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
 
-from __future__ import absolute_import
-
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 

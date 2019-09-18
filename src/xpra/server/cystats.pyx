@@ -7,8 +7,6 @@
 #!python
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
-from __future__ import absolute_import
-
 import time
 from xpra.monotonic_time cimport monotonic_time  #pylint: disable=syntax-error
 

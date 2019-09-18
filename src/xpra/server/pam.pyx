@@ -6,7 +6,6 @@
 
 #!python
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
-from __future__ import absolute_import
 
 import os
 import time

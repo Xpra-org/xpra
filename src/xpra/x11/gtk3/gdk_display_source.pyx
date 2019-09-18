@@ -7,7 +7,6 @@
 
 # This class simply hooks the current GDK display into
 # the core X11 bindings.
-from __future__ import absolute_import
 
 from xpra.os_util import is_X11
 from xpra.x11.bindings.display_source cimport set_display  #pylint: disable=syntax-error

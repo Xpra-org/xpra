@@ -7,8 +7,6 @@
 #!python
 #cython: auto_pickle=False, boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
-from __future__ import absolute_import
-
 import os
 import time
 import struct

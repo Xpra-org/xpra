@@ -9,8 +9,6 @@
 #pylint: disable=unused-argument
 
 import os
-import sys
-import types
 import subprocess
 import ctypes
 from ctypes import wintypes

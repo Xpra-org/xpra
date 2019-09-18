@@ -134,7 +134,7 @@ def main():
         item = Gtk.MenuItem("Some Menu Item Here")
         menu.append(item)
         menu.show_all()
-        a = AppindicatorTray(None, None, menu, "test", "xpra.png", None, None, None, gtk.main_quit)
+        a = AppindicatorTray(None, None, menu, "test", "xpra.png", None, None, None, Gtk.main_quit)
         a.show()
         register_os_signals(Gtk.main_quit)
         Gtk.main()

@@ -5,13 +5,11 @@
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
 
-from __future__ import absolute_import
-
 from xpra.log import Logger
 log = Logger("encoder", "jpeg")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport makebuf, MemBuf, object_as_buffer
+from xpra.buffers.membuf cimport makebuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
 from xpra.net.compression import Compressed
 from xpra.os_util import bytestostr
 from xpra.util import reverse_dict

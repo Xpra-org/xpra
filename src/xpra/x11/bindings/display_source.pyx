@@ -11,8 +11,6 @@
 
 #cython: language_level=3
 
-from __future__ import absolute_import
-
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 cdef extern from "X11/Xlib.h":

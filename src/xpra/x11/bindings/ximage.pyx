@@ -6,8 +6,6 @@
 
 #cython: auto_pickle=False, language_level=3
 
-from __future__ import absolute_import
-
 import errno as pyerrno
 
 from xpra.os_util import strtobytes, bytestostr

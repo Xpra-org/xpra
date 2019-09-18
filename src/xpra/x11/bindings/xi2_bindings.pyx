@@ -5,8 +5,6 @@
 
 #cython: auto_pickle=False, language_level=3
 
-from __future__ import absolute_import
-
 import os
 import time
 import struct

@@ -23,8 +23,6 @@
 
 
 #cython: boundscheck=False, language_level=3
-from __future__ import absolute_import
-
 
 import cairo
 from xpra.buffers.membuf cimport object_as_buffer  #pylint: disable=syntax-error

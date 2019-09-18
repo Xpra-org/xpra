@@ -9,9 +9,8 @@
 
 # Original version written by Petru Paler
 
-__version__ = (b"Python", 2, 5)
+__version__ = (b"Python", 4, 0)
 
-import sys
 import codecs
 
 #idiotic py3k unicode mess makes us reinvent the wheel again:

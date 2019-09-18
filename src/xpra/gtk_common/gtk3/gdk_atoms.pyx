@@ -7,8 +7,6 @@
 
 #cython: wraparound=False, language_level=3
 
-from __future__ import absolute_import
-
 from gi.repository import Gdk
 
 from xpra.os_util import bytestostr

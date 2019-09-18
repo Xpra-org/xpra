@@ -5,8 +5,6 @@
 
 #cython: language_level=3
 
-from __future__ import absolute_import
-
 import os
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t  #pylint: disable=syntax-error

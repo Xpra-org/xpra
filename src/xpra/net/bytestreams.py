@@ -12,7 +12,7 @@ import socket
 
 from xpra.net.common import ConnectionClosedException
 from xpra.util import envint, envbool, csv
-from xpra.os_util import WIN32, POSIX, LINUX
+from xpra.os_util import POSIX, LINUX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
 from xpra.log import Logger
 

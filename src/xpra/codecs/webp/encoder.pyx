@@ -5,8 +5,6 @@
 
 #cython: auto_pickle=False, cdivision=True, language_level=3
 
-from __future__ import absolute_import
-
 import os
 
 from xpra.log import Logger

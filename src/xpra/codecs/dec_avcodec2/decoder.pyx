@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
-from __future__ import absolute_import
 
 import errno
 import weakref

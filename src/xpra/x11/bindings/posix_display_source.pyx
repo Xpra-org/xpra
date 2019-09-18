@@ -7,7 +7,6 @@
 #cython: language_level=3
 
 # This module can be used to open the local $DISPLAY and hook it into the X11 bindings
-from __future__ import absolute_import
 
 import os
 from xpra.os_util import strtobytes
