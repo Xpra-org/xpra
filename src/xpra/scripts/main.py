@@ -12,7 +12,7 @@ import stat
 import socket
 from time import sleep
 import logging
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, DEVNULL
 import signal
 import shlex
 import traceback
@@ -1670,10 +1670,6 @@ def run_opengl_probe():
         kwargs = {}
         if POSIX:
             kwargs["close_fds"] = True
-        try:
-            from subprocess import DEVNULL
-        except ImportError:
-            DEVNULL = open(os.devnull, 'wb')
         proc = Popen(cmd, shell=False, stderr=DEVNULL, env=env, **kwargs)
     except Exception as e:
         log.warn("Warning: failed to execute OpenGL probe command")
