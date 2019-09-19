@@ -35,14 +35,10 @@
 
 import sys, os, syslog
 import subprocess, traceback
-try:
-    #py2:
-    from urlparse import urlparse, parse_qs
-except ImportError:
-    from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs
 
 
-__version__ = "3.0"
+__version__ = "4.0"
 
 
 #Writes a syslog entry (msg) at the default facility:

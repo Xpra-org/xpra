@@ -14,7 +14,6 @@ from xpra.os_util import strtobytes, WIN32, OSX, POSIX
 from xpra.log import Logger
 
 log = Logger("gtk", "util")
-traylog = Logger("gtk", "tray")
 screenlog = Logger("gtk", "screen")
 alphalog = Logger("gtk", "alpha")
 
