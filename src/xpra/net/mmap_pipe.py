@@ -85,17 +85,14 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                     log.info("Using existing mmap file '%s': %sMB", mmap_filename, mmap_size//1024//1024)
                 else:
                     validate_size(mmap_size)
-                    import errno
                     flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
                     try:
                         fd = os.open(filename, flags)
                         mmap_temp_file = None   #os.fdopen(fd, 'w')
                         mmap_filename = filename
-                    except OSError as e:
-                        if e.errno == errno.EEXIST:
-                            log.error("Error: the mmap file '%s' already exists", filename)
-                            return rerr()
-                        raise
+                    except FileExistsError:
+                        log.error("Error: the mmap file '%s' already exists", filename)
+                        return rerr()
             else:
                 validate_size(mmap_size)
                 import tempfile
