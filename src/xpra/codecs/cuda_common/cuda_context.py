@@ -426,7 +426,7 @@ def get_CUDA_function(device_id, function_name):
         fn = function_name
         CUDA_function = mod.get_function(fn)
     except driver.LogicError as e:
-        raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e))
+        raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e)) from None
     end = monotonic_time()
     log("loading function %s from pre-compiled cubin took %.1fms", function_name, 1000.0*(end-start))
     return CUDA_function

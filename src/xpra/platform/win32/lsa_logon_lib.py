@@ -609,7 +609,7 @@ def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
             secur32.LsaLogonUser(*args)
         except WindowsError:            #@UndefinedVariable
             if substatus.value:
-                raise ctypes.WinError(substatus.to_error())
+                raise ctypes.WinError(substatus.to_error()) from None
             raise
         finally:
             if profile_buffer:

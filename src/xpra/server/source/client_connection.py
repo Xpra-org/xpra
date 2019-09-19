@@ -125,7 +125,7 @@ class ClientConnection(ClientConnectionClass):
                 bc.__init__(self)
                 bc.init_from(self, protocol, server)
             except Exception as e:
-                raise Exception("failed to initialize %s: %s" % (bc, e))
+                raise Exception("failed to initialize %s: %s" % (bc, e)) from None
 
         for c in CC_BASES:
             c.init_state(self)

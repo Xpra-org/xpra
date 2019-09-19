@@ -1143,7 +1143,7 @@ def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
             assert f>=min_value, "value is too low"
         return int(f)
     except Exception as e:
-        raise InitException("invalid value for %s '%s': %s" % (numtype, v, e))
+        raise InitException("invalid value for %s '%s': %s" % (numtype, v, e)) from None
 
 
 def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_validation={}):

@@ -283,7 +283,7 @@ def ssh_paramiko_connect_to(display_desc):
                 middle_transport.start_client()
             except SSHException as e:
                 log("start_client()", exc_info=True)
-                raise InitException("SSH negotiation failed: %s" % e)
+                raise InitException("SSH negotiation failed: %s" % e) from None
             proxy_host_config = ssh_config.lookup(host)
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
@@ -327,7 +327,7 @@ def ssh_paramiko_connect_to(display_desc):
             transport.start_client()
         except SSHException as e:
             log("start_client()", exc_info=True)
-            raise InitException("SSH negotiation failed: %s" % e)
+            raise InitException("SSH negotiation failed: %s" % e) from None
         do_ssh_paramiko_connect_to(transport, host, username, password,
                                    host_config or ssh_config.lookup("*"),
                                    keyfiles)
@@ -640,7 +640,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             chan.set_name("find %s" % xpra_cmd)
         except SSHException as e:
             log("open_session", exc_info=True)
-            raise InitException("failed to open SSH session: %s" % e)
+            raise InitException("failed to open SSH session: %s" % e) from None
         cmd = "which %s" % xpra_cmd
         log("exec_command('%s')", cmd)
         chan.exec_command(cmd)
@@ -673,7 +673,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             chan.set_name("run-xpra")
         except SSHException as e:
             log("open_session", exc_info=True)
-            raise InitException("failed to open SSH session: %s" % e)
+            raise InitException("failed to open SSH session: %s" % e) from None
         else:
             log("channel exec_command(%s)" % cmd)
             chan.exec_command(cmd)
@@ -806,7 +806,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 cmd_info = " ".join(display_desc["full_ssh"])
                 log.error(" the command line used was:")
                 log.error(" %s", cmd_info)
-            raise ConnectionClosedException(error_message)
+            raise ConnectionClosedException(error_message) from None
     def stop_tunnel():
         if POSIX:
             #on posix, the tunnel may be shared with other processes

@@ -759,7 +759,7 @@ def setuidgid(uid, gid):
         try:
             username = getpwuid(uid).pw_name
         except KeyError:
-            raise Exception("uid %i not found" % uid)
+            raise Exception("uid %i not found" % uid) from None
         #set the groups:
         if hasattr(os, "initgroups"):   # python >= 2.7
             os.initgroups(username, gid)

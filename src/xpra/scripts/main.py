@@ -1012,7 +1012,7 @@ def connect_or_fail(display_desc, opts):
         raise
     except Exception as e:
         get_util_logger().debug("failed to connect", exc_info=True)
-        raise InitException("connection failed: %s" % e)
+        raise InitException("connection failed: %s" % e) from None
 
 
 def socket_connect(dtype, host, port):
@@ -1027,7 +1027,7 @@ def socket_connect(dtype, host, port):
         raise InitException("cannot get %s address of%s: %s" % ({
             socket.AF_INET6 : " IPv6",
             socket.AF_INET  : " IPv4",
-            }.get(family, ""), (host, port), e))
+            }.get(family, ""), (host, port), e)) from None
     retry = 0
     start = monotonic_time()
     while True:
@@ -1102,7 +1102,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             sock.connect(sockpath)
         except Exception as e:
             get_util_logger().debug("failed to connect using %s%s", sock.connect, sockpath, exc_info=True)
-            raise InitException("failed to connect to '%s':\n %s" % (sockpath, e))
+            raise InitException("failed to connect to '%s':\n %s" % (sockpath, e)) from None
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
@@ -1130,10 +1130,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         except Exception as e:
             try:
                 if e.args[0]==errno.ENOENT:
-                    raise InitException("the named pipe '%s' does not exist" % pipe_name)
+                    raise InitException("the named pipe '%s' does not exist: %s" % (pipe_name, e)) from None
             except AttributeError:
                 pass
-            raise InitException("failed to connect to the named pipe '%s':\n %s" % (pipe_name, e))
+            raise InitException("failed to connect to the named pipe '%s':\n %s" % (pipe_name, e)) from None
         conn = NamedPipeConnection(pipe_name, pipe_handle)
         conn.timeout = SOCKET_TIMEOUT
         conn.target = "namedpipe://%s/" % pipe_name
@@ -1518,7 +1518,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
             app = make_client(error_cb, opts)
         except RuntimeError as e:
             #exceptions at this point are still initialization exceptions
-            raise InitException(e.args[0])
+            raise InitException(e.args[0]) from None
         ehelp = "help" in opts.encodings
         if ehelp:
             from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER

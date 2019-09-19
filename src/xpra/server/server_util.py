@@ -168,7 +168,7 @@ def open_log_file(logpath):
     try:
         return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
     except OSError as e:
-        raise InitException("cannot open log file '%s': %s" % (logpath, e))
+        raise InitException("cannot open log file '%s': %s" % (logpath, e)) from None
 
 def select_log_file(log_dir, log_file, display_name):
     """ returns the log file path we should be using given the parameters,

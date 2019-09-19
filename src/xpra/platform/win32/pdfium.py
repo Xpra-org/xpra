@@ -6,20 +6,20 @@
 
 import os
 import sys
+from ctypes.wintypes import HDC
+from ctypes import WinDLL, c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER
 
 from xpra.util import repr_ellipsized
 from xpra.os_util import strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
 from xpra.platform.win32.win32_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, LPCSTR
-from ctypes.wintypes import HDC
-from ctypes import WinDLL, c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER
 
 LIBPDFIUMDLL = os.environ.get("XPRA_LIBPDFIUMDLL", "libpdfium.dll")
 try:
 	pdfium = WinDLL(LIBPDFIUMDLL, use_last_error=True)
 except WindowsError as e:		#@UndefinedVariable
-	raise ImportError("cannot load %s: %s" % (LIBPDFIUMDLL, e))
+	raise ImportError("cannot load %s: %s" % (LIBPDFIUMDLL, e)) from None
 
 class FPDF_LIBRARY_CONFIG(Structure):
 	_fields_ = [

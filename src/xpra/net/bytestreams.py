@@ -87,9 +87,9 @@ def can_retry(e):
         if abort is not None:
             err = getattr(e, "errno", None)
             log("can_retry: %s, args=%s, errno=%s, code=%s, abort=%s", type(e), e.args, err, code, abort)
-            raise ConnectionClosedException(e)
+            raise ConnectionClosedException(e) from None
     if isinstance(e, CLOSED_EXCEPTIONS):
-        raise ConnectionClosedException(e)
+        raise ConnectionClosedException(e) from None
     return False
 
 def untilConcludes(is_active_cb, can_retry_cb, f, *a, **kw):

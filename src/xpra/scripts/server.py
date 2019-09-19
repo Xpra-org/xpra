@@ -106,7 +106,7 @@ def validate_pixel_depth(pixel_depth, starting_desktop=False):
     try:
         pixel_depth = int(pixel_depth)
     except ValueError:
-        raise InitException("invalid value '%s' for pixel depth, must be a number" % pixel_depth)
+        raise InitException("invalid value '%s' for pixel depth, must be a number" % pixel_depth) from None
     if pixel_depth==0:
         pixel_depth = 24
     if pixel_depth not in (8, 16, 24, 30):

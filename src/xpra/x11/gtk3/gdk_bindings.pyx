@@ -1033,7 +1033,7 @@ cdef object _gw(display, Window xwin):
             error = gdk_x11_display_error_trap_pop(disp)
             if error:
                 verbose("ignoring XError %s in unwind", get_error_text(error))
-            raise XError(e)
+            raise XError(e) from None
         else:
             raise
     if error:

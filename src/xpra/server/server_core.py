@@ -327,7 +327,7 @@ class ServerCore(object):
         except Exception as e:
             log("SSL error", exc_info=True)
             cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
-            raise InitException("cannot create SSL sockets, check your certificate paths (%s): %s" % (cpaths, e))
+            raise InitException("cannot create SSL sockets, check your certificate paths (%s): %s" % (cpaths, e)) from None
 
     def server_ready(self):
         return True
@@ -649,7 +649,7 @@ class ServerCore(object):
             auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
         except ImportError as e:
             authlog("cannot load %s auth for socket %s", auth, socket_type, exc_info=True)
-            raise InitException("cannot load authentication module '%s' for %s socket: %s" % (auth, socket_type, e))
+            raise InitException("cannot load authentication module '%s' for %s socket: %s" % (auth, socket_type, e)) from None
         authlog("auth module for '%s': %s", auth, auth_module)
         try:
             auth_module.init(opts)
@@ -658,7 +658,7 @@ class ServerCore(object):
             return auth, auth_class, auth_options
         except Exception as e:
             authlog("cannot access authenticator class", exc_info=True)
-            raise InitException("authentication setup error in %s: %s" % (auth_module, e))
+            raise InitException("authentication setup error in %s: %s" % (auth_module, e)) from None
 
 
     ######################################################################

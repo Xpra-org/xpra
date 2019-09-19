@@ -55,7 +55,7 @@ try:
 except AttributeError as e:
     #likely running on win XP:
     log("cannot query GetProductInfo", exc_info=True)
-    raise ImportError("cannot query GetProductInfo: %s" % e)
+    raise ImportError("cannot query GetProductInfo: %s" % e) from None
 
 if ISWIN7ORHIGHER:
     MAX_TIP_SIZE = 128

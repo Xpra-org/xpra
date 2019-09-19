@@ -27,7 +27,7 @@ except ImportError:
     raise
 except Exception as e:
     log.error("Error: NvFBC requires CUDA", exc_info=True)
-    raise ImportError("NvFBC requires CUDA: %s" % e)
+    raise ImportError("NvFBC requires CUDA: %s" % e) from None
 
 import ctypes
 from ctypes import wintypes
@@ -404,7 +404,7 @@ def init_nvfbc_library():
     except Exception as e:
         NvFBC = False
         log("failed to load '%s'", nvfbc_libname, exc_info=True)
-        raise ImportError("nvfbc: the required library %s cannot be loaded: %s" % (nvfbc_libname, e))
+        raise ImportError("nvfbc: the required library %s cannot be loaded: %s" % (nvfbc_libname, e)) from None
     NvFBC.NvFBC_GetSDKVersion.argtypes = [ctypes.c_void_p]
     NvFBC.NvFBC_GetSDKVersion.restype = wintypes.INT
     NvFBC.NvFBC_GetStatusEx.argtypes = [ctypes.c_void_p]

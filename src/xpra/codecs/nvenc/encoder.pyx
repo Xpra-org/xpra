@@ -1068,7 +1068,7 @@ def init_nvencode_library():
         log("init_nvencode_library() %s(%s)=%s", load, cuda_libname, x)
     except Exception as e:
         log("failed to load '%s'", cuda_libname, exc_info=True)
-        raise ImportError("nvenc: the required library %s cannot be loaded: %s" % (cuda_libname, e))
+        raise ImportError("nvenc: the required library %s cannot be loaded: %s" % (cuda_libname, e)) from None
     cuCtxGetCurrent = x.cuCtxGetCurrent
     cuCtxGetCurrent.restype = ctypes.c_int          # CUresult == int
     cuCtxGetCurrent.argtypes = [POINTER(CUcontext)] # CUcontext *pctx
@@ -1080,7 +1080,7 @@ def init_nvencode_library():
         log("init_nvencode_library() %s(%s)=%s", load, nvenc_libname, x)
     except Exception as e:
         log("failed to load '%s'", nvenc_libname, exc_info=True)
-        raise ImportError("nvenc: the required library %s cannot be loaded: %s" % (nvenc_libname, e))
+        raise ImportError("nvenc: the required library %s cannot be loaded: %s" % (nvenc_libname, e)) from None
     NvEncodeAPICreateInstance = x.NvEncodeAPICreateInstance
     NvEncodeAPICreateInstance.restype = ctypes.c_int
     NvEncodeAPICreateInstance.argtypes = [ctypes.c_void_p]
@@ -1690,7 +1690,7 @@ cdef class Encoder:
         except driver.MemoryError as e:
             last_context_failure = monotonic_time()
             log("init_cuda %s", e)
-            raise TransientCodecException("could not initialize cuda: %s" % e)
+            raise TransientCodecException("could not initialize cuda: %s" % e) from None
 
     cdef init_cuda_kernel(self):
         global YUV420_ENABLED, YUV444_ENABLED, YUV444_CODEC_SUPPORT, NATIVE_RGB

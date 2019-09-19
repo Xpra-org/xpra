@@ -76,7 +76,7 @@ class NamedPipeConnection(Connection):
         #convert those to a connection closed:
         closed = CONNECTION_CLOSED_ERRORS.get(code)
         if closed:
-            raise ConnectionClosedException(e)
+            raise ConnectionClosedException(e) from None
         return False
 
 
@@ -88,7 +88,7 @@ class NamedPipeConnection(Connection):
             log("untilConcludes(%s, ) exception: %s, error code=%s", fn, e, code, exc_info=True)
             if code==ERROR_PIPE_NOT_CONNECTED:
                 return None
-            raise IOError("%s: %s" % (e, code))
+            raise IOError("%s: %s" % (e, code)) from None
 
     def read(self, n):
         return self._read(self._pipe_read, n)

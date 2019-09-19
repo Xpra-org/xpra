@@ -1206,7 +1206,7 @@ def do_parse_cmdline(cmdline, defaults):
             source_plugins = query_sound().strlistget("sources", ())
             source_default = query_sound().strget("source.default", "")
         except Exception as e:
-            raise InitInfo(e)
+            raise InitInfo(e) from None
         if source_plugins:
             raise InitInfo("The following sound source plugins may be used (default: %s):\n" % source_default+
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
@@ -1258,7 +1258,7 @@ def do_parse_cmdline(cmdline, defaults):
     try:
         options.dpi = int(options.dpi)
     except Exception as e:
-        raise InitException("invalid dpi value '%s': %s" % (options.dpi, e))
+        raise InitException("invalid dpi value '%s': %s" % (options.dpi, e)) from None
     def parse_window_size(v, attribute="max-size"):
         try:
             #split on "," or "x":
@@ -1268,7 +1268,7 @@ def do_parse_cmdline(cmdline, defaults):
             assert 0<w<32768 and 0<h<32768
             return w, h
         except:
-            raise InitException("invalid %s: %s" % (attribute, v))
+            raise InitException("invalid %s: %s" % (attribute, v)) from None
     if options.min_size:
         options.min_size = "%sx%s" % parse_window_size(options.min_size, "min-size")
     if options.max_size:
@@ -1375,14 +1375,14 @@ def parse_vsock(vsock_str):
         except ValueError:
             cid = STR_TO_CID.get(cid_str.upper())
             if cid is None:
-                raise InitException("invalid vsock cid '%s'" % cid_str)
+                raise InitException("invalid vsock cid '%s'" % cid_str) from None
     if port_str.lower() in ("auto", "any"):
         iport = PORT_ANY
     else:
         try:
             iport = int(port_str)
         except ValueError:
-            raise InitException("invalid vsock port '%s'" % port_str)
+            raise InitException("invalid vsock port '%s'" % port_str) from None
     return cid, iport
 
 

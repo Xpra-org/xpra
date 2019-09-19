@@ -298,7 +298,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         tcp_socket = create_tcp_socket(host, iport)
     except Exception as e:
         log("create_tcp_socket%s", (host, iport), exc_info=True)
-        raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
+        raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e)) from None
     def cleanup_tcp_socket():
         log.info("closing %s socket '%s:%s'", socktype.lower(), host, iport)
         try:
@@ -360,7 +360,7 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
             else:
                 try:
                     iport = int(port)
-                    assert iport>0 and iport<2**16
+                    assert 0<iport<2**16
                 except:
                     raise InitException("invalid port number: %s" % port)
             ip_sockets.add((host, iport))
@@ -372,7 +372,7 @@ def setup_vsock_socket(cid, iport):
         from xpra.net.vsock import bind_vsocket     #@UnresolvedImport
         vsock_socket = bind_vsocket(cid=cid, port=iport)
     except Exception as e:
-        raise InitException("failed to setup vsock socket on %s:%s %s" % (cid, iport, e))
+        raise InitException("failed to setup vsock socket on %s:%s %s" % (cid, iport, e)) from None
     def cleanup_vsock_socket():
         log.info("closing vsock socket %s:%s", cid, iport)
         try:
@@ -560,7 +560,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         assert 0<=sperms<=0o777, "invalid socket permission value %s" % oct(sperms)
                     except ValueError:
                         raise ValueError("invalid socket permissions "+
-                                         "(must be an octal number): '%s'" % socket_permissions)
+                                         "(must be an octal number): '%s'" % socket_permissions) from None
                 #now try to create all the sockets:
                 for sockpath in sockpaths:
                     #create it:

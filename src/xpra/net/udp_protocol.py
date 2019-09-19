@@ -558,7 +558,7 @@ class UDPSocketConnection(SocketConnection):
             return self._socket.sendto(buf, self.remote)
         except IOError as e:
             if e.errno==EMSGSIZE:
-                raise MTUExceeded("invalid UDP payload size, cannot send %i bytes: %s" % (len(buf), e))
+                raise MTUExceeded("invalid UDP payload size, cannot send %i bytes: %s" % (len(buf), e)) from None
             raise
 
     def close(self):

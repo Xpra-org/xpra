@@ -356,7 +356,7 @@ class subprocess_caller(object):
     def abort_test(self, action):
         p = self.process
         if p is None or p.poll():
-            raise ConnectionClosedException("cannot %s: subprocess has terminated" % action)
+            raise ConnectionClosedException("cannot %s: subprocess has terminated" % action) from None
 
     def make_protocol(self):
         #make a connection using the process stdin / stdout

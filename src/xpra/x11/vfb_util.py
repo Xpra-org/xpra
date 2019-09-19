@@ -203,7 +203,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                     except OSError:
                         log("lchown(%s, %i, %i)", xorg_log_dir, uid, gid, exc_info=True)
             except OSError as e:
-                raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
+                raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e)) from None
 
     if uinput_uuid:
         #use uinput:
@@ -250,7 +250,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                                             stdin=PIPE, preexec_fn=preexec, cwd=cwd)
                 except OSError as e:
                     log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
-                    raise InitException("failed to execute xvfb command %s: %s" % (xvfb_cmd, e))
+                    raise InitException("failed to execute xvfb command %s: %s" % (xvfb_cmd, e)) from None
                 assert xvfb.poll() is None, "xvfb command failed"
                 # Read the display number from the pipe we gave to Xvfb
                 try:

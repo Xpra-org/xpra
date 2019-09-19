@@ -5,9 +5,9 @@
 
 import os
 import sys
+from ctypes import CDLL, c_int, c_char_p
 
 from xpra.os_util import POSIX, strtobytes
-from ctypes import CDLL, c_int, c_char_p
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 assert init and log #tests will disable logging from here
 
