@@ -74,7 +74,7 @@ class ProxyServer(_ProxyServer):
             try:
                 log("stdout=%s", proc.stdout.read())
                 log("stderr=%s", proc.stderr.read())
-            except (OSError, IOError, AttributeError):
+            except (OSError, AttributeError):
                 log("failed to read stdout / stderr of subprocess", exc_info=True)
             raise Exception("shadow subprocess failed with exit code %s" % r)
         self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)

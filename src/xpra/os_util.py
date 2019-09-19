@@ -254,7 +254,7 @@ def load_os_release_file():
     if os_release_file_data is False:
         try:
             os_release_file_data = load_binary_file("/etc/os-release")
-        except (OSError, IOError):
+        except OSError:
             os_release_file_data = None
     return os_release_file_data
 
@@ -436,7 +436,7 @@ def close_fds(excluding=(0, 1, 2)):
         if i not in excluding:
             try:
                 os.close(i)
-            except (IOError, OSError):
+            except OSError:
                 pass
 
 def get_all_fds():
@@ -660,7 +660,7 @@ def setbinarymode(fd):
         try:
             import msvcrt
             msvcrt.setmode(fd, os.O_BINARY)         #@UndefinedVariable pylint: disable=no-member
-        except (OSError, IOError):
+        except OSError:
             get_util_logger().error("setting stdin to binary mode failed", exc_info=True)
 
 def find_lib_ldconfig(libname):

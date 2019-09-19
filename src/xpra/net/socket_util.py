@@ -45,7 +45,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
         listener.bind(sockpath)
     try:
         inode = os.stat(sockpath).st_ino
-    except (OSError, IOError):
+    except OSError:
         inode = -1
     #set to the "xpra" group if we are a member of it, or if running as root:
     uid = getuid()
@@ -67,7 +67,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
         log = get_network_logger()
         try:
             cur_inode = os.stat(sockpath).st_ino
-        except (OSError, IOError):
+        except OSError:
             log.info("socket '%s' already deleted", sockpath)
             return
         delpath = sockpath
@@ -76,7 +76,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
             log.info("removing socket '%s'", delpath)
             try:
                 os.unlink(delpath)
-            except (OSError, IOError):
+            except OSError:
                 pass
     return listener, cleanup_socket
 
@@ -154,7 +154,7 @@ def accept_connection(socktype, listener, timeout=None):
     #log("peercred(%s)=%s", sock, get_peercred(sock))
     try:
         peername = sock.getpeername()
-    except (OSError, IOError):
+    except OSError:
         peername = address
     sock.settimeout(timeout)
     sockname = sock.getsockname()
@@ -172,7 +172,7 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS):
     while not peek_data and int(1000*(monotonic_time()-start))<timeout:
         try:
             peek_data = conn.peek(PEEK_SIZE)
-        except (OSError, IOError):
+        except OSError:
             pass
         except ValueError:
             log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
@@ -303,7 +303,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         log.info("closing %s socket '%s:%s'", socktype.lower(), host, iport)
         try:
             tcp_socket.close()
-        except (OSError, IOError):
+        except OSError:
             pass
     if iport==0:
         iport = tcp_socket.getsockname()[1]
@@ -335,7 +335,7 @@ def setup_udp_socket(host, iport, socktype="udp"):
         log.info("closing %s socket %s:%s", socktype, host, iport)
         try:
             udp_socket.close()
-        except (OSError, IOError):
+        except OSError:
             pass
     if iport==0:
         iport = udp_socket.getsockname()[1]
@@ -377,7 +377,7 @@ def setup_vsock_socket(cid, iport):
         log.info("closing vsock socket %s:%s", cid, iport)
         try:
             vsock_socket.close()
-        except (OSError, IOError):
+        except OSError:
             pass
     return "vsock", vsock_socket, (cid, iport), cleanup_vsock_socket
 
@@ -395,7 +395,7 @@ def setup_sd_listen_socket(stype, sock, addr):
         log.info("closing sd listen socket %s", addr)
         try:
             sock.close()
-        except (OSError, IOError):
+        except OSError:
             pass
     return stype, sock, addr, cleanup_sd_listen_socket
 
@@ -543,7 +543,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     try:
                         if os.path.exists(sockpath):
                             os.unlink(sockpath)
-                    except (OSError, IOError):
+                    except OSError:
                         pass
                 #socket permissions:
                 if mmap_group.lower() in TRUE_OPTIONS:
@@ -654,7 +654,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         f_listen_on[(get_interface_index(host), port)] = (host, port)
     try:
         name = socket.gethostname()
-    except (IOError, OSError):
+    except OSError:
         name = "Xpra"
     if display_name and not (OSX or WIN32):
         name += " %s" % display_name

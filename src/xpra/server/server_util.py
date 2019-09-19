@@ -163,7 +163,7 @@ def open_log_file(logpath):
     if os.path.exists(logpath):
         try:
             os.rename(logpath, logpath + ".old")
-        except (OSError, IOError):
+        except OSError:
             pass
     try:
         return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
@@ -233,7 +233,7 @@ def write_pidfile(pidfile):
             f.write("%s\n" % pidstr)
             try:
                 inode = os.fstat(f.fileno()).st_ino
-            except (OSError, IOError):
+            except OSError:
                 inode = 0
         log.info("wrote pid %s to '%s'", pidstr, pidfile)
     except Exception as e:
@@ -251,11 +251,11 @@ def rm_pidfile(pidfile, inode):
             log("cleanuppidfile: current inode=%i", i)
             if i!=inode:
                 return 0
-        except (OSError, IOError):
+        except OSError:
             pass
     try:
         os.unlink(pidfile)
-    except (OSError, IOError):
+    except OSError:
         log("rm_pidfile(%s, %s)", pidfile, inode, exc_info=True)
     return 0
 

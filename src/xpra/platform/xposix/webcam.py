@@ -79,7 +79,7 @@ def get_virtual_video_devices(capture_only=True):
             try:
                 name = open(dev_name).read().replace("\n", "")
                 info["card"] = name
-            except (OSError, IOError):
+            except OSError:
                 pass
         devices[no] = info
     log("devices: %s", devices)

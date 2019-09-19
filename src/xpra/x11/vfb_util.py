@@ -45,7 +45,7 @@ def get_vfb_logger():
 def osclose(fd):
     try:
         os.close(fd)
-    except (OSError, IOError):
+    except OSError:
         pass
 
 def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
@@ -200,7 +200,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                 if POSIX and uid!=getuid() or gid!=getgid():
                     try:
                         os.lchown(xorg_log_dir, uid, gid)
-                    except (OSError, IOError):
+                    except OSError:
                         log("lchown(%s, %i, %i)", xorg_log_dir, uid, gid, exc_info=True)
             except OSError as e:
                 raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))

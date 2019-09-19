@@ -261,7 +261,7 @@ class RFBProtocol(object):
             if not self._closed:
                 #ConnectionClosedException means the warning has been logged already
                 self._connection_lost("%s connection %s closed" % (name, self._conn))
-        except (OSError, IOError, socket_error) as e:
+        except (OSError, socket_error) as e:
             if not self._closed:
                 self._internal_error("%s connection %s reset" % (name, self._conn), e, exc_info=e.args[0] not in ABORT)
         except Exception as e:

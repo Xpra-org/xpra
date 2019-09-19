@@ -111,7 +111,7 @@ class AppindicatorTray(TrayBase):
         if self.tmp_filename and DELETE_TEMP_FILE:
             try:
                 os.unlink(self.tmp_filename)
-            except (OSError, IOError):
+            except OSError:
                 log("failed to remove tmp icon", exc_info=True)
             self.tmp_filename = None
 

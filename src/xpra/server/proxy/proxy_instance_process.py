@@ -227,7 +227,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         if cs:
             try:
                 self.control_socket.close()
-            except (OSError, IOError):
+            except OSError:
                 pass
         csc = self.control_socket_cleanup
         if csc:
@@ -247,7 +247,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             return  True
         try:
             peername = sock.getpeername()
-        except (OSError, IOError):
+        except OSError:
             peername = str(address)
         sockname = sock.getsockname()
         target = peername or sockname

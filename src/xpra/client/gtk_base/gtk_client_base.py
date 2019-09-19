@@ -457,7 +457,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         filelog("file_upload_dialog_response: filename=%s", filename)
         try:
             filesize = os.stat(filename).st_size
-        except (OSError, IOError):
+        except OSError:
             pass
         else:
             if not self.check_file_size("upload", filename, filesize):

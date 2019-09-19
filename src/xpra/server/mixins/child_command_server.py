@@ -147,7 +147,7 @@ class ChildCommandServer(StubServerMixin):
             self.watch_manager = None
             try:
                 watch_manager.close()
-            except (OSError, IOError):
+            except OSError:
                 log("error closing watch manager %s", watch_manager, exc_info=True)
 
 

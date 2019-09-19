@@ -180,7 +180,7 @@ class FileTransferHandler(FileTransferAttributes):
         for x in tuple(self.file_descriptors):
             try:
                 os.close(x)
-            except (OSError, IOError):
+            except OSError:
                 pass
         self.file_descriptors = set()
         self.init_attributes()
@@ -275,7 +275,7 @@ class FileTransferHandler(FileTransferAttributes):
             del self.receive_chunks_in_progress[chunk_id]
             try:
                 os.close(fd)
-            except (OSError, IOError):
+            except OSError:
                 pass
             return
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
@@ -425,7 +425,7 @@ class FileTransferHandler(FileTransferAttributes):
             if DELETE_PRINTER_FILE:
                 try:
                     os.unlink(filename)
-                except (OSError, IOError):
+                except OSError:
                     printlog("failed to delete print job file '%s'", filename)
         if not printer:
             printlog.error("Error: the printer name is missing")

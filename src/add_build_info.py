@@ -32,7 +32,7 @@ def save_properties(props, filename):
     if os.path.exists(filename):
         try:
             os.unlink(filename)
-        except (OSError, IOError):
+        except OSError:
             print("WARNING: failed to delete %s" % filename)
     def u(v):
         try:

@@ -342,7 +342,7 @@ class WindowVideoSource(WindowSource):
             self.video_stream_file = None
             try:
                 vsf.close()
-            except (OSError, IOError):
+            except OSError:
                 log.error("Error closing video stream file", exc_info=True)
 
     def ui_cleanup(self):

@@ -69,7 +69,7 @@ CLOSED_EXCEPTIONS = ()
 def can_retry(e):
     if isinstance(e, socket.timeout):
         return "socket.timeout"
-    if isinstance(e, (IOError, OSError)):
+    if isinstance(e, OSError):
         global CONTINUE_ERRNO
         code = e.args[0]
         can_continue = CONTINUE_ERRNO.get(code)

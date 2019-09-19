@@ -36,18 +36,18 @@ def write_displayfd(w_pipe, display, timeout=10):
                 count = os.write(w_pipe, buf)
                 buf = buf[count:]
                 log("wrote %i bytes, remains %s", count, buf)
-        except (select.error, OSError, IOError) as e:
+        except (select.error, OSError) as e:
             if eerrno(e)!=errno.EINTR:
                 raise
     if not buf:
         try:
             os.fsync(w_pipe)
-        except (IOError, OSError):
+        except OSError:
             log("os.fsync(%i)", w_pipe, exc_info=True)
         if w_pipe>2:
             try:
                 os.close(w_pipe)
-            except (IOError, OSError):
+            except OSError:
                 log("os.close(%i)", w_pipe, exc_info=True)
     return len(buf)==0
 
@@ -71,7 +71,7 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
                 log("read=%s", v)
                 if buf and (buf.endswith(b'\n') or len(buf)>=8):
                     break
-        except (select.error, OSError, IOError) as e:
+        except (select.error, OSError) as e:
             if eerrno(e)!=errno.EINTR:
                 raise
     return buf

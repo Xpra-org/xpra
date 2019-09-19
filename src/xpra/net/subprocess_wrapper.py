@@ -138,14 +138,14 @@ class subprocess_callee(object):
                 self._input = None
                 try:
                     i.close()
-                except (OSError, IOError):
+                except OSError:
                     log("%s.close()", i, exc_info=True)
             o = self._output
             if o:
                 self._output = None
                 try:
                     o.close()
-                except (OSError, IOError):
+                except OSError:
                     log("%s.close()", o, exc_info=True)
 
     def make_protocol(self):

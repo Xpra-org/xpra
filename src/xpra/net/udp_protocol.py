@@ -104,7 +104,7 @@ class UDPListener(object):
             try:
                 log("Protocol.close() calling %s", s.close)
                 s.close()
-            except (OSError, IOError):
+            except OSError:
                 log.error("error closing %s", s, exc_info=True)
             self._socket = None
         log("UDPListener.close() done")

@@ -293,13 +293,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 log.error(" %s", e)
             try:
                 self.send_error(404, "File not found")
-            except (IOError, OSError):
+            except OSError:
                 log("failed to send 404 error - maybe some of the headers were already sent?", exc_info=True)
             return None
         finally:
             if f:
                 try:
                     f.close()
-                except (IOError, OSError):
+                except OSError:
                     log("failed to close", exc_info=True)
         return content

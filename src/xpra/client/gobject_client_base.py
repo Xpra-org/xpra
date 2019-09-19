@@ -29,7 +29,7 @@ def errwrite(msg):
     try:
         sys.stderr.write(msg)
         sys.stderr.flush()
-    except (IOError, OSError, AttributeError):
+    except (OSError, AttributeError):
         pass
 
 
@@ -569,7 +569,7 @@ class RequestStartClient(HelloRequestClient):
                     from xpra.platform.displayfd import write_displayfd
                     log("writing display %s to displayfd=%s", display, self.displayfd)
                     write_displayfd(self.displayfd, display[1:])
-            except (IOError, OSError):
+            except OSError:
                 log("server_connection_established()", exc_info=True)
         if not self.exit_code:
             self.quit(0)

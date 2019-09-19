@@ -18,7 +18,7 @@ def register_os_signals(callback):
             sys.stderr.write("\n")
             sys.stderr.flush()
             get_util_logger().info("got signal %s", SIGNAMES.get(signum, signum))
-        except (IOError, OSError):
+        except OSError:
             pass
         callback(signum)
     def os_signal(signum, _frame):

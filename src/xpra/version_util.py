@@ -81,7 +81,7 @@ def get_host_info():
         }
     try:
         info["hostname"] = socket.gethostname()
-    except (OSError, IOError):
+    except OSError:
         pass
     if POSIX:
         info.update({

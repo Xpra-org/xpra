@@ -271,7 +271,7 @@ class TestAuth(unittest.TestCase):
         sockpath = "./socket-test"
         try:
             os.unlink(sockpath)
-        except (OSError, IOError):
+        except OSError:
             pass
         from xpra.net.bytestreams import SocketConnection
         import socket
@@ -300,7 +300,7 @@ class TestAuth(unittest.TestCase):
         for x in to_close:
             try:
                 x.close()
-            except (OSError, IOError):
+            except OSError:
                 pass
         assert verified
 

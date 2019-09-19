@@ -99,7 +99,7 @@ class ClipboardServer(StubServerMixin):
                         clipboard_filter_res.append(line.strip())
                     log("loaded %s regular expressions from clipboard filter file %s",
                         len(clipboard_filter_res), self.clipboard_filter_file)
-            except (IOError, OSError):
+            except OSError:
                 log.error("Error: reading clipboard filter file %s - clipboard disabled!",
                           self.clipboard_filter_file, exc_info=True)
                 return

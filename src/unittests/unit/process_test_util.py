@@ -95,7 +95,7 @@ class ProcessTestUtil(unittest.TestCase):
             for x in self.temp_files:
                 try:
                     os.unlink(x)
-                except (OSError, IOError):
+                except OSError:
                     pass
 
     def stop_commands(self):
@@ -107,15 +107,15 @@ class ProcessTestUtil(unittest.TestCase):
                 if stdout_file:
                     try:
                         stdout_file.close()
-                    except (OSError, IOError):
+                    except OSError:
                         pass
                 stderr_file = getattr(x, "stderr_file", None)
                 if stderr_file:
                     try:
                         stderr_file.close()
-                    except (OSError, IOError):
+                    except OSError:
                         pass
-            except (OSError, IOError):
+            except OSError:
                 log.error("failed to stop subprocess %s", x)
         def get_wait_for():
             return tuple(proc for proc in self.processes if proc.poll() is None)
@@ -146,7 +146,7 @@ class ProcessTestUtil(unittest.TestCase):
             code, out, _ = get_status_output(["which", cmd])
             if code==0:
                 return strtobytes(out.splitlines()[0])
-        except (OSError, IOError):
+        except OSError:
             pass
         return cmd
 

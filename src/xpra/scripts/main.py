@@ -132,11 +132,11 @@ def main(script_file, cmdline):
         platform_clean()
         try:
             sys.stdout.close()
-        except (IOError, OSError):
+        except OSError:
             pass
         try:
             sys.stderr.close()
-        except (IOError, OSError):
+        except OSError:
             pass
 
 
@@ -1883,7 +1883,7 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
                         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                         sock.settimeout(VERIFY_X11_SOCKET_TIMEOUT)
                         sock.connect(sockpath)
-                except (IOError, OSError):
+                except OSError:
                     pass
                 else:
                     #print("found display path '%s'" % socket_path)

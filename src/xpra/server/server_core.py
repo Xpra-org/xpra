@@ -997,7 +997,7 @@ class ServerCore(object):
     def force_close_connection(self, conn):
         try:
             conn.close()
-        except (OSError, IOError):
+        except OSError:
             log("close_connection()", exc_info=True)
 
     def handle_new_connection(self, conn, socket_info):

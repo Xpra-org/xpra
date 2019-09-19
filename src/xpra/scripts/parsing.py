@@ -54,7 +54,7 @@ def info(msg):
     try:
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
-    except (IOError, OSError):
+    except OSError:
         if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_INFO, msg)
@@ -67,7 +67,7 @@ def warn(msg):
     try:
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
-    except (IOError, OSError):
+    except OSError:
         if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_WARNING, msg)
@@ -80,7 +80,7 @@ def error(msg):
     try:
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
-    except (IOError, OSError):
+    except OSError:
         if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_ERR, msg)
