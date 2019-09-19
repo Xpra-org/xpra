@@ -10,10 +10,7 @@ import cairo
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
 from xpra.util import iround, first_time
-from xpra.os_util import (
-    strtobytes, bytestostr,
-    WIN32, OSX, POSIX,
-    )
+from xpra.os_util import strtobytes, WIN32, OSX, POSIX
 from xpra.log import Logger
 
 log = Logger("gtk", "util")
@@ -144,7 +141,6 @@ def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
                                      has_alpha, 8, w, h, rowstride,
                                      None, None)
 
-
 def color_parse(*args):
     try:
         v = Gdk.RGBA()
@@ -157,11 +153,13 @@ def color_parse(*args):
     if not ok:
         return None
     return v
+
 def get_default_root_window():
     screen = Gdk.Screen.get_default()
     if screen is None:
         return None
     return screen.get_root_window()
+
 def get_root_size():
     if WIN32 or (POSIX and not OSX):
         #FIXME: hopefully, we can remove this code once GTK3 on win32 is fixed?
@@ -187,8 +185,6 @@ def get_root_size():
 def get_default_cursor():
     display = Gdk.Display.get_default()
     return Gdk.Cursor.new_from_name(display, "default")
-display_get_default     = Gdk.Display.get_default
-screen_get_default      = Gdk.Screen.get_default
 
 BUTTON_MASK = {
     Gdk.ModifierType.BUTTON1_MASK : 1,
@@ -221,25 +217,10 @@ WINDOW_NAME_TO_HINT = {
             "DND"           : Gdk.WindowTypeHint.DND
             }
 
-def GetClipboard(selection):
-    from gi.repository.Gtk import Clipboard     #@UnresolvedImport
-    sstr = bytestostr(selection)
-    atom = getattr(Gdk, "SELECTION_%s" % sstr, None) or Gdk.Atom.intern(sstr, False)
-    return Clipboard.get(atom)
-
-def atom_intern(atom_name, only_if_exits=False):
-    return Gdk.Atom.intern(bytestostr(atom_name), only_if_exits)
-
 orig_pack_start = Gtk.Box.pack_start
 def pack_start(self, child, expand=True, fill=True, padding=0):
     orig_pack_start(self, child, expand, fill, padding)
 Gtk.Box.pack_start = pack_start
-
-class OptionMenu(Gtk.MenuButton):
-    def set_menu(self, menu):
-        return self.set_popup(menu)
-    def get_menu(self):
-        return self.get_popup()
 
 GRAB_STATUS_STRING = {
     Gdk.GrabStatus.SUCCESS          : "SUCCESS",
@@ -264,65 +245,8 @@ BYTE_ORDER_NAMES = {
                 }
 
 
-class TrayCheckMenuItem(Gtk.CheckMenuItem):
-    """ We add a button handler to catch clicks that somehow do not
-        trigger the "toggled" signal on some platforms (win32?) when we
-        show the tray menu with a right click and click on the item with the left click.
-        (or the other way around)
-    """
-    def __init__(self, label, tooltip=None):
-        Gtk.CheckMenuItem.__init__(self)
-        self.set_label(label)
-        self.label = label
-        if tooltip:
-            self.set_tooltip_text(tooltip)
-        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
-        self.connect("button-release-event", self.on_button_release_event)
-
-    def on_button_release_event(self, *args):
-        traylog("TrayCheckMenuItem.on_button_release_event(%s) label=%s", args, self.label)
-        self.active_state = self.get_active()
-        def recheck():
-            traylog("TrayCheckMenuItem: recheck() active_state=%s, get_active()=%s",
-                    self.active_state, self.get_active())
-            state = self.active_state
-            self.active_state = None
-            if state is not None and state==self.get_active():
-                #toggle did not fire after the button release, so force it:
-                self.set_active(not state)
-        GLib.idle_add(recheck)
-
-class TrayImageMenuItem(Gtk.ImageMenuItem):
-    """ We add a button handler to catch clicks that somehow do not
-        trigger the "activate" signal on some platforms (win32?) when we
-        show the tray menu with a right click and click on the item with the left click.
-        (or the other way around)
-    """
-    def __init__(self):
-        Gtk.ImageMenuItem.__init__(self)
-        self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
-        self.connect("button-release-event", self.on_button_release_event)
-        self.connect("activate", self.record_activated)
-        self._activated = False
-
-    def record_activated(self, *args):
-        traylog("record_activated%s", args)
-        self._activated = True
-
-    def on_button_release_event(self, *args):
-        traylog("TrayImageMenuItem.on_button_release_event(%s) label=%s", args, self.get_label())
-        self._activated = False
-        def recheck():
-            traylog("TrayImageMenuItem: recheck() already activated=%s", self._activated)
-            if not self._activated:
-                self.activate()
-                #not essential since we'll clear it before calling recheck again:
-                self._activated = False
-        GLib.idle_add(recheck)
-
-
 def get_screens_info():
-    display = display_get_default()
+    display = Gdk.Display.get_default()
     info = {}
     for i in range(display.get_n_screens()):
         screen = display.get_screen(i)
@@ -337,7 +261,7 @@ def get_screen_sizes(xscale=1, yscale=1):
         return iround(v/yscale)
     def swork(*workarea):
         return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
-    display = display_get_default()
+    display = Gdk.Display.get_default()
     if not display:
         return ()
     n_screens = display.get_n_screens()
@@ -573,7 +497,7 @@ def get_monitor_info(_display, screen, i):
 
 
 def get_display_info():
-    display = display_get_default()
+    display = Gdk.Display.get_default()
     info = {
             "root-size"             : get_root_size(),
             "screens"               : display.get_n_screens(),
@@ -611,7 +535,6 @@ def scaled_image(pixbuf, icon_size=None):
     if icon_size:
         pixbuf = pixbuf.scale_simple(icon_size, icon_size, GdkPixbuf.InterpType.BILINEAR)
     return Gtk.Image.new_from_pixbuf(pixbuf)
-
 
 
 def get_icon_from_file(filename):
@@ -717,59 +640,6 @@ def label(text="", tooltip=None, font=None):
     if tooltip:
         l.set_tooltip_text(tooltip)
     return l
-
-
-def title_box(label_str):
-    eb = Gtk.EventBox()
-    l = label(label_str)
-    l.modify_fg(Gtk.StateType.NORMAL, Gdk.Color(red=48*256, green=0, blue=0))
-    al = Gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
-    al.set_padding(0, 0, 10, 10)
-    al.add(l)
-    eb.add(al)
-    eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=219*256, green=226*256, blue=242*256))
-    return eb
-
-
-#utility method to ensure there is always only one CheckMenuItem
-#selected in a submenu:
-def ensure_item_selected(submenu, item, recurse=True):
-    if not isinstance(item, Gtk.CheckMenuItem):
-        return None
-    if item.get_active():
-        #deactivate all except this one
-        def deactivate(items, skip=None):
-            for x in items:
-                if x==skip:
-                    continue
-                if isinstance(x, Gtk.MenuItem):
-                    submenu = x.get_submenu()
-                    if submenu and recurse:
-                        deactivate(submenu.get_children(), skip)
-                if isinstance(x, Gtk.CheckMenuItem):
-                    if x!=item and x.get_active():
-                        x.set_active(False)
-        deactivate(submenu.get_children(), item)
-        return item
-    #ensure there is at least one other active item
-    def get_active_item(items):
-        for x in items:
-            if isinstance(x, Gtk.MenuItem):
-                submenu = x.get_submenu()
-                if submenu:
-                    a = get_active_item(submenu.get_children())
-                    if a:
-                        return a
-            if isinstance(x, Gtk.CheckMenuItem):
-                if x.get_active():
-                    return x
-        return None
-    active = get_active_item(submenu.get_children())
-    if active:
-        return active
-    #if not then keep this one active:
-    item.set_active(True)
-    return item
 
 
 class TableBuilder(object):

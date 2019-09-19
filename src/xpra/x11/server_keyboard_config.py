@@ -6,10 +6,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import Gdk
+
 from xpra.util import csv, nonl, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
-from xpra.gtk_common.gtk_util import display_get_default, get_default_root_window
+from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.gtk_common.error import xsync, xlog
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
@@ -39,7 +41,6 @@ ALL_X11_MODIFIERS = {
                     "mod4"      : 6,
                     "mod5"      : 7
                     }
-
 
 class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
@@ -218,8 +219,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def compute_modifier_keynames(self):
         self.keycodes_for_modifier_keynames = {}
         self.xkbmap_mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
-        display = display_get_default()
-        from gi.repository import Gdk
+        display = Gdk.Display.get_default()
         keymap = Gdk.Keymap.get_for_display(display)
         if self.keynames_for_mod:
             for modifier, keynames in self.keynames_for_mod.items():
@@ -281,7 +281,7 @@ class KeyboardConfig(KeyboardConfigBase):
             log.error("Error: compute_client_modifier_keycodes: %s" % e, exc_info=True)
 
     def compute_modifier_map(self):
-        self.modifier_map = grok_modifier_map(display_get_default(), self.xkbmap_mod_meanings)
+        self.modifier_map = grok_modifier_map(Gdk.Display.get_default(), self.xkbmap_mod_meanings)
         log("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
 
 

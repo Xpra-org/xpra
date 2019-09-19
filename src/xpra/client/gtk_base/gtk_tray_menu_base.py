@@ -11,8 +11,7 @@ from gi.repository import GLib, Gtk
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.gtk_common.gtk_util import (
-    ensure_item_selected, menuitem,
-    get_pixbuf_from_data, scaled_image,
+    menuitem, get_pixbuf_from_data, scaled_image,
     )
 from xpra.client.client_base import EXIT_OK
 from xpra.gtk_common.about import about, close_about
@@ -115,6 +114,47 @@ def set_sensitive(widget, sensitive):
         else:
             widget.hide()
     widget.set_sensitive(sensitive)
+
+
+#utility method to ensure there is always only one CheckMenuItem
+#selected in a submenu:
+def ensure_item_selected(submenu, item, recurse=True):
+    if not isinstance(item, Gtk.CheckMenuItem):
+        return None
+    if item.get_active():
+        #deactivate all except this one
+        def deactivate(items, skip=None):
+            for x in items:
+                if x==skip:
+                    continue
+                if isinstance(x, Gtk.MenuItem):
+                    submenu = x.get_submenu()
+                    if submenu and recurse:
+                        deactivate(submenu.get_children(), skip)
+                if isinstance(x, Gtk.CheckMenuItem):
+                    if x!=item and x.get_active():
+                        x.set_active(False)
+        deactivate(submenu.get_children(), item)
+        return item
+    #ensure there is at least one other active item
+    def get_active_item(items):
+        for x in items:
+            if isinstance(x, Gtk.MenuItem):
+                submenu = x.get_submenu()
+                if submenu:
+                    a = get_active_item(submenu.get_children())
+                    if a:
+                        return a
+            if isinstance(x, Gtk.CheckMenuItem):
+                if x.get_active():
+                    return x
+        return None
+    active = get_active_item(submenu.get_children())
+    if active:
+        return active
+    #if not then keep this one active:
+    item.set_active(True)
+    return item
 
 
 def make_min_auto_menu(title, min_options, options,

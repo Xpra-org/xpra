@@ -10,7 +10,7 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gtk_util import (
-    display_get_default, get_default_root_window, GDKWindow,
+    get_default_root_window, GDKWindow,
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -136,7 +136,7 @@ class SystemTray(GObject.GObject):
         log("SystemTray.cleanup() done")
 
     def setup_tray_window(self):
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         root = get_default_root_window()
         screen = root.get_screen()
         owner = X11Window.XGetSelectionOwner(SELECTION)

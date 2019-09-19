@@ -4,9 +4,9 @@
 # later version. See the file COPYING for details.
 
 import cairo
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import KEY_PRESS_MASK, add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel
 
 
 class ColorPlainWindow(Gtk.Window):
@@ -16,7 +16,7 @@ class ColorPlainWindow(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 320)
         self.set_app_paintable(True)
-        self.set_events(KEY_PRESS_MASK)
+        self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
         self.connect("draw", self.area_draw)
         self.connect("destroy", Gtk.main_quit)
         self.show_all()

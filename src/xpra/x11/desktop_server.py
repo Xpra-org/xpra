@@ -6,7 +6,7 @@
 
 import os
 import socket
-from gi.repository import GObject
+from gi.repository import GObject, Gdk
 
 from xpra.os_util import get_generic_os_name, load_binary_file
 from xpra.util import updict, log_screen_sizes
@@ -15,10 +15,7 @@ from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.error import XError
-from xpra.gtk_common.gtk_util import (
-    get_screen_sizes, get_root_size,
-    display_get_default,
-    )
+from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_catchall_receiver, remove_catchall_receiver,
@@ -306,7 +303,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         screens = display.get_n_screens()
         for n in range(screens):
             screen = display.get_screen(n)
@@ -429,7 +426,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def load_existing_windows(self):
         #at present, just one  window is forwarded:
         #the root window covering the whole display
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         screens = display.get_n_screens()
         with xsync:
             for n in range(screens):

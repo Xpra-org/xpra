@@ -23,7 +23,7 @@ from gi.repository import GLib, Gtk, GdkPixbuf
 
 from xpra.os_util import OSX, bytestostr
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, display_get_default, color_parse,
+    add_close_accel, color_parse,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
 
@@ -81,7 +81,7 @@ class GTK_Notifier(NotifierBase):
         self._notify_stack = []
         self._offset = 0
 
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         screen = display.get_default_screen()
         n = screen.get_n_monitors()
         log("screen=%s, monitors=%s", screen, n)

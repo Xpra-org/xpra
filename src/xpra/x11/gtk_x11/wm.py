@@ -12,10 +12,7 @@ from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.gtk_util import (
-    get_default_root_window, display_get_default,
-    GDKWindow,
-    )
+from xpra.gtk_common.gtk_util import get_default_root_window, GDKWindow
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.models.window import WindowModel, configure_bits
@@ -183,7 +180,7 @@ class Wm(GObject.GObject):
         GObject.GObject.__init__(self)
 
         if display is None:
-            display = display_get_default()
+            display = Gdk.Display.get_default()
         self._display = display
         self._root = self._display.get_default_screen().get_root_window()
         self._wm_name = wm_name

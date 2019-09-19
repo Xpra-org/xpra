@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
-
 from xpra.util import typedict, AdHocStruct
 from xpra.os_util import WIN32
 from xpra.log import Logger

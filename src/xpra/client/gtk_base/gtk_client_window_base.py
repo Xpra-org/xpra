@@ -6,11 +6,10 @@
 # later version. See the file COPYING for details.
 
 import math
-import os.path
-from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
-from gi.repository import Gtk, Gdk, Gio
-
 import cairo
+import os.path
+from urllib.parse import unquote
+from gi.repository import Gtk, Gdk, Gio
 
 from xpra.os_util import bytestostr, is_X11, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import (

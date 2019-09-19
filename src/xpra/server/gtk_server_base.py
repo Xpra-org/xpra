@@ -21,7 +21,7 @@ from xpra.gtk_common.quit import (
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import (
-    get_gtk_version_info, display_get_default, get_root_size,
+    get_gtk_version_info, get_root_size,
     )
 from xpra.log import Logger
 
@@ -52,7 +52,7 @@ class GTKServerBase(ServerBase):
 
     def watch_keymap_changes(self):
         ### Set up keymap change notification:
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         keymap = Gdk.Keymap.get_for_display(display)
         keymap.connect("keys-changed", self._keys_changed)
 
@@ -97,7 +97,7 @@ class GTKServerBase(ServerBase):
             self.ui_watcher = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
             self.ui_watcher.start()
         if server_features.windows:
-            display = display_get_default()
+            display = Gdk.Display.get_default()
             i=0
             while i<display.get_n_screens():
                 screen = display.get_screen(i)
@@ -113,7 +113,7 @@ class GTKServerBase(ServerBase):
     def make_hello(self, source):
         capabilities = ServerBase.make_hello(self, source)
         if source.wants_display:
-            display = display_get_default()
+            display = Gdk.Display.get_default()
             max_size = tuple(display.get_maximal_cursor_size())
             capabilities.update({
                 "display"               : display.get_name(),
@@ -127,7 +127,7 @@ class GTKServerBase(ServerBase):
     def get_ui_info(self, proto, *args):
         info = ServerBase.get_ui_info(self, proto, *args)
         info.setdefault("server", {}).update({
-                                              "display"             : display_get_default().get_name(),
+                                              "display"             : Gdk.Display.get_default().get_name(),
                                               "root_window_size"    : self.get_root_window_size(),
                                               })
         info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
@@ -159,7 +159,7 @@ class GTKServerBase(ServerBase):
 
     def send_initial_cursors(self, ss, _sharing=False):
         #cursors: get sizes and send:
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         self.cursor_sizes = int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
         cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
@@ -167,7 +167,7 @@ class GTKServerBase(ServerBase):
     def get_ui_cursor_info(self):
         #(from UI thread)
         #now cursor size info:
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         pos = display.get_default_screen().get_root_window().get_pointer()[-3:-1]
         cinfo = {"position" : pos}
         for prop, size in {
@@ -246,7 +246,7 @@ class GTKServerBase(ServerBase):
 
     def _move_pointer(self, _wid, pos, *_args):
         x, y = pos
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
 
     def do_process_button_action(self, *args):

@@ -23,7 +23,7 @@ from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, color_parse,
-    OptionMenu, choose_file, imagebutton,
+    choose_file, imagebutton,
     )
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX
@@ -93,7 +93,7 @@ def get_active_item_index(optionmenu):
     return -1
 
 def set_history_from_active(optionmenu):
-    #Used for OptionMenu combo:
+    #Used for MenuButton combo:
     #sets the first active menu entry as the "history" value (the selected item)
     i = get_active_item_index(optionmenu)
     if i>0:
@@ -396,11 +396,11 @@ class ApplicationWindow:
         hbox = Gtk.HBox(False, 20)
         hbox.set_spacing(20)
         hbox.pack_start(Gtk.Label("Encoding: "))
-        self.encoding_combo = OptionMenu()
+        self.encoding_combo = Gtk.MenuButton()
         encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER]
         server_encodings = encodings
         es = make_encodingsmenu(self.get_current_encoding, self.set_new_encoding, encodings, server_encodings)
-        self.encoding_combo.set_menu(es)
+        self.encoding_combo.set_popup(es)
         hbox.pack_start(self.encoding_combo)
         self.advanced_box.pack_start(hbox)
         self.set_new_encoding(self.config.encoding)
@@ -608,7 +608,7 @@ class ApplicationWindow:
         if not self.encoding_combo:
             return ""
         index = get_active_item_index(self.encoding_combo)
-        return self.encoding_combo.get_menu().index_to_encoding.get(index)
+        return self.encoding_combo.get_popup().index_to_encoding.get(index)
 
     def encoding_changed(self, *args):
         encoding = self.get_selected_encoding()

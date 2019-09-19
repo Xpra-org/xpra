@@ -8,13 +8,14 @@
 
 import os
 import threading
+from gi.repository import Gdk
 
 from xpra.x11.bindings.core_bindings import set_context_check, X11CoreBindings     #@UnresolvedImport
 from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.gtk_common.error import XError, xswallow, xsync, xlog, trap, verify_sync
-from xpra.gtk_common.gtk_util import display_get_default, get_default_root_window
+from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
@@ -79,7 +80,7 @@ class X11ServerCore(GTKServerBase):
     """
 
     def __init__(self):
-        self.screen_number = display_get_default().get_default_screen().get_number()
+        self.screen_number = Gdk.Screen.get_default().get_number()
         self.root_window = get_default_root_window()
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
@@ -498,7 +499,7 @@ class X11ServerCore(GTKServerBase):
 
 
     def get_cursor_sizes(self):
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         return display.get_default_cursor_size(), display.get_maximal_cursor_size()
 
     def get_cursor_image(self):
@@ -854,7 +855,7 @@ class X11ServerCore(GTKServerBase):
         #maybe this should be in all cases (it is in desktop_server):
         #model = self._id_to_window.get(wid)
         #return model.client_window.get_screen().get_number()
-        #return display_get_default().get_default_screen().get_number()
+        #return Gdk.Display.get_default().get_default_screen().get_number()
         #-1 uses the current screen
         return -1
 

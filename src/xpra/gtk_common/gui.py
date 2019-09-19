@@ -153,8 +153,7 @@ class GUI(Gtk.Window):
         from xpra.gtk_common.cursor_names import cursor_types
         watch = cursor_types.get("WATCH")
         if watch:
-            from xpra.gtk_common.gtk_util import display_get_default
-            display = display_get_default()
+            display = Gdk.Display.get_default()
             cursor = Gdk.Cursor.new_for_display(display, watch)
             widget.get_window().set_cursor(cursor)
             GLib.timeout_add(5*1000, self.reset_cursors)

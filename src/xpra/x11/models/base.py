@@ -4,14 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject, Gdk
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.models.core import CoreX11WindowModel, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.gtk_common.gtk_util import atom_intern
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -314,7 +313,8 @@ class BaseWindowModel(CoreX11WindowModel):
         if not window_types:
             window_type = self._guess_window_type()
             metalog("guessed window type=%s", window_type)
-            window_types = [atom_intern(window_type)]
+            #atom = Gdk.Atom.intern(window_type, False)
+            window_types = [window_type]
         #normalize them (hide _NET_WM_WINDOW_TYPE prefix):
         window_types = [str(wt).replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for wt in window_types]
         self._updateprop("window-type", window_types)

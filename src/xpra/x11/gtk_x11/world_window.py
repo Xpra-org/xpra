@@ -4,14 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gtk
+from gi.repository import GObject, Gtk, Gdk
 
 from xpra.gtk_common.error import trap
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import x11_get_server_time
-from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default
+from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -91,7 +91,7 @@ def get_world_window():
     return world_window
 
 class WorldWindow(Gtk.Window):
-    def __init__(self, screen=screen_get_default()):
+    def __init__(self, screen=Gdk.Screen.get_default()):
         global world_window
         assert world_window is None, "a world window already exists! (%s)" % world_window
         world_window = self
@@ -125,7 +125,7 @@ class WorldWindow(Gtk.Window):
         return "WorldWindow(%#x)" % xid
 
     def _resize(self, *_args):
-        s = screen_get_default()
+        s = Gdk.Screen.get_default()
         x = s.get_width()
         y = s.get_height()
         log("sizing world to %sx%s", x, y)

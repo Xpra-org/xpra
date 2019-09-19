@@ -23,8 +23,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
         by adding the keyval_name.
         We can also ignore some keys
     """
-    from xpra.gtk_common.gtk_util import display_get_default
-    display = display_get_default()
+    display = Gdk.Display.get_default()
     if not display:
         return ()
     keymap = Gdk.Keymap.get_for_display(display)

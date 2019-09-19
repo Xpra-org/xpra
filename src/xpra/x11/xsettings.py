@@ -4,9 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject
+from gi.repository import GObject, Gdk, Gtk
 
-from xpra.gtk_common.gtk_util import GetClipboard
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xlog, XError
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
@@ -61,7 +60,8 @@ class XSettingsHelper(object):
     """
     def __init__(self, screen_number=0):
         self._selection = "_XSETTINGS_S%s" % screen_number
-        self._clipboard = GetClipboard(self._selection)
+        atom = Gdk.Atom.intern(self._selection, False)
+        self._clipboard = Gtk.Clipboard.get(atom)
 
     def xsettings_owner(self):
         with xlog:

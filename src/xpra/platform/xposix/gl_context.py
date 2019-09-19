@@ -10,7 +10,7 @@ from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 from xpra.util import envbool
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
-from xpra.gtk_common.gtk_util import display_get_default, enable_alpha
+from xpra.gtk_common.gtk_util import enable_alpha
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -86,7 +86,7 @@ class GLXWindowContext(object):
 class GLXContext(object):
 
     def __init__(self, alpha=False):
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         screen = display.get_default_screen()
         bpc = 8
         attrs = c_attrs({

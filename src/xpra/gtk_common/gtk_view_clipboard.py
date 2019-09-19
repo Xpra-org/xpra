@@ -5,16 +5,17 @@
 import re
 import sys
 from collections import deque
-from gi.repository import Pango, Gtk
+from gi.repository import Pango, Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import TableBuilder, label, GetClipboard
+from xpra.gtk_common.gtk_util import TableBuilder, label
 from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
 
 
 class ClipboardInstance(object):
     def __init__(self, selection, _log):
-        self.clipboard = GetClipboard(selection)
+        atom = Gdk.Atom.intern(selection, False)
+        self.clipboard = Gtk.Clipboard.get(atom)
         self.selection = selection
         self._log = _log
         self.owned_label = label()

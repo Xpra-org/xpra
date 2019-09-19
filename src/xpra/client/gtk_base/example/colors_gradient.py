@@ -1,16 +1,12 @@
 #!/usr/bin/env python
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import cairo
+from gi.repository import Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import (
-    KEY_PRESS_MASK,
-    add_close_accel,
-    )
-
-from gi.repository import Gtk
+from xpra.gtk_common.gtk_util import add_close_accel
 
 
 class ColorGradientWindow(Gtk.Window):
@@ -21,7 +17,7 @@ class ColorGradientWindow(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(1024, 768)
         self.set_app_paintable(True)
-        self.set_events(KEY_PRESS_MASK)
+        self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
         self.bpc = 16
         self.connect("draw", self.area_draw)
         self.connect("configure_event", self.configure_event)

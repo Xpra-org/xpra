@@ -12,7 +12,6 @@
 from struct import pack, unpack, calcsize
 from gi.repository import GObject, Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import GetClipboard
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -46,7 +45,8 @@ class ManagerSelection(GObject.GObject):
     def __init__(self, selection):
         GObject.GObject.__init__(self)
         self.atom = selection
-        self.clipboard = GetClipboard(selection)
+        atom = Gdk.Atom.intern(selection, False)
+        self.clipboard = Gtk.Clipboard.get(atom)
         self._xwindow = None
 
     def _owner(self):

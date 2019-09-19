@@ -18,7 +18,7 @@ from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_val
 from xpra.scripts.config import python_platform
 from xpra.client import mixin_features
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, label, title_box,
+    add_close_accel, label,
     TableBuilder, imagebutton, get_gtk_version_info,
     )
 from xpra.net.net_util import get_network_caps
@@ -31,6 +31,17 @@ SHOW_PIXEL_STATS = True
 SHOW_SOUND_STATS = True
 SHOW_RECV = True
 
+
+def title_box(label_str):
+    eb = Gtk.EventBox()
+    l = label(label_str)
+    l.modify_fg(Gtk.StateType.NORMAL, Gdk.Color(red=48*256, green=0, blue=0))
+    al = Gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
+    al.set_padding(0, 0, 10, 10)
+    al.add(l)
+    eb.add(al)
+    eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=219*256, green=226*256, blue=242*256))
+    return eb
 
 def pixelstr(v):
     if v<0:

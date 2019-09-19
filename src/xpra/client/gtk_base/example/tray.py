@@ -80,7 +80,7 @@ class FakeApplication:
             from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
         except ImportError:
             GTKStatusIconTray = None
-        for x in (get_native_tray_classes()+[GTKStatusIconTray]):
+        for x in get_native_tray_classes()+[GTKStatusIconTray]:
             if x:
                 try:
                     XPRA_APP_ID = 0

@@ -25,7 +25,7 @@ from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (
     get_gtk_version_info, scaled_image, get_default_cursor, color_parse,
-    display_get_default, screen_get_default, get_pixbuf_from_data,
+    get_pixbuf_from_data,
     get_default_root_window, get_root_size,
     get_screen_sizes, GDKWindow,
     GRAB_STATUS_STRING,
@@ -735,7 +735,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def has_transparency(self):
-        screen = screen_get_default()
+        screen = Gdk.Screen.get_default()
         if screen is None:
             return is_Wayland()
         return screen.get_rgba_visual() is not None
@@ -773,7 +773,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def make_cursor(self, cursor_data):
         #if present, try cursor ny name:
-        display = display_get_default()
+        display = Gdk.Display.get_default()
         cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
                   len(cursor_data)>=10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         #named cursors cannot be scaled

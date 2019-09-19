@@ -3,18 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import pango            #@UnresolvedImport
-import pygtk            #@UnresolvedImport
-pygtk.require('2.0')
-import gtk              #@UnresolvedImport
-from gtk import gtkgl   #@UnresolvedImport
-from gtk import gdkgl   #@UnresolvedImport
-
-from xpra.gtk_common.gtk_util import add_close_accel
 from OpenGL.GL import (
     glClear, glClearColor, glViewport,
     glColor3f, glFlush, glRectf, GL_COLOR_BUFFER_BIT,
     )
+from gi.repository import Gtk, Pango
+
+from xpra.gtk_common.gtk_util import add_close_accel
 
 
 SIZE = 1600, 1200
@@ -34,6 +29,7 @@ class GLContext(object):
 class ColorTest(object):
 
     def __init__(self):
+        #FIXME: needs porting to GTK3:
         display_mode = gdkgl.MODE_RGB | gdkgl.MODE_DOUBLE
         try:
             self.glconfig = gdkgl.Config(mode=display_mode)
@@ -41,17 +37,17 @@ class ColorTest(object):
             display_mode &= ~gdkgl.MODE_DOUBLE
             self.glconfig = gdkgl.Config(mode=display_mode)
 
-        win = gtk.Window()
+        win = Gtk.Window()
         win.set_title('OpenGL Color Gradient')
-        win.connect('destroy', gtk.main_quit)
+        win.connect('destroy', Gtk.main_quit)
         self.win = win
 
-        vbox = gtk.VBox()
+        vbox = Gtk.VBox()
         self.win.add(vbox)
 
         self.bpc = 16
-        self.label = gtk.Label(" ")
-        self.label.modify_font(pango.FontDescription("sans 24"))
+        self.label = Gtk.Label(" ")
+        self.label.modify_font(Pango.FontDescription("sans 24"))
         self.populate_label()
         vbox.add(self.label)
 
@@ -64,7 +60,7 @@ class ColorTest(object):
         self.glarea = glarea
         vbox.add(glarea)
         win.show_all()
-        add_close_accel(win, gtk.main_quit)
+        add_close_accel(win, Gtk.main_quit)
 
     def on_realize(self, widget):
         with GLContext(widget):
@@ -144,7 +140,7 @@ class ColorTest(object):
 if __name__ == '__main__':
     import signal
     def signal_handler(*_args):
-        gtk.main_quit()
+        Gtk.main_quit()
     signal.signal(signal.SIGINT, signal_handler)
     ColorTest()
-    gtk.main()
+    Gtk.main()
