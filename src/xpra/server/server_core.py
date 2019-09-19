@@ -234,7 +234,7 @@ class ServerCore(object):
         self.pidfile = None
         self.pidinode = 0
 
-        self.session_name = u""
+        self.session_name = ""
 
         #Features:
         self.mdns = False
@@ -1537,7 +1537,7 @@ class ServerCore(object):
     def _process_disconnect(self, proto, packet):
         info = bytestostr(packet[1])
         if len(packet)>2:
-            info += u" (%s)" % csv(bytestostr(x) for x in packet[2:])
+            info += " (%s)" % csv(bytestostr(x) for x in packet[2:])
         #only log protocol info if there is more than one client:
         proto_info = self._disconnect_proto_info(proto)
         self._log_disconnect(proto, "client%s has requested disconnection: %s", proto_info, info)

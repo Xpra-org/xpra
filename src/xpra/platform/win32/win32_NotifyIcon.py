@@ -246,7 +246,7 @@ class win32NotifyIcon(object):
 
     def create_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        window_name = u"%s StatusIcon Window" % bytestostr(self.title)
+        window_name = "%s StatusIcon Window" % bytestostr(self.title)
         self.hwnd = CreateWindowExA(0, NIclassAtom, window_name, style,
             win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0, \
             0, 0, NIwc.hInstance, None)
@@ -473,7 +473,7 @@ NIwc.style = win32con.CS_HREDRAW | win32con.CS_VREDRAW
 NIwc.lpfnWndProc = WNDPROC(NotifyIconWndProc)
 NIwc.hInstance = GetModuleHandleA(0)
 NIwc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
-NIwc.lpszClassName = u"win32NotifyIcon"
+NIwc.lpszClassName = "win32NotifyIcon"
 
 NIclassAtom = RegisterClassExA(byref(NIwc))
 log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
@@ -486,8 +486,8 @@ def main():
 
     def click_callback(button, pressed):
         menu = CreatePopupMenu()
-        AppendMenu(menu, win32con.MF_STRING, 1024, u"Generate balloon")
-        AppendMenu(menu, win32con.MF_STRING, 1025, u"Exit")
+        AppendMenu(menu, win32con.MF_STRING, 1024, "Generate balloon")
+        AppendMenu(menu, win32con.MF_STRING, 1025, "Exit")
         pos = POINT()
         GetCursorPos(byref(pos))
         hwnd = tray.hwnd

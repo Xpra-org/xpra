@@ -78,7 +78,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         if self.wndclass_handle==0:
             raise WinError()
         style = win32con.WS_CAPTION   #win32con.WS_OVERLAPPED
-        self.window = CreateWindowExW(0, self.wndclass_handle, u"Clipboard", style,
+        self.window = CreateWindowExW(0, self.wndclass_handle, "Clipboard", style,
                                       0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
                                       win32con.HWND_MESSAGE, 0, self.wndclass.hInstance, None)
         log("clipboard window=%s", self.window)

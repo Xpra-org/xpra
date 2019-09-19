@@ -111,7 +111,7 @@ class UIXpraClient(ClientBaseClass):
 
         self._ui_events = 0
         self.title = ""
-        self.session_name = u""
+        self.session_name = ""
 
         self.server_platform = ""
         self.server_session_name = None
@@ -489,7 +489,7 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # server messages:
     def _process_server_event(self, packet):
-        log(u": ".join((str(x) for x in packet[1:])))
+        log(": ".join((str(x) for x in packet[1:])))
 
     def on_server_setting_changed(self, setting, cb):
         self._on_server_setting_changed.setdefault(setting, []).append(cb)

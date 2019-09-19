@@ -17,7 +17,7 @@ def main():
     win.show()
     def change_wmcommand():
         with xsync:
-            prop_set(win.get_window(), "WM_COMMAND", "latin1", u"HELLO WORLD")
+            prop_set(win.get_window(), "WM_COMMAND", "latin1", "HELLO WORLD")
             print("WM_COMMAND changed!")
     gobject.timeout_add(1000, change_wmcommand)
     gtk.main()

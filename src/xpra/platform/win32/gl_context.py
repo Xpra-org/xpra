@@ -83,7 +83,7 @@ class WGLContext(object):
         #create a temporary window to query opengl attributes:
         hInst = GetModuleHandleA(0)
         log("check_support() GetModuleHandleW()=%#x", hInst or 0)
-        classname = u"Xpra Temporary Window for OpenGL"
+        classname = "Xpra Temporary Window for OpenGL"
         wndc = WNDCLASSEX()
         wndc.cbSize = sizeof(WNDCLASSEX)
         wndc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW
@@ -96,7 +96,7 @@ class WGLContext(object):
         if not reg_atom:
             return {"info" : "disabled: failed to register window class, %s" % FormatError()}
         style = WS_OVERLAPPED | WS_SYSMENU
-        window_name = u"Xpra OpenGL Test"
+        window_name = "Xpra OpenGL Test"
         self.hwnd = CreateWindowExA(0, reg_atom, window_name, style,
             CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
             0, 0, hInst, None)

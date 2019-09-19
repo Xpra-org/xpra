@@ -175,7 +175,7 @@ def get_machine_id():
         Warning: only works on posix!
         (which is ok since we only used it on posix at present)
     """
-    v = u""
+    v = ""
     if POSIX:
         for filename in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
             v = load_binary_file(filename)

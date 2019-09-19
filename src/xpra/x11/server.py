@@ -247,7 +247,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                         #ugly: API expects a window object with a ".xid"
                         X11WindowModel = namedtuple("X11WindowModel", "xid")
                         root_overlay = X11WindowModel(xid=self.root_overlay)
-                        prop_set(root_overlay, "WM_TITLE", "latin1", u"RootOverlay")
+                        prop_set(root_overlay, "WM_TITLE", "latin1", "RootOverlay")
                         X11Window.AllowInputPassthrough(self.root_overlay)
             except Exception as e:
                 log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)

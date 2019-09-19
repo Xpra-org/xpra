@@ -237,7 +237,7 @@ class PRINTER_NOTIFY_INFO_DATA(ctypes.Structure):
     def _data_as_string(self):
         if self._NotifyData.Data.pBuf:
             return ctypes.c_wchar_p(self._NotifyData.Data.pBuf).value
-        return u""
+        return ""
     @property
     def _data_as_datetime(self):
         if self._NotifyData.Data.pBuf:

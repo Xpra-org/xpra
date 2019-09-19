@@ -238,9 +238,9 @@ class DisplayManager(StubServerMixin):
         names = []
         for i in range(count):
             if i==0:
-                name = u"Main"
+                name = "Main"
             else:
-                name = u"Desktop %i" % (i+1)
+                name = "Desktop %i" % (i+1)
             for ss in self._server_sources.values():
                 if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
                     dn = ss.desktop_names[i]

@@ -186,7 +186,7 @@ class WindowModel(BaseWindowModel):
                                         title = "CorralWindow-%#x" % self.xid)
         cxid = self.corral_window.get_xid()
         log("setup() corral_window=%#x", cxid)
-        prop_set(self.corral_window, "_NET_WM_NAME", "utf8", u"Xpra-CorralWindow-%#x" % self.xid)
+        prop_set(self.corral_window, "_NET_WM_NAME", "utf8", "Xpra-CorralWindow-%#x" % self.xid)
         X11Window.substructureRedirect(cxid)
         add_event_receiver(self.corral_window, self)
 

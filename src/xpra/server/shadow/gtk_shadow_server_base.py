@@ -205,12 +205,11 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if OSX:
             return
         try:
-            from gi.repository import Gtk
             #menu:
-            label = u"Xpra Shadow Server"
+            label = "Xpra Shadow Server"
             display = os.environ.get("DISPLAY")
             if POSIX and display:
-                label = u"Xpra %s Shadow Server" % display
+                label = "Xpra %s Shadow Server" % display
             self.tray_menu = Gtk.Menu()
             self.tray_menu.set_title(label)
             title_item = Gtk.MenuItem()

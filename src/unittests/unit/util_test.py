@@ -93,12 +93,12 @@ class TestTypeDict(unittest.TestCase):
 
     def test_strget(self):
         d = typedict({b"bytekey"    : b"bytevalue",
-                      u"unicodekey" : u"unicodevalue"})
+                      "unicodekey" : "unicodevalue"})
         self._test_values_type(d, d.strget, [str, ])
 
     def test_intget(self):
         d = typedict({b"bytekey"    : "1",
-                      u"unicodekey" : 2,
+                      "unicodekey" : 2,
                       996           : 3.14})
         self._test_values_type(d, d.intget, [int], [1, 2, 3])
 

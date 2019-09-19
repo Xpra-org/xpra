@@ -1155,7 +1155,7 @@ def parseguid(s):
     return c_parseguid(s)
 
 def test_parse():
-    sample_guid = u"CE788D20-AAA9-4318-92BB-AC7E858C8D36"
+    sample_guid = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
     x = c_parseguid(sample_guid)
     v = guidstr(x)
     assert v==sample_guid, "expected %s but got %s" % (sample_guid, v)

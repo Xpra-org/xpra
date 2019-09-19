@@ -328,7 +328,7 @@ class GTKTrayMenuBase(object):
         title_item = None
         if SHOW_TITLE_ITEM:
             title_item = Gtk.MenuItem()
-            title_item.set_label(self.client.session_name or u"Xpra")
+            title_item.set_label(self.client.session_name or "Xpra")
             set_sensitive(title_item, False)
             menu.append(title_item)
             def set_menu_title(*_args):
@@ -336,7 +336,7 @@ class GTKTrayMenuBase(object):
                 try:
                     title = self.client.get_tray_title()
                 except Exception:
-                    title = self.client.session_name or u"Xpra"
+                    title = self.client.session_name or "Xpra"
                 title_item.set_label(title)
             self.client.after_handshake(set_menu_title)
 
@@ -1389,12 +1389,12 @@ class GTKTrayMenuBase(object):
         variants = tuple(bytestostr(x) for x in variants)
         full_layout_list = False
         if len(layouts)>1:
-            log("keyboard layouts: %s", u",".join(bytestostr(x) for x in layouts))
+            log("keyboard layouts: %s", ",".join(bytestostr(x) for x in layouts))
             #log after removing dupes:
             def uniq(seq):
                 seen = set()
                 return [x for x in seq if not (x in seen or seen.add(x))]
-            log("keyboard layouts: %s", u",".join(bytestostr(x) for x in uniq(layouts)))
+            log("keyboard layouts: %s", ",".join(bytestostr(x) for x in uniq(layouts)))
             auto = kbitem("Auto", "Auto", "", True)
             self.layout_submenu.append(auto)
             if layout:

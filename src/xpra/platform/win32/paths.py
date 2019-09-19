@@ -71,11 +71,11 @@ def get_program_data_dir():
             return buf.value
     except:
         get_util_logger().debug("get_program_data_dir()", exc_info=True)
-    return u"C:\\ProgramData"
+    return "C:\\ProgramData"
 
 def do_get_system_conf_dirs():
     #ie: C:\ProgramData\Xpra
-    return [os.path.join(get_program_data_dir(), u"Xpra")]
+    return [os.path.join(get_program_data_dir(), "Xpra")]
 
 def do_get_ssh_conf_dirs():
     from xpra.scripts.config import python_platform

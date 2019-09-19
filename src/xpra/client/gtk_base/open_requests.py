@@ -96,7 +96,7 @@ class OpenRequestsWindow(object):
         expired = 0
         for label, expiry in self.expire_labels.items():
             seconds = max(0, expiry-monotonic_time())
-            label.set_text(u"%i" % seconds)
+            label.set_text("%i" % seconds)
             if seconds==0:
                 expired += 1
         if expired:
@@ -123,9 +123,9 @@ class OpenRequestsWindow(object):
             headers = [Gtk.Label("URL / Filename"), Gtk.Label(""), Gtk.Label("Expires in"), Gtk.Label("Action")]
             tb.add_row(*headers)
             for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
-                details = u""
+                details = ""
                 if dtype==b"file" and filesize>0:
-                    details = u"%sB" % std_unit_dec(filesize)
+                    details = "%sB" % std_unit_dec(filesize)
                 expires_label = Gtk.Label()
                 self.expire_labels[expires_label] = expires
                 buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)

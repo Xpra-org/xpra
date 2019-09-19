@@ -148,8 +148,8 @@ class WindowWithMenu(gtk.Window):
     def set_props(self):
         self.app_id = self.app_id_entry.get_text().decode()
         self.app_path = self.app_path_entry.get_text().decode()
-        self.menu_path = u"%s/menus/appmenu" % self.app_path
-        self.window_path = u"%s/window/1" % self.app_path
+        self.menu_path = "%s/menus/appmenu" % self.app_path
+        self.window_path = "%s/window/1" % self.app_path
         self.bus_name = self.session_bus.get_unique_name().decode()
 
     def stop_dbus_services(self):

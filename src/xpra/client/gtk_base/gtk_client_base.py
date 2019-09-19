@@ -1138,7 +1138,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             log("found existing group leader window %s using ref=%s", group_leader_window, refkey)
             return group_leader_window
         #we need to create one:
-        title = u"%s group leader for %s" % (self.session_name or u"Xpra", pid)
+        title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
         #group_leader_window = Gdk.Window(None, 1, 1, Gtk.WindowType.TOPLEVEL, 0, Gdk.INPUT_ONLY, title)
         #static new(parent, attributes, attributes_mask)
         group_leader_window = GDKWindow(wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=title)

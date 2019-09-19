@@ -15,7 +15,7 @@ from xpra.os_util import bytestostr
 
 LOG_PREFIX = bytestostr(os.environ.get("XPRA_LOG_PREFIX", ""))
 LOG_FORMAT = bytestostr(os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s"))
-NOPREFIX_FORMAT = u"%(message)s"
+NOPREFIX_FORMAT = "%(message)s"
 
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)

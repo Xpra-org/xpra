@@ -121,7 +121,7 @@ class Win32EventListener(object):
         if self.wc_atom==0:
             raise ctypes.WinError(ctypes.get_last_error())
 
-        self.hwnd = CreateWindowExA(0, self.wc_atom, u"For xpra event listener only",
+        self.hwnd = CreateWindowExA(0, self.wc_atom, "For xpra event listener only",
             win32con.WS_CAPTION,
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
             0, 0, self.wc.hInstance, None)

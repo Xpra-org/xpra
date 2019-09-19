@@ -225,7 +225,7 @@ class TestBencoderFunctions(object):
         self.t(v, estr)
 
     def test_unicode(self):
-        ustr = u"Schr\xc3\xb6dinger\xe2\x80\x99s_Cat".encode("utf8")
+        ustr = "Schr\xc3\xb6dinger\xe2\x80\x99s_Cat".encode("utf8")
         estr = binascii.unhexlify("6c32353a53636872c383c2b664696e676572c3a2c280c299735f436174646565")
         self.t([ustr, {}], estr)
         #from a real packet:
