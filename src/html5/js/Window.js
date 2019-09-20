@@ -196,9 +196,11 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		jQuery(this.div).mousedown(function (e) {
 			e.stopPropagation();
 		});
-		jQuery(this.div).mouseup(function (e) {
-			e.stopPropagation();
-		});
+		//bug 2418: if we stop 'mouseup' propagation,
+		//jQuery can't ungrab the window with Firefox
+		//jQuery(this.div).mouseup(function (e) {
+		//	e.stopPropagation();
+		//});
 		// assign some interesting callbacks
 		jQuery(this.d_header).click(function() {
 			me.set_focus_cb(me);
