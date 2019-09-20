@@ -10,7 +10,6 @@ from queue import Queue
 
 from xpra.log import Logger
 log = Logger("util")
-debug = log.debug
 
 
 class Worker_Thread(Thread):
@@ -41,7 +40,7 @@ class Worker_Thread(Thread):
         else:
             if self.items.qsize()>0:
                 log.info("waiting for %s items in work queue to complete", self.items.qsize())
-        debug("Worker_Thread.stop(%s) %s items in work queue", force, self.items)
+        log("Worker_Thread.stop(%s) %s items in work queue", force, self.items)
         self.items.put(None)
 
     def add(self, item):
@@ -50,19 +49,19 @@ class Worker_Thread(Thread):
         self.items.put(item)
 
     def run(self):
-        debug("Worker_Thread.run() starting")
+        log("Worker_Thread.run() starting")
         while not self.exit:
             item = self.items.get()
             if item is None:
-                debug("Worker_Thread.run() found end of queue marker")
+                log("Worker_Thread.run() found end of queue marker")
                 self.exit = True
                 break
             try:
-                debug("Worker_Thread.run() calling %s (queue size=%s)", item, self.items.qsize())
+                log("Worker_Thread.run() calling %s (queue size=%s)", item, self.items.qsize())
                 item()
             except Exception:
                 log.error("Error in worker thread processing item %s", item, exc_info=True)
-        debug("Worker_Thread.run() ended (queue size=%s)", self.items.qsize())
+        log("Worker_Thread.run() ended (queue size=%s)", self.items.qsize())
 
 #only one worker thread for now:
 singleton = None
@@ -82,11 +81,11 @@ def get_worker(create=True):
 
 def add_work_item(item):
     w = get_worker(True)
-    debug("add_work_item(%s) worker=%s", item, w)
+    log("add_work_item(%s) worker=%s", item, w)
     w.add(item)
 
 def stop_worker(force=False):
     w = get_worker(False)
-    debug("stop_worker(%s) worker=%s", force, w)
+    log("stop_worker(%s) worker=%s", force, w)
     if w:
         w.stop(force)
