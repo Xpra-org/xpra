@@ -68,7 +68,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                                video_encoder_modules, pings,
                                disp_desc, cipher, encryption_key, caps)
         QueueScheduler.__init__(self)
-        Process.__init__(self, name=str(client_conn))
+        Process.__init__(self, name=str(client_conn), daemon=False)
         self.client_conn = client_conn
         self.server_conn = server_conn
         self.uid = uid
