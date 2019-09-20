@@ -19,7 +19,7 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from gi.repository import GLib, Gtk, GdkPixbuf
+from gi.repository import GLib, Gtk, Gdk, GdkPixbuf
 
 from xpra.os_util import OSX, bytestostr
 from xpra.gtk_common.gtk_util import (
