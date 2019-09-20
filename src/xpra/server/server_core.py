@@ -74,6 +74,7 @@ SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
+SYSCONFIG = envbool("XPRA_SYSCONFIG", True)
 
 
 HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
@@ -2021,6 +2022,15 @@ class ServerCore(object):
             filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
 
         si = self.get_server_info()
+        if SYSCONFIG:
+            import sysconfig
+            si["sysconfig"] = {
+                "platform"          : sysconfig.get_platform(),
+                "python-version"    : sysconfig.get_python_version(),
+                "config-vars"       : sysconfig.get_config_vars(),
+                "paths"             : sysconfig.get_paths(),
+                }
+            
         up("server", si)
 
         ni = get_net_info()
