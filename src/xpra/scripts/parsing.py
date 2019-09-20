@@ -1342,10 +1342,6 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
         codec_help.append("speaker codecs available: %s" % csv(all_speaker_codecs))
     elif invalid_sc:
         codec_help.append("WARNING: some of the specified speaker codecs are not available: %s" % csv(invalid_sc))
-        for x in invalid_sc:
-            speaker_codecs.remove(x)
-    elif not speaker_codecs:
-        speaker_codecs += all_speaker_codecs
 
     all_microphone_codecs = props.strlistget("decoders" if is_server else "encoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
@@ -1355,11 +1351,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     elif invalid_mc:
         codec_help.append("WARNING: some of the specified microphone codecs are not available:"
                           +" %s" % csv(invalid_mc))
-        for x in invalid_mc:
-            microphone_codecs.remove(x)
-    elif not microphone_codecs:
-        microphone_codecs += all_microphone_codecs
-    return info
+    return codec_help
 
 
 def parse_vsock(vsock_str):
