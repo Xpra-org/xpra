@@ -295,7 +295,7 @@ class typedict(dict):
             v = self.get(strtobytes(key), default)
         return v
 
-    def capsget(self, key, default=None):
+    def capsget(self, key : str, default=None):
         v = self.rawget(key, default)
         if isinstance(v, bytes):
             from xpra.os_util import bytestostr
@@ -309,14 +309,14 @@ class typedict(dict):
         from xpra.os_util import bytestostr
         return bytestostr(v)
 
-    def bytesget(self, k, default=None):
+    def bytesget(self, k : str, default=None):
         v = self.capsget(k, default)
         if v is None:
             return default
         from xpra.os_util import strtobytes
         return strtobytes(v)
 
-    def intget(self, k, d=0):
+    def intget(self, k : str, d=0):
         v = self.capsget(k)
         if v is None:
             return d
@@ -328,10 +328,10 @@ class typedict(dict):
             self._warn(" %s", e)
             return d
 
-    def boolget(self, k, default_value=False):
+    def boolget(self, k : str, default_value=False):
         return bool(self.capsget(k, default_value))
 
-    def dictget(self, k, default_value=None):
+    def dictget(self, k : str, default_value=None):
         v = self.capsget(k, default_value)
         if v is None:
             return default_value
@@ -341,7 +341,7 @@ class typedict(dict):
             return default_value
         return v
 
-    def intpair(self, k, default_value=None):
+    def intpair(self, k : str, default_value=None):
         v = self.intlistget(k, default_value)
         if v is None:
             return default_value
@@ -353,13 +353,13 @@ class typedict(dict):
         except ValueError:
             return default_value
 
-    def strlistget(self, k, default_value=[], min_items=None, max_items=None):
+    def strlistget(self, k : str, default_value=[], min_items=None, max_items=None):
         return self.listget(k, default_value, str, min_items, max_items)
 
-    def intlistget(self, k, default_value=[], min_items=None, max_items=None):
+    def intlistget(self, k : str, default_value=[], min_items=None, max_items=None):
         return self.listget(k, default_value, int, min_items, max_items)
 
-    def listget(self, k, default_value=[], item_type=None, min_items=None, max_items=None):
+    def listget(self, k : str, default_value=[], item_type=None, min_items=None, max_items=None):
         v = self.capsget(k)
         if v is None:
             return default_value
@@ -868,13 +868,13 @@ def csv(v):
     except Exception:
         return str(v)
 
-def envint(name, d=0):
+def envint(name : str, d=0):
     try:
         return int(os.environ.get(name, d))
     except ValueError:
         return d
 
-def envbool(name, d=False):
+def envbool(name : str, d=False):
     try:
         v = os.environ.get(name)
         if v is None:
@@ -883,7 +883,7 @@ def envbool(name, d=False):
     except ValueError:
         return d
 
-def envfloat(name, d=0):
+def envfloat(name : str, d=0):
     try:
         return float(os.environ.get(name, d))
     except ValueError:
