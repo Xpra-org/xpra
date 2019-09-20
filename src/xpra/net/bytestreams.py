@@ -151,7 +151,7 @@ class Connection(object):
     def set_cork(self, cork):
         pass
 
-    def is_active(self):
+    def is_active(self) -> bool:
         return self.active
 
     def set_active(self, active):
@@ -160,7 +160,7 @@ class Connection(object):
     def close(self):
         self.set_active(False)
 
-    def can_retry(self, e):
+    def can_retry(self, e) -> bool:
         return can_retry(e)
 
     def untilConcludes(self, *args):
@@ -253,7 +253,7 @@ class TwoFileConnection(Connection):
     def __repr__(self):
         return "Pipe(%s)" % str(self.target)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         d = Connection.get_info(self)
         d.update({
             "type"  : "pipe",
@@ -335,7 +335,7 @@ class SocketConnection(Connection):
                 raise
         log("%s.close() done", self)
 
-    def error_is_closed(self, e):
+    def error_is_closed(self, e) -> bool:
         return isinstance(e, CLOSED_EXCEPTIONS)
 
     def __repr__(self):
@@ -346,7 +346,7 @@ class SocketConnection(Connection):
                 )
         return "%s %s:%s" % (self.socktype, self.protocol_type, pretty_socket(self.local))
 
-    def get_info(self):
+    def get_info(self) -> dict:
         d = Connection.get_info(self)
         try:
             d["remote"] = self.remote or ""
@@ -358,7 +358,7 @@ class SocketConnection(Connection):
             log.error("Error accessing socket information", exc_info=True)
         return d
 
-    def get_socket_info(self):
+    def get_socket_info(self) -> dict:
         return self.do_get_socket_info(self._socket)
 
     def do_get_socket_info(self, s):
@@ -417,7 +417,7 @@ class SocketConnection(Connection):
         return info
 
 
-def get_socket_options(sock, level, options):
+def get_socket_options(sock, level, options) -> dict:
     opts = {}
     errs = []
     for k in options:
@@ -534,7 +534,7 @@ class SSLSocketConnection(SocketConnection):
         assert not isinstance(self._socket, SSLSocketWrapper)
         self._socket = SSLSocketWrapper(self._socket)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         i = SocketConnection.get_info(self)
         i["ssl"] = True
         for k,fn in {

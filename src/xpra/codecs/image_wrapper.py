@@ -25,8 +25,8 @@ class ImageWrapper(object):
         PLANAR_4    : "4_PLANES",
         }
 
-    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride,
-                 bytesperpixel=4, planes=PACKED, thread_safe=True, palette=None):
+    def __init__(self, x : int, y : int, width : int, height : int, pixels, pixel_format, depth : int, rowstride : int,
+                 bytesperpixel : int=4, planes : int=PACKED, thread_safe : bool=True, palette=None):
         self.x = x
         self.y = y
         self.target_x = x
@@ -57,40 +57,40 @@ class ImageWrapper(object):
     def get_geometry(self):
         return self.x, self.y, self.width, self.height, self.depth
 
-    def get_x(self):
+    def get_x(self) -> int:
         return self.x
 
-    def get_y(self):
+    def get_y(self) -> int:
         return self.y
 
-    def get_target_x(self):
+    def get_target_x(self) -> int:
         return self.target_x
 
-    def get_target_y(self):
+    def get_target_y(self) -> int:
         return self.target_y
 
-    def set_target_x(self, target_x):
+    def set_target_x(self, target_x : int):
         self.target_x = target_x
 
-    def set_target_y(self, target_y):
+    def set_target_y(self, target_y : int):
         self.target_y = target_y
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_rowstride(self):
+    def get_rowstride(self) -> int:
         return self.rowstride
 
-    def get_depth(self):
+    def get_depth(self) -> int:
         return self.depth
 
-    def get_bytesperpixel(self):
+    def get_bytesperpixel(self) -> int:
         return self.bytesperpixel
 
-    def get_size(self):
+    def get_size(self) -> int:
         return self.rowstride * self.height
 
     def get_pixel_format(self):
@@ -99,7 +99,7 @@ class ImageWrapper(object):
     def get_pixels(self):
         return self.pixels
 
-    def get_planes(self):
+    def get_planes(self) -> int:
         return self.planes
 
     def get_palette(self):
@@ -108,28 +108,28 @@ class ImageWrapper(object):
     def get_gpu_buffer(self):
         return None
 
-    def has_pixels(self):
+    def has_pixels(self) -> bool:
         return bool(self.pixels)
 
-    def is_thread_safe(self):
+    def is_thread_safe(self) -> bool:
         """ if True, free() and clone_pixel_data() can be called from any thread,
             if False, free() and clone_pixel_data() must be called from the same thread.
             Used by XImageWrapper to ensure X11 images are freed from the UI thread.
         """
         return self.thread_safe
 
-    def get_timestamp(self):
+    def get_timestamp(self) -> int:
         """ time in millis """
         return self.timestamp
 
 
-    def set_timestamp(self, timestamp):
+    def set_timestamp(self, timestamp : int):
         self.timestamp = timestamp
 
-    def set_planes(self, planes):
+    def set_planes(self, planes : int):
         self.planes = planes
 
-    def set_rowstride(self, rowstride):
+    def set_rowstride(self, rowstride : int):
         self.rowstride = rowstride
 
     def set_pixel_format(self, pixel_format):
@@ -147,13 +147,13 @@ class ImageWrapper(object):
         #only defined for XImage wrappers:
         return 0
 
-    def may_restride(self):
+    def may_restride(self) -> bool:
         newstride = roundup(self.width*self.bytesperpixel, 4)
         if self.rowstride>newstride:
             return self.restride(newstride)
         return False
 
-    def restride(self, rowstride):
+    def restride(self, rowstride : int) -> bool:
         assert not self.freed
         if self.planes>0:
             #not supported yet for planar images
@@ -182,7 +182,7 @@ class ImageWrapper(object):
         self.pixels = b"".join(lines)
         return True
 
-    def freeze(self):
+    def freeze(self) -> bool:
         assert not self.freed
         #some wrappers (XShm) need to be told to stop updating the pixel buffer
         return False
@@ -203,7 +203,7 @@ class ImageWrapper(object):
             #could be a race since this can run threaded
             self.free()
 
-    def get_sub_image(self, x, y, w, h):
+    def get_sub_image(self, x : int, y : int, w : int, h : int):
         #raise NotImplementedError("no sub-images for %s" % type(self))
         assert w>0 and h>0, "invalid sub-image size: %ix%i" % (w, h)
         if x+w>self.width:

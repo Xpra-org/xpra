@@ -207,7 +207,7 @@ class Protocol(object):
         self.enable_encoder(self.encoder)
 
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self._closed
 
 
@@ -263,7 +263,7 @@ class Protocol(object):
         for k,v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
 
-    def get_info(self, alias_info=True):
+    def get_info(self, alias_info=True) -> dict:
         info = {
             "large_packets"         : tuple(bytestostr(x) for x in self.large_packets),
             "compression_level"     : self.compression_level,

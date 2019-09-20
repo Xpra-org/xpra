@@ -78,7 +78,7 @@ def remove_debug_category(*cat):
         if c in debug_enabled_categories:
             debug_enabled_categories.remove(c)
 
-def is_debug_enabled(category):
+def is_debug_enabled(category : str):
     if "all" in debug_enabled_categories:
         return True
     if category in debug_enabled_categories:
@@ -320,7 +320,7 @@ for d in STRUCT_KNOWN_FILTERS.values():
         KNOWN_FILTERS[k] = v
 
 
-def isenvdebug(category):
+def isenvdebug(category : str) -> bool:
     return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_"), "0")=="1"
 
 # A wrapper around 'logging' with some convenience stuff.  In particular:
@@ -365,7 +365,7 @@ class Logger(object):
             if x not in KNOWN_FILTERS:
                 self.warn("unknown logging category: %s", x)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "categories"    : self.categories,
             "debug"         : self.debug_enabled,
@@ -375,7 +375,7 @@ class Logger(object):
     def __repr__(self):
         return "Logger(%s)" % ", ".join(self.categories)
 
-    def is_debug_enabled(self):
+    def is_debug_enabled(self) -> bool:
         return self.debug_enabled
 
     def enable_debug(self):
@@ -385,7 +385,7 @@ class Logger(object):
         self.debug_enabled = False
 
 
-    def log(self, level, msg, *args, **kwargs):
+    def log(self, level, msg : str, *args, **kwargs):
         if kwargs.get("exc_info") is True:
             ei = sys.exc_info()
             if ei!=(None, None, None):
@@ -395,17 +395,17 @@ class Logger(object):
             msg = LOG_PREFIX+msg
         global_logging_handler(self.logger.log, level, msg, *args, **kwargs)
 
-    def __call__(self, msg, *args, **kwargs):
+    def __call__(self, msg : str, *args, **kwargs):
         if self.debug_enabled:
             self.log(logging.DEBUG, msg, *args, **kwargs)
-    def debug(self, msg, *args, **kwargs):
+    def debug(self, msg : str, *args, **kwargs):
         if self.debug_enabled:
             self.log(logging.DEBUG, msg, *args, **kwargs)
-    def info(self, msg, *args, **kwargs):
+    def info(self, msg : str, *args, **kwargs):
         self.log(logging.INFO, msg, *args, **kwargs)
-    def warn(self, msg, *args, **kwargs):
+    def warn(self, msg : str, *args, **kwargs):
         self.log(logging.WARN, msg, *args, **kwargs)
-    def error(self, msg, *args, **kwargs):
+    def error(self, msg : str, *args, **kwargs):
         self.log(logging.ERROR, msg, *args, **kwargs)
 
 

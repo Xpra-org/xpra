@@ -88,7 +88,7 @@ def get_encodings():
 
 ENCODINGS = do_get_encodings()
 
-def get_info():
+def get_info() -> dict:
     return  {
             "version"       : get_version(),
             "encodings"     : get_encodings(),

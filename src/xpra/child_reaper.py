@@ -47,7 +47,7 @@ class ProcInfo(object):
     def __repr__(self):
         return "ProcInfo(%s)" % self.__dict__
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
             "pid"       : self.pid,
             "name"      : self.name,
@@ -213,7 +213,7 @@ class ChildReaper(object):
                 break
             self.add_dead_pid(pid)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         iv = tuple(self._proc_info)
         info = {
                 "children"  : {

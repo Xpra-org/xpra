@@ -20,7 +20,7 @@ alphalog = Logger("gtk", "alpha")
 SHOW_ALL_VISUALS = False
 
 GTK_VERSION_INFO = {}
-def get_gtk_version_info():
+def get_gtk_version_info() -> dict:
     #update props given:
     global GTK_VERSION_INFO
     def av(k, v):
@@ -70,7 +70,7 @@ def get_gtk_version_info():
     return GTK_VERSION_INFO.copy()
 
 
-def pixbuf_save_to_memory(pixbuf, fmt="png"):
+def pixbuf_save_to_memory(pixbuf, fmt="png") -> bytes:
     buf = []
     def save_to_memory(data, *_args, **_kwargs):
         buf.append(strtobytes(data))
@@ -134,13 +134,13 @@ def enable_alpha(window):
     return True
 
 
-def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
+def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride) -> GdkPixbuf.Pixbuf:
     data = array.array('B', strtobytes(rgb_data))
     return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
                                      has_alpha, 8, w, h, rowstride,
                                      None, None)
 
-def color_parse(*args):
+def color_parse(*args) -> Gdk.Color:
     try:
         v = Gdk.RGBA()
         ok = v.parse(*args)
@@ -153,7 +153,7 @@ def color_parse(*args):
         return None
     return v
 
-def get_default_root_window():
+def get_default_root_window() -> Gdk.Window:
     screen = Gdk.Screen.get_default()
     if screen is None:
         return None
@@ -181,7 +181,7 @@ def get_root_size():
             log.warn(" using %ix%i instead", w, h)
     return w, h
 
-def get_default_cursor():
+def get_default_cursor() -> Gdk.Cursor:
     display = Gdk.Display.get_default()
     return Gdk.Cursor.new_from_name(display, "default")
 
@@ -244,7 +244,7 @@ BYTE_ORDER_NAMES = {
                 }
 
 
-def get_screens_info():
+def get_screens_info() -> dict:
     display = Gdk.Display.get_default()
     info = {}
     for i in range(display.get_n_screens()):
@@ -359,7 +359,7 @@ def get_screen_sizes(xscale=1, yscale=1):
             i += 1
     return screen_sizes
 
-def get_screen_info(display, screen):
+def get_screen_info(display, screen) -> dict:
     info = {}
     if not WIN32:
         try:
@@ -474,7 +474,7 @@ def get_screen_info(display, screen):
         pass
     return info
 
-def get_monitor_info(_display, screen, i):
+def get_monitor_info(_display, screen, i) -> dict:
     info = {}
     geom = screen.get_monitor_geometry(i)
     for x in ("x", "y", "width", "height"):
@@ -528,7 +528,7 @@ def get_display_info():
     return info
 
 
-def scaled_image(pixbuf, icon_size=None):
+def scaled_image(pixbuf, icon_size=None) -> Gtk.Image:
     if not pixbuf:
         return None
     if icon_size:

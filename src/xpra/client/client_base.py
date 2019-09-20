@@ -276,7 +276,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         sys.exit()
 
 
-    def client_type(self):
+    def client_type(self) -> str:
         #overriden in subclasses!
         return "Python"
 
@@ -321,7 +321,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self._aliases[i] = key
             i += 1
 
-    def has_password(self):
+    def has_password(self) -> bool:
         return self.password or self.password_file or os.environ.get('XPRA_PASSWORD')
 
     def send_hello(self, challenge_response=None, client_salt=None):
@@ -416,7 +416,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         capabilities.update(self.hello_extra)
         return capabilities
 
-    def get_version_info(self):
+    def get_version_info(self) -> dict:
         return get_version_info()
 
     def make_hello(self):
