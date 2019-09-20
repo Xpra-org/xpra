@@ -60,10 +60,10 @@ class Authenticator(SysAuthenticator):
         self.host = host
         SysAuthenticator.__init__(self, username, **kwargs)
 
-    def requires_challenge(self):
+    def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, _challenge_response=None, _client_salt=None):
+    def authenticate(self, _challenge_response=None, _client_salt=None) -> bool:
         if not self.host or not check_host(self.peername, self.host):
             errinfo = "'%s'" % self.peername
             if self.peername!=self.host:

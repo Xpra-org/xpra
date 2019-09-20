@@ -85,7 +85,7 @@ class Authenticator(FileAuthenticatorBase):
             return None
         return entry[0]
 
-    def authenticate_hmac(self, challenge_response, client_salt=None):
+    def authenticate_hmac(self, challenge_response, client_salt=None) -> bool:
         log("authenticate_hmac(%r, %r)", challenge_response, client_salt)
         self.sessions = None
         if not self.salt:

@@ -18,7 +18,7 @@ class Handler(object):
     def get_digest(self):
         return None
 
-    def handle(self, packet):
+    def handle(self, packet) -> bool:
         prompt = "password"
         digest = bytestostr(packet[3])
         if digest.startswith("gss:") or digest.startswith("kerberos:"):

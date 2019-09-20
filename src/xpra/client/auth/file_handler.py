@@ -25,7 +25,7 @@ class Handler(object):
     def get_digest(self):
         return None
 
-    def handle(self, packet):
+    def handle(self, packet) -> bool:
         if not self.password_file:
             return False
         filename = os.path.expanduser(self.password_file)

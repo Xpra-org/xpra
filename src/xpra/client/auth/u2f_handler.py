@@ -24,7 +24,7 @@ class Handler(object):
     def get_digest(self):
         return "u2f"
 
-    def handle(self, packet):
+    def handle(self, packet) -> bool:
         digest = bytestostr(packet[3])
         if not digest.startswith("u2f:"):
             log("%s is not a u2f challenge", digest)

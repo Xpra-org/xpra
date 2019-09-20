@@ -56,7 +56,7 @@ class Authenticator(SysAuthenticatorBase):
             return None
         return SysAuthenticatorBase.get_challenge(self, ["xor"])
 
-    def check(self, password):
+    def check(self, password) -> bool:
         log("check(%s)", obsc(password))
         def emsg(e):
             try:

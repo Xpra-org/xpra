@@ -39,7 +39,7 @@ class Authenticator(SysAuthenticatorBase):
             return None
         return SysAuthenticatorBase.get_challenge(self, ["xor"])
 
-    def check(self, password):
+    def check(self, password) -> bool:
         try:
             if WIN32:
                 import winkerberos as kerberos          #@UnresolvedImport @UnusedImport

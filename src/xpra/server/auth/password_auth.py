@@ -17,5 +17,5 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "password"
 
-    def get_password(self):
+    def get_password(self) -> str:
         return self.value

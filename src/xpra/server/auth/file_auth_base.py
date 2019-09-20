@@ -42,7 +42,7 @@ class FileAuthenticatorBase(SysAuthenticator):
         self.password_filetime = None
         self.authenticate = self.authenticate_hmac
 
-    def requires_challenge(self):
+    def requires_challenge(self) -> bool:
         return True
 
     def get_challenge(self, digests):
@@ -58,7 +58,7 @@ class FileAuthenticatorBase(SysAuthenticator):
             return None
         return self.salt, self.digest
 
-    def get_password(self):
+    def get_password(self) -> str:
         file_data = self.load_password_file()
         if file_data is None:
             return None

@@ -36,7 +36,7 @@ class Authenticator(SysAuthenticator):
             raise Exception("win32 authenticator requires the 'xor' digest")
         return SysAuthenticator.get_challenge(self, ["xor"])
 
-    def check(self, password):
+    def check(self, password) -> bool:
         token = HANDLE()
         domain = '' #os.environ.get('COMPUTERNAME')
         password_str = bytestostr(password)

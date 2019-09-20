@@ -39,7 +39,7 @@ class Authenticator(object):
     def get_password(self):
         return None
 
-    def authenticate(self, _challenge_response, _client_salt=None):
+    def authenticate(self, _challenge_response, _client_salt=None) -> bool:
         return False
 
     def get_sessions(self):

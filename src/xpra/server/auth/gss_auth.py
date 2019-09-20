@@ -41,7 +41,7 @@ class Authenticator(SysAuthenticatorBase):
         self.challenge_sent = True
         return self.salt, "gss:%s" % self.service
 
-    def check(self, token):
+    def check(self, token) -> bool:
         log("check(%s)", repr(token))
         assert self.challenge_sent
         try:

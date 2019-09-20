@@ -24,7 +24,7 @@ class Handler(object):
     def get_digest(self):
         return "gss"
 
-    def handle(self, packet):
+    def handle(self, packet) -> bool:
         digest = bytestostr(packet[3])
         if not digest.startswith("gss:"):
             #not a gss challenge

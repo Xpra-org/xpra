@@ -18,7 +18,7 @@ class Handler(object):
     def get_digest(self):
         return None
 
-    def handle(self, packet):
+    def handle(self, packet) -> bool:
         password = os.environ.get(self.var_name)
         if not password:
             return False

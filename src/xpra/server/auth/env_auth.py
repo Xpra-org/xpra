@@ -18,5 +18,5 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "env"
 
-    def get_password(self):
+    def get_password(self) -> str:
         return os.environ.get(self.var_name)

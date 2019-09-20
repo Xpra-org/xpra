@@ -40,7 +40,7 @@ class Authenticator(SysAuthenticator):
         self.check_account = parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False)
         SysAuthenticator.__init__(self, username, **kwargs)
 
-    def check(self, password):
+    def check(self, password) -> bool:
         log("pam.check(..) pw=%s", self.pw)
         if self.pw is None:
             return False

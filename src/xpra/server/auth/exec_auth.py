@@ -50,10 +50,10 @@ class Authenticator(SysAuthenticator):
         self.connection_str = str(connection)
         SysAuthenticator.__init__(self, username, **kwargs)
 
-    def requires_challenge(self):
+    def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, _challenge_response=None, _client_salt=None):
+    def authenticate(self, _challenge_response=None, _client_salt=None) -> bool:
         info = "Connection request from %s" % self.connection_str
         cmd = [self.command, info, str(self.timeout)]
         proc = Popen(cmd, close_fds=True, shell=False)
