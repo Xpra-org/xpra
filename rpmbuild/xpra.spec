@@ -122,9 +122,6 @@ Requires(postun):	desktop-file-utils
 %if 0%{?el8}
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
-%if 0%{?fedora}
-Recommends:			python2-appindicator
-%endif
 %description common-client
 This package contains the files which are shared between all the xpra client packages.
 
@@ -203,6 +200,7 @@ Requires:			ffmpeg-xpra
 Requires:			turbojpeg
 Requires:			libyuv
 %if 0%{?fedora}%{?el8}
+Recommends:			python2-appindicator
 Requires:			python2-numpy
 %if 0%{?run_tests}
 BuildRequires:		python2-numpy
@@ -438,7 +436,7 @@ Recommends:			python3-xdg
 %if 0%{?el8}
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
-%if 0%{?fedora}>=29
+%if 0%{?fedora}
 Recommends:			libappindicator-gtk3
 %endif
 Suggests:			sshpass
@@ -559,7 +557,7 @@ popd
 
 #fix permissions on shared objects
 find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 %endif
 
@@ -732,7 +730,7 @@ popd
 
 
 %post common-server
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
 %sysusers_create xpra.conf
