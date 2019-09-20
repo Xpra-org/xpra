@@ -44,18 +44,13 @@ if frozen:
     #cx_freeze paths:
     PATH = os.environ.get("PATH", "").split(os.pathsep)
     edir = os.path.dirname(sys.executable)
-    def jedir(*paths):
-        return os.path.join(*([edir]+list(paths)))
-    def addsyspath(*paths):
-        v = jedir(*paths)
-        if os.path.exists(v):
-            if v not in sys.path:
-                sys.path.append(v)
-            if os.path.isdir(v) and v not in PATH:
-                PATH.append(v)
-    addsyspath('')
-    addsyspath('lib')
-    os.environ['GI_TYPELIB_PATH'] = jedir('lib', 'girepository-1.0')
+    libdir = os.path.join(edir, "lib")
+    for d in (edir, libdir):
+        if edir not in sys.path:
+            sys.path.append(edir)
+        if edir not in PATH:
+            PATH.append(edir)
+    os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
     os.environ["PATH"] = os.pathsep.join(PATH)
 
 if REDIRECT_OUTPUT:
