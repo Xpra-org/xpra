@@ -86,6 +86,7 @@ NAME_TO_INFO_PLUGIN = {
 #we keep multiple options here for the same encoding
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
+        (VORBIS_MKA , "vorbisenc",      "matroskamux",  "vorbisdec",                    "matroskademux"),
         (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",                    "matroskademux"),
         #those two used to fail silently (older versions of gstreamer?)
         (VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",      "oggdemux"),
@@ -102,6 +103,7 @@ CODEC_OPTIONS = [
         (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",                      "oggdemux"),
         (OPUS       , "opusenc",        None,           "opusparse ! opusdec",          None),
         #this can cause "could not link opusenc0 to webmmux0"
+        (OPUS_MKA   , "opusenc",        "matroskamux",  "opusdec",                      "matroskademux"),
         (OPUS_MKA   , "opusenc",        "webmmux",      "opusdec",                      "matroskademux"),
         (SPEEX_OGG  , "speexenc",       "oggmux",       "speexdec",                     "oggdemux"),
         (WAVPACK    , "wavpackenc",      None,          "wavpackparse ! wavpackdec",    None),
@@ -112,6 +114,7 @@ CODEC_OPTIONS = [
 MUX_OPTIONS = [
                (OGG,    "oggmux",   "oggdemux"),
                (MKA,    "webmmux",  "matroskademux"),
+               (MKA,    "matroskamux",  "matroskademux"),
                (MPEG4,  "mp4mux",   "qtdemux"),
               ]
 emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip())>0]
@@ -177,6 +180,10 @@ MUXER_DEFAULT_OPTIONS = {
                                "streamable"         : 1,
                                #"min-index-interval" : 0,
                                },
+            "matroskamux"   : {
+                               "writing-app"        : "Xpra",
+                               "streamable"         : 1,
+                },
             "mp4mux"        : {
                                "faststart"          : 1,
                                "streamable"         : 1,
