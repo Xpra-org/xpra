@@ -33,7 +33,7 @@ def warn(msg, *args, **kwargs):
     get_util_logger().warn(msg, *args, **kwargs)
 
 
-def full_version_str():
+def full_version_str() -> str:
     s = XPRA_VERSION
     try:
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
@@ -43,10 +43,10 @@ def full_version_str():
     return s
 
 
-def version_as_numbers(version):
+def version_as_numbers(version : str):
     return [int(x) for x in version.split(".")]
 
-def version_compat_check(remote_version):
+def version_compat_check(remote_version : str):
     if remote_version is None:
         msg = "remote version not available!"
         log(msg)
@@ -68,7 +68,7 @@ def version_compat_check(remote_version):
     return None
 
 
-def get_host_info():
+def get_host_info() -> dict:
     #this function is for non UI thread info
     info = {
         "pid"                   : os.getpid(),
@@ -90,7 +90,7 @@ def get_host_info():
             })
     return info
 
-def get_version_info():
+def get_version_info() -> dict:
     props = {
              "version"  : XPRA_VERSION
              }
@@ -102,7 +102,7 @@ def get_version_info():
         warn("missing some source information: %s", e)
     return props
 
-def get_version_info_full():
+def get_version_info_full() -> dict:
     props = get_version_info()
     try:
         from xpra import build_info
@@ -129,7 +129,7 @@ def get_version_info_full():
     log("get_version_info_full()=%s", props)
     return props
 
-def do_get_platform_info():
+def do_get_platform_info() -> dict:
     from xpra.os_util import platform_name, platform_release
     pp = sys.modules.get("platform", python_platform)
     def get_processor_name():

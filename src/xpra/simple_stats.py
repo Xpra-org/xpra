@@ -17,7 +17,7 @@ def to_std_unit(v, unit=1000):
         return "K", v//unit
     return "", v
 
-def std_unit(v, unit=1000):
+def std_unit(v, unit=1000) -> str:
     unit, value = to_std_unit(v, unit)
     return "%s%s" % (int(value), unit)
 

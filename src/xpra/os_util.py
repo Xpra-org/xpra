@@ -31,15 +31,15 @@ POSIX = os.name=="posix"
 BITS = struct.calcsize(b"P")*8
 
 
-def strtobytes(x):
+def strtobytes(x) -> bytes:
     if isinstance(x, bytes):
         return x
     return str(x).encode("latin1")
-def bytestostr(x):
+def bytestostr(x) -> str:
     if isinstance(x, bytes):
         return x.decode("latin1")
     return str(x)
-def hexstr(v):
+def hexstr(v) -> str:
     return bytestostr(binascii.hexlify(strtobytes(v)))
 
 
@@ -51,7 +51,7 @@ def get_util_logger():
         util_logger = Logger("util")
     return util_logger
 
-def memoryview_to_bytes(v):
+def memoryview_to_bytes(v) -> bytes:
     if isinstance(v, bytes):
         return v
     if isinstance(v, memoryview):
@@ -67,17 +67,17 @@ def setsid():
         os.setsid()
 
 
-def getuid():
+def getuid() -> int:
     if POSIX:
         return os.getuid()
     return 0
 
-def getgid():
+def getgid() -> int:
     if POSIX:
         return os.getgid()
     return 0
 
-def get_shell_for_uid(uid):
+def get_shell_for_uid(uid) -> str:
     if POSIX:
         from pwd import getpwuid
         try:
@@ -86,7 +86,7 @@ def get_shell_for_uid(uid):
             pass
     return ""
 
-def get_username_for_uid(uid):
+def get_username_for_uid(uid) -> str:
     if POSIX:
         from pwd import getpwuid
         try:
@@ -95,7 +95,7 @@ def get_username_for_uid(uid):
             pass
     return ""
 
-def get_home_for_uid(uid):
+def get_home_for_uid(uid) -> str:
     if POSIX:
         from pwd import getpwuid
         try:
@@ -110,7 +110,7 @@ def get_groups(username):
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
     return []
 
-def get_group_id(group):
+def get_group_id(group) -> int:
     try:
         import grp      #@UnresolvedImport
         gr = grp.getgrnam(group)
@@ -135,7 +135,7 @@ def platform_release(release):
     return release
 
 
-def platform_name(sys_platform, release=None):
+def platform_name(sys_platform, release=None) -> str:
     if not sys_platform:
         return "unknown"
     PLATFORMS = {"win32"    : "Microsoft Windows",
@@ -159,17 +159,17 @@ def platform_name(sys_platform, release=None):
     return rel(sys_platform)
 
 
-def get_rand_chars(l=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+def get_rand_chars(l=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") -> bytes:
     import random
     return b"".join(chars[random.randint(0, len(chars)-1):][:1] for _ in range(l))
 
-def get_hex_uuid():
+def get_hex_uuid() -> str:
     return uuid.uuid4().hex
 
-def get_int_uuid():
+def get_int_uuid() -> int:
     return uuid.uuid4().int
 
-def get_machine_id():
+def get_machine_id() -> str:
     """
         Try to get uuid string which uniquely identifies this machine.
         Warning: only works on posix!
@@ -231,7 +231,7 @@ def is_Wayland():
         )
 
 
-def is_distribution_variant(variant=b"Debian"):
+def is_distribution_variant(variant=b"Debian") -> bool:
     if not POSIX:
         return False
     try:
@@ -249,7 +249,7 @@ def is_distribution_variant(variant=b"Debian"):
     return False
 
 os_release_file_data = False
-def load_os_release_file():
+def load_os_release_file() -> bytes:
     global os_release_file_data
     if os_release_file_data is False:
         try:
@@ -258,25 +258,25 @@ def load_os_release_file():
             os_release_file_data = None
     return os_release_file_data
 
-def is_Ubuntu():
+def is_Ubuntu() -> bool:
     return is_distribution_variant(b"Ubuntu")
 
-def is_Debian():
+def is_Debian() -> bool:
     return is_distribution_variant(b"Debian")
 
-def is_Raspbian():
+def is_Raspbian() -> bool:
     return is_distribution_variant(b"Raspbian")
 
-def is_Fedora():
+def is_Fedora() -> bool:
     return is_distribution_variant(b"Fedora")
 
-def is_Arch():
+def is_Arch() -> bool:
     return is_distribution_variant(b"Arch")
 
-def is_CentOS():
+def is_CentOS() -> bool:
     return is_distribution_variant(b"CentOS")
 
-def is_RedHat():
+def is_RedHat() -> bool:
     return is_distribution_variant(b"RedHat")
 
 
@@ -320,17 +320,17 @@ def getUbuntuVersion():
             pass
     return ()
 
-def is_unity():
+def is_unity() -> bool:
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("unity")>=0
 
-def is_gnome():
+def is_gnome() -> bool:
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("gnome")>=0
 
-def is_kde():
+def is_kde() -> bool:
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("kde")>=0
 
 
-def is_WSL():
+def is_WSL() -> bool:
     if not POSIX:
         return False
     r = None
@@ -341,7 +341,7 @@ def is_WSL():
     return r is not None and r.find(b"Microsoft")>=0
 
 
-def get_generic_os_name():
+def get_generic_os_name() -> str:
     for k,v in {
             "linux"     : "linux",
             "darwin"    : "osx",
@@ -353,14 +353,14 @@ def get_generic_os_name():
     return sys.platform
 
 
-def filedata_nocrlf(filename):
+def filedata_nocrlf(filename) -> str:
     v = load_binary_file(filename)
     if v is None:
         get_util_logger().error("failed to load '%s'", filename)
         return None
     return v.strip("\n\r")
 
-def load_binary_file(filename):
+def load_binary_file(filename) -> bytes:
     if not os.path.exists(filename):
         return None
     try:
@@ -716,14 +716,14 @@ def get_status_output(*args, **kwargs):
     return p.returncode, stdout.decode("utf-8"), stderr.decode("utf-8")
 
 
-def is_systemd_pid1():
+def is_systemd_pid1() -> bool:
     if not POSIX:
         return False
     d = load_binary_file("/proc/1/cmdline")
     return d and d.find(b"/systemd")>=0
 
 
-def get_ssh_port():
+def get_ssh_port() -> int:
     #FIXME: how do we find out which port ssh is on?
     if WIN32:
         return 0

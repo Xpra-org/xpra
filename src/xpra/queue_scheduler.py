@@ -9,7 +9,7 @@ from threading import Timer, RLock
 from xpra.util import AtomicInteger
 from xpra.log import Logger
 
-log = Logger("proxy")
+log = Logger("util")
 
 
 #emulate the glib main loop using a single thread + queue:
@@ -23,7 +23,7 @@ class QueueScheduler(object):
         self.timers = {}
         self.timer_lock = RLock()
 
-    def source_remove(self, tid):
+    def source_remove(self, tid : int):
         log("source_remove(%i)", tid)
         with self.timer_lock:
             try:
