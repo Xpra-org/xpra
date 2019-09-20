@@ -352,25 +352,6 @@ def get_generic_os_name():
             return v
     return sys.platform
 
-def get_cpu_count():
-    #sensible default:
-    cpus = 2
-    try:
-        try:
-            #python3:
-            cpus = os.cpu_count()
-        except AttributeError:
-            try:
-                from cpuinfo import get_cpu_info
-                cpus = int(get_cpu_info().get("count"))
-            except Exception:
-                #python2:
-                import multiprocessing
-                cpus = multiprocessing.cpu_count()
-    except Exception:
-        pass
-    return cpus
-
 
 def filedata_nocrlf(filename):
     v = load_binary_file(filename)

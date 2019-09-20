@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import get_cpu_count, bytestostr, WIN32, OSX, POSIX, BITS
+from xpra.os_util import bytestostr, WIN32, OSX, POSIX, BITS
 from xpra.util import AtomicInteger, envint, envbool
 from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
@@ -26,7 +26,7 @@ from xpra.monotonic_time cimport monotonic_time
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
-cdef int default_nthreads = max(1, int(math.sqrt(get_cpu_count()+1)))
+cdef int default_nthreads = max(1, int(math.sqrt(os.cpu_count()+1)))
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", default_nthreads)
 
 cdef inline int roundup(int n, int m):

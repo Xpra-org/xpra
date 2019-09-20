@@ -21,7 +21,7 @@ from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
 
 MAX_DELAYED_FRAMES = envint("XPRA_X264_MAX_DELAYED_FRAMES", 4)
-THREADS = envint("XPRA_X264_THREADS", min(4, max(1, get_cpu_count()//2)))
+THREADS = envint("XPRA_X264_THREADS", min(4, max(1, os.cpu_count()//2)))
 MIN_SLICED_THREADS_SPEED = envint("XPRA_X264_SLICED_THREADS", 60)
 LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 PROFILE = os.environ.get("XPRA_X264_PROFILE")
