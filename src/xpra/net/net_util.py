@@ -9,7 +9,7 @@
 import socket
 import sys
 
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import WIN32
 from xpra.log import Logger
 
 log = Logger("network", "util")
