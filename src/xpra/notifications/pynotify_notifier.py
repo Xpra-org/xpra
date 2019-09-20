@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import pynotify                 #@UnresolvedImport
+import notify2                 #@UnresolvedImport
 
 from xpra.notifications.notifier_base import NotifierBase
 
@@ -15,9 +15,9 @@ class PyNotify_Notifier(NotifierBase):
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
-        pynotify.init(app_name or "Xpra")
-        n = pynotify.Notification(summary, body, icon_string)
-        n.set_urgency(pynotify.URGENCY_LOW)
+        notify2.init(app_name or "Xpra")
+        n = notify2.Notification(summary, body, icon_string)
+        n.set_urgency(notify2.URGENCY_LOW)
         n.set_timeout(expire_timeout)
         if actions and False:
             while len(actions)>=2:
