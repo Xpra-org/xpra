@@ -49,10 +49,10 @@ def query_video_device(device):
         return {}
 
 
-def get_virtual_video_devices(capture_only=True):
+def get_virtual_video_devices(capture_only=True) -> dict:
     log("get_virtual_video_devices(%s) CHECK_VIRTUAL_CAPTURE=%s", capture_only, CHECK_VIRTUAL_CAPTURE)
     if not check_virtual_dir(False):
-        return []
+        return {}
     contents = os.listdir(v4l2_virtual_dir)
     devices = OrderedDict()
     for f in sorted(contents):

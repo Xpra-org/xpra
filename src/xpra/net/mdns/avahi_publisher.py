@@ -132,7 +132,7 @@ class AvahiPublisher(object):
         self.server = None
         self.group = None
 
-    def get_info(self):
+    def get_info(self) -> dict:
         def iface():
             if self.interface>0:
                 return "interface %i" % self.interface

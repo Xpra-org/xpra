@@ -30,10 +30,10 @@ class NetworkStateMixin(StubSourceMixin):
         self.cancel_ping_echo_timers()
         self.cancel_ping_timer()
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         return {"ping-echo-sourceid" : True}
 
-    def get_info(self):
+    def get_info(self) -> dict:
         lpe = 0
         if self.last_ping_echoed_time>0:
             lpe = int(monotonic_time()*1000-self.last_ping_echoed_time)

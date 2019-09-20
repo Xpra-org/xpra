@@ -151,7 +151,7 @@ class ClipboardProtocolHelperCore(object):
     def __repr__(self):
         return "ClipboardProtocolHelperCore"
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
                 "type"      :       str(self).replace("ClipboardProtocolHelper", ""),
                 "max_size"  :       self.max_clipboard_packet_size,
@@ -558,11 +558,11 @@ class ClipboardProxyCore(object):
         self._loop_uuid = LOOP_PREFIX+get_hex_uuid()
         log("init_uuid() %s uuid=%s", self._selection, self._loop_uuid)
 
-    def set_direction(self, can_send, can_receive):
+    def set_direction(self, can_send : bool, can_receive : bool):
         self._can_send = can_send
         self._can_receive = can_receive
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
                 "have_token"            : self._have_token,
                 "enabled"               : self._enabled,
@@ -587,14 +587,14 @@ class ClipboardProxyCore(object):
         self._enabled = False
         self.cancel_emit_token()
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         return self._enabled
 
-    def set_enabled(self, enabled):
+    def set_enabled(self, enabled : bool):
         log("%s.set_enabled(%s)", self, enabled)
         self._enabled = enabled
 
-    def set_greedy_client(self, greedy):
+    def set_greedy_client(self, greedy : bool):
         log("%s.set_greedy_client(%s)", self, greedy)
         self._greedy_client = greedy
 

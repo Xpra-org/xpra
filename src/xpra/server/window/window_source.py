@@ -430,7 +430,7 @@ class WindowSource(WindowIconSource):
         self.global_statistics = None
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         #should get prefixed with "client[M].window[N]." by caller
         """
             Add window specific stats

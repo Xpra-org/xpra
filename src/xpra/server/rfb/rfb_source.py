@@ -31,7 +31,7 @@ class RFBSource(object):
         self.lock = False
         self.keyboard_config = None
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "protocol"  : "rfb",
             "uuid"      : self.uuid,

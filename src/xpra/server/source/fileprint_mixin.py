@@ -30,7 +30,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def parse_client_caps(self, c):
         FileTransferHandler.parse_file_transfer_caps(self, c)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "printers"          : self.printers,
             "file-transfers"    : FileTransferHandler.get_info(self),

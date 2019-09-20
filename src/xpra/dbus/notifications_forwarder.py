@@ -40,7 +40,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         dbus.service.Object.__init__(self, bus_name, BUS_PATH)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "active"        : tuple(self.active_notifications),
             "counter"       : self.counter,

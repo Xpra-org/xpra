@@ -86,7 +86,7 @@ class MmapClient(StubClientMixin):
         return True
 
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         if not self.mmap_enabled:
             return {}
         raw_caps = {

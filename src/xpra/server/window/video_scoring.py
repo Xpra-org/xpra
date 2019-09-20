@@ -20,7 +20,7 @@ SUBSAMPLING_QUALITY_LOSS = {
     }
 
 
-def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_quality=100, min_quality=0):
+def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_quality=100, min_quality=0) -> int:
     quality = encoder_spec.quality
     #any colourspace convertion will lose at least some quality (due to rounding)
     #(so add 0.2 to the value we get from calculating the degradation using get_subsampling_divs)
@@ -48,7 +48,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_qualit
             qscore *= 2.0
     return int(qscore)
 
-def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=100, min_speed=0):
+def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=100, min_speed=0) -> int:
     #when subsampling, add the speed gains to the video encoder
     #which now has less work to do:
     mult = {

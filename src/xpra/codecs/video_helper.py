@@ -184,7 +184,7 @@ class VideoHelper(object):
         vds = deepish_clone_dict(self._video_decoder_specs)
         return VideoHelper(ves, ces, vds, True)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         d = {}
         einfo = d.setdefault("encoding", {})
         dinfo = d.setdefault("decoding", {})

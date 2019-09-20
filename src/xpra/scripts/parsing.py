@@ -23,7 +23,7 @@ from xpra.scripts.config import (
     )
 
 
-def enabled_str(v, true_str="yes", false_str="no"):
+def enabled_str(v, true_str="yes", false_str="no") -> str:
     if v:
         return true_str
     return false_str
@@ -158,7 +158,7 @@ def ignore_options(args, options):
                 args.remove(r)
 
 
-def parse_env(env):
+def parse_env(env) -> dict:
     d = {}
     for ev in env:
         try:
@@ -1378,5 +1378,5 @@ def parse_vsock(vsock_str):
     return cid, iport
 
 
-def is_local(host):
+def is_local(host) -> bool:
     return host.lower() in ("localhost", "127.0.0.1", "::1")

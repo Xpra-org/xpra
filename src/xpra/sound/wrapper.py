@@ -292,7 +292,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         return self.state
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return self.info
 
     def info_update(self, _wrapper, info):

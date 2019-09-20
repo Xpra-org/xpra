@@ -18,7 +18,7 @@ from xpra.os_util import monotonic_time
 NRECS = 100
 
 
-def ival(key, default, minv=0, maxv=None):
+def ival(key, default, minv=0, maxv=None) -> int:
     try:
         v = os.environ.get("XPRA_BATCH_%s" % key)
         if v is None:
@@ -73,7 +73,7 @@ class DamageBatchConfig(object):
     def cleanup(self):
         self.factors = ()
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
             "min-delay"         : self.min_delay,
             "max-delay"         : self.max_delay,

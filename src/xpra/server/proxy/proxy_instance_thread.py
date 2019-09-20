@@ -70,7 +70,7 @@ class ProxyInstanceThread(ProxyInstance):
         #self.client_protocol.start()
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {}
         cinfo = info.setdefault("connection", {})
         def add_protocol_info(prefix, proto):

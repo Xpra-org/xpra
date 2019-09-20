@@ -167,7 +167,7 @@ class SSHSocketConnection(SocketConnection):
             return {}
         return self.do_get_socket_info(self._raw_socket)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         i = SocketConnection.get_info(self)
         s = self._socket
         if s:

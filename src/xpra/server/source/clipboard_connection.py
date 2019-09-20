@@ -58,7 +58,7 @@ class ClipboardConnection(StubSourceMixin):
         if self.clipboard_enabled and not self.clipboard_contents_slice_fix:
             log.info("client clipboard does not include contents slice fix")
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "clipboard" : {
                 "enabled"               : self.clipboard_enabled,

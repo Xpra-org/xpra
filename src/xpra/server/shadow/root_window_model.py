@@ -32,7 +32,7 @@ class RootWindowModel(object):
     def __repr__(self):
         return "RootWindowModel(%s : %24s)" % (self.capture, self.geometry)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {}
         c = self.capture
         if c:

@@ -109,7 +109,7 @@ class MMAP_Connection(StubSourceMixin):
         if self.mmap_size>0:
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         caps = {"mmap_enabled" : self.mmap_size>0}
         if self.mmap_client_token:
             sep = "." if self.mmap_client_namespace else "_"
@@ -120,7 +120,7 @@ class MMAP_Connection(StubSourceMixin):
             mmapattr("token_bytes", self.mmap_client_token_bytes)
         return caps
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "mmap" : {
                 "supported"     : self.supports_mmap,

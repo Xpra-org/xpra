@@ -38,7 +38,7 @@ class InputMixin(StubSourceMixin):
         self.mouse_last_position = c.intpair("mouse.initial-position")
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         dc_info = {}
         dct = self.double_click_time
         if dct:
@@ -54,7 +54,7 @@ class InputMixin(StubSourceMixin):
             info["keyboard"] = kc.get_info()
         return info
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         kc = self.keyboard_config
@@ -88,7 +88,7 @@ class InputMixin(StubSourceMixin):
         return kc
 
 
-    def is_modifier(self, keyname, keycode):
+    def is_modifier(self, keyname, keycode) -> bool:
         if keyname in DEFAULT_MODIFIER_MEANINGS.keys():
             return True
         #keyboard config should always exist if we are here?

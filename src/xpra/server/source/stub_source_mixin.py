@@ -31,7 +31,7 @@ class StubSourceMixin(object):
     """
     When the connection is closed or closing, this method returns True.
     """
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return False
 
     """
@@ -43,7 +43,7 @@ class StubSourceMixin(object):
     """
     Return the capabilities provided by this mixin.
     """
-    def get_caps(self):
+    def get_caps(self) -> dict:
         return {}
 
     """
@@ -51,7 +51,7 @@ class StubSourceMixin(object):
     Somewhat overlaps with the capabilities,
     but the data is returned in a structured format. (ie: nested dictionaries)
     """
-    def get_info(self):
+    def get_info(self) -> dict:
         return {}
 
     """

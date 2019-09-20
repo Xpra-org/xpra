@@ -78,7 +78,7 @@ class NetworkState(StubClientMixin):
         self.cancel_ping_echo_timeout_timer()
 
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         caps = {"info-namespace" : True}
         #get socket speed if we have it:
         pinfo = self._protocol.get_info()

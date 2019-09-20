@@ -198,7 +198,7 @@ class WindowVideoSource(WindowSource):
         i["scaling"] = self.scaling or (1, 1)
         return i
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = WindowSource.get_info(self)
         sr = self.video_subregion
         if sr:

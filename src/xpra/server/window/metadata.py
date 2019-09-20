@@ -12,7 +12,7 @@ from xpra.util import WORKSPACE_UNSET, get_util_logger
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 
-def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None, skip_defaults=False):
+def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None, skip_defaults=False) -> dict:
     try:
         return do_make_window_metadata(window, propname, get_transient_for, get_window_id, skip_defaults)
     except (ValueError, TypeError) as e:
@@ -26,7 +26,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         return {}
 
 
-def do_make_window_metadata(window, propname, get_transient_for=None, get_window_id=None, skip_defaults=False):
+def do_make_window_metadata(window, propname, get_transient_for=None, get_window_id=None, skip_defaults=False) -> dict:
     if propname in SKIP_METADATA:
         return {}
     #note: some of the properties handled here aren't exported to the clients,

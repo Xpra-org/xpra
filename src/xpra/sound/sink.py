@@ -340,7 +340,7 @@ class SoundSink(SoundPipeline):
         self.cleanup()
         return 0
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = SoundPipeline.get_info(self)
         if QUEUE_TIME>0 and self.queue:
             clt = self.queue.get_property("current-level-time")

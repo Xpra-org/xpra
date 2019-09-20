@@ -92,7 +92,7 @@ class SoundPipeline(GObject.GObject):
             self.source_remove(eit)
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = self.info.copy()
         if inject_fault():
             info["INJECTING_NONE_FAULT"] = None

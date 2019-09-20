@@ -164,7 +164,7 @@ class WindowPerformanceStatistics(object):
         return factors
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {"damage"    : {"events"         : self.damage_events_count,
                                "packets_sent"   : self.packet_count,
                                "target-latency" : int(1000*self.target_latency),

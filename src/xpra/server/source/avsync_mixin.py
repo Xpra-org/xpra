@@ -32,7 +32,7 @@ class AVSyncMixin(StubSourceMixin):
         self.av_sync_delta = AV_SYNC_DELTA
 
 
-    def get_server_features(self, _source):
+    def get_server_features(self, _source) -> dict:
         return {
             "av-sync" : {
                 ""          : self.av_sync,
@@ -40,7 +40,7 @@ class AVSyncMixin(StubSourceMixin):
                 }
             }
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "av-sync" : {
                 ""          : self.av_sync,

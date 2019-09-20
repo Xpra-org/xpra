@@ -52,7 +52,7 @@ class WebcamMixin(StubSourceMixin):
         self.stop_all_virtual_webcams()
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "webcam" : {
                 "encodings"         : self.webcam_encodings,

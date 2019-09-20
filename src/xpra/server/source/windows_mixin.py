@@ -147,13 +147,13 @@ class WindowsMixin(StubSourceMixin):
             filterslog.error("Error parsing window-filters: %s", e)
 
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         return {}
 
 
     ######################################################################
     # info:
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
             "windows"       : self.send_windows,
             "cursors"       : self.send_cursors,

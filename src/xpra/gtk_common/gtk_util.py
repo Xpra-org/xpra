@@ -81,7 +81,7 @@ def pixbuf_save_to_memory(pixbuf, fmt="png") -> bytes:
 
 def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVEL,
               event_mask=0, wclass=Gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
-              x=None, y=None, override_redirect=False, visual=None, **kwargs):
+              x=None, y=None, override_redirect=False, visual=None, **kwargs) -> Gdk.Window:
     attributes_mask = 0
     attributes = Gdk.WindowAttr()
     if x is not None:
@@ -111,7 +111,7 @@ def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVE
     mask = Gdk.WindowAttributesType(attributes_mask)
     return Gdk.Window(parent, attributes, mask)
 
-def enable_alpha(window):
+def enable_alpha(window) -> bool:
     screen = window.get_screen()
     visual = screen.get_rgba_visual()
     alphalog("enable_alpha(%s) screen=%s, visual=%s", window, screen, visual)
@@ -495,7 +495,7 @@ def get_monitor_info(_display, screen, i) -> dict:
     return info
 
 
-def get_display_info():
+def get_display_info() -> dict:
     display = Gdk.Display.get_default()
     info = {
             "root-size"             : get_root_size(),
@@ -563,7 +563,7 @@ def set_tooltip_text(widget, text):
 
 
 def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32,
-                default=False, min_size=None, label_color=None, label_font=None):
+                default=False, min_size=None, label_color=None, label_font=None) -> Gtk.Button:
     button = Gtk.Button(title)
     settings = button.get_settings()
     settings.set_property('gtk-button-images', True)
@@ -593,7 +593,7 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32,
                 label.modify_font(label_font)
     return button
 
-def menuitem(title, image=None, tooltip=None, cb=None):
+def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
     """ Utility method for easily creating an ImageMenuItem """
     menu_item = Gtk.ImageMenuItem()
     menu_item.set_label(title)
@@ -621,7 +621,7 @@ def add_close_accel(window, callback):
     wa('Escape', callback)
     return accel_groups
 
-def add_window_accel(window, accel, callback):
+def add_window_accel(window, accel, callback) -> Gtk.AccelGroup:
     def connect(ag, *args):
         ag.connect(*args)
     accel_group = Gtk.AccelGroup()
@@ -631,7 +631,7 @@ def add_window_accel(window, accel, callback):
     return accel_group
 
 
-def label(text="", tooltip=None, font=None):
+def label(text="", tooltip=None, font=None) -> Gtk.Label:
     l = Gtk.Label(text)
     if font:
         fontdesc = Pango.FontDescription(font)

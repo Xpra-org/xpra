@@ -80,7 +80,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
                 pass
     return listener, cleanup_socket
 
-def has_dual_stack():
+def has_dual_stack() -> bool:
     """
         Return True if kernel allows creating a socket which is able to
         listen for both IPv4 and IPv6 connections.

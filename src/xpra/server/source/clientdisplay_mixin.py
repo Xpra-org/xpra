@@ -34,7 +34,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_names = ()
         self.show_desktop_allowed = False
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
             "desktop_size"  : self.desktop_size or "",
             "desktops"      : self.desktops,

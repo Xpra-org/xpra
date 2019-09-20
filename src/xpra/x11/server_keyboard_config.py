@@ -73,7 +73,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def __repr__(self):
         return "KeyboardConfig(%s / %s / %s)" % (self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = KeyboardConfigBase.get_info(self)
         #keycodes:
         if self.keycode_translation:

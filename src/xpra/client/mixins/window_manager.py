@@ -267,7 +267,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # hello:
-    def get_caps(self):
+    def get_caps(self) -> dict:
         #FIXME: the messy bits without proper namespace:
         caps = {
             #generic server flags:

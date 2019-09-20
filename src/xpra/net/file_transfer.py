@@ -105,7 +105,7 @@ class FileTransferAttributes(object):
         self.open_command = open_command
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
-    def get_file_transfer_features(self):
+    def get_file_transfer_features(self) -> dict:
         #used in hello packets
         return {
                 "file-transfer"     : self.file_transfer,
@@ -121,7 +121,7 @@ class FileTransferAttributes(object):
                 "file-ask-timeout"  : self.file_ask_timeout,
                 }
 
-    def get_info(self):
+    def get_info(self) -> dict:
         #slightly different from above... for legacy reasons
         #this one is used for get_info() in a proper "file." namespace from server_base.py
         return {
@@ -209,7 +209,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("file transfer remote caps: open-url=%s        (ask=%s)",
                 self.remote_open_url, self.remote_open_url_ask)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = FileTransferAttributes.get_info(self)
         info["remote"] = {
             "file-transfer"     : self.remote_file_transfer,

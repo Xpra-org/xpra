@@ -90,7 +90,7 @@ class DisplayClient(StubClientMixin):
 
     ######################################################################
     # hello:
-    def get_caps(self):
+    def get_caps(self) -> dict:
         caps = {
             "randr_notify"  : True,
             "show-desktop"  : True,
@@ -181,7 +181,7 @@ class DisplayClient(StubClientMixin):
 
     #this is the format we should be moving towards
     #with proper namespace:
-    #def get_info(self):
+    #def get_info(self) -> dict:
     #    sinfo = self.get_screen_caps()
     #    sinfo["scaling"] = self.get_scaling_caps()
     #    sinfo["dpi"] = self.get_dpi_caps()

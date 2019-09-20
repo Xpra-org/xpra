@@ -115,7 +115,7 @@ class ClientInfoMixin(StubSourceMixin):
         return cinfo
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
                 "version"           : self.client_version or "unknown",
                 "revision"          : self.client_revision or "unknown",

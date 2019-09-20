@@ -58,7 +58,7 @@ class OSXRootCapture(object):
         rect = (x, y, width, height)
         return get_CG_imagewrapper(rect)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {}
 
     def take_screenshot(self):

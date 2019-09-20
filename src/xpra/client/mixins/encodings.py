@@ -84,7 +84,7 @@ class Encodings(StubClientMixin):
             log.error("error on video cleanup", exc_info=True)
 
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         caps = {
             #legacy (not needed in 1.0 - can be dropped soon):
             "generic-rgb-encodings"     : True,

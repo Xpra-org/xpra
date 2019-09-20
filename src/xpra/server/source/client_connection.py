@@ -445,7 +445,7 @@ class ClientConnection(ClientConnectionClass):
 
     ######################################################################
     # info:
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
                 "protocol"          : "xpra",
                 "connection_time"   : int(self.connection_time),
@@ -473,7 +473,7 @@ class ClientConnection(ClientConnectionClass):
                 log.error(" %s", e)
         return info
 
-    def get_features_info(self):
+    def get_features_info(self) -> dict:
         info = {
             "lock"  : bool(self.lock),
             "share" : bool(self.share),

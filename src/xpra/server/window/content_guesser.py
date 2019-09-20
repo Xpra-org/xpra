@@ -38,7 +38,7 @@ def getprop(window, prop):
 
 
 content_type_defs = None
-def load_content_type_defs():
+def load_content_type_defs() -> dict:
     global content_type_defs
     if content_type_defs is None:
         content_type_defs = OrderedDict()
@@ -78,7 +78,7 @@ def load_content_type_file(ct_file):
 def process_content_type_entry(entry):
     global content_type_defs
     entry = entry.rstrip("\n\r")
-    if entry.startswith("#") or not (entry.strip()):
+    if entry.startswith("#") or not entry.strip():
         return True
     parts = entry.rsplit("=", 1)
     #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
@@ -118,7 +118,7 @@ def get_content_type_properties():
     return content_type_defs.keys()
 
 
-def guess_content_type_from_defs(window):
+def guess_content_type_from_defs(window) -> str:
     global content_type_defs
     load_content_type_defs()
     for prop_name, defs in content_type_defs.items():

@@ -73,14 +73,14 @@ class StubClientMixin(object):
     """
     Return the capabilities provided by this mixin.
     """
-    def get_caps(self):
+    def get_caps(self) -> dict:
         return {}
 
     """
     Parse server attributes specified in the hello capabilities.
     This runs in a non-UI thread.
     """
-    def parse_server_capabilities(self):
+    def parse_server_capabilities(self) -> bool:
         return True
 
     """
@@ -107,7 +107,7 @@ class StubClientMixin(object):
     def init_authenticated_packet_handlers(self):
         pass
 
-    def add_packet_handler(self, packet_type, handler, main_thread=True):
+    def add_packet_handler(self, packet_type : str, handler : callable, main_thread=True):
         raise NotImplementedError()
 
     def add_packet_handlers(self, defs, main_thread=True):

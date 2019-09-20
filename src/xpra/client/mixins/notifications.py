@@ -65,7 +65,7 @@ class NotificationClient(StubClientMixin):
         return True
 
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         return updict({}, "notifications", {
             ""            : self.client_supports_notifications,
             "close"       : self.client_supports_notifications,

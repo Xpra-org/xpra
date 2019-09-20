@@ -201,7 +201,7 @@ class SoundSource(SoundPipeline):
             self.file = None
             f.close()
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = SoundPipeline.get_info(self)
         if self.queue:
             info["queue"] = {"cur" : self.queue.get_property("current-level-time")//MS_TO_NS}

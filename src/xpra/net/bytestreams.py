@@ -154,7 +154,7 @@ class Connection(object):
     def is_active(self) -> bool:
         return self.active
 
-    def set_active(self, active):
+    def set_active(self, active : bool):
         self.active = active
 
     def close(self):
@@ -166,7 +166,7 @@ class Connection(object):
     def untilConcludes(self, *args):
         return untilConcludes(self.is_active, self.can_retry, *args)
 
-    def peek(self, _n):
+    def peek(self, _n : int):
         #not implemented
         return None
 
@@ -184,7 +184,7 @@ class Connection(object):
         self.input_readcount += 1
         return r
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = self.info.copy()
         if self.socktype_wrapped!=self.socktype:
             info["wrapped"] = self.socktype_wrapped
@@ -282,25 +282,25 @@ class SocketConnection(Connection):
         if SOCKET_NODELAY is not None and self.socktype in TCP_SOCKTYPES:
             self.do_set_nodelay(SOCKET_NODELAY)
 
-    def set_nodelay(self, nodelay):
+    def set_nodelay(self, nodelay : bool):
         if SOCKET_NODELAY is None and self.socktype_wrapped in TCP_SOCKTYPES and self.nodelay!=nodelay:
             self.do_set_nodelay(nodelay)
 
-    def do_set_nodelay(self, nodelay):
+    def do_set_nodelay(self, nodelay : bool):
         self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
         self.nodelay = nodelay
         log("changed %s socket to nodelay=%s", self.socktype, nodelay)
 
-    def set_cork(self, cork):
+    def set_cork(self, cork : bool):
         if SOCKET_CORK and self.socktype_wrapped in TCP_SOCKTYPES and self.cork!=cork:
             self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)
             self.cork = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 
-    def peek(self, n):
+    def peek(self, n : int):
         return self._socket.recv(n, socket.MSG_PEEK)
 
-    def read(self, n):
+    def read(self, n : int):
         return self._read(self._socket.recv, n)
 
     def write(self, buf):
@@ -517,7 +517,7 @@ class SSLSocketWrapper(object):
 class SSLSocketConnection(SocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
-    def can_retry(self, e):
+    def can_retry(self, e) -> bool:
         if getattr(e, "library", None)=="SSL":
             reason = getattr(e, "reason", None)
             if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):

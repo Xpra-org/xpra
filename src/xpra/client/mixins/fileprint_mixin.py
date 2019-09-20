@@ -39,7 +39,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             }.items():
             self.add_packet_handler(packet_type, handler, False)
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         return self.get_file_transfer_features()
 
     def cleanup(self):

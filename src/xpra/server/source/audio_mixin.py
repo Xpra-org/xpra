@@ -72,7 +72,7 @@ class AudioMixin(StubSourceMixin):
                  self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server,
                  self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         if not self.wants_sound or not self.sound_properties:
             return {}
         sound_props = self.sound_properties.copy()
@@ -474,10 +474,10 @@ class AudioMixin(StubSourceMixin):
         return encoder_latency
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {"sound" : self.get_sound_info()}
 
-    def get_sound_info(self):
+    def get_sound_info(self) -> dict:
         def sound_info(supported, prop, codecs):
             i = {"codecs" : codecs}
             if not supported:

@@ -212,7 +212,7 @@ class GlobalPerformanceStatistics(object):
         return info
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         cwqsizes = tuple(x[1] for x in tuple(self.compression_work_qsizes))
         pqsizes = tuple(x[1] for x in tuple(self.packet_qsizes))
         now = monotonic_time()

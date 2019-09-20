@@ -34,7 +34,7 @@ class IdleMixin(StubSourceMixin):
         self.cancel_idle_grace_timeout()
         self.cancel_idle_timeout()
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
                 "idle_time"         : int(monotonic_time()-self.last_user_event),
                 "idle"              : self.idle,

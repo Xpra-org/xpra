@@ -18,7 +18,7 @@ class KeyboardConfigBase(object):
     def __repr__(self):
         return "KeyboardConfigBase"
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
                 "enabled"   : self.enabled,
                 "owner"     : self.owner or "",

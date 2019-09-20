@@ -74,7 +74,7 @@ class WindowIconSource(object):
             self.send_window_icon_timer = 0
             self.source_remove(swit)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         idata = self.window_icon_data
         if not idata:
             return {}

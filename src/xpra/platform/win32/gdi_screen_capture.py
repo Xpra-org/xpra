@@ -101,13 +101,13 @@ class GDICapture(object):
     def __repr__(self):
         return "GDICapture(%i-bits)" % self.bit_depth
 
-    def get_info(self):
+    def get_info(self) -> dict:
         return {
             "type"  : "gdi",
             "depth" : self.bit_depth,
             }
 
-    def refresh(self):
+    def refresh(self) -> bool:
         return True
 
     def clean(self):

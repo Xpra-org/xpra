@@ -136,7 +136,7 @@ class VideoSubregion(object):
             self.refresh_timer = 0
             self.source_remove(rt)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         r = self.rectangle
         info = {
                 "supported" : self.supported,

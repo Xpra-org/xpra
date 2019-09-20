@@ -102,7 +102,7 @@ class EncodingsMixin(StubSourceMixin):
         return tuple(window_sources.values())
 
 
-    def get_caps(self):
+    def get_caps(self) -> dict:
         caps = {}
         if self.wants_encodings and self.encoding:
             caps["encoding"] = self.encoding
@@ -445,7 +445,7 @@ class EncodingsMixin(StubSourceMixin):
             self.encoding = encoding
 
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = {
                 "auto_refresh"      : self.auto_refresh_delay,
                 "lz4"               : self.lz4,
