@@ -53,7 +53,6 @@ class AudioClient(StubClientMixin):
         self.server_sound_receive = False
         self.server_sound_send = False
         self.server_sound_bundle_metadata = False
-        self.server_ogg_latency_fix = False
         self.queue_used_sent = None
         #duplicated from ServerInfo mixin:
         self._remote_machine_id = None
@@ -183,7 +182,6 @@ class AudioClient(StubClientMixin):
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")
-        self.server_ogg_latency_fix = c.boolget("sound.ogg-latency-fix", False)
         log("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server,
                  csv(self.server_sound_decoders), csv(self.server_sound_encoders),
@@ -372,9 +370,6 @@ class AudioClient(StubClientMixin):
                 self.no_matching_codec_error("speaker", self.server_sound_encoders, self.speaker_codecs)
                 return
             codec = matching_codecs[0]
-            if not self.server_ogg_latency_fix and codec in ("flac", "opus", "speex"):
-                log.warn("Warning: this server's sound support is out of date")
-                log.warn(" the sound latency with the %s codec will be high", codec)
             def sink_ready(*args):
                 scodec = codec
                 log("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)

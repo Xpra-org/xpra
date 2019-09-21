@@ -83,7 +83,6 @@ class AudioClientReceiveTest(AudioClientTestUtil):
 		x = self._test_audio(opts, {
 			"sound.send" : True,
 			"sound.encoders" : CODEC_ORDER,
-			"sound.ogg-latency-fix" : True,
 			})
 		def stop():
 			x.stop_receiving_sound()
