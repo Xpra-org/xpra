@@ -70,7 +70,7 @@ class ClipboardServer(StubServerMixin):
             "clipboard-direction"   : self.clipboard_direction,
             "clipboard" : {
                 ""                      : True,
-                "enable-selections"     : True,
+                "enable-selections"     : True,             #client check removed in v4
                 "contents-slice-fix"    : True,
                 "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
                 },

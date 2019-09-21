@@ -105,7 +105,6 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: incompatible clipboard direction settings")
                 log.warn(" server setting: %s, client setting: %s",
                          self.server_clipboard_direction, self.client_clipboard_direction)
-        self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
         try:
             from xpra.clipboard.clipboard_core import ALL_CLIPBOARDS
         except ImportError:
@@ -238,10 +237,8 @@ class ClipboardClient(StubClientMixin):
                 pass    #FIXME: todo!
 
     def send_clipboard_selections(self, selections):
-        log("send_clipboard_selections(%s) server_clipboard_enable_selections=%s",
-            selections, self.server_clipboard_enable_selections)
-        if self.server_clipboard_enable_selections:
-            self.send_now("clipboard-enable-selections", selections)
+        log("send_clipboard_selections(%s)", selections)
+        self.send_now("clipboard-enable-selections", selections)
 
     def send_clipboard_loop_uuids(self):
         uuids = self.clipboard_helper.get_loop_uuids()
