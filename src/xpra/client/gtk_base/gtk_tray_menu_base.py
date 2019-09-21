@@ -922,9 +922,8 @@ class GTKTrayMenuBase(object):
         if not encodings:
             #all we have, show the "bad" hidden ones then!
             encodings = all_encodings
-        if self.client.server_auto_video_encoding:
-            encodings.insert(0, "auto")
-            server_encodings.insert(0, "auto")
+        encodings.insert(0, "auto")
+        server_encodings.insert(0, "auto")
         encodings_submenu = make_encodingsmenu(self.get_current_encoding,
                                                self.set_current_encoding,
                                                encodings, server_encodings)

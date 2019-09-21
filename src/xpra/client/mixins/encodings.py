@@ -47,7 +47,6 @@ class Encodings(StubClientMixin):
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless_mode = ()
-        self.server_auto_video_encoding = False
 
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
@@ -107,7 +106,6 @@ class Encodings(StubClientMixin):
         self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("h264",))
         self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
-        self.server_auto_video_encoding = c.boolget("auto-video-encoding")
         e = c.strget("encoding")
         if e:
             if self.encoding and e!=self.encoding:
@@ -267,7 +265,6 @@ class Encodings(StubClientMixin):
     def set_encoding(self, encoding):
         log("set_encoding(%s)", encoding)
         if encoding=="auto":
-            assert self.server_auto_video_encoding
             self.encoding = ""
         else:
             assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
