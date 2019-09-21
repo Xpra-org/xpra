@@ -73,7 +73,6 @@ INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH", False)
 MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
 AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
 AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
-PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 
@@ -178,7 +177,6 @@ class WindowSource(WindowIconSource):
         self.client_bit_depth = encoding_options.intget("bit-depth", 24)
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
-        self.supports_flush = PAINT_FLUSH and encoding_options.boolget("flush")
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [])
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
@@ -498,7 +496,6 @@ class WindowSource(WindowIconSource):
                 "last_used"             : self.encoding_last_used or "",
                 "full-frames-only"      : self.full_frames_only,
                 "supports-transparency" : self.supports_transparency,
-                "flush"                 : self.supports_flush,
                 "delta"                 : {""               : self.supports_delta,
                                            "buckets"        : self.delta_buckets,
                                            "bucket"         : buckets_info,
@@ -2377,7 +2374,7 @@ class WindowSource(WindowIconSource):
             client_options["z.len"] = len(data)
             log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), chksum)
         #actual network packet:
-        if self.supports_flush and flush not in (None, 0):
+        if flush not in (None, 0):
             client_options["flush"] = flush
         if self.send_timetamps:
             client_options["ts"] = image.get_timestamp()

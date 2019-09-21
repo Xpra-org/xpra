@@ -1130,7 +1130,6 @@ XpraClient.prototype._make_hello = function() {
 		"encodings.cursor"			: ["png"],
 		"encoding.flush"			: true,
 		"encoding.transparency"		: true,
-		"encoding.client_options"	: true,
 		"encoding.csc_atoms"		: true,
 		"encoding.scrolling"		: true,
 		//"encoding.scrolling.min-percent" : 30,
