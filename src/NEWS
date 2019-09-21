@@ -1,6 +1,53 @@
-v3.0 (2019-03-19)
+v3.0 (2019-09-21)
 ======================
-	-- TODO
+	-- Python 3 port complete, now the default: #1571, #2195
+	-- much nicer HTML5 client user interface: #2269
+	-- Window handling:
+		smoother window resizing: #478 (OpenGL)
+		honouring gravity: #2217
+		lock them in readonly mode: #2137
+	-- xpra top subcommand: #2348
+	-- faster startup:
+		#2347 faster client startup
+		#2341 faster server startup
+	-- OpenGL:
+		more reliable driver probing: #2204
+		cursor paint support: #1497
+		transparency on MacOS: #1794
+	-- Encoding:
+		lossless window scrolling: #1320
+		scrolling acceleration for non-OpenGL backends: #2295
+		harden image parsing: #2279
+		workaround slow video encoder initialization (ie: NVENC) using replacement frames: #2048
+		avoid loading codecs we don't need: #2344
+		skip some CUDA devices, speedup enumeration: #2415
+	-- Clipboard:
+		new native clipboard implementations for all platforms: #812
+		HTML5 asynchronous clipboard: #1844
+		HTML5 support for copying images: #2312 (with watermarking)
+		brotli compression for text data: #2289
+	-- Authentication:
+		modular client authentication handlers: #1796
+		mysql authentication module: #2287
+		generic SQL authentication module: #2288
+	-- Network:
+		client listen mode: #1022
+		retry to connect until it succeeds or times out: #2346
+		mdns TXT attributes updated at runtime: #2187
+		zeroconf fixes: #2317
+		drop pybonjour: #2297
+		paramiko honours IdentityFile: #2282, handles SIGINT better: #2378
+		proxy server fixes for ssl and ssh sockets: #2399, remove spurious options: #2193
+		proxy ping and timeouts: #2408
+		proxy dynamic authentication: #2261
+	-- Automated Testing:
+		test HTML5 client: #2231
+		many new mixin tests: #1773 (and bugs found)
+	-- start-new-commands is now enabled by default: #2278, and the UI allows free text: #2221
+	-- basic support for native GTK wayland client: #2243
+	-- forward custom X11 properties: #2311
+	-- xpra launcher visual feedback during connection: #1421, sharing option: #2115
+	-- "Window" menu on MacOS: #1808
 
 
 v2.5 (2019-03-19)
