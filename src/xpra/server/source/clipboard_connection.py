@@ -30,7 +30,6 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_notifications = False
         self.clipboard_notifications_current = 0
         self.clipboard_notifications_pending = 0
-        self.clipboard_set_enabled = False
         self.clipboard_progress_timer = None
         self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
         self.clipboard_greedy = False
@@ -44,9 +43,8 @@ class ClipboardConnection(StubSourceMixin):
     def parse_client_caps(self, c):
         self.clipboard_enabled = c.boolget("clipboard", False)
         self.clipboard_notifications = c.boolget("clipboard.notifications")
-        self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
-        log("client clipboard: enabled=%s, notifications=%s, set-enabled=%s",
-            self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
+        log("client clipboard: enabled=%s, notifications=%s",
+            self.clipboard_enabled, self.clipboard_notifications)
         self.clipboard_greedy = c.boolget("clipboard.greedy")
         self.clipboard_want_targets = c.boolget("clipboard.want_targets")
         self.clipboard_client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
@@ -63,7 +61,6 @@ class ClipboardConnection(StubSourceMixin):
             "clipboard" : {
                 "enabled"               : self.clipboard_enabled,
                 "notifications"         : self.clipboard_notifications,
-                "set-enabled"           : self.clipboard_set_enabled,
                 "greedy"                : self.clipboard_greedy,
                 "want-targets"          : self.clipboard_want_targets,
                 "preferred-targets"     : self.clipboard_preferred_targets,

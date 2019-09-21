@@ -71,7 +71,7 @@ class ClipboardServer(StubServerMixin):
             "clipboard" : {
                 ""                      : True,
                 "enable-selections"     : True,             #client check removed in v4
-                "contents-slice-fix"    : True,
+                "contents-slice-fix"    : True,             #fixed in v2.4
                 "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
                 },
             }
