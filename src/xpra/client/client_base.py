@@ -371,7 +371,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         capabilities.update(FilePrintMixin.get_caps(self))
         capabilities.update({
                 "version"               : XPRA_VERSION,
-                "encoding.generic"      : True,
                 "namespace"             : True,
                 "websocket.multi-packet": True,
                 "hostname"              : socket.gethostname(),
