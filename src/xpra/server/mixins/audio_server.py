@@ -73,7 +73,6 @@ class AudioServer(StubServerMixin):
 
     def get_server_features(self, _source):
         return {
-            "sound_sequence" : True,        #legacy flag
             "sound" : {
                 "ogg-latency-fix" : True,
                 "eos-sequence"    : True,
