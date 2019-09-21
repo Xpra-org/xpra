@@ -483,11 +483,7 @@ class ClientConnection(ClientConnectionClass):
 
 
     def send_info_response(self, info):
-        if self.info_namespace:
-            v = notypedict(info)
-        else:
-            v = flatten_dict(info)
-        self.send_async("info-response", v)
+        self.send_async("info-response", notypedict(info))
 
 
     def send_setting_change(self, setting, value):

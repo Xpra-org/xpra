@@ -1838,8 +1838,7 @@ class ServerCore(object):
             self.send_id_info(proto)
             return True
         if is_req("info"):
-            flatten = not c.boolget("info-namespace", False)
-            self.send_hello_info(proto, flatten)
+            self.send_hello_info(proto)
             return True
         if self._closing:
             self.disconnect_client(proto, SERVER_EXIT, "server is shutting down")
@@ -1894,7 +1893,6 @@ class ServerCore(object):
                         })
         if source is None or source.wants_features:
             capabilities.update({
-                "info-request"      : True,
                 "readonly-server"   : True,
                 "readonly"          : self.readonly,
                 })
@@ -1927,20 +1925,16 @@ class ServerCore(object):
             id_info["display"] = display
         return id_info
 
-    def send_hello_info(self, proto, flatten=True):
+    def send_hello_info(self, proto):
         #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
         #(ie: see server_base)
-        log.info("processing %s info request from %s", "flat" if flatten else "structured", proto._conn)
+        log.info("processing structured info request from %s", proto._conn)
         def cb(proto, info):
-            self.do_send_info(proto, info, flatten)
+            self.do_send_info(proto, info)
         self.get_all_info(cb, proto)
 
-    def do_send_info(self, proto, info, flatten):
-        if flatten:
-            info = flatten_dict(info)
-        else:
-            info = notypedict(info)
-        proto.send_now(("hello", info))
+    def do_send_info(self, proto, info):
+        proto.send_now(("hello", notypedict(info)))
 
     def get_all_info(self, callback, proto=None, *args):
         start = monotonic_time()

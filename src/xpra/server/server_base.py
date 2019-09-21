@@ -486,9 +486,6 @@ class ServerBase(ServerBaseClass):
                  "pointer"                      : server_features.input_devices,
                  })
             capabilities.update(flatten_dict(self.get_server_features(source)))
-        #this is a feature, but we would need the hello request
-        #to know if it is really needed.. so always include it:
-        capabilities["exit_server"] = True
         capabilities["configure.pointer"] = True    #v4 clients assume this is enabled
         return capabilities
 

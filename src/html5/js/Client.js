@@ -1194,9 +1194,6 @@ XpraClient.prototype._make_hello = function() {
 		"file-transfer" 			: this.file_transfer,
 		"printing" 					: this.printing,
 		"file-size-limit"			: 10,
-		//capabilities:
-		//this causes errors with info-response!
-		//"info-namespace"			: true,
 	});
 }
 

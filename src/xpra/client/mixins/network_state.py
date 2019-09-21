@@ -79,7 +79,7 @@ class NetworkState(StubClientMixin):
 
 
     def get_caps(self) -> dict:
-        caps = {"info-namespace" : True}
+        caps = {"info-namespace" : True}        #v4 servers assume this is always supported
         #get socket speed if we have it:
         pinfo = self._protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})
