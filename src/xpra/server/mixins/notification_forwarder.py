@@ -45,8 +45,8 @@ class NotificationForwarder(StubServerMixin):
     def get_server_features(self, _source=None):
         return {
             "notifications"                : self.notifications,
-            "notifications.close"          : self.notifications,
-            "notifications.actions"        : self.notifications,
+            "notifications.close"          : self.notifications,    #added in v2.3
+            "notifications.actions"        : self.notifications,    #added in v2.3
             }
 
     def parse_hello(self, ss, _caps, send_ui):

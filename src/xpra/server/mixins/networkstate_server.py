@@ -75,9 +75,9 @@ class NetworkStateServer(StubServerMixin):
 
     def get_server_features(self, _source):
         return {
-            "connection-data" : True,
+            "connection-data" : True,           #added in v2.3
             "network" : {
-                "bandwidth-limit-change"       : True,
+                "bandwidth-limit-change"       : True,  #added in v2.2
                 "bandwidth-limit"              : self.bandwidth_limit or 0,
                 }
             }
