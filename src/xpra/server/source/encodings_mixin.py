@@ -310,7 +310,7 @@ class EncodingsMixin(StubSourceMixin):
                 stripped_k = k[len(b"encoding."):]
                 if stripped_k in (b"transparency",
                                   b"rgb_zlib", b"rgb_lz4", b"rgb_lzo",
-                                  b"video_scaling"):
+                                  ):
                     v = c.boolget(k)
                 elif stripped_k in (b"initial_quality", b"initial_speed",
                                     b"min-quality", b"quality",

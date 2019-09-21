@@ -135,9 +135,7 @@ class Encodings(StubClientMixin):
             video_b_frames = ()
         caps = {
             "flush"                     : PAINT_FLUSH,      #v4 servers assume this is available
-            #TODO: check for csc support (swscale only?)
-            "video_reinit"              : True,
-            "video_scaling"             : True,
+            "video_scaling"             : True,             #v4 servers assume this is available
             "video_b_frames"            : video_b_frames,
             "video_max_size"            : self.video_max_size,
             "webp_leaks"                : False,

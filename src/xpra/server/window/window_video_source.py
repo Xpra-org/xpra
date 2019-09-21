@@ -111,7 +111,6 @@ class WindowVideoSource(WindowSource):
         self.scroll_encoding = SCROLL_ENCODING
         self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
         self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
-        self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
         self.video_max_size = self.encoding_options.intlistget("video_max_size", (8192, 8192), 2, 2)
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
@@ -156,8 +155,6 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_params = None
         self.last_pipeline_scores = ()
         self.last_pipeline_time = 0
-
-        self.supports_video_scaling = False
 
         self.video_encodings = ()
         self.common_video_encodings = ()
@@ -206,7 +203,6 @@ class WindowVideoSource(WindowSource):
             sri["video-mode"] = self.subregion_is_video()
             info["video_subregion"] = sri
         info["scaling"] = self.actual_scaling
-        info["supports_video_scaling"] = self.supports_video_scaling
         info["video-max-size"] = self.video_max_size
         def addcinfo(prefix, x):
             if not x:
@@ -382,7 +378,6 @@ class WindowVideoSource(WindowSource):
         #client may restrict csc modes for specific windows
         self.supports_scrolling = self.scroll_encoding and properties.boolget("encoding.scrolling", self.supports_scrolling) and not STRICT_MODE
         self.scroll_min_percent = properties.intget("scrolling.min-percent", self.scroll_min_percent)
-        self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.video_subregion.supported = properties.boolget("encoding.video_subregion", VIDEO_SUBREGION) and VIDEO_SUBREGION
         if properties.get("scaling.control") is not None:
             self.scaling_control = max(0, min(100, properties.intget("scaling.control", 0)))
@@ -394,8 +389,8 @@ class WindowVideoSource(WindowSource):
             self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
         except IndexError:
             self.edge_encoding = None
-        log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
-            properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
+        log("do_set_client_properties(%s) full_csc_modes=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
+            properties, self.full_csc_modes, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
         if self.common_video_encodings or self.supports_scrolling:
@@ -1365,8 +1360,7 @@ class WindowVideoSource(WindowSource):
                 if width*num/den<=max_w and height*num/den<=max_h:
                     return (num, den)
             raise Exception("BUG: failed to find a scaling value for window size %sx%s" % (width, height))
-        if not SCALING or not self.supports_video_scaling:
-            #not supported by client or disabled by env
+        if not SCALING:
             if (width>max_w or height>max_h) and first_time("scaling-required"):
                 if not SCALING:
                     scalinglog.warn("Warning: video scaling is disabled")
