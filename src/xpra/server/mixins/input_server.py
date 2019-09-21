@@ -398,7 +398,6 @@ class InputServer(StubServerMixin):
         if key_repeat:
             capabilities.update({
                 "key_repeat"           : key_repeat,
-                "key_repeat_modifiers" : True,
                 })
 
 
