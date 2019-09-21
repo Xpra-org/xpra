@@ -80,13 +80,14 @@ def parse_displayfd(buf, err):
     if not buf:
         err("did not provide a display number using displayfd")
         return None
-    if buf[-1] not in (b'\n', ord(b"\n")):
-        err("output not terminated by newline: %s" % buf)
+    if not buf.endswith(b"\n"):
+        err("output not terminated by newline: '%s'" % buf)
         return None
+    buf = buf.rstrip(b"\n\r")
     try:
-        n = int(buf[:-1])
+        n = int(buf)
     except ValueError:
-        err("display number is not a valid number: %s" % buf[:-1])
+        err("display number is not a valid number: %s" % buf)
     if n<0 or n>=2**16:
         err("provided an invalid display number: %s" % n)
     return n

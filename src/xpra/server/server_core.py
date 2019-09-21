@@ -1041,7 +1041,7 @@ class ServerCore(object):
             #verify that this isn't plain HTTP / xpra:
             if peek_data:
                 packet_type = None
-                if peek_data[0] in ("P", ord("P")):
+                if peek_data[0]==ord("P"):
                     packet_type = "xpra"
                 elif line1.find(b"HTTP/")>0:
                     packet_type = "HTTP"
@@ -1080,7 +1080,7 @@ class ServerCore(object):
                         return
                     ssllog("ws socket receiving ssl, upgrading")
                     conn = ssl_wrap()
-                elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
+                elif len(peek_data)>=2 and peek_data[0]==ord("P") and peek_data[1]==0:
                     self.new_conn_err(conn, sock, socktype, socket_info, "xpra",
                                       "packet looks like a plain xpra packet")
                     return
@@ -1243,7 +1243,7 @@ class ServerCore(object):
         if not peek_data:
             netlog("may_wrap_socket: no data, not wrapping")
             return True, conn, peek_data
-        if peek_data[0] in ("P", ord("P")) and peek_data[:5]!=b"POST ":
+        if peek_data[0]==ord("P") and peek_data[:5]!=b"POST ":
             netlog("may_wrap_socket: xpra protocol header '%s', not wrapping", peek_data[0])
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
@@ -1308,10 +1308,7 @@ class ServerCore(object):
         proto.gibberish(err, data)
 
     def guess_header_protocol(self, v):
-        try:
-            c = ord(v[0])
-        except TypeError:
-            c = int(v[0])
+        c = int(v[0])
         s = bytestostr(v)
         netlog("guess_header_protocol(%r) first char=%#x", repr_ellipsized(s), c)
         if c==0x16:

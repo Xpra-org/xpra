@@ -22,8 +22,6 @@ def strindex(s, char, start):
             return -1
     return i
 #the values end up being ints..
-def cv(x):
-    return ord(x)
 def b(x):
     if isinstance(x, bytes):
         return x
@@ -34,10 +32,10 @@ def decode_int(x, f):
     f += 1
     newf = strindex(x, 'e', f)
     n = int(x[f:newf])
-    if x[f] == cv('-'):
-        if x[f + 1] == cv('0'):
+    if x[f] == ord('-'):
+        if x[f + 1] == ord('0'):
             raise ValueError
-    elif x[f] == cv('0') and newf != f+1:
+    elif x[f] == ord('0') and newf != f+1:
         raise ValueError
     return (n, newf+1)
 
@@ -45,7 +43,7 @@ def decode_string(x, f):
     colon = strindex(x, ':', f)
     assert colon>=0
     n = int(x[f:colon])
-    if x[f] == cv('0') and colon != f+1:
+    if x[f] == ord('0') and colon != f+1:
         raise ValueError
     colon += 1
     return (x[colon:colon+n], colon+n)
@@ -56,7 +54,7 @@ def decode_unicode(x, f):
 
 def decode_list(x, f):
     r, f = [], f+1
-    while x[f] != cv('e'):
+    while x[f] != ord('e'):
         fn = decode_func.get(x[f])
         if not fn:
             raise ValueError("invalid list entry: %s" % (x[f:]))
@@ -67,7 +65,7 @@ def decode_list(x, f):
 def decode_dict(x, f):
     r, f = {}, f+1
     #lastkey = None
-    while x[f] != cv('e'):
+    while x[f] != ord('e'):
         fn = decode_func.get(x[f])
         if not fn:
             raise ValueError("invalid dict key: %s" % (x[f:]))

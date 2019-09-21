@@ -828,7 +828,7 @@ class Protocol(object):
                 if payload_size<0:
                     #try to handle the first buffer:
                     buf = read_buffers[0]
-                    if not header and buf[0] not in ("P", ord("P")):
+                    if not header and buf[0]!=ord("P"):
                         self._invalid_header(buf, "invalid packet header byte %s" % buf)
                         return
                     #how much to we need to slice off to complete the header:

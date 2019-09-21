@@ -1112,22 +1112,16 @@ cdef GUID c_parseguid(src) except *:
     if len(bsrc)!=len(sample_guid):
         raise Exception("invalid GUID format: expected %s characters but got %s" % (len(sample_guid), len(src)))
     cdef int i
-    #deal with differences between python 2 and 3:
-    def _ord(c):
-        try:
-            return ord(c)
-        except:
-            return c
     #validate the input bytestring:
-    hexords = tuple(_ord(x) for x in b"0123456789ABCDEF")
+    hexords = tuple(x for x in b"0123456789ABCDEF")
     for i in range(len(sample_guid)):
-        if _ord(sample_guid[i])==_ord(b"-"):
+        if sample_guid[i]==ord(b"-"):
             #dash must be in the same place:
-            if _ord(bsrc[i])!=_ord(b"-"):
+            if bsrc[i]!=ord(b"-"):
                 raise Exception("invalid GUID format: character at position %s is not '-': %s" % (i, src[i]))
         else:
             #must be an hex number:
-            c = _ord(bsrc[i])
+            c = bsrc[i]
             if c not in hexords:
                 raise Exception("invalid GUID format: character at position %s is not in hex: %s" % (i, chr(c)))
     parts = bsrc.split(b"-")    #ie: ["CE788D20", "AAA9", ...]
@@ -1138,7 +1132,7 @@ cdef GUID c_parseguid(src) except *:
         log("c_parseguid bytes(%s)=%r", part, binv)
         v = 0
         for j in range(s):
-            c = _ord(binv[j])
+            c = binv[j]
             v += c<<((s-j-1)*8)
         nparts.append(v)
     cdef GUID guid

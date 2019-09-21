@@ -837,12 +837,7 @@ def nonl(x):
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
 
 def xor(s1,s2):
-    def _ord(v):
-        try:
-            return ord(v)
-        except TypeError:
-            return int(v)
-    return ''.join(chr(_ord(a) ^ _ord(b)) for a,b in zip(s1,s2))
+    return b''.join(chr(a ^ b) for a,b in zip(s1,s2))
 
 def engs(v):
     if isinstance(v, int):
