@@ -9,13 +9,9 @@ import subprocess
 
 
 def bytestostr(x):
+    if type(x)==bytes:
+        return x.decode("latin1")
     return str(x)
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
-    def bytestostr(x):
-        if type(x)==bytes:
-            return x.decode("latin1")
-        return str(x)
 
 
 def get_status_output(*args, **kwargs):
