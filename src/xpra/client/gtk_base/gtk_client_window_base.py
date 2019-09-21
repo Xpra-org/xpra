@@ -1787,11 +1787,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         cy = self._client.cy
         sx, sy, sw, sh = cx(x), cy(y), cx(w), cy(h)
         packet = ["configure-window", self._id, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
-        if self._client.window_configure_pointer:
-            #window id is redundant (now that we removed an OSX focus workaround)
-            packet.append(self._id)
-            packet.append(self._client.get_mouse_position())
-            packet.append(self._client.get_current_modifiers())
+        #window id is redundant (now that we removed an OSX focus workaround)
+        packet.append(self._id)
+        packet.append(self._client.get_mouse_position())
+        packet.append(self._client.get_current_modifiers())
         geomlog("%s", packet)
         self.send(*packet)
 

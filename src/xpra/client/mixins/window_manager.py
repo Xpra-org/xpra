@@ -109,7 +109,6 @@ class WindowClient(StubClientMixin):
         self.server_window_signals = ()
         self.server_window_filters = False
         self.window_buffer_refresh = False
-        self.window_configure_pointer = False
 
         self.server_input_devices = None
         self.server_precise_wheel = False
@@ -319,7 +318,6 @@ class WindowClient(StubClientMixin):
     def parse_server_capabilities(self):
         c = self.server_capabilities
         self.window_buffer_refresh = c.boolget("window_refresh_config")
-        self.window_configure_pointer = c.boolget("window.configure.pointer")
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
