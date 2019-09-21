@@ -132,7 +132,6 @@ class UIXpraClient(ClientBaseClass):
         self.server_sharing_toggle = False
         self.server_lock = False
         self.server_lock_toggle = False
-        self.server_window_filters = False
         self.server_keyboard = True
         self.server_pointer = True
 

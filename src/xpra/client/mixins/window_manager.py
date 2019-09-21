@@ -107,7 +107,6 @@ class WindowClient(StubClientMixin):
         self.server_is_desktop = False
         self.server_window_states = []
         self.server_window_signals = ()
-        self.server_window_filters = False
 
         self.server_input_devices = None
         self.server_precise_wheel = False
@@ -336,7 +335,6 @@ class WindowClient(StubClientMixin):
             "above", "below",
             "sticky", "iconified", "maximized",
             ])
-        self.server_window_filters = c.boolget("window-filters")
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
         #input devices:
         self.server_input_devices = c.strget("input-devices")
