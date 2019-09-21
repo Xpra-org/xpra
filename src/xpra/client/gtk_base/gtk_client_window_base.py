@@ -6,9 +6,9 @@
 # later version. See the file COPYING for details.
 
 import math
-import cairo
 import os.path
 from urllib.parse import unquote
+import cairo
 from gi.repository import Gtk, Gdk, Gio
 
 from xpra.os_util import bytestostr, is_X11, monotonic_time, WIN32, OSX, POSIX
@@ -101,7 +101,6 @@ CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
-OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", False)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 XSHAPE = envbool("XPRA_XSHAPE", True)
@@ -2021,28 +2020,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def do_key_release_event(self, event):
         key_event = self.parse_key_event(event, False)
         self._client.handle_key_action(self, key_event)
-
-
-    def get_mouse_event_wid(self, x, y):
-        #on OSX, the mouse events are reported against the wrong window by GTK,
-        #so we may have to patch this and use the currently focused window:
-        #(OR windows may never get the focus events - so don't patch those..)
-        if OSX and OSX_FOCUS_WORKAROUND and not self.is_OR():
-            focused = self._client._focused
-            w = self._client._id_to_window.get(focused)
-            focuslog("get_mouse_event_wid(%s, %s) focused=%s vs id=%i, window=%s", x, y, focused, self._id, w)
-            if focused and focused!=self._id and w:
-                gdkwin = w.get_window()
-                if gdkwin:
-                    rect = gdkwin.get_frame_extents()
-                    if x>=rect.x and x<=rect.x+rect.width and y>=rect.y and y<=rect.y+rect.height:
-                        focuslog("patched focused window %i, raising %s", focused, w)
-                        #we would prefer using this function,
-                        #but this raises the wrong window! (gdk is really messed up)
-                        #gdkwin.raise_()
-                        w.present()
-                        return focused
-        return ClientWindowBase.get_mouse_event_wid(self, x, y)
 
 
     def _do_scroll_event(self, event):
