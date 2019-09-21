@@ -85,8 +85,6 @@ class Encodings(StubClientMixin):
 
     def get_caps(self) -> dict:
         caps = {
-            #legacy (not needed in 1.0 - can be dropped soon):
-            "generic-rgb-encodings"     : True,
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
             "encodings.window-icon"     : self.get_window_icon_encodings(),

@@ -1111,7 +1111,6 @@ XpraClient.prototype._make_hello = function() {
 		"randr_notify"				: true,
 		"sound.server_driven"		: true,
 		"server-window-resize"		: true,
-		"generic-rgb-encodings"		: true,
 		"window.raise"				: true,
 		"window.initiate-moveresize": true,
 		"screen-resize-bigger"		: false,
