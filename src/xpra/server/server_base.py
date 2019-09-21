@@ -455,15 +455,9 @@ class ServerBase(ServerBaseClass):
     def get_server_features(self, server_source=None):
         #these are flags that have been added over time with new versions
         #to expose new server features:
-        f = dict((k, True) for k in (
-                #all these flags are assumed enabled in 0.17 (they are present in 0.14.x onwards):
-                "toggle_cursors_bell_notify",
-                "toggle_keyboard_sync",         #v4.0 clients assume this is always available
-                "xsettings-tuple",
-                "event_request",
-                "notify-startup-complete",
-                "server-events",
-                ))
+        f = {
+            "toggle_keyboard_sync" : True,  #v4.0 clients assume this is always available
+            }
         for c in SERVER_BASES:
             if c!=ServerCore:
                 merge_dicts(f, c.get_server_features(self, server_source))

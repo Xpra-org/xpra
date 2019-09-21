@@ -346,7 +346,7 @@ class UIXpraClient(ClientBaseClass):
             except:
                 pass
         for x in (#generic feature flags:
-            "notify-startup-complete", "wants_events", "setting-change",
+            "wants_events", "setting-change",
             "xdg-menu-update",
             ):
             caps[x] = True
