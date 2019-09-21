@@ -1169,7 +1169,6 @@ XpraClient.prototype._make_hello = function() {
 		"sound.decoders"			: Object.keys(this.audio_codecs),
 		"sound.bundle-metadata"		: true,
 		// encoding stuff
-		"encoding.rgb24zlib"		: true,
 		"encoding.rgb_zlib"			: true,
 		"windows"					: true,
 		//partial support:

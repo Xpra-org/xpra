@@ -138,8 +138,6 @@ class Encodings(StubClientMixin):
             "video_scaling"             : True,             #v4 servers assume this is available
             "video_b_frames"            : video_b_frames,
             "video_max_size"            : self.video_max_size,
-            "webp_leaks"                : False,
-            "rgb24zlib"                 : True,
             "max-soft-expired"          : MAX_SOFT_EXPIRED,
             "send-timestamps"           : SEND_TIMESTAMPS,
             "supports_delta"            : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()),
