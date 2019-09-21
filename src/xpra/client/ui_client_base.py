@@ -342,14 +342,13 @@ class UIXpraClient(ClientBaseClass):
             try:
                 from xpra.server.server_uuid import get_uuid
                 caps["server_uuid"] = get_uuid() or ""
-            except:
+            except ImportError:
                 pass
         for x in (#generic feature flags:
             "wants_events", "setting-change",
             "xdg-menu-update",
             ):
             caps[x] = True
-        #FIXME: the messy bits without proper namespace:
         caps.update({
             #generic server flags:
             "share"                     : self.client_supports_sharing,

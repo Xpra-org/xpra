@@ -735,7 +735,7 @@ class ServerBase(ServerBaseClass):
             return None
         try:
             args_str = handler.path.split("?", 1)[1]
-        except:
+        except IndexError:
             return err()
         #parse args:
         args = {}
