@@ -102,7 +102,6 @@ class WindowClient(StubClientMixin):
         self.windows_enabled = True
         self.pixel_depth = 0
 
-        self.server_window_decorations = False
         self.server_window_frame_extents = False
         self.server_is_desktop = False
         self.server_window_states = []
@@ -300,7 +299,6 @@ class WindowClient(StubClientMixin):
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
-        self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_cursors and self.client_supports_cursors

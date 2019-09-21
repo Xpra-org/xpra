@@ -504,24 +504,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #(show window decorations or not)
         if self._override_redirect:
             return False
-        decorations = metadata.get("decorations")
-        if decorations is not None:
-            #honour the flag given by the server:
-            return bool(decorations)
-        if self._client.server_window_decorations:
-            #rely on the server to tell us when to turn decorations off
-            return True
-        #older servers don't tell us if we need decorations, so take a guess:
-        #skip decorations for any non-normal non-dialog window that is transient for another window:
-        window_types = metadata.strlistget("window-type", [])
-        if ("NORMAL" not in window_types) and ("DIALOG" not in window_types) and metadata.intget("transient-for", -1)>0:
-            return False
-        undecorated_types = tuple(UNDECORATED_TYPE_HINTS.intersection(window_types))
-        metalog("undecorated_types(%s)=%s", window_types, undecorated_types)
-        if undecorated_types:
-            metalog("not decorating window type %s", undecorated_types)
-            return False
-        return True
+        return metadata.boolget("decorations", True)
 
     def set_decorated(self, decorated):
         was_decorated = self.get_decorated()
