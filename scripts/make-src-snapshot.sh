@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PYTHON=python
+PYTHON=python3
 VERSION=$1
 if [ -z "${VERSION}" ]; then
 	VERSION=`PYTHONPATH="./src" $PYTHON -c "from xpra import __version__; print(__version__)"`
@@ -30,7 +30,7 @@ find ${DIR} -name "*.pyd" -exec rm -fr {} \;
 find ${DIR} -name "*.egg" -exec rm -fr {} \;
 
 RAW_SVN_VERSION=`svnversion`
-SVN_REVISION=`$PYTHON -c "x=\"$RAW_SVN_VERSION\";y=x.split(\":\");y.reverse();z=y[0];print \"\".join([c for c in z if c in \"0123456789\"])"`
+SVN_REVISION=`$PYTHON -c "x=\"$RAW_SVN_VERSION\";y=x.split(\":\");y.reverse();z=y[0];print(\"\".join([c for c in z if c in \"0123456789\"]))"`
 MODULE_DIRS="xpra"
 echo "adding svn revision ${SVN_REVISION} to __init__.py in ${MODULE_DIRS}"
 for module in ${MODULE_DIRS}; do

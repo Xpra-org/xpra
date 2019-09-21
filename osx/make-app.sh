@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PYTHON="${PYTHON:=python}"
+PYTHON="${PYTHON:=python3}"
 PYTHON_MAJOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
 PYTHON_MINOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])'`
 
