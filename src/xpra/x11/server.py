@@ -331,7 +331,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
             updict(capabilities, "window", {
                 "decorations"            : True,        #v4 clients assume this is enabled
                 "frame-extents"          : True,
-                "configure.pointer"      : True,
                 "configure.delta"        : True,
                 "signals"                : WINDOW_SIGNALS,
                 "dragndrop"              : True,

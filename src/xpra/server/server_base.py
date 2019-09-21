@@ -489,6 +489,7 @@ class ServerBase(ServerBaseClass):
         #this is a feature, but we would need the hello request
         #to know if it is really needed.. so always include it:
         capabilities["exit_server"] = True
+        capabilities["configure.pointer"] = True    #v4 clients assume this is enabled
         return capabilities
 
     def send_hello(self, server_source, root_w, root_h, server_cipher):
