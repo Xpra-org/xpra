@@ -57,7 +57,6 @@ class InputServer(StubServerMixin):
 
     def get_server_features(self, _source=None):
         return {
-            "toggle_keyboard_sync"  : True,
             "input-devices"         : self.input_devices,
             "pointer.relative"      : True,
             }

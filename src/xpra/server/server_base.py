@@ -458,7 +458,7 @@ class ServerBase(ServerBaseClass):
         f = dict((k, True) for k in (
                 #all these flags are assumed enabled in 0.17 (they are present in 0.14.x onwards):
                 "toggle_cursors_bell_notify",
-                "toggle_keyboard_sync",
+                "toggle_keyboard_sync",         #v4.0 clients assume this is always available
                 "xsettings-tuple",
                 "event_request",
                 "notify-startup-complete",

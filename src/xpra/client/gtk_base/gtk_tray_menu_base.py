@@ -754,8 +754,6 @@ class GTKTrayMenuBase(object):
             kh = self.client.keyboard_helper
             if not kh:
                 text = "Keyboard support is not loaded"
-            elif not self.client.server_toggle_keyboard_sync:
-                text = "Server does not support toggling the synchronization"
             elif kh.keyboard_sync:
                 text = "Disable keyboard synchronization "+\
                        "(prevents spurious key repeats on high latency connections)"
@@ -773,7 +771,7 @@ class GTKTrayMenuBase(object):
         set_sensitive(self.keyboard_sync_menuitem, False)
         def set_keyboard_sync_menuitem(*args):
             kh = self.client.keyboard_helper
-            can_set_sync = kh and self.client.server_keyboard and self.client.server_toggle_keyboard_sync
+            can_set_sync = kh and self.client.server_keyboard
             set_sensitive(self.keyboard_sync_menuitem, can_set_sync)
             if can_set_sync:
                 self.keyboard_sync_menuitem.connect("toggled", keyboard_sync_toggled)
