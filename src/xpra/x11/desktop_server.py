@@ -415,8 +415,6 @@ class XpraDesktopServer(DesktopServerBaseClass):
                                  })
             updict(capabilities, "window", {
                 "decorations"            : True,
-                "resize-counter"         : True,
-                "configure.skip-geometry": True,
                 "configure.pointer"      : True,
                 "states"                 : ["iconified", "focused"],
                 })

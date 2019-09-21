@@ -282,20 +282,8 @@ class WindowClient(StubClientMixin):
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             #system tray forwarding:
             "system_tray"               : self.client_supports_system_tray,
-            #window meta data and handling:
-            "generic_window_types"      : True,
-            "server-window-move-resize" : True,
-            "server-window-resize"      : True,
+            "wants_default_cursor"      : True,
             }
-        for x in (
-            #generic feature flags:
-            "wants_default_cursor",
-            #window meta data and handling:
-            "generic_window_types", "server-window-move-resize", "server-window-resize",
-            #legacy (not needed in 1.0 - can be dropped soon):
-            "raw_window_icons",
-            ):
-            caps[x] = True
         updict(caps, "window", self.get_window_caps())
         updict(caps, "encoding", {
             "eos"                       : True,
@@ -304,10 +292,7 @@ class WindowClient(StubClientMixin):
 
     def get_window_caps(self):
         return {
-            "raise"                     : True,
             #implemented in the gtk client:
-            "initiate-moveresize"       : False,
-            "resize-counter"            : True,
             "min-size"                  : self.min_window_size,
             "max-size"                  : self.max_window_size,
             }

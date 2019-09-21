@@ -66,7 +66,6 @@ class WindowsMixin(StubSourceMixin):
         self.send_bell = False
         self.send_windows = True
         self.pointer_grabs = False
-        self.window_initiate_moveresize = False
         self.window_min_size = 0, 0
         self.window_max_size = 0, 0
         self.system_tray = False
@@ -129,7 +128,6 @@ class WindowsMixin(StubSourceMixin):
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.cursor_encodings = c.strlistget("encodings.cursor")
         self.send_bell = c.boolget("bell")
-        self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes", {}))
@@ -344,7 +342,7 @@ class WindowsMixin(StubSourceMixin):
     ######################################################################
     # windows:
     def initiate_moveresize(self, wid, window, x_root, y_root, direction, button, source_indication):
-        if not self.can_send_window(window) or not self.window_initiate_moveresize:
+        if not self.can_send_window(window):
             return
         log("initiate_moveresize sending to %s", self)
         self.send("initiate-moveresize", wid, x_root, y_root, direction, button, source_indication)
