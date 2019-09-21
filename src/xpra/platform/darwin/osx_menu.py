@@ -84,7 +84,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
     def build(self):
         log("OSXMenuHelper.build()")
         if self.menu_bar is None:
-            self.menu_bar = gtk.MenuBar()
+            self.menu_bar = Gtk.MenuBar()
             self.menu_bar.show_all()
         return self.menu_bar
 
@@ -126,7 +126,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             item.show_all()
         else:
             if label.startswith(SEPARATOR):
-                item = gtk.SeparatorMenuItem()
+                item = Gtk.SeparatorMenuItem()
             else:
                 item = self.menuitem(label)
                 item.set_submenu(submenu)
@@ -203,7 +203,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             menus.append(("Clipboard", clipboard_menu))
             for label in CLIPBOARD_LABELS:
                 clipboard_menu.add(self.make_clipboard_submenuitem(label, self._remote_clipboard_changed))
-            clipboard_menu.add(gtk.SeparatorMenuItem())
+            clipboard_menu.add(Gtk.SeparatorMenuItem())
             for label in CLIPBOARD_DIRECTION_LABELS:
                 clipboard_menu.add(self.make_clipboard_submenuitem(label, self._clipboard_direction_changed))
             clipboard_menu.show_all()
