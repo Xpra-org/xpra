@@ -421,23 +421,17 @@ class WindowClient(StubClientMixin):
     def _process_cursor(self, packet):
         if not self.cursors_enabled:
             return
-        #trim packet type:
-        packet = packet[1:]
-        if len(packet)==1:
+        if len(packet)==2:
             #marker telling us to use the default cursor:
-            new_cursor = packet[0]
+            new_cursor = packet[1]
         else:
-            if len(packet)<7:
+            if len(packet)<9:
                 raise Exception("invalid cursor packet: %s items" % len(packet))
-            #newer versions include the cursor encoding as first argument,
-            #we know this is it because it will be a string rather than an int:
-            if isinstance(packet[0], (str, bytes)):
-                #we have the encoding in the packet already
-                new_cursor = packet
-            else:
-                #prepend "raw" which is the default
-                new_cursor = [b"raw"] + packet
-            encoding = new_cursor[0]
+            encoding = packet[1]
+            if not isinstance(encoding, bytes):
+                raise Exception("invalid cursor packet format: cursor type is a %s" % type(encoding))
+            #trim packet-type:
+            new_cursor = packet[1:]
             pixels = new_cursor[8]
             if encoding==b"png":
                 if SAVE_CURSORS:
