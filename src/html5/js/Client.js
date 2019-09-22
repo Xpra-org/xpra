@@ -3210,13 +3210,6 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 			});
 		}
 	}
-
-	if (navigator.clipboard && navigator.clipboard.writeText && selection=="CLIPBOARD") {
-		//always claim the CLIPBOARD again,
-		//so we will be asked for contents
-		//and we can decide if we have the most up-to-date or not
-		ctx.send_clipboard_token();
-	}
 }
 
 XpraClient.prototype._process_set_clipboard_enabled = function(packet, ctx) {
