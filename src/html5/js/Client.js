@@ -3311,7 +3311,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 							}, function(err) {
 								ctx.debug("clipboard", "getType('"+itemtype+"') failed", err);
 								//send last server buffer instead:
-								ctx.resend_clipboard_server_buffer();
+								ctx.resend_clipboard_server_buffer(request_id, selection);
 							});
 							return;
 						}
@@ -3320,7 +3320,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 			}, function(err) {
 				ctx.debug("clipboard", "read() failed:", err);
 				//send last server buffer instead:
-				ctx.resend_clipboard_server_buffer();
+				ctx.resend_clipboard_server_buffer(request_id, selection);
 			});
 			return;
 		}
@@ -3334,14 +3334,14 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 					//and the server is asking for the CLIPBOARD selection
 					//send it back the last value it gave us
 					ctx.debug("clipboard request: using backup value");
-					ctx.resend_clipboard_server_buffer();
+					ctx.resend_clipboard_server_buffer(request_id, selection);
 					return;
 				}
 				ctx.send_clipboard_string(request_id, selection, text);
 			}, function(err) {
 				ctx.debug("clipboard", "readText() failed:", err);
 				//send last server buffer instead:
-				ctx.resend_clipboard_server_buffer();
+				ctx.resend_clipboard_server_buffer(request_id, selection);
 			});
 			return;
 		}
@@ -3352,8 +3352,10 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 
 XpraClient.prototype.resend_clipboard_server_buffer = function(request_id, selection) {
 	var server_buffer = this.clipboard_server_buffers["CLIPBOARD"];
+	this.debug("clipboard", "resend_clipboard_server_buffer:", server_buffer);
 	if (!server_buffer) {
 		this.send_clipboard_string(request_id, selection, "", "UTF8_STRING");
+		return;
 	}
 	var target = server_buffer[0];
 	var dtype = server_buffer[1];
