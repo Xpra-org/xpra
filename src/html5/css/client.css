@@ -306,6 +306,17 @@ div.windowinfocus {
 	text-align: left;
 }
 
+#shadow_pointer {
+	width : 32px;
+	height: 32px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	border: 1px;
+	z-index: 100000;
+	display: none;
+}
+
 table#sessiondata {
 	width: 90%;
 }

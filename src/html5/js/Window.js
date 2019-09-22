@@ -226,6 +226,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		div.addEventListener('DOMMouseScroll',	on_mousescroll, false); // for Firefox
 	}
 
+	this.png_cursor_data = null;
 	this.pointer_down = -1;
 	this.pointer_last_x = 0;
 	this.pointer_last_y = 0;
@@ -1004,6 +1005,7 @@ XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 
 XpraWindow.prototype.reset_cursor = function() {
 	jQuery("#"+String(this.wid)).css("cursor", 'default');
+	this.png_cursor_data = null;
 };
 
 XpraWindow.prototype.set_cursor = function(encoding, w, h, xhot, yhot, img_data) {
@@ -1012,6 +1014,7 @@ XpraWindow.prototype.set_cursor = function(encoding, w, h, xhot, yhot, img_data)
 		jQuery("#"+String(this.wid)).css("cursor", cursor_url+", default");
 		//CSS3 with hotspot:
 		jQuery("#"+String(this.wid)).css("cursor", cursor_url+" "+xhot+" "+yhot+", auto");
+		this.png_cursor_data = [w, h, xhot, yhot, img_data];
 	}
 };
 

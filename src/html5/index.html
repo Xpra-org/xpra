@@ -117,6 +117,8 @@
 				</ul>
 				<div id="float_tray"  class="menu-divright"></div>
 			</div>
+			<img id="shadow_pointer">
+			</img>
 		</div>
 
 		<div class="notifications">
@@ -676,7 +678,7 @@
 				client.host = server;
 				client.port = port;
 				client.ssl = ssl;
-				client.path = path;
+				client.path = path.split("index.html")[0];
 				return client;
 			}
 

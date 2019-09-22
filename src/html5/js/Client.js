@@ -331,6 +331,7 @@ XpraClient.prototype.init_packet_handlers = function() {
 		'send-file': this._process_send_file,
 		'open-url': this._process_open_url,
 		'setting-change': this._process_setting_change,
+		'pointer-position': this._process_pointer_position,
 	};
 }
 
@@ -1037,6 +1038,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"zlib"						: true,
 		"lzo"						: false,
 		"compression_level"	 		: 1,
+		"mouse.show"				: true,
 		// packet encoders
 		"rencode" 					: false,
 		"bencode"					: true,
@@ -2258,6 +2260,49 @@ XpraClient.prototype._process_initiate_moveresize = function(packet, ctx) {
 			source_indication = packet[6];
 		win.initiate_moveresize(ctx.mousedown_event, x_root, y_root, direction, button, source_indication)
 	}
+}
+
+XpraClient.prototype._process_pointer_position = function(packet, ctx) {
+	var wid = packet[1],
+		x = packet[2],
+		y = packet[3];
+	var win = ctx.id_to_window[wid];
+	if (packet.length>=6) {
+		//we can use window relative coordinates:
+		if (win) {
+			x = win.x + packet[4];
+			y = win.y + packet[5];
+		}
+	}
+	var shadow_pointer = document.getElementById("shadow_pointer");
+	var style = shadow_pointer.style;
+	var cursor_url = null,
+		w = 32,
+		h = 32,
+		xhot = 0,
+		yhot = 0;
+	if (win.png_cursor_data) {
+		w = win.png_cursor_data[0],
+		h = win.png_cursor_data[1],
+		xhot = win.png_cursor_data[2],
+		yhot = win.png_cursor_data[3],
+		cursor_url = "data:image/png;base64," + window.btoa(win.png_cursor_data[4]);
+	}
+	else {
+		w = 32;
+		h = 32;
+		xhot = 8;
+		yhot = 3;
+		cursor_url = "../icons/default_cursor.png";
+	}
+	x -= xhot;
+	y -= yhot;
+	style.width = w+"px";
+	style.height = h+"px";
+	shadow_pointer.src = cursor_url;
+	style.left = x+"px";
+	style.top = y+"px";
+	style.display = "inline";
 }
 
 XpraClient.prototype.on_last_window = function() {
