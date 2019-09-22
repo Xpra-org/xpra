@@ -2398,14 +2398,14 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 					});
 				}
 			}*/
-		    var notification = new Notification(summary, { body: body, icon: icon_url });
-		    notification.onclose = function() {
-		    	var reason = 2;	//closed by the user - best guess...
+			var notification = new Notification(summary, { body: body, icon: icon_url });
+			notification.onclose = function() {
+				var reason = 2;	//closed by the user - best guess...
 				ctx.send(["notification-close", nid, reason, ""]);
-		    };
-		    notification.onclick = function() {
-		    	ctx.log("user clicked on notification", nid);
-		    }
+			};
+			notification.onclick = function() {
+				ctx.log("user clicked on notification", nid);
+			}
 		}
 		//we have notification support in the browser
 		if (Notification.permission === "granted") {
@@ -2417,7 +2417,7 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 				if (permission === "granted") {
 					notify();
 				}
-		    });
+			});
 			return;
 		}
 	}
