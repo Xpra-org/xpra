@@ -9,7 +9,7 @@ import binascii
 import os
 import sys
 import numpy
-from collections import deque, OrderedDict
+from collections import deque
 import ctypes
 from ctypes import cdll as loader, POINTER
 from threading import Lock
@@ -2826,7 +2826,7 @@ def init_module():
         if LOSSLESS_ENABLED:
             LOSSLESS_ENABLED = False
     #check NVENC availibility by creating a context:
-    device_warnings = OrderedDict()
+    device_warnings = {}
     log("init_module() will try keys: %s", try_keys)
     for client_key in try_keys:
         if client_key:
@@ -2902,7 +2902,7 @@ def init_module():
                     if YUV444_ENABLED and not yuv444_support:
                         wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "YUV444")
                         if first_time(wkey):
-                            device_warnings.setdefault(device_id, OrderedDict()).setdefault(encoding, []).append("YUV444")
+                            device_warnings.setdefault(device_id, {}).setdefault(encoding, []).append("YUV444")
                         log("no support for YUV444 with %s", encoding)
                     log("%s YUV444 support: %s", encoding, YUV444_CODEC_SUPPORT.get(encoding, YUV444_ENABLED))
                     #check for lossless:
@@ -2911,7 +2911,7 @@ def init_module():
                     if LOSSLESS_ENABLED and not lossless_support:
                         wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "lossless")
                         if first_time(wkey):
-                            device_warnings.setdefault(device_id, OrderedDict()).setdefault(encoding, []).append("lossless")
+                            device_warnings.setdefault(device_id, {}).setdefault(encoding, []).append("lossless")
                         log("no support for lossless mode with %s", encoding)
                     log("%s lossless support: %s", encoding, LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED))
                 except NVENCException as e:

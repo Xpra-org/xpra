@@ -8,7 +8,6 @@ import sys
 import os.path
 import socket
 import subprocess
-from collections import OrderedDict
 from gi.repository import Pango, GLib, Gtk, GdkPixbuf
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command
@@ -225,7 +224,7 @@ class SessionsGUI(Gtk.Window):
         self.vbox.add(self.table)
         self.table.resize(1+len(self.records), 5)
         #group them by uuid
-        d = OrderedDict()
+        d = {}
         session_names = {}
         for i, record in enumerate(self.records):
             interface, protocol, name, stype, domain, host, address, port, text = record

@@ -6,7 +6,6 @@
 
 import re
 import os.path
-from collections import OrderedDict
 
 from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, OSX, POSIX, LINUX
@@ -41,7 +40,7 @@ content_type_defs = None
 def load_content_type_defs() -> dict:
     global content_type_defs
     if content_type_defs is None:
-        content_type_defs = OrderedDict()
+        content_type_defs = {}
         content_type_dir = os.path.join(get_app_dir(), "content-type")
         log("load_content_type_defs() content_type_dir=%s", content_type_dir)
         load_content_type_dir(content_type_dir)
@@ -100,7 +99,7 @@ def process_content_type_entry(entry):
     prop_name, regex = parts
     try:
         c = re.compile(regex)
-        content_type_defs.setdefault(prop_name, OrderedDict())[c]=(regex, content_type)
+        content_type_defs.setdefault(prop_name, {})[c]=(regex, content_type)
         log("%16s matching '%s' is %s", prop_name, regex, content_type)
     except Exception as e:
         log.warn("Warning: invalid regular expression")

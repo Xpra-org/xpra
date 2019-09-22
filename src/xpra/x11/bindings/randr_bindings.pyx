@@ -8,7 +8,6 @@
 
 import os
 import time
-from collections import OrderedDict
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
@@ -138,7 +137,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def __init__(self):
         self._has_randr = self.check_randr() and self.check_randr_sizes()
-        self._added_modes = OrderedDict()
+        self._added_modes = {}
 
     def __repr__(self):
         return "RandRBindings(%s)" % self.display_name

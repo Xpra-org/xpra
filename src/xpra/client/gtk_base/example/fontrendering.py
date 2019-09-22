@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections import OrderedDict
 import cairo
 from gi.repository import PangoCairo, Gtk
 
@@ -12,11 +11,12 @@ from xpra.gtk_common.gtk_util import add_close_accel
 FONT = "Serif 27"
 PATTERN = "%f"
 
-ANTIALIAS = OrderedDict()
-ANTIALIAS[cairo.ANTIALIAS_NONE]     = "NONE"
-ANTIALIAS[cairo.ANTIALIAS_DEFAULT]  = "DEFAULT"
-ANTIALIAS[cairo.ANTIALIAS_GRAY]     = "GRAY"
-ANTIALIAS[cairo.ANTIALIAS_SUBPIXEL] = "SUBPIXEL"
+ANTIALIAS = {
+    cairo.ANTIALIAS_NONE        : "NONE",
+    cairo.ANTIALIAS_DEFAULT     : "DEFAULT",
+    cairo.ANTIALIAS_GRAY        : "GRAY",
+    cairo.ANTIALIAS_SUBPIXEL    : "SUBPIXEL",
+    }
 
 WHITE = (1, 1, 1)
 BLACK = (0, 0, 0)

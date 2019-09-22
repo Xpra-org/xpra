@@ -153,8 +153,7 @@ class ZeroconfPublisher(object):
 
     def txt_rec(self, text_dict):
         #prevent zeroconf from mangling our ints into booleans:
-        from collections import OrderedDict
-        new_dict = OrderedDict()
+        new_dict = {}
         for k,v in text_dict.items():
             if isinstance(v, int):
                 new_dict[k] = str(v)

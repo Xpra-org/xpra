@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from collections import OrderedDict
 
 from xpra.util import envbool
 from xpra.os_util import pollwait, which, WIN32, OSX, POSIX
@@ -187,7 +186,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         #test every option disabled individually:
         #TEST_VALUES = tuple(2**i for i in range(len(OPTIONS)))
         for i in TEST_VALUES:
-            options = OrderedDict()
+            options = {}
             for o, option in enumerate(OPTIONS):
                 options[option] = not bool((2**o) & i)
             log("test options for %i: %s", i, options)

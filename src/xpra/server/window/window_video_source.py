@@ -10,7 +10,6 @@ import operator
 import threading
 from math import sqrt
 from functools import reduce
-from collections import OrderedDict
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -1417,7 +1416,7 @@ class WindowVideoSource(WindowSource):
                     target = target * (10+q)**2 // 50**2
                     #high speed means more scaling:
                     target = target * 60**2 // (q+20)**2
-                    sscaling = OrderedDict()
+                    sscaling = {}
                     for num, denom in SCALING_OPTIONS:
                         #scaled pixels per second value:
                         spps = pps*(num**2)/(denom**2)

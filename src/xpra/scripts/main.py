@@ -2417,8 +2417,7 @@ def run_list_mdns(error_cb, extra_args):
     from xpra.dbus.common import loop_init
     from gi.repository import GLib
     loop_init()
-    import collections
-    found = collections.OrderedDict()
+    found = {}
     shown = set()
     def show_new_found():
         new_found = [x for x in found.keys() if x not in shown]

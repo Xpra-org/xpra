@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,6 @@
 import os
 import time
 import struct
-import collections
 
 from xpra.util import envbool, repr_ellipsized, csv
 from xpra.log import Logger
@@ -242,7 +241,7 @@ cdef class ScrollData:
         # {line-start : count, ..}
         cdef uint16_t start = 0, count = 0
         try:
-            scrolls = collections.OrderedDict()
+            scrolls = {}
             #starting with the highest matches
             for i in reversed(sorted(scroll_hits.keys())):
                 v = scroll_hits[i]
@@ -253,7 +252,7 @@ cdef class ScrollData:
                         scrolls[scroll] = line_defs
             #same for the unmatched lines:
             #all the lines in tmp which have not been set by match_distance()
-            line_defs = collections.OrderedDict()
+            line_defs = {}
             for i in range(l):
                 if line_state[i]==0:
                     if count==0:
@@ -283,7 +282,7 @@ cdef class ScrollData:
             rstart = -distance
             rend = self.height
         cdef uint16_t i1, i2, start = 0, count = 0
-        line_defs = collections.OrderedDict()
+        line_defs = {}
         for i1 in range(rstart, rend):
             i2 = i1+distance
             if line_state[i2]:

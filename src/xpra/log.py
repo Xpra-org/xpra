@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,6 @@ import os
 import sys
 import logging
 import weakref
-from collections import OrderedDict
 # This module is used by non-GUI programs and thus must not import gtk.
 
 from xpra.os_util import bytestostr
@@ -167,154 +166,154 @@ def enable_format(format_string):
         pass
 
 
-STRUCT_KNOWN_FILTERS = OrderedDict([
-    ("Client", OrderedDict([
-                ("client"       , "All client code"),
-                ("paint"        , "Client window paint code"),
-                ("draw"         , "Client draw packets"),
-                ("cairo"        , "Cairo paint code used with the GTK3 client"),
-                ("opengl"       , "Client OpenGL rendering"),
-                ("info"         , "About and Session info dialogs"),
-                ("launcher"     , "The client launcher program"),
-                ])),
-    ("General", OrderedDict([
-                ("clipboard"    , "All clipboard operations"),
-                ("notify"       , "Notification forwarding"),
-                ("tray"         , "System Tray forwarding"),
-                ("printing"     , "Printing"),
-                ("file"         , "File transfers"),
-                ("keyboard"     , "Keyboard mapping and key event handling"),
-                ("screen"       , "Screen and workarea dimension"),
-                ("fps"          , "Frames per second"),
-                ("xsettings"    , "XSettings synchronization"),
-                ("dbus"         , "DBUS calls"),
-                ("rpc"          , "Remote Procedure Calls"),
-                ("menu"         , "Menus"),
-                ("events"       , "System and window events"),
-                ])),
-    ("Window", OrderedDict([
-                ("window"       , "All window code"),
-                ("damage"       , "Window X11 repaint events"),
-                ("geometry"     , "Window geometry"),
-                ("shape"        , "Window shape forwarding (XShape)"),
-                ("focus"        , "Window focus"),
-                ("workspace"    , "Window workspace synchronization"),
-                ("metadata"     , "Window metadata"),
-                ("alpha"        , "Window Alpha channel (transparency)"),
-                ("state"        , "Window state"),
-                ("icon"         , "Window icons"),
-                ("frame"        , "Window frame"),
-                ("grab"         , "Window grabs (both keyboard and mouse)"),
-                ("dragndrop"    , "Window drag-n-drop events"),
-                ("filters"      , "Window filters"),
-                ])),
-    ("Encoding", OrderedDict([
-                ("codec"        , "Codec loader and video helper"),
-                ("loader"       , "Pixel compression codec loader"),
-                ("video"        , "Video encoding"),
-                ("score"        , "Video pipeline scoring and selection"),
-                ("encoding"     , "Server side encoding selection and compression"),
-                ("scaling"      , "Picture scaling"),
-                ("delta"        , "Delta pre-compression"),
-                ("scroll"       , "Scrolling detection and compression"),
-                ("xor"          , "XOR delta pre-compression"),
-                ("subregion"    , "Video subregion processing"),
-                ("regiondetect" , "Video region detection"),
-                ("regionrefresh", "Video region refresh"),
-                ("refresh"      , "Refresh of lossy screen updates"),
-                ("compress"     , "Pixel compression (non video)"),
-                ])),
-    ("Codec", OrderedDict([
+STRUCT_KNOWN_FILTERS = {
+    "Client" : {
+                "client"        : "All client code",
+                "paint"         : "Client window paint code",
+                "draw"          : "Client draw packets",
+                "cairo"         : "Cairo paint code used with the GTK3 client",
+                "opengl"        : "Client OpenGL rendering",
+                "info"          : "About and Session info dialogs",
+                "launcher"      : "The client launcher program",
+                },
+    "General" : {
+                "clipboard"     : "All clipboard operations",
+                "notify"        : "Notification forwarding",
+                "tray"          : "System Tray forwarding",
+                "printing"      : "Printing",
+                "file"          : "File transfers",
+                "keyboard"      : "Keyboard mapping and key event handling",
+                "screen"        : "Screen and workarea dimension",
+                "fps"           : "Frames per second",
+                "xsettings"     : "XSettings synchronization",
+                "dbus"          : "DBUS calls",
+                "rpc"           : "Remote Procedure Calls",
+                "menu"          : "Menus",
+                "events"        : "System and window events",
+                },
+    "Window" : {
+                "window"        : "All window code",
+                "damage"        : "Window X11 repaint events",
+                "geometry"      : "Window geometry",
+                "shape"         : "Window shape forwarding (XShape)",
+                "focus"         : "Window focus",
+                "workspace"     : "Window workspace synchronization",
+                "metadata"      : "Window metadata",
+                "alpha"         : "Window Alpha channel (transparency)",
+                "state"         : "Window state",
+                "icon"          : "Window icons",
+                "frame"         : "Window frame",
+                "grab"          : "Window grabs (both keyboard and mouse)",
+                "dragndrop"     : "Window drag-n-drop events",
+                "filters"       : "Window filters",
+                },
+    "Encoding" : {
+                "codec"         : "Codec loader and video helper",
+                "loader"        : "Pixel compression codec loader",
+                "video"         : "Video encoding",
+                "score"         : "Video pipeline scoring and selection",
+                "encoding"      : "Server side encoding selection and compression",
+                "scaling"       : "Picture scaling",
+                "delta"         : "Delta pre-compression",
+                "scroll"        : "Scrolling detection and compression",
+                "xor"           : "XOR delta pre-compression",
+                "subregion"     : "Video subregion processing",
+                "regiondetect"  : "Video region detection",
+                "regionrefresh" : "Video region refresh",
+                "refresh"       : "Refresh of lossy screen updates",
+                "compress"      : "Pixel compression (non video)",
+                },
+    "Codec" : {
                 #codecs:
-                ("csc"          , "Colourspace conversion codecs"),
-                ("cuda"         , "CUDA device access (nvenc)"),
-                ("cython"       , "Cython CSC module"),
-                ("swscale"      , "swscale CSC module"),
-                ("libyuv"       , "libyuv CSC module"),
-                ("decoder"      , "All decoders"),
-                ("encoder"      , "All encoders"),
-                ("avcodec"      , "avcodec decoder"),
-                ("libav"        , "libav common code (used by swscale, avcodec and ffmpeg)"),
-                ("ffmpeg"       , "ffmpeg encoder"),
-                ("pillow"       , "Pillow encoder and decoder"),
-                ("jpeg"         , "JPEG codec"),
-                ("vpx"          , "libvpx encoder and decoder"),
-                ("nvenc"        , "nvenc hardware encoder"),
-                ("nvfbc"        , "nfbc screen capture"),
-                ("x264"         , "libx264 encoder"),
-                ("x265"         , "libx265 encoder"),
-                ("webp"         , "libwebp encoder and decoder"),
-                ("webcam"       , "webcam access"),
-                ])),
-    ("Pointer", OrderedDict([
-                ("mouse"        , "Mouse motion"),
-                ("cursor"       , "Mouse cursor shape"),
-                ])),
-    ("Misc", OrderedDict([
+                "csc"           : "Colourspace conversion codecs",
+                "cuda"          : "CUDA device access (nvenc)",
+                "cython"        : "Cython CSC module",
+                "swscale"       : "swscale CSC module",
+                "libyuv"        : "libyuv CSC module",
+                "decoder"       : "All decoders",
+                "encoder"       : "All encoders",
+                "avcodec"       : "avcodec decoder",
+                "libav"         : "libav common code (used by swscale, avcodec and ffmpeg)",
+                "ffmpeg"        : "ffmpeg encoder",
+                "pillow"        : "Pillow encoder and decoder",
+                "jpeg"          : "JPEG codec",
+                "vpx"           : "libvpx encoder and decoder",
+                "nvenc"         : "nvenc hardware encoder",
+                "nvfbc"         : "nfbc screen capture",
+                "x264"          : "libx264 encoder",
+                "x265"          : "libx265 encoder",
+                "webp"          : "libwebp encoder and decoder",
+                "webcam"        : "webcam access",
+                },
+    "Pointer" : {
+                "mouse"         : "Mouse motion",
+                "cursor"        : "Mouse cursor shape",
+                },
+    "Misc" : {
                 #libraries
-                ("gtk"          , "All GTK code: bindings, client, etc"),
-                ("util"         , "All utility functions"),
-                ("gobject"      , "Command line clients"),
+                "gtk"           : "All GTK code: bindings, client, etc",
+                "util"          : "All utility functions",
+                "gobject"       : "Command line clients",
                 #server bits:
-                ("test"         , "Test code"),
-                ("verbose"      , "Very verbose flag"),
+                "test"          : "Test code",
+                "verbose"       : "Very verbose flag",
                 #specific applications:
-                ])),
-    ("Network", OrderedDict([
+                },
+    "Network" : {
                 #internal / network:
-                ("network"      , "All network code"),
-                ("bandwidth"    , "Bandwidth detection and management"),
-                ("ssh"          , "SSH connections"),
-                ("ssl"          , "SSL connections"),
-                ("http"         , "HTTP requests"),
-                ("rfb"          , "RFB Protocol"),
-                ("mmap"         , "mmap transfers"),
-                ("protocol"     , "Packet input and output (formatting, parsing, sending and receiving)"),
-                ("websocket"    , "WebSocket layer"),
-                ("named-pipe"   , "Named pipe"),
-                ("udp"          , "UDP"),
-                ("crypto"       , "Encryption"),
-                ("auth"         , "Authentication"),
-                ])),
-    ("Server", OrderedDict([
+                "network"       : "All network code",
+                "bandwidth"     : "Bandwidth detection and management",
+                "ssh"           : "SSH connections",
+                "ssl"           : "SSL connections",
+                "http"          : "HTTP requests",
+                "rfb"           : "RFB Protocol",
+                "mmap"          : "mmap transfers",
+                "protocol"      : "Packet input and output (formatting, parsing, sending and receiving)",
+                "websocket"     : "WebSocket layer",
+                "named-pipe"    : "Named pipe",
+                "udp"           : "UDP",
+                "crypto"        : "Encryption",
+                "auth"          : "Authentication",
+                },
+    "Server" : {
                 #Server:
-                ("server"       , "All server code"),
-                ("proxy"        , "Proxy server"),
-                ("shadow"       , "Shadow server"),
-                ("command"      , "Server control channel"),
-                ("timeout"      , "Server timeouts"),
-                ("exec"         , "Executing commands"),
+                "server"        : "All server code",
+                "proxy"         : "Proxy server",
+                "shadow"        : "Shadow server",
+                "command"       : "Server control channel",
+                "timeout"       : "Server timeouts",
+                "exec"          : "Executing commands",
                 #server features:
-                ("mdns"         , "mDNS session publishing"),
+                "mdns"          : "mDNS session publishing",
                 #server internals:
-                ("stats"        , "Server statistics"),
-                ("xshm"         , "XShm pixel capture"),
-                ])),
-    ("Sound", OrderedDict([
-                ("sound"        , "All sound"),
-                ("gstreamer"    , "GStreamer internal messages"),
-                ("av-sync"      , "Audio-video sync"),
-                ])),
-    ("X11", OrderedDict([
-                ("x11"          , "All X11 code"),
-                ("xinput"       , "XInput bindings"),
-                ("bindings"     , "X11 Cython bindings"),
-                ("core"         , "X11 core bindings"),
-                ("randr"        , "X11 RandR bindings"),
-                ("ximage"       , "X11 XImage bindings"),
-                ("error"        , "X11 errors"),
-                ])),
-    ("Platform", OrderedDict([
-                ("platform"     , "All platform support code"),
-                ("import"       , "Platform support import code"),
-                ("osx"          , "Mac OS X platform support code"),
-                ("win32"        , "Microsoft Windows platform support code"),
-                ("posix"        , "Posix platform code"),
-                ])),
-    ])
+                "stats"         : "Server statistics",
+                "xshm"          : "XShm pixel capture",
+                },
+    "Sound" : {
+                "sound"         : "All sound",
+                "gstreamer"     : "GStreamer internal messages",
+                "av-sync"       : "Audio-video sync",
+                },
+    "X11" : {
+                "x11"           : "All X11 code",
+                "xinput"        : "XInput bindings",
+                "bindings"      : "X11 Cython bindings",
+                "core"          : "X11 core bindings",
+                "randr"         : "X11 RandR bindings",
+                "ximage"        : "X11 XImage bindings",
+                "error"         : "X11 errors",
+                },
+    "Platform" : {
+                "platform"      : "All platform support code",
+                "import"        : "Platform support import code",
+                "osx"           : "Mac OS X platform support code",
+                "win32"         : "Microsoft Windows platform support code",
+                "posix"         : "Posix platform code",
+                },
+    }
 
 #flatten it:
-KNOWN_FILTERS = OrderedDict()
+KNOWN_FILTERS = {}
 for d in STRUCT_KNOWN_FILTERS.values():
     for k,v in d.items():
         KNOWN_FILTERS[k] = v

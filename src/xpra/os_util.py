@@ -470,8 +470,7 @@ def osexpand(s, actual_username="", uid=0, gid=0, subs=None):
             #replace "~/" with "~$actual_username/"
             return os.path.expanduser("~%s/%s" % (actual_username, s[2:]))
         return os.path.expanduser(s)
-    from collections import OrderedDict
-    d = OrderedDict(subs or {})
+    d = dict(subs or {})
     d.update({
         "PID"   : os.getpid(),
         "HOME"  : expanduser("~/"),
@@ -489,7 +488,7 @@ def osexpand(s, actual_username="", uid=0, gid=0, subs=None):
         d["USER"] = actual_username
     #first, expand the substitutions themselves,
     #as they may contain references to other variables:
-    ssub = OrderedDict()
+    ssub = {}
     for k,v in d.items():
         ssub[k] = expanduser(shellsub(str(v), d))
     return os.path.expandvars(expanduser(shellsub(expanduser(s), ssub)))

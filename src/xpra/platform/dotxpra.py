@@ -160,8 +160,7 @@ class DotXpra(object):
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe
     def socket_details(self, check_uid=0, matching_state=None, matching_display=None):
-        import collections
-        sd = collections.OrderedDict()
+        sd = {}
         dirs = []
         if self._sockdir!="undefined":
             dirs.append(self._sockdir)

@@ -10,7 +10,6 @@ import struct
 import os.path
 import binascii
 import base64
-from collections import OrderedDict
 from hashlib import sha256
 
 from xpra.util import csv, engs
@@ -31,8 +30,8 @@ class Authenticator(SysAuthenticator):
         self.app_id = kwargs.pop("app_id", APP_ID)
         key_hexstring = kwargs.pop("public_key", "")
         SysAuthenticator.__init__(self, username, **kwargs)
-        self.public_keys = OrderedDict()
-        key_strs = OrderedDict()
+        self.public_keys = {}
+        key_strs = {}
         if key_hexstring:
             log("u2f_auth: public key from configuration=%s", key_hexstring)
             key_strs["command-option"] = key_hexstring
@@ -115,7 +114,7 @@ class Authenticator(SysAuthenticator):
         #check all the public keys:
         from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.asymmetric import ec
-        errors = OrderedDict()
+        errors = {}
         for origin, public_key in self.public_keys.items():
             verifier = public_key.verifier(sig, ec.ECDSA(hashes.SHA256()))
             verifier.update(param)

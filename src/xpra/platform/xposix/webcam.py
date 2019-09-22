@@ -5,7 +5,6 @@
 #pylint: disable-msg=E1101
 
 import os
-from collections import OrderedDict
 
 from xpra.util import engs, envbool
 from xpra.os_util import is_Ubuntu, is_Debian
@@ -54,7 +53,7 @@ def get_virtual_video_devices(capture_only=True) -> dict:
     if not check_virtual_dir(False):
         return {}
     contents = os.listdir(v4l2_virtual_dir)
-    devices = OrderedDict()
+    devices = {}
     for f in sorted(contents):
         if not f.startswith("video"):
             continue

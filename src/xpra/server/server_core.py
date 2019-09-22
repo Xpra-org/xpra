@@ -13,7 +13,6 @@ import socket
 import signal
 import threading
 import traceback
-from collections import OrderedDict
 from weakref import WeakKeyDictionary
 from time import sleep, time
 
@@ -780,7 +779,7 @@ class ServerCore(object):
         mdns_info = self.get_mdns_info()
         self.mdns_publishers = {}
         for mdns_mode, listen_on in mdns_recs.items():
-            info = OrderedDict(mdns_info)
+            info = dict(mdns_info)
             info["mode"] = mdns_mode
             aps = mdns_publish(self.display_name, listen_on, info)
             for ap in aps:
@@ -819,13 +818,13 @@ class ServerCore(object):
 
     def get_mdns_info(self):
         from xpra.platform.info import get_username
-        mdns_info = OrderedDict({
+        mdns_info = {
             "display"  : self.display_name,
             "username" : get_username(),
             "uuid"     : self.uuid,
             "platform" : sys.platform,
             "type"     : self.session_type,
-            })
+            }
         MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
         if MDNS_EXPOSE_NAME and self.session_name:
             mdns_info["name"] = self.session_name
