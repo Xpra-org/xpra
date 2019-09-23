@@ -8,6 +8,8 @@ import socket
 from time import sleep
 
 from xpra.scripts.config import InitException, TRUE_OPTIONS
+from xpra.scripts.main import InitExit
+from xpra.exit_codes import EXIT_SSL_FAILURE
 from xpra.os_util import (
     bytestostr, hexstr,
     getuid, get_username_for_uid, get_groups, get_group_id,
@@ -680,3 +682,162 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         index += 1
         aps.append(MDNSPublishers(listen, sn, service_type=service_type, text_dict=d))
     return aps
+
+
+def ssl_wrap_socket_fn(opts, server_side=True):
+    if server_side and not opts.ssl_cert:
+        raise InitException("you must specify an 'ssl-cert' file to use 'bind-ssl' sockets")
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    ssllog("ssl_wrap_socket_fn(.., %s)", server_side)
+    import ssl
+    if server_side:
+        verify_mode = opts.ssl_client_verify_mode
+    else:
+        verify_mode = opts.ssl_server_verify_mode
+    ssllog("ssl_wrap_socket_fn: verify_mode(%s)=%s", server_side, verify_mode)
+    #ca-certs:
+    ssl_ca_certs = opts.ssl_ca_certs
+    if ssl_ca_certs=="default":
+        ssl_ca_certs = None
+    ssllog("ssl_wrap_socket_fn: ca_certs=%s", ssl_ca_certs)
+    #parse verify-mode:
+    ssl_cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
+    if ssl_cert_reqs is None:
+        values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
+        raise InitException("invalid ssl-server-verify-mode '%s', must be one of: %s" % (verify_mode, csv(values)))
+    ssllog("ssl_wrap_socket_fn: cert_reqs=%#x", ssl_cert_reqs)
+    #parse protocol:
+    ssl_protocol = getattr(ssl, "PROTOCOL_%s" % (opts.ssl_protocol.upper().replace("V", "v")), None)
+    if ssl_protocol is None:
+        values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
+        raise InitException("invalid ssl-protocol '%s', must be one of: %s" % (opts.ssl_protocol, csv(values)))
+    ssllog("ssl_wrap_socket_fn: protocol=%#x", ssl_protocol)
+    #cadata may be hex encoded:
+    cadata = opts.ssl_ca_data
+    if cadata:
+        import binascii
+        try:
+            cadata = binascii.unhexlify(cadata)
+        except (TypeError, binascii.Error):
+            import base64
+            cadata = base64.b64decode(cadata)
+    ssllog("ssl_wrap_socket_fn: cadata=%s", repr_ellipsized(cadata))
+
+    kwargs = {
+              "server_side"             : server_side,
+              "do_handshake_on_connect" : False,
+              "suppress_ragged_eofs"    : True,
+              }
+    #parse ssl-verify-flags as CSV:
+    ssl_verify_flags = 0
+    for x in opts.ssl_verify_flags.split(","):
+        x = x.strip()
+        if not x:
+            continue
+        v = getattr(ssl, "VERIFY_"+x.upper(), None)
+        if v is None:
+            raise InitException("invalid ssl verify-flag: %s" % x)
+        ssl_verify_flags |= v
+    ssllog("ssl_wrap_socket_fn: verify_flags=%#x", ssl_verify_flags)
+    #parse ssl-options as CSV:
+    ssl_options = 0
+    for x in opts.ssl_options.split(","):
+        x = x.strip()
+        if not x:
+            continue
+        v = getattr(ssl, "OP_"+x.upper(), None)
+        if v is None:
+            raise InitException("invalid ssl option: %s" % x)
+        ssl_options |= v
+    ssllog("ssl_wrap_socket_fn: options=%#x", ssl_options)
+
+    context = ssl.SSLContext(ssl_protocol)
+    context.set_ciphers(opts.ssl_ciphers)
+    context.verify_mode = ssl_cert_reqs
+    context.verify_flags = ssl_verify_flags
+    context.options = ssl_options
+    ssllog("ssl_wrap_socket_fn: cert=%s, key=%s", opts.ssl_cert, opts.ssl_key)
+    if opts.ssl_cert:
+        SSL_KEY_PASSWORD = os.environ.get("XPRA_SSL_KEY_PASSWORD")
+        context.load_cert_chain(certfile=opts.ssl_cert or None, keyfile=opts.ssl_key or None, password=SSL_KEY_PASSWORD)
+    if ssl_cert_reqs!=ssl.CERT_NONE:
+        if server_side:
+            purpose = ssl.Purpose.CLIENT_AUTH   #@UndefinedVariable
+        else:
+            purpose = ssl.Purpose.SERVER_AUTH   #@UndefinedVariable
+            context.check_hostname = opts.ssl_check_hostname
+            ssllog("ssl_wrap_socket_fn: check_hostname=%s", opts.ssl_check_hostname)
+            if context.check_hostname:
+                if not opts.ssl_server_hostname:
+                    raise InitException("ssl error: check-hostname is set but server-hostname is not")
+                kwargs["server_hostname"] = opts.ssl_server_hostname
+        ssllog("ssl_wrap_socket_fn: load_default_certs(%s)", purpose)
+        context.load_default_certs(purpose)
+
+        ssl_ca_certs = opts.ssl_ca_certs
+        if not ssl_ca_certs or ssl_ca_certs.lower()=="default":
+            ssllog("ssl_wrap_socket_fn: loading default verify paths")
+            context.set_default_verify_paths()
+        elif not os.path.exists(ssl_ca_certs):
+            raise InitException("invalid ssl-ca-certs file or directory: %s" % ssl_ca_certs)
+        elif os.path.isdir(ssl_ca_certs):
+            ssllog("ssl_wrap_socket_fn: loading ca certs from directory '%s'", ssl_ca_certs)
+            context.load_verify_locations(capath=ssl_ca_certs)
+        else:
+            ssllog("ssl_wrap_socket_fn: loading ca certs from file '%s'", ssl_ca_certs)
+            assert os.path.isfile(ssl_ca_certs), "'%s' is not a valid ca file" % ssl_ca_certs
+            context.load_verify_locations(cafile=ssl_ca_certs)
+        #handle cadata:
+        if cadata:
+            #PITA: because of a bug in the ssl module, we can't pass cadata,
+            #so we use a temporary file instead:
+            import tempfile
+            with tempfile.NamedTemporaryFile(prefix='cadata') as f:
+                ssllog("ssl_wrap_socket_fn: loading cadata '%s'", repr_ellipsized(cadata))
+                ssllog(" using temporary file '%s'", f.name)
+                f.file.write(cadata)
+                f.file.flush()
+                context.load_verify_locations(cafile=f.name)
+    elif opts.ssl_check_hostname and not server_side:
+        raise InitException("cannot check hostname with verify mode %s" % verify_mode)
+    wrap_socket = context.wrap_socket
+    del opts
+    def do_wrap_socket(tcp_socket):
+        ssllog("do_wrap_socket(%s)", tcp_socket)
+        if WIN32:
+            #on win32, setting the tcp socket to blocking doesn't work?
+            #we still hit the following errors that we need to retry:
+            from xpra.net import bytestreams
+            bytestreams.CAN_RETRY_EXCEPTIONS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
+        if not WIN32:
+            tcp_socket.setblocking(True)
+        try:
+            ssl_sock = wrap_socket(tcp_socket, **kwargs)
+        except Exception as e:
+            ssllog.debug("do_wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
+            SSLEOFError = getattr(ssl, "SSLEOFError", None)
+            if SSLEOFError and isinstance(e, SSLEOFError):
+                return None
+            raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e))
+        if not server_side:
+            try:
+                ssl_sock.do_handshake(True)
+            except Exception as e:
+                ssllog.debug("do_handshake", exc_info=True)
+                SSLEOFError = getattr(ssl, "SSLEOFError", None)
+                if SSLEOFError and isinstance(e, SSLEOFError):
+                    return None
+                SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
+                if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
+                    try:
+                        msg = e.args[1].split(":", 2)[2]
+                    except (ValueError, IndexError):
+                        msg = str(e)
+                    #ssllog.warn("host failed SSL verification: %s", msg)
+                else:
+                    msg = str(e)
+                raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % msg)
+        return ssl_sock
+    return do_wrap_socket
+

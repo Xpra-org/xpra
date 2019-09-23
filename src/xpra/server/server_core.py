@@ -321,7 +321,7 @@ class ServerCore(object):
                 need_ssl = True
         if not need_ssl:
             return
-        from xpra.scripts.main import ssl_wrap_socket_fn
+        from xpra.net.socket_util import ssl_wrap_socket_fn
         try:
             self._ssl_wrap_socket = ssl_wrap_socket_fn(opts, server_side=True)
             log("init_ssl() wrap_socket_fn=%s", self._ssl_wrap_socket)
