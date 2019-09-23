@@ -65,10 +65,10 @@ def main():
     for x in paths:
         if os.path.isdir(x):
             r = add_recursive(x)
-            if r!=0:
-                return r
         else:
-            run_file(x)
+            r = run_file(x)
+        if r!=0:
+            return r
 
 if __name__ == '__main__':
     sys.exit(main())
