@@ -31,7 +31,6 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboard = False
         self.server_clipboard_loop_uuids = {}
         self.server_clipboard_direction = ""
-        self.server_clipboard_enable_selections = False
         self.server_clipboard_contents_slice_fix = False
         self.server_clipboard_preferred_targets = False
         self.server_clipboards = []
@@ -110,8 +109,8 @@ class ClipboardClient(StubClientMixin):
         except ImportError:
             ALL_CLIPBOARDS = []
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
-        log("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
-                     self.server_clipboard, self.server_clipboard_direction, self.server_clipboard_enable_selections)
+        log("server clipboard: supported=%s, direction=%s",
+                     self.server_clipboard, self.server_clipboard_direction)
         log("client clipboard: supported=%s, direction=%s",
                      self.client_supports_clipboard, self.client_clipboard_direction)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
@@ -134,10 +133,9 @@ class ClipboardClient(StubClientMixin):
             self.clipboard_enabled = ch is not None
             log("clipboard helper=%s", ch)
             if self.clipboard_enabled:
-                if self.server_clipboard_enable_selections:
-                    #tell the server about which selections we really want to sync with
-                    #(could have been translated, or limited if the client only has one, etc)
-                    self.send_clipboard_selections(ch.remote_clipboards)
+                #tell the server about which selections we really want to sync with
+                #(could have been translated, or limited if the client only has one, etc)
+                self.send_clipboard_selections(ch.remote_clipboards)
                 ch.send_all_tokens()
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
@@ -258,15 +256,11 @@ class ClipboardClient(StubClientMixin):
                  "can-send"             : self.client_clipboard_direction in ("to-server", "both"),
                  "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
                  "remote-loop-uuids"    : self.server_clipboard_loop_uuids,
-                 }
-        #only allow translation overrides if we have a way of telling the server about them:
-        if self.server_clipboard_enable_selections:
-            kwargs.update({
-                #the local clipboard we want to sync to (with the translated clipboard only):
+                 #the local clipboard we want to sync to (with the translated clipboard only):
                  "clipboard.local"      : self.local_clipboard,
                  #the remote clipboard we want to we sync to (with the translated clipboard only):
                  "clipboard.remote"     : self.remote_clipboard
-                 })
+                 }
         log("setup_clipboard_helper() kwargs=%s", kwargs)
         def clipboard_send(*parts):
             log("clipboard_send: %s", parts[0])
