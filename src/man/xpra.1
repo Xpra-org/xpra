@@ -158,7 +158,7 @@ configuration directory set this value.
 Attach to the xpra server that is using local display number \fI:7\fP.
 Any apps running on that server will appear on your screen.
 .TP
-\fBxpra attach\fP \fIssh:foo@frodo:7\fP
+\fBxpra attach\fP \fIssh://foo@frodo:7\fP
 Use ssh to attach to the xpra server that is running on machine
 \fIfrodo\fP as user \fIfoo\fP and using display \fI:7\fP.
 Any apps running on that server will appear on your local screen.
@@ -223,7 +223,7 @@ using \fBssh\fP(1).  Generally, if you have only one xpra session
 running on a machine (which you can verify by running \fBxpra list\fP
 on that machine), then you can omit the number entirely; \fBxpra
 attach\fP alone will attach to the lone xpra server on the current
-machine regardless of its number, \fBxpra attach ssh:frodo\fP will
+machine regardless of its number, \fBxpra attach ssh://frodo\fP will
 similarly attach to the lone xpra session on a remote machine.
 
 Connecting using the display number assumes that the client and server
@@ -583,7 +583,7 @@ or named-pipe (on MS Windows) for each \fBbind\fP option specified.
 This option can be specified multiple times to specify multiple
 socket locations.
 These sockets support local connections with the \fB:7\fP-style display
-address, and remote connections with the \fBssh:frodo:7\fP-style
+address, and remote connections with the \fBssh://frodo:7\fP-style
 display address.
 
 Local sockets may also process HTTP / Websocket connections
@@ -1513,7 +1513,7 @@ For example, if you want to use arcfour encryption, then you should run
 .\" produces fine output in the terminal, at least:
 .RS
 .RS
-\fBxpra attach --ssh\fP=\fI"ssh -c arcfour" ssh:frodo:7\fP
+\fBxpra attach --ssh\fP=\fI"ssh -c arcfour" ssh://frodo:7\fP
 
 .RE
 \fINote:\fP Don't bother to enable ssh compression; this
