@@ -7,9 +7,8 @@
 import re
 import sys
 
-from xpra.server.auth.sys_auth_base import init, log
+from xpra.server.auth.sys_auth_base import log
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
-assert init and log #tests will disable logging from here
 
 
 def url_path_to_dict(path):

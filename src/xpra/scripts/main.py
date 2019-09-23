@@ -1588,7 +1588,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                                                     None, False,
                                                     opts.mmap_group, opts.socket_permissions,
                                                     get_username(), getuid, getgid)
-                sockets += local_sockets
+                sockets.update(local_sockets)
                 listen_cleanup = []
                 socket_cleanup = []
                 def new_connection(socktype, sock, handle=0):

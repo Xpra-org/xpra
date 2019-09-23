@@ -3,8 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
-assert init and log #tests will disable logging from here
+from xpra.server.auth.sys_auth_base import SysAuthenticator
 
 
 class Authenticator(SysAuthenticator):

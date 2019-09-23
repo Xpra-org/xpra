@@ -217,6 +217,7 @@ class ServerCore(object):
         self._http_headers_dir = None
         self._aliases = {}
         self.socket_info = {}
+        self.socket_options = {}
         self.socket_cleanup = []
         self.socket_verify_timer = WeakKeyDictionary()
         self.socket_rfb_upgrade_timer = WeakKeyDictionary()
@@ -601,23 +602,23 @@ class ServerCore(object):
     ######################################################################
     # authentication:
     def init_auth(self, opts):
-        auth = self.get_auth_modules("local-auth", opts.auth, opts)
+        auth = self.get_auth_modules("local-auth", opts.auth)
         if WIN32:
             self.auth_classes["named-pipe"] = auth
         else:
             self.auth_classes["unix-domain"] = auth
         for x in SOCKET_TYPES:
             opts_value = getattr(opts, "%s_auth" % x)
-            self.auth_classes[x] = self.get_auth_modules(x, opts_value, opts)
+            self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog("init_auth(..) auth=%s", self.auth_classes)
 
-    def get_auth_modules(self, socket_type, auth_strs, opts):
+    def get_auth_modules(self, socket_type, auth_strs):
         authlog("get_auth_modules(%s, %s, {..})", socket_type, auth_strs)
         if not auth_strs:
             return None
-        return tuple(self.get_auth_module(socket_type, auth_str, opts) for auth_str in auth_strs)
+        return tuple(self.get_auth_module(socket_type, auth_str) for auth_str in auth_strs)
 
-    def get_auth_module(self, socket_type, auth_str, opts):
+    def get_auth_module(self, socket_type, auth_str):
         authlog("get_auth_module(%s, %s, {..})", socket_type, auth_str)
         #separate options from the auth module name
         #either with ":" or "," as separator
@@ -626,8 +627,6 @@ class ServerCore(object):
         if cpos<0 or scpos<cpos:
             parts = auth_str.split(":", 1)
         else:
-            parts = auth_str.split(",", 1)
-        if len(parts)==1 and auth_str.find(",")>0:
             parts = auth_str.split(",", 1)
         auth = parts[0]
         auth_options = {}
@@ -652,7 +651,6 @@ class ServerCore(object):
             raise InitException("cannot load authentication module '%s' for %s socket: %s" % (auth, socket_type, e)) from None
         authlog("auth module for '%s': %s", auth, auth_module)
         try:
-            auth_module.init(opts)
             auth_class = auth_module.Authenticator
             auth_class.auth_name = auth.lower()
             return auth, auth_class, auth_options
@@ -848,9 +846,11 @@ class ServerCore(object):
 
     def start_listen_sockets(self):
         ### All right, we're ready to accept customers:
-        for socktype, sock, info, _ in self._socket_info:
+        for sock_def, options in self._socket_info.items():
+            socktype, sock, info, _ = sock_def
             netlog("init_sockets(%s) will add %s socket %s (%s)", self._socket_info, socktype, sock, info)
             self.socket_info[sock] = info
+            self.socket_options[sock] = options
             self.idle_add(self.add_listen_socket, socktype, sock)
             if socktype=="unix-domain" and info:
                 try:
@@ -950,13 +950,14 @@ class ServerCore(object):
         socket_info = self.socket_info.get(listener)
         assert socktype, "cannot find socket type for %s" % listener
         #TODO: just like add_listen_socket above, this needs refactoring
+        socket_options = self.socket_options.get(listener)
         if socktype=="named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-            conn = NamedPipeConnection(listener.pipe_name, handle)
+            conn = NamedPipeConnection(listener.pipe_name, handle, socket_options)
             netlog.info("New %s connection received on %s", socktype, conn.target)
             return self.make_protocol(socktype, conn)
 
-        conn = accept_connection(socktype, listener, self._socket_timeout)
+        conn = accept_connection(socktype, listener, self._socket_timeout, socket_options)
         if conn is None:
             return True
         #limit number of concurrent network connections:
@@ -1613,15 +1614,24 @@ class ServerCore(object):
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
     def make_authenticators(self, socktype, username, conn):
-        authlog("make_authenticators%s", (socktype, username, conn))
-        authenticators = []
-        auth_classes = self.auth_classes[socktype]
+        authlog("make_authenticators%s socket options=%s", (socktype, username, conn), conn.options)
+        sock_auth = conn.options.get("auth", "")
+        if sock_auth:
+            #per socket authentication option:
+            #ie: --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=pass.txt:foo=bar
+            # -> sock_auth = ["hosts", "file:filename=pass.txt:foo=bar"]
+            if not isinstance(sock_auth, list):
+                sock_auth = sock_auth.split(",")
+            auth_classes = self.get_auth_modules(conn.socktype, sock_auth)
+        else:
+            #use authentication configuration defined for all sockets of this type:
+            auth_classes = self.auth_classes[socktype]
         i = 0
+        authenticators = []
         if auth_classes:
             authlog("creating authenticators %s for %s, with username=%s, connection=%s",
                     csv(auth_classes), socktype, username, conn)
-            for auth_class in auth_classes:
-                auth, aclass, options = auth_class
+            for auth, aclass, options in auth_classes:
                 opts = dict(options)
                 opts["connection"] = conn
                 authenticator = aclass(username, **opts)

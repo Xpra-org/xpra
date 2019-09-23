@@ -10,11 +10,8 @@ from gi.repository import GLib
 from xpra.util import envint
 from xpra.os_util import OSX
 from xpra.child_reaper import getChildReaper
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
+from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
-
-#will be called when we init the module
-assert init
 
 TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 

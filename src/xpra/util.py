@@ -704,7 +704,13 @@ def parse_simple_dict(s="", sep=","):
         if not el:
             continue
         try:
-            k,v = el.split("=", 1)
+            k, v = el.split("=", 1)
+            cur = d.get(k)
+            if cur:
+                if not isinstance(cur, list):
+                    cur = [cur]
+                cur.append(v)
+                v = cur
             d[k] = v
         except Exception as e:
             log = get_util_logger()

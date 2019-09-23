@@ -7,9 +7,7 @@
 import os
 import sys
 
-from xpra.server.auth.sys_auth_base import init, log
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
-assert init and log #tests will disable logging from here
 
 
 class Authenticator(SQLAuthenticator):

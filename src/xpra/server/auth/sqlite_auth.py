@@ -8,9 +8,8 @@ import os
 import sys
 
 from xpra.util import parse_simple_dict
-from xpra.server.auth.sys_auth_base import init, log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import log, parse_uid, parse_gid
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
-assert init and log #tests will disable logging from here
 
 
 class Authenticator(SQLAuthenticator):

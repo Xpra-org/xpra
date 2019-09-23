@@ -7,11 +7,10 @@
 # username|password|uid|gid|displays|env_options|session_options
 
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
-from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init
+from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
 from xpra.os_util import strtobytes, bytestostr, hexstr
 from xpra.util import parse_simple_dict
 from xpra.net.digest import verify_digest
-assert init and log #tests will disable logging from here
 
 
 def parse_auth_line(line):

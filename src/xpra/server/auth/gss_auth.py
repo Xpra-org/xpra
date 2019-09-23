@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
 from xpra.util import xor
-assert init and log #tests will disable logging from here
 
 
 class Authenticator(SysAuthenticatorBase):

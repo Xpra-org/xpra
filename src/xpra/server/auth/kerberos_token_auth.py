@@ -6,21 +6,15 @@
 
 import sys
 
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
 from xpra.util import xor
 from xpra.os_util import WIN32
-assert init and log #tests will disable logging from here
 
 
 class Authenticator(SysAuthenticatorBase):
 
     def __init__(self, username, **kwargs):
-        def ipop(k):
-            try:
-                return int(kwargs.pop(k, 0))
-            except ValueError:
-                return 0
         self.service = kwargs.pop("service", "")
         self.uid = parse_uid(kwargs.pop("uid", None))
         self.gid = parse_gid(kwargs.pop("gid", None))

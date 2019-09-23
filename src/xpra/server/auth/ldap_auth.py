@@ -10,9 +10,8 @@ import socket
 
 from xpra.util import envint, obsc
 from xpra.os_util import bytestostr
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import is_debug_enabled, enable_debug_for
-assert init and log #tests will disable logging from here
 
 LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)
 LDAP_PROTOCOL_VERSION = envint("XPRA_LDAP_PROTOCOL_VERSION", 3)

@@ -8,8 +8,7 @@ import sys
 from ctypes import CDLL, c_int, c_char_p
 
 from xpra.os_util import POSIX, strtobytes
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
-assert init and log #tests will disable logging from here
+from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 LIBWRAP = os.environ.get("XPRA_LIBWRAP", "libwrap.so.0")
 

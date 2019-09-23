@@ -126,7 +126,7 @@ def pretty_socket(s):
 
 
 class Connection(object):
-    def __init__(self, endpoint, socktype, info=None):
+    def __init__(self, endpoint, socktype, info=None, options=None):
         log("Connection%s", (endpoint, socktype, info))
         self.endpoint = endpoint
         try:
@@ -137,6 +137,7 @@ class Connection(object):
         self.socktype_wrapped = socktype
         self.socktype = socktype
         self.info = info or {}
+        self.options = options or {}
         self.input_bytecount = 0
         self.input_readcount = 0
         self.output_bytecount = 0
@@ -268,9 +269,9 @@ class TwoFileConnection(Connection):
 TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss")
 
 class SocketConnection(Connection):
-    def __init__(self, sock, local, remote, target, socktype, info=None):
+    def __init__(self, sock, local, remote, target, socktype, info=None, socket_options=None):
         log("SocketConnection%s", (sock, local, remote, target, socktype, info))
-        Connection.__init__(self, target, socktype, info)
+        Connection.__init__(self, target, socktype, info, socket_options)
         self._socket = sock
         self.local = local
         self.remote = remote

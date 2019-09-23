@@ -6,11 +6,10 @@
 from ctypes import windll, byref, addressof, POINTER, FormatError, GetLastError
 from ctypes.wintypes import LPCWSTR, DWORD, HANDLE, BOOL
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
+from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.util import envbool
 from xpra.os_util import bytestostr
 from xpra.platform.win32.common import CloseHandle
-assert init and log #tests will disable logging from here
 
 LOG_CREDENTIALS = envbool("XPRA_LOG_CREDENTIALS", False)
 

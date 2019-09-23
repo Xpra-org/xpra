@@ -6,8 +6,7 @@
 
 from xpra.util import csv, parse_simple_dict
 from xpra.os_util import getuid, getgid
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
-assert init and log #tests will disable logging from here
+from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 
 class SQLAuthenticator(SysAuthenticator):

@@ -7,6 +7,7 @@ import os
 from collections import deque
 
 from xpra.platform.dotxpra import DotXpra
+from xpra.platform.paths import get_socket_dirs
 from xpra.util import envint
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import hexstr, POSIX
@@ -16,14 +17,6 @@ log = Logger("auth")
 USED_SALT_CACHE_SIZE = envint("XPRA_USED_SALT_CACHE_SIZE", 1024*1024)
 DEFAULT_UID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_UID", "nobody")
 DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
-
-
-socket_dir = None
-socket_dirs = None
-def init(opts):
-    global socket_dir, socket_dirs
-    socket_dir = opts.socket_dir
-    socket_dirs = opts.socket_dirs
 
 
 def parse_uid(v):
@@ -68,6 +61,7 @@ class SysAuthenticatorBase(object):
         self.digest = None
         self.salt_digest = None
         self.prompt = kwargs.pop("prompt", "password")
+        self.socket_dirs = kwargs.pop("socket-dirs", get_socket_dirs())
         self.challenge_sent = False
         self.passed = False
         self.password_used = None
@@ -176,7 +170,7 @@ class SysAuthenticatorBase(object):
         gid = self.get_gid()
         log("%s.get_sessions() uid=%i, gid=%i", self, uid, gid)
         try:
-            sockdir = DotXpra(socket_dir, socket_dirs, actual_username=self.username, uid=uid, gid=gid)
+            sockdir = DotXpra(None, self.socket_dirs, actual_username=self.username, uid=uid, gid=gid)
             results = sockdir.sockets(check_uid=uid)
             displays = []
             for state, display in results:

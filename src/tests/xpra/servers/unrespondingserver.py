@@ -79,7 +79,7 @@ def main():
     dotxpra = DotXpra(opts.socket_dir)
     sockpath = dotxpra.socket_path(display_name)
     socket, cleanup_socket = create_unix_domain_socket(sockpath)
-    sockets = [socket]
+    sockets = {socket : {}}
     xvfb = start_Xvfb(opts.xvfb, display_name)
     assert check_xvfb_process(xvfb), "xvfb error"
 

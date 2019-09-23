@@ -72,7 +72,7 @@ class ServerMixinTest(unittest.TestCase):
         return self.source
 
     def create_test_sockets(self):
-        return ()
+        return {}
 
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubSourceMixin):
         x = self.mixin = mclass()

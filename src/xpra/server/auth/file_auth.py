@@ -1,17 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #authentication from a file containing just the password
 
 from xpra.net.digest import verify_digest
-from xpra.server.auth.file_auth_base import FileAuthenticatorBase, init, log
+from xpra.server.auth.file_auth_base import FileAuthenticatorBase, log
 from xpra.util import obsc
-
-
-#will be called when we init the module
-assert init
 
 
 class Authenticator(FileAuthenticatorBase):
@@ -36,7 +32,7 @@ class Authenticator(FileAuthenticatorBase):
         password = FileAuthenticatorBase.get_password(self)
         if not password:
             return password
-        if password.find(b"\n") or password.find(b"\r"):
+        if password.find(b"\n")>=0 or password.find(b"\r")>=0:
             log.warn("Warning: newline found in password data")
             log.warn(" this is usually a mistake")
         return password

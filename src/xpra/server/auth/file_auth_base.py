@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,30 +14,18 @@ from xpra.log import Logger
 log = Logger("auth")
 
 
-#legacy interface: this is to inject the "--password-file=" option
-#this is shared by all instances
-password_file = None
-def init(opts):
-    global password_file
-    password_file = opts.password_file
-
-
 class FileAuthenticatorBase(SysAuthenticator):
     def __init__(self, username, **kwargs):
-        password_files = [kwargs.pop("filename", None)]+list(password_file or [])
-        log("FileAuthenticatorBase password_files=%s", password_files)
-        filename = None
-        for filename in password_files:
-            if not filename:
-                continue
-            if not os.path.isabs(filename):
-                exec_cwd = kwargs.get("exec_cwd", os.getcwd())
-                filename = os.path.join(exec_cwd, filename)
-            if os.path.exists(filename):
-                break
-        log("FileAuthenticatorBase filename=%s", filename)
+        password_file = kwargs.pop("filename", None)
+        log("FileAuthenticatorBase password_file=%s", password_file)
+        if not password_file:
+            raise Exception("file authentication module is missing the password file option")
+        if not os.path.isabs(password_file):
+            exec_cwd = kwargs.get("exec_cwd", os.getcwd())
+            password_file = os.path.join(exec_cwd, password_file)
+        log("FileAuthenticatorBase filename=%s", password_file)
         SysAuthenticator.__init__(self, username, **kwargs)
-        self.password_filename = filename
+        self.password_filename = password_file
         self.password_filedata = None
         self.password_filetime = None
         self.authenticate = self.authenticate_hmac

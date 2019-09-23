@@ -1,11 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
-assert init and log #tests will disable logging from here
+from xpra.server.auth.sys_auth_base import SysAuthenticator
 
 
 class Authenticator(SysAuthenticator):

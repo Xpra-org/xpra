@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,8 +8,7 @@ import sys
 
 from xpra.util import envbool
 from xpra.scripts.config import parse_bool
-from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
-assert init and log #tests will disable logging from here
+from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")
 PAM_CHECK_ACCOUNT = envbool("XPRA_PAM_CHECK_ACCOUNT", False)

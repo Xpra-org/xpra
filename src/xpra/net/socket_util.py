@@ -14,7 +14,7 @@ from xpra.os_util import (
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
     )
 from xpra.util import (
-    envint, envbool, csv,
+    envint, envbool, csv, parse_simple_dict,
     repr_ellipsized,
     DEFAULT_PORT,
     )
@@ -142,7 +142,7 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connectio
         return None
 
 
-def accept_connection(socktype, listener, timeout=None):
+def accept_connection(socktype, listener, timeout=None, socket_options=None):
     log = get_network_logger()
     try:
         sock, address = listener.accept()
@@ -159,7 +159,7 @@ def accept_connection(socktype, listener, timeout=None):
     sock.settimeout(timeout)
     sockname = sock.getsockname()
     from xpra.net.bytestreams import SocketConnection
-    conn = SocketConnection(sock, sockname, address, peername, socktype)
+    conn = SocketConnection(sock, sockname, address, peername, socktype, None, socket_options)
     log("accept_connection(%s, %s, %s)=%s", listener, socktype, timeout, conn)
     return conn
 
@@ -201,23 +201,23 @@ def create_sockets(opts, error_cb):
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
-    sockets = []
+    sockets = {}
 
     min_port = int(opts.min_port)
-    def add_tcp_socket(socktype, host_str, iport):
+    def add_tcp_socket(socktype, host_str, iport, options):
         if iport!=0 and iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
         for host in hosts(host_str):
             sock = setup_tcp_socket(host, iport, socktype)
             host, iport = sock[2]
-            sockets.append(sock)
-    def add_udp_socket(socktype, host_str, iport):
+            sockets[sock] = options
+    def add_udp_socket(socktype, host_str, iport, options):
         if iport!=0 and iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
         for host in hosts(host_str):
             sock = setup_udp_socket(host, iport, socktype)
             host, iport = sock[2]
-            sockets.append(sock)
+            sockets[sock] = options
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
@@ -234,31 +234,24 @@ def create_sockets(opts, error_cb):
             sshlog("import paramiko", exc_info=True)
             sshlog.error("Error: cannot enable SSH socket upgrades:")
             sshlog.error(" %s", e)
-    log("setting up SSL sockets: %s", csv(bind_ssl))
-    for host, iport in bind_ssl:
-        add_tcp_socket("ssl", host, iport)
-    log("setting up SSH sockets: %s", csv(bind_ssh))
-    for host, iport in bind_ssh:
-        add_tcp_socket("ssh", host, iport)
-    log("setting up https / wss (secure websockets): %s", csv(bind_wss))
-    for host, iport in bind_wss:
-        add_tcp_socket("wss", host, iport)
-    log("setting up TCP sockets: %s", csv(bind_tcp))
-    for host, iport in bind_tcp:
-        add_tcp_socket("tcp", host, iport)
+    for socktype, defs in {
+        "tcp"   : bind_tcp,
+        "ssl"   : bind_ssl,
+        "ssh"   : bind_ssh,
+        "ws"    : bind_ws,
+        "wss"   : bind_wss,
+        "rfb"   : bind_rfb,
+        }.items():
+        log("setting up %s sockets: %s", socktype, defs)
+        for (host, iport), options in defs.items():
+            add_tcp_socket(socktype, host, iport, options)
     log("setting up UDP sockets: %s", csv(bind_udp))
-    for host, iport in bind_udp:
-        add_udp_socket("udp", host, iport)
-    log("setting up http / ws (websockets): %s", csv(bind_ws))
-    for host, iport in bind_ws:
-        add_tcp_socket("ws", host, iport)
-    log("setting up rfb sockets: %s", csv(bind_rfb))
-    for host, iport in bind_rfb:
-        add_tcp_socket("rfb", host, iport)
+    for (host, iport), options in bind_udp:
+        add_udp_socket("udp", host, iport, options)
     log("setting up vsock sockets: %s", csv(bind_vsock))
-    for cid, iport in bind_vsock:
+    for (cid, iport), options in bind_vsock:
         sock = setup_vsock_socket(cid, iport)
-        sockets.append(sock)
+        sockets[sock] = options
 
     # systemd socket activation:
     if POSIX and not OSX:
@@ -270,7 +263,8 @@ def create_sockets(opts, error_cb):
             sd_sockets = get_sd_listen_sockets()
             log("systemd sockets: %s", sd_sockets)
             for stype, sock, addr in sd_sockets:
-                sockets.append(setup_sd_listen_socket(stype, sock, addr))
+                sock = setup_sd_listen_socket(stype, sock, addr)
+                sockets[sock] = {}
                 log("%s : %s", (stype, [addr]), sock)
     return sockets
 
@@ -345,12 +339,14 @@ def setup_udp_socket(host, iport, socktype="udp"):
 
 
 def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
-    ip_sockets = set()
+    ip_sockets = {}
     if bind_ip:
         for spec in bind_ip:
+            parts = spec.split(",", 1)
+            ip_port = parts[0]
             if ":" not in spec:
                 raise InitException("port must be specified as [HOST]:PORT")
-            host, port = spec.rsplit(":", 1)
+            host, port = ip_port.rsplit(":", 1)
             if host == "":
                 host = "127.0.0.1"
             if not port:
@@ -363,7 +359,10 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
                     assert 0<iport<2**16
                 except:
                     raise InitException("invalid port number: %s" % port)
-            ip_sockets.add((host, iport))
+            options = {}
+            if len(parts)==2:
+                options = parse_simple_dict(parts[1])
+            ip_sockets[(host, iport)] = options
     return ip_sockets
 
 def setup_vsock_socket(cid, iport):
@@ -382,11 +381,16 @@ def setup_vsock_socket(cid, iport):
     return "vsock", vsock_socket, (cid, iport), cleanup_vsock_socket
 
 def parse_bind_vsock(bind_vsock):
-    vsock_sockets = set()
+    vsock_sockets = {}
     if bind_vsock:
         from xpra.scripts.main import parse_vsock
         for spec in bind_vsock:
-            vsock_sockets.add(parse_vsock(spec))
+            parts = spec.split(",", 1)
+            cid, iport = parse_vsock(parts[0])
+            options = {}
+            if len(parts)==2:
+                options = parse_simple_dict(parts[1])
+            vsock_sockets[(cid, iport)] = options
     return vsock_sockets
 
 def setup_sd_listen_socket(stype, sock, addr):
@@ -417,7 +421,7 @@ def normalize_local_display_name(local_display_name):
 def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
     if not bind:
-        return []
+        return {}
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
         if WIN32:
             socket_dirs = [""]
@@ -428,45 +432,50 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
     if display_name is not None:
         display_name = normalize_local_display_name(display_name)
     log = get_network_logger()
-    defs = []
+    defs = {}
     try:
-        sockpaths = []
+        sockpaths = {}
         log("setup_local_sockets: bind=%s", bind)
         for b in bind:
-            sockpath = b
             if b in ("none", ""):
                 continue
-            elif b=="auto":
+            parts = b.split(",")
+            sockpath = parts[0]
+            options = {}
+            if len(parts)==2:
+                options = parse_simple_dict(parts[1])
+            if sockpath=="auto":
                 assert display_name is not None
-                sockpaths += dotxpra.norm_socket_paths(display_name)
+                for sockpath in dotxpra.norm_socket_paths(display_name):
+                    sockpaths[sockpath] = options
                 log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, uid, gid)
             else:
-                sockpath = dotxpra.osexpand(b)
-                if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
+                sockpath = dotxpra.osexpand(sockpath)
+                if os.path.isabs(sockpath):
+                    pass
+                elif sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
                     assert display_name is not None
                     sockpath = os.path.abspath(sockpath)
                     if not os.path.exists(sockpath):
                         os.makedirs(sockpath)
                     sockpath = norm_makepath(sockpath, display_name)
-                elif os.path.isabs(b):
-                    sockpath = b
                 else:
-                    sockpath = dotxpra.socket_path(b)
-                sockpaths += [sockpath]
+                    sockpath = dotxpra.socket_path(sockpath)
+                sockpaths[sockpath] = options
             assert sockpaths, "no socket paths to try for %s" % b
         #expand and remove duplicate paths:
-        tmp = []
-        for tsp in sockpaths:
+        tmp = {}
+        for tsp, options in sockpaths.items():
             sockpath = dotxpra.osexpand(tsp)
             if sockpath in tmp:
                 log.warn("Warning: skipping duplicate bind path %s", sockpath)
                 continue
-            tmp.append(sockpath)
+            tmp[sockpath] = options
         sockpaths = tmp
         #create listeners:
         if WIN32:
             from xpra.platform.win32.namedpipes.listener import NamedPipeListener
-            for sockpath in sockpaths:
+            for sockpath, options in sockpaths.items():
                 npl = NamedPipeListener(sockpath)
                 log.info("created named pipe '%s'", sockpath)
                 defs.append(("named-pipe", npl, sockpath, npl.stop))
@@ -511,7 +520,6 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
             log("sockets in unknown state: %s", unknown)
             if unknown:
                 #re-probe them using threads so we can do them in parallel:
-                from time import sleep
                 from xpra.make_thread import start_thread
                 threads = []
                 def timeout_probe(sockpath):
@@ -562,12 +570,12 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         raise ValueError("invalid socket permissions "+
                                          "(must be an octal number): '%s'" % socket_permissions) from None
                 #now try to create all the sockets:
-                for sockpath in sockpaths:
+                for sockpath, options in sockpaths.items():
                     #create it:
                     try:
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
                         log.info("created unix domain socket '%s'", sockpath)
-                        defs.append(("unix-domain", sock, sockpath, cleanup_socket))
+                        defs[("unix-domain", sock, sockpath, cleanup_socket)] = options
                     except Exception as e:
                         handle_socket_error(sockpath, sperms, e)
                         del e
@@ -579,7 +587,6 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 log.error("Error cleaning up socket %s:", sock)
                 log.error(" %s", e)
                 del e
-        defs = []
         raise
     return defs
 
