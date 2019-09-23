@@ -59,13 +59,11 @@ class TestAuth(unittest.TestCase):
         assert mod, "cannot load '%s_auth' from %s" % (name, pmod)
         return mod
 
-    def _init_auth(self, mod_name, options=None, username="foo", **kwargs):
+    def _init_auth(self, mod_name, username="foo", **kwargs):
         mod = self.a(mod_name)
-        return self.do_init_auth(mod, options, username, **kwargs)
+        return self.do_init_auth(mod, username, **kwargs)
 
-    def do_init_auth(self, module, options=None, username="foo", **kwargs):
-        opts = FakeOpts(options)
-        module.init(opts)
+    def do_init_auth(self, module, username="foo", **kwargs):
         try:
             c = module.Authenticator
         except AttributeError:
@@ -284,7 +282,7 @@ class TestAuth(unittest.TestCase):
         def wait_for_connection():
             conn, addr = sock.accept()
             s = SocketConnection(conn, sockpath, addr, sockpath, "unix")
-            pc = self._init_auth("peercred", options={}, username="foo", connection=s)
+            pc = self._init_auth("peercred", username="foo", connection=s)
             assert not pc.requires_challenge()
             assert pc.get_uid()==os.getuid()
             verified.append(True)
