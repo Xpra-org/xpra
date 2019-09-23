@@ -276,27 +276,42 @@ class SocketConnection(Connection):
         self.local = local
         self.remote = remote
         self.protocol_type = "socket"
-        self.nodelay = None
-        self.cork = None
+        if self.socktype_wrapped in TCP_SOCKTYPES:
+            def boolget(k, default_value):
+                v = self.options.get(k)
+                if v is None:
+                    return default_value
+                try:
+                    return bool(int(v))
+                except ValueError:
+                    return default_value
+            self.cork = boolget("cork", SOCKET_CORK)
+            self.nodelay = boolget("nodelay", SOCKET_NODELAY)
+            log("%s options: cork=%s, nodelay=%s", self.socktype_wrapped, self.cork, self.nodelay)
+            if self.nodelay:
+                self.do_set_nodelay(self.nodelay)
+        else:
+            self.cork = False
+            self.nodelay = False
+        self.nodelay_value = None
+        self.cork_value = None
         if isinstance(remote, str):
             self.filename = remote
-        if SOCKET_NODELAY is not None and self.socktype in TCP_SOCKTYPES:
-            self.do_set_nodelay(SOCKET_NODELAY)
 
     def set_nodelay(self, nodelay : bool):
-        if SOCKET_NODELAY is None and self.socktype_wrapped in TCP_SOCKTYPES and self.nodelay!=nodelay:
+        if self.nodelay is None and self.nodelay_value!=nodelay:
             self.do_set_nodelay(nodelay)
 
     def do_set_nodelay(self, nodelay : bool):
         self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
-        self.nodelay = nodelay
-        log("changed %s socket to nodelay=%s", self.socktype, nodelay)
+        self.nodelay_value = nodelay
+        log.info("changed %s socket to nodelay=%s", self.socktype, nodelay)
 
     def set_cork(self, cork : bool):
-        if SOCKET_CORK and self.socktype_wrapped in TCP_SOCKTYPES and self.cork!=cork:
+        if self.cork and self.cork_value!=cork:
             self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)
-            self.cork = cork
-            log("changed %s socket to cork=%s", self.socktype, cork)
+            self.cork_value = cork
+            log.info("changed %s socket to cork=%s", self.socktype, cork)
 
     def peek(self, n : int):
         return self._socket.recv(n, socket.MSG_PEEK)
