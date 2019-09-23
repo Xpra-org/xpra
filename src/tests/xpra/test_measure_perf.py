@@ -48,10 +48,6 @@ from xpra.log import Logger
 
 log = Logger("util")
 
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
-    long = int
-
 
 def getoutput(cmd, env=None):
     try:
@@ -1033,11 +1029,11 @@ def main():
             return ""
         if isinstance(x, (list, tuple, set)):
             return '"' + (", ".join(list(x))) + '"'
-        if type(x) in (unicode, str):
+        if isinstance(x, str):
             if not x:
                 return ""
             return '"%s"' % x
-        if isinstance(x, (float, long, int)):
+        if isinstance(x, (float, int)):
             return str(x)
         return "unhandled-type: %s" % type(x)
 

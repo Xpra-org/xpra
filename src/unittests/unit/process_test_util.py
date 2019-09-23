@@ -75,7 +75,7 @@ class ProcessTestUtil(unittest.TestCase):
         os.environ["XPRA_NOTTY"] = "1"
         cls.default_env = os.environ.copy()
         cls.default_config = get_defaults()
-        cls.display_start = 100+sys.version_info[0]
+        cls.display_start = 100
 
     @classmethod
     def tearDownClass(cls):
