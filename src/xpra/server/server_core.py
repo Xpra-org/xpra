@@ -202,7 +202,7 @@ class ServerCore(object):
         self._closing = False
         self._upgrading = False
         #networking bits:
-        self._socket_info = []
+        self._socket_info = {}
         self._potential_protocols = []
         self._udp_listeners = []
         self._udp_protocols = {}
@@ -469,7 +469,7 @@ class ServerCore(object):
             sc()
         #actually close the socket:
         si = self._socket_info
-        self._socket_info = ()
+        self._socket_info = {}
         for socktype, _, info, cleanup in si:
             log("cleanup_sockets() calling %s for %s %s", cleanup, socktype, info)
             try:
