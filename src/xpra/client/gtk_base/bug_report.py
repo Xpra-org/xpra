@@ -7,7 +7,7 @@
 import os.path
 import sys
 import time
-from gi.repository import Pango, Gtk, Gdk
+from gi.repository import Pango, Gtk, Gdk, GdkPixbuf
 
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
