@@ -756,8 +756,15 @@ class ServerCore(object):
             return
         #find all the records we want to publish:
         mdns_recs = {}
-        for socktype, _, info, _ in self._socket_info:
+        for sock_def, options in self._socket_info.items():
+            socktype, _, info, _ = sock_def
             socktypes = self.get_mdns_socktypes(socktype)
+            mdns_option = options.get("mdns")
+            if mdns_option:
+                v = parse_bool("mdns", mdns_option, False)
+                if not v:
+                    mdnslog("mdns_publish() mdns(%s)=%s, skipped", info, mdns_option)
+                    continue
             mdnslog("mdns_publish() info=%s, socktypes(%s)=%s", info, socktype, socktypes)
             for st in socktypes:
                 recs = mdns_recs.setdefault(st, [])
