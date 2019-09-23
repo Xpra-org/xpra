@@ -1134,7 +1134,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             except AttributeError:
                 pass
             raise InitException("failed to connect to the named pipe '%s':\n %s" % (pipe_name, e)) from None
-        conn = NamedPipeConnection(pipe_name, pipe_handle)
+        conn = NamedPipeConnection(pipe_name, pipe_handle, {})
         conn.timeout = SOCKET_TIMEOUT
         conn.target = "namedpipe://%s/" % pipe_name
         return conn
@@ -1339,7 +1339,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
                     try:
                         msg = e.args[1].split(":", 2)[2]
-                    except:
+                    except (ValueError, IndexError):
                         msg = str(e)
                     #ssllog.warn("host failed SSL verification: %s", msg)
                 else:
