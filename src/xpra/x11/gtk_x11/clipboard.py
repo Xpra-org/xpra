@@ -294,7 +294,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if event.message_type=="_GTK_LOAD_ICONTHEMES":
             #ignore this crap
             return
-        log.info("clipboard window %#x received an X11 message", self.window.get_xid())
+        log.info("clipboard window %#x received an X11 message", event.window.get_xid())
         log.info(" %s", event)
 
 
