@@ -305,13 +305,13 @@ class SocketConnection(Connection):
     def do_set_nodelay(self, nodelay : bool):
         self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
         self.nodelay_value = nodelay
-        log.info("changed %s socket to nodelay=%s", self.socktype, nodelay)
+        log("changed %s socket to nodelay=%s", self.socktype, nodelay)
 
     def set_cork(self, cork : bool):
         if self.cork and self.cork_value!=cork:
             self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)
             self.cork_value = cork
-            log.info("changed %s socket to cork=%s", self.socktype, cork)
+            log("changed %s socket to cork=%s", self.socktype, cork)
 
     def peek(self, n : int):
         return self._socket.recv(n, socket.MSG_PEEK)
