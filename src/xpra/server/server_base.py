@@ -539,13 +539,13 @@ class ServerBase(ServerBaseClass):
             ss.send_info_response(info)
         self.get_all_info(info_callback, proto, None)
 
-    def send_hello_info(self, proto, flatten=True):
+    def send_hello_info(self, proto):
         start = monotonic_time()
         def cb(proto, info):
-            self.do_send_info(proto, info, flatten)
+            self.do_send_info(proto, info)
             end = monotonic_time()
-            log.info("processed %s info request from %s in %ims",
-                     ["structured", "flat"][flatten], proto._conn, (end-start)*1000)
+            log.info("processed structured info request from %s in %ims",
+                     proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, None)
 
     def get_ui_info(self, proto, client_uuids=None, *args):
