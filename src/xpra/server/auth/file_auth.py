@@ -36,7 +36,7 @@ class Authenticator(FileAuthenticatorBase):
         password = FileAuthenticatorBase.get_password(self)
         if not password:
             return password
-        if password.find(b"\n") or password.find(b"\r"):
+        if password.find(b"\n")>=0 or password.find(b"\r")>=0:
             log.warn("Warning: newline found in password data")
             log.warn(" this is usually a mistake")
         return password
