@@ -415,7 +415,7 @@ def filedata_nocrlf(filename):
     if v is None:
         get_util_logger().error("failed to load '%s'", filename)
         return None
-    return v.strip("\n\r")
+    return v.strip(b"\n\r")
 
 def load_binary_file(filename):
     if not os.path.exists(filename):
