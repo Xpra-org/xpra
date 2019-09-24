@@ -449,8 +449,11 @@ export XPRA_TEST_DEBUG=1
 
 %if 0%{?run_tests}
 pushd xpra-%{version}/unittests
-rm -fr unit/client unit/server/*server*py
-PYTHONPATH="%{buildroot}%{python3_sitearch}:." PATH="%{__python3} `pwd`/../scripts/:$PATH" XPRA_COMMAND="`pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python3} ./unit/run.py
+PYTHONPATH="%{buildroot}%{python3_sitearch}:." \
+PATH="`pwd`/../scripts/:$PATH" \
+XPRA_COMMAND="`pwd`/../scripts/xpra" \
+XPRA_CONF_DIR="`pwd`/../etc/xpra" \
+%{__python3} ./unit/run.py
 popd
 %endif
 
