@@ -286,6 +286,18 @@ def is_distribution_variant(variant=b"Debian"):
         pass
     return False
 
+def get_distribution_version_id() -> bool:
+    if not POSIX:
+        return ""
+    try:
+        v = load_os_release_file()
+        for l in v.splitlines():
+            if l.startswith(b"VERSION_ID="):
+                return l.split(b"=", 1)[1]
+    except Exception:
+        pass
+    return ""
+
 os_release_file_data = False
 def load_os_release_file():
     global os_release_file_data
