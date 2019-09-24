@@ -44,12 +44,6 @@ class TempFileContext(object):
             os.unlink(self.filename)
 
 
-class FakeOpts(object):
-    def __init__(self, d):
-        self._d = d or {}
-    def __getattr__(self, name):
-        return self._d.get(name)
-
 class TestAuth(unittest.TestCase):
 
     def a(self, name):
@@ -193,7 +187,7 @@ class TestAuth(unittest.TestCase):
                 f = context.file
                 filename = context.filename
                 with f:
-                    a = self._init_auth(mod_name, {"password_file" : [filename]})
+                    a = self._init_auth(mod_name, filename=filename)
                     password, filedata = genauthdata(a)
                     #print("saving password file data='%s' to '%s'" % (filedata, filename))
                     f.write(strtobytes(filedata))
