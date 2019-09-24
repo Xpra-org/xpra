@@ -22,7 +22,7 @@ from distutils.command.install_data import install_data
 
 import xpra
 from xpra.os_util import (
-    get_status_output, getUbuntuVersion,
+    get_status_output, getUbuntuVersion, get_distribution_version_id,
     PYTHON3, BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
     is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS, is_RedHat,
     )
@@ -1839,6 +1839,7 @@ if xinput_ENABLED:
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models")
+gtk2_deprecated = is_Fedora() and int(get_distribution_version_id())>=31
 if gtk_x11_ENABLED:
     toggle_packages(PYTHON3, "xpra.x11.gtk3")
     toggle_packages(not PYTHON3, "xpra.x11.gtk2")
@@ -1855,21 +1856,30 @@ if gtk_x11_ENABLED:
 
     else:
         #GTK2:
+        gtk2_pkgconfig = pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+        if gtk2_deprecated:
+            add_to_keywords(gtk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
         cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
                     ["xpra/x11/gtk2/gdk_display_source.pyx"],
-                    **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+                    **gtk2_pkgconfig
                     ))
         GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
+        gdk2_pkgconfig = pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+        if gtk2_deprecated:
+            add_to_keywords(gdk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
         cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
                     ["xpra/x11/gtk2/gdk_bindings.pyx"],
-                    **pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+                    **gdk2_pkgconfig
                     ))
 
 toggle_packages(not PYTHON3 and (gtk2_ENABLED or gtk_x11_ENABLED), "xpra.gtk_common.gtk2")
 if gtk2_ENABLED or (gtk_x11_ENABLED and not PYTHON3):
+    gtk2_pkgconfig = pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+    if gtk2_deprecated:
+        add_to_keywords(gtk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     cython_add(Extension("xpra.gtk_common.gtk2.gdk_bindings",
                 ["xpra/gtk_common/gtk2/gdk_bindings.pyx"],
-                **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+                **gtk2_pkgconfig
                 ))
 elif gtk3_ENABLED or (gtk_x11_ENABLED and PYTHON3):
     cython_add(Extension("xpra.gtk_common.gtk3.gdk_bindings",
@@ -1985,9 +1995,11 @@ if clipboard_ENABLED:
                              **pkgconfig("gtk+-3.0")
                              ))
     else:
+        gtk2_pkgconfig = pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+        add_to_keywords(gtk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
         cython_add(Extension("xpra.gtk_common.gtk2.gdk_atoms",
                              ["xpra/gtk_common/gtk2/gdk_atoms.pyx"],
-                             **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+                             **gtk2_pkgconfig
                              ))
 
 O3_pkgconfig = pkgconfig(optimize=3)
