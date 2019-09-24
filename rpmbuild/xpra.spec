@@ -131,13 +131,15 @@ BuildArch:			noarch
 Conflicts:			xpra < 2.1
 BuildRequires:		uglify-js
 BuildRequires:		js-jquery
-BuildRequires:		desktop-backgrounds-compat
 Requires:			js-jquery
-Recommends:		    desktop-backgrounds-compat
 #don't depend on this package,
 #so we can also install on a pure RHEL distro:
 %if 0%{?el8}
 BuildRequires:		centos-logos
+BuildRequires:		centos-backgrounds
+%else
+BuildRequires:		desktop-backgrounds-compat
+Recommends:		    desktop-backgrounds-compat
 %endif
 %description html5
 This package contains Xpra's HTML5 client.
