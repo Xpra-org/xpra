@@ -32,7 +32,7 @@ BuildRequires:  python-devel
 BuildRequires:  python-Cython
 %else
 BuildRequires:  python2-devel
-BuildRequires:  Cython
+BuildRequires:  python2-Cython
 BuildRequires:  python2-pbr
 %endif
 %if 0%{?with_python3}
