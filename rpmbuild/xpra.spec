@@ -193,7 +193,7 @@ Requires:			libvpx-xpra
 %else
 Requires:			libvpx
 Conflicts:			libvpx-xpra
-Obsoletes:          libvpx-xpra
+Obsoletes:          libvpx-xpra < 1.8
 %endif
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
