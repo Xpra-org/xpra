@@ -3,14 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#authentication from a file containing just the password
-
 import os.path
 
 from xpra.net.digest import get_salt, choose_digest
 from xpra.os_util import strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticator
 from xpra.log import Logger
+
 log = Logger("auth")
 
 
@@ -19,8 +18,9 @@ class FileAuthenticatorBase(SysAuthenticator):
         password_file = kwargs.pop("filename", None)
         log("FileAuthenticatorBase password_file=%s", password_file)
         if not password_file:
-            raise Exception("file authentication module is missing the password file option")
-        if not os.path.isabs(password_file):
+            log.warn("Warning: %r authentication module is missing the 'filename' option", self)
+            log.warn(" all authentication attempts will fail")
+        elif not os.path.isabs(password_file):
             exec_cwd = kwargs.get("exec_cwd", os.getcwd())
             password_file = os.path.join(exec_cwd, password_file)
         log("FileAuthenticatorBase filename=%s", password_file)
@@ -55,7 +55,7 @@ class FileAuthenticatorBase(SysAuthenticator):
     def parse_filedata(self, data):
         return data
 
-    def load_password_file(self):
+    def load_password_file(self) -> bytes:
         if not self.password_filename:
             return None
         full_path = os.path.abspath(self.password_filename)
@@ -79,7 +79,7 @@ class FileAuthenticatorBase(SysAuthenticator):
                     self.password_filedata = None
         return self.password_filedata
 
-    def stat_password_filetime(self):
+    def stat_password_filetime(self) -> int:
         try:
             full_path = os.path.abspath(self.password_filename)
             v = os.stat(full_path).st_mtime
