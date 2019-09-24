@@ -305,7 +305,9 @@ Recommends:			python2-xpra-audio
 Recommends:			python2-cups
 Suggests:			sshpass
 %if 0%{?run_tests}
+%if 0%{?fedora}
 BuildRequires:		xclip
+%endif
 %endif
 %endif
 %if 0%{?el7}
