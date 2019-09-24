@@ -286,7 +286,7 @@ def is_distribution_variant(variant=b"Debian"):
         pass
     return False
 
-def get_distribution_version_id() -> bool:
+def get_distribution_version_id():
     if not POSIX:
         return ""
     try:
