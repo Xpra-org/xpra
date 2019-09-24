@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from gi.repository import Gdk
 
 from xpra.util import AdHocStruct
 from xpra.client.keyboard_helper import KeyboardHelper
@@ -20,6 +19,7 @@ class KeyboardHelperTest(unittest.TestCase):
 			#print("checkmask(%s, %s)", mask, modifiers)
 			mods = kh.mask_to_names(mask)
 			assert set(mods)==set(modifiers), "expected %s got %s" % (modifiers, mods)
+		from gi.repository import Gdk
 		checkmask(Gdk.ModifierType.SHIFT_MASK, "shift")
 		checkmask(Gdk.ModifierType.LOCK_MASK, "lock")
 		if getattr(kh.keyboard, "swap_keys", False):
