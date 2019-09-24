@@ -19,7 +19,7 @@ DEFAULT_UID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_UID", "nobody")
 DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
 
 
-def parse_uid(v):
+def parse_uid(v) -> int:
     if v:
         try:
             return int(v)
@@ -35,7 +35,7 @@ def parse_uid(v):
         return os.getuid()
     return -1
 
-def parse_gid(v):
+def parse_gid(v) -> int:
     if v:
         try:
             return int(v)
@@ -71,10 +71,10 @@ class SysAuthenticatorBase(object):
             log.warn("Warning: unused keyword arguments for %s authentication:", self)
             log.warn(" %s", unused)
 
-    def get_uid(self):
+    def get_uid(self) -> int:
         raise NotImplementedError()
 
-    def get_gid(self):
+    def get_gid(self) -> int:
         raise NotImplementedError()
 
     def requires_challenge(self):
@@ -146,6 +146,7 @@ class SysAuthenticatorBase(object):
         return ret
 
     def authenticate_hmac(self, challenge_response, client_salt=None) -> bool:
+        log("sys_auth_base.authenticate_hmac(%r, %r)", challenge_response, client_salt)
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return None
@@ -199,12 +200,12 @@ class SysAuthenticator(SysAuthenticatorBase):
             except Exception:
                 log("cannot load password database entry for '%s'", username, exc_info=True)
 
-    def get_uid(self):
+    def get_uid(self) -> int:
         if self.pw is None:
             raise Exception("username '%s' not found" % self.username)
         return self.pw.pw_uid
 
-    def get_gid(self):
+    def get_gid(self) -> int:
         if self.pw is None:
             raise Exception("username '%s' not found" % self.username)
         return self.pw.pw_gid

@@ -12,7 +12,8 @@ from xpra.util import obsc
 
 class Authenticator(FileAuthenticatorBase):
 
-    def authenticate_hmac(self, challenge_response, client_salt=None):
+    def authenticate_hmac(self, challenge_response, client_salt=None) -> bool:
+        log("file_auth.authenticate_hmac(%r, %r)", challenge_response, client_salt)
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return None
