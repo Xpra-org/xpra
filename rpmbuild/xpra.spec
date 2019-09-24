@@ -355,7 +355,7 @@ Requires:			python3-numpy
 Requires:			libyuv
 Requires:			libvpx
 Conflicts:			libvpx-xpra
-Obsoletes:          libvpx-xpra
+Obsoletes:          libvpx-xpra < 1.8
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			python3-cryptography
