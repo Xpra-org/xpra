@@ -7,7 +7,7 @@
 
 #this spec file is for Fedora, openSUSE and CentOS
 #CentOS does not have Python3 support:
-%if 0%{?fedora}%{?suse_version}
+%if 0%{?fedora}%{?suse_version}%{?el8}
 %define with_python3 1
 %endif
 
