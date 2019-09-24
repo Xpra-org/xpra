@@ -19,7 +19,7 @@ BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:	yasm
 
 
-%if 0%{?fedora}>=27
+%if 0%{?fedora}%{?el8}
 %global debug_package %{nil}
 %endif
 
