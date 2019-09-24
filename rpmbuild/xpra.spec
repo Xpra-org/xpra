@@ -242,7 +242,9 @@ Recommends:			libappindicator-gtk3
 %endif
 Suggests:			sshpass
 %if 0%{?run_tests}
+%if 0%{?fedora}
 BuildRequires:		xclip
+%endif
 %endif
 %description -n python3-xpra-client
 This package contains the python3 xpra client.
