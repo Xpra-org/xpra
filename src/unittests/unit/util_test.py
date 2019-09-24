@@ -168,7 +168,7 @@ class TestModuleFunctions(unittest.TestCase):
         self.assertEqual(nonl("A\nB\rC"), "A\\nB\\rC")
 
     def test_xor(self):
-        self.assertEqual(xor("A", "a"), xor("B", "b"))
+        self.assertEqual(xor(b"A", b"a"), xor(b"B", b"b"))
 
 
 def main():
