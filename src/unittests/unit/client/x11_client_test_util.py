@@ -6,7 +6,7 @@
 
 import os
 
-from xpra.os_util import get_hex_uuid
+from xpra.os_util import get_hex_uuid, osexpand
 from unit.server_test_util import ServerTestUtil, log
 
 uq = 0
@@ -22,7 +22,8 @@ class X11ClientTestUtil(ServerTestUtil):
 	def do_run_client(self, client_display, *args):
 		from xpra.x11.vfb_util import xauth_add
 		xauth_data = get_hex_uuid()
-		xauth_add(self.default_env["XAUTHORITY"], client_display, xauth_data, os.getuid(), os.getgid())
+		xauthority = self.default_env.get("XAUTHORITY", osexpand("~/.Xauthority"))
+		xauth_add(xauthority, client_display, xauth_data, os.getuid(), os.getgid())
 		env = self.get_run_env()
 		env["DISPLAY"] = client_display
 		global uq
