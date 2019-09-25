@@ -232,7 +232,7 @@ Recommends:			python3-xpra-audio
 Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
-Recommends:			python3-xdg
+Recommends:			python3-pyxdg
 #without this, the system tray is unusable!
 %if 0%{?el8}
 Recommends:			gnome-shell-extension-topicons-plus
