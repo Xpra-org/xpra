@@ -16,7 +16,7 @@
 	%global lcms lcms2
 	%global libjpeg libjpeg-turbo
 %endif
-%if 0%{?fedora}
+%if 0%{?fedora}{%?el8}
 	%global with_python3 1
 	%global lcms lcms2
 	%global with_filter 1
@@ -25,7 +25,7 @@
 
 
 Name:           python2-pillow
-Version:        6.0.0
+Version:        6.1.0
 Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
@@ -37,11 +37,7 @@ Provides:       python-pillow = %{version}-%{release}
 Obsoletes:      python-pillow < %{version}-%{release}
 Conflicts:      python-pillow < %{version}-%{release}
 
-%if 0%{?suse_version}
-BuildRequires:  python-devel
-%else
 BuildRequires:  python2-devel
-%endif
 
 BuildRequires:  python-setuptools
 BuildRequires:  %{tkinter}
@@ -288,6 +284,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 6.1-1
+- new upstream release
+
 * Mon Apr 01 2019 Antoine Martin <antoine@xpra.org> - 6.0-1
 - new upstream release
 
