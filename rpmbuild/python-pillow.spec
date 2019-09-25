@@ -21,6 +21,7 @@
 	%global lcms lcms2
 	%global with_filter 1
 	%global with_webp 1
+        %global tkinter python2-tkinter
 %endif
 
 
@@ -39,7 +40,7 @@ Conflicts:      python-pillow < %{version}-%{release}
 
 BuildRequires:  python2-devel
 
-BuildRequires:  python-setuptools
+BuildRequires:  python2-setuptools
 BuildRequires:  %{tkinter}
 BuildRequires:  tk-devel
 #BuildRequires:  python-sphinx
@@ -53,7 +54,7 @@ BuildRequires:  %{lcms}-devel
 BuildRequires:  libwebp-devel
 %endif
 BuildRequires:  %{PyQt4}
-BuildRequires:  numpy
+BuildRequires:  python2-numpy
 
 %if 0%{with_python3}
 BuildRequires:  python3-devel
