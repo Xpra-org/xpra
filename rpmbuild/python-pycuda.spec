@@ -33,7 +33,7 @@ Requires:       python2-pytools
 Requires:       python2-six
 
 BuildRequires:  gcc-c++
-BuildRequires:  python-devel
+BuildRequires:  python2-devel
 %if 0%{?fedora}%{?el8}
 BuildRequires:  python2-setuptools
 %else
