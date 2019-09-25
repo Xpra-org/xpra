@@ -16,7 +16,7 @@
 
 Name:           python2-pycuda
 Version:        2019.2
-Release:        1
+Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
@@ -34,7 +34,7 @@ Requires:       python-six
 
 BuildRequires:  gcc-c++
 BuildRequires:  python-devel
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 BuildRequires:  python-setuptools
 %else
 BuildRequires:  python-distribute
@@ -47,7 +47,7 @@ BuildRequires:  cuda
 PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %package -n python3-pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
@@ -71,7 +71,7 @@ Python3 version.
 
 %prep
 %setup -q -n pycuda-%{version}
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 rm -fr %{py3dir}
 cp -a . %{py3dir}
 %endif
@@ -88,7 +88,7 @@ cp -a . %{py3dir}
 	--boost-python-libname=boost_python27
 #	--boost-thread-libname=boost_thread
 %{__python2} setup.py build
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 pushd %{py3dir}
 %{__python3} ./setup.py clean
 rm -f siteconf.py
@@ -108,7 +108,7 @@ make
 
 %install
 %{__python2} setup.py install --prefix=%{_prefix} --root=%{buildroot}
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 pushd %{py3dir}
 %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
 popd
@@ -122,7 +122,7 @@ rm -rf %{buildroot}
 %doc examples/ test/
 %{python2_sitearch}/pycuda*
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %files -n python3-pycuda
 %defattr(-,root,root)
 %doc examples/ test/
@@ -130,6 +130,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 2019.2-2
+- build for centos8
+
 * Sat Aug 31 2019 Antoine Martin <antoine@xpra.org> - 2019.2-1
 - new upstream release
 
