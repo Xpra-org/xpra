@@ -14,6 +14,8 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: gcc-c++
 Provides: mad = %{version}-%{release}
 
+%global debug_package %{nil}
+
 %description
 MAD (libmad) is a high-quality MPEG audio decoder. It currently supports
 MPEG-1 and the MPEG-2 extension to Lower Sampling Frequencies, as well as
