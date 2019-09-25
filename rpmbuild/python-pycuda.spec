@@ -15,8 +15,8 @@
 %global debug_package %{nil}
 
 Name:           python2-pycuda
-Version:        2019.2
-Release:        2
+Version:        2019.1.2
+Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
@@ -130,10 +130,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 2019.2-2
+* Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 2019.1.2-1
 - build for centos8
-
-* Sat Aug 31 2019 Antoine Martin <antoine@xpra.org> - 2019.2-1
 - new upstream release
 
 * Mon May 20 2019 Antoine Martin <antoine@xpra.org> - 2019.1-1
