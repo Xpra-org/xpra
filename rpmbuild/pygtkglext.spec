@@ -20,7 +20,7 @@ URL:            http://www.k-3d.org/gtkglext/Main_Page
 Source:         http://downloads.sourceforge.net/gtkglext/pygtkglext-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/pygtkglext-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  gtkglext-devel
-BuildRequires:  python-devel
+BuildRequires:  python2-devel
 BuildRequires:  %{pygtk2}-devel
 Requires:       %{pygtk2}
 
