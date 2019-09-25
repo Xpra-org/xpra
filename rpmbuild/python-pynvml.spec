@@ -25,7 +25,7 @@ Provides:       python-pynvml
 %description
 Python Bindings for the NVIDIA Management Library
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %package -n python3-pynvml
 Summary:        Python3 wrapper for NVML
 License:        BSD
@@ -40,7 +40,7 @@ Python Bindings for the NVIDIA Management Library
 
 %build
 %{__python2} ./setup.py build
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 rm -fr %{py3dir}
 cp -r . %{py3dir}
 find %{py3dir} -name "*.py" -exec 2to3 -w {} \;
@@ -48,7 +48,7 @@ find %{py3dir} -name "*.py" -exec 2to3 -w {} \;
 
 %install
 %{__python2} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 pushd %{py3dir}
 %{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 popd
@@ -63,7 +63,7 @@ rm -rf %{buildroot}
 %{python2_sitelib}/nvidia_smi.py*
 %{python2_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %files -n python3-pynvml
 %defattr(-,root,root)
 %{python3_sitelib}/__pycache__/nvidia*
@@ -74,6 +74,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 7.352.0-3
+- build pynvml for python3 on centos8
+
 * Tue Jul 18 2017 Antoine Martin <antoine@xpra.org> - 7.352.0-2
 - build python3 variant too
 
