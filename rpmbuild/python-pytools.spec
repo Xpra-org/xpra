@@ -16,7 +16,8 @@ Obsoletes:		python-pytools < %{version}-%{release}
 Conflicts:		python-pytools < %{version}-%{release}
 
 BuildArch:      noarch
-BuildRequires:  python-devel python-setuptools
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
 
 %description
 Pytools are a few interesting things that are missing from the Python Standard
