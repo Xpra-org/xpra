@@ -31,7 +31,7 @@ Obsoletes:      PyOpenGL-accelerate < %{version}-%{release}
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
 Conflicts:		PyOpenGL-accelerate < %{version}-%{release}
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %define with_python3 1
 Requires:       python2-numpy
 BuildRequires:  python2-setuptools
