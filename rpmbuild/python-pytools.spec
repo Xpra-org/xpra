@@ -60,7 +60,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Mon May 20 2018 Antoine Martin <antoine@xpra.org> - 2019.1.1-1
+* Mon May 20 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-1
 - new upstream release
 
 * Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 2018.5.2-1
