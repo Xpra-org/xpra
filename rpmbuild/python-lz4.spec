@@ -25,8 +25,8 @@ License:        GPLv2+
 Group:          Development/Languages/Python
 Source:         https://files.pythonhosted.org/packages/98/52/94bb31d416e52c3c9cc432e26b7a30b4b5a3c853e81df2906ce4bbc59437/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-BuildRequires:  python-devel
-BuildRequires:  python-setuptools
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
 BuildRequires:  python2-pkgconfig
 Requires: 		lz4
 Provides:		python-lz4 = %{version}-%{release}
