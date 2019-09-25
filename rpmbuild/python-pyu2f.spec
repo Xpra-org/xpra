@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@
 
 Name:           python2-pyu2f
 Version:        0.1.4
-Release:        2
+Release:        3
 URL:            https://github.com/google/pyu2f
 Summary:        Python based U2F host library for Linux
 License:        BSD
@@ -26,7 +26,7 @@ Provides:       python-pyu2f
 %description
 pyu2f provides functionality for interacting with a U2F device over USB.
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %package -n python3-pyu2f
 Summary:        Python3 based U2F host library for Linux
 License:        BSD
@@ -41,7 +41,7 @@ pyu2f provides functionality for interacting with a U2F device over USB.
 
 %build
 %{__python2} ./setup.py build
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 rm -fr %{py3dir}
 cp -r . %{py3dir}
 pushd %{py3dir}
@@ -51,7 +51,7 @@ popd
 
 %install
 %{__python2} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 pushd %{py3dir}
 %{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 popd
@@ -65,7 +65,7 @@ rm -rf %{buildroot}
 %{python2_sitelib}/pyu2f/*
 %{python2_sitelib}/pyu2f-%{version}-py2*.egg-info/*
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %files -n python3-pyu2f
 %defattr(-,root,root)
 %{python3_sitelib}/pyu2f/*
@@ -73,6 +73,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 0.1.4-3
+- build for CentOS 8
+
 * Thu Jun 28 2018 Antoine Martin <antoine@xpra.org> - 0.1.4-2
 - fix provides tag
 
