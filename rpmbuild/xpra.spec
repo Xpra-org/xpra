@@ -255,7 +255,7 @@ BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
 %if 0%{?run_tests}
 BuildRequires:		python2-rencode
-%if 0%{fedora}
+%if 0%{?fedora}
 BuildRequires:		python2-cryptography
 %endif
 %endif
