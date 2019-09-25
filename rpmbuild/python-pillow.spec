@@ -16,7 +16,7 @@
 	%global lcms lcms2
 	%global libjpeg libjpeg-turbo
 %endif
-%if 0%{?fedora}{%?el8}
+%if 0%{?fedora}%{?el8}
 	%global with_python3 1
 	%global lcms lcms2
 	%global with_filter 1
