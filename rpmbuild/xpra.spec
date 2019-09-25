@@ -299,14 +299,14 @@ Requires:			pygtkglext
 #no longer available in Fedora 30:
 #BuildRequires:		python2-cups
 %if 0%{?fedora}%{?el8}
-BuildRequires:		python2-pyxdg
-Recommends:         python2-xdg
+Recommends:         python2-pyxdg
 Recommends:			python2-xpra-audio
 Recommends:			python2-cups
 Suggests:			sshpass
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
+BuildRequires:		python2-pyxdg
 %endif
 %endif
 %endif
