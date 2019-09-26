@@ -50,6 +50,7 @@ Vcs-Browser: http://xpra.org/trac/browser/
 
 
 Package: xpra
+Conflicts: python2-xpra, python3-xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi
