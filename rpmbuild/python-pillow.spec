@@ -9,12 +9,16 @@
 %global tkinter tkinter
 %global PyQt4 PyQt4
 # none of these RHEL versions have python 3
+%global with_qt4 1
 %if 0%{?el7}
 	%global with_python3 0
 	%global with_filter 1
 	%global with_webp 0
 	%global lcms lcms2
 	%global libjpeg libjpeg-turbo
+%endif
+%if 0%{el8}
+	%global with_qt4 0
 %endif
 %if 0%{?fedora}%{?el8}
 	%global with_python3 1
@@ -122,6 +126,7 @@ Obsoletes:      python-imaging-tk <= 1.1.7-12
 %description tk
 Tk interface for %{name}.
 
+%if 0%{with_qt4}
 %package qt
 Summary:        PIL image wrapper for Qt
 Group:          System Environment/Libraries
@@ -131,6 +136,7 @@ Provides:       python-imaging-qt = %{version}-%{release}
 
 %description qt
 PIL image wrapper for Qt.
+%endif
 
 
 %if 0%{with_python3}
@@ -171,6 +177,7 @@ Requires:       tkinter
 %description -n %{name3}-tk
 Tk interface for %{name3}.
 
+%if 0%{with_qt4}
 %package -n %{name3}-qt
 Summary:        PIL image wrapper for Qt
 Group:          System Environment/Libraries
@@ -180,7 +187,7 @@ Requires:       python3-PyQt4
 
 %description -n %{name3}-qt
 PIL image wrapper for Qt.
-
+%endif
 %endif
 
 
