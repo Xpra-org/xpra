@@ -2,7 +2,7 @@ Source: xpra
 Section: x11
 Priority: optional
 Maintainer: Antoine Martin <antoine@xpra.org>
-XS-Python-Version: all
+XS-Python-Version: 3.6, 3.7
 Build-Depends: debhelper (>= 8)
               ,libx11-dev
               ,libvpx-dev
@@ -79,7 +79,6 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 #eoan:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
-
 # for notifications forwarding and dbus server / proxying:
 Recommends: python3-dbus
         ,xpra-html5
