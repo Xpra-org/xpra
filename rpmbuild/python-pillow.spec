@@ -57,14 +57,18 @@ BuildRequires:  %{lcms}-devel
 %if 0%{with_webp} > 0
 BuildRequires:  libwebp-devel
 %endif
+%if 0%{with_qt4}
 BuildRequires:  %{PyQt4}
+%endif
 BuildRequires:  python2-numpy
 
 %if 0%{with_python3}
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-tkinter
+%if 0%{with_qt4}
 BuildRequires:  python3-PyQt4
+%endif
 BuildRequires:  python3-numpy
 #BuildRequires:  python3-sphinx
 %endif
