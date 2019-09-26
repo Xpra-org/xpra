@@ -14,7 +14,7 @@ Build-Depends: debhelper (>= 8)
 #buster:              ,uglifyjs
 #xenial:              ,uglifyjs
 #bionic:              ,uglifyjs
-#cosmic:              ,uglifyjs
+#eoan:              ,uglifyjs
               ,brotli
               ,libjs-jquery
               ,libjs-jquery-ui
@@ -25,8 +25,8 @@ Build-Depends: debhelper (>= 8)
               ,cython
 #xenial:              ,python-gobject-dev
 #bionic:              ,python-gobject-2-dev
-#cosmic:              ,python-gobject-2-dev
 #disco:              ,python-gobject-2-dev
+#eoan:              ,python-gobject-2-dev
 #stretch:              ,python-gobject-dev
 #buster:              ,python-gobject-2-dev
 #python3 :
@@ -39,12 +39,12 @@ Build-Depends: debhelper (>= 8)
 #bionic:              ,libavcodec-dev
 #bionic:              ,libavformat-dev
 #bionic:              ,libswscale-dev
-#cosmic:              ,libavcodec-dev
-#cosmic:              ,libavformat-dev
-#cosmic:              ,libswscale-dev
 #disco:              ,libavcodec-dev
 #disco:              ,libavformat-dev
 #disco:              ,libswscale-dev
+#eoan:              ,libavcodec-dev
+#eoan:              ,libavformat-dev
+#eoan:              ,libswscale-dev
 #stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
 #buster:              ,libavformat-dev
@@ -73,8 +73,8 @@ Depends: python2-xpra | python3-xpra,
 # fast JPEG client support:
 #xenial:         ,libturbojpeg
 #bionic:        ,libturbojpeg
-#cosmic:        ,libturbojpeg
 #disco:        ,libturbojpeg
+#eoan:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
 Recommends:
@@ -85,18 +85,18 @@ Recommends:
 #xenial:        ,ffmpeg-xpra
 #bionic:        ,libavcodec57
 #bionic:        ,libswscale4
-#cosmic:        ,libavcodec58
-#cosmic:        ,libswscale5
 #disco:        ,libavcodec58
 #disco:        ,libswscale5
+#eoan:        ,libavcodec58
+#eoan:        ,libswscale5
 #buster:        ,libavcodec57
 #buster:        ,libswscale4
 # x264:
 #stretch:        ,libx264-148
 #xenial:        ,libx264-148
 #bionic:        ,libx264-152
-#cosmic:        ,libx264-152
 #disco:        ,libx264-155
+#eoan:        ,libx264-152
 #buster:        ,libx264-155
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
@@ -106,8 +106,8 @@ Recommends:
 #stretch:        ,libwebp6
 #xenial:        ,libwebp5
 #bionic:        ,libwebp6
-#cosmic:        ,libwebp6
 #disco:        ,libwebp6
+#eoan:        ,libwebp6
 #buster:        ,libwebp6
 # audio-related:
         ,gstreamer1.0-pulseaudio
@@ -129,8 +129,8 @@ Recommends:
 # to make the system tray work again with gnome-shell:
 #buster:		,gnome-shell-extension-appindicator
 #bionic:		,gnome-shell-extension-appindicator
-#cosmic:        ,gnome-shell-extension-appindicator
 #disco:        ,gnome-shell-extension-appindicator
+#eoan:        ,gnome-shell-extension-appindicator
 Suggests: openssh-server
 # to make the system tray work again (sigh):
 		,gnome-shell-extension-top-icons-plus
@@ -143,8 +143,8 @@ Suggests: openssh-server
 #stretch:        ,gnome-shell-extension-top-icons-plus
 #buster:        ,gnome-shell-extension-top-icons-plus
 #bionic:        ,gnome-shell-extension-top-icons-plus
-#cosmic:        ,gnome-shell-extension-top-icons-plus
 #disco:        ,gnome-shell-extension-top-icons-plus
+#eoan:        ,gnome-shell-extension-top-icons-plus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
@@ -206,8 +206,8 @@ Recommends: python-dbus
 #stretch:        ,python-appindicator
 #xenial:        ,python-appindicator
 #bionic:        ,python-appindicator
-#cosmic:        ,python-appindicator
 #disco:        ,python-appindicator
+#eoan:        ,python-appindicator
 #better debug output:
         ,python3-cpuinfo
 Suggests:
