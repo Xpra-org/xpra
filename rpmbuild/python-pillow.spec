@@ -265,8 +265,10 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %{python_sitearch}/PIL/ImageTk*
 %{python_sitearch}/PIL/SpiderImagePlugin*
 
+%if 0%{with_qt4}
 %files qt
 %{python_sitearch}/PIL/ImageQt*
+%endif
 
 %if %{with_python3}
 %files -n %{name3}
@@ -286,8 +288,10 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %{python3_sitearch}/PIL/ImageTk*
 %{python3_sitearch}/PIL/SpiderImagePlugin*
 
+%if 0%{with_qt4}
 %files -n %{name3}-qt
 %{python3_sitearch}/PIL/ImageQt*
+%endif
 
 %endif
 
