@@ -18,7 +18,7 @@
 
 Name:           python2-lz4
 Version:        2.2.1
-Release:        1.xpra1%{?dist}
+Release:        2
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
@@ -42,7 +42,6 @@ http://code.google.com/p/lz4/ by Yann Collet.
 Summary:        LZ4 Bindings for Python3
 Group:          Development/Languages/Python
 BuildRequires:  python3-pkgconfig
-Requires: 		python3-deprecation
 
 %description -n python3-lz4
 This package provides Python3 bindings for the lz4 compression library
@@ -90,6 +89,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2.2.1-2
+- remove old dependency
+
 * Mon Sep 16 2019 Antoine Martin <antoine@xpra.org> - 2.2.1-1
 - New upstream release
 
