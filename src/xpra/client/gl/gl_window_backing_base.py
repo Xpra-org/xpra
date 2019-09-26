@@ -528,7 +528,10 @@ class GLWindowBackingBase(WindowBackingBase):
         glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
         glBindFramebuffer(GL_FRAMEBUFFER, fbo)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[texture_index], 0)
-        glClear(GL_COLOR_BUFFER_BIT)
+        try:
+            glClear(GL_COLOR_BUFFER_BIT)
+        except:
+            log("ignoring glClear(GL_COLOR_BUFFER_BIT) error, buggy driver?", exc_info=True)
 
 
     def close_gl_config(self):
