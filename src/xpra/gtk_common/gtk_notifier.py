@@ -244,8 +244,8 @@ class Popup(Gtk.Window):
         self.show_timeout = show_timeout
         self.hover = False
         self.show_all()
-        self.w = self.get_preferred_width()
-        self.h = self.get_preferred_height()
+        self.w = self.get_preferred_width()[0]
+        self.h = self.get_preferred_height()[0]
         self.move(self.get_x(self.w), self.get_y(self.h))
         self.wait_timer = None
         self.fade_out_timer = None
@@ -270,7 +270,7 @@ class Popup(Gtk.Window):
         return button
 
     def get_x(self, w):
-        x =    self.stack.get_origin_x() - w/2
+        x = self.stack.get_origin_x() - w//2
         if (x + w) >= self.stack.max_width:    #dont overflow on the right
             x = self.stack.max_width - w
         if x <= 0:                                #or on the left
@@ -280,7 +280,7 @@ class Popup(Gtk.Window):
 
     def get_y(self, h):
         y = self.stack.get_origin_y()
-        if y >= (self.stack.max_height/2):        #if near bottom, substract window height
+        if y >= (self.stack.max_height//2):        #if near bottom, substract window height
             y = y - h
         if (y + h) >= self.stack.max_height:
             y = self.stack.max_height - h
