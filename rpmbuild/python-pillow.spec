@@ -17,7 +17,7 @@
 	%global lcms lcms2
 	%global libjpeg libjpeg-turbo
 %endif
-%if 0%{el8}
+%if 0%{?el8}
 	%global with_qt4 0
 %endif
 %if 0%{?fedora}%{?el8}
