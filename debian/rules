@@ -13,6 +13,9 @@ BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpr
 %:
 	dh $@ --with python3 --with systemd
 
+override_dh_auto_clean:
+	python3 setup.py clean
+
 override_dh_auto_build:
 	python3 setup.py build $(PY3BUILDOPTS)
 
