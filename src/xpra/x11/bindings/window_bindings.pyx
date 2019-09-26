@@ -122,9 +122,6 @@ cdef extern from "X11/Xlib.h":
     int CWBorderWidth
     int CWSibling
     int CWStackMode
-    int SubstructureNotifyMask
-    int SubstructureRedirectMask
-    int FocusChangeMask
     int AnyPropertyType
     int Success
     int PropModeReplace
