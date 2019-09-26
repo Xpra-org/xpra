@@ -1,9 +1,6 @@
-%{!?__python2: %define __python2 python2}
-%{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-
-Name:           python2-pytools
+Name:           python3-pytools
 Version:        2019.1.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A collection of tools for python
 
 Group:          Development/Languages
@@ -11,9 +8,7 @@ License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
 Source0:        https://files.pythonhosted.org/packages/00/96/00416762a3eda8876a17d007df4a946f46b2e4ee1057e0b9714926472ef8/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Provides:		python-pytools = %{version}-%{release}
-Obsoletes:		python-pytools < %{version}-%{release}
-Conflicts:		python-pytools < %{version}-%{release}
+Provides:		python3-pytools = %{version}-%{release}
 
 BuildArch:      noarch
 BuildRequires:  python-devel python-setuptools
@@ -41,12 +36,12 @@ Small tool functions such as ::
 
 
 %build
-%{__python2} setup.py build
+%{__python3} setup.py build
 
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python2} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
+%{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
 
 
 %clean
@@ -56,10 +51,13 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc PKG-INFO
-%{python2_sitelib}/*
+%{python3_sitelib}/*
 
 
 %changelog
+* Thy Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-2
+- drop support for python2
+
 * Mon May 20 2018 Antoine Martin <antoine@xpra.org> - 2019.1.1-1
 - new upstream release
 
