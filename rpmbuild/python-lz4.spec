@@ -6,7 +6,7 @@
 
 #this spec file is for both Fedora and CentOS
 #only Fedora has Python3 at present:
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 %define with_python3 1
 %endif
 
