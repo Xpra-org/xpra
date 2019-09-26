@@ -125,7 +125,7 @@ Recommends: python3-dbus
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 # AES encryption:
-        ,python-cryptography
+        ,python3-cryptography
 #webp
 #stretch:        ,libwebp6
 #xenial:        ,libwebp5
@@ -177,7 +177,7 @@ Suggests: openssh-server
 #nvenc support requires pycuda (and its huge list of dependencies!)
 #and the nvencode library:
         ,python3-pycuda, libnvidia-encode1
-#python-lz4 is better and available everywhere now, alternatively use:
+#python3-lz4 is better and available everywhere now, alternatively use:
         ,python3-lzo
 # AES encryption:
         ,python3-cryptography
