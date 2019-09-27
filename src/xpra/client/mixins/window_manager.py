@@ -1387,7 +1387,7 @@ class WindowClient(StubClientMixin):
         """ this runs from the draw thread above """
         wid = packet[1]
         window = self._id_to_window.get(wid)
-        if packet[0]==b"eos":
+        if bytestostr(packet[0])=="eos":
             if window:
                 window.eos()
             return
@@ -1395,7 +1395,7 @@ class WindowClient(StubClientMixin):
         if not window:
             #window is gone
             def draw_cleanup():
-                if coding==b"mmap":
+                if bytestostr(coding)==b"mmap":
                     assert self.mmap_enabled
                     from xpra.net.mmap_pipe import int_from_buffer
                     #we need to ack the data to free the space!
