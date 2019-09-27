@@ -226,6 +226,9 @@ def check_PyOpenGL_support(force_enable):
                         gl_major, gl_minor, req_maj, req_min, vendor))
 
         from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
+        #maybe we can continue without?
+        if not bool(gluGetString):
+            raise_fatal_error("no OpenGL GLU support")
         for d,s in {"GLU.version": GLU_VERSION, "GLU.extensions":GLU_EXTENSIONS}.items():
             v = gluGetString(s)
             v = v.decode()
