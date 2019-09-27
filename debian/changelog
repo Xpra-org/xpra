@@ -17,7 +17,8 @@ xpra (3.0-1) UNRELEASED; urgency=low
     - lossless window scrolling: #1320
     - scrolling acceleration for non-OpenGL backends: #2295
     - harden image parsing: #2279
-    - workaround slow video encoder initialization (ie: NVENC) using replacement frames: #2048
+    - workaround slow video encoder initialization (ie: NVENC)
+      using replacement frames: #2048
     - avoid loading codecs we don't need: #2344
     - skip some CUDA devices, speedup enumeration: #2415
   * Clipboard:
@@ -35,17 +36,20 @@ xpra (3.0-1) UNRELEASED; urgency=low
     - mdns TXT attributes updated at runtime: #2187
     - zeroconf fixes: #2317
     - drop pybonjour: #2297
-    - paramiko honours IdentityFile: #2282, handles SIGINT better: #2378
+    - paramiko honours IdentityFile: #2282,
+      handles SIGINT better: #2378
     - proxy server fixes for ssl and ssh sockets: #2399, remove spurious options: #2193
     - proxy ping and timeouts: #2408
     - proxy dynamic authentication: #2261
   * Automated Testing:
     - test HTML5 client: #2231
     - many new mixin tests: #1773 (and bugs found)
-  * start-new-commands is now enabled by default: #2278, and the UI allows free text: #2221
+  * start-new-commands is now enabled by default: #2278,
+      and the UI allows free text: #2221
   * basic support for native GTK wayland client: #2243
   * forward custom X11 properties: #2311
-  * xpra launcher visual feedback during connection: #1421, sharing option: #2115
+  * xpra launcher visual feedback during connection: #1421,
+    sharing option: #2115
   * "Window" menu on MacOS: #1808
 
  -- Antoine Martin <antoine@xpra.org>  Sat, 21 Sep 2019 09:56:38 +0700
