@@ -1016,6 +1016,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16*1024)
             self.gl_max_viewport_dims = self.opengl_props.get("max-viewport-dims",
                                                               (self.gl_texture_size_limit, self.gl_texture_size_limit))
+            driver_info = self.opengl_props.get("renderer") or self.opengl_props.get("vendor") or "unknown card"
             if min(self.gl_max_viewport_dims)<4*1024:
                 opengllog.warn("Warning: OpenGL is disabled:")
                 opengllog.warn(" the maximum viewport size is too low: %s", self.gl_max_viewport_dims)
@@ -1023,6 +1024,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             elif self.gl_texture_size_limit<4*1024:
                 opengllog.warn("Warning: OpenGL is disabled:")
                 opengllog.warn(" the texture size limit is too low: %s", self.gl_texture_size_limit)
+                self.opengl_enabled = False
+            elif driver_info.startswith("SVGA3D") and os.environ.get("WAYLAND_DISPLAY"):
+                opengllog.warn("Warning: OpenGL is disabled:")
+                opengllog.warn(" SVGA3D driver is buggy under Wayland")
                 self.opengl_enabled = False
             self.GLClientWindowClass.MAX_VIEWPORT_DIMS = self.gl_max_viewport_dims
             self.GLClientWindowClass.MAX_BACKING_DIMS = self.gl_texture_size_limit, self.gl_texture_size_limit
@@ -1047,7 +1052,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     err("OpenGL test rendering failed:", draw_result.get("message", "unknown error"))
                     return
                 log("OpenGL test rendering succeeded")
-            driver_info = self.opengl_props.get("renderer") or self.opengl_props.get("vendor") or "unknown card"
             if self.opengl_enabled:
                 opengllog.info("OpenGL enabled with %s", driver_info)
                 #don't try to handle video dimensions bigger than this:
