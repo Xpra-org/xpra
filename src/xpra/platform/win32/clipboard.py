@@ -171,8 +171,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                          success_callback, failure_callback, retries-1, delay)
 
     def clear(self):
-        def clear_error():
+        def clear_error(error_text=""):
             log.error("Error: failed to clear the clipboard")
+            if error_text:
+                log.error(" %s", error_text)
         self.with_clipboard_lock(EmptyClipboard, clear_error)
 
     def do_emit_token(self):
@@ -336,8 +338,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("SetClipboardData(..) done")
             cleanup()
             ret[0] = True
-        def set_error():
+        def set_error(error_text=""):
             log.error("Error: failed to set clipboard data")
+            if error_text:
+                log.error(" %s", error_text)
             cleanup()
         self.with_clipboard_lock(do_set_data, set_error)
         return ret[0]
