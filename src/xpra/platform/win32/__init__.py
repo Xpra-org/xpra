@@ -46,10 +46,10 @@ if frozen:
     edir = os.path.dirname(sys.executable)
     libdir = os.path.join(edir, "lib")
     for d in (edir, libdir):
-        if edir not in sys.path:
-            sys.path.append(edir)
-        if edir not in PATH:
-            PATH.append(edir)
+        if d not in sys.path:
+            sys.path.append(d)
+        if d not in PATH:
+            PATH.append(d)
     os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
     os.environ["PATH"] = os.pathsep.join(PATH)
 
