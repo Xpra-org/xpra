@@ -8,6 +8,7 @@
 %global PyQt4 PyQt4
 # none of these RHEL versions have python 3
 %global with_qt4 1
+%global with_tk 1
 %if 0%{?el7}
 	%global with_python3 0
 	%global with_filter 1
@@ -17,6 +18,7 @@
 %endif
 %if 0%{?el8}
 	%global with_qt4 0
+	%global with_tk 0
 %endif
 %if 0%{?fedora}%{?el8}
 	%global with_python3 1
@@ -43,9 +45,10 @@ Conflicts:      python-pillow < %{version}-%{release}
 BuildRequires:  python2-devel
 
 BuildRequires:  python2-setuptools
+%if %{with_tk}
 BuildRequires:  %{tkinter}
 BuildRequires:  tk-devel
-#BuildRequires:  python-sphinx
+%endif
 BuildRequires:  %{libjpeg}-devel
 BuildRequires:  zlib-devel
 BuildRequires:  freetype-devel
@@ -63,7 +66,9 @@ BuildRequires:  python2-numpy
 %if 0%{with_python3}
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
+%if %{with_tk}
 BuildRequires:  python3-tkinter
+%endif
 %if 0%{with_qt4}
 BuildRequires:  python3-PyQt4
 %endif
@@ -117,6 +122,7 @@ BuildArch:      noarch
 Documentation for %{name}.
 
 
+%if %{with_tk}
 %package tk
 Summary:        Tk interface for %{name}
 Group:          System Environment/Libraries
@@ -127,6 +133,7 @@ Obsoletes:      python-imaging-tk <= 1.1.7-12
 
 %description tk
 Tk interface for %{name}.
+%endif
 
 %if 0%{with_qt4}
 %package qt
@@ -170,6 +177,7 @@ BuildArch:      noarch
 Documentation for python3-pillow.
 
 
+%if %{with_tk}
 %package -n python3-pillow-tk
 Summary:        Tk interface for python3-pillow
 Group:          System Environment/Libraries
@@ -178,6 +186,7 @@ Requires:       tkinter
 
 %description -n python3-pillow-tk
 Tk interface for python3-pillow.
+%endif
 
 %if 0%{with_qt4}
 %package -n python3-pillow-qt
@@ -254,18 +263,24 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %doc README.rst CHANGES.rst docs/COPYING
 %{python_sitearch}/*
 # These are in subpackages
+%if %{with_tk}
 %exclude %{python_sitearch}/PIL/_imagingtk*
 %exclude %{python_sitearch}/PIL/ImageTk*
 %exclude %{python_sitearch}/PIL/SpiderImagePlugin*
+%endif
+%if 0%{with_qt4}
 %exclude %{python_sitearch}/PIL/ImageQt*
+%endif
 
 %files devel
 %{py2_incdir}/Imaging/
 
+%if %{with_tk}
 %files tk
 %{python_sitearch}/PIL/_imagingtk*
 %{python_sitearch}/PIL/ImageTk*
 %{python_sitearch}/PIL/SpiderImagePlugin*
+%endif
 
 %if 0%{with_qt4}
 %files qt
@@ -277,18 +292,24 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %doc README.rst CHANGES.rst docs/COPYING
 %{python3_sitearch}/*
 # These are in subpackages
+%if %{with_tk}
 %exclude %{python3_sitearch}/PIL/_imagingtk*
 %exclude %{python3_sitearch}/PIL/ImageTk*
 %exclude %{python3_sitearch}/PIL/SpiderImagePlugin*
+%endif
+%if 0%{with_qt4}
 %exclude %{python3_sitearch}/PIL/ImageQt*
+%endif
 
 %files -n python3-pillow-devel
 %{py3_incdir}/Imaging/
 
+%if %{with_tk}
 %files -n python3-pillow-tk
 %{python3_sitearch}/PIL/_imagingtk*
 %{python3_sitearch}/PIL/ImageTk*
 %{python3_sitearch}/PIL/SpiderImagePlugin*
+%endif
 
 %if 0%{with_qt4}
 %files -n python3-pillow-qt
