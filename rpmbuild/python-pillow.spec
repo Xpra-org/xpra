@@ -2,8 +2,6 @@
 %global py2_incdir %{_includedir}/python%{python_version}
 %global py3_incdir %{_includedir}/python%{python3_version}
 
-%global name3 python3-pillow
-
 %global lcms lcms
 %global libjpeg libjpeg
 %global tkinter tkinter
@@ -144,52 +142,52 @@ PIL image wrapper for Qt.
 
 
 %if 0%{with_python3}
-%package -n %{name3}
+%package -n python3-pillow
 Summary:        Python 3 image processing library
 Provides:       python3-imaging = %{version}-%{release}
 
-%description -n %{name3}
+%description -n python3-pillow
 %{_description}
 
 
-%package -n %{name3}-devel
-Summary:        Development files for %{name3}
+%package -n python3-pillow-devel
+Summary:        Development files for python3-pillow
 Group:          Development/Libraries
-Requires:       %{name3}%{?_isa} = %{version}-%{release}
+Requires:       python3-pillow%{?_isa} = %{version}-%{release}
 Requires:       python3-devel, libjpeg-devel, zlib-devel
 
-%description -n %{name3}-devel
-Development files for %{name3}.
+%description -n python3-pillow-devel
+Development files for python3-pillow.
 
 
-%package -n %{name3}-doc
-Summary:        Documentation for %{name3}
+%package -n python3-pillow-doc
+Summary:        Documentation for python3-pillow
 Group:          Documentation
-Requires:       %{name3} = %{version}-%{release}
+Requires:       python3-pillow = %{version}-%{release}
 BuildArch:      noarch
 
-%description -n %{name3}-doc
-Documentation for %{name3}.
+%description -n python3-pillow-doc
+Documentation for python3-pillow.
 
 
-%package -n %{name3}-tk
-Summary:        Tk interface for %{name3}
+%package -n python3-pillow-tk
+Summary:        Tk interface for python3-pillow
 Group:          System Environment/Libraries
-Requires:       %{name3}%{?_isa} = %{version}-%{release}
+Requires:       python3-pillow%{?_isa} = %{version}-%{release}
 Requires:       tkinter
 
-%description -n %{name3}-tk
-Tk interface for %{name3}.
+%description -n python3-pillow-tk
+Tk interface for python3-pillow.
 
 %if 0%{with_qt4}
-%package -n %{name3}-qt
+%package -n python3-pillow-qt
 Summary:        PIL image wrapper for Qt
 Group:          System Environment/Libraries
-Obsoletes:      %{name3} <= 2.0.0-5.git93a488e8
-Requires:       %{name3}%{?_isa} = %{version}-%{release}
+Obsoletes:      python3-pillow <= 2.0.0-5.git93a488e8
+Requires:       python3-pillow%{?_isa} = %{version}-%{release}
 Requires:       python3-PyQt4
 
-%description -n %{name3}-qt
+%description -n python3-pillow-qt
 PIL image wrapper for Qt.
 %endif
 %endif
@@ -275,7 +273,7 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %if %{with_python3}
-%files -n %{name3}
+%files -n python3-pillow
 %doc README.rst CHANGES.rst docs/COPYING
 %{python3_sitearch}/*
 # These are in subpackages
@@ -284,16 +282,16 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %exclude %{python3_sitearch}/PIL/SpiderImagePlugin*
 %exclude %{python3_sitearch}/PIL/ImageQt*
 
-%files -n %{name3}-devel
+%files -n python3-pillow-devel
 %{py3_incdir}/Imaging/
 
-%files -n %{name3}-tk
+%files -n python3-pillow-tk
 %{python3_sitearch}/PIL/_imagingtk*
 %{python3_sitearch}/PIL/ImageTk*
 %{python3_sitearch}/PIL/SpiderImagePlugin*
 
 %if 0%{with_qt4}
-%files -n %{name3}-qt
+%files -n python3-pillow-qt
 %{python3_sitearch}/PIL/ImageQt*
 %endif
 
