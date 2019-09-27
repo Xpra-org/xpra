@@ -6,7 +6,6 @@
 
 import os
 import sys
-from gi.repository import GLib
 
 try:
     import encodings
@@ -92,6 +91,7 @@ def set_name(prgname=None, appname=None):
 #platforms can override this
 def set_prgname(name):
     try:
+        from gi.repository import GLib
         GLib.set_prgname(name)
     except Exception:
         pass
@@ -104,6 +104,7 @@ def get_prgname():
 #platforms can override this
 def set_application_name(name):
     try:
+        from gi.repository import GLib
         GLib.set_application_name(name)
     except Exception:
         pass
