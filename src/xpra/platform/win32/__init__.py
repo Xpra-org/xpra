@@ -43,9 +43,11 @@ REDIRECT_OUTPUT = envbool("XPRA_REDIRECT_OUTPUT", frozen is True and GetConsoleC
 if frozen:
     #cx_freeze paths:
     PATH = os.environ.get("PATH", "").split(os.pathsep)
-    edir = os.path.dirname(sys.executable)
+    edir = os.path.abspath(os.path.dirname(sys.executable))
     libdir = os.path.join(edir, "lib")
     for d in (edir, libdir):
+        if not os.path.exists(d) or not os.path.isdir(d):
+            continue
         if d not in sys.path:
             sys.path.append(d)
         if d not in PATH:
