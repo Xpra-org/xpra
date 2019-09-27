@@ -16,16 +16,17 @@
 	%global lcms lcms2
 	%global libjpeg libjpeg-turbo
 %endif
-%if 0%{?el8}
-	%global with_qt4 0
-	%global with_tk 0
-%endif
 %if 0%{?fedora}%{?el8}
 	%global with_python3 1
 	%global lcms lcms2
 	%global with_filter 1
 	%global with_webp 1
         %global tkinter python2-tkinter
+%endif
+%if 0%{?el8}
+	%global with_qt4 0
+	%global with_tk 0
+	%global with_filter 0
 %endif
 
 
