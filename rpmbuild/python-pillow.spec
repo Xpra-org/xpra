@@ -1,4 +1,5 @@
 %{!?__python2: %global __python2 /usr/bin/python2}
+%{!?python2_sitearch:%global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))" 2>/dev/null)}
 %global py2_incdir %{_includedir}/python%{python_version}
 %global py3_incdir %{_includedir}/python%{python3_version}
 
@@ -86,7 +87,7 @@ Requires:		%{lcms}
 %endif
 
 %if 0%{with_filter} > 0
-%filter_provides_in %{python_sitearch}
+%filter_provides_in %{python2_sitearch}
 %filter_provides_in %{python3_sitearch}
 %filter_setup
 %endif
@@ -262,15 +263,15 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 
 %files
 %doc README.rst CHANGES.rst docs/COPYING
-%{python_sitearch}/*
+%{python2_sitearch}/*
 # These are in subpackages
 %if %{with_tk}
-%exclude %{python_sitearch}/PIL/_imagingtk*
-%exclude %{python_sitearch}/PIL/ImageTk*
-%exclude %{python_sitearch}/PIL/SpiderImagePlugin*
+%exclude %{python2_sitearch}/PIL/_imagingtk*
+%exclude %{python2_sitearch}/PIL/ImageTk*
+%exclude %{python2_sitearch}/PIL/SpiderImagePlugin*
 %endif
 %if 0%{with_qt4}
-%exclude %{python_sitearch}/PIL/ImageQt*
+%exclude %{python2_sitearch}/PIL/ImageQt*
 %endif
 
 %files devel
@@ -278,14 +279,14 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 
 %if %{with_tk}
 %files tk
-%{python_sitearch}/PIL/_imagingtk*
-%{python_sitearch}/PIL/ImageTk*
-%{python_sitearch}/PIL/SpiderImagePlugin*
+%{python2_sitearch}/PIL/_imagingtk*
+%{python2_sitearch}/PIL/ImageTk*
+%{python2_sitearch}/PIL/SpiderImagePlugin*
 %endif
 
 %if 0%{with_qt4}
 %files qt
-%{python_sitearch}/PIL/ImageQt*
+%{python2_sitearch}/PIL/ImageQt*
 %endif
 
 %if %{with_python3}
