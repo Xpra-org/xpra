@@ -160,11 +160,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             finally:
                 CloseClipboard()
         if GetLastError()!=ERROR_ACCESS_DENIED:
-            failure_callback()
+            failure_callback("OpenClipboard: access denied")
             return
         log("clipboard lock: access denied")
         if retries<=0:
-            failure_callback()
+            failure_callback("OpenClipboard: too many failed attemps, giving up")
             return
         #try again later:
         glib.timeout_add(delay, self.with_clipboard_lock,
@@ -194,9 +194,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         def got_text(text):
             log("got_text(%s)", repr_ellipsized(bytestostr(text)))
             got_contents("text/plain", 8, text)
-        def errback(error_text):
+        def errback(error_text=""):
             log.error("Error: failed to get clipboard data")
-            log.error(" %s", error_text)
+            if error_text:
+                log.error(" %s", error_text)
             got_contents("text/plain", 8, b"")
         self.get_clipboard_text(got_text, errback)
 
