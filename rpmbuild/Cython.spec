@@ -2,17 +2,17 @@
 %{!?__python3: %define __python3 python3}
 %{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?py3dir: %global py3dir %{_builddir}/python3-%{name}-%{version}-%{release}}
-%define with_python3 0%{?fedora}
+%define with_python3 0%{?fedora}%{?el8}
 
 Name:		python2-Cython
-Version:	0.29.10
+Version:	0.29.13
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source:     https://files.pythonhosted.org/packages/e7/2e/aee8dfff93c7f5d20461ddcefd1da3d43bab18e1666a7777f4d9dbe94065/Cython-%{version}.tar.gz
+Source:     https://files.pythonhosted.org/packages/a5/1f/c7c5450c60a90ce058b47ecf60bb5be2bfe46f952ed1d3b95d1d677588be/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python
 Conflicts:	Cython < %{version}-%{release}
@@ -107,6 +107,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Sep 27 2019 Antoine Martin <antoine@xpra.org> - 0.29.13-1
+- new upstream release
+
 * Mon Apr 15 2019 Antoine Martin <antoine@xpra.org> - 0.29.7-1
 - new upstream release
 
