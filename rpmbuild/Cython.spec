@@ -14,7 +14,7 @@ License:	Python
 URL:		http://www.cython.org
 Source:     https://files.pythonhosted.org/packages/a5/1f/c7c5450c60a90ce058b47ecf60bb5be2bfe46f952ed1d3b95d1d677588be/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Requires:   python
+Requires:   python2
 Conflicts:	Cython < %{version}-%{release}
 Obsoletes:	Cython < %{version}-%{release}
 Provides: 	Cython = %{version}-%{release}

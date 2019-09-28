@@ -14,7 +14,7 @@ Name: python2-netifaces
 Version: 0.10.9
 Release: 1%{?dist}
 License: GPL3
-Requires: python
+Requires: python2
 Group: Networking
 Packager: Antoine Martin <antoine@xpra.org>
 URL: http://winswitch.org/
