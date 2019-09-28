@@ -18,9 +18,6 @@ BuildRequires: dbus-glib-devel
 BuildRequires: python2-docutils
 BuildRequires: python2-devel
 BuildRequires: python2dist(setuptools)
-# for %%check
-BuildRequires: dbus-x11
-BuildRequires: python2-gobject
 # autoreconf and friends
 BuildRequires: autoconf-archive automake libtool
 Provides: dbus-python = %{version}-%{release}
@@ -49,9 +46,6 @@ autoreconf -vif
 # unpackaged files
 rm -fv  $RPM_BUILD_ROOT%{python2_sitearch}/*.la
 rm -rfv $RPM_BUILD_ROOT%{_datadir}/doc/dbus-python/
-
-%check
-make check -k || (cat test-suite.log && false)
 
 %files
 %doc NEWS
