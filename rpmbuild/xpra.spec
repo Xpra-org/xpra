@@ -537,18 +537,14 @@ popd
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%if %{with_python3}
-pushd xpra-%{version}-python3
-%{__python3} setup.py install \
-	%{build_args} \
-	--without-html5 --without-printing --without-cuda_kernels \
-	--prefix /usr --skip-build --root %{buildroot}
-popd
-%endif
 pushd xpra-%{version}-python2
 %{__python2} setup.py install \
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}
+#fix permissions on shared objects
+find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
+#remove the tests, not meant to be installed in the first place
+rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unittests
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -561,20 +557,21 @@ do
 done
 %endif
 popd
-
+%if %{with_python3}
+pushd xpra-%{version}-python3
+%{__python3} setup.py install \
+	%{build_args} \
+	--without-html5 --without-printing --without-cuda_kernels \
+	--prefix /usr --skip-build --root %{buildroot}
+popd
 #fix permissions on shared objects
-find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
-%if 0%{?fedora}%{?el8}
 find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
+#remove the tests, not meant to be installed in the first place
+rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 %endif
 
-# Ensure all .js files are not executeable
+# Ensure none of the .js files are executeable
 find %{buildroot}%{_datadir}/xpra/www/js -name '*.js' -exec chmod 0644 {} \;
-
-#remove the tests, not meant to be installed in the first place
-#(but I can't get distutils to play nice: I want them built, not installed)
-rm -fr ${RPM_BUILD_ROOT}/%{python2_sitearch}/unittests
-rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 
 
 %clean
