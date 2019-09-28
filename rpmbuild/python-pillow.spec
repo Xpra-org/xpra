@@ -35,7 +35,7 @@
 
 Name:           python2-pillow
 Version:        6.1.0
-Release:        1%{?snap}%{?dist}
+Release:        2%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -323,6 +323,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Sat Sep 28 2019 Antoine Martin <antoine@xpra.org> - 6.1-2
+- centos8 rebuild with tweaks (ie: no python3)
+
 * Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 6.1-1
 - new upstream release
 
