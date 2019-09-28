@@ -28,8 +28,8 @@ Patch2:         python-rencode-rename.patch
 
 %if 0%{?suse_version}
 %{!?py3dir: %global py3dir %{_builddir}/python3-%{name}-%{version}-%{release}}
-BuildRequires:  python-devel
-BuildRequires:  python-Cython
+BuildRequires:  python2-devel
+BuildRequires:  python2-Cython
 %else
 BuildRequires:  python2-devel
 BuildRequires:  python2-Cython

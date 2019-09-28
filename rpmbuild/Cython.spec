@@ -19,7 +19,7 @@ Conflicts:	Cython < %{version}-%{release}
 Obsoletes:	Cython < %{version}-%{release}
 Provides: 	Cython = %{version}-%{release}
 
-BuildRequires:	python-devel python-setuptools
+BuildRequires:	python2-devel python2-setuptools
 %if %{with_python3}
 BuildRequires:  python3-devel
 %endif

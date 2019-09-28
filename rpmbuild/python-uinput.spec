@@ -21,7 +21,7 @@ Provides:		python-uinput
 Obsoletes:      python-uinput < 0.11.2
 Conflicts:		python-uinput < 0.11.2
 
-BuildRequires:  python-devel
+BuildRequires:  python2-devel
 BuildRequires:  kernel-headers
 BuildRequires:  libudev-devel
 

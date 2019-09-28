@@ -25,9 +25,9 @@ License:        MIT
 Group:          Development/Languages/Python
 Source:         https://pypi.python.org/packages/source/s/srp/srp-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-BuildRequires:  python-devel
+BuildRequires:  python2-devel
 BuildRequires:  openssl-devel
-BuildRequires:  python-setuptools
+BuildRequires:  python2-setuptools
 Requires:       openssl
 Provides:       python-srp
 Obsoletes:      python-srp
