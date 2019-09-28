@@ -1,6 +1,6 @@
 %{!?__python2: %define __python2 python2}
-%{!?python_sitelib: %global python_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 %define pygtk2 pygtk2
 %define pygtkglext pygtkglext
@@ -67,17 +67,18 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT INSTALL="%{__install} -p"
-if [ %{python_sitelib} != %{python_sitearch} ]; then
-  mv $RPM_BUILD_ROOT%{python_sitelib}/gtk-2.0/gtk/gdkgl/* \
-     $RPM_BUILD_ROOT%{python_sitearch}/gtk-2.0/gtk/gdkgl
-  mv $RPM_BUILD_ROOT%{python_sitelib}/gtk-2.0/gtk/gtkgl/* \
-     $RPM_BUILD_ROOT%{python_sitearch}/gtk-2.0/gtk/gtkgl
+if [ %{python2_sitelib} != %{python2_sitearch} ]; then
+  mv $RPM_BUILD_ROOT%{python2_sitelib}/gtk-2.0/gtk/gdkgl/* \
+     $RPM_BUILD_ROOT%{python2_sitearch}/gtk-2.0/gtk/gdkgl
+  mv $RPM_BUILD_ROOT%{python2_sitelib}/gtk-2.0/gtk/gtkgl/* \
+     $RPM_BUILD_ROOT%{python2_sitearch}/gtk-2.0/gtk/gtkgl
 fi
-rm $RPM_BUILD_ROOT%{python_sitearch}/gtk-2.0/gtk/gdkgl/_gdkgl.la
-rm $RPM_BUILD_ROOT%{python_sitearch}/gtk-2.0/gtk/gtkgl/_gtkgl.la
+rm $RPM_BUILD_ROOT%{python2_sitearch}/gtk-2.0/gtk/gdkgl/_gdkgl.la
+rm $RPM_BUILD_ROOT%{python2_sitearch}/gtk-2.0/gtk/gtkgl/_gtkgl.la
 
 # this can be executed to run some basic tests (it has a main and shebang)
-chmod +x $RPM_BUILD_ROOT%{python_sitearch}/gtk-2.0/gtk/gtkgl/apputils.py
+sed -i "1s+.*+#!/usr/bin/python3+" $RPM_BUILD_ROOT%{python2_sitearch}/gtk-2.0/gtk/gtkgl/apputils.py
+chmod +x $RPM_BUILD_ROOT%{python2_sitearch}/gtk-2.0/gtk/gtkgl/apputils.py
 
 # for %%doc
 rm examples/Makefile*
@@ -90,8 +91,8 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc AUTHORS ChangeLog COPYING COPYING.LIB README examples
-%{python_sitearch}/gtk-2.0/gtk/gdkgl
-%{python_sitearch}/gtk-2.0/gtk/gtkgl
+%{python2_sitearch}/gtk-2.0/gtk/gdkgl
+%{python2_sitearch}/gtk-2.0/gtk/gtkgl
 
 %files devel
 %defattr(-,root,root,-)
