@@ -25,6 +25,8 @@
         %global tkinter python2-tkinter
 %endif
 %if 0%{?el8}
+	#don't override the system python3 package:
+	%global with_python3 0
 	%global with_qt4 0
 	%global with_tk 0
 	%global with_filter 0
