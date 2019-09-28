@@ -108,7 +108,7 @@ devel (development) and doc (documentation).
 Summary:        Development files for %{name}
 Group:          Development/Libraries
 Requires:       %{name}%{?_isa} = %{version}-%{release}
-Requires:       python-devel, libjpeg-devel, zlib-devel
+Requires:       python2-devel, libjpeg-devel, zlib-devel
 Provides:       python-imaging-devel = %{version}-%{release}
 Obsoletes:      python-imaging-devel <= 1.1.7-12
 
