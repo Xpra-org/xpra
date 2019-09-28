@@ -76,8 +76,12 @@ class Keyboard(KeyboardBase):
         # System Locale: LANG=en_GB.UTF-8
         # VC Keymap: gb
         # X11 Layout: gb
-        from subprocess import getoutput
-        out = getoutput("localectl status")
+        from subprocess import check_output
+        try:
+            out = check_output(["localectl", "status"])
+        except Exception:
+            log("get_locale_status() 'localectl status' failed", exc_info=True)
+            return {}
         if not out:
             return {}
         locale = {}
