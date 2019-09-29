@@ -98,7 +98,7 @@ class WindowIconSource(object):
                 assert os.path.exists(icon_filename), "xpra icon not found: %s" % icon_filename
                 img = Image.open(icon_filename)
                 icon_data = load_binary_file(icon_filename)
-                icon = (img.size, "png", icon_data)
+                icon = (img.size[0], img.size[1], "png", icon_data)
                 WindowIconSource.fallback_window_icon = icon
                 return icon
             except Exception as e:
