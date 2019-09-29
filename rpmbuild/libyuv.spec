@@ -1,13 +1,13 @@
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.31.20180904git9a07219.1%{?dist}
+Release:	0.35.20190401git4bd08cb%{?dist}
 License:	BSD
 Url:		https://chromium.googlesource.com/libyuv/libyuv
 VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
 ## git clone https://chromium.googlesource.com/libyuv/libyuv
 ## cd libyuv
-## git archive --format=tar --prefix=libyuv-0/ 9a07219 | xz  > ../libyuv-0.tar.xz
+## git archive --format=tar --prefix=libyuv-0/ 4bd08cb | xz  > ../libyuv-0.tar.xz
 Source0:	%{name}-%{version}.tar.xz
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
@@ -15,6 +15,7 @@ Patch2:		libyuv-0002-Link-against-shared-library.patch
 Patch3:		libyuv-0003-Disable-static-library.patch
 Patch4:		libyuv-0004-Don-t-install-conversion-tool.patch
 Patch5:		libyuv-0005-Use-library-suffix-during-installation.patch
+Patch6:		libyuv-0006-Link-main-library-against-libjpeg.patch
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
 %if !0%{?el7}
@@ -43,6 +44,18 @@ Additional header files for development with %{name}.
 %prep
 %autosetup -p1
 
+cat > %{name}.pc << EOF
+prefix=%{_prefix}
+exec_prefix=${prefix}
+libdir=%{_libdir}
+includedir=%{_includedir}
+
+Name: %{name}
+Description: %{summary}
+Version: %{version}
+Libs: -lyuv
+EOF
+
 
 %build
 %if 0%{?el7}
@@ -51,19 +64,12 @@ Additional header files for development with %{name}.
 %{cmake} -DTEST=true
 %endif
 
+
 %install
 %{make_install}
-mkdir -p %{buildroot}%{_libdir}/pkgconfig
-cat > %{buildroot}%{_libdir}/pkgconfig/%{name}.pc <<EOF
-prefix=%{_prefix}
-libdir=%{_libdir}
-includedir=%{_includedir}
 
-Name: %{name}
-Description: YUV conversion and scaling functionality library
-Version: 0
-Libs: -lyuv -ljpeg
-EOF
+mkdir -p %{buildroot}%{_libdir}/pkgconfig
+cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
 
 
 %check
@@ -85,8 +91,17 @@ EOF
 
 
 %changelog
-* Tue Nov 13 2018 Peter Lemenkov <lemenkov@gmail.com> - 0-0.31.20180904git9a07219.1
-- add pkgconfig file
+* Wed Apr 17 2019 Peter Lemenkov <lemenkov@gmail.com> - 0-0.35.20190401git4bd08cb
+- Fix linkage against libjpeg
+
+* Tue Apr 16 2019 Peter Lemenkov <lemenkov@gmail.com> - 0-0.34.20190401git4bd08cb
+- Fixed pkgconfig-file
+
+* Tue Apr 09 2019 Peter Lemenkov <lemenkov@gmail.com> - 0-0.33.20190401git4bd08cb
+- Update to the latest git snapshot
+
+* Fri Feb 01 2019 Fedora Release Engineering <releng@fedoraproject.org> - 0-0.32.20180904git9a07219
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
 
 * Mon Sep 24 2018 Peter Lemenkov <lemenkov@gmail.com> - 0-0.31.20180904git9a07219
 - Update to the latest git snapshot
