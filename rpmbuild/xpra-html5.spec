@@ -46,7 +46,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc html5/LICENSE
 
 %changelog
-* Mon Sep 30 2019 Antoine Martin <antoine@xpra.org> 3.0-0
+* Mon Sep 30 2019 Antoine Martin <antoine@xpra.org> 3.0-1
 - add license
 
 * Thu Feb 21 2019 Antoine Martin <antoine@xpra.org> 2.5-0
