@@ -423,7 +423,7 @@ class Protocol(object):
             else:
                 #the xpra packet header:
                 #(WebSocketProtocol may also add a websocket header too)
-                header = self.make_chunk_header(packet_type, proto_flags, level, index, actual_size)
+                header = self.make_chunk_header(packet_type, proto_flags, level, index, payload_size)
                 if actual_size<PACKET_JOIN_SIZE:
                     if not isinstance(data, bytes):
                         data = memoryview_to_bytes(data)
