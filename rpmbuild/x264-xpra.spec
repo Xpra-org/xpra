@@ -1,7 +1,7 @@
 %define _build_id_links none
 
 Name:	     x264-xpra
-Version:     20190109
+Version:     20190929
 %define SNAPSHOTTYPE -stable
 %if 0%{?beta} < 1
 Release:     1%{?dist}
