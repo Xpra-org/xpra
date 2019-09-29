@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 2.5
+%define version 3.0
 %define build_no 1
 
 Name: 			xpra-html5
@@ -46,6 +46,9 @@ rm -rf $RPM_BUILD_ROOT
 %doc html5/LICENSE
 
 %changelog
+* Mon Sep 30 2019 Antoine Martin <antoine@xpra.org> 3.0-0
+- add license
+
 * Thu Feb 21 2019 Antoine Martin <antoine@xpra.org> 2.5-0
 - add license
 
