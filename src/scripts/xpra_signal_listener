@@ -20,5 +20,6 @@ for x in WINDOW_SIGNALS:
 def sigpipe(*_args):
 	sys.exit(1)
 addsignalhandler("SIGPIPE", sigpipe)
+addsignalhandler("SIGHUP", sigpipe)
 
 sys.stdin.readline()

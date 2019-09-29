@@ -8,6 +8,7 @@
 #pylint: disable-msg=E1101
 
 import os
+import errno
 import signal
 import datetime
 from collections import deque
@@ -1185,21 +1186,21 @@ class WindowClient(StubClientMixin):
             try:
                 proc.stdin.write(b"exit\n")
                 proc.stdin.flush()
+                proc.stdin.close()
             except IOError:
                 log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
-            def force_kill():
-                if proc.poll() is None:
-                    log.warn("Warning: signal watcher %i is still running", proc.pid)
-                    log.warn(" killing it")
-                    os.kill(proc.pid, signal.SIGKILL)
-            self.timeout_add(1000, force_kill)
+            try:
+                os.kill(proc.pid, signal.SIGKILL)
+            except OSError as e:
+                if e.errno!=errno.ESRCH:
+                    log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
 
     def destroy_all_windows(self):
         for wid, window in self._id_to_window.items():
             try:
                 log("destroy_all_windows() destroying %s / %s", wid, window)
                 self.destroy_window(wid, window)
-            except:
+            except Exception:
                 pass
         self._id_to_window = {}
         self._window_to_id = {}
@@ -1208,7 +1209,7 @@ class WindowClient(StubClientMixin):
         for signalwatcher in tuple(self._signalwatcher_to_wids.keys()):
             try:
                 self.kill_signalwatcher(signalwatcher)
-            except:
+            except Exception:
                 log("destroy_all_windows() error killing signal watcher %s", signalwatcher, exc_info=True)
 
 
