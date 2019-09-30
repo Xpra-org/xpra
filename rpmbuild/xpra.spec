@@ -727,14 +727,14 @@ export XPRA_TEST_DEBUG=1
 pushd xpra-%{version}-python2/unittests
 %if 0%{?el8}
 #we don't have python2-cryptography on centos8 (yet?):
-rm -fr unit/net/crypto_test.py
+rm -fr unit/net/crypto_test.py unit/client/mixins/webcam_test.py
 %endif
 PYTHONPATH="%{buildroot}%{python2_sitearch}:." PATH="`pwd`/../scripts/:$PATH" XPRA_COMMAND="%{__python2} `pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python2} ./unit/run.py
 popd
 
 %if 0%{?with_python3}
 pushd xpra-%{version}-python3/unittests
-rm -fr unit/client unit/server/*server*py
+rm -fr unit/client unit/server/*server*py unit/client/mixins/webcam_test.py
 PYTHONPATH="%{buildroot}%{python3_sitearch}:." PATH="%{__python3} `pwd`/../scripts/:$PATH" XPRA_COMMAND="`pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python3} ./unit/run.py
 popd
 %endif
