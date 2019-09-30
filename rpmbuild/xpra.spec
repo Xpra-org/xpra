@@ -726,6 +726,7 @@ popd
 
 %if 0%{?with_python3}
 pushd xpra-%{version}-python3/unittests
+rm -fr unit/client unit/server/*server*py
 PYTHONPATH="%{buildroot}%{python3_sitearch}:." PATH="%{__python3} `pwd`/../scripts/:$PATH" XPRA_COMMAND="`pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python3} ./unit/run.py
 popd
 %endif
