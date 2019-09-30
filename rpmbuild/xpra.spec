@@ -571,6 +571,8 @@ find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #remove the tests, not meant to be installed in the first place
 rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 sed -i "s+/usr/bin/python2+/usr/bin/python3+g" ${RPM_BUILD_ROOT}/usr/bin/*xpra*
+%else
+sed -i "s+/usr/bin/python3+/usr/bin/python2+g" ${RPM_BUILD_ROOT}/usr/bin/*xpra*
 %endif
 
 # Ensure none of the .js files are executeable
