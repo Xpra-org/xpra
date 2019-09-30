@@ -848,7 +848,12 @@ class ServerCore(object):
         for mdns_publisher, mode in dict(self.mdns_publishers).items():
             info = dict(txt)
             info["mode"] = mode
-            mdns_publisher.update_txt(info)
+            try:
+                mdns_publisher.update_txt(info)
+            except Exception as e:
+                mdnslog("mdns_update: %s(%s)", mdns_publisher.update_txt, info, exc_info=True)
+                mdnslog.warn("Warning: mdns update failed")
+                mdnslog.warn(" %s", e)
 
 
     def start_listen_sockets(self):
