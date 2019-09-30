@@ -176,6 +176,8 @@ Requires:			js-jquery
 #don't depend on this package,
 #so we can also install on a pure RHEL distro:
 BuildRequires:		centos-logos
+%endif
+%if 0%{?el8}
 BuildRequires:		centos-backgrounds
 %endif
 %description html5
