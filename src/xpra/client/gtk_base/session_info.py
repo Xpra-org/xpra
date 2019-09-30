@@ -774,7 +774,7 @@ class SessionInfo(Gtk.Window):
 
     def populate_codecs(self):
         #clamp the large labels so they will overflow vertically:
-        w = self.tab_box.get_preferred_width()
+        w = self.tab_box.get_preferred_width()[0]
         lw = max(200, int(w//2.5))
         self.client_encodings_label.set_size_request(lw, -1)
         self.server_encodings_label.set_size_request(lw, -1)
