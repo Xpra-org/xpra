@@ -1986,10 +1986,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._unfocus()
         if not self._override_redirect:
             self.send("unmap-window", self._id, False)
-        try:
-            gtk.Window.do_unmap_event(self, event)
-        except Exception:
-            log.error("Error handling unmap event", exc_info=True)
+        if not PYTHON3:
+            try:
+                gtk.Window.do_unmap_event(self, event)
+            except Exception:
+                log.error("Error handling unmap event", exc_info=True)
 
     def do_delete_event(self, event):
         #gtk.Window.do_delete_event(self, event)
