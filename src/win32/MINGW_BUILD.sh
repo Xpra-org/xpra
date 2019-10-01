@@ -22,7 +22,7 @@ BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-0}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 ZIP_MODULES=${ZIP_MODULES:-1}
 
-PYTHON=${PYTHON:-python2}
+PYTHON=${PYTHON:-python3}
 
 KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
@@ -102,9 +102,7 @@ else
 	APPID="Xpra_is1"
 	BITS="64"
 fi
-if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-	BUILD_TYPE="-Python3${BUILD_TYPE}"
-fi
+BUILD_TYPE="-Python${PYTHON_MAJOR_VERSION}${BUILD_TYPE}"
 echo
 echo
 
