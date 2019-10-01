@@ -769,7 +769,6 @@ Allows the client to forward dbus calls to the server.
 \fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP
 Start a dbus server which can be used to interact with the server
 process.
-.TP
 
 
 .SS Options for start, upgrade
@@ -893,7 +892,6 @@ This is necessary to share the mmap file across user accounts.
 \fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP
 Specifies the permissions on the server socket.
 Defaults to 600. This is ignored when \fImmap\-group\fP is enabled.
-.TP
 
 
 .SS Options for start, upgrade and attach
@@ -1009,6 +1007,7 @@ Enable or disable audio-video synchronization.
 The video data will be delayed so that it is displayed in sync with the audio.
 Note: this only applies to video regions, either auto-detected via the builtin
 heuristics or specified using the dbus interface.
+
 
 .SS Options for attach
 .TP
@@ -1311,6 +1310,7 @@ By default it uses a simple default 'xpra' icon.
 The client and server will exchange ping and echo packets
 which are used to gather latency statistics.
 Those statistics can be seen using the \fBxpra info\fP command.
+
 
 .SS Options for attach, stop, info, screenshot, version
 .TP
