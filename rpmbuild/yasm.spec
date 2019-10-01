@@ -158,7 +158,7 @@ rm -rf %{buildroot}
 * Sun May 22 2005 Jeremy Katz <katzj@redhat.com> - 0.4.0-4
 - rebuild on all arches
 
-* Fri Apr  7 2005 Michael Schwendt <mschwendt[AT]users.sf.net>
+* Thu Apr  7 2005 Michael Schwendt <mschwendt[AT]users.sf.net>
 - rebuilt
 
 * Mon Feb 14 2005 David Woodhouse <dwmw2@infradead.org> 0.4.0-2
