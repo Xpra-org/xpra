@@ -1871,15 +1871,7 @@ if WIN32 and client_ENABLED and gtk3_ENABLED:
     add_modules("xpra.scripts.gtk_info")
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
-#we can't just include "xpra.client.gl" because cx_freeze then do the wrong thing
-#and tries to include both gtk3 and gtk2, and fails hard..
-for x in (
-    "gl_check", "gl_drivers", "gl_spinner",
-    "gl_colorspace_conversions", "gl_window_backing_base", "window_backend",
-    ):
-    toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl.%s" % x)
-toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk_base")
-
+toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
 
 toggle_modules(sound_ENABLED, "xpra.sound")
 toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
