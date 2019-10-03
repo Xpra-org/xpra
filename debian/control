@@ -242,6 +242,7 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,xpra
         ,python3-gi
         ,gir1.2-gtk-3.0
+        ,python3-cairo,
 # for opengl support:
         ,python3-opengl
 # not *strictly* required, but too important to miss:
