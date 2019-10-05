@@ -108,6 +108,9 @@ Recommends:		which
 Recommends:		libfakeXinerama
 Recommends:		gtk2-immodule-xim
 Recommends:		mesa-dri-drivers
+Recommends:		redhat-menus
+Recommends:		gnome-menus
+Recommends:		gnome-icon-theme
 #allows the server to use software opengl:
 Recommends:		mesa-libOSMesa
 BuildRequires:		systemd-devel
