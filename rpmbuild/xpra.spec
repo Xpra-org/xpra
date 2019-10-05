@@ -146,6 +146,9 @@ Requires(postun):	systemd-units
 #allows the server to use software opengl:
 %{Recommends}:		mesa-libOSMesa
 %endif
+%{Recommends}:		redhat-menus
+%{Recommends}:		gnome-menus
+%{Recommends}:		gnome-icon-theme
 BuildRequires:		systemd-devel
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
