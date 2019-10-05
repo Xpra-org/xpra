@@ -90,12 +90,11 @@ class ClientWindowBase(ClientWidgetBase):
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
         self._override_redirect_windows = []
-        if "workspace" in self._client_properties:
-            workspace = self._client_properties.get("workspace")
-            if workspace is not None:
-                workspacelog("workspace from client properties: %s", workspace)
-                #client properties override application specified workspace value on init only:
-                metadata["workspace"] = int(workspace)
+        workspace = typedict(self._client_properties).intget("workspace", None)
+        if workspace is not None:
+            workspacelog("workspace from client properties: %s", workspace)
+            #client properties override application specified workspace value on init only:
+            metadata["workspace"] = int(workspace)
         self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present
         self._desktop_workspace = self.get_desktop_workspace()  #pylint: disable=assignment-from-none
         def wn(w):
