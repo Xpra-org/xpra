@@ -2198,9 +2198,11 @@ toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
+    pygtk_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
+    add_to_keywords(pygtk_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     cython_add(Extension("xpra.gtk_common.gdk_atoms",
                 ["xpra/gtk_common/gdk_atoms.pyx"],
-                **pkgconfig(*PYGTK_PACKAGES)
+                **pygtk_pkgconfig
                 ))
 
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
