@@ -1,5 +1,7 @@
+%define _build_id_links none
+
 Name:	     x264-xpra
-Version:     20161126
+Version:     20190929
 %define SNAPSHOTTYPE -stable
 %if 0%{?beta} < 1
 Release:     1%{?dist}
@@ -16,6 +18,10 @@ BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
 
+
+%if 0%{?fedora}%{?el8}
+%global debug_package %{nil}
+%endif
 
 %if 0%{?fedora} || 0%{?rhel} >= 7
 BuildRequires: perl-Digest-MD5
@@ -76,55 +82,64 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
-* Sun Nov 27 2016 Antoine Martin <antoine@devloop.org.uk> 20161126
+* Sat Dec 23 2017 Antoine Martin <antoine@xpra.org> 20171222-1
+- use a newer snapshot
+
+* Wed Jul 05 2017 Antoine Martin <antoine@xpra.org> 20170704-1
+- use a newer snapshot
+
+* Thu Mar 02 2017 Antoine Martin <antoine@xpra.org> 20170301
 - new upstream release
 
-* Wed Sep 07 2016 Antoine Martin <antoine@devloop.org.uk> 20160906
+* Sun Nov 27 2016 Antoine Martin <antoine@xpra.org> 20161126
 - new upstream release
 
-* Sat Jul 30 2016 Antoine Martin <antoine@devloop.org.uk> 20160729
+* Wed Sep 07 2016 Antoine Martin <antoine@xpra.org> 20160906
 - new upstream release
 
-* Tue Jul 05 2016 Antoine Martin <antoine@devloop.org.uk> 20160704
+* Sat Jul 30 2016 Antoine Martin <antoine@xpra.org> 20160729
 - new upstream release
 
-* Fri Apr 29 2016 Antoine Martin <antoine@devloop.org.uk> 20160428
+* Tue Jul 05 2016 Antoine Martin <antoine@xpra.org> 20160704
 - new upstream release
 
-* Tue Apr 19 2016 Antoine Martin <antoine@devloop.org.uk> 20160419
+* Fri Apr 29 2016 Antoine Martin <antoine@xpra.org> 20160428
 - new upstream release
 
-* Sat Feb 06 2016 Antoine Martin <antoine@devloop.org.uk> 20160205
+* Tue Apr 19 2016 Antoine Martin <antoine@xpra.org> 20160419
 - new upstream release
 
-* Wed Dec 02 2015 Antoine Martin <antoine@devloop.org.uk> 20151202
+* Sat Feb 06 2016 Antoine Martin <antoine@xpra.org> 20160205
 - new upstream release
 
-* Fri Nov 20 2015 Antoine Martin <antoine@devloop.org.uk> 20151119
+* Wed Dec 02 2015 Antoine Martin <antoine@xpra.org> 20151202
 - new upstream release
 
-* Thu Sep 10 2015 Antoine Martin <antoine@devloop.org.uk> 20150909
+* Fri Nov 20 2015 Antoine Martin <antoine@xpra.org> 20151119
 - new upstream release
 
-* Tue Jul 28 2015 Antoine Martin <antoine@devloop.org.uk> 20150727
+* Thu Sep 10 2015 Antoine Martin <antoine@xpra.org> 20150909
 - new upstream release
 
-* Tue Jul 14 2015 Antoine Martin <antoine@devloop.org.uk> 20150713
+* Tue Jul 28 2015 Antoine Martin <antoine@xpra.org> 20150727
 - new upstream release
 
-* Sun Jan 18 2015 Antoine Martin <antoine@devloop.org.uk> 20141218
+* Tue Jul 14 2015 Antoine Martin <antoine@xpra.org> 20150713
 - new upstream release
 
-* Tue Dec 09 2014 Antoine Martin <antoine@devloop.org.uk> 20141208
+* Sun Jan 18 2015 Antoine Martin <antoine@xpra.org> 20141218
 - new upstream release
 
-* Tue Oct 07 2014 Antoine Martin <antoine@devloop.org.uk> 20141006
+* Tue Dec 09 2014 Antoine Martin <antoine@xpra.org> 20141208
 - new upstream release
 
-* Wed Sep 10 2014 Antoine Martin <antoine@devloop.org.uk> 20140909
+* Tue Oct 07 2014 Antoine Martin <antoine@xpra.org> 20141006
+- new upstream release
+
+* Wed Sep 10 2014 Antoine Martin <antoine@xpra.org> 20140909
 - version bump
 
-* Sun Jul 20 2014 Antoine Martin <antoine@devloop.org.uk> 20140719
+* Sun Jul 20 2014 Antoine Martin <antoine@xpra.org> 20140719
 - version bump
 
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>

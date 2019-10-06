@@ -1,13 +1,15 @@
+%define _build_id_links none
+
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     3.2.1
-Release:     1%{?dist}
+Version:     4.2.1
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
 License:     GPL
 URL:	     http://www.ffmpeg.org
-Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.bz2
+Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	x264-xpra-devel
@@ -34,7 +36,7 @@ This package contains the development files for %{name}.
 
 %build
 # set pkg_config_path for xpra video libs
-./configure \
+PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--prefix="%{_prefix}" \
 	--libdir="%{_libdir}/xpra" \
 	--shlibdir="%{_libdir}/xpra" \
@@ -60,9 +62,13 @@ This package contains the development files for %{name}.
 	--enable-decoder=vp8 \
 	--enable-decoder=vp9 \
 	--enable-decoder=mpeg4 \
+	--enable-decoder=mpeg1video \
+	--enable-decoder=mpeg2video \
 	--enable-encoder=libvpx_vp8 \
 	--enable-encoder=libvpx_vp9 \
 	--enable-encoder=mpeg4 \
+	--enable-encoder=mpeg1video \
+	--enable-encoder=mpeg2video \
 	--enable-encoder=libx264 \
 	--enable-encoder=aac \
 	--enable-muxer=mp4 \
@@ -77,8 +83,9 @@ This package contains the development files for %{name}.
 	--enable-shared \
 	--enable-debug \
 	--disable-stripping \
-	--disable-symver
-	#--enable-static \
+	--disable-symver \
+	--enable-rpath
+	#--enable-static
 
 make %{?_smp_mflags}
 
@@ -86,6 +93,10 @@ make %{?_smp_mflags}
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
+#we don't care about the examples,
+#and we can't turn them off using a build switch,
+#so just delete them
+rm -fr %{buildroot}/usr/share/ffmpeg/examples
 
 #%post -p /sbin/ldconfig
 #%postun -p /sbin/ldconfig
@@ -96,7 +107,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc COPYING* CREDITS doc/ffserver.conf
+%doc COPYING* CREDITS
 %{_libdir}/xpra/libavcodec.so.*
 %{_libdir}/xpra/libavfilter.so.*
 %{_libdir}/xpra/libavformat.so.*
@@ -140,122 +151,197 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sun Nov 27 2016 Antoine Martin <antoine@devloop.org.uk> 3.2.1-1
+* Tue Oct 01 2019 Antoine Martin <antoine@xpra.org> 4.2.1-2
+- centos8 rebuild
+
+* Tue Sep 24 2019 Antoine Martin <antoine@xpra.org> 4.2.1-1
 - new upstream release
 
-* Fri Nov 04 2016 Antoine Martin <antoine@devloop.org.uk> 3.2-2
+* Thu Aug 08 2019 Antoine Martin <antoine@xpra.org> 4.2-1
+- new upstream release
+
+* Fri Jul 19 2019 Antoine Martin <antoine@xpra.org> 4.1.4-1
+- new upstream release
+
+* Tue Apr 16 2019 Antoine Martin <antoine@xpra.org> 4.1.3-1
+- new upstream release
+
+* Thu Mar 07 2019 Antoine Martin <antoine@xpra.org> 4.1.1-1
+- new upstream release
+
+* Thu Jan 10 2019 Antoine Martin <antoine@xpra.org> 4.1-2
+- force rebuild
+
+* Mon Nov 19 2018 Antoine Martin <antoine@xpra.org> 4.1-1
+- new upstream release
+
+* Mon Nov 05 2018 Antoine Martin <antoine@xpra.org> 4.0.3-1
+- new upstream release
+
+* Thu Aug 02 2018 Antoine Martin <antoine@xpra.org> 4.0.2-1
+- new upstream release
+
+* Wed Jun 20 2018 Antoine Martin <antoine@xpra.org> 4.0.1-1
+- new upstream release
+
+* Sat May 12 2018 Antoine Martin <antoine@xpra.org> 4.0-2
+- enable mpeg1
+
+* Sat Apr 21 2018 Antoine Martin <antoine@xpra.org> 4.0-1
+- new upstream release
+
+* Sun Mar 18 2018 Antoine Martin <antoine@xpra.org> 3.4.2-1
+- new upstream release
+
+* Wed Dec 13 2017 Antoine Martin <antoine@xpra.org> 3.4.1-1
+- new upstream release
+
+* Sat Oct 21 2017 Antoine Martin <antoine@xpra.org> 3.4-1
+- new upstream release
+
+* Thu Sep 14 2017 Antoine Martin <antoine@xpra.org> 3.3.4-1
+- new upstream release
+
+* Tue Aug 01 2017 Antoine Martin <antoine@xpra.org> 3.3.3-1
+- new upstream release
+
+* Sun Jun 11 2017 Antoine Martin <antoine@xpra.org> 3.3.2-1
+- new upstream release
+
+* Mon May 15 2017 Antoine Martin <antoine@xpra.org> 3.3.1-1
+- new upstream release
+
+* Tue Apr 18 2017 Antoine Martin <antoine@xpra.org> 3.3-3
+- use xpra's PKG_CONFIG_PATH
+
+* Tue Apr 18 2017 Antoine Martin <antoine@xpra.org> 3.3-2
+- enable rpath
+
+* Fri Apr 14 2017 Antoine Martin <antoine@xpra.org> 3.3-1
+- new upstream release
+
+* Mon Feb 13 2017 Antoine Martin <antoine@xpra.org> 3.2.4-1
+- new upstream release
+
+* Fri Dec 09 2016 Antoine Martin <antoine@xpra.org> 3.2.2-1
+- new upstream release
+
+* Sun Nov 27 2016 Antoine Martin <antoine@xpra.org> 3.2.1-1
+- new upstream release
+
+* Fri Nov 04 2016 Antoine Martin <antoine@xpra.org> 3.2-2
 - add aac encoder for html5 client
 
-* Sun Oct 30 2016 Antoine Martin <antoine@devloop.org.uk> 3.2-1
+* Sun Oct 30 2016 Antoine Martin <antoine@xpra.org> 3.2-1
 - new upstream release
 
-* Sun Oct 23 2016 Antoine Martin <antoine@devloop.org.uk> 3.1.5-1
+* Sun Oct 23 2016 Antoine Martin <antoine@xpra.org> 3.1.5-1
 - new upstream release
 
-* Sun Oct 09 2016 Antoine Martin <antoine@devloop.org.uk> 3.1.4-1
+* Sun Oct 09 2016 Antoine Martin <antoine@xpra.org> 3.1.4-1
 - new upstream release
 
-* Sun Aug 28 2016 Antoine Martin <antoine@devloop.org.uk> 3.1.3-1
+* Sun Aug 28 2016 Antoine Martin <antoine@xpra.org> 3.1.3-1
 - new upstream release
 
-* Sat Aug 20 2016 Antoine Martin <antoine@devloop.org.uk> 3.1.2-1
+* Sat Aug 20 2016 Antoine Martin <antoine@xpra.org> 3.1.2-1
 - new upstream release
 
-* Fri Aug 05 2016 Antoine Martin <antoine@devloop.org.uk> 3.1.1-2
+* Fri Aug 05 2016 Antoine Martin <antoine@xpra.org> 3.1.1-2
 - add file protocol for testing muxer
 
-* Mon Jul 04 2016 Antoine Martin <antoine@devloop.org.uk> 3.1.1-1
+* Mon Jul 04 2016 Antoine Martin <antoine@xpra.org> 3.1.1-1
 - new upstream release
 
-* Mon Jun 27 2016 Antoine Martin <antoine@devloop.org.uk> 3.1-2
+* Mon Jun 27 2016 Antoine Martin <antoine@xpra.org> 3.1-2
 - new upstream release
 
-* Sun Jun 12 2016 Antoine Martin <antoine@devloop.org.uk> 3.0.2-2
+* Sun Jun 12 2016 Antoine Martin <antoine@xpra.org> 3.0.2-2
 - include encoders and muxers for ffmpeg encoder
 
-* Fri Apr 29 2016 Antoine Martin <antoine@devloop.org.uk> 3.0.2-1
+* Fri Apr 29 2016 Antoine Martin <antoine@xpra.org> 3.0.2-1
 - new upstream release
 
-* Fri Apr 01 2016 Antoine Martin <antoine@devloop.org.uk> 3.0.1-1
+* Fri Apr 01 2016 Antoine Martin <antoine@xpra.org> 3.0.1-1
 - new upstream release
 - include mpeg4, ogg, matroska and webm support
 
-* Mon Feb 15 2016 Antoine Martin <antoine@devloop.org.uk> 3.0-1
+* Mon Feb 15 2016 Antoine Martin <antoine@xpra.org> 3.0-1
 - new upstream release
 
-* Sat Feb 06 2016 Antoine Martin <antoine@devloop.org.uk> 2.8.6-1
+* Sat Feb 06 2016 Antoine Martin <antoine@xpra.org> 2.8.6-1
 - new upstream release
 
-* Thu Jan 21 2016 Antoine Martin <antoine@devloop.org.uk> 2.8.5-1
+* Thu Jan 21 2016 Antoine Martin <antoine@xpra.org> 2.8.5-1
 - new upstream release
 
-* Sun Dec 20 2015 Antoine Martin <antoine@devloop.org.uk> 2.8.4-1
+* Sun Dec 20 2015 Antoine Martin <antoine@xpra.org> 2.8.4-1
 - new upstream release
 
-* Sun Nov 29 2015 Antoine Martin <antoine@devloop.org.uk> 2.8.3-1
+* Sun Nov 29 2015 Antoine Martin <antoine@xpra.org> 2.8.3-1
 - new upstream release
 
-* Tue Nov 17 2015 Antoine Martin <antoine@devloop.org.uk> 2.8.2-1
+* Tue Nov 17 2015 Antoine Martin <antoine@xpra.org> 2.8.2-1
 - new upstream release
 
-* Fri Oct 16 2015 Antoine Martin <antoine@devloop.org.uk> 2.8.1-1
+* Fri Oct 16 2015 Antoine Martin <antoine@xpra.org> 2.8.1-1
 - new upstream release
 
-* Thu Sep 10 2015 Antoine Martin <antoine@devloop.org.uk> 2.8-1
+* Thu Sep 10 2015 Antoine Martin <antoine@xpra.org> 2.8-1
 - new upstream release
 
-* Tue Jul 28 2015 Antoine Martin <antoine@devloop.org.uk> 2.7.2-1
+* Tue Jul 28 2015 Antoine Martin <antoine@xpra.org> 2.7.2-1
 - new upstream release
 
-* Wed Jul 01 2015 Antoine Martin <antoine@devloop.org.uk> 2.7.1-1
+* Wed Jul 01 2015 Antoine Martin <antoine@xpra.org> 2.7.1-1
 - new upstream release
 
-* Wed Jun 10 2015 Antoine Martin <antoine@devloop.org.uk> 2.7-1
+* Wed Jun 10 2015 Antoine Martin <antoine@xpra.org> 2.7-1
 - new upstream release
 
-* Fri May 22 2015 Antoine Martin <antoine@devloop.org.uk> 2.6.3-1
+* Fri May 22 2015 Antoine Martin <antoine@xpra.org> 2.6.3-1
 - new upstream release
 
-* Sat Apr 04 2015 Antoine Martin <antoine@devloop.org.uk> 2.6.1-1
+* Sat Apr 04 2015 Antoine Martin <antoine@xpra.org> 2.6.1-1
 - new upstream release
 
-* Sat Apr 04 2015 Antoine Martin <antoine@devloop.org.uk> 2.4.8-1
+* Sat Apr 04 2015 Antoine Martin <antoine@xpra.org> 2.4.8-1
 - new upstream release
 
-* Tue Mar 10 2015 Antoine Martin <antoine@devloop.org.uk> 2.4.7-1
+* Tue Mar 10 2015 Antoine Martin <antoine@xpra.org> 2.4.7-1
 - new upstream release
 
-* Sun Jan 18 2015 Antoine Martin <antoine@devloop.org.uk> 2.4.6-1
+* Sun Jan 18 2015 Antoine Martin <antoine@xpra.org> 2.4.6-1
 - new upstream release
 
-* Mon Dec 29 2014 Antoine Martin <antoine@devloop.org.uk> 2.4.5-1
+* Mon Dec 29 2014 Antoine Martin <antoine@xpra.org> 2.4.5-1
 - new upstream release
 
-* Mon Dec 01 2014 Antoine Martin <antoine@devloop.org.uk> 2.4.4-1
+* Mon Dec 01 2014 Antoine Martin <antoine@xpra.org> 2.4.4-1
 - new upstream release
 
-* Mon Nov 03 2014 Antoine Martin <antoine@devloop.org.uk> 2.4.3-1
+* Mon Nov 03 2014 Antoine Martin <antoine@xpra.org> 2.4.3-1
 - new upstream release
 
-* Tue Oct 07 2014 Antoine Martin <antoine@devloop.org.uk> 2.4.2-1
+* Tue Oct 07 2014 Antoine Martin <antoine@xpra.org> 2.4.2-1
 - new upstream release
 
-* Sun Sep 21 2014 Antoine Martin <antoine@devloop.org.uk> 2.4-1
+* Sun Sep 21 2014 Antoine Martin <antoine@xpra.org> 2.4-1
 - new upstream release
 
-* Mon Aug 18 2014 Antoine Martin <antoine@devloop.org.uk> 2.3.3-1
+* Mon Aug 18 2014 Antoine Martin <antoine@xpra.org> 2.3.3-1
 - version bump
 
-* Thu Aug 07 2014 Antoine Martin <antoine@devloop.org.uk> 2.3.2-1
+* Thu Aug 07 2014 Antoine Martin <antoine@xpra.org> 2.3.2-1
 - version bump, switch to 2.3.x
 
-* Thu Aug 07 2014 Antoine Martin <antoine@devloop.org.uk> 2.2.6-1
+* Thu Aug 07 2014 Antoine Martin <antoine@xpra.org> 2.2.6-1
 - version bump
 
-* Thu Jul 31 2014 Antoine Martin <antoine@devloop.org.uk> 2.2.5-1
+* Thu Jul 31 2014 Antoine Martin <antoine@xpra.org> 2.2.5-1
 - version bump
 
-* Sun Jul 20 2014 Antoine Martin <antoine@devloop.org.uk> 2.2.4-1
+* Sun Jul 20 2014 Antoine Martin <antoine@xpra.org> 2.2.4-1
 - version bump
 
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>

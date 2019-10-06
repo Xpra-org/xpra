@@ -1,12 +1,12 @@
 Name:	     libvpx-xpra
-Version:     1.6.0
+Version:     1.8.1
 Release:     1%{?dist}
 Summary:     vpx library for xpra
 
 Group:       Applications/Multimedia
 License:     BSD
 URL:	     http://www.webmproject.org/code/
-Source0:     http://downloads.webmproject.org/releases/webm/libvpx-%{version}.tar.bz2
+Source0:     https://github.com/webmproject/libvpx/archive/v%{version}/libvpx-%{version}.tar.gz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
@@ -26,6 +26,9 @@ Requires: pkgconfig
 This package contains the development files for %{name}.
 
 
+%global debug_package %{nil}
+
+
 %prep
 %setup -q -n libvpx-%{version}
 
@@ -34,6 +37,7 @@ This package contains the development files for %{name}.
 ./configure \
     --prefix="%{_prefix}" \
     --libdir="%{_libdir}/xpra" \
+    --as=yasm \
     --enable-pic \
     --disable-install-docs \
     --disable-install-bins \
@@ -73,13 +77,25 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sun Jul 24 2016 Antoine Martin <antoine@devloop.org.uk> 1.6.0-1
+* Fri Jul 19 2019 Antoine Martin <antoine@xpra.org> 1.8.1-1
 - new upstream release
 
-* Fri Nov 13 2015 Antoine Martin <antoine@devloop.org.uk> 1.5.0-1
+* Tue Feb 05 2018 Antoine Martin <antoine@xpra.org> 1.8.0-1
 - new upstream release
 
-* Sat Apr 04 2015 Antoine Martin <antoine@devloop.org.uk> 1.4.0-1
+* Sat Jan 27 2018 Antoine Martin <antoine@xpra.org> 1.7.0-1
+- new upstream release
+
+* Tue Jan 24 2017 Antoine Martin <antoine@xpra.org> 1.6.1-1
+- new upstream release
+
+* Sun Jul 24 2016 Antoine Martin <antoine@xpra.org> 1.6.0-1
+- new upstream release
+
+* Fri Nov 13 2015 Antoine Martin <antoine@xpra.org> 1.5.0-1
+- new upstream release
+
+* Sat Apr 04 2015 Antoine Martin <antoine@xpra.org> 1.4.0-1
 - new upstream release
 
 * Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>
