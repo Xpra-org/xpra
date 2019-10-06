@@ -40,8 +40,7 @@ This package contains the development files for %{name}.
     --as=yasm \
     --enable-pic \
 %if %{?el6}
-#fails to build on centos6:
-    --disable-libyuv
+    --disable-libyuv \
 %endif
     --disable-install-docs \
     --disable-install-bins \
