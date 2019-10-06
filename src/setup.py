@@ -2111,14 +2111,18 @@ if gtk_x11_ENABLED:
                     ))
     else:
         #below uses gtk/gdk:
+        gtk2_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
+        add_to_keywords(gtk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
         cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
                     ["xpra/x11/gtk2/gdk_display_source.pyx"],
-                    **pkgconfig(*PYGTK_PACKAGES)
+                    **gtk2_pkgconfig
                     ))
         GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
+        gdk2_pkgconfig = pkgconfig(*GDK_BINDINGS_PACKAGES)
+        add_to_keywords(gdk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
         cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
                     ["xpra/x11/gtk2/gdk_bindings.pyx"],
-                    **pkgconfig(*GDK_BINDINGS_PACKAGES)
+                    **gdk2_pkgconfig
                     ))
 
 if client_ENABLED and gtk3_ENABLED:
