@@ -1067,7 +1067,12 @@ def get_host_target_string(display_desc, port_key="port", prefix=""):
     dtype = display_desc["type"]
     username = display_desc.get(prefix+"username")
     host = display_desc[prefix+"host"]
-    port = display_desc.get(prefix+port_key)
+    try:
+        port = int(display_desc.get(prefix+port_key))
+        if port<0 or port>=2**16:
+            port = 0
+    except ValueError:
+        port = 0
     display = display_desc.get(prefix+"display", "")
     return host_target_string(dtype, username, host, port, display)
 
