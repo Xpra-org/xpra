@@ -256,8 +256,8 @@ rm -rf build install
 # set pkg_config_path for xpra video libs
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python2} setup.py build \
 	%{build_args} \
--pkg-config-path=%{_libdir}/xpra/pkgconfig \
--rpath=%{_libdir}/xpra
+	--pkg-config-path=%{_libdir}/xpra/pkgconfig \
+	--rpath=%{_libdir}/xpra
 %if 0%{?with_selinux}
 pushd selinux/cups_xpra
 for selinuxvariant in %{selinux_variants}
