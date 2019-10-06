@@ -39,7 +39,7 @@ This package contains the development files for %{name}.
     --libdir="%{_libdir}/xpra" \
     --as=yasm \
     --enable-pic \
-%if %{?el6}
+%if 0%{?el6}
     --disable-libyuv \
 %endif
     --disable-install-docs \
