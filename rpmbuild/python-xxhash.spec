@@ -25,7 +25,7 @@ URL:            https://github.com/ifduyue/python-xxhash
 Summary:        xxhash Bindings for Python
 License:        BSD
 Group:          Development/Languages/Python
-Source:         https://codeload.github.com/ifduyue/python-xxhash/tar.gz/v%{version}
+Source:         https://codeload.github.com/ifduyue/python-xxhash/tar.gz/v%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
