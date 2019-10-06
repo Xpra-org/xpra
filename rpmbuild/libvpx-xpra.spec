@@ -39,6 +39,10 @@ This package contains the development files for %{name}.
     --libdir="%{_libdir}/xpra" \
     --as=yasm \
     --enable-pic \
+%if %{?el6}
+#fails to build on centos6:
+    --disable-libyuv
+%endif
     --disable-install-docs \
     --disable-install-bins \
     --enable-shared \
