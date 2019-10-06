@@ -303,8 +303,8 @@ def main():
             return "%i bytes" % len(icondata)
         menu = load_xdg_menu_data()
         if menu:
-	        print_nested_dict(menu, vformat={"IconData" : icon_fmt})
-	    else:
+            print_nested_dict(menu, vformat={"IconData" : icon_fmt})
+        else:
             print("no menu data found")
     return 0
 
