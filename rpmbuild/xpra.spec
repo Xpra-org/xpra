@@ -461,7 +461,7 @@ fi
 
 
 %changelog
-* Tue Jul 30 2019 Antoine Martin <antoine@devloop.org.uk> 1.0.14-2
+* Sun Oct 06 2019 Antoine Martin <antoine@devloop.org.uk> 1.0.14-1
 - fix html5 clipboard wrongly disabled
 - fix html5 handling of websocket frames with more than one packet
 - fix desktop-scaling normalization calculations
@@ -486,7 +486,13 @@ fi
 - fix mmap leak which can cause the client to stop painting
 - fix HTML5 client authentication issue when going through a proxy server
 - fix errors if md5 is not available: use sha1
+- fix win32 system tray not responding to clicks after re-initialization
+- fix file descriptors not closed on exit
+- fix proxy instances emulation of glib repeating calls
+- fix unlikely (impossible?) error with virtual webcams
+- fix man page headers alignment
 - silence annoying atk warnings
+- silence ffmpeg build warnings with GCC 9
 - avoid running invalid lpinfo commands
 - support newer nvidia encode shared libraries
 - prevent hash collisions in motion search

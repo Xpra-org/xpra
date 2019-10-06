@@ -23,7 +23,13 @@ xpra (1.0.14-1) UNRELEASED; urgency=low
   * fix mmap leak which can cause the client to stop painting
   * fix HTML5 client authentication issue when going through a proxy server
   * fix errors if md5 is not available: use sha1
+  * fix win32 system tray not responding to clicks after re-initialization
+  * fix file descriptors not closed on exit
+  * fix proxy instances emulation of glib repeating calls
+  * fix unlikely (impossible?) error with virtual webcams
+  * fix man page headers alignment
   * silence annoying atk warnings
+  * silence ffmpeg build warnings with GCC 9
   * avoid running invalid lpinfo commands
   * support newer nvidia encode shared libraries
   * prevent hash collisions in motion search
@@ -37,7 +43,7 @@ xpra (1.0.14-1) UNRELEASED; urgency=low
   * avoid keyboard warnings
   * fix sdist
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 30 Jul 2019 17:19:34 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 06 Oct 2019 15:41:52 +0700
 
 xpra (1.0.13-1) UNRELEASED; urgency=low
   * fix server crash with application setting invalid X11 atoms
