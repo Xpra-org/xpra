@@ -2112,13 +2112,15 @@ if gtk_x11_ENABLED:
     else:
         #below uses gtk/gdk:
         gtk2_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
-        add_to_keywords(gtk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
+        if not WIN32:
+            add_to_keywords(gtk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
         cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
                     ["xpra/x11/gtk2/gdk_display_source.pyx"],
                     **gtk2_pkgconfig
                     ))
         GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
-        gdk2_pkgconfig = pkgconfig(*GDK_BINDINGS_PACKAGES)
+        if not WIN32:
+            gdk2_pkgconfig = pkgconfig(*GDK_BINDINGS_PACKAGES)
         add_to_keywords(gdk2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
         cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
                     ["xpra/x11/gtk2/gdk_bindings.pyx"],
@@ -2199,7 +2201,8 @@ toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
     pygtk_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
-    add_to_keywords(pygtk_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
+    if not WIN32:
+        add_to_keywords(pygtk_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     cython_add(Extension("xpra.gtk_common.gdk_atoms",
                 ["xpra/gtk_common/gdk_atoms.pyx"],
                 **pygtk_pkgconfig
