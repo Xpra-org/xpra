@@ -406,7 +406,7 @@ class ApplicationWindow:
         self.set_new_encoding(self.config.encoding)
         # Sharing:
         self.sharing = Gtk.CheckButton("Sharing")
-        self.sharing.set_active(self.config.sharing)
+        self.sharing.set_active(bool(self.config.sharing))
         self.sharing.set_tooltip_text("allow multiple concurrent users to connect")
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.sharing)
