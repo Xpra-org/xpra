@@ -1,8 +1,6 @@
-diff --git a/src/dummy.h b/src/dummy.h
-index c3fdd6e..7e7e0aa 100644
---- a/src/dummy.h
-+++ b/src/dummy.h
-@@ -51,6 +51,7 @@ typedef struct dummyRec
+--- a/src/dummy.h	2016-12-17 23:02:53.396287041 +0100
++++ b/src/dummy.h	2016-12-17 23:03:30.319616550 +0100
+@@ -51,6 +51,7 @@
      /* options */
      OptionInfoPtr Options;
      Bool swCursor;
@@ -10,10 +8,8 @@ index c3fdd6e..7e7e0aa 100644
      /* proc pointer */
      CloseScreenProcPtr CloseScreen;
      xf86CursorInfoPtr CursorInfo;
-diff --git a/src/dummy_driver.c b/src/dummy_driver.c
-index 6062c39..c994d79 100644
---- a/src/dummy_driver.c
-+++ b/src/dummy_driver.c
+--- a/src/dummy_driver.c	2016-12-14 21:54:20.000000000 +0100
++++ b/src/dummy_driver.c	2016-12-17 23:04:59.916416126 +0100
 @@ -17,6 +17,12 @@
  /* All drivers using the mi colormap manipulation need this */
  #include "micmap.h"
@@ -27,7 +23,7 @@ index 6062c39..c994d79 100644
  /* identifying atom needed by magnifiers */
  #include <X11/Xatom.h>
  #include "property.h"
-@@ -118,11 +124,15 @@ static SymTabRec DUMMYChipsets[] = {
+@@ -115,11 +121,15 @@
  };
  
  typedef enum {
@@ -44,7 +40,7 @@ index 6062c39..c994d79 100644
      { -1,                  NULL,           OPTV_NONE,	{0}, FALSE }
  };
  
-@@ -362,6 +372,7 @@ DUMMYPreInit(ScrnInfoPtr pScrn, int flags)
+@@ -359,6 +369,7 @@
      xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, dPtr->Options);
  
      xf86GetOptValBool(dPtr->Options, OPTION_SW_CURSOR,&dPtr->swCursor);
@@ -52,7 +48,7 @@ index 6062c39..c994d79 100644
  
      if (device->videoRam != 0) {
  	pScrn->videoRam = device->videoRam;
-@@ -661,12 +672,48 @@ DUMMYScreenInit(SCREEN_INIT_ARGS_DECL)
+@@ -639,10 +650,45 @@
      return TRUE;
  }
  
@@ -81,10 +77,7 @@ index 6062c39..c994d79 100644
  Bool
  DUMMYSwitchMode(SWITCH_MODE_ARGS_DECL)
  {
-     SCRN_INFO_PTR(arg);
--    return dummyModeInit(pScrn, mode);
-+    if (!dummyModeInit(pScrn, mode))
-+        return FALSE;
++    SCRN_INFO_PTR(arg);
 +#ifdef RANDR
 +    DUMMYPtr dPtr = DUMMYPTR(pScrn);
 +    if (dPtr->constantDPI) {
@@ -98,7 +91,6 @@ index 6062c39..c994d79 100644
 +        RRTellChanged(pScrn->pScreen);
 +    }
 +#endif
-+    return TRUE;
+     return TRUE;
  }
  
- /* Mandatory */
