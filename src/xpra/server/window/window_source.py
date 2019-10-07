@@ -1527,6 +1527,9 @@ class WindowSource(object):
                 #figure out the proportion of pixels updated:
                 pixels = region.width*region.height
                 ww, wh = self.window_dimensions
+                if ww<=0 or wh<=0:
+                    #window cleaned up?
+                    return
                 pct = 100*pixels/(ww*wh)
                 #try to take into account speed and quality:
                 #delay more when quality is low
