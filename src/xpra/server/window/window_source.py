@@ -1872,6 +1872,9 @@ class WindowSource(WindowIconSource):
             # so the value may be greater than the size of the window)
             pixels = sum(rect.width*rect.height for rect in self.refresh_regions)
             ww, wh = self.window_dimensions
+            if ww<=0 or wh<=0:
+                #window cleaned up?
+                return
             pct = int(min(100, 100*pixels//(ww*wh)) * (1+self.global_statistics.congestion_value))
             if not self.refresh_timer:
                 #we must schedule a new refresh timer
