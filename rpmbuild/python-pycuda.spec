@@ -27,14 +27,16 @@ Provides:       python-pycuda
 Obsoletes:      python-pycuda
 Conflicts:      python-pycuda
 
-Requires:       python2-decorator
 %if 0%{?el7}
 Requires:       numpy
+Requires:       python-decorator
+Requires:       python-six
 %else
 Requires:       python2-numpy
+Requires:       python2-decorator
+Requires:       python2-six
 %endif
 Requires:       python2-pytools
-Requires:       python2-six
 
 BuildRequires:  gcc-c++
 BuildRequires:  python2-devel
