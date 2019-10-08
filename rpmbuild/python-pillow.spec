@@ -1,6 +1,6 @@
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitearch:%global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))" 2>/dev/null)}
-%global py2_incdir %{_includedir}/python%{python_version}
+%global py2_incdir %{_includedir}/python%{python2_version}
 %global py3_incdir %{_includedir}/python%{python3_version}
 
 %global lcms lcms
