@@ -28,19 +28,24 @@ Obsoletes:      python-pycuda
 Conflicts:      python-pycuda
 
 Requires:       python2-decorator
+%if 0%{?el7}
+Requires:       numpy
+%else
 Requires:       python2-numpy
+%endif
 Requires:       python2-pytools
 Requires:       python2-six
 
 BuildRequires:  gcc-c++
 BuildRequires:  python2-devel
-%if 0%{?fedora}%{?el8}
 BuildRequires:  python2-setuptools
+%if 0%{?el7}
+Requires:       numpy
+BuildRequires:  boost-devel
 %else
-BuildRequires:  python2-distribute
-%endif
-BuildRequires:  python2-numpy
+Requires:       python2-numpy
 BuildRequires:  boost-python2-devel
+%endif
 BuildRequires:  cuda
 
 %description
