@@ -65,7 +65,11 @@ BuildRequires:  libwebp-devel
 %if 0%{with_qt4}
 BuildRequires:  %{PyQt4}
 %endif
+%if 0%{el7}
+BuildRequires:  numpy
+%else
 BuildRequires:  python2-numpy
+%endif
 
 %if 0%{with_python3}
 BuildRequires:  python3-devel
