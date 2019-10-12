@@ -82,10 +82,10 @@
 	</autotools>
 
 	<autotools id="twolame" autogenargs="" autogen-sh="configure">
-		<branch module="/src/twolame-0.3.13.tar.gz"
-			version="0.3.13"
-			hash="md5:4113d8aa80194459b45b83d4dbde8ddb"
-			repo="winswitch.org"/>
+		<branch module="https://github.com/njh/twolame/archive/0.4.0.tar.gz"
+			version="0.4.0" checkoutdir="twolame-0.4.0"
+			hash="sha256:9f3f03bc9e1038d900f86002c7dce4b49109b3a61544800fc62d71dc51829f05"
+			repo="github.com"/>
 	</autotools>
 
 	<autotools id="libmad" autogen-sh="configure">
