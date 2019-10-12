@@ -27,7 +27,7 @@ License:        BSD
 Group:          Development/Languages/Python
 Source:         https://files.pythonhosted.org/packages/d3/11/d41a1a1e04389a9da41d3e78491df592cb910c106b628a68c27a392e4821/xxhash-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-$if 0%{?fedora}%{?el8}
+%if 0%{?fedora}%{?el8}
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 %else
