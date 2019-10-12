@@ -148,7 +148,7 @@ cdef class X11CoreBindingsInstance:
             return code
         cdef char[128] buffer
         XGetErrorText(self.display, code, buffer, 128)
-        return str(buffer[:128])
+        return str(buffer[:128]).split("\0")[0]
 
     def UngrabKeyboard(self, time=CurrentTime):
         assert self.display!=NULL, "display is closed"
