@@ -642,9 +642,9 @@
 
   <distutils id="python-xxhash">
 	<branch repo="pypi.python.org"
-	        module="/packages/06/2d/59697bd6d2e8b277a39a916fcdd17246bd25eeceb107534fe50e128f6e59/xxhash-1.0.1.zip"
-	        hash="sha256:7abe69c9d02374385e23d0e7d6279d5fa03899989d25b381d837fa46cf294831"
-	        version="1.0.1"/>
+	        module="/packages/7a/88/b7f2ce590944d6e879182ecf971f3f2562cd0db23b2de2f1d3110e4ec1b3/xxhash-1.4.2.tar.gz"
+	        hash="sha256:82cdc67b41da904aa2921107e9877814079d9b067a99f19852b5d85e8a40555d"
+	        version="1.4.2"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
