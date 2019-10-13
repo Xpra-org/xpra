@@ -15,7 +15,7 @@ from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type,
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
-from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
+from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, is_Wayland
 from xpra.util import (
     std, envbool, envint, typedict, updict, repr_ellipsized,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
@@ -339,7 +339,7 @@ class UIXpraClient(ClientBaseClass):
         caps["session-type"] = get_session_type()
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
-        if MMAP_SUPPORTED:
+        if MMAP_SUPPORTED and not is_Wayland():
             #we may be running inside another server!
             try:
                 from xpra.server.server_uuid import get_uuid
