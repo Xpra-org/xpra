@@ -1529,9 +1529,9 @@ class ServerCore(object):
             info = conn.get_info()
             endpoint = info.get("endpoint")
             if endpoint:
-                proto_info = " %s" % (endpoint,)
+                proto_info = " %s" % pretty_socket(endpoint)
             else:
-                proto_info = " %s" % (conn.local,)
+                proto_info = " %s" % pretty_socket(conn.local)
         except (KeyError, AttributeError):
             pass
         self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
