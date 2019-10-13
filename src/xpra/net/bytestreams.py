@@ -613,7 +613,7 @@ def log_new_connection(conn, socket_info=""):
         log.info("New %s connection received", socktype)
         log.info(" from '%s'", frominfo)
         if socket_info:
-            log.info(" on %s", pretty_socket(socket_info))
+            log.info(" on '%s'", pretty_socket(socket_info))
     elif socktype=="unix-domain":
         frominfo = sockname
         log.info("New %s connection received", socktype)
