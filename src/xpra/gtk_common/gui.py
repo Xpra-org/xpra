@@ -241,12 +241,12 @@ class StartSession(Gtk.Window):
         vbox.set_spacing(0)
 
         hbox = Gtk.HBox(True, 10)
-        self.seamless_btn = Gtk.RadioButton(None, "Seamless Session")
+        self.seamless_btn = Gtk.RadioButton.new_with_label(None, "Seamless Session")
         self.seamless_btn.connect("toggled", self.seamless_toggled)
         al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.seamless_btn)
         hbox.add(al)
-        self.desktop_btn = Gtk.RadioButton(self.seamless_btn, "Desktop Session")
+        self.desktop_btn = Gtk.RadioButton.new_with_label_from_widget(self.seamless_btn, "Desktop Session")
         #since they're radio buttons, both get toggled,
         #so no need to connect to both signals:
         #self.desktop.connect("toggled", self.desktop_toggled)
