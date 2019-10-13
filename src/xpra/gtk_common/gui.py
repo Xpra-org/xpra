@@ -362,7 +362,9 @@ class StartSession(Gtk.Window):
                         self.categories[name] = submenu
         except Exception:
             log("failed to parse menus", exc_info=True)
-        self.category_combo.get_model().clear()
+        model = self.category_combo.get_model()
+        if model:
+            model.clear()
         for name in sorted(self.categories.keys()):
             self.category_combo.append_text(name)
         if self.categories:
