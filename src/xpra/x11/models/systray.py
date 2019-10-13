@@ -26,7 +26,7 @@ class SystemTrayWindowModel(CoreX11WindowModel):
     _MODELTYPE = "Tray"
 
     def __init__(self, client_window):
-        super(SystemTrayWindowModel, self).__init__(client_window)
+        super().__init__(client_window)
         self._updateprop("tray", True)
 
     def __repr__(self):
@@ -34,7 +34,7 @@ class SystemTrayWindowModel(CoreX11WindowModel):
 
     def _read_initial_X11_properties(self):
         self._internal_set_property("has-alpha", True)
-        super(SystemTrayWindowModel, self)._read_initial_X11_properties()
+        super()._read_initial_X11_properties()
 
     def move_resize(self, x, y, width, height):
         #Used by clients to tell us where the tray is located on screen

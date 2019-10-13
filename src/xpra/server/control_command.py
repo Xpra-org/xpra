@@ -12,7 +12,7 @@ log = Logger("util", "command")
 class ControlError(Exception):
 
     def __init__(self, msg, help_text=None, code=127):
-        super(ControlError, self).__init__(msg)
+        super().__init__(msg)
         self.help = help_text
         self.code = code
 
@@ -43,7 +43,7 @@ class ControlCommand(object):
 class ArgsControlCommand(ControlCommand):
     """ Adds very basic argument validation """
     def __init__(self, name, help_text=None, run=None, validation=(), min_args=None, max_args=None):
-        super(ArgsControlCommand, self).__init__(name, help_text, run)
+        super().__init__(name, help_text, run)
         self.validation = validation
         self.min_args = min_args
         self.max_args = max_args
@@ -66,7 +66,7 @@ class ArgsControlCommand(ControlCommand):
                 args[i] = validation(v)
             except ValueError as e:
                 self.raise_error("argument %i failed validation: %s" % (i+1, e))
-        return super(ArgsControlCommand, self).run(*args)
+        return super().run(*args)
 
     def do_run(self):
         raise NotImplementedError()
@@ -75,7 +75,7 @@ class ArgsControlCommand(ControlCommand):
 class FixedMessageCommand(ControlCommand):
     """ A control command that returns a fixed message """
     def __init__(self, name, message, help_text=None):
-        super(FixedMessageCommand, self).__init__(name, help_text)
+        super().__init__(name, help_text)
         self.message = message
 
     def run(self, *_args):
@@ -86,13 +86,13 @@ class HelloCommand(FixedMessageCommand):
     """ Just says hello """
 
     def __init__(self):
-        super(HelloCommand, self).__init__("hello", "hello", "just says hello back")
+        super().__init__("hello", "hello", "just says hello back")
 
 
 class HelpCommand(ArgsControlCommand):
     """ The help command looks at the 'help' definition of other commands """
     def __init__(self, control_commands):
-        super(HelpCommand, self).__init__("help", max_args=1)
+        super().__init__("help", max_args=1)
         self.control_commands = control_commands
 
     def run(self, *args):
@@ -109,7 +109,7 @@ class HelpCommand(ArgsControlCommand):
 
 class DebugControl(ArgsControlCommand):
     def __init__(self):
-        super(DebugControl, self).__init__("debug", "usage: 'debug enable category', 'debug disable category' or 'debug status'", min_args=1)
+        super().__init__("debug", "usage: 'debug enable category', 'debug disable category' or 'debug status'", min_args=1)
 
     def run(self, *args):
         if len(args)==1 and args[0]=="status":

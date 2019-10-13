@@ -62,7 +62,7 @@ class GTKServerBase(ServerBase):
 
     def signal_quit(self, signum, frame=None):
         gtk_main_quit_on_fatal_exceptions_disable()
-        super(GTKServerBase, self).signal_quit(signum, frame)
+        super().signal_quit(signum, frame)
 
     def do_quit(self):
         log("do_quit: calling gtk_main_quit_really")

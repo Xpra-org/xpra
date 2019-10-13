@@ -17,7 +17,7 @@ from xpra.client.spinner import cv
 class Example(Gtk.Window):
 
     def __init__(self):
-        super(Example, self).__init__()
+        super().__init__()
         self.init_ui()
 
     def init_ui(self):

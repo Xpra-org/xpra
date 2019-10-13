@@ -10,7 +10,7 @@ WIDTH, HEIGHT = 640, 640
 class FPSWindow(gtk.Window):
 
     def __init__(self):
-        super(FPSWindow, self).__init__()
+        super().__init__()
         self.set_default_size(WIDTH, HEIGHT)
         self.set_app_paintable(True)
         self.counter = 0

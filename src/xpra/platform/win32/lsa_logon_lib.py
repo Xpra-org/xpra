@@ -302,7 +302,7 @@ class ContiguousUnicode(ctypes.Structure):
         if name in self._string_names_:
             self._set_unicode_string(name, value)
         else:
-            super(ContiguousUnicode, self).__setattr__(name, value)
+            super().__setattr__(name, value)
 
     @classmethod
     def from_address_copy(cls, address, size=None):
@@ -333,7 +333,7 @@ class MSV1_0_INTERACTIVE_LOGON(AuthInfo):
                 ('_Password',        UNICODE_STRING))
 
     def __init__(self, UserName=None, Password=None, LogonDomainName=None):
-        super(MSV1_0_INTERACTIVE_LOGON, self).__init__()
+        super().__init__()
         if LogonDomainName is not None:
             self.LogonDomainName = LogonDomainName
         if UserName is not None:
@@ -350,7 +350,7 @@ class S4ULogon(AuthInfo):
                 ('_DomainName',        UNICODE_STRING))
 
     def __init__(self, UserPrincipalName=None, DomainName=None, Flags=0):
-        super(S4ULogon, self).__init__()
+        super().__init__()
         self.Flags = Flags
         if UserPrincipalName is not None:
             self.UserPrincipalName = UserPrincipalName
@@ -398,7 +398,7 @@ class SECURITY_ATTRIBUTES(ctypes.Structure):
                 ('bInheritHandle',       wintypes.BOOL))
     def __init__(self, **kwds):
         self.nLength = ctypes.sizeof(self)
-        super(SECURITY_ATTRIBUTES, self).__init__(**kwds)
+        super().__init__(**kwds)
 
 LPSECURITY_ATTRIBUTES = ctypes.POINTER(SECURITY_ATTRIBUTES)
 

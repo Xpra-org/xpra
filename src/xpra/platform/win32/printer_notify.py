@@ -183,7 +183,7 @@ class PRINTER_NOTIFY_OPTIONS_TYPE(ctypes.Structure):
                 ('Count',     wintypes.DWORD),
                 ('_pFields',  wintypes.PWORD))
     def __init__(self, Type=JOB_NOTIFY_TYPE, pFields=None):
-        super(PRINTER_NOTIFY_OPTIONS_TYPE, self).__init__(Type)
+        super().__init__(Type)
         if pFields is not None:
             self.pFields = pFields
     @property
@@ -203,7 +203,7 @@ class PRINTER_NOTIFY_OPTIONS(ctypes.Structure):
                 ('Count',   wintypes.DWORD),
                 ('_pTypes', PPRINTER_NOTIFY_OPTIONS_TYPE))
     def __init__(self, Flags=0, pTypes=None):
-        super(PRINTER_NOTIFY_OPTIONS, self).__init__(2, Flags)
+        super().__init__(2, Flags)
         if pTypes is not None:
             self.pTypes = pTypes
     @property

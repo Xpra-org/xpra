@@ -95,7 +95,7 @@ class WorldWindow(Gtk.Window):
         global world_window
         assert world_window is None, "a world window already exists! (%s)" % world_window
         world_window = self
-        super(WorldWindow, self).__init__()
+        super().__init__()
         self.set_screen(screen)
         self.set_title("Xpra-WorldWindow")
         self.set_skip_taskbar_hint(True)
@@ -166,7 +166,7 @@ class WorldWindow(Gtk.Window):
         htf = self.get_property("has-toplevel-focus")
         focuslog("world window got focus: %s, has-toplevel-focus=%s", event, htf)
         if not htf:
-            #super(WorldWindow, self).do_focus_in_event(*args)
+            #super().do_focus_in_event(*args)
             Gtk.Window.do_focus_in_event(self, event)
             self.reset_x_focus()
 

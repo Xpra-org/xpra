@@ -12,7 +12,7 @@ from xpra.gtk_common.gtk_util import add_close_accel
 class AnimatedColorWindow(Gtk.Window):
 
     def __init__(self):
-        super(AnimatedColorWindow, self).__init__()
+        super().__init__()
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 320)
         self.set_app_paintable(True)

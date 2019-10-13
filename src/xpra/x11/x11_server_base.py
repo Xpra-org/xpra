@@ -114,7 +114,7 @@ class X11ServerBase(X11ServerCore):
             get_saved_dbus_pid, get_saved_dbus_env,
             save_dbus_pid, save_dbus_env,
             )
-        super(X11ServerBase, self).init_dbus(dbus_pid, dbus_env)
+        super().init_dbus(dbus_pid, dbus_env)
         if self.clobber:
             #get the saved pids and env
             self.dbus_pid = get_saved_dbus_pid()

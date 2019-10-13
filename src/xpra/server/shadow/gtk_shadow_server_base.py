@@ -104,7 +104,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def send_updated_screen_size(self):
         log("send_updated_screen_size")
-        super(GTKShadowServerBase, self).send_updated_screen_size()
+        super().send_updated_screen_size()
         if server_features.windows:
             self.recreate_window_models()
 
@@ -154,7 +154,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if not window:
             self.suspend_cursor(proto)
             return None
-        pointer = super(GTKShadowServerBase, self)._adjust_pointer(proto, wid, opointer)
+        pointer = super()._adjust_pointer(proto, wid, opointer)
         #the window may be at an offset (multi-window for multi-monitor):
         wx, wy, ww, wh = window.get_geometry()
         #or maybe the pointer is off-screen:

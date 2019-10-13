@@ -155,7 +155,7 @@ class WindowModel(BaseWindowModel):
         managed, for whatever reason.  ATM, this mostly means that the window
         died somehow before we could do anything with it."""
 
-        super(WindowModel, self).__init__(client_window)
+        super().__init__(client_window)
         self.parking_window = parking_window
         self.corral_window = None
         self.desktop_geometry = desktop_geometry
@@ -172,7 +172,7 @@ class WindowModel(BaseWindowModel):
     #########################################
 
     def setup(self):
-        super(WindowModel, self).setup()
+        super().setup()
 
         ox, oy, ow, oh = self.client_window.get_geometry()[:4]
         # We enable PROPERTY_CHANGE_MASK so that we can call
@@ -281,7 +281,7 @@ class WindowModel(BaseWindowModel):
         #"decorations" needs to be set before reading the X11 properties
         #because handle_wm_normal_hints_change reads it:
         set_if_unset("decorations", -1)
-        super(WindowModel, self)._read_initial_X11_properties()
+        super()._read_initial_X11_properties()
         net_wm_state = self.get_property("state")
         assert net_wm_state is not None, "_NET_WM_STATE should have been read already"
         geom = X11Window.getGeometry(self.xid)
@@ -397,7 +397,7 @@ class WindowModel(BaseWindowModel):
         if event.delivered_to is self.corral_window or self.corral_window is None:
             return
         assert event.window is self.client_window
-        super(WindowModel, self).do_xpra_destroy_event(event)
+        super().do_xpra_destroy_event(event)
 
 
     #########################################

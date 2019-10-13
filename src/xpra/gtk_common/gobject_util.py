@@ -19,7 +19,7 @@ class AutoPropGObjectMixin(object):
     Make sure this is the first entry on your parent list, so super().__init__
     will work right."""
     def __init__(self):
-        super(AutoPropGObjectMixin, self).__init__()
+        super().__init__()
         self._gproperties = {}
 
     def do_get_property(self, pspec):

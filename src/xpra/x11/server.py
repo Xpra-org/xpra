@@ -385,7 +385,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         #when we have clients, this should have been done already
         #in the code that synchonizes the screen resolution
         if not self._server_sources:
-            super(XpraServer, self).set_screen_geometry_attributes(w, h)
+            super().set_screen_geometry_attributes(w, h)
 
     def set_desktops(self, names):
         wm = self._wm
@@ -529,7 +529,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def _add_new_window_common(self, window):
         windowlog("adding window %s", window)
-        wid = super(XpraServer, self)._add_new_window_common(window)
+        wid = super()._add_new_window_common(window)
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("grab", self._window_grab)
@@ -685,7 +685,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def add_control_commands(self):
-        super(XpraServer, self).add_control_commands()
+        super().add_control_commands()
         from xpra.server.control_command import ArgsControlCommand
         cmd = ArgsControlCommand("show-all-windows", "make all the windows visible", validation=[])
         def control_cb():
@@ -1114,7 +1114,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def refresh_window_area(self, window, x, y, width, height, options=None):
-        super(XpraServer, self).refresh_window_area(window, x, y, width, height, options)
+        super().refresh_window_area(window, x, y, width, height, options)
         if self.root_overlay:
             image = window.get_image(x, y, width, height)
             if image:

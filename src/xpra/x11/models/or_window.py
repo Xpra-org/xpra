@@ -26,11 +26,11 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     _MODELTYPE = "OR-Window"
 
     def __init__(self, client_window):
-        super(OverrideRedirectWindowModel, self).__init__(client_window)
+        super().__init__(client_window)
         self._updateprop("override-redirect", True)
 
     def setup(self):
-        super(OverrideRedirectWindowModel, self).setup()
+        super().setup()
         # So now if the window becomes unmapped in the future then we will
         # notice... but it might be unmapped already, and any event
         # already generated, and our request for that event is too late!

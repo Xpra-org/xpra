@@ -102,7 +102,7 @@ class X11ServerCore(GTKServerBase):
         if server_features.windows:
             from xpra.x11.x11_window_filters import init_x11_window_filters
             init_x11_window_filters()
-        super(X11ServerCore, self).server_init()
+        super().server_init()
 
     def do_init(self, opts):
         self.opengl = opts.opengl
@@ -295,7 +295,7 @@ class X11ServerCore(GTKServerBase):
 
     def get_child_env(self):
         #adds fakeXinerama:
-        env = super(X11ServerCore, self).get_child_env()
+        env = super().get_child_env()
         if self.fake_xinerama and self.libfakeXinerama_so:
             env["LD_PRELOAD"] = self.libfakeXinerama_so
         return env
@@ -437,7 +437,7 @@ class X11ServerCore(GTKServerBase):
         return cinfo
 
     def get_window_info(self, window):
-        info = super(X11ServerCore, self).get_window_info(window)
+        info = super().get_window_info(window)
         info["XShm"] = window.uses_XShm()
         info["geometry"] = window.get_geometry()
         return info

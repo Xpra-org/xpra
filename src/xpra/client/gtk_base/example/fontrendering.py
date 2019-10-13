@@ -25,7 +25,7 @@ BLACK = (0, 0, 0)
 class FontWindow(Gtk.Window):
 
     def __init__(self):
-        super(FontWindow, self).__init__()
+        super().__init__()
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(1600, 1200)
         self.set_app_paintable(True)

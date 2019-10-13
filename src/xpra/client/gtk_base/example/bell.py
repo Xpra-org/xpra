@@ -14,7 +14,7 @@ from gi.repository import Gtk
 
 class BellWindow(Gtk.Window):
     def __init__(self):
-        super(BellWindow, self).__init__()
+        super().__init__()
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 120)
         self.set_title("Test System Bell")

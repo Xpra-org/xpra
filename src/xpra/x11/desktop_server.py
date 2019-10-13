@@ -323,7 +323,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         pass
 
     def print_screen_info(self):
-        super(XpraDesktopServer, self).print_screen_info()
+        super().print_screen_info()
         root_w, root_h = get_root_size()
         sss = get_screen_sizes()
         log_screen_sizes(root_w, root_h, sss)
@@ -432,7 +432,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
                 model = DesktopModel(root, self.randr_exact_size)
                 model.setup()
                 windowlog("adding root window model %s", model)
-                super(XpraDesktopServer, self)._add_new_window_common(model)
+                super()._add_new_window_common(model)
                 model.managed_connect("client-contents-changed", self._contents_changed)
                 model.managed_connect("resized", self._window_resized_signaled)
 
@@ -563,7 +563,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         if not window:
             self.suspend_cursor(proto)
             return None
-        pointer = super(XpraDesktopServer, self)._adjust_pointer(proto, wid, pointer)
+        pointer = super()._adjust_pointer(proto, wid, pointer)
         #maybe the pointer is off-screen:
         ww, wh = window.get_dimensions()
         x, y = pointer[:2]

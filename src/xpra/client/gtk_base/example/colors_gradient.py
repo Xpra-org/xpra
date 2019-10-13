@@ -12,7 +12,7 @@ from xpra.gtk_common.gtk_util import add_close_accel
 class ColorGradientWindow(Gtk.Window):
 
     def __init__(self):
-        super(ColorGradientWindow, self).__init__()
+        super().__init__()
         self.set_title("Color Gradient")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(1024, 768)

@@ -200,7 +200,7 @@ class CoreX11WindowModel(WindowModelStub):
                               "_NET_FRAME_EXTENTS", "_NET_WM_ALLOWED_ACTIONS"]
 
     def __init__(self, client_window):
-        super(CoreX11WindowModel, self).__init__()
+        super().__init__()
         self.xid = client_window.get_xid()
         log("new window %#x", self.xid)
         self.client_window = client_window

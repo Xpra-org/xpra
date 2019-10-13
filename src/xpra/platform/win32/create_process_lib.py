@@ -148,7 +148,7 @@ class STARTUPINFO(ctypes.Structure):
 
     def __init__(self, **kwds):
         self.cb = ctypes.sizeof(self)
-        super(STARTUPINFO, self).__init__(**kwds)
+        super().__init__(**kwds)
 
 class PROC_THREAD_ATTRIBUTE_LIST(ctypes.Structure):
     pass
@@ -167,7 +167,7 @@ class SECURITY_ATTRIBUTES(ctypes.Structure):
                 ('bInheritHandle',       wintypes.BOOL))
     def __init__(self, **kwds):
         self.nLength = ctypes.sizeof(self)
-        super(SECURITY_ATTRIBUTES, self).__init__(**kwds)
+        super().__init__(**kwds)
 
 LPSECURITY_ATTRIBUTES = ctypes.POINTER(SECURITY_ATTRIBUTES)
 
@@ -388,7 +388,7 @@ class Popen(subprocess.Popen):
         if kwds.pop('suspended', False):
             ci.dwCreationFlags |= CREATE_SUSPENDED
         self._child_started = False
-        super(Popen, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
     def _execute_child(self, args, executable, preexec_fn, close_fds,
                        pass_fds, cwd, env, startupinfo, creationflags,
@@ -481,4 +481,4 @@ class Popen(subprocess.Popen):
             finally:
                 if hasattr(self, '_handle'):
                     self.terminate()
-        super(Popen, self).__del__()        #pylint: disable=no-member
+        super().__del__()        #pylint: disable=no-member

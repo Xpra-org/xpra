@@ -212,7 +212,7 @@ class BaseWindowModel(CoreX11WindowModel):
     _MODELTYPE = "Base"
 
     def __init__(self, client_window):
-        super(BaseWindowModel, self).__init__(client_window)
+        super().__init__(client_window)
         self.last_unmap_serial = 0
         self._input_field = True            # The WM_HINTS input field
 
@@ -230,7 +230,7 @@ class BaseWindowModel(CoreX11WindowModel):
     def _read_initial_X11_properties(self):
         metalog("%s.read_initial_X11_properties()", self._MODELTYPE)
         self._updateprop("state", frozenset(self._read_wm_state()))
-        super(BaseWindowModel, self)._read_initial_X11_properties()
+        super()._read_initial_X11_properties()
 
     def _guess_window_type(self):
         #query the X11 property directly,
@@ -499,14 +499,14 @@ class BaseWindowModel(CoreX11WindowModel):
             #virtual property for WM_STATE:
             self.update_state(pspec.name, value)
             return
-        super(BaseWindowModel, self).do_set_property(pspec, value)
+        super().do_set_property(pspec, value)
 
     def do_get_property(self, pspec):
         #intercept state properties to route via get_wm_state()
         if pspec.name in self._state_properties:
             #virtual property for WM_STATE:
             return self.get_wm_state(pspec.name)
-        return super(BaseWindowModel, self).do_get_property(pspec)
+        return super().do_get_property(pspec)
 
 
     def update_wm_state(self, prop, b):
