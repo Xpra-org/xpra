@@ -18,7 +18,7 @@ from xpra.gtk_common.gtk_util import (
     window_defaults, scaled_image, WIN_POS_CENTER,
     )
 from xpra.platform.paths import get_icon_dir, get_xpra_command
-from xpra.os_util import OSX, WIN32, platform_name
+from xpra.os_util import OSX, WIN32, PYTHON3, platform_name
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -249,12 +249,19 @@ class StartSession(gtk.Window):
         vbox.set_spacing(0)
 
         hbox = gtk.HBox(True, 10)
-        self.seamless_btn = gtk.RadioButton(None, "Seamless Session")
+
+        if PYTHON3:
+            self.seamless_btn = gtk.RadioButton.new_with_label(None, "Seamless Session")
+        else:
+            self.seamless_btn = gtk.RadioButton(None, "Seamless Session")
         self.seamless_btn.connect("toggled", self.seamless_toggled)
         al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.seamless_btn)
         hbox.add(al)
-        self.desktop_btn = gtk.RadioButton(self.seamless_btn, "Desktop Session")
+        if PYTHON3:
+            self.desktop_btn = gtk.RadioButton.new_with_label_from_widget(self.seamless_btn, "Desktop Session")
+        else:
+            self.desktop_btn = gtk.RadioButton(self.seamless_btn, "Desktop Session")
         #since they're radio buttons, both get toggled,
         #so no need to connect to both signals:
         #self.desktop.connect("toggled", self.desktop_toggled)
