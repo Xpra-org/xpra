@@ -46,6 +46,7 @@ log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
 framelog = Logger("gtk", "client", "frame")
+screenlog = Logger("gtk", "client", "screen")
 filelog = Logger("gtk", "client", "file")
 clipboardlog = Logger("gtk", "client", "clipboard")
 notifylog = Logger("gtk", "notify")
@@ -323,6 +324,36 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.client.window_border import WindowBorder
         self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
         log("parse_border(%s)=%s", border_str, self.border)
+
+
+    def parse_scaling(self, desktop_scaling):
+        #The screen may be using a scale factor:
+        if desktop_scaling=="auto":
+            screen = Gdk.Screen.get_default()
+            screenlog("parse_scaling(%s) screen=%s", desktop_scaling, screen)
+            if screen:
+                n = screen.get_n_monitors()
+                scale_factors = []
+                screenlog("%i monitors", n)
+                for i in range(n):
+                    try:
+                        scale_factor = screen.get_monitor_scale_factor(i)
+                    except Exception as e:
+                        log("no scale factor: %s", e)
+                        scale_factor = -1
+                    screenlog("get_monitor_scale_factor(%i)=%s", i, scale_factor)
+                    scale_factors.append(scale_factor)
+                if n and all(v==scale_factors[0] for v in scale_factors):
+                    #all screens use the same scale factor:
+                    scale_factor = scale_factors[0]
+                    if n>1:
+                        screenlog.info("screen scale factor on all %i screens: %s", n, scale_factor)
+                    else:
+                        screenlog.info("using screen scale factor: %s", scale_factor)
+                    self.initial_scaling = scale_factor, scale_factor
+                    self.xscale, self.yscale = self.initial_scaling
+                    return 
+        super().parse_scaling(desktop_scaling)
 
 
     def show_server_commands(self, *_args):

@@ -49,6 +49,7 @@ class DisplayClient(StubClientMixin):
     def __init__(self):
         StubClientMixin.__init__(self)
         self.dpi = 0
+        self.can_scale = False
         self.initial_scaling = 1, 1
         self.xscale, self.yscale = self.initial_scaling
         self.scale_change_embargo = float("inf")
@@ -69,10 +70,13 @@ class DisplayClient(StubClientMixin):
         self.dpi = int(opts.dpi)
         self.can_scale = opts.desktop_scaling not in FALSE_OPTIONS
         if self.can_scale:
-            root_w, root_h = self.get_root_size()
-            from xpra.client.scaling_parser import parse_scaling
-            self.initial_scaling = parse_scaling(opts.desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
-            self.xscale, self.yscale = self.initial_scaling
+            self.parse_scaling(opts.desktop_scaling)
+
+    def parse_scaling(self, desktop_scaling):
+        root_w, root_h = self.get_root_size()
+        from xpra.client.scaling_parser import parse_scaling
+        self.initial_scaling = parse_scaling(desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
+        self.xscale, self.yscale = self.initial_scaling
 
     def cleanup(self):
         ssct = self.screen_size_change_timer
