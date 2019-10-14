@@ -13,7 +13,7 @@ from xpra.util import nonl, typedict, envbool, iround
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
+from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString, BLACKLISTED_XSETTINGS
 from xpra.log import Logger
 
 log = Logger("x11", "server")
@@ -291,6 +291,9 @@ class X11ServerBase(X11ServerCore):
                     if len(parts)!=2:
                         log("skipped invalid option: '%s'", option)
                         continue
+                    if parts[0] in BLACKLISTED_XSETTINGS:
+                        log("skipped blacklisted option: '%s'", option)
+                        continue
                     values[parts[0]] = parts[1]
                 if cursor_size>0:
                     values["Xcursor.size"] = cursor_size
@@ -328,6 +331,17 @@ class X11ServerBase(X11ServerCore):
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
             if k==b"xsettings-blob" and \
             (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
+                #start by removing blacklisted options:
+                def filter_blacklisted():
+                    serial, values = v
+                    new_values = []
+                    for _t,_n,_v,_s in values:
+                        if bytestostr(_n) in BLACKLISTED_XSETTINGS:
+                            log("skipped blacklisted option %s", (_t, _n, _v, _s))
+                        else:
+                            new_values.append((_t, _n, _v, _s))
+                    return serial, new_values
+                v = filter_blacklisted()
                 def set_xsettings_value(name, value_type, value):
                     #remove existing one, if any:
                     serial, values = v
