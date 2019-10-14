@@ -812,16 +812,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         display = Gdk.Display.get_default()
         cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
                   len(cursor_data)>=10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
-        #named cursors cannot be scaled
-        #(round to 10 to compare so 0.95 and 1.05 are considered the same as 1.0, no scaling):
-        if len(cursor_data)>=10 and cursor_types and iround(self.xscale*10)==10 and iround(self.yscale*10)==10:
+        pixbuf = None
+        if len(cursor_data)>=10 and cursor_types:
             cursor_name = bytestostr(cursor_data[9])
             if cursor_name and USE_LOCAL_CURSORS:
                 gdk_cursor = cursor_types.get(cursor_name.upper())
                 if gdk_cursor is not None:
-                    cursorlog("setting new cursor by name: %s=%s", cursor_name, gdk_cursor)
                     try:
-                        return Gdk.Cursor.new_for_display(display, gdk_cursor)
+                        cursor = Gdk.Cursor.new_for_display(display, gdk_cursor)
+                        cursorlog("Cursor.new_for_display(%s, %s)=%s", display, gdk_cursor, cursor)
+                        pixbuf = cursor.get_image()
+                        cursorlog("image=%s", pixbuf)
                     except TypeError as e:
                         log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
                         if first_time("cursor:%s" % cursor_name.upper()):
@@ -836,12 +837,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if encoding!="raw":
             cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
             return None
-        if len(pixels)<w*h*4:
-            cursorlog.warn("Warning: not enough pixels provided in cursor data")
-            cursorlog.warn(" %s needed and only %s bytes found:", w*h*4, len(pixels))
-            cursorlog.warn(" '%s')", repr_ellipsized(hexstr(pixels)))
-            return None
-        pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
+        if not pixbuf:
+            if len(pixels)<w*h*4:
+                cursorlog.warn("Warning: not enough pixels provided in cursor data")
+                cursorlog.warn(" %s needed and only %s bytes found:", w*h*4, len(pixels))
+                cursorlog.warn(" '%s')", repr_ellipsized(hexstr(pixels)))
+                return None
+            pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
+        else:
+            w = pixbuf.get_width()
+            h = pixbuf.get_height()
+            pixels = pixbuf.get_pixels()
         x = max(0, min(xhot, w-1))
         y = max(0, min(yhot, h-1))
         csize = display.get_default_cursor_size()
