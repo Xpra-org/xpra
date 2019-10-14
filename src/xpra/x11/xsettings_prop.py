@@ -14,6 +14,7 @@ and
 It is used by xpra.x11.gtk_x11.prop
 """
 
+import os
 import sys
 import struct
 
@@ -25,6 +26,8 @@ from xpra.os_util import PYTHON3, strtobytes, bytestostr
 log = Logger("x11", "xsettings")
 
 DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
+BLACKLISTED_XSETTINGS = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
+                                       "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule").split(",")
 
 
 if PYTHON3:
