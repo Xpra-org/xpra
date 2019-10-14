@@ -83,6 +83,7 @@ def main():
     w = AnimatedColorWindow()
     add_close_accel(w, Gtk.main_quit)
     Gtk.main()
+    return 0
 
 
 if __name__ == "__main__":

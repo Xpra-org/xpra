@@ -145,6 +145,9 @@ def configure_logging(options, mode):
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-mdns", "sessions", "mdns-gui", "bug-report",
         "opengl", "opengl-probe", "test-connect",
+        "encoding", "webcam", "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
+        "printing-info", "version-info", "gtk-info",
+        "colors-test", "colors-gradient-test", "transparent-colors", "transparent-window",
         ):
         s = sys.stdout
     else:
@@ -468,6 +471,51 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_glcheck(options)
         elif mode=="opengl-probe":
             return run_glprobe(options)
+        elif mode=="encoding":
+            from xpra.codecs import loader
+            return loader.main()
+        elif mode=="webcam":
+            from xpra.scripts import show_webcam
+            return show_webcam.main()
+        elif mode=="keyboard":
+            from xpra.platform import keyboard
+            return keyboard.main()
+        elif mode=="keyboard-test":
+            from xpra.gtk_common import gtk_view_keyboard
+            return gtk_view_keyboard.main()
+        elif mode=="keymap":
+            from xpra.gtk_common import keymap
+            return keymap.main()
+        elif mode=="gtk-info":
+            from xpra.scripts import gtk_info
+            return gtk_info.main()
+        elif mode=="gui-info":
+            from xpra.platform import gui
+            return gui.main()
+        elif mode=="network-info":
+            from xpra.net import net_util
+            return net_util.main()
+        elif mode=="path-info":
+            from xpra.platform import paths
+            return paths.main()
+        elif mode=="printing-info":
+            from xpra.platform import printing
+            return printing.main()
+        elif mode=="version-info":
+            from xpra.scripts import version
+            return version.main()
+        elif mode=="colors-test":
+            from xpra.client.gtk_base.example import colors
+            return colors.main()
+        elif mode=="colors-gradient-test":
+            from xpra.client.gtk_base.example import colors_gradient
+            return colors_gradient.main()
+        elif mode=="transparent-colors":
+            from xpra.client.gtk_base.example import transparent_colors
+            return transparent_colors.main()
+        elif mode=="transparent-window":
+            from xpra.client.gtk_base.example import transparent_window
+            return transparent_window.main()
         elif mode == "initenv":
             from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)

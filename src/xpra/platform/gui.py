@@ -322,6 +322,7 @@ def main():
             init_posix_display_source()
         i = get_info()
         print_nested_dict(i, hex_keys=("data", "icc-data", "icc-profile"))
+    return 0
 
 
 if __name__ == "__main__":

@@ -507,6 +507,7 @@ def main():
         except Exception as e:
             print("No Crypto:")
             print(" %s" % e)
+    return 0
 
 
 if __name__ == "__main__":

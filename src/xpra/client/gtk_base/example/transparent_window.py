@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import cairo
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 from xpra.gtk_common.gtk_util import add_close_accel
 
@@ -59,6 +59,7 @@ def main():
     w = TransparentWindow()
     add_close_accel(w, Gtk.main_quit)
     Gtk.main()
+    return 0
 
 
 if __name__ == "__main__":

@@ -24,6 +24,9 @@ class KeyboardStateInfoWindow:
         vbox.set_spacing(15)
         label = Gtk.Label("Keyboard State")
         label.modify_font(Pango.FontDescription("sans 13"))
+        #patch pack_start:
+        from xpra.gtk_common.gtk_util import pack_start
+        assert pack_start
         vbox.pack_start(label)
 
         self.modifiers = Gtk.Label()
@@ -117,6 +120,7 @@ def main():
         enable_color()
         KeyboardStateInfoWindow()
         Gtk.main()
+    return 0
 
 
 if __name__ == "__main__":

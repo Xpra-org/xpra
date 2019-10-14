@@ -46,9 +46,9 @@ def main():
         print("")
         layout,layouts,variant,variants, options = keyboard.get_layout_spec()
         print("Layout:     '%s'" % bytestostr(layout or b""))
-        print("Layouts:    %s" % csv("'%s'" % x for x in (layouts or [])))
+        print("Layouts:    %s" % csv("'%s'" % bytestostr(x) for x in (layouts or [])))
         print("Variant:    '%s'" % bytestostr(variant or b""))
-        print("Variants:   %s" % csv("'%s'" % x for x in (variants or [])))
+        print("Variants:   %s" % csv("'%s'" % bytestostr(x) for x in (variants or [])))
         print("Options:    %s" % (options))
         print("")
         print("Repeat:     %s" % csv(keyboard.get_keyboard_repeat()))
@@ -58,6 +58,7 @@ def main():
                 print("Keysyms:")
                 for keycode,keysyms in keysyms.items():
                     print(" %3i    : %s" % (keycode, csv(keysyms)))
+    return 0
 
 
 if __name__ == "__main__":
