@@ -329,31 +329,37 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def parse_scaling(self, desktop_scaling):
         #The screen may be using a scale factor:
         if desktop_scaling=="auto":
-            screen = Gdk.Screen.get_default()
-            screenlog("parse_scaling(%s) screen=%s", desktop_scaling, screen)
-            if screen:
-                n = screen.get_n_monitors()
-                scale_factors = []
-                screenlog("%i monitors", n)
-                for i in range(n):
-                    try:
-                        scale_factor = screen.get_monitor_scale_factor(i)
-                    except Exception as e:
-                        log("no scale factor: %s", e)
-                        scale_factor = -1
-                    screenlog("get_monitor_scale_factor(%i)=%s", i, scale_factor)
-                    scale_factors.append(scale_factor)
-                if n and all(v==scale_factors[0] for v in scale_factors):
-                    #all screens use the same scale factor:
-                    scale_factor = scale_factors[0]
-                    if n>1:
-                        screenlog.info("screen scale factor on all %i screens: %s", n, scale_factor)
-                    else:
-                        screenlog.info("using screen scale factor: %s", scale_factor)
-                    self.initial_scaling = scale_factor, scale_factor
-                    self.xscale, self.yscale = self.initial_scaling
-                    return 
+            scale_factor = self.get_screen_scaling()
+            if scale_factor is not None:
+                self.initial_scaling = scale_factor, scale_factor
+                self.xscale, self.yscale = self.initial_scaling
+                return
         super().parse_scaling(desktop_scaling)
+
+    def get_screen_scaling(self):
+        #The screen may be using a scale factor:
+        screen = Gdk.Screen.get_default()
+        screenlog("get_screen_scaling() screen=%s", screen)
+        if not screen:
+            return None
+        n = screen.get_n_monitors()
+        if n<1:
+            return None
+        scale_factors = []
+        screenlog("%i monitors", n)
+        for i in range(n):
+            try:
+                scale_factor = screen.get_monitor_scale_factor(i)
+            except Exception as e:
+                log("no scale factor: %s", e)
+                scale_factor = -1
+            screenlog("get_monitor_scale_factor(%i)=%s", i, scale_factor)
+            scale_factors.append(scale_factor)
+        scale_factor = scale_factors[0]
+        if any(v!=scale_factor for v in scale_factors):
+            #not all screens use the same scale factor:
+            return None
+        return scale_factor
 
 
     def show_server_commands(self, *_args):

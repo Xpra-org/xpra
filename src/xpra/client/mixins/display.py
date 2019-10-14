@@ -183,6 +183,9 @@ class DisplayClient(StubClientMixin):
                 },
             }
 
+    def get_screen_scaling(self):
+        return None
+
     #this is the format we should be moving towards
     #with proper namespace:
     #def get_info(self) -> dict:
@@ -238,11 +241,13 @@ class DisplayClient(StubClientMixin):
                     self.scalingoff()
             elif self.mmap_enabled:
                 if self.desktop_scaling=="auto":
-                    log.info(" no need for scaling with mmap")
-                    skip_vfb_size_check = self.xscale>1 or self.yscale>1
-                    self.scale_change_embargo = 0
-                    self.scalingoff()
-                    self.can_scale = False
+                    scale_factor = self.get_screen_scaling()
+                    if not scale_factor:
+                        log.info(" no need for scaling with mmap")
+                        skip_vfb_size_check = self.xscale>1 or self.yscale>1
+                        self.scale_change_embargo = 0
+                        self.scalingoff()
+                        self.can_scale = False
         if self.can_scale:
             self.may_adjust_scaling()
         if not self.server_is_desktop and not skip_vfb_size_check and self.server_max_desktop_size:
