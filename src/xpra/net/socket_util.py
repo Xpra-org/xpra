@@ -480,7 +480,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
             for sockpath, options in sockpaths.items():
                 npl = NamedPipeListener(sockpath)
                 log.info("created named pipe '%s'", sockpath)
-                defs.append(("named-pipe", npl, sockpath, npl.stop))
+                defs[("named-pipe", npl, sockpath, npl.stop)] = options
         else:
             def checkstate(sockpath, state):
                 if state not in (DotXpra.DEAD, DotXpra.UNKNOWN):
