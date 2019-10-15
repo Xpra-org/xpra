@@ -333,7 +333,10 @@ class typedict(dict):
             return d
 
     def boolget(self, k, default_value=False):
-        return bool(self.capsget(k, default_value))
+        v = self.capsget(k)
+        if v is None:
+            return default_value
+        return bool(v)
 
     def dictget(self, k, default_value=None):
         v = self.capsget(k, default_value)
