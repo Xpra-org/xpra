@@ -43,9 +43,6 @@ DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = [
                                          ]
 
 
-CLIENT_MODULES = ["xpra.client.gtk3.client"]
-
-
 SOCKET_OPTIONS = (
     "SO_BROADCAST", "SO_RCVLOWAT",
     "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
@@ -77,7 +74,6 @@ _features_list_ = [
                    "CLIPBOARD_GREEDY",
                    "CLIPBOARD_PREFERRED_TARGETS",
                    "EXECUTABLE_EXTENSION",
-                   "CLIENT_MODULES",
                    "INPUT_DEVICES",
                    "SYSTEM_PROXY_SOCKET",
                    "OPEN_COMMAND",

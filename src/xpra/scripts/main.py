@@ -1623,13 +1623,8 @@ def make_client(error_cb, opts):
     mixin_features.tray             = b(opts.tray)
     mixin_features.network_state    = True
     mixin_features.encoding         = opts.windows
-    from xpra.platform.features import CLIENT_MODULES
-    for client_module in CLIENT_MODULES:
-        #ie: "xpra.client.gtk2.client"
-        toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
-        if toolkit_module:
-            return toolkit_module.XpraClient()
-    error_cb("could not load %s" % csv(CLIENT_MODULES))
+    from xpra.client.gtk3.client import XpraClient
+    return XpraClient()
 
 def do_run_client(app):
     try:
