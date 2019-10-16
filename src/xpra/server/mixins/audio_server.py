@@ -167,7 +167,7 @@ class AudioServer(StubServerMixin):
         try:
             soundlog("pulseaudio cmd=%s", " ".join(cmd))
             soundlog("pulseaudio env=%s", env)
-            self.pulseaudio_proc = subprocess.Popen(cmd, stdin=None, env=env)
+            self.pulseaudio_proc = subprocess.Popen(cmd, env=env)
         except Exception as e:
             soundlog("Popen(%s)", cmd, exc_info=True)
             soundlog.error("Error: failed to start pulseaudio:")
@@ -185,7 +185,7 @@ class AudioServer(StubServerMixin):
                 if p is None or p.poll() is not None:
                     return
                 for i, x in enumerate(self.pulseaudio_configure_commands):
-                    proc = subprocess.Popen(x, stdin=None, env=env, shell=True)
+                    proc = subprocess.Popen(x, env=env, shell=True)
                     self.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
             self.timeout_add(2*1000, configure_pulse)
 

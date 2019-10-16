@@ -451,7 +451,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 #start the server:
                 if config.START_SERVER:
                     print("starting server: %s" % str(start_server_command))
-                    server_process = Popen(start_server_command, stdin=None)
+                    server_process = Popen(start_server_command)
                     #give it time to settle down:
                     t = config.SERVER_SETTLE_TIME
                     if count==1:
@@ -478,7 +478,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
 
                     print("starting test command: %s with env=%s, settle time=%s" % (cmd, env, test_command_settle_time))
                     shell = isinstance(cmd, str)
-                    test_command_process = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, env=env, shell=shell)
+                    test_command_process = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env, shell=shell)
 
                     if config.PREVENT_SLEEP:
                         Popen(config.PREVENT_SLEEP_COMMAND)
@@ -537,7 +537,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     for s in stop_server_commands:
                         print("stopping server with: %s" % (s))
                         try:
-                            stop_process = Popen(s, stdin=None, stdout=PIPE, stderr=PIPE, shell=True)
+                            stop_process = Popen(s, stdout=PIPE, stderr=PIPE, shell=True)
                             stop_process.wait()
                         except Exception as e:
                             print("error: %s" % e)
@@ -915,7 +915,7 @@ def get_vnc_stats(initial_stats=None, all_stats=[]):
         tcbench_log  = open(config.TCBENCH_LOG, 'w')
         try:
             print("tcbench starting: %s, logging to %s" % (command, config.TCBENCH_LOG))
-            proc = Popen(command, stdin=None, stdout=tcbench_log, stderr=tcbench_log)
+            proc = Popen(command, stdout=tcbench_log, stderr=tcbench_log)
             return {"tcbench" : proc}
         except Exception as e:
             import traceback

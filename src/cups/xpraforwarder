@@ -55,7 +55,7 @@ def err(msg):
 def exec_command(command, env=os.environ.copy()):
     info("running: %s" % command)
     PIPE = subprocess.PIPE
-    proc = subprocess.Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, env=env)
+    proc = subprocess.Popen(command, stdout=PIPE, stderr=PIPE, env=env)
     out,err = proc.communicate()
     info("returncode=%s" % proc.returncode)
     if proc.returncode!=0:

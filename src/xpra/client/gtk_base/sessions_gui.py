@@ -188,7 +188,7 @@ class SessionsGUI(Gtk.Window):
         else:
             socktype = "socket"
         cmd = get_nodock_command()+["id", "%s:%s" % (socktype, sockpath)]
-        p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout = p.communicate()[0]
         log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
         if p.returncode!=0:

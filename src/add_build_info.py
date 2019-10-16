@@ -119,7 +119,7 @@ def get_status_output(*args, **kwargs):
 
 def get_output_lines(cmd, valid_exit_code=0):
     try:
-        returncode, stdout, stderr = get_status_output(cmd, stdin=None, shell=True)
+        returncode, stdout, stderr = get_status_output(cmd, shell=True)
         if returncode!=valid_exit_code:
             print("'%s' failed with return code %s" % (cmd, returncode))
             print("stderr: %s" % stderr)
@@ -293,7 +293,7 @@ def get_svn_props():
                 "LOCAL_MODIFICATIONS" : "unknown"
             }
     #find revision:
-    proc = subprocess.Popen("svnversion -n ..", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("svnversion -n ..", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
     if proc.returncode!=0:
         print("'svnversion -n' failed with return code %s" % proc.returncode)
@@ -320,7 +320,7 @@ def get_svn_props():
     props["REVISION"] = rev
     #find number of local files modified:
     changes = 0
-    proc = subprocess.Popen("svn status", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("svn status", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
     if proc.poll()!=0:
         print("could not get status of local files")

@@ -23,7 +23,7 @@ def main():
        ]
     def preexec_fn():
         close_fds([0, 1, 2, r_pipe, w_pipe])
-    proc = subprocess.Popen(cmd, stdin=None, stdout=None, stderr=None, close_fds=False, preexec_fn=preexec_fn)
+    proc = subprocess.Popen(cmd, close_fds=False, preexec_fn=preexec_fn)
     print("Popen(%s)=%s" % (cmd, proc))
     buf = read_displayfd(r_pipe, timeout=30, proc=proc)
     print("read_displayfd(%i)='%s'" % (r_pipe, nonl(buf)))
