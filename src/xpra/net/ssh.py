@@ -21,7 +21,7 @@ from xpra.os_util import (
     is_WSL, WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, nonl, engs
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 
 log = Logger("network", "ssh")
 
@@ -56,6 +56,8 @@ def keymd5(k):
 
 
 def exec_dialog_subprocess(cmd):
+    if is_debug_enabled("ssh"):
+        cmd += ["-d", "all"]
     try:
         log("exec_dialog_subprocess(%s)", cmd)
         kwargs = {}
@@ -72,10 +74,10 @@ def exec_dialog_subprocess(cmd):
             #WSL needs to wait before calling communicate?
             proc.wait()
         stdout, stderr = proc.communicate()
-        log("exec_dialog_subprocess(%s)", cmd)
+        log("exec_dialog_subprocess(%s) returncode=%s", cmd, proc.poll())
         if stderr:
             log.warn("Warning: dialog process error output:")
-            for x in stderr.splitlines():
+            for x in stderr.decode().splitlines():
                 log.warn(" %s", x)
         return proc.returncode, stdout
     except Exception as e:
@@ -105,7 +107,7 @@ def confirm_key(info=()):
         icon = get_icon_filename("authentication", "png") or ""
         prompt = "Are you sure you want to continue connecting?"
         code, out = dialog_confirm("Confirm Key", prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
-        log.debug("dialog output: '%s', return code=%s", nonl(out), code)
+        log("dialog output: '%s', return code=%s", nonl(out), code)
         r = code==200
         log.info("host key %sconfirmed", ["not ", ""][r])
         return r
@@ -123,7 +125,7 @@ def input_pass(prompt):
     if not use_tty():
         icon = get_icon_filename("authentication", "png") or ""
         code, out = dialog_pass("Password Input", prompt, icon)
-        log.debug("pass dialog output return code=%s", code)
+        log("pass dialog output return code=%s", code)
         if code!=0:
             return None
         return out
