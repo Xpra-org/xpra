@@ -21,9 +21,9 @@ def parse_auth_line(line):
     username = ldata[0]
     password = ldata[1]
     if len(ldata)>=5:
-        uid = parse_uid(ldata[2])
-        gid = parse_gid(ldata[3])
-        displays = ldata[4].split(b",")
+        uid = parse_uid(bytestostr(ldata[2]))
+        gid = parse_gid(bytestostr(ldata[3]))
+        displays = bytestostr(ldata[4]).split(",")
     else:
         #this will use the default value, usually "nobody":
         uid = parse_uid(None)
