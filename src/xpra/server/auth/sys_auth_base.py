@@ -23,7 +23,7 @@ def parse_uid(v) -> int:
     if v:
         try:
             return int(v)
-        except TypeError:
+        except (TypeError, ValueError):
             log("uid '%s' is not an int", v)
     if POSIX:
         try:
@@ -39,7 +39,7 @@ def parse_gid(v) -> int:
     if v:
         try:
             return int(v)
-        except TypeError:
+        except (TypeError, ValueError):
             log("gid '%s' is not an int", v)
     if POSIX:
         try:
