@@ -3,8 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject               #@UnresolvedImport
-from gi.repository import Gdk                   #@UnresolvedImport
+from gi.repository import GObject, Gdk               #@UnresolvedImport
 
 from xpra.os_util import OSX, POSIX, is_Wayland
 from xpra.gtk_common.gobject_compat import register_os_signals
