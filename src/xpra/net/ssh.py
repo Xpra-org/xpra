@@ -67,17 +67,36 @@ def exec_dialog_subprocess(cmd):
             env = os.environ.copy()
             env["XPRA_LOG_TO_FILE"] = "0"
             kwargs["env"] = env
-        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, **kwargs)
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, **kwargs)
+        stdout = []
+        stderr = []
+        from gi.repository import Gtk
+        def read_thread(fd, out):
+            while proc.poll() is None:
+                try:
+                    v = fd.read()
+                    if v:
+                        out.append(v)
+                except:
+                    time.sleep(0.1)
+            try:
+                Gtk.main_quit()
+            except:
+                pass
+        from xpra.make_thread import start_thread
+        start_thread(read_thread, "dialog-stdout-reader", True, (proc.stdout, stdout))
+        start_thread(read_thread, "dialog-stderr-reader", True, (proc.stderr, stderr))
         if is_WSL():
-            #WSL needs to wait before calling communicate?
+            #WSL needs to wait before calling communicate,
+            #is this still needed now that we read using threads?
             proc.wait()
-        stdout, stderr = proc.communicate()
+        Gtk.main()
         log("exec_dialog_subprocess(%s) returncode=%s", cmd, proc.poll())
         if stderr:
             log.warn("Warning: dialog process error output:")
-            for x in stderr.decode().splitlines():
+            for x in (b"".join(stderr)).decode().splitlines():
                 log.warn(" %s", x)
-        return proc.returncode, stdout
+        return proc.returncode, (b"".join(stdout)).decode()
     except Exception as e:
         log("exec_dialog_subprocess(..)", exc_info=True)
         log.error("Error: failed to execute the dialog subcommand")
