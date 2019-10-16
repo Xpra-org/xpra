@@ -9,7 +9,7 @@ def main():
     from xpra.os_util import close_all_fds
     import subprocess
     #proc = subprocess.Popen(["xpra", "start", "--no-daemon", "--systemd-run=no", ":100"], stdin=None, stdout=None, stderr=None, close_fds=True, preexec_fn=close_all_fds)
-    proc = subprocess.Popen(["xpra", "attach"], stdin=None, stdout=None, stderr=None, close_fds=True, preexec_fn=close_all_fds)
+    proc = subprocess.Popen(["xpra", "attach"], stdin=None, stdout=None, stderr=None, preexec_fn=close_all_fds)
     print("proc=%s" % proc)
     import time
     while proc.poll() is None:

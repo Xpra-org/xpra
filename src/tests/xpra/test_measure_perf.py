@@ -51,7 +51,7 @@ log = Logger("util")
 
 def getoutput(cmd, env=None):
     try:
-        process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT, env=env, close_fds=True)
+        process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT, env=env)
     except Exception as e:
         print("error running %s: %s" % (cmd, e))
         raise e

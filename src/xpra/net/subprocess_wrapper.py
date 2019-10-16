@@ -278,9 +278,7 @@ class subprocess_callee(object):
 def exec_kwargs():
     kwargs = {}
     stderr = sys.stderr.fileno()
-    if POSIX:
-        kwargs["close_fds"] = True
-    elif WIN32:
+    if WIN32:
         from xpra.platform.win32 import REDIRECT_OUTPUT
         if REDIRECT_OUTPUT:
             #stderr is not valid and would give us this error:

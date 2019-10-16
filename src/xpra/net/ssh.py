@@ -61,9 +61,7 @@ def exec_dialog_subprocess(cmd):
     try:
         log("exec_dialog_subprocess(%s)", cmd)
         kwargs = {}
-        if POSIX:
-            kwargs["close_fds"] = True
-        else:
+        if not POSIX:
             #win32 platform code would create a log file for the command's output,
             #tell it not to do that:
             env = os.environ.copy()

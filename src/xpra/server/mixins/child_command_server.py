@@ -287,7 +287,7 @@ class ChildCommandServer(StubServerMixin):
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
-            proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
+            proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             log("pid(%s)=%s", real_cmd, proc.pid)
             if not ignore:

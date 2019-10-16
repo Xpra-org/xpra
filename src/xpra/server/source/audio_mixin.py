@@ -242,7 +242,7 @@ class AudioMixin(StubSourceMixin):
                         "!", "audioconvert",
                         "!", sink]
                     import subprocess
-                    proc = subprocess.Popen(cmd, close_fds=True)
+                    proc = subprocess.Popen(cmd)
                     log("Popen(%s)=%s", cmd, proc)
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)

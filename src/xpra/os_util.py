@@ -301,7 +301,7 @@ def get_linux_distribution():
         import subprocess
         cmd = ["lsb_release", "-a"]
         try:
-            p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out = p.communicate()[0]
             assert p.returncode==0 and out
         except Exception:

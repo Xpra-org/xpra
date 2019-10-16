@@ -157,7 +157,7 @@ class SSHServer(paramiko.ServerInterface):
             #but we need to expand the file argument:
             cmd[1] = osexpand(xpra_cmd)
             try:
-                proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, close_fds=not WIN32, shell=False)
+                proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
                 out, err = proc.communicate()
             except Exception as e:
                 log("check_channel_exec_request(%s, %s)", channel, command, exc_info=True)

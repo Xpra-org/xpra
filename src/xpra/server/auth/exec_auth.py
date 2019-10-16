@@ -53,7 +53,7 @@ class Authenticator(SysAuthenticator):
     def authenticate(self, _challenge_response=None, _client_salt=None) -> bool:
         info = "Connection request from %s" % self.connection_str
         cmd = [self.command, info, str(self.timeout)]
-        proc = Popen(cmd, close_fds=True, shell=False)
+        proc = Popen(cmd)
         self.proc = proc
         log("authenticate(..) Popen(%s)=%s", cmd, proc)
         #if required, make sure we kill the command when it times out:

@@ -418,7 +418,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     preexec_fn = None
                     if POSIX and not OSX:
                         preexec_fn = setsid
-                    proc = Popen(cmd, close_fds=True, preexec_fn=preexec_fn, cwd=cwd, env=env)
+                    proc = Popen(cmd, preexec_fn=preexec_fn, cwd=cwd, env=env)
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)
@@ -542,7 +542,7 @@ def find_session_by_name(opts, session_name):
     id_sessions = {}
     for socket_path in socket_paths:
         cmd = get_nodock_command()+["id", "socket://%s" % socket_path]
-        proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, shell=False)
+        proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE)
         id_sessions[socket_path] = proc
     now = monotonic_time()
     import time
@@ -1326,7 +1326,7 @@ def run_client(error_cb, opts, extra_args, mode):
         cmd = sys.argv[:index]+sys.argv[index+1:]
         for display in displays:
             dcmd = cmd + [display]
-            Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32, shell=False)
+            Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
         return 0
     app = get_client_app(error_cb, opts, extra_args, mode)
     return do_run_client(app)
@@ -1565,10 +1565,7 @@ def run_opengl_probe():
         env["NOTTY"] = "1"
     start = monotonic_time()
     try:
-        kwargs = {}
-        if POSIX:
-            kwargs["close_fds"] = True
-        proc = Popen(cmd, shell=False, stderr=DEVNULL, env=env, **kwargs)
+        proc = Popen(cmd, stderr=DEVNULL, env=env)
     except Exception as e:
         log.warn("Warning: failed to execute OpenGL probe command")
         log.warn(" %s", e)
@@ -1978,7 +1975,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                            ]
         log("start_server_subprocess: launch_commands=%s", launch_commands)
         for x in launch_commands:
-            proc = Popen(x, shell=False, close_fds=True, env=env, cwd=cwd)
+            proc = Popen(x, env=env, cwd=cwd)
             proc.wait()
         proc = None
     else:
@@ -2009,7 +2006,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                     osclose_fds([0, 1, 2, r_pipe, w_pipe])
                 preexec_fn = no_close_pipes
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
-        proc = Popen(cmd, shell=False, close_fds=close_fds, env=env, cwd=cwd, preexec_fn=preexec_fn)
+        proc = Popen(cmd, close_fds=close_fds, env=env, cwd=cwd, preexec_fn=preexec_fn)
         log("proc=%s", proc)
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd

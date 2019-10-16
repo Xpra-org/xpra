@@ -113,7 +113,7 @@ def get_lpinfo_drv(make_and_model):
         os.setsid()
     log("get_lpinfo_drv(%s) command=%s", make_and_model, command)
     try:
-        proc = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, preexec_fn=preexec)
+        proc = Popen(command, stdout=PIPE, stderr=PIPE, preexec_fn=preexec)
     except Exception as e:
         log("get_lp_info_drv(%s) lpinfo command %s failed", make_and_model, command, exc_info=True)
         log.error("Error: lpinfo command failed to run")
@@ -244,7 +244,7 @@ def exec_lpadmin(args, success_cb=None):
     def preexec():
         os.setsid()
     log("exec_lpadmin(%s) command=%s", args, command)
-    proc = Popen(command, close_fds=True, preexec_fn=preexec)
+    proc = Popen(command, preexec_fn=preexec)
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
     cr = getChildReaper()

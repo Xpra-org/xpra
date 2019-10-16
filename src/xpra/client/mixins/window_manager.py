@@ -776,7 +776,7 @@ class WindowClient(StubClientMixin):
             from xpra.child_reaper import getChildReaper
             import subprocess
             try:
-                proc = subprocess.Popen("xpra_signal_listener", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True, preexec_fn=os.setsid)
+                proc = subprocess.Popen("xpra_signal_listener", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn=os.setsid)
             except OSError as e:
                 log("assign_signal_watcher_pid(%s, %s)", wid, pid, exc_info=True)
                 log.error("Error: cannot execute signal listener")
