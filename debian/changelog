@@ -1,3 +1,23 @@
+xpra (3.0.1-1) UNRELEASED; urgency=low
+  * fix window cleanup errors preventing a clean exit
+  * fix launcher error if sharing flag is unset
+  * fix window states wrongly getting reset
+  * fix SSH password dialog lockups on MS Windows
+  * fix authentication module errors (multifile, python3)
+  * fix radio buttons on start server dialog (python3)
+  * fix error in encoding selection fallback (python3)
+  * fix logging error in cups printing backend (python3)
+  * fix null bytes in X11 error text (notifications errors)
+  * fix keyboard debug logging error
+  * fix error querying X11 properties under pure wayland client
+  * fix GDK window scaling setting wrongly propagated to the server
+  * fix compilation on Ubuntu Eoan Ermine
+  * re-enable tooltips on MS Windows
+  * update to xxhash 0.7.2
+  * consistent use of quotes in endpoint logging
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 16 Oct 2019 22:26:45 +0700
+
 xpra (3.0-1) UNRELEASED; urgency=low
   * Python 3 port complete, now the default: #1571, #2195
   * much nicer HTML5 client user interface: #2269

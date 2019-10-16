@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0
+%define version 3.0.1
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -864,7 +864,25 @@ fi
 
 
 %changelog
-* Tue Mar 19 2019 Antoine Martin <antoine@xpra.org> 3.0-1
+* Wed Oct 16 2019 Antoine Martin <antoine@xpra.org> 3.0-1
+- fix window cleanup errors preventing a clean exit
+- fix launcher error if sharing flag is unset
+- fix window states wrongly getting reset
+- fix SSH password dialog lockups on MS Windows
+- fix authentication module errors (multifile, python3)
+- fix radio buttons on start server dialog (python3)
+- fix error in encoding selection fallback (python3)
+- fix logging error in cups printing backend (python3)
+- fix null bytes in X11 error text (notifications errors)
+- fix keyboard debug logging error
+- fix error querying X11 properties under pure wayland client
+- fix GDK window scaling setting wrongly propagated to the server
+- fix compilation on Ubuntu Eoan Ermine
+- re-enable tooltips on MS Windows
+- update to xxhash 0.7.2
+- consistent use of quotes in endpoint logging
+
+* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0-1
 - Python 3 port complete, now the default: #1571, #2195
 - much nicer HTML5 client user interface: #2269
 - Window handling:
