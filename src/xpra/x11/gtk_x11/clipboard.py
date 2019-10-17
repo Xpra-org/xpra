@@ -434,9 +434,12 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     ############################################################################
     def do_selection_notify_event(self, event):
         owned = self.owned
-        self.owned = event.owner and event.owner.get_xid()==self.xid
-        log("do_selection_notify_event(%s) owned=%s, was %s, enabled=%s, can-send=%s",
-            event, self.owned, owned, self._enabled, self._can_send)
+        xid = 0
+        if event.owner:
+            xid = event.owner.get_xid()
+        self.owned = xid==self.xid
+        log("do_selection_notify_event(%s) owned=%s, was %s (owner=%#x, xid=%#x), enabled=%s, can-send=%s",
+            event, self.owned, owned, xid, self.xid, self._enabled, self._can_send)
         if not self._enabled:
             return
         if self.owned or not self._can_send:
