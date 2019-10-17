@@ -149,7 +149,7 @@ class TopClient(MonitorXpraClient):
     def dictget(self, *parts):
         d = self.server_last_info
         while parts:
-            d = typedict(d.dictget(parts[0]))
+            d = typedict(d.dictget(parts[0], {}))
             parts = parts[1:]
         return d
 
