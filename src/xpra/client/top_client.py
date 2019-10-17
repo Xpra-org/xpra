@@ -138,18 +138,18 @@ class TopClient(MonitorXpraClient):
                     cpair = curses.color_pair(color)
                     self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
-        except Exception:
-            log.error("update_screen()", exc_info=True)
+        except Exception as e:
+            import traceback
+            self.stdscr.addstr(0, 0, str(e))
+            self.stdscr.addstr(0, 1, traceback.format_exc())
+            self.stdscr.refresh()
         else:
             self.stdscr.refresh()
 
     def dictget(self, *parts):
         d = self.server_last_info
         while parts:
-            d = d.dictget(parts[0])
-            if d is None:
-                return None
-            d = typedict(d)
+            d = typedict(d.dictget(parts[0], {}))
             parts = parts[1:]
         return d
 
