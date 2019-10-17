@@ -138,8 +138,11 @@ class TopClient(MonitorXpraClient):
                     cpair = curses.color_pair(color)
                     self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
-        except Exception:
-            log.error("update_screen()", exc_info=True)
+        except Exception as e:
+            import traceback
+            self.stdscr.addstr(0, 0, str(e))
+            self.stdscr.addstr(0, 1, traceback.format_exc())
+            self.stdscr.refresh()
         else:
             self.stdscr.refresh()
 
