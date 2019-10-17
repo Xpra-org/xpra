@@ -1838,15 +1838,12 @@ def do_run_glcheck(opts):
         logging.root.setLevel(logging.WARN)
     try:
         from xpra.client.gl.window_backend import (
-            get_opengl_backends,
             get_gl_client_window_module,
             test_gl_client_window,
             )
         opengl_str = (opts.opengl or "").lower()
         force_enable = opengl_str.split(":")[0] in TRUE_OPTIONS
-        backends = get_opengl_backends(opengl_str)
-        log("run_glprobe() backends=%s", backends)
-        opengl_props, gl_client_window_module = get_gl_client_window_module(backends, force_enable)
+        opengl_props, gl_client_window_module = get_gl_client_window_module(force_enable)
         log("run_glprobe() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
         if gl_client_window_module and (opengl_props.get("safe", False) or force_enable):
             gl_client_window_class = gl_client_window_module.GLClientWindow

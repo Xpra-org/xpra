@@ -11,36 +11,19 @@ from xpra.log import Logger
 log = Logger("opengl", "paint")
 
 
-def get_opengl_backends(option_str):
-    parts = option_str.split(":")
-    if len(parts)==2:
-        backend_str = parts[1]
-    else:
-        backend_str = option_str
-    if backend_str in ("native", "gtk") or backend_str.find(",")>0:
-        return backend_str.split(",")
-    return ("native", )
-
-def get_gl_client_window_module(backends, force_enable=False):
-    gl_client_window_module = None
-    for impl in backends:
-        log("attempting to load '%s' OpenGL backend", impl)
-        GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk3.%sgl_client_window" % (impl,)
-        log("importing %s", GL_CLIENT_WINDOW_MODULE)
-        try:
-            gl_client_window_module = __import__(GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow", "check_support"])
-        except ImportError as e:
-            log("cannot import %s", GL_CLIENT_WINDOW_MODULE, exc_info=True)
-            log.warn("Warning: cannot import %s OpenGL module", impl)
-            log.warn(" %s", e)
-            del e
-            continue
-        log("%s=%s", GL_CLIENT_WINDOW_MODULE, gl_client_window_module)
-        opengl_props = gl_client_window_module.check_support(force_enable)
-        log("check_support(%s)=%s", force_enable, opengl_props)
-        if opengl_props:
-            return opengl_props, gl_client_window_module
-    log("get_gl_client_window_module(%s, %s) no match found", backends, force_enable)
+def get_gl_client_window_module(force_enable=False):
+    log("get_gl_client_window_module()")
+    try:
+        from xpra.client.gl.gtk3 import nativegl_client_window
+    except ImportError as e:
+        log("cannot import opengl window module", exc_info=True)
+        log.warn("Warning: cannot import native OpenGL module")
+        log.warn(" %s", e)
+        return {}, None
+    opengl_props = nativegl_client_window.check_support(force_enable)
+    log("check_support(%s)=%s", force_enable, opengl_props)
+    if opengl_props:
+        return opengl_props, nativegl_client_window
     return {}, None
 
 def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), pixel_depth=24):
