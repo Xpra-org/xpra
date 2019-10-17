@@ -1842,7 +1842,7 @@ toggle_packages((client_ENABLED and gtk3_ENABLED) or sound_ENABLED or server_ENA
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk_base")
-toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3", "xpra.client.gl.gtk_base")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
 toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.client.gtk_base.example")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     propsys_pkgconfig = pkgconfig()

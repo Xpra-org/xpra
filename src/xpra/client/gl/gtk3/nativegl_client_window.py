@@ -6,7 +6,7 @@
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 
 from xpra.client.gl.gtk3.gl_client_window import GLClientWindowBase
-from xpra.client.gl.gtk_base.gl_drawing_area import GLDrawingArea, GLContext
+from xpra.client.gl.gtk3.gl_drawing_area import GLDrawingArea, GLContext
 
 def check_support(force_enable=False):
     return GLContext().check_support(force_enable)  #pylint: disable=not-callable
