@@ -13,6 +13,8 @@
 
 import os
 import sys
+import tempfile
+import gi
 
 from xpra.util import envbool
 from xpra.os_util import monotonic_time, osexpand
@@ -24,9 +26,8 @@ log = Logger("tray", "posix")
 
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 
-import gi
 gi.require_version('AppIndicator3', '0.1')
-from gi.repository import AppIndicator3, GdkPixbuf #@UnresolvedImport @Reimport
+from gi.repository import AppIndicator3, GdkPixbuf #pylint: disable=wrong-import-order
 
 PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
 ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
@@ -80,16 +81,24 @@ class AppindicatorTray(TrayBase):
         from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
         tray_icon = GdkPixbuf.Pixbuf.new_from_data(pixels, GdkPixbuf.Colorspace.RGB, has_alpha, 8, w, h, rowstride, None, None)
         png_data = pixbuf_save_to_memory(tray_icon)
-        import tempfile
         tmp_dir = osexpand(get_xpra_tmp_dir())
         if not os.path.exists(tmp_dir):
             os.mkdir(tmp_dir, 0o755)
-        fd, self.tmp_filename = tempfile.mkstemp(prefix="tray", suffix=".png", dir=tmp_dir)
-        log("set_icon_from_data%s using temporary file %s",
-            ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), self.tmp_filename)
-        os.write(fd, png_data)
-        os.close(fd)
-        os.fchmod(fd, 0o644)
+        fd = None
+        try:
+            fd, self.tmp_filename = tempfile.mkstemp(prefix="tray", suffix=".png", dir=tmp_dir)
+            log("set_icon_from_data%s using temporary file %s",
+                ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), self.tmp_filename)
+            os.write(fd, png_data)
+        except OSError as e:
+            log("error saving temporary file", exc_info=True)
+            log.error("Error saving icon data to temporary file")
+            log.error(" %s", e)
+            return
+        finally:
+            if fd:
+                os.close(fd)
+                os.fchmod(fd, 0o644)
         self.do_set_icon_from_file(self.tmp_filename)
 
     def do_set_icon_from_file(self, filename):
