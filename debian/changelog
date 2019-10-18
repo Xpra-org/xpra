@@ -10,13 +10,22 @@ xpra (3.0.1-1) UNRELEASED; urgency=low
   * fix null bytes in X11 error text (notifications errors)
   * fix keyboard debug logging error
   * fix error querying X11 properties under pure wayland client
+  * fix unresponsive appindicator system tray
   * fix GDK window scaling setting wrongly propagated to the server
   * fix compilation on Ubuntu Eoan Ermine
+  * fix Debian bin path warnings
+  * fix error handling in 'xpra top'
+  * fix pyobjc API compatibility in OpenGL transparency shim
+  * fix out of date PKG OS version requirements
+  * fix PKG compatibility with MacOS 10.15 Catalina
+  * update Python to 3.7.5 on MacOS
+  * bump revision to override broken Fedora packaging
+  * show Python version in MacOS packages
   * re-enable tooltips on MS Windows
   * update to xxhash 0.7.2
   * consistent use of quotes in endpoint logging
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 16 Oct 2019 22:26:45 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 18 Oct 2019 22:42:29 +0700
 
 xpra (3.0-1) UNRELEASED; urgency=low
   * Python 3 port complete, now the default: #1571, #2195

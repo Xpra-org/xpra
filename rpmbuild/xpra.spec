@@ -866,7 +866,7 @@ fi
 
 
 %changelog
-* Wed Oct 16 2019 Antoine Martin <antoine@xpra.org> 3.0-1
+* Fri Oct 18 2019 Antoine Martin <antoine@xpra.org> 3.0.1-1
 - fix window cleanup errors preventing a clean exit
 - fix launcher error if sharing flag is unset
 - fix window states wrongly getting reset
@@ -878,8 +878,17 @@ fi
 - fix null bytes in X11 error text (notifications errors)
 - fix keyboard debug logging error
 - fix error querying X11 properties under pure wayland client
+- fix unresponsive appindicator system tray
 - fix GDK window scaling setting wrongly propagated to the server
 - fix compilation on Ubuntu Eoan Ermine
+- fix Debian bin path warnings
+- fix error handling in 'xpra top'
+- fix pyobjc API compatibility in OpenGL transparency shim
+- fix out of date PKG OS version requirements
+- fix PKG compatibility with MacOS 10.15 Catalina
+- update Python to 3.7.5 on MacOS
+- bump revision to override broken Fedora packaging
+- show Python version in MacOS packages
 - re-enable tooltips on MS Windows
 - update to xxhash 0.7.2
 - consistent use of quotes in endpoint logging
