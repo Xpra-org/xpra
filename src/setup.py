@@ -1781,10 +1781,6 @@ if gtk_x11_ENABLED:
                 ["xpra/x11/gtk3/gdk_bindings.pyx", "xpra/x11/gtk3/gdk_x11_macros.c"],
                 **pkgconfig("gdk-3.0")
                 ))
-    cython_add(Extension("xpra.gtk_common.gtk3.gdk_bindings",
-                ["xpra/gtk_common/gtk3/gdk_bindings.pyx"],
-                **pkgconfig("gtk+-3.0", "pygobject-3.0")
-                ))
 
 if client_ENABLED and gtk3_ENABLED:
     #cairo workaround:
@@ -1882,6 +1878,12 @@ if clipboard_ENABLED:
                          ["xpra/gtk_common/gtk3/gdk_atoms.pyx"],
                          **pkgconfig("gtk+-3.0")
                          ))
+toggle_packages(clipboard_ENABLED or gtk3_ENABLED, "xpra.gtk_common.gtk3")
+if gtk3_ENABLED:
+    cython_add(Extension("xpra.gtk_common.gtk3.gdk_bindings",
+                ["xpra/gtk_common/gtk3/gdk_bindings.pyx"],
+                **pkgconfig("gtk+-3.0", "pygobject-3.0")
+                ))
 
 O3_pkgconfig = pkgconfig(optimize=3)
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
