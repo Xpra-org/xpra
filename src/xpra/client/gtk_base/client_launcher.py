@@ -86,7 +86,7 @@ white   = color_parse("white")
 
 
 def get_active_item_index(optionmenu):
-    menu = optionmenu.get_menu()
+    menu = optionmenu.get_popup()
     for i, x in enumerate(menu.get_children()):
         if hasattr(x, "get_active") and x.get_active():
             return i
