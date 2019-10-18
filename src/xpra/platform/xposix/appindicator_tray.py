@@ -81,7 +81,8 @@ class AppindicatorTray(TrayBase):
             return
         import tempfile
         try:
-            _, filename = tempfile.mkstemp(suffix="png")
+            fd, filename = tempfile.mkstemp(suffix="png")
+            os.close(fd)
             log("set_icon_from_data%s using temporary file %s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
             tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
             tray_icon.save(filename, "png")
