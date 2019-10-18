@@ -282,6 +282,7 @@ class X11ServerBase(X11ServerCore):
             dpi, double_click_time, double_click_distance)
         log("overrides: antialias=%s", antialias)
         self._settings.update(settings)
+        from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString, BLACKLISTED_XSETTINGS
         for k, v in settings.items():
             #cook the "resource-manager" value to add the DPI and/or antialias values:
             if k==b"resource-manager" and (dpi>0 or antialias or cursor_size>0):
@@ -336,7 +337,6 @@ class X11ServerBase(X11ServerCore):
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
             if k==b"xsettings-blob" and \
             (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
-                from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString, BLACKLISTED_XSETTINGS
                 #start by removing blacklisted options:
                 def filter_blacklisted():
                     serial, values = v
