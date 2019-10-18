@@ -21,6 +21,8 @@ log = Logger("x11", "xsettings")
 
 
 DEBUG_XSETTINGS = os.environ.get("XPRA_XSETTINGS_DEBUG", "0")=="1"
+BLACKLISTED_XSETTINGS = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
+                                       "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule").split(",")
 
 
 if sys.version > '3':

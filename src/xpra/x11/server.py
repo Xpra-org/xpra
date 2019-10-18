@@ -1271,6 +1271,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         settingslog("overrides: dpi=%s, double click time=%s, double click distance=%s", dpi, double_click_time, double_click_distance)
         settingslog("overrides: antialias=%s", antialias)
         self._settings.update(settings)
+        from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString, BLACKLISTED_XSETTINGS
         for k, v in settings.items():
             #cook the "resource-manager" value to add the DPI and/or antialias values:
             if k=="resource-manager" and (dpi>0 or antialias or cursor_size>0):
@@ -1284,6 +1285,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     parts = option.split(":\t", 1)
                     if len(parts)!=2:
                         settingslog("skipped invalid option: '%s'", option)
+                        continue
+                    if parts[0] in BLACKLISTED_XSETTINGS:
+                        log("skipped blacklisted option: '%s'", option)
                         continue
                     values[parts[0]] = parts[1]
                 if cursor_size>0:
@@ -1319,7 +1323,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #cook xsettings to add various settings:
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
             if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
-                from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
+                #start by removing blacklisted options:
+                def filter_blacklisted():
+                    serial, values = v
+                    new_values = []
+                    for _t,_n,_v,_s in values:
+                        if bytestostr(_n) in BLACKLISTED_XSETTINGS:
+                            log("skipped blacklisted option %s", (_t, _n, _v, _s))
+                        else:
+                            new_values.append((_t, _n, _v, _s))
+                    return serial, new_values
+                v = filter_blacklisted()
                 def set_xsettings_value(name, value_type, value):
                     #remove existing one, if any:
                     serial, values = v
