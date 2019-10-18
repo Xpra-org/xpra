@@ -70,7 +70,7 @@ if [ "${DO_TESTS}" == "1" ]; then
 	pushd ./unittests
 	rm -fr ./tmpdir
 	mkdir ./tmpdir
-	#make sure the unit tests can run "python2 xpra ...":
+	#make sure the unit tests can run "python3 xpra ...":
 	rm -f ./xpra >& /dev/null
 	ln -sf ../scripts/xpra .
 	UNITTEST_LOG=`pwd`/unittest.log
@@ -123,7 +123,7 @@ fi
 echo
 echo "*******************************************************************************"
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-svn revert Info.plist Xpra.bundle
+svn revert Info.plist
 sed -i '' -e "s+%VERSION%+$VERSION+g" "./Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "./Info.plist"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "./Info.plist"
@@ -135,10 +135,6 @@ fi
 echo
 echo "*******************************************************************************"
 echo "calling 'gtk-mac-bundler Xpra.bundle' in `pwd`"
-if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-	sed -i '' -e "s+gtk2+gtk3+g" "./Xpra.bundle"
-	sed -i '' -e "s+pygtk/2.0+cairo+g" Xpra.bundle
-fi
 #we have to make sure we use python2 here (not ported yet):
 python2 ~/.local/bin/gtk-mac-bundler Xpra.bundle
 if [ "$?" != "0" ]; then
@@ -247,16 +243,6 @@ echo "Hacks"
 echo " * macos notifications API look for Info.plist in the wrong place"
 cp ${CONTENTS_DIR}/Info.plist ${RSCDIR}/bin/
 #no idea why I have to do this by hand
-echo " * add pygtk bits, gtk .so"
-if [ "${PYTHON_MAJOR_VERSION}" == "2" ]; then
-	rsync -rpl $PYTHON_PACKAGES/gtk-2.0/* $LIBDIR/
-	#add pygtk .py
-	PYGTK_LIBDIR="$LIBDIR/pygtk/2.0"
-	mkdir -p $PYGTK_LIBDIR
-	rsync -rpl $JHBUILD_PREFIX/lib/pygtk/2.0/* $PYGTK_LIBDIR/
-	rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR/
-	rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR/
-fi
 echo " * add all OpenGL"
 rsync -rpl $PYTHON_PACKAGES/OpenGL* $LIBDIR/python/
 if [ "$STRIP_OPENGL" == "1" ]; then
@@ -276,11 +262,7 @@ fi
 echo " * add gobject-introspection (py2app refuses to do it)"
 rsync -rpl $PYTHON_PACKAGES/gi $LIBDIR/python/
 mkdir $LIBDIR/girepository-1.0
-GI_MODULES="Gst GObject GLib GModule"
-if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-	#GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication"
-	GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication GL Gio Pango cairo Atk"
-fi
+GI_MODULES="Gst GObject GLib GModule Gtk Gdk GtkosxApplication GL Gio Pango cairo Atk"
 for t in ${GI_MODULES}; do
 	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
 done
@@ -399,4 +381,4 @@ echo "Done"
 echo "*******************************************************************************"
 echo
 
-svn revert Info.plist Xpra.bundle
+svn revert Info.plist
