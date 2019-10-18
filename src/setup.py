@@ -1453,9 +1453,7 @@ else:
         man_path = "share/man"
         if OPENBSD:
             man_path = "man"
-        if not OSX:
-            #breaks installation with MacOS Catalina (see ticket #2453)
-            add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1"])
+        add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1"])
         add_data_files("share/applications",  glob.glob("xdg/*.desktop"))
         add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
         add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png", "xdg/xpra-shadow.png"])
@@ -1505,8 +1503,7 @@ else:
                 if chmod:
                     os.chmod(dst_file, chmod)
 
-            if printing_ENABLED and POSIX and not OSX:
-                #breaks installation with MacOS Catalina (see ticket #2453)
+            if printing_ENABLED and POSIX:
                 #install "/usr/lib/cups/backend" with 0700 permissions:
                 copytodir("cups/xpraforwarder", "lib/cups/backend", chmod=0o700)
 
