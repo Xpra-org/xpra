@@ -38,15 +38,6 @@ mkdir -p ./image/flat/base.pkg ./image/flat/Resources/en.lproj
 mkdir -p ./image/root/Applications
 rsync -rplogt ${APP_DIR} ./image/root/Applications/
 
-#man page:
-mkdir -p ./image/root/usr/share/man/man1
-for x in xpra xpra_launcher; do
-	gzip -c ../src/man/$x.1 > ./image/root/usr/share/man/man1/$x.1.gz
-done
-#add cups backend:
-mkdir -p ./image/root/usr/libexec/cups/backend/
-cp ../src/cups/xpraforwarder ./image/root/usr/libexec/cups/backend/
-chmod 700 ./image/root/usr/libexec/cups/backend
 #add launchd agent:
 #mkdir -p ./image/root/System/Library/LaunchAgents/
 #cp ./org.xpra.Agent.plist ./image/root/System/Library/LaunchAgents/

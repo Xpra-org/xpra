@@ -1,10 +1,6 @@
 #!/bin/bash
 # this script will:
-# * fix cups backend permissions which are not preserved:
 # * add scripts in /usr/local/bin to launch the xpra commands
-
-chown root:wheel /usr/libexec/cups/backend/xpraforwarder
-chmod 700 /usr/libexec/cups/backend/xpraforwarder
 
 #FIXME: figure out where we were installed if using a custom location..
 APP_ROOT="/Applications/Xpra.app"
