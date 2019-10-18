@@ -19,7 +19,7 @@ log = Logger("opengl", "paint")
 class GLDrawingArea(GLWindowBackingBase):
 
     def __repr__(self):
-        return "gtk3.GLDrawingArea(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
+        return "GLDrawingArea(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
     def idle_add(self, *args, **kwargs):
         GLib.idle_add(*args, **kwargs)
