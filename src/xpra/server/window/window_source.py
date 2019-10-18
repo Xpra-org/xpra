@@ -1798,6 +1798,13 @@ class WindowSource(WindowIconSource):
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         try:
             packet = self.make_data_packet(damage_time, process_damage_time, image, coding, sequence, options, flush)
+        except Exception as e:
+            log("make_data_packet%s", (damage_time, process_damage_time, image, coding, sequence, options, flush),
+                exc_info=True)
+            if not self.is_cancelled(sequence):
+                log.error("Error: failed to create data packet")
+                log.error(" %s", e)
+            packet = None
         finally:
             self.free_image_wrapper(image)
             del image
