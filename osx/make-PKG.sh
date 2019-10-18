@@ -87,7 +87,7 @@ cat > ./image/flat/Distribution << EOF
 <installer-script minSpecVersion="2">
 	<title>${APP_NAME} $VERSION</title>
 	<allowed-os-versions>
-		<os-version min="10.5.8" />
+		<os-version min="10.10" />
 	</allowed-os-versions>
 	<options customize="never" require-scripts="false" allow-external-scripts="no"/>
 	<domains enable_anywhere="true"/>
