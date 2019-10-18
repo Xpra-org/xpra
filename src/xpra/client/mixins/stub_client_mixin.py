@@ -69,7 +69,6 @@ class StubClientMixin(object):
     """
     def setup_connection(self, _conn):
         pass
-
     """
     Return the capabilities provided by this mixin.
     """

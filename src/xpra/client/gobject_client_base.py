@@ -106,13 +106,10 @@ class CommandConnectClient(GObjectXpraClient):
     """
     COMMAND_TIMEOUT = EXTRA_TIMEOUT
 
-    def __init__(self, conn, opts):
-        GObjectXpraClient.__init__(self)
-        GObjectXpraClient.init(self, opts)
-        connection, display_desc = conn
-        self.display_desc = display_desc
-        self.connect_with_timeout(connection)
-        self._protocol._log_stats  = False
+    def __init__(self, opts):
+        super().__init__()
+        super().init(opts)
+        self.display_desc = {}
         #not used by command line clients,
         #so don't try probing for printers, etc
         self.file_transfer = False
@@ -122,11 +119,13 @@ class CommandConnectClient(GObjectXpraClient):
                   "wants_versions", "wants_features", "wants_sound", "windows"):
             self.hello_extra[x] = False
 
-    def connect_with_timeout(self, conn):
-        self.setup_connection(conn)
+    def setup_connection(self, conn):
+        protocol = super().setup_connection(conn)
+        protocol._log_stats  = False
         if conn.timeout>0:
             GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         GLib.idle_add(self.send_hello)
+        return protocol
 
     def _process_connection_lost(self, _packet):
         #override so we don't log a warning
@@ -160,7 +159,7 @@ class SendCommandConnectClient(CommandConnectClient):
     def server_connection_established(self):
         assert self.parse_encryption_capabilities(), "encryption failure"
         assert self.parse_network_capabilities(), "network capabilities failure"
-        return CommandConnectClient.server_connection_established(self)
+        return super().server_connection_established()
 
 
 class HelloRequestClient(SendCommandConnectClient):
@@ -170,7 +169,7 @@ class HelloRequestClient(SendCommandConnectClient):
     """
 
     def make_hello_base(self):
-        caps = CommandConnectClient.make_hello_base(self)
+        caps = super().make_hello_base()
         caps.update(self.hello_request())
         return caps
 
@@ -203,9 +202,9 @@ class ScreenshotXpraClient(CommandConnectClient):
         and exits when the resulting image is received (or timedout)
     """
 
-    def __init__(self, conn, opts, screenshot_filename):
+    def __init__(self, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
-        CommandConnectClient.__init__(self, conn, opts)
+        super().__init__(opts)
         self.hello_extra["screenshot_request"] = True
         self.hello_extra["request"] = "screenshot"
 
@@ -224,7 +223,7 @@ class ScreenshotXpraClient(CommandConnectClient):
         self.warn_and_quit(EXIT_OK, "screenshot %sx%s saved to: %s" % (w, h, self.screenshot_filename))
 
     def init_packet_handlers(self):
-        GObjectXpraClient.init_packet_handlers(self)
+        super().init_packet_handlers()
         self._ui_packet_handlers["screenshot"] = self._process_screenshot
 
 
@@ -233,8 +232,8 @@ class InfoXpraClient(CommandConnectClient):
         it queries the server with an 'info' request
     """
 
-    def __init__(self, *args):
-        CommandConnectClient.__init__(self, *args)
+    def __init__(self, opts):
+        super().__init__(opts)
         self.hello_extra["info_request"] = True
         self.hello_extra["request"] = "info"
         if FLATTEN_INFO>=1:
@@ -274,7 +273,7 @@ class InfoXpraClient(CommandConnectClient):
 class IDXpraClient(InfoXpraClient):
 
     def __init__(self, *args):
-        InfoXpraClient.__init__(self, *args)
+        super().__init__(*args)
         self.hello_extra["request"] = "id"
 
 
@@ -283,8 +282,8 @@ class ConnectTestXpraClient(CommandConnectClient):
         it queries the server with an 'info' request
     """
 
-    def __init__(self, *args, **kwargs):
-        CommandConnectClient.__init__(self, *args)
+    def __init__(self, opts, **kwargs):
+        super().__init__(opts)
         self.value = get_hex_uuid()
         self.hello_extra.update({
             "connect_test_request"      : self.value,
@@ -324,8 +323,8 @@ class MonitorXpraClient(SendCommandConnectClient):
         If the server does not support this feature it exits with an error.
     """
 
-    def __init__(self, *args):
-        SendCommandConnectClient.__init__(self, *args)
+    def __init__(self, opts):
+        super().__init__(opts)
         for x in ("wants_features", "wants_events", "event_request"):
             self.hello_extra[x] = True
         self.hello_extra["request"] = "event"
@@ -342,7 +341,7 @@ class MonitorXpraClient(SendCommandConnectClient):
         log.info(": ".join(bytestostr(x) for x in packet[1:]))
 
     def init_packet_handlers(self):
-        SendCommandConnectClient.init_packet_handlers(self)
+        super().init_packet_handlers()
         self._packet_handlers["server-event"] = self._process_server_event
         self._packet_handlers["ping"] = self._process_ping
 
@@ -399,7 +398,7 @@ class ControlXpraClient(CommandConnectClient):
         self.warn_and_quit(EXIT_OK, text)
 
     def make_hello(self):
-        capabilities = GObjectXpraClient.make_hello(self)
+        capabilities = super().make_hello()
         log("make_hello() adding command request '%s' to %s", self.command, capabilities)
         capabilities["command_request"] = self.command
         capabilities["request"] = "command"
@@ -460,7 +459,7 @@ class PrintClient(SendCommandConnectClient):
         self.idle_add(self.send, "disconnect", DONE, "detaching")
 
     def make_hello(self):
-        capabilities = SendCommandConnectClient.make_hello(self)
+        capabilities = super().make_hello()
         capabilities["wants_features"] = True   #so we know if printing is supported or not
         capabilities["print_request"] = True    #marker to skip full setup
         capabilities["request"] = "print"
@@ -538,7 +537,7 @@ class RequestStartClient(HelloRequestClient):
 
     def _process_connection_lost(self, packet):
         errwrite("\n")
-        HelloRequestClient._process_connection_lost(self, packet)
+        super()._process_connection_lost(packet)
 
     def hello_request(self):
         if first_time("hello-request"):
@@ -575,8 +574,8 @@ class RequestStartClient(HelloRequestClient):
             self.quit(0)
         return True
 
-    def __init__(self, conn, opts):
-        HelloRequestClient.__init__(self, conn, opts)
+    def __init__(self, opts):
+        super().__init__(opts)
         try:
             self.displayfd = int(opts.displayfd)
         except (ValueError, TypeError):

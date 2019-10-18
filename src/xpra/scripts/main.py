@@ -19,7 +19,7 @@ import traceback
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
-from xpra.exit_codes import EXIT_STR, EXIT_UNSUPPORTED
+from xpra.exit_codes import EXIT_STR, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED
 from xpra.os_util import (
     get_util_logger, getuid, getgid,
     monotonic_time, setsid, bytestostr, use_tty,
@@ -1331,6 +1331,40 @@ def run_client(error_cb, opts, extra_args, mode):
     app = get_client_app(error_cb, opts, extra_args, mode)
     return do_run_client(app)
 
+
+def connect_to_server(app, display_desc, opts):
+    #on win32, we must run the main loop
+    #before we can call connect()
+    #because connect() may run a subprocess,
+    #and Gdk locks up the system if the main loop is not running by then!
+    from gi.repository import GLib
+    log = Logger("network")
+    def do_setup_connection():
+        try:
+            log("do_setup_connection() display_desc=%s", display_desc)
+            conn = connect_or_fail(display_desc, opts)
+            log("do_setup_connection() conn=%s", conn)
+            #UGLY warning: connect_or_fail() will parse the display string,
+            #which may change the username and password..
+            app.username = opts.username
+            app.password = opts.password
+            app.display = opts.display
+            app.display_desc = display_desc
+            protocol = app.setup_connection(conn)
+            protocol.start()
+            GLib.idle_add(app.send_hello)
+        except Exception as e:
+            log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            log.error("Error: failed to connect")
+            log.error(" %s", e)
+            GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
+    def setup_connection():
+        log("setup_connection() starting setup-connection thread")
+        from xpra.make_thread import start_thread
+        start_thread(do_setup_connection, "setup-connection", True)
+    GLib.idle_add(setup_connection)
+
+
 def get_client_app(error_cb, opts, extra_args, mode):
     validate_encryption(opts)
     if mode=="screenshot":
@@ -1354,35 +1388,31 @@ def get_client_app(error_cb, opts, extra_args, mode):
     if opts.quality!=-1 and (opts.quality < 0 or opts.quality > 100):
         error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
-    def connect():
-        desc = pick_display(error_cb, opts, extra_args)
-        return connect_or_fail(desc, opts), desc
-
     if mode=="screenshot":
         from xpra.client.gobject_client_base import ScreenshotXpraClient
-        app = ScreenshotXpraClient(connect(), opts, screenshot_filename)
+        app = ScreenshotXpraClient(opts, screenshot_filename)
     elif mode=="info":
         from xpra.client.gobject_client_base import InfoXpraClient
-        app = InfoXpraClient(connect(), opts)
+        app = InfoXpraClient(opts)
     elif mode=="id":
         from xpra.client.gobject_client_base import IDXpraClient
-        app = IDXpraClient(connect(), opts)
+        app = IDXpraClient(opts)
     elif mode=="connect-test":
         from xpra.client.gobject_client_base import ConnectTestXpraClient
-        app = ConnectTestXpraClient(connect(), opts)
+        app = ConnectTestXpraClient(opts)
     elif mode=="_monitor":
         from xpra.client.gobject_client_base import MonitorXpraClient
-        app = MonitorXpraClient(connect(), opts)
+        app = MonitorXpraClient(opts)
     elif mode == "top":
         from xpra.client.top_client import TopClient
-        app = TopClient(connect(), opts)
+        app = TopClient(opts)
     elif mode=="control":
         from xpra.client.gobject_client_base import ControlXpraClient
         if len(extra_args)<=1:
             error_cb("not enough arguments for 'control' mode")
         args = extra_args[1:]
         extra_args = extra_args[:1]
-        app = ControlXpraClient(connect(), opts)
+        app = ControlXpraClient(opts)
         app.set_command_args(args)
     elif mode=="print":
         from xpra.client.gobject_client_base import PrintClient
@@ -1390,19 +1420,19 @@ def get_client_app(error_cb, opts, extra_args, mode):
             error_cb("not enough arguments for 'print' mode")
         args = extra_args[1:]
         extra_args = extra_args[:1]
-        app = PrintClient(connect(), opts)
+        app = PrintClient(opts)
         app.set_command_args(args)
     elif mode=="version":
         from xpra.client.gobject_client_base import VersionXpraClient
-        app = VersionXpraClient(connect(), opts)
+        app = VersionXpraClient(opts)
     elif mode=="detach":
         from xpra.client.gobject_client_base import DetachXpraClient
-        app = DetachXpraClient(connect(), opts)
+        app = DetachXpraClient(opts)
     elif request_mode and opts.attach is not True:
         from xpra.client.gobject_client_base import RequestStartClient
         sns = get_start_new_session_dict(opts, request_mode, extra_args)
         extra_args = ["socket:%s" % opts.system_proxy_socket]
-        app = RequestStartClient(connect(), opts)
+        app = RequestStartClient(opts)
         app.hello_extra = {"connect" : False}
         app.start_new_session = sns
     else:
@@ -1456,17 +1486,6 @@ def get_client_app(error_cb, opts, extra_args, mode):
             app.start_child_new_commands = []
             app.start_new_commands = []
 
-        def connect_to_server():
-            conn, display_desc = connect()
-            app.display_desc = display_desc
-            #UGLY warning: connect will parse the display string,
-            #which may change the username and password..
-            app.username = opts.username
-            app.password = opts.password
-            app.display = opts.display
-            app.setup_connection(conn)
-            return conn
-
         try:
             if mode=="listen":
                 if extra_args:
@@ -1510,9 +1529,10 @@ def get_client_app(error_cb, opts, extra_args, mode):
                                 run_socket_cleanups()
                                 netlog.info("connecting to %s", uri)
                                 extra_args[:] = [uri, ]
-                                conn = connect_to_server()
-                                app._protocol.start()
-                                app.idle_add(app.send_hello)
+                                display_desc = pick_display(error_cb, opts, [uri, ])
+                                connect_to_server(app, display_desc, opts)
+                                #app._protocol.start()
+                                #app.idle_add(app.send_hello)
                                 return
                     app.idle_add(do_handle_connection, conn)
                 def do_handle_connection(conn):
@@ -1535,8 +1555,9 @@ def get_client_app(error_cb, opts, extra_args, mode):
                     cleanup = add_listen_socket(socktype, sock, sinfo, new_connection)
                     if cleanup:
                         listen_cleanup.append(cleanup)
-            else:
-                connect_to_server()
+                #listen mode is special,
+                #don't fall through to connect_to_server!
+                return app
         except Exception as e:
             may_notify = getattr(app, "may_notify", None)
             if may_notify:
@@ -1548,9 +1569,11 @@ def get_client_app(error_cb, opts, extra_args, mode):
                     body = "\n".join(lines[1:])
                 else:
                     summary = "Xpra client failed to connect"
-                may_notify(XPRA_FAILURE_NOTIFICATION_ID, summary, body, icon_name="disconnected")
+                may_notify(XPRA_FAILURE_NOTIFICATION_ID, summary, body, icon_name="disconnected")  #pylint: disable=not-callable
             app.cleanup()
             raise
+    display_desc = pick_display(error_cb, opts, extra_args)
+    connect_to_server(app, display_desc, opts)
     return app
 
 def run_opengl_probe():
@@ -1709,17 +1732,14 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
                 sns[x] = v
         hello_extra = {"start-new-session" : sns}
 
-    def connect():
-        return connect_or_fail(params, opts)
-
     if opts.attach is False:
         from xpra.client.gobject_client_base import WaitForDisconnectXpraClient, RequestStartClient
         if isdisplaytype(args, "ssh"):
             #ssh will start the instance we requested,
             #then we just detach and we're done
-            app = WaitForDisconnectXpraClient((connect(), params), opts)
+            app = WaitForDisconnectXpraClient(opts)
         else:
-            app = RequestStartClient((connect(), params), opts)
+            app = RequestStartClient(opts)
             app.start_new_session = sns
         app.hello_extra = {"connect" : False}
     else:
@@ -1727,7 +1747,8 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         app.init(opts)
         app.init_ui(opts)
         app.hello_extra = hello_extra
-        app.setup_connection(connect())
+    conn = connect_or_fail(params, opts)
+    app.setup_connection(conn)
     return do_run_client(app)
 
 
@@ -2235,17 +2256,18 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         return multimode(extra_args)
 
     display_desc = pick_display(error_cb, opts, extra_args)
-    conn = connect_or_fail(display_desc, opts)
     app = None
     e = 1
     try:
         if mode=="stop":
             from xpra.client.gobject_client_base import StopXpraClient
-            app = StopXpraClient((conn, display_desc), opts)
+            app = StopXpraClient(opts)
         else:
             assert mode=="exit"
             from xpra.client.gobject_client_base import ExitXpraClient
-            app = ExitXpraClient((conn, display_desc), opts)
+            app = ExitXpraClient(opts)
+        app.display_desc = display_desc
+        connect_to_server(app, display_desc, opts)
         e = app.run()
     finally:
         if app:

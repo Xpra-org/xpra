@@ -308,7 +308,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             proc, name, command = process
             if proc:
                 getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
-        netlog("setup_connection(%s) protocol=%s", conn, self._protocol)
+        netlog("setup_connection(%s) protocol=%s", conn, protocol)
+        return protocol
 
     def _process_udp_control(self, packet):
         #send it back to the protocol object:

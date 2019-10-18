@@ -168,9 +168,6 @@ class AudioClient(StubClientMixin):
             }
 
 
-    def setup_connection(self, _conn):
-        pass
-
     def parse_server_capabilities(self):
         c = self.server_capabilities
         self.server_av_sync = c.boolget("av-sync.enabled")
