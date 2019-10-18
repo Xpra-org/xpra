@@ -27,7 +27,7 @@ def get_status_output(*args, **kwargs):
 
 def get_output_lines(cmd):
     try:
-        returncode, stdout, stderr = get_status_output(cmd, stdin=None, shell=False)
+        returncode, stdout, stderr = get_status_output(cmd)
         if returncode!=0:
             print("'%s' failed with return code %s" % (cmd, returncode))
             print("stderr: %s" % stderr)
