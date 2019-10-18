@@ -99,10 +99,10 @@ class GLClientWindowBase(GTK3ClientWindow):
 
     def destroy(self):
         self.remove_backing()
-        GTK3ClientWindow.destroy(self)
+        super().destroy()
 
     def new_backing(self, bw, bh):
-        widget = GTK3ClientWindow.new_backing(self, bw, bh)
+        widget = super().new_backing(bw, bh)
         if self.drawing_area:
             self.remove(self.drawing_area)
         self.init_widget_events(widget)

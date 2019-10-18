@@ -53,7 +53,7 @@ class WindowPropertyIn(WindowPropertyFilter):
 class WindowPropertyNotIn(WindowPropertyIn):
 
     def evaluate(self, window_value):
-        return not(WindowPropertyIn.evaluate(self, window_value))
+        return not(super().evaluate(window_value))
 
     def __repr__(self):
         return "WindowPropertyNotIn(%s=%s, recurse=%s)" % (self.property_name, self.value, self.recurse)

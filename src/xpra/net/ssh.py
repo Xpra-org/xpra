@@ -153,7 +153,7 @@ def input_pass(prompt):
 class SSHSocketConnection(SocketConnection):
 
     def __init__(self, ssh_channel, sock, sockname, peername, target, info=None):
-        SocketConnection.__init__(self, ssh_channel, sockname, peername, target, "ssh", info)
+        super().__init__(ssh_channel, sockname, peername, target, "ssh", info)
         self._raw_socket = sock
 
     def start_stderr_reader(self):
@@ -199,7 +199,7 @@ class SSHSocketConnection(SocketConnection):
 
 class SSHProxyCommandConnection(SSHSocketConnection):
     def __init__(self, ssh_channel, peername, target, info):
-        SSHSocketConnection.__init__(self, ssh_channel, None, None, peername, target, info)
+        super().__init__(ssh_channel, None, None, peername, target, info)
         self.process = None
 
     def error_is_closed(self, e):
@@ -209,7 +209,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             #then the connection must be closed:
             if p[0].poll() is not None:
                 return True
-        return SSHSocketConnection.error_is_closed(self, e)
+        return super().error_is_closed(e)
 
     def get_socket_info(self):
         p = self.process
@@ -362,7 +362,7 @@ def ssh_paramiko_connect_to(display_desc):
 class nogssapi_context(nomodule_context):
 
     def __init__(self):
-        nomodule_context.__init__(self, "gssapi")
+        super().__init__("gssapi")
 
 
 def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None, keyfiles=None):

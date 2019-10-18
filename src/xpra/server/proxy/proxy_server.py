@@ -95,7 +95,7 @@ class ProxyServer(ServerCore):
         self.pings = int(opts.pings)
         self.video_encoders = opts.proxy_video_encoders
         self._start_sessions = opts.proxy_start_sessions
-        ServerCore.init(self, opts)
+        super().init(opts)
         #ensure we cache the platform info before intercepting SIGCHLD
         #as this will cause a fork and SIGCHLD to be emitted:
         from xpra.version_util import get_platform_info

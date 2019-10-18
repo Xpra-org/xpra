@@ -24,7 +24,7 @@ RED = 3
 class TopClient(MonitorXpraClient):
 
     def __init__(self, *args):
-        MonitorXpraClient.__init__(self, *args)
+        super().__init__(*args)
         self.info_request_pending = False
         self.server_last_info = typedict()
         #curses init:

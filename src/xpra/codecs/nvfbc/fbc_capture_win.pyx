@@ -379,7 +379,7 @@ class NvFBCException(Exception):
         self.function = fn
         self.code = code
         msg = "%s - returned %s" % (fn, ERRORS.get(code, code))
-        Exception.__init__(self, msg)
+        super().__init__(msg)
 
 cdef inline raiseNvFBC(NVFBCRESULT ret, msg):
     if ret!=0:

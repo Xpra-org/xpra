@@ -42,7 +42,7 @@ class WebSocketProtocol(Protocol):
     TYPE = "websocket"
 
     def __init__(self, *args, **kwargs):
-        Protocol.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.ws_data = b""
         self.ws_payload = []
         self.ws_payload_opcode = 0
@@ -61,13 +61,13 @@ class WebSocketProtocol(Protocol):
 
 
     def get_info(self, alias_info=True):
-        info = Protocol.get_info(self, alias_info)
+        info = super().get_info(alias_info)
         info["legacy-frames"] = self.legacy_frame_per_chunk
         return info
 
 
     def parse_remote_caps(self, caps):
-        Protocol.parse_remote_caps(self, caps)
+        super().parse_remote_caps(caps)
         if LEGACY_FRAME_PER_CHUNK is None:
             may_have_bug = caps.strget("client_type", "")=="HTML5"
             self.legacy_frame_per_chunk = not caps.boolget("websocket.multi-packet", not may_have_bug)
@@ -87,7 +87,7 @@ class WebSocketProtocol(Protocol):
             self.make_frame_header = self.make_wsframe_header
 
     def make_wschunk_header(self, packet_type, proto_flags, level, index, payload_size):
-        header = Protocol.make_xpra_header(self, packet_type, proto_flags, level, index, payload_size)
+        header = super().make_xpra_header(packet_type, proto_flags, level, index, payload_size)
         log("make_wschunk_header(%s)", (packet_type, proto_flags, level, index, payload_size))
         return encode_hybi_header(OPCODE_BINARY, payload_size+len(header))+header
 

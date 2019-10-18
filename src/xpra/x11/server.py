@@ -199,7 +199,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.wm_name = opts.wm_name
         self.sync_xvfb = int(opts.sync_xvfb)
         self.system_tray = opts.system_tray
-        X11ServerBase.init(self, opts)
+        super().init(opts)
         self.fake_xinerama = opts.fake_xinerama
         def log_server_event(_, event):
             eventlog("server-event: %s", event)

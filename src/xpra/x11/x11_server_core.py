@@ -93,7 +93,7 @@ class X11ServerCore(GTKServerBase):
 
     def init(self, opts):
         self.do_init(opts)
-        GTKServerBase.init(self, opts)
+        super().init(opts)
 
     def server_init(self):
         with xsync:

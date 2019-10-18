@@ -211,7 +211,7 @@ class Connection(object):
 # socket (if it exists)
 class TwoFileConnection(Connection):
     def __init__(self, writeable, readable, abort_test=None, target=None, socktype="", close_cb=None, info=None):
-        Connection.__init__(self, target, socktype, info)
+        super().__init__(target, socktype, info)
         self._writeable = writeable
         self._readable = readable
         self._read_fd = self._readable.fileno()
@@ -271,7 +271,7 @@ TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss")
 class SocketConnection(Connection):
     def __init__(self, sock, local, remote, target, socktype, info=None, socket_options=None):
         log("SocketConnection%s", (sock, local, remote, target, socktype, info))
-        Connection.__init__(self, target, socktype, info, socket_options)
+        super().__init__(target, socktype, info, socket_options)
         self._socket = sock
         self.local = local
         self.remote = remote
@@ -544,7 +544,7 @@ class SSLSocketConnection(SocketConnection):
         code = getattr(e, "code", None)
         if code in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
             return True
-        return SocketConnection.can_retry(self, e)
+        return super().can_retry(e)
 
     def enable_peek(self):
         assert not isinstance(self._socket, SSLSocketWrapper)

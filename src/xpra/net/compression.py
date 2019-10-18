@@ -217,7 +217,7 @@ class Compressed(object):
 
 class LevelCompressed(Compressed):
     def __init__(self, datatype, data, level, algo, can_inline):
-        Compressed.__init__(self, datatype, data, can_inline)
+        super().__init__(datatype, data, can_inline)
         self.level = level
         self.algorithm = algo
     def __repr__(self):

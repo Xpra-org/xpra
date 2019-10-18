@@ -29,7 +29,7 @@ class ClientTray(ClientWidgetBase):
 
     def __init__(self, client, wid, w, h, metadata, tray_widget, mmap_enabled, mmap_area):
         log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_enabled, mmap_area))
-        ClientWidgetBase.__init__(self, client, 0, wid, True)
+        super().__init__(client, 0, wid, True)
         self._metadata = metadata
         self.title = metadata.strget("title", "")
         self.tray_widget = tray_widget
@@ -205,7 +205,7 @@ class TrayBacking(WindowBackingBase):
 
     def __init__(self, wid, _w, _h, _has_alpha, data=None):
         self.data = data
-        WindowBackingBase.__init__(self, wid, True)
+        super().__init__(wid, True)
         self._backing = object()    #pretend we have a backing structure
 
     def get_encoding_properties(self):

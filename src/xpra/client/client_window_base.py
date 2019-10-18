@@ -48,7 +48,7 @@ class ClientWindowBase(ClientWidgetBase):
              wx, wy, ww, wh, bw, bh,
              metadata, override_redirect, client_properties,
              border, max_window_size, default_cursor_data, pixel_depth))
-        ClientWidgetBase.__init__(self, client, watcher_pid, wid, metadata.boolget("has-alpha"))
+        super().__init__(client, watcher_pid, wid, metadata.boolget("has-alpha"))
         self._override_redirect = override_redirect
         self.group_leader = group_leader
         self._pos = (wx, wy)

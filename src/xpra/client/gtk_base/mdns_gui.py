@@ -20,7 +20,7 @@ HIDE_IPV6 = envbool("XPRA_HIDE_IPV6", False)
 class mdns_sessions(SessionsGUI):
 
     def __init__(self, options):
-        SessionsGUI.__init__(self, options)
+        super().__init__(options)
         listener_class = get_listener_class()
         assert listener_class
         self.listener = listener_class(XPRA_MDNS_TYPE,

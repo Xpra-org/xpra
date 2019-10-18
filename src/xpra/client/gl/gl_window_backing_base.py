@@ -249,7 +249,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.last_flush = monotonic_time()
         self.last_present_fbo_error = None
 
-        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
+        super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.init_gl_config(self._alpha_enabled)
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
@@ -1002,7 +1002,7 @@ class GLWindowBackingBase(WindowBackingBase):
             flush = options.intget("flush", 0)
             self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, callbacks)
             return
-        WindowBackingBase.paint_webp(self, img_data, x, y, width, height, options, callbacks)
+        super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
     def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
         log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",

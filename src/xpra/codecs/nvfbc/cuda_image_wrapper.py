@@ -17,7 +17,7 @@ log = Logger("cuda", "nvfbc")
 class CUDAImageWrapper(ImageWrapper):
 
     def __init__(self, *args):
-        ImageWrapper.__init__(self, *args)
+        super().__init__(*args)
         self.stream = None
         self.cuda_device_buffer = None
         self.cuda_context = None
@@ -68,7 +68,7 @@ class CUDAImageWrapper(ImageWrapper):
 
     def get_sub_image(self, x, y, w, h):
         self.may_download()
-        return ImageWrapper.get_sub_image(self, x, y, w, h)
+        return super().get_sub_image(x, y, w, h)
 
     def free_cuda_device_buffer(self):
         cdb = self.cuda_device_buffer

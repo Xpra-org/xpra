@@ -1408,7 +1408,7 @@ class NVENCException(Exception):
         self.function = fn
         self.code = code
         msg = "%s - returned %s" % (fn, nvencStatusInfo(code))
-        Exception.__init__(self, msg)
+        super().__init__(msg)
 
 cdef inline raiseNVENC(NVENCSTATUS ret, msg):
     if DEBUG_API:

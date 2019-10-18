@@ -146,7 +146,7 @@ class FileTransferHandler(FileTransferAttributes):
     """
 
     def init_attributes(self, *args):
-        FileTransferAttributes.init_attributes(self, *args)
+        super().init_attributes(*args)
         self.remote_file_transfer = False
         self.remote_file_transfer_ask = False
         self.remote_printing = False

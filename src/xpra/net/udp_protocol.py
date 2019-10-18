@@ -121,7 +121,7 @@ class UDPProtocol(Protocol):
     """
 
     def __init__(self, *args, **kwargs):
-        Protocol.__init__(self, *args)
+        super().__init__(*args)
         self.mtu = 0
         self.last_sequence = -1     #the most recent packet sequence we processed in full
         self.highest_sequence = -1
@@ -419,7 +419,7 @@ class UDPProtocol(Protocol):
         log("_send_async(%s, %s)", packet, sync)
         chunks = self.encode(packet)
         if len(chunks)>1:
-            return Protocol.send_now(self, packet)
+            return super().send_now(packet)
         proto_flags,index,level,data = chunks[0]
         from xpra.net.header import pack_header
         payload_size = len(data)
@@ -433,7 +433,7 @@ class UDPProtocol(Protocol):
         """ make sure we don't enable asynchronous mode until the other end is read """
         if not self.asynchronous_send_enabled:
             synchronous = True
-        Protocol.raw_write(self, items, start_cb, end_cb, fail_cb, synchronous)
+        super().raw_write(items, start_cb, end_cb, fail_cb, synchronous)
 
     def write_buffers(self, buf_data, fail_cb, synchronous):
         """
@@ -492,7 +492,7 @@ class UDPProtocol(Protocol):
 
 
     def get_info(self, alias_info=True):
-        i = Protocol.get_info(self, alias_info)
+        i = super().get_info(alias_info)
         i.update({
             "mtu"   : {
                 ""      : clamp_mtu(self.mtu),
@@ -513,11 +513,11 @@ class UDPServerProtocol(UDPProtocol):
 class UDPClientProtocol(UDPProtocol):
 
     def __init__(self, *args, **kwargs):
-        UDPProtocol.__init__(self, *args, uuid = random.randint(0, 2**64-1))
+        super().__init__(*args, uuid = random.randint(0, 2**64-1))
 
     def con_write(self, data, fail_cb):
         """ After successfully writing some data, update the mtu value """
-        r = UDPProtocol.con_write(self, data, fail_cb)
+        r = super().con_write(data, fail_cb)
         if r>0 and LINUX:
             IP_MTU = 14
             con = self._conn
@@ -548,9 +548,6 @@ class UDPSocketConnection(SocketConnection):
         (servers use a single socket to talk to multiple clients,
         they do not call connect() and so we have to specify the remote target every time)
     """
-
-    def __init__(self, *args):
-        SocketConnection.__init__(self, *args)
 
     def write(self, buf):
         #log("UDPSocketConnection: sending %i bytes to %s", len(buf), self.remote)

@@ -37,7 +37,7 @@ def DBUS_Notifier_factory(*args):
 class DBUS_Notifier(NotifierBase):
 
     def __init__(self, *args):
-        NotifierBase.__init__(self, *args)
+        super().__init__(*args)
         self.app_name_format = NOTIFICATION_APP_NAME
         self.last_notification = None
         self.actual_notification_id = {}

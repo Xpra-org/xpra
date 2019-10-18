@@ -27,7 +27,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                  http_headers_dir="/usr/share/xpra/http-headers", script_paths=None):
         self.new_websocket_client = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
-        HTTPRequestHandler.__init__(self, sock, addr, web_root, http_headers_dir, script_paths)
+        super().__init__(sock, addr, web_root, http_headers_dir, script_paths)
 
     def handle_websocket(self):
         log("handle_websocket() calling %s, request=%s (%s)",

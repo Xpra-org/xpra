@@ -38,7 +38,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         self.support_actions = True
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
-        dbus.service.Object.__init__(self, bus_name, BUS_PATH)
+        super().__init__(bus_name, BUS_PATH)
 
     def get_info(self) -> dict:
         return {

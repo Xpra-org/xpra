@@ -30,7 +30,7 @@ class CairoBackingBase(WindowBackingBase):
     HAS_ALPHA = GTK_ALPHA_SUPPORTED
 
     def __init__(self, wid, window_alpha, _pixel_depth=0):
-        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
+        super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.idle_add = GLib.idle_add
 
     def init(self, ww, wh, bw, bh):

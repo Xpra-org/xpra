@@ -85,7 +85,7 @@ class ShadowServer(GTKShadowServerBase):
         GTKShadowServerBase.__init__(self)
 
     def init(self, opts):
-        GTKShadowServerBase.init(self, opts)
+        super().init(opts)
         self.keycodes = {}
         #printing fails silently on OSX
         self.printing = False

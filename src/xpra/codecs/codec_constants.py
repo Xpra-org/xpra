@@ -163,7 +163,7 @@ class video_spec(_codec_spec):
         self.input_colorspace = input_colorspace
         self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
         self.has_lossless_mode = has_lossless_mode
-        _codec_spec.__init__(self, codec_class, codec_type, **kwargs)
+        super().__init__(codec_class, codec_type, **kwargs)
         self._exported_fields += ["encoding", "input_colorspace", "output_colorspaces", "has_lossless_mode"]
 
     def __repr__(self):
@@ -175,7 +175,7 @@ class csc_spec(_codec_spec):
     def __init__(self, input_colorspace, output_colorspace, codec_class, codec_type, **kwargs):
         self.input_colorspace = input_colorspace
         self.output_colorspace = output_colorspace
-        _codec_spec.__init__(self, codec_class, codec_type, **kwargs)
+        super().__init__(codec_class, codec_type, **kwargs)
         self._exported_fields += ["input_colorspace", "output_colorspace"]
 
     def __repr__(self):

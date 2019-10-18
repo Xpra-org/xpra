@@ -245,7 +245,7 @@ class SeamlessRootWindowModel(RootWindowModel):
         if signal=="notify::shape":
             self.shape_notify.append((cb, args))
         else:
-            RootWindowModel.connect(self, signal, cb, *args)
+            super().connect(signal, cb, *args)
 
     def get_shape_rectangles(self, logit=False):
         #get the list of windows
@@ -370,7 +370,7 @@ class ShadowServer(GTKShadowServerBase):
         self.pixel_depth = int(opts.pixel_depth) or 32
         if self.pixel_depth not in (24, 30, 32):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
-        GTKShadowServerBase.init(self, opts)
+        super().init(opts)
 
 
     def power_broadcast_event(self, wParam, lParam):

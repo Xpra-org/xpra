@@ -318,6 +318,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     ################################################################################
 
     def stop(self, skip_proto, *reasons):
-        ProxyInstance.stop(self, skip_proto, *reasons)
+        super().stop(skip_proto, *reasons)
         self.stop_control_socket()
         QueueScheduler.stop(self)

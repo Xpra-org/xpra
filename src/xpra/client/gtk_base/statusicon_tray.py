@@ -31,7 +31,7 @@ SAVE = envbool("XPRA_SAVE_SYSTRAY", False)
 class GTKStatusIconTray(TrayBase):
 
     def __init__(self, *args, **kwargs):
-        TrayBase.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.tray_widget = Gtk.StatusIcon()
         self.tray_widget.set_tooltip_text(self.tooltip or "Xpra")
         self.tray_widget.connect('activate', self.activate_menu)

@@ -182,10 +182,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     #maximum size of the backing pixel buffer:
     MAX_BACKING_DIMS = 16*1024, 16*1024
 
-    def __init__(self, *args, **kwargs):
-        ClientWindowBase.__init__(self, *args, **kwargs)
-        #Gtk.Window.__init__() is called from do_init_window()
-
     def init_window(self, metadata):
         self.init_max_window_size()
         if self._is_popup(metadata):

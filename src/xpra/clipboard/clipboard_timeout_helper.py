@@ -22,7 +22,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
 
     #a clipboard superclass that handles timeouts
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
-        ClipboardProtocolHelperCore.__init__(self, send_packet_cb, progress_cb, **kwargs)
+        super().__init__(send_packet_cb, progress_cb, **kwargs)
         self._clipboard_outstanding_requests = {}
 
     def cleanup(self):
@@ -43,7 +43,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         return proxy
 
     def set_want_targets_client(self, want_targets):
-        ClipboardProtocolHelperCore.set_want_targets_client(self, want_targets)
+        super().set_want_targets_client(want_targets)
         #pass it on to the ClipboardProxy instances:
         for proxy in self._clipboard_proxies.values():
             proxy.set_want_targets(want_targets)
