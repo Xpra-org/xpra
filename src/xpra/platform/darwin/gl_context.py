@@ -144,7 +144,7 @@ class AGLContext(object):
             nsview = objc.objc_object(c_void_p=nsview_ptr)
             log("get_paint_context(%s) nsview(%#x)=%s", gdk_window, nsview_ptr, nsview)
             if self.alpha and enable_transparency:
-                self.gl_context.setValues_forParameter_(0, NSOpenGLCPSurfaceOpacity)
+                self.gl_context.setValues_forParameter_([0], NSOpenGLCPSurfaceOpacity)
                 enable_transparency(gdk_window)
             self.window_context = AGLWindowContext(self.gl_context, nsview)
         return self.window_context
