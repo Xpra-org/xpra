@@ -1090,8 +1090,8 @@ class SessionInfo(Gtk.Window):
         #newer servers store it under client
         self.client.send_info_request("network", "damage", "state", "batch", "client")
         box = self.tab_box
-        h = box.get_preferred_height()
-        bh = self.tab_button_box.get_preferred_height()
+        h = box.get_preferred_height()[0]
+        bh = self.tab_button_box.get_preferred_height()[0]
         if h<=0:
             return True
         start_x_offset = min(1.0, (monotonic_time()-self.last_populate_time)*0.95)
