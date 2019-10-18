@@ -252,6 +252,8 @@ class typedict(dict):
             return d
 
     def boolget(self, k, default_value=False):
+        #warning: this does not honour the default_value if it is not a boolean
+        #see changeset 24140 for the fix applied in trunk
         return bool(self.capsget(k, default_value))
 
     def dictget(self, k, default_value={}):
