@@ -12,3 +12,30 @@ def do_init():
 
 def do_clean():
     pass
+
+
+exit_cb = None
+def quit_handler(*_args):
+    global exit_cb
+    if exit_cb:
+        exit_cb()
+    else:
+        from xpra.gtk_common.quit import gtk_main_quit_really
+        gtk_main_quit_really()
+    return True
+
+def set_exit_cb(ecb):
+    global exit_cb
+    exit_cb = ecb
+
+macapp = None
+def get_OSXApplication():
+    global macapp
+    if macapp is None:
+        import gi
+        gi.require_version('GtkosxApplication', '1.0')
+        from gi.repository import GtkosxApplication #@UnresolvedImport
+        gtkosx_application = GtkosxApplication()
+        macapp = gtkosx_application.Application()
+        macapp.connect("NSApplicationWillTerminate", quit_handler)
+    return macapp

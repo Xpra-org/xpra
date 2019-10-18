@@ -23,18 +23,12 @@ def do_get_resources_dir():
     #FUGLY warning: importing gtkosx_application causes the dock to appear,
     #and in some cases we don't want that.. so use the env var XPRA_SKIP_UI as workaround for such cases:
     if not envbool("XPRA_SKIP_UI", False):
+        from xpra.platform.darwin import get_OSXApplication
+        macapp = get_OSXApplication()
         try:
-            import gi
-            gi.require_version('GtkosxApplication', '1.0')
-            from gi.repository import GtkosxApplication #@UnresolvedImport
-            gtkosx_application = GtkosxApplication()
-            try:
-                rsc = gtkosx_application.gtkosx_application_get_resource_path()
-                debug("get_resources_dir() gtkosx_application_get_resource_path=%s", rsc)
-            except:
-                #maybe we're not running from an app bundle?
-                pass
-        except:
+            rsc = macapp.get_resource_path()
+            debug("get_resources_dir() %s.get_resource_path=%s", macapp, rsc)
+        except Exception:
             global _gtkosx_warning_
             if _gtkosx_warning_ is False:
                 _gtkosx_warning_ = True

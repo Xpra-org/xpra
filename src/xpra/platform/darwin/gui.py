@@ -9,6 +9,8 @@ import math
 import ctypes
 import struct
 import weakref
+
+from gi.repository import GLib
 import objc                         #@UnresolvedImport
 import Quartz                       #@UnresolvedImport
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
@@ -31,10 +33,10 @@ from Foundation import (
     NSUserNotification, NSUserNotificationCenter,   #@UnresolvedImport
     NSUserNotificationDefaultSoundName,             #@UnresolvedImport
     )
-from gi.repository import GLib
 
 from xpra.util import envbool, envint, roundup
 from xpra.notifications.notifier_base import NotifierBase
+from xpra.platform.darwin import get_OSXApplication
 from xpra.log import Logger
 
 log = Logger("osx", "events")
@@ -63,36 +65,8 @@ ALPHA = {
 try:
     Carbon_ctypes = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
     GetDblTime = Carbon_ctypes.GetDblTime
-except:
+except Exception:
     GetDblTime = None
-
-
-exit_cb = None
-def quit_handler(*_args):
-    global exit_cb
-    if exit_cb:
-        exit_cb()
-    else:
-        from xpra.gtk_common.quit import gtk_main_quit_really
-        gtk_main_quit_really()
-    return True
-
-def set_exit_cb(ecb):
-    global exit_cb
-    exit_cb = ecb
-
-
-macapp = None
-def get_OSXApplication():
-    global macapp
-    if macapp is None:
-        import gi
-        gi.require_version('GtkosxApplication', '1.0')
-        from gi.repository import GtkosxApplication #@UnresolvedImport
-        gtkosx_application = GtkosxApplication()
-        macapp = gtkosx_application.Application()
-        macapp.connect("NSApplicationWillTerminate", quit_handler)
-    return macapp
 
 
 def do_init():
