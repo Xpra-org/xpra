@@ -1,7 +1,7 @@
 Index: scripts/gnome-open
 ===================================================================
---- scripts/gnome-open	(revision 24151)
-+++ scripts/gnome-open	(working copy)
+--- a/scripts/gnome-open	(revision 24151)
++++ b/scripts/gnome-open	(working copy)
 @@ -1,4 +1,4 @@
 -#!/usr/bin/sh
 +#!/bin/sh
@@ -10,8 +10,8 @@ Index: scripts/gnome-open
  # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 Index: scripts/gvfs-open
 ===================================================================
---- scripts/gvfs-open	(revision 24151)
-+++ scripts/gvfs-open	(working copy)
+--- a/scripts/gvfs-open	(revision 24151)
++++ b/scripts/gvfs-open	(working copy)
 @@ -1,4 +1,4 @@
 -#!/usr/bin/sh
 +#!/bin/sh
@@ -20,8 +20,8 @@ Index: scripts/gvfs-open
  # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 Index: scripts/xpra_udev_product_version
 ===================================================================
---- scripts/xpra_udev_product_version	(revision 24151)
-+++ scripts/xpra_udev_product_version	(working copy)
+--- a/scripts/xpra_udev_product_version	(revision 24151)
++++ b/scripts/xpra_udev_product_version	(working copy)
 @@ -1,4 +1,4 @@
 -#!/usr/bin/bash
 +#!/bin/bash
