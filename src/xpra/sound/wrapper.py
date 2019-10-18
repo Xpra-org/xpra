@@ -103,7 +103,7 @@ class sound_subprocess(subprocess_callee):
             def force_exit():
                 sys.exit(1)
             self.timeout_add(FAKE_CRASH*1000, force_exit)
-        super().start(self)
+        super().start()
 
     def cleanup(self):
         wo = self.wrapped_object
