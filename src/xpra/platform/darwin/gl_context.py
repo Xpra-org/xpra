@@ -12,13 +12,13 @@ from Cocoa import (
     )
 from xpra.gtk_common.gtk_util import GDKWindow
 from xpra.client.gl.gl_check import check_PyOpenGL_support
+from xpra.platform.darwin.gdk3_bindings import (    #@UnresolvedImport
+    get_nsview_ptr, enable_transparency,            #@UnresolvedImport
+    )
 from xpra.log import Logger
 
 log = Logger("opengl")
 
-from xpra.platform.darwin.gdk3_bindings import (    #@UnresolvedImport
-    get_nsview_ptr, enable_transparency,            #@UnresolvedImport
-    )
 
 
 class AGLWindowContext(object):
