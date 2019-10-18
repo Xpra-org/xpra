@@ -19,9 +19,9 @@ class ProxyInstanceThread(ProxyInstance):
                  video_encoders, pings,
                  client_proto, server_conn,
                  disp_desc, cipher, encryption_key, caps):
-        ProxyInstance.__init__(self, session_options,
-                               video_encoders, pings,
-                               disp_desc, cipher, encryption_key, caps)
+        super().__init__(session_options,
+                         video_encoders, pings,
+                         disp_desc, cipher, encryption_key, caps)
         self.client_protocol = client_proto
         self.server_conn = server_conn
 

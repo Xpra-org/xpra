@@ -115,7 +115,7 @@ class GTKServerBase(ServerBase):
 
 
     def make_hello(self, source):
-        capabilities = ServerBase.make_hello(self, source)
+        capabilities = super().make_hello(source)
         if source.wants_display:
             display = Gdk.Display.get_default()
             max_size = tuple(display.get_maximal_cursor_size())
@@ -129,7 +129,7 @@ class GTKServerBase(ServerBase):
         return capabilities
 
     def get_ui_info(self, proto, *args):
-        info = ServerBase.get_ui_info(self, proto, *args)
+        info = super().get_ui_info(proto, *args)
         info.setdefault("server", {}).update({
                                               "display"             : Gdk.Display.get_default().get_name(),
                                               "root_window_size"    : self.get_root_window_size(),
@@ -185,7 +185,7 @@ class GTKServerBase(ServerBase):
 
     def do_get_info(self, proto, *args):
         start = monotonic_time()
-        info = ServerBase.do_get_info(self, proto, *args)
+        info = super().do_get_info(proto, *args)
         vi = get_gtk_version_info()
         vi["type"] = "Python/gtk"
         info.setdefault("server", {}).update(vi)

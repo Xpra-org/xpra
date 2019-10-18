@@ -57,7 +57,7 @@ class Authenticator(SysAuthenticator):
             raise
         self.peername = peername
         self.host = host
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
 
     def requires_challenge(self) -> bool:
         return False

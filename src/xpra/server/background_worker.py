@@ -20,7 +20,7 @@ class Worker_Thread(Thread):
     """
 
     def __init__(self):
-        Thread.__init__(self, name="Worker_Thread")
+        super().__init__(name="Worker_Thread")
         self.items = Queue()
         self.exit = False
         self.setDaemon(True)

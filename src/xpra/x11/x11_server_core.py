@@ -347,7 +347,7 @@ class X11ServerCore(GTKServerBase):
             keylog("keyboard repeat disabled")
 
     def make_hello(self, source):
-        capabilities = GTKServerBase.make_hello(self, source)
+        capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/gtk/x11"
         if source.wants_features:
             capabilities.update({
@@ -368,7 +368,7 @@ class X11ServerCore(GTKServerBase):
 
     def do_get_info(self, proto, server_sources):
         start = monotonic_time()
-        info = GTKServerBase.do_get_info(self, proto, server_sources)
+        info = super().do_get_info(proto, server_sources)
         if self.opengl_props:
             info["opengl"] = self.opengl_props
         sinfo = info.setdefault("server", {})
@@ -382,7 +382,7 @@ class X11ServerCore(GTKServerBase):
 
     def get_ui_info(self, proto, wids=None, *args):
         log("do_get_info thread=%s", threading.current_thread())
-        info = GTKServerBase.get_ui_info(self, proto, wids, *args)
+        info = super().get_ui_info(proto, wids, *args)
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
         if not self.readonly:
             with xlog:

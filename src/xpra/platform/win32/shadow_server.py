@@ -218,7 +218,7 @@ def init_capture(w, h, pixel_depth=32):
 class SeamlessRootWindowModel(RootWindowModel):
 
     def __init__(self, root, capture):
-        RootWindowModel.__init__(self, root, capture)
+        super().__init__(root, capture)
         log("SeamlessRootWindowModel(%s, %s) SEAMLESS=%s", root, capture, SEAMLESS)
         self.property_names.append("shape")
         self.dynamic_property_names.append("shape")
@@ -333,7 +333,7 @@ class SeamlessRootWindowModel(RootWindowModel):
             shape = {"Bounding.rectangles" : self.rectangles}
             #provide clip rectangle? (based on workspace area?)
             return shape
-        return RootWindowModel.get_property(self, prop)
+        return super().get_property(prop)
 
 
 class ShadowServer(GTKShadowServerBase):

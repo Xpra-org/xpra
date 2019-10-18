@@ -14,7 +14,7 @@ from xpra.server.auth.sys_auth_base import log
 class Authenticator(SQLAuthenticator):
 
     def __init__(self, username, uri, **kwargs):
-        SQLAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         self.uri = uri
 
     def db_cursor(self, *sqlargs):
@@ -34,7 +34,7 @@ class Authenticator(SQLAuthenticator):
 class SQLDatabaseUtil(DatabaseUtilBase):
 
     def __init__(self, uri):
-        DatabaseUtilBase.__init__(self, uri)
+        super().__init__(uri)
         #from sqlalchemy import create_engine    #@UnresolvedImport
         #db = create_engine(self.uri)
         self.param = os.environ.get("PARAMSTYLE", "%s")

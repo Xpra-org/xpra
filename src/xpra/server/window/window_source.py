@@ -133,7 +133,7 @@ class WindowSource(WindowIconSource):
                     rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size, bandwidth_limit, jitter):
-        WindowIconSource.__init__(self, window_icon_encodings, icons_encoding_options)
+        super().__init__(window_icon_encodings, icons_encoding_options)
         self.idle_add = idle_add
         self.timeout_add = timeout_add
         self.source_remove = source_remove

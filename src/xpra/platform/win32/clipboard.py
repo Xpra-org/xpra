@@ -62,7 +62,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
     """
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         self.init_window()
-        ClipboardTimeoutHelper.__init__(self, send_packet_cb, progress_cb, **kwargs)
+        super().__init__(send_packet_cb, progress_cb, **kwargs)
 
     def init_window(self):
         log("Win32Clipboard.init_window() creating clipboard window class and instance")
@@ -129,13 +129,13 @@ class Win32Clipboard(ClipboardTimeoutHelper):
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
         if encoding=="atoms":
             return _filter_targets(data)
-        return ClipboardTimeoutHelper._munge_wire_selection_to_raw(self, encoding, dtype, dformat, data)
+        return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         if dtype=="ATOM":
             assert isinstance(data, (tuple, list))
             return "atoms", _filter_targets(data)
-        return ClipboardTimeoutHelper._munge_raw_selection_to_wire(self, target, dtype, dformat, data)
+        return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)
 
 
 class Win32ClipboardProxy(ClipboardProxyCore):
@@ -143,7 +143,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.window = window
         self.send_clipboard_request_handler = send_clipboard_request_handler
         self.send_clipboard_token_handler = send_clipboard_token_handler
-        ClipboardProxyCore.__init__(self, selection)
+        super().__init__(selection)
 
     def set_want_targets(self, want_targets):
         self._want_targets = want_targets

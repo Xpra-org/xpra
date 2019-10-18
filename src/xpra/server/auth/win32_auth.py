@@ -33,7 +33,7 @@ class Authenticator(SysAuthenticator):
     def get_challenge(self, digests):
         if "xor" not in digests:
             raise Exception("win32 authenticator requires the 'xor' digest")
-        return SysAuthenticator.get_challenge(self, ["xor"])
+        return super().get_challenge(["xor"])
 
     def check(self, password) -> bool:
         token = HANDLE()

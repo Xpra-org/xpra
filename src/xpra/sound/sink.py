@@ -77,7 +77,7 @@ class SoundSink(SoundPipeline):
                 csv(codecs), csv(get_decoders().keys())))
         codec = matching[0]
         decoder, parser, stream_compressor = get_decoder_elements(codec)
-        SoundPipeline.__init__(self, codec)
+        super().__init__(codec)
         self.container_format = (parser or "").replace("demux", "").replace("depay", "")
         self.sink_type = sink_type
         self.stream_compressor = stream_compressor

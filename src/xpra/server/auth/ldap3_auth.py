@@ -38,7 +38,7 @@ class Authenticator(SysAuthenticatorBase):
         self.authentication = kwargs.pop("authentication", "NTLM").upper()
         assert self.authentication in ("SIMPLE", "SASL", "NTLM"), "invalid authentication mechanism '%s'" % self.authentication
         username = kwargs.pop("username", username)
-        SysAuthenticatorBase.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         log("ldap auth: host=%s, port=%i, tls=%s",
             self.host, self.port, self.tls)
 
@@ -55,7 +55,7 @@ class Authenticator(SysAuthenticatorBase):
         if "xor" not in digests:
             log.error("Error: ldap authentication requires the 'xor' digest")
             return None
-        return SysAuthenticatorBase.get_challenge(self, ["xor"])
+        return super().get_challenge(["xor"])
 
     def check(self, password) -> bool:
         log("check(%s)", obsc(password))

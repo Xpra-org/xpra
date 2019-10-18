@@ -133,7 +133,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def parse_options(self, props):
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
-        KeyboardConfigBase.parse_options(self, props)
+        super().parse_options(props)
         modded = {}
         def parse_option(name, parse_fn, *parse_args):
             prop = "xkbmap_%s" % name

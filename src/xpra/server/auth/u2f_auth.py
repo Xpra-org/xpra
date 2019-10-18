@@ -28,7 +28,7 @@ class Authenticator(SysAuthenticator):
     def __init__(self, username, **kwargs):
         self.app_id = kwargs.pop("app_id", APP_ID)
         key_hexstring = kwargs.pop("public_key", "")
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         self.public_keys = {}
         key_strs = {}
         if key_hexstring:

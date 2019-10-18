@@ -43,7 +43,7 @@ def db_from_uri(uri):
 class Authenticator(SQLAuthenticator):
 
     def __init__(self, username, uri, **kwargs):
-        SQLAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         self.uri = uri
 
     def db_cursor(self, *sqlargs):
@@ -62,7 +62,7 @@ class Authenticator(SQLAuthenticator):
 class MySQLDatabaseUtil(DatabaseUtilBase):
 
     def __init__(self, uri):
-        DatabaseUtilBase.__init__(self, uri)
+        super().__init__(uri)
         import mysql.connector as mysql  #@UnresolvedImport
         assert mysql.paramstyle=="pyformat"
         self.param = "%s"

@@ -63,7 +63,7 @@ class X11ServerBase(X11ServerCore):
         self.display_pid = 0
 
     def do_init(self, opts):
-        X11ServerCore.do_init(self, opts)
+        super().do_init(opts)
         self._xsettings_enabled = opts.xsettings
         if self._xsettings_enabled:
             from xpra.x11.xsettings import XSettingsHelper

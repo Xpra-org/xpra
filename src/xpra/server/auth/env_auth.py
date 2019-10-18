@@ -11,7 +11,7 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
         self.var_name = kwargs.pop("name", "XPRA_PASSWORD")
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         self.authenticate = self.authenticate_hmac
 
     def __repr__(self):

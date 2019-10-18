@@ -23,7 +23,7 @@ class Proxy_DBUS_Server(DBUS_Server_Base):
             bus = init_system_bus()
         else:
             bus = init_session_bus()
-        DBUS_Server_Base.__init__(self, bus, server, BUS_NAME)
+        super().__init__(bus, server, BUS_NAME)
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}')
     def GetInfo(self):

@@ -59,7 +59,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
     """
 
     def __init__(self, client=None):
-        GTKTrayMenuBase.__init__(self, client)
+        super().__init__(client)
         log("OSXMenuHelper(%s)", client)
         self.menu_bar = None
         self.hidden_window = None

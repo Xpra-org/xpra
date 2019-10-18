@@ -18,7 +18,7 @@ except ImportError:
 class Win32_Notifier(NotifierBase):
 
     def __init__(self, *args):
-        NotifierBase.__init__(self, *args)
+        super().__init__(*args)
         self.handles_actions = GTK_Notifier is not None
         self.gtk_notifier = None
         self.gtk_notifications = set()

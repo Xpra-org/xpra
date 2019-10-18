@@ -10,7 +10,7 @@ from xpra.platform.info import get_username
 class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
-        SysAuthenticator.__init__(self, username or get_username(), **kwargs)
+        super().__init__(username or get_username(), **kwargs)
         self.salt = None
 
     def requires_challenge(self):

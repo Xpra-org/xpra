@@ -24,7 +24,7 @@ class FileAuthenticatorBase(SysAuthenticator):
             exec_cwd = kwargs.get("exec_cwd", os.getcwd())
             password_file = os.path.join(exec_cwd, password_file)
         log("FileAuthenticatorBase filename=%s", password_file)
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         self.password_filename = password_file
         self.password_filedata = None
         self.password_filetime = None

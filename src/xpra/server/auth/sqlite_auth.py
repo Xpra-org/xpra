@@ -15,7 +15,7 @@ from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run
 class Authenticator(SQLAuthenticator):
 
     def __init__(self, username, filename="sqlite.sdb", **kwargs):
-        SQLAuthenticator.__init__(self, username)
+        super().__init__(username)
         if filename and not os.path.isabs(filename):
             exec_cwd = kwargs.get("exec_cwd", os.getcwd())
             filename = os.path.join(exec_cwd, filename)
@@ -65,7 +65,7 @@ class Authenticator(SQLAuthenticator):
 class SqliteDatabaseUtil(DatabaseUtilBase):
 
     def __init__(self, uri):
-        DatabaseUtilBase.__init__(self, uri)
+        super().__init__(uri)
         import sqlite3
         assert sqlite3.paramstyle=="qmark"
         self.param = "?"

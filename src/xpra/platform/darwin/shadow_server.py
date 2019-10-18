@@ -144,12 +144,12 @@ class ShadowServer(GTKShadowServerBase):
                 return
             log.warn("Warning: CGRegisterScreenRefreshCallback failed with error %i", err)
             log.warn(" using fallback timer method")
-        GTKShadowServerBase.start_refresh(self, wid)
+        super().start_refresh(wid)
 
     def stop_refresh(self, wid):
         log("stop_refresh(%i) mapped=%s, timer=%s", wid, self.mapped, self.refresh_timer)
         #may stop the timer fallback:
-        GTKShadowServerBase.stop_refresh(self, wid)
+        super().stop_refresh(wid)
         if self.refresh_registered and not self.mapped:
             try:
                 err = CG.CGUnregisterScreenRefreshCallback(self.screen_refresh_callback, None)

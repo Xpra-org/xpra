@@ -81,7 +81,7 @@ class SoundSource(SoundPipeline):
             raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_encoders().keys())))
         codec = matching[0]
         encoder, fmt, stream_compressor = get_encoder_elements(codec)
-        SoundPipeline.__init__(self, codec)
+        super().__init__(codec)
         self.queue = None
         self.caps = None
         self.volume = None

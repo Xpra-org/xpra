@@ -320,12 +320,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def server_event(self, *args):
-        X11ServerBase.server_event(self, *args)
+        super().server_event(*args)
         self.emit("server-event", args)
 
 
     def make_hello(self, source):
-        capabilities = X11ServerBase.make_hello(self, source)
+        capabilities = super().make_hello(source)
         if source.wants_features:
             capabilities["pointer.grabs"] = True
             updict(capabilities, "window", {
@@ -347,7 +347,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     # info:
     #
     def do_get_info(self, proto, server_sources):
-        info = X11ServerBase.do_get_info(self, proto, server_sources)
+        info = super().do_get_info(proto, server_sources)
         info.setdefault("state", {}).update({
                                              "focused"  : self._has_focus,
                                              "grabbed"  : self._has_grab,
@@ -355,7 +355,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return info
 
     def get_ui_info(self, proto, wids=None, *args):
-        info = X11ServerBase.get_ui_info(self, proto, wids, *args)
+        info = super().get_ui_info(proto, wids, *args)
         #_NET_WM_NAME:
         wm = self._wm
         if wm:
@@ -363,7 +363,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return info
 
     def get_window_info(self, window):
-        info = X11ServerBase.get_window_info(self, window)
+        info = super().get_window_info(window)
         info.update({
                      "focused"  : self._has_focus and self._window_to_id.get(window, -1)==self._has_focus,
                      "grabbed"  : self._has_grab and self._window_to_id.get(window, -1)==self._has_grab,
@@ -1057,7 +1057,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #we have handled it on the window directly, so remove it from client properties
             del new_client_properties["workspace"]
         #handle the rest as normal:
-        X11ServerBase._set_client_properties(self, proto, wid, window, new_client_properties)
+        super()._set_client_properties(proto, wid, window, new_client_properties)
 
 
     """ override so we can raise the window under the cursor
@@ -1072,7 +1072,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 mouselog("raising %s", window)
                 with xswallow:
                     window.raise_window()
-        X11ServerBase._move_pointer(self, wid, pos, *args)
+        super()._move_pointer(wid, pos, *args)
 
 
     def _process_close_window(self, proto, packet):

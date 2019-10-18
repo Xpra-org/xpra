@@ -43,7 +43,7 @@ class DBUS_Server(DBUS_Server_Base):
         name = BUS_NAME
         if extra:
             name += extra.replace(".", "_").replace(":", "_")
-        DBUS_Server_Base.__init__(self, bus, server, name)
+        super().__init__(bus, server, name)
         self._properties.update({
             "idle-timeout"          : ("idle_timeout",          ni),
             "server-idle-timeout"   : ("server_idle_timeout",   ni),

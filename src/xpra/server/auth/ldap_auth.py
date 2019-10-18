@@ -36,7 +36,7 @@ class Authenticator(SysAuthenticatorBase):
         self.port = int(kwargs.pop("port", default_port))
         self.username_format = kwargs.pop("username_format", "cn=%username, o=%domain")
         #self.username_format = kwargs.pop("username_format", "%username@%domain")
-        SysAuthenticatorBase.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         log("ldap auth: host=%s, port=%i, tls=%s, username_format=%s, cacert=%s, encoding=%s",
             self.host, self.port, self.tls, self.username_format, self.cacert, self.encoding)
 
@@ -53,7 +53,7 @@ class Authenticator(SysAuthenticatorBase):
         if "xor" not in digests:
             log.error("Error: ldap authentication requires the 'xor' digest")
             return None
-        return SysAuthenticatorBase.get_challenge(self, ["xor"])
+        return super().get_challenge(["xor"])
 
     def check(self, password) -> bool:
         log("check(%s)", obsc(password))

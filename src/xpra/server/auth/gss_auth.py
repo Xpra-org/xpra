@@ -19,7 +19,7 @@ class Authenticator(SysAuthenticatorBase):
         self.gid = parse_gid(kwargs.pop("gid", None))
         username = kwargs.pop("username", username)
         kwargs["prompt"] = kwargs.pop("prompt", "GSS token")
-        SysAuthenticatorBase.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         log("gss auth: service=%s, username=%s", self.service, username)
 
     def get_uid(self):

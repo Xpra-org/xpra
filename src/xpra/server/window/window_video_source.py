@@ -105,7 +105,7 @@ class WindowVideoSource(WindowSource):
         #this will call init_vars():
         self.supports_scrolling = False
         self.video_subregion = None
-        WindowSource.__init__(self, *args)
+        super().__init__(*args)
         self.supports_eos = self.encoding_options.boolget("eos")
         self.scroll_encoding = SCROLL_ENCODING
         self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
@@ -169,7 +169,7 @@ class WindowVideoSource(WindowSource):
         self.last_scroll_time = 0
 
     def do_set_auto_refresh_delay(self, min_delay, delay):
-        WindowSource.do_set_auto_refresh_delay(self, min_delay, delay)
+        super().do_set_auto_refresh_delay(min_delay, delay)
         r = self.video_subregion
         if r:
             r.set_auto_refresh_delay(self.base_auto_refresh_delay)
@@ -349,7 +349,7 @@ class WindowVideoSource(WindowSource):
         if self.encoding!=encoding:
             #ensure we re-init the codecs asap:
             self.cleanup_codecs()
-        WindowSource.set_new_encoding(self, encoding, strict)
+        super().set_new_encoding(encoding, strict)
 
     def update_encoding_selection(self, encoding=None, exclude=None, init=False):
         #override so we don't use encodings that don't have valid csc modes:
@@ -371,7 +371,7 @@ class WindowVideoSource(WindowSource):
         self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
         log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
-        WindowSource.update_encoding_selection(self, encoding, exclude, init)
+        super().update_encoding_selection(encoding, exclude, init)
 
     def do_set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
@@ -380,7 +380,7 @@ class WindowVideoSource(WindowSource):
         self.video_subregion.supported = properties.boolget("encoding.video_subregion", VIDEO_SUBREGION) and VIDEO_SUBREGION
         if properties.get("scaling.control") is not None:
             self.scaling_control = max(0, min(100, properties.intget("scaling.control", 0)))
-        WindowSource.do_set_client_properties(self, properties)
+        super().do_set_client_properties(properties)
         #encodings may have changed, so redo this:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
@@ -539,7 +539,7 @@ class WindowVideoSource(WindowSource):
             if r and r.intersects(x, y, w, h):
                 #the damage will take care of scheduling it again
                 vs.cancel_refresh_timer()
-        WindowSource.do_damage(self, ww, wh, x, y, w, h, options)
+        super().do_damage(ww, wh, x, y, w, h, options)
 
 
     def cancel_damage(self):
@@ -570,16 +570,16 @@ class WindowVideoSource(WindowSource):
         if self.non_video_encodings:
             #refresh the whole window in one go:
             damage_options["novideo"] = True
-        WindowSource.full_quality_refresh(self, damage_options)
+        super().full_quality_refresh(damage_options)
 
 
     def quality_changed(self, window, *args):
-        WindowSource.quality_changed(self, window, args)
+        super().quality_changed(window, args)
         self.video_context_clean()
         return True
 
     def speed_changed(self, window, *args):
-        WindowSource.speed_changed(self, window, args)
+        super().speed_changed(window, args)
         self.video_context_clean()
         return True
 
@@ -587,18 +587,18 @@ class WindowVideoSource(WindowSource):
     def must_batch(self, delay):
         #force batching when using video region
         #because the video region code is in the send_delayed path
-        return self.video_subregion.rectangle is not None or WindowSource.must_batch(self, delay)
+        return self.video_subregion.rectangle is not None or super().must_batch(delay)
 
 
     def get_speed(self, encoding):
-        s = WindowSource.get_speed(self, encoding)
+        s = super().get_speed(encoding)
         #give a boost if we have a video region and this is not video:
         if self.video_subregion.rectangle and encoding not in self.video_encodings:
             s += 25
         return min(100, s)
 
     def get_quality(self, encoding):
-        q = WindowSource.get_quality(self, encoding)
+        q = super().get_quality(encoding)
         #give a boost if we have a video region and this is not video:
         if self.video_subregion.rectangle and encoding not in self.video_encodings:
             q += 40
@@ -608,7 +608,7 @@ class WindowVideoSource(WindowSource):
     def client_decode_error(self, error, message):
         #maybe the stream is now corrupted..
         self.cleanup_codecs()
-        WindowSource.client_decode_error(self, error, message)
+        super().client_decode_error(error, message)
 
 
     def get_refresh_exclude(self):
@@ -626,7 +626,7 @@ class WindowVideoSource(WindowSource):
         self.flush_video_encoder_now()
         encoding = self.auto_refresh_encodings[0]
         options = self.get_refresh_options()
-        WindowSource.do_send_delayed_regions(self, now, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
+        super().do_send_delayed_regions(now, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
         return True
 
     def get_refresh_subregion_encoding(self, *_args):
@@ -640,7 +640,7 @@ class WindowVideoSource(WindowSource):
 
     def remove_refresh_region(self, region):
         #override so we can update the subregion timers / regions tracking:
-        WindowSource.remove_refresh_region(self, region)
+        super().remove_refresh_region(region)
         self.video_subregion.remove_refresh_region(region)
 
     def add_refresh_region(self, region):
@@ -651,7 +651,7 @@ class WindowVideoSource(WindowSource):
         vr = self.video_subregion.rectangle
         if vr is None:
             #no video region, normal code path:
-            return WindowSource.add_refresh_region(self, region)
+            return super().add_refresh_region(region)
         if vr.contains_rect(region):
             #all of it is in the video region:
             self.video_subregion.add_video_refresh(region)
@@ -659,12 +659,12 @@ class WindowVideoSource(WindowSource):
         ir = vr.intersection_rect(region)
         if ir is None:
             #region is outside video region, normal code path:
-            return WindowSource.add_refresh_region(self, region)
+            return super().add_refresh_region(region)
         #add intersection (rectangle in video region) to video refresh:
         self.video_subregion.add_video_refresh(ir)
         #add any rectangles not in the video region
         #(if any: keep track if we actually added anything)
-        return sum(WindowSource.add_refresh_region(self, r) for r in region.substract_rect(vr))
+        return sum(super().add_refresh_region(r) for r in region.substract_rect(vr))
 
     def matches_video_subregion(self, width, height):
         vr = self.video_subregion.rectangle
@@ -707,7 +707,7 @@ class WindowVideoSource(WindowSource):
             if self.b_frame_flush_timer and exclude_region is None:
                 #a b-frame is already due, don't clobber it!
                 exclude_region = vr
-            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
+            super().do_send_delayed_regions(damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
@@ -727,7 +727,7 @@ class WindowVideoSource(WindowSource):
 
         if not vr:
             sublog("no video region, we may use the video encoder for something else")
-            WindowSource.do_send_delayed_regions(self, damage_time, regions, coding, options)
+            super().do_send_delayed_regions(damage_time, regions, coding, options)
             return
         assert not self.full_frames_only
 
@@ -1023,7 +1023,7 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
-        WindowSource.update_encoding_options(self, force_reload)
+        super().update_encoding_options(force_reload)
         vs = self.video_subregion
         if vs:
             if (self.encoding!="auto" and self.encoding not in self.common_video_encodings) or \
@@ -1064,8 +1064,8 @@ class WindowVideoSource(WindowSource):
                             #we don't bother substracting new and old (too complicated)
                             refreshlog("scheduling refresh of old region: %s", old)
                             #this may also schedule a refresh:
-                            WindowSource.add_refresh_region(self, old)
-                        WindowSource.remove_refresh_region(self, newrect)
+                            super().add_refresh_region(old)
+                        super().remove_refresh_region(newrect)
                         if not self.refresh_regions:
                             self.cancel_refresh_timer()
                         if subregion_needs_refresh:
@@ -1720,13 +1720,13 @@ class WindowVideoSource(WindowSource):
         coding = packet[6]
         if coding in self.common_video_encodings:
             return None
-        return WindowSource.get_fail_cb(self, packet)
+        return super().get_fail_cb(packet)
 
 
     def make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options, options):
         #overriden so we can invalidate the scroll data:
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
-        packet = WindowSource.make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options, options)
+        packet = super().make_draw_packet(x, y, w, h, coding, data, outstride, client_options, options)
         sd = self.scroll_data
         if sd and not options.get("scroll"):
             if client_options.get("scaled_size") or client_options.get("quality", 100)<20:
@@ -1944,7 +1944,7 @@ class WindowVideoSource(WindowSource):
             #if there are non-scroll packets following this one, they will
             #and if not then we're OK anyway
             return
-        WindowSource.do_schedule_auto_refresh(self, encoding, data, region, client_options, options)
+        super().do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
 
     def get_fallback_encoding(self, encodings, order):

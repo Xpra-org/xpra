@@ -19,7 +19,7 @@ class DBUS_Server_Base(dbus.service.Object):
     def __init__(self, bus, server, name):
         self.server = server
         bus_name = dbus.service.BusName(name, bus)
-        dbus.service.Object.__init__(self, bus_name, PATH)
+        super().__init__(bus_name, PATH)
         self.log("(%s)", server)
         self._properties = {}
 

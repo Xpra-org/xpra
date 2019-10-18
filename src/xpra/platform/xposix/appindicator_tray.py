@@ -27,7 +27,7 @@ log = Logger("tray", "posix")
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 
 gi.require_version('AppIndicator3', '0.1')
-from gi.repository import AppIndicator3, GdkPixbuf #pylint: disable=wrong-import-order
+from gi.repository import AppIndicator3, GdkPixbuf #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 
 PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
 ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
@@ -39,7 +39,7 @@ def Indicator(tooltip, filename, status):
 class AppindicatorTray(TrayBase):
 
     def __init__(self, *args, **kwargs):
-        TrayBase.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         filename = get_icon_filename(self.default_icon_filename) or "xpra.png"
         self._has_icon = False
         self.tmp_filename = None

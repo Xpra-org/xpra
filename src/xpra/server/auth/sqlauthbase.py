@@ -16,7 +16,7 @@ class SQLAuthenticator(SysAuthenticator):
         self.sessions_query = kwargs.pop("sessions_query",
                                          "SELECT uid, gid, displays, env_options, session_options "+
                                          "FROM users WHERE username=(%s) AND password=(%s)")
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         self.authenticate = self.authenticate_hmac
 
     def db_cursor(self, *sqlargs):

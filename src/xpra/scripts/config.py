@@ -33,7 +33,7 @@ class InitInfo(Exception):
 class InitExit(Exception):
     def __init__(self, status, msg):
         self.status = status
-        Exception.__init__(self, msg)
+        super().__init__(msg)
 
 
 DEBUG_CONFIG_PROPERTIES = os.environ.get("XPRA_DEBUG_CONFIG_PROPERTIES", "").split()

@@ -77,7 +77,7 @@ class Authenticator(SysAuthenticator):
         except Exception as e:
             log.error("Error: cannot get peer uid")
             log.error(" %s", e)
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
 
     def get_uid(self):
         return self.uid

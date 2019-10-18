@@ -37,7 +37,7 @@ class Authenticator(SysAuthenticator):
     def __init__(self, username, **kwargs):
         self.service = kwargs.pop("service", PAM_AUTH_SERVICE)
         self.check_account = parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False)
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
 
     def check(self, password) -> bool:
         log("pam.check(..) pw=%s", self.pw)
@@ -49,7 +49,7 @@ class Authenticator(SysAuthenticator):
         if "xor" not in digests:
             log.error("Error: pam authentication requires the 'xor' digest")
             return None
-        return SysAuthenticator.get_challenge(self, ["xor"])
+        return super().get_challenge(["xor"])
 
     def __repr__(self):
         return "PAM"

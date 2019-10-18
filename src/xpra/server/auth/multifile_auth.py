@@ -40,7 +40,7 @@ def parse_auth_line(line):
 
 class Authenticator(FileAuthenticatorBase):
     def __init__(self, username, **kwargs):
-        FileAuthenticatorBase.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         self.sessions = None
 
     def parse_filedata(self, data):

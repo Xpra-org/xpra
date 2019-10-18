@@ -335,7 +335,7 @@ class WindowModel(BaseWindowModel):
                 self.client_window.show_unraised()
             #it is now safe to destroy the corral window:
             cwin.destroy()
-        BaseWindowModel.do_unmanaged(self, wm_exiting)
+        super().do_unmanaged(wm_exiting)
 
 
     #########################################
@@ -366,7 +366,7 @@ class WindowModel(BaseWindowModel):
     def do_xpra_property_notify_event(self, event):
         if event.delivered_to is self.corral_window:
             return
-        BaseWindowModel.do_xpra_property_notify_event(self, event)
+        super().do_xpra_property_notify_event(event)
 
     def do_child_map_request_event(self, event):
         # If we get a MapRequest then it might mean that someone tried to map
@@ -621,7 +621,7 @@ class WindowModel(BaseWindowModel):
             with xswallow:
                 X11Window.configureAndNotify(self.xid, x, y, w, h)
             return True
-        return BaseWindowModel.process_client_message_event(self, event)
+        return super().process_client_message_event(event)
 
     def calc_constrained_size(self, w, h, hints):
         mhints = typedict(hints)

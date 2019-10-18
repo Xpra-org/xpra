@@ -144,7 +144,7 @@ class UInputPointerDevice(UInputDevice):
 class UInputTouchpadDevice(UInputDevice):
 
     def __init__(self, device, device_path, root_w, root_h):
-        UInputDevice.__init__(self, device, device_path)
+        super().__init__(device, device_path)
         self.root_w = root_w
         self.root_h = root_h
 

@@ -411,7 +411,7 @@ class Logger(object):
 class CaptureHandler(logging.Handler):
 
     def __init__(self):
-        logging.Handler.__init__(self, logging.DEBUG)
+        super().__init__(logging.DEBUG)
         self.records = []
 
     def handle(self, record):

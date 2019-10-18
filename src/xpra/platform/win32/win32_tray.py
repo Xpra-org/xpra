@@ -25,7 +25,7 @@ log = Logger("tray", "win32")
 class Win32Tray(TrayBase):
 
     def __init__(self, *args):
-        TrayBase.__init__(self, *args)
+        super().__init__(*args)
         self.calculate_offset()
         self.default_icon_extension = "ico"
         icon_filename = get_icon_filename(self.default_icon_filename, "ico")

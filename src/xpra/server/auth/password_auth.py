@@ -10,7 +10,7 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
         self.value = kwargs.pop("value", None)
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         self.authenticate = self.authenticate_hmac
 
     def __repr__(self):

@@ -40,7 +40,7 @@ class DBUS_Source(dbus.service.Object):
         if extra:
             name += extra.replace(".", "_").replace(":", "_")
         bus_name = dbus.service.BusName(name, session_bus)
-        dbus.service.Object.__init__(self, bus_name, self.path)
+        super().__init__(bus_name, self.path)
         self.log("(%s)", source)
         self._properties = {"bell"              : ("send_bell",             ni),
                             "cursors"           : ("send_cursors",          ni),

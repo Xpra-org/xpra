@@ -54,11 +54,8 @@ class _AnsiColorStreamHandler(logging.StreamHandler):
             return cls.DEBUG
         return cls.DEFAULT
 
-    def __init__(self, stream=None):
-        logging.StreamHandler.__init__(self, stream)
-
     def format(self, record):
-        text = logging.StreamHandler.format(self, record)
+        text = super().format(record)
         color = self._get_color(record.levelno)
         return color + text + self.DEFAULT
 
@@ -111,7 +108,7 @@ class _WinColorStreamHandler(logging.StreamHandler):
         ctypes.windll.kernel32.SetConsoleTextAttribute(self._outhdl, code)      #@UndefinedVariable
 
     def __init__(self, stream=None):
-        logging.StreamHandler.__init__(self, stream)
+        super().__init__(stream)
         # get file handle for the stream
         import ctypes.util
         crtname = ctypes.util.find_msvcrt()
@@ -121,7 +118,7 @@ class _WinColorStreamHandler(logging.StreamHandler):
     def emit(self, record):
         color = self._get_color(record.levelno)
         self._set_color(color)
-        logging.StreamHandler.emit(self, record)
+        super().emit(record)
         self._set_color(self.FOREGROUND_WHITE)
 
 # select ColorStreamHandler based on platform

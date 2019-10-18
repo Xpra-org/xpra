@@ -51,7 +51,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         server = AdHocStruct()
         server.logger = log
         self.directory_listing = DIRECTORY_LISTING
-        BaseHTTPRequestHandler.__init__(self, sock, addr, server)
+        super().__init__(sock, addr, server)
 
     def translate_path(self, path):
         #code duplicated from superclass since we can't easily inject the web_root..

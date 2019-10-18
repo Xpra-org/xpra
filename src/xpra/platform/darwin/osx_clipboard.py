@@ -33,7 +33,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
             raise Exception("cannot load Pasteboard, maybe not running from a GUI session?")
         kwargs["clipboard.local"] = "CLIPBOARD"
         kwargs["clipboards.local"] = ["CLIPBOARD"]
-        ClipboardTimeoutHelper.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
     def __repr__(self):
@@ -57,7 +57,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
         if encoding=="atoms":
             return _filter_targets(data)
-        return ClipboardTimeoutHelper._munge_wire_selection_to_raw(self, encoding, dtype, dformat, data)
+        return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
 
 
 class OSXClipboardProxy(ClipboardProxyCore):
@@ -66,7 +66,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         self.pasteboard = pasteboard
         self.send_clipboard_request_handler = send_clipboard_request_handler
         self.send_clipboard_token_handler = send_clipboard_token_handler
-        ClipboardProxyCore.__init__(self, selection)
+        super().__init__(selection)
         self.update_change_count()
         #setup clipboard counter watcher:
         w = get_UI_watcher(GLib.timeout_add, GLib.source_remove)

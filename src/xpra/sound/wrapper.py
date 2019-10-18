@@ -87,7 +87,7 @@ class sound_subprocess(subprocess_callee):
         #add bits common to both record and play:
         methods = method_whitelist+["set_volume", "cleanup"]
         exports = ["state-changed", "info", "error"] + exports_list
-        subprocess_callee.__init__(self, wrapped_object=wrapped_object, method_whitelist=methods)
+        super().__init__(wrapped_object=wrapped_object, method_whitelist=methods)
         for x in exports:
             self.connect_export(x)
 
@@ -103,7 +103,7 @@ class sound_subprocess(subprocess_callee):
             def force_exit():
                 sys.exit(1)
             self.timeout_add(FAKE_CRASH*1000, force_exit)
-        subprocess_callee.start(self)
+        super().start(self)
 
     def cleanup(self):
         wo = self.wrapped_object
@@ -126,7 +126,7 @@ class sound_record(sound_subprocess):
     def __init__(self, *pipeline_args):
         from xpra.sound.src import SoundSource
         sound_pipeline = SoundSource(*pipeline_args)
-        sound_subprocess.__init__(self, sound_pipeline, [], ["new-stream", "new-buffer"])
+        super().__init__(sound_pipeline, [], ["new-stream", "new-buffer"])
         self.large_packets = [b"new-buffer"]
 
 class sound_play(sound_subprocess):
@@ -134,7 +134,7 @@ class sound_play(sound_subprocess):
     def __init__(self, *pipeline_args):
         from xpra.sound.sink import SoundSink
         sound_pipeline = SoundSink(*pipeline_args)
-        sound_subprocess.__init__(self, sound_pipeline, ["add_data"], [])
+        super().__init__(sound_pipeline, ["add_data"], [])
 
 
 def run_sound(mode, error_cb, options, args):
@@ -236,7 +236,7 @@ class sound_subprocess_wrapper(subprocess_caller):
         * forward get/set volume calls (get_volume uses the value found in "info")
     """
     def __init__(self, description):
-        subprocess_caller.__init__(self, description)
+        super().__init__(description)
         self.state = "stopped"
         self.codec = "unknown"
         self.codec_description = ""
@@ -315,7 +315,7 @@ class sound_subprocess_wrapper(subprocess_caller):
 class source_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, options, codecs, volume, element_options):
-        sound_subprocess_wrapper.__init__(self, "sound source")
+        super().__init__("sound source")
         self.large_packets = [b"new-buffer"]
         self.command = get_full_sound_command()+[
             "_sound_record", "-", "-",
@@ -338,7 +338,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
 class sink_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, codec, volume, element_options):
-        sound_subprocess_wrapper.__init__(self, "sound output")
+        super().__init__("sound output")
         self.large_packets = [b"add_data"]
         self.codec = codec
         self.command = get_full_sound_command()+[

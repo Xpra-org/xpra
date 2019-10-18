@@ -54,7 +54,7 @@ class Keyboard(KeyboardBase):
         KEY_TRANSLATIONS[("dead_grave", 65104,  55)]    = "grave"
 
     def set_modifier_mappings(self, mappings):
-        KeyboardBase.set_modifier_mappings(self, mappings)
+        super().set_modifier_mappings(mappings)
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
         log("set_modifier_mappings found 'Num_Lock' with modifier value: %s", self.num_lock_modifier)
         for x in ("ISO_Level3_Shift", "Mode_switch"):
@@ -66,7 +66,7 @@ class Keyboard(KeyboardBase):
 
     def mask_to_names(self, mask):
         """ Patch NUMLOCK and AltGr """
-        names = KeyboardBase.mask_to_names(self, mask)
+        names = super().mask_to_names(mask)
         if EMULATE_ALTGR:
             rmenu = GetKeyState(win32con.VK_RMENU)
             #log("GetKeyState(VK_RMENU)=%s", rmenu)
@@ -207,7 +207,7 @@ class Keyboard(KeyboardBase):
                 key_event.keycode = -1
                 self.AltGr_modifiers(key_event.modifiers)
         self.send_delayed_key()
-        KeyboardBase.process_key_event(self, send_key_action_cb, wid, key_event)
+        super().process_key_event(send_key_action_cb, wid, key_event)
 
     def send_delayed_key(self):
         #timeout: this must be a real one, send it now
@@ -218,4 +218,4 @@ class Keyboard(KeyboardBase):
             rmenu = GetKeyState(win32con.VK_RMENU)
             log("send_delayed_key() GetKeyState(VK_RMENU)=%s", rmenu)
             if rmenu not in (0, 1):
-                KeyboardBase.process_key_event(self, *dk)
+                super().process_key_event(*dk)

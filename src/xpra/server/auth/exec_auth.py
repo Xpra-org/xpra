@@ -45,7 +45,7 @@ class Authenticator(SysAuthenticator):
         log("exec connection info: %s", connection)
         assert connection, "connection object is missing"
         self.connection_str = str(connection)
-        SysAuthenticator.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
 
     def requires_challenge(self) -> bool:
         return False

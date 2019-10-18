@@ -80,7 +80,7 @@ class NamedPipeListener(Thread):
         self.pipe_name = pipe_name
         self.new_connection_cb = new_connection_cb or self.new_connection
         self.exit_loop = False
-        Thread.__init__(self, name="NamedPipeListener-%s" % pipe_name)
+        super().__init__(name="NamedPipeListener-%s" % pipe_name)
         self.daemon = True
         self.security_attributes = None
         self.security_descriptor = None

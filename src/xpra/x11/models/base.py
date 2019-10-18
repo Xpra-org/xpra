@@ -646,4 +646,4 @@ class BaseWindowModel(CoreX11WindowModel):
         # it may make sense to apply it to the client_window
         # whereas the code in WindowModel assumes there is a corral window
         #not handled:
-        return CoreX11WindowModel.process_client_message_event(self, event)
+        return super().process_client_message_event(event)

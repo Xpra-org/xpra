@@ -20,7 +20,7 @@ class Authenticator(SysAuthenticatorBase):
         self.uid = parse_uid(kwargs.pop("uid", None))
         self.gid = parse_gid(kwargs.pop("gid", None))
         username = kwargs.pop("username", username)
-        SysAuthenticatorBase.__init__(self, username, **kwargs)
+        super().__init__(username, **kwargs)
         log("kerberos-password auth: service=%s, realm=%s, username=%s", self.service, self.realm, username)
 
     def get_uid(self):
@@ -36,7 +36,7 @@ class Authenticator(SysAuthenticatorBase):
         if "xor" not in digests:
             log.error("Error: kerberos authentication requires the 'xor' digest")
             return None
-        return SysAuthenticatorBase.get_challenge(self, ["xor"])
+        return super().get_challenge(["xor"])
 
     def check(self, password) -> bool:
         try:
