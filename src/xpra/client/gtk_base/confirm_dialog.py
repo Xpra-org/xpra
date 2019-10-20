@@ -26,6 +26,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
         self.connect("destroy", self.quit)
         self.set_default_size(400, 150)
         self.set_title(title)
+        add_close_accel(self, self.quit)
 
         if icon:
             icon_filename = os.path.join(get_icon_dir(), icon)
@@ -46,25 +47,15 @@ class ConfirmDialogWindow(Gtk.Dialog):
             al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
             vbox.add(al)
-
         al(title, "sans 18", 0.5)
         al(info, "sans 14")
         al(prompt, "sans 14")
 
-        vbox = self.get_action_area()
         # Buttons:
-        self.exit_code = 0
-        if buttons:
-            hbox = Gtk.HBox()
-            al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
-            al.add(hbox)
-            vbox.pack_start(al)
-            for label, code in buttons:
-                btn = self.add_button(label, code)
-                btn.set_size_request(100, 48)
-                hbox.pack_start(btn)
+        for label, code in buttons:
+            btn = self.add_button(label, code)
+            btn.set_size_request(100, 48)
 
-        add_close_accel(self, self.quit)
 
     def show(self):
         log("show()")
