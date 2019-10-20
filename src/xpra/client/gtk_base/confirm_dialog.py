@@ -10,36 +10,35 @@ import sys
 from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image, color_parse,
-    )
+from xpra.gtk_common.gtk_util import add_close_accel, color_parse
 from xpra.platform.paths import get_icon_dir
 from xpra.os_util import get_util_logger
 
 log = get_util_logger()
 
 
-class ConfirmDialogWindow(object):
+class ConfirmDialogWindow(Gtk.Dialog):
 
     def __init__(self, title="Title", prompt="", info=(), icon="", buttons=()):
-        self.window = Gtk.Window(type=Gtk.WindowType.POPUP)
-        self.window.set_border_width(20)
-        self.window.set_position(Gtk.WindowPosition.CENTER)
-        self.window.connect("destroy", self.quit)
-        self.window.set_default_size(400, 150)
-        self.window.set_title(title)
-        #self.window.set_modal(True)
+        super().__init__()
+        self.set_border_width(20)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.connect("destroy", self.quit)
+        self.set_default_size(400, 150)
+        self.set_title(title)
 
         if icon:
-            icon_pixbuf = self.get_icon(icon)
-            if icon_pixbuf:
-                self.window.set_icon(icon_pixbuf)
+            icon_filename = os.path.join(get_icon_dir(), icon)
+            if os.path.exists(icon_filename):
+                icon_pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+                if icon_pixbuf:
+                    self.set_icon(icon_pixbuf)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = self.get_content_area()
         vbox.set_spacing(10)
 
         def al(label, font="sans 14", xalign=0):
-            l = Gtk.Label(label)
+            l = Gtk.Label(label=label)
             l.modify_font(Pango.FontDescription(font))
             if label.startswith("WARNING"):
                 red = color_parse("red")
@@ -52,74 +51,29 @@ class ConfirmDialogWindow(object):
         al(info, "sans 14")
         al(prompt, "sans 14")
 
+        vbox = self.get_action_area()
         # Buttons:
         self.exit_code = 0
         if buttons:
-            hbox = Gtk.HBox(False, 0)
+            hbox = Gtk.HBox()
             al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
             al.add(hbox)
             vbox.pack_start(al)
             for label, code in buttons:
-                b = self.btn(label,  "", code)
-                hbox.pack_start(b)
+                btn = self.add_button(label, code)
+                btn.set_size_request(100, 48)
+                hbox.pack_start(btn)
 
-        add_close_accel(self.window, self.quit)
-        vbox.show_all()
-        self.window.add(vbox)
-
-    def btn(self, label, tooltip, code, icon_name=None):
-        btn = Gtk.Button(label)
-        settings = btn.get_settings()
-        settings.set_property('gtk-button-images', True)
-        if tooltip:
-            btn.set_tooltip_text(tooltip)
-        def btn_clicked(*_args):
-            log("%s button clicked, returning %s", label, code)
-            self.exit_code = code
-            self.quit()
-        btn.set_size_request(100, 48)
-        btn.connect("clicked", btn_clicked)
-        btn.set_can_focus(True)
-        isdefault = label[:1].upper()!=label[:1]
-        btn.set_can_default(isdefault)
-        if isdefault:
-            self.window.set_default(btn)
-            self.window.set_focus(btn)
-        if icon_name:
-            icon = self.get_icon(icon_name)
-            if icon:
-                btn.set_image(scaled_image(icon, 24))
-        return btn
-
+        add_close_accel(self, self.quit)
 
     def show(self):
         log("show()")
-        self.window.show_all()
-        GLib.idle_add(self.window.present)
-
-    def destroy(self, *args):
-        log("destroy%s", args)
-        if self.window:
-            self.window.destroy()
-            self.window = None
-
-    def run(self):
-        log("run()")
-        Gtk.main()
-        log("run() Gtk.main done")
-        return self.exit_code
+        self.show_all()
+        GLib.idle_add(self.present)
 
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        Gtk.main_quit()
-
-
-    def get_icon(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        return None
 
 
 def show_confirm_dialog(argv):
@@ -161,7 +115,7 @@ def main():
     from xpra.platform import program_context
     with program_context("Confirm-Dialog", "Confirm Dialog"):
         #logging init:
-        if "-v" in sys.argv:
+        if "-v" in sys.argv or "--verbose" in sys.argv:
             from xpra.log import enable_debug_for
             enable_debug_for("util")
 
