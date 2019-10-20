@@ -56,7 +56,14 @@ def safe_open_download_file(basefilename, mimetype):
         #we want to force an extension
         #so that the file manager can display them properly when you double-click on them
         wanted_filename += "."+ext
-    filename = wanted_filename
+    if WIN32:
+        filename = ""
+        for char in wanted_filename:
+            if ord(char)<32 or char in ("<", ">", ":", "\"", "|", "?", "*"):
+                char = "_"
+            filename += char
+    else:
+        filename = wanted_filename
     base = 0
     while os.path.exists(filename):
         filelog("cannot save file as %s: file already exists", filename)
