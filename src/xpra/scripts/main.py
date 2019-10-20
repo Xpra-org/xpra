@@ -1352,7 +1352,6 @@ def connect_to_server(app, display_desc, opts):
             app.display_desc = display_desc
             protocol = app.setup_connection(conn)
             protocol.start()
-            GLib.idle_add(app.send_hello)
         except Exception as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             log.error("Error: failed to connect")
@@ -1532,14 +1531,11 @@ def get_client_app(error_cb, opts, extra_args, mode):
                                 display_desc = pick_display(error_cb, opts, [uri, ])
                                 connect_to_server(app, display_desc, opts)
                                 #app._protocol.start()
-                                #app.idle_add(app.send_hello)
                                 return
                     app.idle_add(do_handle_connection, conn)
                 def do_handle_connection(conn):
-                    app.setup_connection(conn)
-                    protocol = app._protocol
+                    protocol = app.setup_connection(conn)
                     protocol.start()
-                    app.send_hello()
                     #stop listening for new connections:
                     run_socket_cleanups()
                 def run_socket_cleanups():

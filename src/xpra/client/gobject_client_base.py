@@ -38,6 +38,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         Utility superclass for GObject clients
     """
     INSTALL_SIGNAL_HANDLERS = True
+    COMMAND_TIMEOUT = EXTRA_TIMEOUT
 
     def __init__(self):
         self.idle_add = GLib.idle_add
@@ -54,6 +55,15 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def get_scheduler(self):
         return GLib
+
+
+    def setup_connection(self, conn):
+        protocol = super().setup_connection(conn)
+        protocol._log_stats  = False
+        if conn.timeout>0:
+            GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
+        GLib.idle_add(self.send_hello)
+        return protocol
 
 
     def client_type(self):
@@ -104,7 +114,6 @@ class CommandConnectClient(GObjectXpraClient):
         Utility superclass for clients that only send one command
         via the hello packet.
     """
-    COMMAND_TIMEOUT = EXTRA_TIMEOUT
 
     def __init__(self, opts):
         super().__init__()
@@ -118,14 +127,6 @@ class CommandConnectClient(GObjectXpraClient):
         for x in ("ui_client", "wants_aliases", "wants_encodings",
                   "wants_versions", "wants_features", "wants_sound", "windows"):
             self.hello_extra[x] = False
-
-    def setup_connection(self, conn):
-        protocol = super().setup_connection(conn)
-        protocol._log_stats  = False
-        if conn.timeout>0:
-            GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
-        GLib.idle_add(self.send_hello)
-        return protocol
 
     def _process_connection_lost(self, _packet):
         #override so we don't log a warning

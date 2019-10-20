@@ -221,7 +221,6 @@ class UIXpraClient(ClientBaseClass):
             self.idle_add(self.client_extras.ready)
         for c in CLIENT_BASES:
             c.run(self)
-        self.send_hello()
 
 
     def quit(self, _exit_code=0):
