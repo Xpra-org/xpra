@@ -313,6 +313,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             log("border color derived from %s: %s", extra_args, color_str)
         try:
             color = color_parse(color_str)
+            assert color is not None
         except Exception as e:
             log.warn("invalid border color specified: '%s' (%s)", color_str, e)
             border_help()
