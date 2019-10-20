@@ -69,7 +69,7 @@ def get_program_data_dir():
         SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
         if buf.value:
             return buf.value
-    except:
+    except Exception:
         get_util_logger().debug("get_program_data_dir()", exc_info=True)
     return "C:\\ProgramData"
 
@@ -141,16 +141,14 @@ def do_get_download_dir():
     #from win32com.shell import shell, shellcon
     #shell.SHGetFolderPath(0, shellcon.CSIDL_MYDOCUMENTS, None, 0)
     try:
-        try:
-            import _winreg as winreg
-        except ImportError:
-            import winreg   #@UnresolvedImport @Reimport
+        import winreg   #@UnresolvedImport @Reimport
         #use the internet explorer registry key:
         #HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer
         key_path = 'Software\\Microsoft\\Internet Explorer'
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)    #@UndefinedVariable
         DOWNLOAD_PATH = winreg.QueryValueEx(key, 'Download Directory')[0]               #@UndefinedVariable
-    except:
+    except Exception:
+        get_util_logger()("do_get_download_dir()", exc_info=True)
         #fallback to what the documentation says is the default:
         DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")
         if not os.path.exists(DOWNLOAD_PATH):
