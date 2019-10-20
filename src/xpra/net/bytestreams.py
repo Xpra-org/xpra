@@ -21,7 +21,7 @@ log = Logger("network", "protocol")
 SOCKET_CORK = envbool("XPRA_SOCKET_CORK", LINUX)
 if SOCKET_CORK:
     try:
-        assert socket.TCP_CORK>0
+        assert socket.TCP_CORK>0  #@UndefinedVariable
     except (AttributeError, AssertionError) as cork_e:
         log.warn("Warning: unable to use TCP_CORK on %s", sys.platform)
         log.warn(" %s", cork_e)
@@ -309,7 +309,7 @@ class SocketConnection(Connection):
 
     def set_cork(self, cork : bool):
         if self.cork and self.cork_value!=cork:
-            self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)
+            self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)  #@UndefinedVariable
             self.cork_value = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 
@@ -402,17 +402,21 @@ class SocketConnection(Connection):
                 fd = 0
             if fd:
                 info["fileno"] = fd
-            from xpra.platform.netdev_query import get_interface_info
             #ie: self.local = ("192.168.1.7", "14500")
             if self.local and len(self.local)==2:
                 from xpra.net.net_util import get_interface
                 iface = get_interface(self.local[0])
                 #ie: iface = "eth0"
                 if iface and iface!="lo":
-                    i = get_interface_info(fd, iface)
-                    if i:
-                        info["device"] = i
-        except OSError as e:
+                    try:
+                        from xpra.platform.netdev_query import get_interface_info
+                    except ImportError as e:
+                        log("do_get_socket_info() no netdev_query: %s", e)
+                    else:
+                        i = get_interface_info(fd, iface)
+                        if i:
+                            info["device"] = i
+        except (OSError, ValueError) as e:
             log("do_get_socket_info() error querying socket speed", exc_info=True)
             log.error("Error querying socket speed:")
             log.error(" %s", e)
