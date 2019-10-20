@@ -57,7 +57,7 @@ class AudioClient(StubClientMixin):
         #duplicated from ServerInfo mixin:
         self._remote_machine_id = None
 
-    def init(self, opts, _extra_args=()):
+    def init(self, opts):
         self.av_sync = opts.av_sync
         self.sound_properties = typedict()
         self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")

@@ -154,11 +154,11 @@ class UIXpraClient(ClientBaseClass):
         self._on_server_setting_changed = {}
 
 
-    def init(self, opts, extra_args=()):
+    def init(self, opts):
         """ initialize variables from configuration """
         for c in CLIENT_BASES:
             log("init: %s", c)
-            c.init(self, opts, extra_args)
+            c.init(self, opts)
 
         self.title = opts.title
         self.session_name = bytestostr(opts.session_name)

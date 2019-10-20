@@ -65,7 +65,7 @@ class NetworkState(StubClientMixin):
         self.ping_echo_timeout_timer = None
 
 
-    def init(self, opts, _extra_args=()):
+    def init(self, opts):
         self.pings = opts.pings
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
         self.bandwidth_detection = opts.bandwidth_detection

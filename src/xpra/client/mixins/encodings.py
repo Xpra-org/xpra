@@ -52,7 +52,7 @@ class Encodings(StubClientMixin):
         self.encoding_defaults = {}
 
 
-    def init(self, opts, _extra_args=()):
+    def init(self, opts):
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         if opts.video_scaling.lower() in ("auto", "on"):

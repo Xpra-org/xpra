@@ -24,7 +24,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         self.send_printers_timer = 0
         self.exported_printers = None
 
-    def init(self, opts, _extra_args=()):
+    def init(self, opts):
         #printing and file transfer:
         FileTransferHandler.init_opts(self, opts)
 

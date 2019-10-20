@@ -64,7 +64,7 @@ class DisplayClient(StubClientMixin):
         self.server_randr = False
 
 
-    def init(self, opts, _extra_args=()):
+    def init(self, opts):
         self.desktop_fullscreen = opts.desktop_fullscreen
         self.desktop_scaling = opts.desktop_scaling
         self.dpi = int(opts.dpi)

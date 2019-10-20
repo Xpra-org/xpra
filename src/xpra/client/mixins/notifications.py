@@ -32,7 +32,7 @@ class NotificationClient(StubClientMixin):
         #override the default handler in client base:
         self.may_notify = self.do_notify
 
-    def init(self, opts, _extra_args=()):
+    def init(self, opts):
         if opts.notifications:
             try:
                 from xpra import notifications

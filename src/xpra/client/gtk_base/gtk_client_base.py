@@ -274,38 +274,53 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return True
 
 
-    def parse_border(self, border_str, extra_args):
-        enabled = not border_str.endswith(":off")
-        parts = [x.strip() for x in border_str.replace(":off", "").split(",")]
+    def setup_connection(self, conn):
+        conn = super().setup_connection(conn)
+        #now that we have display_desc, parse the border again:
+        self.parse_border(False)
+        return conn
+
+
+    def show_border_help(self):
+        if not first_time("border-help"):
+            return
+        log.info(" border format: color[,size][:off]")
+        log.info("  eg: red,10")
+        log.info("  eg: ,5")
+        log.info("  eg: auto,5")
+        log.info("  eg: blue")
+
+    def parse_border(self, warn=True):
+        enabled = not self.border_str.endswith(":off")
+        parts = [x.strip() for x in self.border_str.replace(":off", "").split(",")]
         color_str = parts[0]
-        def border_help():
-            log.info(" border format: color[,size][:off]")
-            log.info("  eg: red,10")
-            log.info("  eg: ,5")
-            log.info("  eg: auto,5")
-            log.info("  eg: blue")
         if color_str.lower() in ("none", "no", "off", "0"):
             return
         if color_str.lower()=="help":
-            border_help()
+            self.show_border_help()
             return
         color_str = color_str.replace(":off", "")
         if color_str in ("auto", ""):
             from hashlib import md5
             try:
                 m = md5()
-            except ValueError:
                 from hashlib import sha1
+            except ValueError:
                 m = sha1()
-            for x in extra_args:
-                m.update(strtobytes(x))
+            endpoint = self.display_desc.get("display_name")
+            if endpoint:
+                m.update(strtobytes(endpoint))
             color_str = "#%s" % m.hexdigest()[:6]
-            log("border color derived from %s: %s", extra_args, color_str)
+            log("border color derived from %s: %s", endpoint, color_str)
         try:
             color = color_parse(color_str)
+            assert color is not None
         except Exception as e:
-            log.warn("invalid border color specified: '%s' (%s)", color_str, e)
-            border_help()
+            if warn:
+                log.warn("Warning: invalid border color specified '%s'", color_str)
+                if str(e):
+                    log.warn(" %s", e)
+                self.show_border_help()
             color = color_parse("red")
         alpha = 0.6
         size = 4
@@ -314,7 +329,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             try:
                 size = int(size_str)
             except Exception as e:
-                log.warn("Warning: invalid size specified: %s (%s)", size_str, e)
+                if warn:
+                    log.warn("Warning: invalid border size specified '%s'", size_str)
+                    log.warn(" %s", e)
+                    self.show_border_help()
+                size = 5
             if size<=0:
                 log("border size is %s, disabling it", size)
                 return
@@ -323,7 +342,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 size = 45
         from xpra.client.window_border import WindowBorder
         self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
-        log("parse_border(%s)=%s", border_str, self.border)
+        log("parse_border(%s)=%s", self.border_str, self.border)
 
 
     def parse_scaling(self, desktop_scaling):

@@ -143,7 +143,7 @@ class WindowClient(StubClientMixin):
         self._suspended_at = 0
         self._button_state = {}
 
-    def init(self, opts, extra_args=[]):
+    def init(self, opts):
         if opts.system_tray and SYSTEM_TRAY_SUPPORTED:
             try:
                 from xpra.client import client_tray
@@ -183,8 +183,9 @@ class WindowClient(StubClientMixin):
                 self.window_close_action = opts.window_close
         self.modal_windows = self.windows_enabled and opts.modal_windows
 
+        self.border_str = opts.border
         if opts.border:
-            self.parse_border(opts.border, extra_args)
+            self.parse_border()
 
         #mouse wheel:
         mw = (opts.mousewheel or "").lower().replace("-", "")
@@ -225,8 +226,8 @@ class WindowClient(StubClientMixin):
         self._draw_thread = make_thread(self._draw_thread_loop, "draw")
 
 
-    def parse_border(self, border_str, extra_args):
-        #not implemented here (see gtk2 client)
+    def parse_border(self):
+        #not implemented here (see gtk3 client)
         pass
 
 

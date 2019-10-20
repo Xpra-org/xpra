@@ -31,7 +31,7 @@ class TrayClient(StubClientMixin):
         self.tray = None
         self.menu_helper = None
 
-    def init(self, opts, _extra_args=[]):
+    def init(self, opts):
         self.tray_enabled = opts.tray
         self.delay_tray = opts.delay_tray
         self.tray_icon = opts.tray_icon

@@ -41,7 +41,7 @@ class ClipboardClient(StubClientMixin):
         self.local_clipboard = ""
         self.remote_clipboard = ""
 
-    def init(self, opts, _extra_args=()):
+    def init(self, opts):
         self.client_clipboard_type = opts.clipboard
         self.client_clipboard_direction = opts.clipboard_direction
         self.client_supports_clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS

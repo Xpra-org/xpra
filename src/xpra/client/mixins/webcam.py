@@ -57,7 +57,7 @@ class WebcamForwarder(StubClientMixin):
         self.stop_sending_webcam()
 
 
-    def init(self, opts, _extra_args=()):
+    def init(self, opts):
         self.webcam_option = opts.webcam
         self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
         self.server_webcam = False
