@@ -17,23 +17,25 @@ from xpra.platform.paths import get_icon_dir
 log = get_util_logger()
 
 
-class PasswordInputDialogWindow(object):
+class PasswordInputDialogWindow(Gtk.Dialog):
 
     def __init__(self, title="Title", prompt="", icon=""):
-        self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
-        self.window.set_border_width(20)
-        self.window.set_position(Gtk.WindowPosition.CENTER)
-        self.window.connect("destroy", self.quit)
-        self.window.set_default_size(400, 150)
-        self.window.set_title(title)
-        self.window.set_modal(True)
+        super().__init__()
+        self.set_border_width(20)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.connect("destroy", self.quit)
+        self.set_default_size(400, 150)
+        self.set_title(title)
+        add_close_accel(self, self.quit)
 
         if icon:
-            icon_pixbuf = self.get_icon(icon)
-            if icon_pixbuf:
-                self.window.set_icon(icon_pixbuf)
+            icon_filename = os.path.join(get_icon_dir(), icon)
+            if os.path.exists(icon_filename):
+                icon_pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+                if icon_pixbuf:
+                    self.set_icon(icon_pixbuf)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = self.get_content_area()
         vbox.set_spacing(10)
 
         def al(label, font="sans 14", xalign=0):
@@ -53,76 +55,36 @@ class PasswordInputDialogWindow(object):
         self.password_input.set_visibility(False)
         vbox.add(self.password_input)
 
-        # Buttons:
-        self.exit_code = 0
-        hbox = Gtk.HBox(False, 0)
-        al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
-        al.add(hbox)
-        vbox.pack_start(al)
-        for label, isdefault, cb in (
-            ("Confirm", True, self.activate),
-            ("Cancel", False, self.quit),
-            ):
-            b = self.btn(label, isdefault, cb)
-            hbox.pack_start(b)
-
-        add_close_accel(self.window, self.quit)
-        vbox.show_all()
-        self.window.add(vbox)
-
-    def btn(self, label, isdefault=False, cb=None):
-        btn = Gtk.Button(label)
-        settings = btn.get_settings()
-        settings.set_property('gtk-button-images', True)
-        btn.set_size_request(100, 48)
-        btn.connect("clicked", cb)
-        btn.set_can_focus(True)
-        btn.set_can_default(isdefault)
-        if isdefault:
-            self.window.set_default(btn)
-            self.window.set_focus(btn)
-        return btn
+        btn = self.add_button("Confirm", 0)
+        self.set_default(btn)
+        self.set_focus(btn)
+        self.add_button("Cancel", 1)
 
 
     def show(self):
         log("show()")
-        self.window.show_all()
-        GLib.idle_add(self.window.present)
+        self.show_all()
+        GLib.idle_add(self.present)
         GLib.idle_add(self.password_input.grab_focus)
-
-    def destroy(self, *args):
-        log("destroy%s", args)
-        if self.window:
-            self.window.destroy()
-            self.window = None
-
-    def run(self):
-        log("run()")
-        Gtk.main()
-        log("run() Gtk.main done")
-        return self.exit_code
 
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
-        Gtk.main_quit()
+
+    def run(self):
+        r = super().run()
+        if r in (0, -1):
+            self.write_password()
+            return 0
+        return r
 
     def activate(self, *args):
-        log("activate%s", args)
+        self.write_password()
+        self.quit()
+
+    def write_password(self):
         sys.stdout.write(self.password_input.get_text())
         sys.stdout.flush()
-        self.quit()
-
-    def cancel(self, *args):
-        log("cancel%s", args)
-        self.exit_code = 1
-        self.quit()
-
-    def get_icon(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        return None
 
 
 def show_pass_dialog(argv):
