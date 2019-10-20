@@ -346,18 +346,27 @@ class FileTransferHandler(FileTransferAttributes):
             l.error("Error: file '%s' is too large:", basefilename)
             l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
             return
+        chunk_id = options.strget("file-chunk-id")
         #basefilename should be utf8:
         try:
             base = basefilename.decode("utf8")
         except:
             base = bytestostr(basefilename)
-        filename, fd = safe_open_download_file(base, mimetype)
+        try:
+            filename, fd = safe_open_download_file(base, mimetype)
+        except OSError as e:
+            filelog("cannot save file %s / %s", base, mimetype, exc_info=True)
+            filelog.error("Error: failed to save downloaded file")
+            filelog.error(" %s", e)
+            if chunk_id:
+                self.send("ack-file-chunk", chunk_id, False, "failed to create file: %s" % e, 0)
+            return
         self.file_descriptors.add(fd)
-        chunk_id = options.strget("file-chunk-id")
         if chunk_id:
             chunk_id = strtobytes(chunk_id)
-            if len(self.receive_chunks_in_progress)>=MAX_CONCURRENT_FILES:
-                self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress", 0)
+            l = len(self.receive_chunks_in_progress)
+            if l>=MAX_CONCURRENT_FILES:
+                self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress: %i" % l, 0)
                 os.close(fd)
                 return
             digest = hashlib.sha1()
@@ -760,7 +769,10 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state[-2] = 0         #timer has fired
             if chunk_state[-1]==chunk_no:
                 filelog.error("Error: chunked file transfer timed out on chunk %i", chunk_no)
-                del self.send_chunks_in_progress[chunk_id]
+                try:
+                    del self.send_chunks_in_progress[chunk_id]
+                except KeyError:
+                    pass
 
     def _process_ack_file_chunk(self, packet):
         #the other end received our send-file or send-file-chunk,
