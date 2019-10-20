@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,6 +17,7 @@ display = os.environ.get("DISPLAY", "unknown")
 if socket_path and os.path.exists(socket_path):
     #try to forward open commands:
     #sys.stderr.write("xdg-open: forwarding request to xpra server at '%s'\n" % (socket_path,))
+    failed = 0
     for x in sys.argv[1:]:
         filename = os.path.abspath(x)
         #sys.stderr.write("arg: '%s'\n" % x)
@@ -38,8 +39,9 @@ if socket_path and os.path.exists(socket_path):
             #sys.stderr.write("Popen(%s)=%s\n" % (command, proc))
             out, err = proc.communicate(None)
             if proc.returncode==0:
-                sys.exit(0)
+                continue
             else:
+                failed += 1
                 if out:
                     sys.stdout.write(out)
                     sys.stdout.flush()
@@ -49,6 +51,8 @@ if socket_path and os.path.exists(socket_path):
         except Exception as e:
             sys.stderr.write("xdg-open: failed to forward to xpra server using socket '%s': %s\n" % (socket_path, e))
             sys.stderr.flush()
+    if not failed:
+        sys.exit(0)
 
 
 #fallback to the "real" xdg-open:
