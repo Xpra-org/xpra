@@ -42,15 +42,20 @@ def safe_open_download_file(basefilename, mimetype):
     from xpra.platform.paths import get_download_dir
     #make sure we use a filename that does not exist already:
     dd = os.path.expanduser(get_download_dir())
-    base = os.path.basename(basefilename)
+    #we can't use os.path.basename,
+    #because the remote end may have sent us a filename
+    #which is using a different pathsep
+    base = basefilename
+    for sep in ("\\", "/", os.sep):
+        i = base.rfind(sep) + 1
+        base = base[i:]
     wanted_filename = os.path.abspath(os.path.join(dd, base))
     ext = MIMETYPE_EXTS.get(mimetype)
-    if ext:
+    if ext and not wanted_filename.endswith("."+ext):
         #on some platforms (win32),
         #we want to force an extension
         #so that the file manager can display them properly when you double-click on them
-        if not wanted_filename.endswith("."+ext):
-            wanted_filename += "."+ext
+        wanted_filename += "."+ext
     filename = wanted_filename
     base = 0
     while os.path.exists(filename):
@@ -58,13 +63,14 @@ def safe_open_download_file(basefilename, mimetype):
         root, ext = os.path.splitext(wanted_filename)
         base += 1
         filename = root+("-%s" % base)+ext
+    filelog("safe_open_download_file(%s, %s) will use '%s'", basefilename, mimetype, filename)
     flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
     try:
         flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
     except AttributeError:
         pass
     fd = os.open(filename, flags)
-    filelog("using filename '%s'", filename)
+    filelog("using filename '%s', file descriptor=%s", filename, fd)
     return filename, fd
 
 
