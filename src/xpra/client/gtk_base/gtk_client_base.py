@@ -337,7 +337,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 log("border size is %s, disabling it", size)
                 return
             if size>=45:
-                log.warn("border size is too high: %s, clipping it", size)
+                log.warn("Warning: border size is too large: %s, clipping it", size)
                 size = 45
         from xpra.client.window_border import WindowBorder
         self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
