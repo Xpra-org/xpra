@@ -77,11 +77,11 @@ def exec_dialog_subprocess(cmd):
                     v = fd.read()
                     if v:
                         out.append(v)
-                except:
+                except OSError:
                     time.sleep(0.1)
             try:
                 Gtk.main_quit()
-            except:
+            except Exception:
                 pass
         from xpra.make_thread import start_thread
         start_thread(read_thread, "dialog-stdout-reader", True, (proc.stdout, stdout))
