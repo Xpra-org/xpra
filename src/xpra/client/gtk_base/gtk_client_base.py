@@ -333,7 +333,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     log.warn("Warning: invalid border size specified '%s'", size_str)
                     log.warn(" %s", e)
                     self.show_border_help()
-                size = 5
             if size<=0:
                 log("border size is %s, disabling it", size)
                 return
