@@ -720,17 +720,16 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error("Error: unknown datatype '%s'", dtype)
 
     def send_data_ask_timeout(self, send_id):
-        v = self.pending_send_data_timers.get(send_id)
-        if not v:
-            filelog.warn("Warning: send timeout, id '%s' not found!", send_id)
-            return False
+        v = self.pending_send_data.pop(send_id, None)
         try:
-            del self.pending_send_data[send_id]
             del self.pending_send_data_timers[send_id]
         except KeyError:
             pass
-        filename = v[0]
-        printit = v[4]
+        if not v:
+            filelog.warn("Warning: send timeout, id '%s' not found!", send_id)
+            return False
+        filename = v[1]
+        printit = v[5]
         filelog.warn("Warning: failed to %s file '%s',", ["send", "print"][printit], filename)
         filelog.warn(" the send approval request timed out")
         return False
