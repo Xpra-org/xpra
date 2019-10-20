@@ -42,15 +42,20 @@ def safe_open_download_file(basefilename, mimetype):
     from xpra.platform.paths import get_download_dir
     #make sure we use a filename that does not exist already:
     dd = os.path.expanduser(get_download_dir())
-    base = os.path.basename(basefilename)
+    #we can't use os.path.basename,
+    #because the remote end may have sent us a filename
+    #which is using a different pathsep
+    base = basefilename
+    for sep in ("\\", "/", os.sep):
+        i = base.rfind(sep) + 1
+        base = base[i:]
     wanted_filename = os.path.abspath(os.path.join(dd, base))
     ext = MIMETYPE_EXTS.get(mimetype)
-    if ext:
+    if ext and not wanted_filename.endswith("."+ext):
         #on some platforms (win32),
         #we want to force an extension
         #so that the file manager can display them properly when you double-click on them
-        if not wanted_filename.endswith("."+ext):
-            wanted_filename += "."+ext
+        wanted_filename += "."+ext
     filename = wanted_filename
     base = 0
     while os.path.exists(filename):
@@ -58,13 +63,14 @@ def safe_open_download_file(basefilename, mimetype):
         root, ext = os.path.splitext(wanted_filename)
         base += 1
         filename = root+("-%s" % base)+ext
+    filelog("safe_open_download_file(%s, %s) will use '%s'", basefilename, mimetype, filename)
     flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
     try:
         flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
     except AttributeError:
         pass
     fd = os.open(filename, flags)
-    filelog("using filename '%s'", filename)
+    filelog("using filename '%s', file descriptor=%s", filename, fd)
     return filename, fd
 
 
@@ -347,18 +353,27 @@ class FileTransferHandler(FileTransferAttributes):
             l.error("Error: file '%s' is too large:", basefilename)
             l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
             return
+        chunk_id = options.strget("file-chunk-id")
         #basefilename should be utf8:
         try:
             base = basefilename.decode("utf8")
         except:
             base = bytestostr(basefilename)
-        filename, fd = safe_open_download_file(base, mimetype)
+        try:
+            filename, fd = safe_open_download_file(base, mimetype)
+        except OSError as e:
+            filelog("cannot save file %s / %s", base, mimetype, exc_info=True)
+            filelog.error("Error: failed to save downloaded file")
+            filelog.error(" %s", e)
+            if chunk_id:
+                self.send("ack-file-chunk", chunk_id, False, "failed to create file: %s" % e, 0)
+            return
         self.file_descriptors.add(fd)
-        chunk_id = options.strget("file-chunk-id")
         if chunk_id:
             chunk_id = strtobytes(chunk_id)
-            if len(self.receive_chunks_in_progress)>=MAX_CONCURRENT_FILES:
-                self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress", 0)
+            l = len(self.receive_chunks_in_progress)
+            if l>=MAX_CONCURRENT_FILES:
+                self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress: %i" % l, 0)
                 os.close(fd)
                 return
             digest = hashlib.sha1()
@@ -761,7 +776,10 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state[-2] = 0         #timer has fired
             if chunk_state[-1]==chunk_no:
                 filelog.error("Error: chunked file transfer timed out on chunk %i", chunk_no)
-                del self.send_chunks_in_progress[chunk_id]
+                try:
+                    del self.send_chunks_in_progress[chunk_id]
+                except KeyError:
+                    pass
 
     def _process_ack_file_chunk(self, packet):
         #the other end received our send-file or send-file-chunk,
