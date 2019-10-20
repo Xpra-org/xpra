@@ -22,7 +22,7 @@ log = get_util_logger()
 class ConfirmDialogWindow(object):
 
     def __init__(self, title="Title", prompt="", info=(), icon="", buttons=()):
-        self.window = Gtk.Window(type=WINDOW_POPUP)
+        self.window = Gtk.Window(type=Gtk.WindowType.POPUP)
         self.window.set_border_width(20)
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.connect("destroy", self.quit)
