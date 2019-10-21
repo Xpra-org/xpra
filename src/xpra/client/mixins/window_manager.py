@@ -246,6 +246,8 @@ class WindowClient(StubClientMixin):
         #(cleaner and needed when we run embedded in the client launcher)
         self.destroy_all_windows()
         self.cancel_lost_focus_timer()
+        if dq:
+            dq.put(None)
         log("WindowClient.cleanup() done")
 
 

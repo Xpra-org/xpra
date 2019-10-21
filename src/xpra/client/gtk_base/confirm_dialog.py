@@ -7,7 +7,7 @@
 
 import os.path
 import sys
-from gi.repository import GLib, Pango, Gtk, GdkPixbuf
+from gi.repository import Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import add_close_accel, color_parse
@@ -20,6 +20,7 @@ log = get_util_logger()
 class ConfirmDialogWindow(Gtk.Dialog):
 
     def __init__(self, title="Title", prompt="", info=(), icon="", buttons=()):
+        log("ConfirmDialogWindow%s", (title, prompt, info, icon, buttons))
         super().__init__()
         self.set_border_width(20)
         self.set_position(Gtk.WindowPosition.CENTER)
@@ -46,21 +47,20 @@ class ConfirmDialogWindow(Gtk.Dialog):
                 l.modify_fg(Gtk.StateType.NORMAL, red)
             al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
-            vbox.add(al)
-        al(title, "sans 18", 0.5)
-        al(info, "sans 14")
-        al(prompt, "sans 14")
+            al.show_all()
+            return al
+        vbox.add(al(title, "sans 18", 0.5))
+        info_box = Gtk.VBox()
+        for i in info:
+            info_box.add(al(i, "sans 14"))
+        info_box.show_all()
+        vbox.add(info_box)
+        vbox.add(al(prompt, "sans 14"))
 
         # Buttons:
         for label, code in buttons:
             btn = self.add_button(label, code)
             btn.set_size_request(100, 48)
-
-
-    def show(self):
-        log("show()")
-        self.show_all()
-        GLib.idle_add(self.present)
 
     def quit(self, *args):
         log("quit%s", args)
@@ -98,7 +98,8 @@ def show_confirm_dialog(argv):
     app = ConfirmDialogWindow(title, prompt, info, icon, buttons)
     register_os_signals(app.quit)
     gui_ready()
-    app.show()
+    app.show_all()
+    app.present()
     return app.run()
 
 

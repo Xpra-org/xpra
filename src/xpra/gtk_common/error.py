@@ -27,12 +27,11 @@
 # super-fast connections to the X server, everything running on fast
 # computers... does being this careful to avoid sync's actually matter?)
 
-import threading
 import traceback
 from gi.repository import Gdk
 
 from xpra.util import envbool
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, is_main_thread
 from xpra.log import Logger
 
 __all__ = ["XError", "trap", "xsync", "xswallow"]
@@ -45,14 +44,13 @@ VERIFY_MAIN_THREAD = envbool("XPRA_VERIFY_MAIN_THREAD", True)
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
 
+
 if not VERIFY_MAIN_THREAD:
     def verify_main_thread():
         return
 else:
-    main_thread = threading.current_thread()
     def verify_main_thread():
-        ct = threading.current_thread()
-        if main_thread != ct:
+        if not is_main_thread():
             log.error("Error: invalid access from thread %s", ct)
             traceback.print_stack()
     verify_main_thread()

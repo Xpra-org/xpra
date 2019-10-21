@@ -9,8 +9,8 @@ import os.path
 import sys
 from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 
-from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import get_util_logger
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.platform.paths import get_icon_dir
 
@@ -26,7 +26,8 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         self.connect("destroy", self.quit)
         self.set_default_size(400, 150)
         self.set_title(title)
-        add_close_accel(self, self.quit)
+        add_close_accel(self, self.cancel)
+        self.password = None
 
         if icon:
             icon_filename = os.path.join(get_icon_dir(), icon)
@@ -44,6 +45,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
             al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
             vbox.add(al)
+            al.show_all()
 
         #window title is visible so this would be redundant:
         #al(title, "sans 18", 0.5)
@@ -51,18 +53,19 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         self.password_input = Gtk.Entry()
         self.password_input.set_max_length(255)
         self.password_input.set_width_chars(32)
-        self.password_input.connect('activate', self.activate)
+        self.password_input.connect('activate', self.password_activate)
+        self.password_input.connect('changed', self.password_changed)
         self.password_input.set_visibility(False)
         vbox.add(self.password_input)
 
-        btn = self.add_button("Confirm", 0)
-        self.set_default(btn)
-        self.set_focus(btn)
-        self.add_button("Cancel", 1)
+        self.confirm_btn = self.add_button("Confirm", 0)
+        self.set_default(self.confirm_btn)
+        self.set_focus(self.confirm_btn)
+        self.cancel_btn = self.add_button("Cancel", 1)
 
 
     def show(self):
-        log("show()")
+        log("PasswordInputDialogWindow.show()")
         self.show_all()
         GLib.idle_add(self.present)
         GLib.idle_add(self.password_input.grab_focus)
@@ -71,20 +74,18 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         log("quit%s", args)
         self.destroy()
 
-    def run(self):
-        r = super().run()
-        if r in (0, -1):
-            self.write_password()
-            return 0
-        return r
+    def cancel(self, *args):
+        log("cancel%s", args)
+        self.cancel_btn.activate()
 
-    def activate(self, *args):
-        self.write_password()
-        self.quit()
+    def password_activate(self, *_args):
+        self.confirm_btn.activate()
 
-    def write_password(self):
-        sys.stdout.write(self.password_input.get_text())
-        sys.stdout.flush()
+    def password_changed(self, *_args):
+        self.password = self.password_input.get_text()
+
+    def get_password(self):
+        return self.password
 
 
 def show_pass_dialog(argv):
@@ -107,7 +108,12 @@ def show_pass_dialog(argv):
     register_os_signals(app.quit)
     gui_ready()
     app.show()
-    return app.run()
+    r = app.run()
+    if r==0:
+        password = app.get_password()
+        sys.stdout.write(password)
+        sys.stdout.flush()
+    return r
 
 
 def main():

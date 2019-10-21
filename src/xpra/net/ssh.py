@@ -10,18 +10,18 @@ import socket
 from subprocess import PIPE, Popen
 
 from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
-from xpra.platform.paths import get_xpra_command, get_ssh_known_hosts_files
+from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform import get_username
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
 from xpra.os_util import (
     bytestostr, osexpand, monotonic_time, load_binary_file,
-    setsid, nomodule_context, umask_context,
-    is_WSL, WIN32, OSX, POSIX,
+    setsid, nomodule_context, umask_context, is_main_thread,
+    WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, nonl, engs
-from xpra.log import Logger, is_debug_enabled
+from xpra.log import Logger
 
 log = Logger("network", "ssh")
 
@@ -44,7 +44,6 @@ PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 assert PASSWORD_RETRY>=0
 
 
-
 def keymd5(k):
     import binascii
     f = bytestostr(binascii.hexlify(k.get_fingerprint()))
@@ -55,65 +54,51 @@ def keymd5(k):
     return s
 
 
-def exec_dialog_subprocess(cmd):
-    if is_debug_enabled("ssh"):
-        cmd += ["-d", "all"]
-    try:
-        log("exec_dialog_subprocess(%s)", cmd)
-        kwargs = {}
-        if not POSIX:
-            #win32 platform code would create a log file for the command's output,
-            #tell it not to do that:
-            env = os.environ.copy()
-            env["XPRA_LOG_TO_FILE"] = "0"
-            kwargs["env"] = env
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, **kwargs)
-        stdout = []
-        stderr = []
-        from gi.repository import Gtk
-        def read_thread(fd, out):
-            while proc.poll() is None:
-                try:
-                    v = fd.read()
-                    if v:
-                        out.append(v)
-                except OSError:
-                    time.sleep(0.1)
-            try:
-                Gtk.main_quit()
-            except Exception:
-                pass
-        from xpra.make_thread import start_thread
-        start_thread(read_thread, "dialog-stdout-reader", True, (proc.stdout, stdout))
-        start_thread(read_thread, "dialog-stderr-reader", True, (proc.stderr, stderr))
-        if is_WSL():
-            #WSL needs to wait before calling communicate,
-            #is this still needed now that we read using threads?
-            proc.wait()
-        Gtk.main()
-        log("exec_dialog_subprocess(%s) returncode=%s", cmd, proc.poll())
-        if stderr:
-            log.warn("Warning: dialog process error output:")
-            for x in (b"".join(stderr)).decode().splitlines():
-                log.warn(" %s", x)
-        return proc.returncode, (b"".join(stdout)).decode()
-    except Exception as e:
-        log("exec_dialog_subprocess(..)", exc_info=True)
-        log.error("Error: failed to execute the dialog subcommand")
-        log.error(" %s", e)
-        return -1, None
+def dialog_run(dialog):
+    from gi.repository import GLib
+    if is_main_thread():
+        dialog.show()
+        try:
+            return dialog.run()
+        finally:
+            dialog.destroy()
+    #do a little dance if we're not running in the main thread:
+    #block this thread and wait for the main thread to run the dialog
+    from threading import Event
+    e = Event()
+    code = []
+    def main_thread_run():
+        dialog.show()
+        try:
+            r = dialog.run()
+        finally:
+            dialog.destroy()
+        code.append(r)
+        e.set()
+    GLib.idle_add(main_thread_run)
+    e.wait()
+    log("dialog_run(%s) code=%s", dialog, code)
+    return code[0]
 
 def dialog_pass(title="Password Input", prompt="enter password", icon=""):
-    cmd = get_xpra_command()+["_pass", nonl(title), nonl(prompt), icon]
-    return exec_dialog_subprocess(cmd)
+    from xpra.client.gtk_base.pass_dialog import PasswordInputDialogWindow
+    dialog = PasswordInputDialogWindow(title, prompt, icon)
+    try:
+        if dialog_run(dialog)==0:
+            return dialog.get_password()
+        return None
+    finally:
+        dialog.destroy()
 
-def dialog_confirm(title, prompt, qinfo="", icon="", buttons=(("OK", 1),)):
-    cmd = get_xpra_command()+["_dialog", nonl(title), nonl(prompt), nonl("\\n".join(qinfo)), icon]
-    for label, code in buttons:
-        cmd.append(nonl(label))
-        cmd.append(str(code))
-    log("dialog_confirm%s", (title, prompt, qinfo, icon, buttons))
-    return exec_dialog_subprocess(cmd)
+def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)):
+    from xpra.client.gtk_base.confirm_dialog import ConfirmDialogWindow
+    dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
+    try:
+        r = dialog_run(dialog)
+    finally:
+        dialog.destroy()
+    return r
+
 
 def confirm_key(info=()):
     if SKIP_UI:
@@ -123,8 +108,8 @@ def confirm_key(info=()):
     if not use_tty():
         icon = get_icon_filename("authentication", "png") or ""
         prompt = "Are you sure you want to continue connecting?"
-        code, out = dialog_confirm("Confirm Key", prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
-        log("dialog output: '%s', return code=%s", nonl(out), code)
+        code = dialog_confirm("Confirm Key", prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
+        log("dialog return code=%s", code)
         r = code==200
         log.info("host key %sconfirmed", ["not ", ""][r])
         return r
@@ -141,11 +126,7 @@ def input_pass(prompt):
     from xpra.os_util import use_tty
     if not use_tty():
         icon = get_icon_filename("authentication", "png") or ""
-        code, out = dialog_pass("Password Input", prompt, icon)
-        log("pass dialog output return code=%s", code)
-        if code!=0:
-            return None
-        return out
+        return dialog_pass("Password Input", prompt, icon)
     from getpass import getpass
     return getpass(prompt)
 

@@ -13,6 +13,7 @@ import uuid
 import time
 import struct
 import binascii
+import threading
 
 SIGNAMES = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
@@ -29,6 +30,11 @@ FREEBSD  = sys.platform.startswith("freebsd")
 POSIX = os.name=="posix"
 
 BITS = struct.calcsize(b"P")*8
+
+
+main_thread = threading.current_thread()
+def is_main_thread():
+    return threading.current_thread()==main_thread
 
 
 def strtobytes(x) -> bytes:
