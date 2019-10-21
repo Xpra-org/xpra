@@ -60,8 +60,6 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     def setup_connection(self, conn):
         protocol = super().setup_connection(conn)
         protocol._log_stats  = False
-        if conn.timeout>0:
-            GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         GLib.idle_add(self.send_hello)
         return protocol
 
@@ -70,8 +68,6 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         #overriden in subclasses!
         return "Python3/GObject"
 
-    def timeout(self, *_args):
-        log.warn("timeout!")
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
@@ -127,6 +123,16 @@ class CommandConnectClient(GObjectXpraClient):
         for x in ("ui_client", "wants_aliases", "wants_encodings",
                   "wants_versions", "wants_features", "wants_sound", "windows"):
             self.hello_extra[x] = False
+
+    def setup_connection(self, conn):
+        protocol = super().setup_connection(conn)
+        if conn.timeout>0:
+            GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
+        return protocol
+
+    def timeout(self, *_args):
+        log.warn("timeout!")
+
 
     def _process_connection_lost(self, _packet):
         #override so we don't log a warning
