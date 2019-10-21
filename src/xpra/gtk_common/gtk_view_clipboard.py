@@ -7,6 +7,7 @@ import sys
 from collections import deque
 from gi.repository import Pango, Gtk, Gdk
 
+from xpra.util import csv
 from xpra.gtk_common.gtk_util import TableBuilder, label
 from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
@@ -62,7 +63,7 @@ class ClipboardInstance(object):
         self.value_label.set_text("")
 
     def get_targets_callback(self, _c, targets, *_args):
-        self.log("got targets: %s" % str(targets))
+        self.log("got targets: %s" % csv(str(x) for x in targets))
         if hasattr(targets, "name"):
             self.log("target is atom: %s" % targets.name())
             targets = []
