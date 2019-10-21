@@ -37,37 +37,38 @@ DENY = 0
 ACCEPT = 1
 OPEN = 2
 
-
-def safe_open_download_file(basefilename, mimetype):
-    from xpra.platform.paths import get_download_dir
-    #make sure we use a filename that does not exist already:
-    dd = os.path.expanduser(get_download_dir())
+def basename(filename):
     #we can't use os.path.basename,
     #because the remote end may have sent us a filename
     #which is using a different pathsep
-    base = basefilename
     for sep in ("\\", "/", os.sep):
-        i = base.rfind(sep) + 1
-        base = base[i:]
-    wanted_filename = os.path.abspath(os.path.join(dd, base))
+        i = filename.rfind(sep) + 1
+        filename = filename[i:]
+    if not WIN32:
+        return filename
+    #many characters aren't allowed at all on win32:
+    tmp = ""
+    for char in filename:
+        if ord(char)<32 or char in ("<", ">", ":", "\"", "|", "?", "*"):
+            char = "_"
+        tmp += char
+    return tmp
+
+def safe_open_download_file(basefilename, mimetype):
+    from xpra.platform.paths import get_download_dir
+    dd = os.path.expanduser(get_download_dir())
+    filename = os.path.abspath(os.path.join(dd, basename(basefilename)))
     ext = MIMETYPE_EXTS.get(mimetype)
-    if ext and not wanted_filename.endswith("."+ext):
+    if ext and not filename.endswith("."+ext):
         #on some platforms (win32),
         #we want to force an extension
         #so that the file manager can display them properly when you double-click on them
-        wanted_filename += "."+ext
-    if WIN32:
-        filename = ""
-        for char in wanted_filename:
-            if ord(char)<32 or char in ("<", ">", ":", "\"", "|", "?", "*"):
-                char = "_"
-            filename += char
-    else:
-        filename = wanted_filename
+        filename += "."+ext
+    #make sure we use a filename that does not exist already:
+    root, ext = os.path.splitext(filename)
     base = 0
     while os.path.exists(filename):
         filelog("cannot save file as %s: file already exists", filename)
-        root, ext = os.path.splitext(wanted_filename)
         base += 1
         filename = root+("-%s" % base)+ext
     filelog("safe_open_download_file(%s, %s) will use '%s'", basefilename, mimetype, filename)
