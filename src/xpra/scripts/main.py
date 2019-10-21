@@ -145,7 +145,8 @@ def configure_logging(options, mode):
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-mdns", "sessions", "mdns-gui", "bug-report",
         "opengl", "opengl-probe", "test-connect",
-        "encoding", "webcam", "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
+        "encoding", "webcam", "clipboard-test",
+        "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
         "printing-info", "version-info", "gtk-info",
         "colors-test", "colors-gradient-test", "transparent-colors", "transparent-window",
         ):
@@ -477,6 +478,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode=="webcam":
             from xpra.scripts import show_webcam
             return show_webcam.main()
+        elif mode=="clipboard-test":
+            from xpra.gtk_common import gtk_view_clipboard
+            return gtk_view_clipboard.main()
         elif mode=="keyboard":
             from xpra.platform import keyboard
             return keyboard.main()
