@@ -407,12 +407,12 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
 
     def set_selection_response(self, requestor, target, prop, dtype, dformat, data, time=0):
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
-            requestor, target, prop, dtype, dformat, repr_ellipsized(str(data)), time)
+            requestor, target, prop, dtype, dformat, repr_ellipsized(bytestostr(data)), time)
         #answer the selection request:
         with xsync:
             xid = get_xwindow(requestor)
             if data is not None:
-                X11Window.XChangeProperty(xid, prop, dtype, dformat, data)
+                X11Window.XChangeProperty(xid, prop, target, dformat, data)
             else:
                 #maybe even delete the property?
                 #X11Window.XDeleteProperty(xid, prop)
