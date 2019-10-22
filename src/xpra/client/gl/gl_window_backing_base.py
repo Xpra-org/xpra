@@ -528,9 +528,12 @@ class GLWindowBackingBase(WindowBackingBase):
         glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
         glBindFramebuffer(GL_FRAMEBUFFER, fbo)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[texture_index], 0)
+        self.gl_clear_color_buffer()
+
+    def gl_clear_color_buffer(self):
         try:
             glClear(GL_COLOR_BUFFER_BIT)
-        except:
+        except Exception:
             log("ignoring glClear(GL_COLOR_BUFFER_BIT) error, buggy driver?", exc_info=True)
 
 
@@ -705,7 +708,7 @@ class GLWindowBackingBase(WindowBackingBase):
             # black, no alpha:
             glClearColor(0.0, 0.0, 0.0, 1.0)
         if left or top or right or bottom:
-            glClear(GL_COLOR_BUFFER_BIT)
+            self.gl_clear_color_buffer()
 
         #from now on, take the offsets into account:
         glViewport(left, top, ww, wh)
