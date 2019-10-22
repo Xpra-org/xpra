@@ -867,6 +867,7 @@ fi
 
 %changelog
 * Fri Oct 18 2019 Antoine Martin <antoine@xpra.org> 3.0.1-1
+- fix clipboard synchronization failures with MS Windows clients
 - fix window cleanup errors preventing a clean exit
 - fix launcher error if sharing flag is unset
 - fix window states wrongly getting reset
@@ -881,11 +882,15 @@ fi
 - fix unresponsive appindicator system tray
 - fix GDK window scaling setting wrongly propagated to the server
 - fix compilation on Ubuntu Eoan Ermine
+- fix file download failures on MS Windows due to invalid characters
+- fix handling of file download errors
 - fix Debian bin path warnings
 - fix error handling in 'xpra top'
 - fix pyobjc API compatibility in OpenGL transparency shim
 - fix out of date PKG OS version requirements
 - fix PKG compatibility with MacOS 10.15 Catalina
+- fix window border color parsing failures causing errors
+- fix OpenGL window paint errors with some drivers
 - update Python to 3.7.5 on MacOS
 - bump revision to override broken Fedora packaging
 - show Python version in MacOS packages
