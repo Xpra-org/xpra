@@ -23,6 +23,7 @@ xpra (3.0.1-1) UNRELEASED; urgency=low
   * fix PKG compatibility with MacOS 10.15 Catalina
   * fix window border color parsing failures causing errors
   * fix OpenGL window paint errors with some drivers
+  * make it easier to launch test tools
   * update Python to 3.7.5 on MacOS
   * bump revision to override broken Fedora packaging
   * show Python version in MacOS packages
@@ -30,7 +31,7 @@ xpra (3.0.1-1) UNRELEASED; urgency=low
   * update to xxhash 0.7.2
   * consistent use of quotes in endpoint logging
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 18 Oct 2019 22:42:29 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 22 Oct 2019 18:54:21 +0700
 
 xpra (3.0-1) UNRELEASED; urgency=low
   * Python 3 port complete, now the default: #1571, #2195

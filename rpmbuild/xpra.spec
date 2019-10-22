@@ -866,7 +866,7 @@ fi
 
 
 %changelog
-* Fri Oct 18 2019 Antoine Martin <antoine@xpra.org> 3.0.1-1
+* Tue Oct 22 2019 Antoine Martin <antoine@xpra.org> 3.0.1-1
 - fix clipboard synchronization failures with MS Windows clients
 - fix window cleanup errors preventing a clean exit
 - fix launcher error if sharing flag is unset
@@ -891,6 +891,7 @@ fi
 - fix PKG compatibility with MacOS 10.15 Catalina
 - fix window border color parsing failures causing errors
 - fix OpenGL window paint errors with some drivers
+- make it easier to launch test tools
 - update Python to 3.7.5 on MacOS
 - bump revision to override broken Fedora packaging
 - show Python version in MacOS packages
