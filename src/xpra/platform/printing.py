@@ -114,17 +114,17 @@ platform_import(globals(), "printing", False,
                 "DEFAULT_MIMETYPES")
 
 
-def main():
-    if "-v" in sys.argv or "--verbose" in sys.argv:
+def main(argv=[]):
+    if "-v" in argv or "--verbose" in argv:
         from xpra.log import add_debug_category, enable_debug_for
         add_debug_category("printing")
         enable_debug_for("printing")
         try:
-            sys.argv.remove("-v")
+            argv.remove("-v")
         except ValueError:
             pass
         try:
-            sys.argv.remove("--verbose")
+            argv.remove("--verbose")
         except ValueError:
             pass
 
@@ -168,7 +168,7 @@ def main():
         except Exception as e:
             print("Error: initializing the printing tool")
             print(" %s" % e)
-        if len(sys.argv)<=1:
+        if len(argv)<=1:
             dump_printers(get_printers())
             print("")
             dump_info(get_info())
@@ -177,8 +177,8 @@ def main():
         if not printers:
             print("Cannot print: no printers found")
             return 1
-        if len(sys.argv)==2:
-            filename = sys.argv[1]
+        if len(argv)==2:
+            filename = argv[1]
             if not os.path.exists(filename):
                 print("Cannot print file '%s': file does not exist" % filename)
                 return 1
@@ -189,20 +189,20 @@ def main():
                     print("More than one printer found: %s", csv(printer.keys()))
             print("Using printer '%s'" % printer)
             filenames = [filename]
-        if len(sys.argv)>2:
-            printer = sys.argv[1]
+        if len(argv)>2:
+            printer = argv[1]
             if printer not in printers:
                 print("Invalid printer '%s'" % printer)
                 return 1
-            filenames = sys.argv[2:]
+            filenames = argv[2:]
             for filename in filenames:
                 if not os.path.exists(filename):
                     print("File '%s' does not exist" % filename)
                     return 1
         print("Printing: %s" % csv(filenames))
         print_files(printer, filenames, "Print Command", {})
-        return 0
+    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

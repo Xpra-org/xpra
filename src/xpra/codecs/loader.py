@@ -343,6 +343,7 @@ def main():
         def forcever(v):
             return pver(v, numsep=".", strsep=".").lstrip("v")
         print_nested_dict(codec_versions, vformat=forcever)
+    return 0
 
 
 if __name__ == "__main__":

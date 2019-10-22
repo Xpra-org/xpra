@@ -74,6 +74,7 @@ def main():
         pkey("keyval", "name", "keycode", "group", "level")
         for x in gtk_keymap:
             pkey(*x)
+    return 0
 
 
 if __name__ == "__main__":

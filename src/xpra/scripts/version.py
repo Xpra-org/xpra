@@ -31,6 +31,7 @@ def main():
         from xpra.platform.info import get_version_info as pvinfo
         d.update(pvinfo())
         print_nested_dict(d)
+    return 0
 
 
 if __name__ == "__main__":

@@ -92,6 +92,7 @@ def main():
     w = TransparentColorWindow()
     add_close_accel(w, gtk.main_quit)
     gtk.main()
+    return 0
 
 
 if __name__ == "__main__":

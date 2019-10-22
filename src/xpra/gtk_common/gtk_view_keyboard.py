@@ -128,6 +128,7 @@ def main():
         enable_color()
         KeyboardStateInfoWindow()
         gtk.main()
+    return 0
 
 
 if __name__ == "__main__":
