@@ -79,8 +79,8 @@
   <autotools id="python" autogenargs="--enable-shared"
 	     supports-non-srcdir-builds="no" autogen-sh="autoreconf">
     <branch repo="python"
-           module="2.7.16/Python-2.7.16.tar.xz" version="2.7.16"
-           hash="sha256:f222ef602647eecb6853681156d32de4450a2c39f4de93bd5b20235f2e660ed7">
+           module="2.7.17/Python-2.7.17.tar.xz" version="2.7.17"
+           hash="sha256:4d43f033cdbd0aa7b7023c81b0e986fd11e653b5248dac9144d508f11812ba41">
   <!-- related to https://bugs.python.org/issue11445 -->
   <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/python-ldflags.patch" strip="1"/>
     </branch>
