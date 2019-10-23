@@ -18,7 +18,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     cleanup_x11_filter,
     )
 from xpra.clipboard.clipboard_core import (
-    ClipboardProtocolHelperCore, ClipboardProxyCore, TEXT_TARGETS,
+    ClipboardProxyCore, TEXT_TARGETS,
     must_discard, must_discard_extra, _filter_targets,
     )
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper, CONVERT_TIMEOUT
