@@ -1,4 +1,9 @@
 xpra (3.0.1-1) UNRELEASED; urgency=low
+  * correct clipboard fix
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 23 Oct 2019 19:24:22 +0700
+
+xpra (3.0.1-1) UNRELEASED; urgency=low
   * fix clipboard synchronization failures with MS Windows clients
   * fix window cleanup errors preventing a clean exit
   * fix launcher error if sharing flag is unset

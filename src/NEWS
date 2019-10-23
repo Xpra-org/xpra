@@ -1,4 +1,4 @@
-v3.0.1 (2019-10-22)
+v3.0.1 (2019-10-23)
 ======================
 	-- fix clipboard synchronization failures with MS Windows clients
 	-- fix window cleanup errors preventing a clean exit

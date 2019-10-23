@@ -10,7 +10,7 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
-%{!?revision_no: %define revision_no 1}
+%{!?revision_no: %define revision_no 2}
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -866,6 +866,9 @@ fi
 
 
 %changelog
+* Wed Oct 23 2019 Antoine Martin <antoine@xpra.org> 3.0.1-2
+- correct clipboard fix
+
 * Tue Oct 22 2019 Antoine Martin <antoine@xpra.org> 3.0.1-1
 - fix clipboard synchronization failures with MS Windows clients
 - fix window cleanup errors preventing a clean exit
