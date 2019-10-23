@@ -405,7 +405,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         with xsync:
             xid = requestor.get_xid()
             if data is not None:
-                X11Window.XChangeProperty(xid, prop, target, dformat, data)
+                X11Window.XChangeProperty(xid, prop, dtype, dformat, data)
             else:
                 #maybe even delete the property?
                 #X11Window.XDeleteProperty(xid, prop)
