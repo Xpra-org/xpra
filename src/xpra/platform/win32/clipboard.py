@@ -193,7 +193,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             return
         def got_text(text):
             log("got_text(%s)", repr_ellipsized(bytestostr(text)))
-            got_contents("text/plain", 8, text)
+            got_contents(target, 8, text)
         def errback(error_text=""):
             log.error("Error: failed to get clipboard data")
             if error_text:
