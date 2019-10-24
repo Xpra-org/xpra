@@ -12,7 +12,7 @@ from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 
 from xpra.util import dump_exc, envbool
-from xpra.os_util import strtobytes, is_X11
+from xpra.os_util import strtobytes, is_X11, bytestostr
 from xpra.log import Logger
 log = Logger("x11", "bindings", "core")
 
@@ -148,7 +148,7 @@ cdef class X11CoreBindingsInstance:
             return code
         cdef char[128] buffer
         XGetErrorText(self.display, code, buffer, 128)
-        return str(buffer[:128]).split("\0")[0]
+        return bytestostr(bytes(buffer[:128]).split(b"\0")[0])
 
     def UngrabKeyboard(self, time=CurrentTime):
         assert self.display!=NULL, "display is closed"
