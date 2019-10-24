@@ -1155,8 +1155,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #call this method whenever something workspace related may have changed
         window_workspace = self.get_window_workspace()
         desktop_workspace = self.get_desktop_workspace()
-        workspacelog("do_workspace_changed(%s) (window, desktop): from %s to %s",
-                     info,
+        workspacelog("do_workspace_changed(%s) for window %i (window, desktop): from %s to %s",
+                     info, self._id,
                      (wn(self._window_workspace), wn(self._desktop_workspace)),
                      (wn(window_workspace), wn(desktop_workspace)))
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
