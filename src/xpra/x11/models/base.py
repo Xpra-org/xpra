@@ -4,13 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gdk
+from gi.repository import GObject
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.models.core import CoreX11WindowModel, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
-from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -260,7 +260,7 @@ class BaseWindowModel(CoreX11WindowModel):
         with xswallow:
             if workspace==WORKSPACE_UNSET:
                 workspacelog("removing _NET_WM_DESKTOP property from window %#x", self.xid)
-                X11Window.XDeleteProperty(self.xid, "_NET_WM_DESKTOP")
+                prop_del(self.client_window, "_NET_WM_DESKTOP")
             else:
                 workspacelog("setting _NET_WM_DESKTOP=%s on window %#x", workspacestr(workspace), self.xid)
                 prop_set(self.client_window, "_NET_WM_DESKTOP", "u32", workspace)
