@@ -13,7 +13,7 @@ from collections import deque, namedtuple
 from gi.repository import GObject, Gtk, Gdk, GdkPixbuf
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import updict, rindex, envbool, envint, typedict
+from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -1050,12 +1050,17 @@ class XpraServer(GObject.GObject, X11ServerBase):
         Override so we can update the workspace on the window directly,
         instead of storing it as a client property
         """
-        workspace = new_client_properties.get("workspace")
-        workspacelog("workspace from client properties %s: %s", new_client_properties, workspace)
+        workspace = typedict(new_client_properties).intget("workspace", None)
+        def wn(w):
+            return WORKSPACE_NAMES.get(w, w)
+        workspacelog.warn("workspace from client properties %s: %s", new_client_properties, wn(workspace))
         if workspace is not None:
             window.move_to_workspace(workspace)
             #we have handled it on the window directly, so remove it from client properties
-            del new_client_properties["workspace"]
+            try:
+                del new_client_properties[b"workspace"]
+            except KeyError:
+                del new_client_properties["workspace"]
         #handle the rest as normal:
         super()._set_client_properties(proto, wid, window, new_client_properties)
 
