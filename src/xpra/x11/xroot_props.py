@@ -6,7 +6,7 @@
 
 from gi.repository import GObject, Gdk
 
-from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
+from xpra.gtk_common.gobject_util import one_arg_signal, SIGNAL_RUN_LAST
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
     )
@@ -18,7 +18,7 @@ log = Logger("x11", "util")
 class XRootPropWatcher(GObject.GObject):
     __gsignals__ = {
         "root-prop-changed": (SIGNAL_RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_STRING, )),
-        "xpra-property-notify-event": n_arg_signal(1),
+        "xpra-property-notify-event": one_arg_signal,
         }
 
     def __init__(self, props, root_window):
@@ -33,6 +33,11 @@ class XRootPropWatcher(GObject.GObject):
         #this must be called from the UI thread!
         remove_event_receiver(self._root, self)
         self._root.set_events(self._saved_event_mask)
+
+
+    def __repr__(self):
+        return "XRootPropWatcher"
+
 
     def do_xpra_property_notify_event(self, event):
         log("XRootPropWatcher.do_xpra_property_notify_event(%s)", event)
