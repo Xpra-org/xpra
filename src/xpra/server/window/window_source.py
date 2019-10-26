@@ -669,6 +669,8 @@ class WindowSource(WindowIconSource):
         for k in ("workspace", "screen"):
             if k in properties:
                 del properties[k]
+            elif strtobytes(k) in properties:
+                del properties[strtobytes(k)]
         if properties:
             self.do_set_client_properties(properties)
 
