@@ -911,7 +911,9 @@ class WindowVideoSource(WindowSource):
         if FORCE_AV_DELAY>0:
             return FORCE_AV_DELAY
         if options.get("av-sync", False):
-            return -1
+            return 0
+        if self.content_type in ("text", "picture"):
+            return 0
         l = len(self.encode_queue)
         if l>=self.encode_queue_max_size:
             #we must free some space!
