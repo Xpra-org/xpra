@@ -832,22 +832,24 @@ class WindowVideoSource(WindowSource):
         assert self.ui_thread == threading.current_thread()
         assert coding is not None
         if w==0 or h==0:
+            log("process_damage_region: dropped, zero dimensions")
             return
         if not self.window.is_managed():
-            log("the window %s is not composited!?", self.window)
+            log("process_damage_region: the window %s is not managed", self.window)
             return
         self._sequence += 1
         sequence = self._sequence
         if self.is_cancelled(sequence):
-            log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
+            log("process_damage_region: dropping damage request with sequence=%s", sequence)
             return
 
         rgb_request_time = monotonic_time()
         image = self.window.get_image(x, y, w, h)
         if image is None:
-            log("get_window_pixmap: no pixel data for window %s, wid=%s", self.window, self.wid)
+            log("process_damage_region: no pixel data for window %s, wid=%s", self.window, self.wid)
             return
         if self.is_cancelled(sequence):
+            log("process_damage_region: dropping damage request with sequence=%s", sequence)
             image.free()
             return
         self.pixel_format = image.get_pixel_format()
@@ -867,13 +869,15 @@ class WindowVideoSource(WindowSource):
         # * the video encoder needs a thread safe image
         #   (the xshm backing may change from underneath us if we don't freeze it)
         must_freeze = av_delay>0 or ((coding in self.video_encodings or coding=="auto") and not image.is_thread_safe())
+        log("process_damage_region: av_delay=%s, must_freeze=%s, size=%s, encoding=%s",
+            av_delay, must_freeze, (w, h), coding)
         if must_freeze:
             image.freeze()
         def call_encode(ew, eh, eimage, encoding, eflush):
             self._sequence += 1
             sequence = self._sequence
             if self.is_cancelled(sequence):
-                log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
+                log("call_encode: dropping damage request with sequence=%s", sequence)
                 return
             now = monotonic_time()
             log("process_damage_region: wid=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms, frame delay=%ims",
