@@ -1676,7 +1676,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._been_mapped = True
             workspace = self._metadata.intget("workspace", WORKSPACE_UNSET)
             if workspace!=WORKSPACE_UNSET:
-                log.warn("map event set workspace")
+                log("map event set workspace %s", wn(workspace))
                 self.set_workspace(workspace)
         if self._window_workspace!=workspace and workspace is not None:
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s",
