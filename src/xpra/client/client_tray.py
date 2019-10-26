@@ -113,9 +113,6 @@ class ClientTray(ClientWidgetBase):
                 orientation = tw.get_orientation()
                 if orientation:
                     client_properties["orientation"] = orientation
-                screen = tw.get_screen()
-                if screen>=0:
-                    client_properties["screen"] = screen
             #scale to server coordinates
             sx, sy, sw, sh = self._client.crect(x, y, w, h)
             log("%s.reconfigure(%s) sending configure for geometry=%s : %s",
