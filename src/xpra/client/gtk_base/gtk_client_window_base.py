@@ -1188,7 +1188,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._desktop_workspace = desktop_workspace
         client_properties = {}
         if window_workspace is not None:
-            client_properties = {"workspace" : window_workspace}
+            client_properties["workspace"] = window_workspace
         self.send_control_refresh(suspend_resume, client_properties)
 
     def send_control_refresh(self, suspend_resume, client_properties={}, refresh=False):
