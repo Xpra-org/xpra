@@ -1471,10 +1471,11 @@ def get_client_app(error_cb, opts, extra_args, mode):
             log = get_util_logger()
             try:
                 conn = app._protocol._conn
+                if conn:
+                    log.info("Attached to %s", conn.target)
+                    log.info(" (press Control-C to detach)\n")
             except AttributeError:
                 return
-            log.info("Attached to %s", conn.target)
-            log.info(" (press Control-C to detach)\n")
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
         app.init_ui(opts)
