@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.util import repr_ellipsized
+from xpra.util import repr_ellipsized, envint
 from xpra.log import Logger
 log = Logger("network")
 
@@ -49,13 +49,15 @@ def get_log_packets(exclude=False):
 LOG_PACKETS = get_log_packets()
 NOLOG_PACKETS = get_log_packets(True)
 
+PACKET_LOG_MAX_SIZE = envint("XPRA_PACKET_LOG_MAX_SIZE", 500)
+
 def _may_log_packet(packet_type, packet):
     if packet_type in NOLOG_PACKETS:
         return
     if packet_type in LOG_PACKETS or "*" in LOG_PACKETS:
         s = str(packet)
-        if len(s)>200:
-            s = repr_ellipsized(s, 200)
+        if len(s)>PACKET_LOG_MAX_SIZE:
+            s = repr_ellipsized(s, PACKET_LOG_MAX_SIZE)
         log.info(s)
 
 def noop(*_args):
