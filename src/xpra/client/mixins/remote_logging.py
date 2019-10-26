@@ -91,6 +91,10 @@ class RemoteLogging(StubClientMixin):
             self.local_logging(log, logging.WARNING, "Warning: failed to send logging packet:")
             self.local_logging(log, logging.WARNING, " %s" % e)
             self.local_logging(log, logging.WARNING, " original unformatted message: %s", msg)
+            if args:
+                self.local_logging(log, logging.WARNING, " %i arguments: %s", len(args), args)
+            else:
+                self.local_logging(log, logging.WARNING, " (no arguments)")
             try:
                 self.local_logging(log, level, msg, *args, **kwargs)
             except Exception:
