@@ -1267,10 +1267,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return default_value        #window is not realized yet
         value = self.xget_u32_property(target, prop)
         if value is not None:
-            workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), target.get_xid())
+            workspacelog("do_get_workspace %s=%s on window %i: %#x",
+                         prop, wn(value), self._id, target.get_xid())
             return value
-        workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s",
-                     prop, target.get_xid(), wn(default_value))
+        workspacelog("do_get_workspace %s unset on window %i: %#x, returning default value=%s",
+                     prop, self._id, target.get_xid(), wn(default_value))
         return  default_value
 
 
@@ -1675,6 +1676,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._been_mapped = True
             workspace = self._metadata.intget("workspace", WORKSPACE_UNSET)
             if workspace!=WORKSPACE_UNSET:
+                log.warn("map event set workspace")
                 self.set_workspace(workspace)
         if self._window_workspace!=workspace and workspace is not None:
             workspacelog("map event: been_mapped=%s, changed workspace from %s to %s",
