@@ -1053,7 +1053,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         workspace = typedict(new_client_properties).intget("workspace", None)
         def wn(w):
             return WORKSPACE_NAMES.get(w, w)
-        workspacelog.warn("workspace from client properties %s: %s", new_client_properties, wn(workspace))
+        workspacelog("workspace from client properties %s: %s", new_client_properties, wn(workspace))
         if workspace is not None:
             window.move_to_workspace(workspace)
             #we have handled it on the window directly, so remove it from client properties
