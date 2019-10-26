@@ -733,9 +733,12 @@ class WindowClient(StubClientMixin):
             client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, watcher_pid, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
+                window = cwc(self, group_leader_window, watcher_pid, wid,
+                             wx, wy, ww, wh, bw, bh,
+                             metadata, override_redirect, client_properties,
+                             border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
                 break
-            except:
+            except Exception:
                 log.warn("failed to instantiate %s", cwc, exc_info=True)
         if window is None:
             log.warn("no more options.. this window will not be shown, sorry")
