@@ -69,7 +69,11 @@ class RemoteLogging(StubClientMixin):
                 return strtobytes(x)
         try:
             dtime = int(1000*(monotonic_time() - self.monotonic_start_time))
-            data = self.compressed_wrapper("text", enc(msg % args), level=1)
+            if args:
+                s = msg % args
+            else:
+                s = msg
+            data = self.compressed_wrapper("text", enc(s), level=1)
             self.send("logging", level, data, dtime)
             exc_info = kwargs.get("exc_info")
             if exc_info is True:
