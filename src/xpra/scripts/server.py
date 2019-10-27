@@ -23,7 +23,7 @@ from xpra.os_util import (
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand,
     )
-from xpra.util import envbool
+from xpra.util import envbool, unsetenv
 from xpra.platform.dotxpra import DotXpra
 
 
@@ -148,12 +148,6 @@ def print_DE_warnings():
 
 
 def sanitize_env():
-    def unsetenv(*varnames):
-        for x in varnames:
-            try:
-                del os.environ[x]
-            except KeyError:
-                pass
     #we don't want client apps to think these mean anything:
     #(if set, they belong to the desktop the server was started from)
     #TODO: simply whitelisting the env would be safer/better

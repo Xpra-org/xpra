@@ -18,7 +18,7 @@ import shlex
 import traceback
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import csv, envbool, envint, repr_ellipsized, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
+from xpra.util import csv, envbool, envint, unsetenv, repr_ellipsized, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
     get_util_logger, getuid, getgid,
@@ -82,6 +82,9 @@ def main(script_file, cmdline):
     #and we may need to use it again to launch new commands:
     if "XPRA_ALT_PYTHON_RETRY" in os.environ:
         del os.environ["XPRA_ALT_PYTHON_RETRY"]
+
+    #some environment variables cause us problems if set:
+    unsetenv("GDK_SCALE")
 
     if envbool("XPRA_NOMD5", False):
         import hashlib

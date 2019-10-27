@@ -872,6 +872,14 @@ def obsc(v):
 def csv(v):
     try:
         return ", ".join(str(x) for x in v)
+
+def unsetenv(*varnames):
+    for x in varnames:
+        try:
+            del os.environ[x]
+        except KeyError:
+            pass
+
     except Exception:
         return str(v)
 
