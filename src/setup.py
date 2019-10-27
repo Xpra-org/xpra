@@ -366,7 +366,7 @@ external_excludes = [
                     #Tcl/Tk
                     "Tkconstants", "Tkinter", "tcl",
                     #PIL bits that import TK:
-                    "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
+                    "PIL._tkinter_finder", "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
                     #formats we don't use:
                     "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
                     #not used:
