@@ -872,6 +872,14 @@ def csv(v):
     except Exception:
         return str(v)
 
+
+def unsetenv(*varnames):
+    for x in varnames:
+        try:
+            del os.environ[x]
+        except KeyError:
+            pass
+
 def envint(name : str, d=0):
     try:
         return int(os.environ.get(name, d))
