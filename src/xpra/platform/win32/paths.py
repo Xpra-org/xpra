@@ -119,10 +119,7 @@ def do_get_user_conf_dirs(_uid):
 
 def do_get_desktop_background_paths():
     try:
-        try:
-            import _winreg as winreg
-        except ImportError:
-            import winreg   #@UnresolvedImport @Reimport
+        import winreg   #@UnresolvedImport @Reimport
         key_path = "Control Panel\\Desktop"
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)    #@UndefinedVariable
         wallpaper = winreg.QueryValueEx(key, 'WallPaper')[0]    #@UndefinedVariable
