@@ -208,8 +208,25 @@
 		</div>
 
 		<script>
-			var getparam = Utilities.getparam;
-			var getboolparam = Utilities.getboolparam;
+			var default_settings = {}
+			var getparam = function(prop) {
+				var v = Utilities.getparam(prop);
+				if (v==null && prop in default_settings) {
+					v = default_settings[prop];
+				}
+				return v;
+			}
+			var getboolparam = function(prop, default_value) {
+				var v = Utilities.getparam(prop);
+				if (v==null && prop in default_settings) {
+					v = default_settings[prop];
+				}
+				if (v===null) {
+					return default_value;
+				}
+				return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())!==-1;
+			}
+
 			var float_menu_item_size = 30;
 			var float_menu_padding = 20;
 			var float_menu_width = (float_menu_item_size*4) + float_menu_padding;
@@ -225,10 +242,6 @@
 			}
 			var clog = function () {
 				Utilities.clog.apply(Utilities, arguments);
-			}
-
-			if (!getboolparam("floating_menu", true)) {
-				$("#float_menu").hide();
 			}
 
 			function confirm_shutdown_server() {
@@ -923,16 +936,20 @@
 				document.getElementById('float_menu').style.width ='0px'; $('#float_menu').children().hide();
 			}
 
-			if (getboolparam("autohide", false)) {
-				$('#float_menu').on('mouseover', expand_float_menu);
-				$('#float_menu').on('mouseout', retract_float_menu);
-			}
-			else {
-				expand_float_menu();
-			}
-
 			var client = null;
-			$(document).ready(function() {
+			function init_page() {
+				if (!getboolparam("floating_menu", true)) {
+					$("#float_menu").hide();
+				}
+
+				if (getboolparam("autohide", false)) {
+					$('#float_menu').on('mouseover', expand_float_menu);
+					$('#float_menu').on('mouseout', retract_float_menu);
+				}
+				else {
+					expand_float_menu();
+				}
+
 				var touchaction = getparam("touchaction") || "scroll";
 				touchaction_scroll = touchaction == "scroll";
 				set_touchaction();
@@ -1011,7 +1028,7 @@
 				$('#fullscreen').on('click', function (e) {
 					toggle_fullscreen();
 				});
-				
+
 				$('#fullscreen_button').on('click', function (e) {
 					toggle_fullscreen();
 				});
@@ -1025,6 +1042,27 @@
 						$('#fullscreen_button').attr('data-icon', 'fullscreen');
 					}
 				});
+			}
+
+			$(document).ready(function() {
+				var xhr = new XMLHttpRequest();
+				xhr.open("GET", "./default-settings.txt");
+				xhr.onload = function() {
+					var tmp_default_settings = Utilities.parseINIString(xhr.responseText);
+					//update the default settings object
+					//so getparam will look there
+					for (key in tmp_default_settings) {
+						default_settings[key] = tmp_default_settings[key];
+    				}
+					init_page();
+				}
+				xhr.onerror  = function() {
+					init_page();
+				}
+				xhr.onabort = function() {
+					init_page();
+				}
+				xhr.send();
 			});
 		</script>
 	</body>

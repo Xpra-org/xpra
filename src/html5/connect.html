@@ -333,12 +333,27 @@ function doConnect() {
 	window.location = url;
 }
 
-$(document).ready(function() {
-	var getparam = Utilities.getparam;
-	var getboolparam = Utilities.getboolparam;
+function fill_form(default_settings) {
+	console.log("fill_form(", default_settings, ")");
+	var getparam = function(prop) {
+		var v = Utilities.getparam(prop);
+		if (v==null && prop in default_settings) {
+			v = default_settings[prop];
+		}
+		return v;
+	}
+	var getboolparam = function(prop, default_value) {
+		var v = Utilities.getparam(prop);
+		if (v==null && prop in default_settings) {
+			v = default_settings[prop];
+		}
+		if (v===null) {
+			return default_value;
+		}
+		return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())!==-1;
+	}
 
 	var disconnect_reason = getparam("disconnect") || null;
-
 	if(disconnect_reason) {
 		document.getElementById("alert-disconnect").style.display = "block";
 		document.getElementById("disconnect-reason").innerHTML = disconnect_reason;
@@ -432,7 +447,10 @@ $(document).ready(function() {
 	}
 	document.getElementById('bandwidth_limit').value = bandwidth_limit || 0;
 
-	var keyboard_layout = Utilities.getKeyboardLayout();
+	var keyboard_layout = getparam("keyboard_layout");
+	if (keyboard_layout==null) {
+		keyboard_layout = Utilities.getKeyboardLayout();
+	}
 	document.getElementById('keyboard_layout').value = keyboard_layout;
 	try {
 		var req = new XMLHttpRequest()
@@ -564,6 +582,21 @@ $(document).ready(function() {
 	for (var i = 0; i < submit_text_fields.length; i++) {
 		document.getElementById(submit_text_fields[i]).addEventListener("keydown", submit_if_enter);
 	}
+}
+
+$(document).ready(function() {
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", "./default-settings.txt");
+	xhr.onload = function() {
+		fill_form(Utilities.parseINIString(xhr.responseText));
+	}
+	xhr.onerror  = function() {
+		fill_form({});
+	}
+	xhr.onabort = function() {
+		fill_form({});
+	}
+	xhr.send();
 });
 
 </script>
