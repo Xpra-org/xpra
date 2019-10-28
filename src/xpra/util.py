@@ -872,6 +872,9 @@ def obsc(v):
 def csv(v):
     try:
         return ", ".join(str(x) for x in v)
+    except Exception:
+        return str(v)
+
 
 def unsetenv(*varnames):
     for x in varnames:
@@ -879,9 +882,6 @@ def unsetenv(*varnames):
             del os.environ[x]
         except KeyError:
             pass
-
-    except Exception:
-        return str(v)
 
 def envint(name, d=0):
     try:
