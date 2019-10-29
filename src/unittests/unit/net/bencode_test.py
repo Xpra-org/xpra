@@ -144,7 +144,7 @@ def noop(_input):
     raise NotImplementedError()
 
 
-class TestBencoderFunctions(object):
+class TestBencoderFunctions:
 
     def setUp(self):
         self.encode = noop

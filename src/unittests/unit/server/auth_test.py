@@ -24,7 +24,7 @@ def temp_filename(prefix=""):
     return os.path.join(os.environ.get("TEMP", "/tmp"), "file-auth-%s-test-%s" % (prefix, monotonic_time()))
 
 
-class TempFileContext(object):
+class TempFileContext:
 
     def __init__(self, prefix="prefix"):
         self.prefix = prefix
