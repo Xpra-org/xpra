@@ -29,6 +29,8 @@ def get_gl_client_window_module(force_enable=False):
 def noop(*_args):
     pass
 def no_scaling(*args):
+    if len(args)==1:
+        return args[0]
     return args
 def get_None(*_args):
     return None
