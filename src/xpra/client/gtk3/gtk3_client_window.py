@@ -39,9 +39,6 @@ class GTK3ClientWindow(GTKClientWindowBase):
     OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
 
-    def do_init_window(self, window_type):
-        Gtk.Window.__init__(self, type = window_type)
-
     def init_widget_events(self, widget):
         GTKClientWindowBase.init_widget_events(self, widget)
         widget.connect("draw", self.drawing_area_draw)

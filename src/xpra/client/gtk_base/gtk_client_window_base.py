@@ -189,7 +189,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         else:
             window_type = Gtk.WindowType.TOPLEVEL
         self.on_realize_cb = {}
-        self.do_init_window(window_type)
+        Gtk.Window.__init__(self, type = window_type)
         self.init_drawing_area()
         self.set_decorated(self._is_decorated(metadata))
         self.set_app_paintable(True)
