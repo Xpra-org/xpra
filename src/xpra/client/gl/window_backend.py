@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import typedict, AdHocStruct
+from xpra.util import typedict, envint, AdHocStruct, AtomicInteger
 from xpra.os_util import WIN32
 from xpra.log import Logger
 
@@ -57,6 +57,7 @@ class FakeClient(AdHocStruct):
         self.server_readonly = False
         self.server_pointer = False
         self.update_focus = noop
+        self.handle_key_action = noop
         self.idle_add = no_idle_add
         self.timeout_add = no_timeout_add
         self.source_remove = no_source_remove
@@ -69,6 +70,8 @@ class FakeClient(AdHocStruct):
         return 0, 0
     def server_ok(self):
         return True
+    def mask_to_names(self, *_args):
+        return ()
 
 def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), pixel_depth=24, show=False):
     #try to render using a temporary window:
@@ -99,7 +102,6 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         bpp = len(pixel_format)
         options = typedict({"pixel_format" : pixel_format})
         stride = bpp*w
-        img_data = b"\x7f"*stride*h
         coding = "rgb32"
         widget = window_backing._backing
         widget.realize()
@@ -110,8 +112,12 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
                 "message"   : message,
                 })
         log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
+        pix = AtomicInteger(0x7f)
+        REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", 0)
         def draw():
+            img_data = bytes([pix.increase() % 256]*stride*h)
             window.draw_region(0, 0, w, h, coding, img_data, stride, 1, options, [paint_callback])
+            return REPAINT_DELAY>0
         #the paint code is actually synchronous here,
         #so we can check the present_fbo() result:
         if show:
@@ -121,7 +127,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
             def window_close_event(*_args):
                 Gtk.main_quit()
             noclient.window_close_event = window_close_event
-            GLib.timeout_add(100, draw)
+            GLib.timeout_add(REPAINT_DELAY, draw)
             Gtk.main()
         else:
             draw()
