@@ -210,7 +210,7 @@ def rgb_to_bitmap(rgb_data, bytes_per_pixel, w, h):
     return bitmap
 
 
-class win32NotifyIcon(object):
+class win32NotifyIcon:
 
     #we register the windows event handler on the class,
     #this allows us to know which hwnd refers to which instance:

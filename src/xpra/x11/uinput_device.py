@@ -41,7 +41,7 @@ BUTTON_MAP = {
     }
 
 
-class UInputDevice(object):
+class UInputDevice:
 
     def __init__(self, device, device_path):
         self.device = device

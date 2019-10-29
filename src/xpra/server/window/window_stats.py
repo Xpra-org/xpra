@@ -30,7 +30,7 @@ NRECS = 100
 TARGET_LATENCY_TOLERANCE = envint("XPRA_TARGET_LATENCY_TOLERANCE", 20)/1000.0
 
 
-class WindowPerformanceStatistics(object):
+class WindowPerformanceStatistics:
     """
     Statistics which belong to a specific WindowSource
     """

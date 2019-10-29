@@ -8,7 +8,7 @@ import os
 from xpra.os_util import load_binary_file
 
 
-class Handler(object):
+class Handler:
 
     def __init__(self, client, **kwargs):
         self.client = client

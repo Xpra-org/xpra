@@ -16,7 +16,7 @@ log = Logger("keyboard")
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 
 
-class KeyboardHelper(object):
+class KeyboardHelper:
 
     def __init__(self, net_send, keyboard_sync=True,
                  shortcut_modifiers="auto", key_shortcuts=(),

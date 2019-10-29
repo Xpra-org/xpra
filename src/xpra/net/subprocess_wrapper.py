@@ -65,7 +65,7 @@ def setup_fastencoder_nocompression(protocol):
     protocol.enable_compressor("none")
 
 
-class subprocess_callee(object):
+class subprocess_callee:
     """
     This is the callee side, wrapping the gobject we want to interact with.
     All the input received will be converted to method calls on the wrapped object.
@@ -308,7 +308,7 @@ def exec_env(blacklist=("LS_COLORS", )):
     return env
 
 
-class subprocess_caller(object):
+class subprocess_caller:
     """
     This is the caller side, wrapping the subprocess.
     You can call send() to pass packets to it

@@ -943,7 +943,7 @@ WTS_SESSION_EVENTS = {
                       WTS_SESSION_REMOTE_CONTROL: "SESSION_REMOTE_CONTROL",
                       }
 
-class ClientExtras(object):
+class ClientExtras:
     def __init__(self, client, _opts):
         self.client = client
         self._kh_warning = False

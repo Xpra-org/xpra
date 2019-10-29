@@ -82,7 +82,7 @@ def safe_open_download_file(basefilename, mimetype):
     return filename, fd
 
 
-class FileTransferAttributes(object):
+class FileTransferAttributes:
 
     def __init__(self):
         self.init_attributes()

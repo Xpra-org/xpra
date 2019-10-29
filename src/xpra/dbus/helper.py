@@ -84,7 +84,7 @@ def native_to_dbus(value):
     return dbus.types.String(value)
 
 
-class DBusHelper(object):
+class DBusHelper:
 
     def __init__(self):
         from xpra.dbus.common import init_session_bus

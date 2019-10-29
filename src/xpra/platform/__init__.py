@@ -35,7 +35,7 @@ def threaded_server_init():
     pass
 
 
-class program_context(object):
+class program_context:
     def __init__(self, prgname=None, appname=None):
         self.prgname = prgname
         self.appname = appname

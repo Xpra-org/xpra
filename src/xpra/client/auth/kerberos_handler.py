@@ -25,7 +25,7 @@ def log_kerberos_exception(e):
     except Exception:
         log.error(" %s", e)
 
-class Handler(object):
+class Handler:
 
     def __init__(self, client, **_kwargs):
         self.client = client

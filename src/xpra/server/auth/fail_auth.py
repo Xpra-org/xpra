@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-class Authenticator(object):
+class Authenticator:
     def __init__(self, username="", **kwargs):
         raise Exception("failing")
 

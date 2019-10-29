@@ -97,7 +97,7 @@ def fire_paint_callbacks(callbacks, success=True, message=""):
 Generic superclass for all Backing code,
 see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
 """
-class WindowBackingBase(object):
+class WindowBackingBase:
     RGB_MODES = ()
 
     def __init__(self, wid, window_alpha):

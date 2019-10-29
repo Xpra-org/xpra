@@ -17,7 +17,7 @@ log = Logger("rfb")
 counter = AtomicInteger()
 
 
-class RFBSource(object):
+class RFBSource:
 
     def __init__(self, protocol, desktop, share=False):
         self.protocol = protocol

@@ -33,7 +33,7 @@ if USE_NVFBC:
         USE_NVFBC = False
 
 
-class XImageCapture(object):
+class XImageCapture:
     def __init__(self, xwindow):
         self.xshm = None
         self.xwindow = xwindow

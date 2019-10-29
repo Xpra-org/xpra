@@ -292,7 +292,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
     encodings_submenu.show_all()
 
 
-class GTKTrayMenuBase(object):
+class GTKTrayMenuBase:
 
     def __init__(self, client):
         self.client = client

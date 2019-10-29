@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("network", "mdns")
 
 
-class ZeroconfListener(object):
+class ZeroconfListener:
 
     def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None):
         log("ZeroconfListener%s", (service_type, mdns_found, mdns_add, mdns_remove))

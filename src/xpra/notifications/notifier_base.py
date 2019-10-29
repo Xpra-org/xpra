@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("notify")
 
 
-class NotifierBase(object):
+class NotifierBase:
 
     def __init__(self, closed_cb=None, action_cb=None):
         #posix only - but degrades ok on non-posix:

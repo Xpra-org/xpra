@@ -25,7 +25,7 @@ def debug(msg, *args, **kwargs):
     log(msg, *args, **kwargs)
 
 
-class DotXpra(object):
+class DotXpra:
     def __init__(self, sockdir=None, sockdirs=None, actual_username="", uid=0, gid=0):
         self.uid = uid or os.getuid()
         self.gid = gid or os.getgid()

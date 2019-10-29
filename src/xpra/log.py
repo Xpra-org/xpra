@@ -46,7 +46,7 @@ def get_all_loggers():
 debug_enabled_categories = set()
 debug_disabled_categories = set()
 
-class FullDebugContext(object):
+class FullDebugContext:
 
     def __enter__(self):
         global debug_enabled_categories
@@ -338,7 +338,7 @@ def isenvdebug(category : str) -> bool:
 #    -- we bypass the logging system unless debugging is enabled for the logger,
 #       which is much faster than relying on the python logging code
 
-class Logger(object):
+class Logger:
     def __init__(self, *categories):
         global default_level, debug_disabled_categories, KNOWN_FILTERS
         self.categories = list(categories)

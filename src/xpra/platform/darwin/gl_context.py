@@ -21,7 +21,7 @@ log = Logger("opengl")
 
 
 
-class AGLWindowContext(object):
+class AGLWindowContext:
 
     def __init__(self, gl_context, nsview):
         self.gl_context = gl_context
@@ -52,7 +52,7 @@ class AGLWindowContext(object):
         return "AGLWindowContext(%s, %s)" % (self.gl_context, self.nsview)
 
 
-class AGLContext(object):
+class AGLContext:
 
     def __init__(self, alpha=True):
         self.alpha = alpha

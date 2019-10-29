@@ -664,7 +664,7 @@ def enable_focus_workaround():
     NSApp.activateIgnoringOtherApps_(True)
 
 
-class ClientExtras(object):
+class ClientExtras:
     def __init__(self, client=None, opts=None):
         if OSX_FOCUS_WORKAROUND and client:
             def first_ui_received(*_args):

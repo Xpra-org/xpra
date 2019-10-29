@@ -10,7 +10,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 
 
-class FakeJitter(object):
+class FakeJitter:
 
     def __init__(self, timeout_add, process_packet_cb, delay):
         self.timeout_add = timeout_add

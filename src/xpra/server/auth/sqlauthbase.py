@@ -58,7 +58,7 @@ class SQLAuthenticator(SysAuthenticator):
         return uid, gid, displays, env_options, session_options
 
 
-class DatabaseUtilBase(object):
+class DatabaseUtilBase:
 
     def __init__(self, uri):
         self.uri = uri

@@ -50,7 +50,7 @@ gllog = Logger("screen", "opengl")
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 
 
-class XTestPointerDevice(object):
+class XTestPointerDevice:
 
     def __repr__(self):
         return "XTestPointerDevice"

@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("auth")
 
 
-class Handler(object):
+class Handler:
 
     def __init__(self, client, **_kwargs):
         self.client = client

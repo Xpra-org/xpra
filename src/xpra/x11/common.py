@@ -17,7 +17,7 @@ REPR_FUNCTIONS = {}
 
 # Just to make it easier to pass around and have a helpful debug logging.
 # Really, just a python objects where we can stick random bags of attributes.
-class X11Event(object):
+class X11Event:
     def __init__(self, name):
         self.name = name
 

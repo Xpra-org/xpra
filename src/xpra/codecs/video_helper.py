@@ -109,7 +109,7 @@ def get_DEFAULT_VIDEO_DECODERS():
     return decoders
 
 
-class VideoHelper(object):
+class VideoHelper:
     """
         This class is a bit like a registry of known encoders, csc modules and decoders.
         The main instance, obtained by calling getVideoHelper, can be initialized

@@ -35,7 +35,7 @@ def inet_ton(af, addr):
     return inet_pton(af, addr)   #@UndefinedVariable
 
 
-class ZeroconfPublishers(object):
+class ZeroconfPublishers:
     """
     Expose services via python zeroconf
     """
@@ -98,7 +98,7 @@ class ZeroconfPublishers(object):
             s.update_txt(txt)
 
 
-class ZeroconfPublisher(object):
+class ZeroconfPublisher:
     def __init__(self, address, host, port, service_name, service_type=XPRA_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublisher%s", (address, host, port, service_name, service_type, text_dict))
         self.address = address

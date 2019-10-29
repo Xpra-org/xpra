@@ -48,7 +48,7 @@ CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression",
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 
 
-class ProxyInstance(object):
+class ProxyInstance:
 
     def __init__(self, session_options,
                  video_encoder_modules, pings,

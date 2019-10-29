@@ -133,7 +133,7 @@ cdef int password_conv(int n_msg, const pam_message **msg, pam_response **resp, 
     return 0
 
 
-cdef class pam_session(object):
+cdef class pam_session:
 
     cdef pam_handle_t *pam_handle
     cdef object service_name

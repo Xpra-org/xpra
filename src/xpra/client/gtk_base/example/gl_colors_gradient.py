@@ -14,7 +14,7 @@ from xpra.gtk_common.gtk_util import add_close_accel
 
 SIZE = 1600, 1200
 
-class GLContext(object):
+class GLContext:
     def __init__(self, widget):
         self.widget = widget
     def __enter__(self):
@@ -26,7 +26,7 @@ class GLContext(object):
         self.gldrawable.gl_end()
 
 
-class ColorTest(object):
+class ColorTest:
 
     def __init__(self):
         #FIXME: needs porting to GTK3:

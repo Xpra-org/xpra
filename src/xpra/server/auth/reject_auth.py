@@ -10,7 +10,7 @@ def init(_opts):
     pass
 
 
-class Authenticator(object):
+class Authenticator:
     def __init__(self, username, **kwargs):
         self.username = username
         self.challenge_sent = False

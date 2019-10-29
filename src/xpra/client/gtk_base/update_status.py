@@ -26,7 +26,7 @@ def getUpdateStatusWindow():
     return _instance
 
 
-class UpdateStatusWindow(object):
+class UpdateStatusWindow:
 
     def __init__(self):
         self.window = Gtk.Window()

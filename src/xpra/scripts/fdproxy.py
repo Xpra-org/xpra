@@ -22,7 +22,7 @@ PROXY_BUFFER_SIZE = envint("XPRA_PROXY_BUFFER_SIZE", 65536)
 def noretry(_e):
     return False
 
-class XpraProxy(object):
+class XpraProxy:
     """
         This is the proxy command that runs
         when one uses the hidden subcommand

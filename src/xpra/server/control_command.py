@@ -17,7 +17,7 @@ class ControlError(Exception):
         self.code = code
 
 
-class ControlCommand(object):
+class ControlCommand:
     """ Utility superclass for control commands """
 
     def __init__(self, name, help_text=None, run=None):

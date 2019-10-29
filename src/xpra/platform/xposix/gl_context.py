@@ -53,7 +53,7 @@ def get_xdisplay():
     return cast(ptr, POINTER(struct__XDisplay))
 
 
-class GLXWindowContext(object):
+class GLXWindowContext:
 
     def __init__(self, glx_context, xid):
         self.context = glx_context
@@ -83,7 +83,7 @@ class GLXWindowContext(object):
         return "GLXWindowContext(%#x)" % self.xid
 
 
-class GLXContext(object):
+class GLXContext:
 
     def __init__(self, alpha=False):
         from gi.repository import Gdk

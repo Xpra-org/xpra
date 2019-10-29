@@ -32,7 +32,7 @@ DOUBLE_BUFFERED = True
 def DefWndProc(hwnd, msg, wParam, lParam):
     return DefWindowProcA(hwnd, msg, wParam, lParam)
 
-class WGLWindowContext(object):
+class WGLWindowContext:
 
     def __init__(self, hwnd, hdc, context):
         self.hwnd = hwnd
@@ -69,7 +69,7 @@ class WGLWindowContext(object):
         return "WGLWindowContext(%#x)" % self.hwnd
 
 
-class WGLContext(object):
+class WGLContext:
 
     def __init__(self, alpha=True):
         self.alpha = alpha

@@ -112,7 +112,7 @@ def do_verify_packet(tree, packet):
     return r
 
 
-class Protocol(object):
+class Protocol:
     """
         This class handles sending and receiving packets,
         it will encode and compress them before sending,

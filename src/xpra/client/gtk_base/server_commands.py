@@ -29,7 +29,7 @@ def getServerCommandsWindow(client):
     return _instance
 
 
-class ServerCommandsWindow(object):
+class ServerCommandsWindow:
 
     def __init__(self, client):
         assert client

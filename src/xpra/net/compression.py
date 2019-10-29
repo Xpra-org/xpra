@@ -203,7 +203,7 @@ def sanity_checks():
             logger.warn(" install and enable lz4 support for better performance")
 
 
-class Compressed(object):
+class Compressed:
     def __init__(self, datatype, data, can_inline=False):
         assert data is not None, "compressed data cannot be set to None"
         self.datatype = datatype
@@ -224,7 +224,7 @@ class LevelCompressed(Compressed):
         return  "LevelCompressed(%s: %i bytes as %s/%i)" % (self.datatype, len(self.data), self.algorithm, self.level)
 
 
-class LargeStructure(object):
+class LargeStructure:
     def __init__(self, datatype, data):
         self.datatype = datatype
         self.data = data

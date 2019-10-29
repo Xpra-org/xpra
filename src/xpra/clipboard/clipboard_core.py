@@ -92,7 +92,7 @@ def get_format_size(dformat):
     return max(8, {32 : CARD32_SIZE}.get(dformat, dformat))
 
 
-class ClipboardProtocolHelperCore(object):
+class ClipboardProtocolHelperCore:
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         d = typedict(kwargs)
         self.send = send_packet_cb
@@ -526,7 +526,7 @@ class ClipboardProtocolHelperCore(object):
 
 
 
-class ClipboardProxyCore(object):
+class ClipboardProxyCore:
     def __init__(self, selection):
         self._selection = selection
         self._enabled = True

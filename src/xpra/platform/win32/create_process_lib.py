@@ -269,7 +269,7 @@ CREATION_TYPE_LOGON  = 1
 CREATION_TYPE_TOKEN  = 2
 CREATION_TYPE_USER   = 3
 
-class CREATIONINFO(object):
+class CREATIONINFO:
     __slots__ = ('dwCreationType',
         'lpApplicationName', 'lpCommandLine', 'bUseShell',
         'lpProcessAttributes', 'lpThreadAttributes', 'bInheritHandles',

@@ -9,7 +9,7 @@ import struct
 PIXEL_FORMAT = b"BBBBHHHBBBBBB"
 
 
-class RFBClientMessage(object):
+class RFBClientMessage:
     """ client to server messages """
     SETPIXELFORMAT = 0
     SETENCODINGS = 2
@@ -85,7 +85,7 @@ class RFBClientMessage(object):
         PACKET_STRUCT[ptype] = struct.Struct(fmt)
 
 
-class RFBServerMessage(object):
+class RFBServerMessage:
     #server to client messages:
     FRAMEBUFFERUPDATE = 0
     SETCOLORMAPENTRIES = 1
@@ -135,7 +135,7 @@ class RFBServerMessage(object):
         QEMUSERVERMESSAGE        : "QEMUServerMessage",
         }
 
-class RFBEncoding(object):
+class RFBEncoding:
     RAW = 0
     COPYRECT = 1
     RRE = 2
@@ -204,7 +204,7 @@ class RFBEncoding(object):
         }
 
 
-class RFBAuth(object):
+class RFBAuth:
     INVALID = 0
     NONE = 1
     VNC = 2

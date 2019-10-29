@@ -13,7 +13,7 @@ from xpra.log import Logger, is_debug_enabled
 log = Logger("auth")
 
 
-class Handler(object):
+class Handler:
 
     def __init__(self, client, **_kwargs):
         self.client = client

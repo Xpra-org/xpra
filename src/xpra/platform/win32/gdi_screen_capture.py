@@ -89,7 +89,7 @@ RGB_FORMATS = {
     }
 
 
-class GDICapture(object):
+class GDICapture:
 
     def __init__(self):
         self.metrics = None

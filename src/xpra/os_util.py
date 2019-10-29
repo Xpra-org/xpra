@@ -539,7 +539,7 @@ def path_permission_info(filename, ftype=None):
 #used by the sound code to get rid of the stupid gst warning below:
 #"** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
 #ideally we would redirect to a buffer so we could still capture and show these messages in debug out
-class HideStdErr(object):
+class HideStdErr:
 
     def __init__(self, *_args):
         self.savedstderr = None
@@ -559,7 +559,7 @@ class HideStdErr(object):
         if self.savedstderr is not None:
             os.dup2(self.savedstderr, 2)
 
-class HideSysArgv(object):
+class HideSysArgv:
 
     def __init__(self, *_args):
         self.savedsysargv = None
@@ -573,7 +573,7 @@ class HideSysArgv(object):
             sys.argv = self.savedsysargv
 
 
-class OSEnvContext(object):
+class OSEnvContext:
 
     def __init__(self):
         self.env = os.environ.copy()
@@ -586,7 +586,7 @@ class OSEnvContext(object):
         return "OSEnvContext"
 
 
-class FDChangeCaptureContext(object):
+class FDChangeCaptureContext:
 
     def __init__(self):
         self.enter_fds = []
@@ -602,7 +602,7 @@ class FDChangeCaptureContext(object):
     def get_lost_fds(self):
         return sorted(tuple(set(self.enter_fds)-set(self.exit_fds)))
 
-class DummyContextManager(object):
+class DummyContextManager:
 
     def __enter__(self):
         pass
@@ -613,7 +613,7 @@ class DummyContextManager(object):
 
 
 #workaround incompatibility between paramiko and gssapi:
-class nomodule_context(object):
+class nomodule_context:
 
     def __init__(self, module_name):
         self.module_name = module_name
@@ -632,7 +632,7 @@ class nomodule_context(object):
     def __repr__(self):
         return "nomodule_context(%s)" % self.module_name
 
-class umask_context(object):
+class umask_context:
 
     def __init__(self, umask):
         self.umask = umask

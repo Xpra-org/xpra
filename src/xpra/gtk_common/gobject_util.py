@@ -13,7 +13,7 @@ no_arg_signal = n_arg_signal(0)
 one_arg_signal = n_arg_signal(1)
 
 
-class AutoPropGObjectMixin(object):
+class AutoPropGObjectMixin:
     """Mixin for automagic property support in GObjects.
 
     Make sure this is the first entry on your parent list, so super().__init__

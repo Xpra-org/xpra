@@ -534,7 +534,7 @@ def get_info():
     return i
 
 
-class XI2_Window(object):
+class XI2_Window:
     def __init__(self, window):
         log("XI2_Window(%s)", window)
         self.XI2 = X11XI2Bindings()
@@ -700,7 +700,7 @@ class XI2_Window(object):
         return args
 
 
-class ClientExtras(object):
+class ClientExtras:
     def __init__(self, client, _opts):
         self.client = client
         self._xsettings_watcher = None

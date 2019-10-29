@@ -8,7 +8,7 @@
 Base class for client-connection mixins.
 Defines the default interface methods that each mixin may override.
 """
-class StubSourceMixin(object):
+class StubSourceMixin:
 
     """
     Initialize state attributes.

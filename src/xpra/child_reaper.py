@@ -43,7 +43,7 @@ def reaper_cleanup():
     #singleton = None
 
 
-class ProcInfo(object):
+class ProcInfo:
     def __repr__(self):
         return "ProcInfo(%s)" % self.__dict__
 
@@ -71,7 +71,7 @@ class ProcInfo(object):
 #
 # WNOHANG is a tricky beast, see:
 # https://github.com/gevent/gevent/issues/622
-class ChildReaper(object):
+class ChildReaper:
     #note: the quit callback will fire only once!
     def __init__(self, quit_cb=None):
         log("ChildReaper(%s)", quit_cb)

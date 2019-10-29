@@ -8,7 +8,7 @@ from xpra.log import Logger
 log = Logger("filters")
 
 
-class WindowPropertyFilter(object):
+class WindowPropertyFilter:
     def __init__(self, property_name, value, recurse=False):
         self.property_name = property_name
         self.value = value

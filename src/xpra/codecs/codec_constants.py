@@ -71,7 +71,7 @@ class CodecStateException(Exception):
     pass
 
 
-class _codec_spec(object):
+class _codec_spec:
 
     #I can't imagine why someone would have more than this many
     #encoders or csc modules active at the same time!

@@ -6,7 +6,7 @@
 import os
 
 
-class Handler(object):
+class Handler:
 
     def __init__(self, client, **kwargs):
         self.client = client

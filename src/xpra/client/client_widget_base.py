@@ -13,7 +13,7 @@ log = Logger("window")
 USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 
-class ClientWidgetBase(object):
+class ClientWidgetBase:
 
     def __init__(self, client, watcher_pid, wid, has_alpha):
         self._id = wid

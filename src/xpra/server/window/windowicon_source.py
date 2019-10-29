@@ -30,7 +30,7 @@ MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
 """
 Mixin for handling the sending of window icon pixels.
 """
-class WindowIconSource(object):
+class WindowIconSource:
 
     fallback_window_icon = False
 

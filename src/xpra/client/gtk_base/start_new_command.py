@@ -28,7 +28,7 @@ def getStartNewCommand(run_callback, can_share=False, xdg_menu=None):
     return _instance
 
 
-class StartNewCommand(object):
+class StartNewCommand:
 
     def __init__(self, run_callback=None, can_share=False, xdg_menu=None):
         self.run_callback = run_callback

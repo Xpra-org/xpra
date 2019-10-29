@@ -634,7 +634,7 @@ def label(text="", tooltip=None, font=None) -> Gtk.Label:
     return l
 
 
-class TableBuilder(object):
+class TableBuilder:
 
     def __init__(self, rows=1, columns=2, homogeneous=False, col_spacings=0, row_spacings=0):
         self.table = Gtk.Table(rows, columns, homogeneous)

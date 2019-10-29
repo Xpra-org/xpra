@@ -48,7 +48,7 @@ def _force_length(name, data, length, noerror_length=None):
     return data[:length]
 
 
-class NetWMStrut(object):
+class NetWMStrut:
     def __init__(self, _disp, data):
         # This eats both _NET_WM_STRUT and _NET_WM_STRUT_PARTIAL.  If we are
         # given a _NET_WM_STRUT instead of a _NET_WM_STRUT_PARTIAL, then it
@@ -73,7 +73,7 @@ class NetWMStrut(object):
         return "NetWMStrut(%s)" % self.todict()
 
 
-class MotifWMHints(object):
+class MotifWMHints:
     def __init__(self, _disp, data):
         #some applications use the wrong size (ie: blender uses 16) so pad it:
         sizeof_long = struct.calcsize(b"@L")

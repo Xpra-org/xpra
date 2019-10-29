@@ -44,7 +44,7 @@ def get_interface_index(host):
     return index
 
 
-class AvahiPublishers(object):
+class AvahiPublishers:
     """
     Aggregates a number of AvahiPublisher(s).
     This takes care of constructing the appropriate AvahiPublisher
@@ -115,7 +115,7 @@ class AvahiPublishers(object):
             publisher.update_txt(txt)
 
 
-class AvahiPublisher(object):
+class AvahiPublisher:
 
     def __init__(self, bus, name, port, stype=XPRA_MDNS_TYPE, domain="", host="", text=(), interface=avahi.IF_UNSPEC):
         log("AvahiPublisher%s", (bus, name, port, stype, domain, host, text, interface))

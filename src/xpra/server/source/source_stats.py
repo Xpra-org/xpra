@@ -22,7 +22,7 @@ log = Logger("network")
 NRECS = 500
 
 
-class GlobalPerformanceStatistics(object):
+class GlobalPerformanceStatistics:
     """
     Statistics which are shared by all WindowSources
     """

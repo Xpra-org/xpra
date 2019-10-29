@@ -37,7 +37,7 @@ _header_struct = struct.Struct(b'!QQHHH')
 _header_size = _header_struct.size
 
 
-class PendingPacket(object):
+class PendingPacket:
     def __init__(self, seqno, start_time, chunks=None):
         self.seqno = seqno
         self.start_time = start_time
@@ -48,7 +48,7 @@ class PendingPacket(object):
         return ("PendingPacket(%i: %s chunks)" % (self.seqno, len(self.chunks or [])))
 
 
-class UDPListener(object):
+class UDPListener:
     """
         This class is used by servers to receive UDP packets,
         it parses the header and then exposes the data received via process_packet_cb.

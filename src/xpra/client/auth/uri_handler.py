@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-class Handler(object):
+class Handler:
 
     def __init__(self, client, **_kwargs):
         self.client = client

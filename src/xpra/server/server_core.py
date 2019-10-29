@@ -182,7 +182,7 @@ def get_thread_info(proto=None, protocols=()):
     return info
 
 
-class ServerCore(object):
+class ServerCore:
     """
         This is the simplest base class for servers.
         It only handles the connection layer:

@@ -242,7 +242,7 @@ RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210, RGB565, BGR5
 
 cdef int ximage_counter = 0
 
-cdef class XImageWrapper(object):
+cdef class XImageWrapper:
     """
         Presents X11 image pixels as in ImageWrapper
     """
@@ -551,7 +551,7 @@ cdef class XImageWrapper(object):
         return True
 
 
-cdef class XShmWrapper(object):
+cdef class XShmWrapper:
     cdef Display *display                              #@DuplicatedSignature
     cdef Visual *visual
     cdef Window window
@@ -782,7 +782,7 @@ cdef class XShmImageWrapper(XImageWrapper):
 
 cdef int xpixmap_counter = 0
 
-cdef class PixmapWrapper(object):
+cdef class PixmapWrapper:
     cdef Display *display
     cdef Pixmap pixmap
     cdef unsigned int width                          #@DuplicatedSignature

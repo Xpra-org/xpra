@@ -43,7 +43,7 @@ def patch_picture_encode():
     picture_encode.pixels_to_bytes = pixels_to_bytes
 
 
-class OSXRootCapture(object):
+class OSXRootCapture:
 
     def __repr__(self):
         return "OSXRootCapture"

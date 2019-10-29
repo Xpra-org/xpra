@@ -13,7 +13,7 @@ from xpra.os_util import monotonic_time
 log = Logger("tray")
 
 
-class TrayBase(object):
+class TrayBase:
     """
         Utility superclass for all tray implementations
     """

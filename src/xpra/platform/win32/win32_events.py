@@ -91,7 +91,7 @@ def get_win32_event_listener(create=True):
 WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 
 
-class Win32EventListener(object):
+class Win32EventListener:
 
     def __init__(self):
         assert singleton is None

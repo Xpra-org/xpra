@@ -13,7 +13,7 @@ from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
 
 
-class ClipboardInstance(object):
+class ClipboardInstance:
     def __init__(self, selection, _log):
         atom = Gdk.Atom.intern(selection, False)
         self.clipboard = Gtk.Clipboard.get(atom)
@@ -167,7 +167,7 @@ class ClipboardInstance(object):
 
 
 
-class ClipboardStateInfoWindow(object):
+class ClipboardStateInfoWindow:
 
     def    __init__(self):
         self.window = Gtk.Window()

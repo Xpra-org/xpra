@@ -47,7 +47,7 @@ def take_png_screenshot(window):
     return w, h, "png", rowstride, data
 
 
-class GTKImageCapture(object):
+class GTKImageCapture:
     def __init__(self, window):
         self.window = window
 

@@ -14,7 +14,7 @@ PIPE_ROOT = "\\\\"
 PIPE_PATH = "%s.\\pipe\\" % PIPE_ROOT
 
 
-class DotXpra(object):
+class DotXpra:
     def __init__(self, sockdir=None, sockdirs=(), actual_username="", *_args, **_kwargs):
         self.username = actual_username
 

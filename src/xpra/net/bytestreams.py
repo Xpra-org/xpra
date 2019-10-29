@@ -125,7 +125,7 @@ def pretty_socket(s):
     return str(s)
 
 
-class Connection(object):
+class Connection:
     def __init__(self, endpoint, socktype, info=None, options=None):
         log("Connection%s", (endpoint, socktype, info))
         self.endpoint = endpoint
@@ -457,7 +457,7 @@ def get_socket_options(sock, level, options) -> dict:
     return opts
 
 
-class SSLPeekFile(object):
+class SSLPeekFile:
     def __init__(self, fileobj, peeked, update_peek):
         self.fileobj = fileobj
         self.peeked = peeked
@@ -494,7 +494,7 @@ class SSLPeekFile(object):
             return peeked[:read]
         return self.fileobj.readline(limit)
 
-class SSLSocketWrapper(object):
+class SSLSocketWrapper:
     def __init__(self, sock):
         self.socket = sock
         self.peeked = b""

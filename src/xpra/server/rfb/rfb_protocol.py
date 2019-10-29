@@ -21,7 +21,7 @@ log = Logger("network", "protocol", "rfb")
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 
 
-class RFBProtocol(object):
+class RFBProtocol:
     CONNECTION_LOST = "connection-lost"
     INVALID = "invalid"
 

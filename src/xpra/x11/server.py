@@ -55,7 +55,7 @@ ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
 
-class DesktopState(object):
+class DesktopState:
     def __init__(self, geom, resize_counter=0, shown=False):
         self.geom = geom
         self.resize_counter = resize_counter

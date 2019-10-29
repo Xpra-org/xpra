@@ -100,7 +100,7 @@ def bind_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_HOST, port=VMADDR_PORT_AN
     vsock = VSocket(sockfd)
     return vsock
 
-class VSocket(object):
+class VSocket:
     def __init__(self, sockfd):
         self.sockfd = sockfd
         self.sock = pysocket.fromfd(sockfd, AF_VSOCK, 0)

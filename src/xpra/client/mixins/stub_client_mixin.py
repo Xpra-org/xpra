@@ -9,7 +9,7 @@ import time
 from xpra.util import typedict
 
 
-class StubClientMixin(object):
+class StubClientMixin:
 
     __signals__ = {}
     def __init__(self):

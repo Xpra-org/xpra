@@ -28,7 +28,7 @@ XSETTINGS_TYPE = "xsettings-settings"
 XNone = 0
 
 
-class XSettingsManager(object):
+class XSettingsManager:
     def __init__(self, screen_number=0):
         selection = "_XSETTINGS_S%i" % screen_number
         self._manager = ManagerSelection(selection)
@@ -53,7 +53,7 @@ class XSettingsManager(object):
             log.error(" %s", e)
 
 
-class XSettingsHelper(object):
+class XSettingsHelper:
     """
         Convenience class for accessing XSETTINGS,
         without all the code from the watcher.

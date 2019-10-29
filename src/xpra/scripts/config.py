@@ -1229,7 +1229,7 @@ def dict_to_config(options):
     return config
 
 
-class XpraConfig(object):
+class XpraConfig:
     def __repr__(self):
         return "XpraConfig(%s)" % self.__dict__
 

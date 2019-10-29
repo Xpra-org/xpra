@@ -733,7 +733,7 @@ def get_spec(encoding, colorspace):
                       setup_cost=90, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
-cdef class Encoder(object):
+cdef class Encoder:
     """
         This wraps the AVCodecContext and its configuration,
     """

@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-class KeyboardConfigBase(object):
+class KeyboardConfigBase:
     """ Base class representing the keyboard configuration for a server.
     """
 

@@ -14,7 +14,7 @@ log = Logger("util")
 
 #emulate the glib main loop using a single thread + queue:
 
-class QueueScheduler(object):
+class QueueScheduler:
 
     def __init__(self):
         self.main_queue = Queue()

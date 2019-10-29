@@ -14,7 +14,7 @@ log = Logger("window", "fake")
 FAKE_BACKING_DELAY = envint("XPRA_FAKE_BACKING_DELAY", 5)
 
 
-class FakeBacking(object):
+class FakeBacking:
 
     HAS_ALPHA = True
 

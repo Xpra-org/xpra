@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-class WindowBorder(object):
+class WindowBorder:
 
     def __init__(self, shown=True, red=0.9, green=0.1, blue=0.1, alpha=0.6, size=4):
         self.shown = shown

@@ -20,7 +20,7 @@ log = Logger("rfb")
 """
     Adds RFB packet handler to a server.
 """
-class RFBServer(object):
+class RFBServer:
 
     def __init__(self):
         self._window_to_id = {}

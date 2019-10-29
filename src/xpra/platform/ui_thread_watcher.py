@@ -17,7 +17,7 @@ FAKE_UI_LOCKUPS = envint("XPRA_FAKE_UI_LOCKUPS")
 POLLING = envint("XPRA_UI_THREAD_POLLING", 500)
 
 
-class UI_thread_watcher(object):
+class UI_thread_watcher:
     """
         Allows us to register callbacks
         to fire when the UI thread fails to run

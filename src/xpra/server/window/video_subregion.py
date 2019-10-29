@@ -53,7 +53,7 @@ def scoreinout(ww, wh, region, incount, outcount):
     return max(0, int(score))
 
 
-class VideoSubregion(object):
+class VideoSubregion:
 
     def __init__(self, timeout_add, source_remove, refresh_cb, auto_refresh_delay, supported=False):
         self.timeout_add = timeout_add

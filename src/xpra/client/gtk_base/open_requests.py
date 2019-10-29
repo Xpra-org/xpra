@@ -29,7 +29,7 @@ def getOpenRequestsWindow(show_file_upload_cb=None):
     return _instance
 
 
-class OpenRequestsWindow(object):
+class OpenRequestsWindow:
 
     def __init__(self, show_file_upload_cb=None):
         self.show_file_upload_cb = show_file_upload_cb

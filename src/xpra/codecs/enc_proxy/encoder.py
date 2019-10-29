@@ -31,7 +31,7 @@ def cleanup_module():
     log("enc_proxy.cleanup_module()")
 
 
-class Encoder(object):
+class Encoder:
     """
         This is a "fake" encoder which just forwards
         the raw pixels and the metadata that goes with it.

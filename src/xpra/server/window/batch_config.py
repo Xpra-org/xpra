@@ -34,7 +34,7 @@ def ival(key, default, minv=0, maxv=None) -> int:
         return default
 
 
-class DamageBatchConfig(object):
+class DamageBatchConfig:
     """
     Encapsulate all the damage batching configuration into one object.
     """

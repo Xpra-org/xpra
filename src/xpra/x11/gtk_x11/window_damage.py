@@ -29,7 +29,7 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 USE_XSHM = envbool("XPRA_XSHM", True)
 
 
-class WindowDamageHandler(object):
+class WindowDamageHandler:
 
     XShmEnabled = USE_XSHM
 

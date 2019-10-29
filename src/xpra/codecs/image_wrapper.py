@@ -13,7 +13,7 @@ def clone_plane(plane):
     return plane[:]
 
 
-class ImageWrapper(object):
+class ImageWrapper:
 
     PACKED = 0
     PLANAR_3 = 3

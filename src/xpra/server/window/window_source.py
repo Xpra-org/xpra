@@ -94,7 +94,7 @@ LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", ("rgb", "png", "png/P", "png/
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", ("webp", "png", "rgb24", "rgb32"))
 
 
-class DelayedRegions(object):
+class DelayedRegions:
     def __init__(self, damage_time, regions, encoding, options):
         self.expired = False
         self.damage_time = damage_time

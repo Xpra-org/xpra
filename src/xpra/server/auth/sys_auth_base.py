@@ -52,7 +52,7 @@ def parse_gid(v) -> int:
     return -1
 
 
-class SysAuthenticatorBase(object):
+class SysAuthenticatorBase:
     USED_SALT = deque(maxlen=USED_SALT_CACHE_SIZE)
 
     def __init__(self, username, **kwargs):

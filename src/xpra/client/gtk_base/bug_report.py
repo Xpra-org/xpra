@@ -23,7 +23,7 @@ log = Logger("util")
 STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 
 
-class BugReport(object):
+class BugReport:
 
     def init(self, show_about=True, get_server_info=None, opengl_info=None, includes=None):
         self.show_about = show_about

@@ -109,7 +109,7 @@ class PRINTER_INFO_9(Structure):
 		]
 
 
-class GDIPrinterContext(object):
+class GDIPrinterContext:
 
 	def __init__(self, printer_name):
 		self.printer_name = printer_name

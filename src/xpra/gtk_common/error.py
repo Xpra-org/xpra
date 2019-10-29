@@ -86,7 +86,7 @@ def get_X_error(xerror):
         log.error("get_X_error(%s) %s", xerror, e, exc_info=True)
     return xerror
 
-class XErrorInfo(object):
+class XErrorInfo:
     def __init__(self, xerror):
         self.xerror = xerror
     def __repr__(self):
@@ -95,7 +95,7 @@ class XErrorInfo(object):
 
 # gdk has its own depth tracking stuff, but we have to duplicate it here to
 # minimize calls to XSync.
-class _ErrorManager(object):
+class _ErrorManager:
     def __init__(self):
         self.depth = 0
 
@@ -177,7 +177,7 @@ class _ErrorManager(object):
 trap = _ErrorManager()
 
 
-class XSyncContext(object):
+class XSyncContext:
 
     def __enter__(self):
         trap.Xenter()
@@ -197,7 +197,7 @@ class XSyncContext(object):
 xsync = XSyncContext()
 
 
-class XSwallowContext(object):
+class XSwallowContext:
 
     def __enter__(self):
         trap.Xenter()
@@ -215,7 +215,7 @@ class XSwallowContext(object):
 xswallow = XSwallowContext()
 
 
-class XLogContext(object):
+class XLogContext:
 
     def __enter__(self):
         trap.Xenter()

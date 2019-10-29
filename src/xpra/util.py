@@ -151,7 +151,7 @@ def dump_exc():
 
 # A simple little class whose instances we can stick random bags of attributes
 # on.
-class AdHocStruct(object):
+class AdHocStruct:
     def __repr__(self):
         return ("<%s object, contents: %r>"
                 % (type(self).__name__, self.__dict__))
@@ -200,7 +200,7 @@ def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
 
 
-class AtomicInteger(object):
+class AtomicInteger:
     def __init__(self, integer = 0):
         self.counter = integer
         self.lock = threading.RLock()

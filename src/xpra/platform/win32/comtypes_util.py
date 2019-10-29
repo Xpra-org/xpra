@@ -12,7 +12,7 @@ if SILENCE_COMTYPES:
     logging.getLogger("comtypes").setLevel(logging.INFO)
 
 
-class QuietenLogging(object):
+class QuietenLogging:
 
     def __init__(self, *_args):
         self.loggers = [logging.getLogger(x) for x in ("comtypes.client._code_cache", "comtypes.client._generate")]

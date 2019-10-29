@@ -10,7 +10,7 @@ from xpra.os_util import bytestostr
 log = Logger("keyboard")
 
 
-class KeyboardBase(object):
+class KeyboardBase:
 
     def __init__(self):
         self.modifier_mappings = {}

@@ -7,7 +7,7 @@ from xpra.util import std
 from xpra.os_util import bytestostr
 
 
-class Handler(object):
+class Handler:
 
     def __init__(self, client, **_kwargs):
         self.client = client

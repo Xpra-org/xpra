@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
-class RootWindowModel(object):
+class RootWindowModel:
 
     def __init__(self, root_window, capture=None):
         self.window = root_window

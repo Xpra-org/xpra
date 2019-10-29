@@ -46,7 +46,7 @@ def close_display_source(uintptr_t ptr):
     return v
 
 
-class X11DisplayContext(object):
+class X11DisplayContext:
     """
         Ensures that there is an X11 display source available
         so the X11 bindings will work as expected.
