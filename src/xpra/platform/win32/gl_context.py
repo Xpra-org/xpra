@@ -138,6 +138,7 @@ class WGLContext(object):
         self.hwnd = hwnd
         self.pixel_format_props = {}
         self.hdc = GetDC(hwnd)
+        log("create_wgl_context(%#x) hdc=%#x", hwnd, self.hdc)
         flags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DEPTH_DONTCARE
         if self.alpha:
             flags |= PFD_SUPPORT_COMPOSITION
