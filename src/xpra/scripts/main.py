@@ -147,7 +147,8 @@ def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-mdns", "sessions", "mdns-gui", "bug-report",
-        "opengl", "opengl-probe", "test-connect",
+        "opengl", "opengl-probe", "opengl-test",
+        "test-connect",
         "encoding", "webcam", "clipboard-test",
         "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
         "printing-info", "version-info", "gtk-info",
@@ -475,6 +476,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_glcheck(options)
         elif mode=="opengl-probe":
             return run_glprobe(options)
+        elif mode=="opengl-test":
+            return run_glprobe(options, True)
         elif mode=="encoding":
             from xpra.codecs import loader
             return loader.main()
@@ -1846,18 +1849,19 @@ def no_gtk():
     raise Exception("the gtk module is already loaded: %s" % gtk)
 
 
-def run_glprobe(opts):
-    props = do_run_glcheck(opts)
+def run_glprobe(opts, show=False):
+    props = do_run_glcheck(opts, show)
     if not props.get("success", False):
         return 3
     if not props.get("safe", False):
         return 2
     return 0
 
-def do_run_glcheck(opts):
+def do_run_glcheck(opts, show=False):
     #suspend all logging:
     saved_level = None
     log = Logger("opengl")
+    log("do_run_glcheck(.., %s)" % show)
     if not is_debug_enabled("opengl") or not use_tty():
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
@@ -1869,19 +1873,19 @@ def do_run_glcheck(opts):
         opengl_str = (opts.opengl or "").lower()
         force_enable = opengl_str.split(":")[0] in TRUE_OPTIONS
         opengl_props, gl_client_window_module = get_gl_client_window_module(force_enable)
-        log("run_glprobe() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
+        log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
         if gl_client_window_module and (opengl_props.get("safe", False) or force_enable):
             gl_client_window_class = gl_client_window_module.GLClientWindow
             pixel_depth = int(opts.pixel_depth)
-            log("run_glprobe() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
+            log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
             if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
                 pixel_depth = 0
-            draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth)
+            draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=show)
             opengl_props.update(draw_result)
         return opengl_props
     except Exception as e:
         if is_debug_enabled("opengl"):
-            log("run_glprobe(..)", exc_info=True)
+            log("do_run_glcheck(..)", exc_info=True)
         if use_tty():
             sys.stderr.write("error:\n")
             sys.stderr.write("%s\n" % e)
