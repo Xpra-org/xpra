@@ -10,7 +10,7 @@
 'use strict';
 
 var Utilities = {
-	VERSION	: "3.0.1",
+	VERSION	: "3.0.2",
 
 	exc : function() {
 		console.error.apply(console, arguments);

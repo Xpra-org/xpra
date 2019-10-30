@@ -3,14 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.1
+%define version 3.0.2
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
-%{!?revision_no: %define revision_no 2}
+%{!?revision_no: %define revision_no 1}
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -866,6 +866,18 @@ fi
 
 
 %changelog
+* Wed Oct 30 2019 Antoine Martin <antoine@xpra.org> 3.0.2-2
+- fix clipboard synchronization issue with MS Windows clients properly
+- fix Pillow 6.x compatibility with MS Windows packaging
+- fix null bytes in X11 error text properly
+- fix Python 3 servers wrongly re-sending the 'screen' attribute
+- fix remote logging failures with some message formats
+- fix lost screen updates
+- fix GTK scaling causing window geometry issues
+- re-instante ancient popup window workaround (was disabled by mistake)
+- don't use av-synchronization for text and picture content types
+- workaround Fedora packaging causing gratuitious conflicts
+
 * Wed Oct 23 2019 Antoine Martin <antoine@xpra.org> 3.0.1-2
 - correct clipboard fix
 
@@ -902,7 +914,7 @@ fi
 - update to xxhash 0.7.2
 - consistent use of quotes in endpoint logging
 
-* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0-1
+* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0.2
 - Python 3 port complete, now the default: #1571, #2195
 - much nicer HTML5 client user interface: #2269
 - Window handling:
@@ -1394,7 +1406,7 @@ fi
 - fix re-stride code for compatibility with ancient clients
 - fix timer reference leak causing some warnings
 
-* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0-1
+* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0.2
 - Python3 / GTK3 client support
 - NVENC module included in binary builds
 - support for enhanced dummy driver with DPI option
@@ -2051,7 +2063,7 @@ fi
 - "xpra info" to report the number of clients connected
 - use xpra's own icon for its own windows (about and info dialogs)
 
-* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0-1
+* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0.2
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
 - fix vpx encoder memory leak
