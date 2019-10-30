@@ -82,7 +82,6 @@ FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", OSX)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
-TEXTURE_CURSOR = envbool("XPRA_OPENGL_TEXTURE_CURSOR", True)
 
 SAVE_BUFFERS = os.environ.get("XPRA_OPENGL_SAVE_BUFFERS")
 if SAVE_BUFFERS not in ("png", "jpeg", None):
@@ -201,12 +200,8 @@ TEX_V = 2
 TEX_RGB = 3
 TEX_FBO = 4         #FBO texture (guaranteed up-to-date window contents)
 TEX_TMP_FBO = 5
-if TEXTURE_CURSOR:
-    TEX_CURSOR = 6
-    N_TEXTURES = 7
-else:
-    TEX_CURSOR = -1
-    N_TEXTURES = 6
+TEX_CURSOR = 6
+N_TEXTURES = 7
 
 # Shader number assignment
 YUV2RGB_SHADER = 0
@@ -824,46 +819,29 @@ class GLWindowBackingBase(WindowBackingBase):
         yhot = self.cursor_data[6]
         x = px-xhot
         y = py-yhot
-        if TEXTURE_CURSOR:
-            #paint the texture containing the cursor:
-            glActiveTexture(GL_TEXTURE0)
-            target = GL_TEXTURE_RECTANGLE_ARB
-            glEnable(target)
-            glBindTexture(target, self.textures[TEX_CURSOR])
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
-            #glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+        #paint the texture containing the cursor:
+        glActiveTexture(GL_TEXTURE0)
+        target = GL_TEXTURE_RECTANGLE_ARB
+        glEnable(target)
+        glBindTexture(target, self.textures[TEX_CURSOR])
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+        #glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 
-            glBegin(GL_QUADS)
-            glTexCoord2i(0, 0)
-            glVertex2i(x, y)
-            glTexCoord2i(0, ch)
-            glVertex2i(x, y+ch)
-            glTexCoord2i(cw, ch)
-            glVertex2i(x+cw, y+ch)
-            glTexCoord2i(cw, 0)
-            glVertex2i(x+cw, y)
-            glEnd()
+        glBegin(GL_QUADS)
+        glTexCoord2i(0, 0)
+        glVertex2i(x, y)
+        glTexCoord2i(0, ch)
+        glVertex2i(x, y+ch)
+        glTexCoord2i(cw, ch)
+        glVertex2i(x+cw, y+ch)
+        glTexCoord2i(cw, 0)
+        glVertex2i(x+cw, y)
+        glEnd()
 
-            glDisable(GL_BLEND)
-            glBindTexture(target, 0)
-            glDisable(target)
-        else:
-            #ugly and slow: paint each pixel separately..
-            if not self.validate_cursor():
-                return
-            pixels = self.cursor_data[8]
-            blen = cw*ch*4
-            p = struct.unpack(b"B"*blen, pixels)
-            glLineWidth(1)
-            for cx in range(cw):
-                for cy in range(ch):
-                    i = cx*4+cy*cw*4
-                    if p[i+3]>=64:
-                        glBegin(GL_POINTS)
-                        glColor4f(p[i]/256.0, p[i+1]/256.0, p[i+2]/256.0, p[i+3]/256.0)
-                        glVertex2i(x+cx, y+cy)
-                        glEnd()
+        glDisable(GL_BLEND)
+        glBindTexture(target, 0)
+        glDisable(target)
 
     def draw_spinner(self):
         bw, bh = self.size
@@ -900,7 +878,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if not cursor_data:
             return
         self.cursor_data = cursor_data
-        if not cursor_data or not TEXTURE_CURSOR:
+        if not cursor_data:
             return
         cw = cursor_data[3]
         ch = cursor_data[4]
