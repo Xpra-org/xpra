@@ -77,6 +77,7 @@ class FakeClient(AdHocStruct):
         self.server_window_frame_extents = False
         self.server_readonly = False
         self.server_pointer = False
+        self.window_configure_pointer = True
         self.update_focus = noop
         self.handle_key_action = noop
         self.idle_add = no_idle_add
@@ -136,7 +137,10 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         pix = AtomicInteger(0x7f)
         REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", 0)
         def draw():
-            img_data = bytes([pix.increase() % 256]*stride*h)
+            if PYTHON3:
+                img_data = bytes([pix.increase() % 256]*stride*h)
+            else:
+                img_data = chr(pix.increase() % 256)*stride*h
             window.draw_region(0, 0, w, h, coding, img_data, stride, 1, options, [paint_callback])
             return REPAINT_DELAY>0
         #the paint code is actually synchronous here,
@@ -144,12 +148,14 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         if show:
             widget.show()
             window.show()
-            from gi.repository import Gtk, GLib
+            from xpra.gtk_common.gobject_compat import import_gtk, import_glib
+            gtk = import_gtk()
+            glib = import_glib()
             def window_close_event(*_args):
-                Gtk.main_quit()
+                gtk.main_quit()
             noclient.window_close_event = window_close_event
-            GLib.timeout_add(REPAINT_DELAY, draw)
-            Gtk.main()
+            glib.timeout_add(REPAINT_DELAY, draw)
+            gtk.main()
         else:
             draw()
         if window_backing.last_present_fbo_error:
