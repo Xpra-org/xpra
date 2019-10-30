@@ -223,9 +223,11 @@ def get_build_info():
             BUILD_DATE, BUILD_TIME, BUILD_BIT,
             CYTHON_VERSION, COMPILER_VERSION,
             )
+        info.insert(0, "")
+        einfo = "Python %i.%i" % sys.version_info[:2]
         if BUILD_BIT:
-            info.insert(0, "")
-            info.insert(0, BUILD_BIT)
+            einfo += ", "+BUILD_BIT
+        info.insert(0, einfo)
         try:
             from xpra.build_info import BUILT_BY, BUILT_ON
             info.append("built on %s by %s" % (BUILT_ON, BUILT_BY))
