@@ -6,7 +6,7 @@
 
 import sys
 
-from xpra.util import typedict, AdHocStruct
+from xpra.util import typedict, envint, AdHocStruct, AtomicInteger
 from xpra.os_util import PYTHON3, WIN32
 from xpra.log import Logger
 
@@ -47,47 +47,70 @@ def get_gl_client_window_module(backends, force_enable=False):
     log("get_gl_client_window_module(%s, %s) no match found", backends, force_enable)
     return {}, None
 
-def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), pixel_depth=24):
+def noop(*_args):
+    pass
+def no_scaling(*args):
+    return args
+def get_None(*_args):
+    return None
+def no_idle_add(fn, *args, **kwargs):
+    fn(*args, **kwargs)
+def no_timeout_add(*_args, **_kwargs):
+    raise Exception("timeout_add should not have been called")
+def no_source_remove(*_args, **_kwargs):
+    raise Exception("source_remove should not have been called")
+
+class FakeClient(AdHocStruct):
+    def __init__(self):
+        self.sp = self.sx = self.sy = self.srect = no_scaling
+        self.cx = self.cy = no_scaling
+        self.xscale = self.yscale = 1
+        self.server_window_decorations = True
+        self.mmap_enabled = False
+        self.mmap = None
+        self.readonly = False
+        self.encoding_defaults = {}
+        self.get_window_frame_sizes = get_None
+        self._focused = None
+        self.request_frame_extents = noop
+        self.server_window_states = ()
+        self.server_window_frame_extents = False
+        self.server_readonly = False
+        self.server_pointer = False
+        self.update_focus = noop
+        self.handle_key_action = noop
+        self.idle_add = no_idle_add
+        self.timeout_add = no_timeout_add
+        self.source_remove = no_source_remove
+
+    def send(self, *args):
+        log("send%s", args)
+    def get_current_modifiers(self):
+        return ()
+    def get_mouse_position(self):
+        return 0, 0
+    def server_ok(self):
+        return True
+    def mask_to_names(self, *_args):
+        return ()
+
+def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), pixel_depth=24, show=False):
     #try to render using a temporary window:
     draw_result = {}
     window = None
     try:
-        w, h = 50, 50
+        x, y = -100, -100
+        if show:
+            x, y = 100, 100
+        w, h = 250, 250
         from xpra.client.window_border import WindowBorder
         border = WindowBorder()
         default_cursor_data = None
-        noclient = AdHocStruct()
-        def no_idle_add(fn, *args, **kwargs):
-            fn(*args, **kwargs)
-        def no_timeout_add(*_args, **_kwargs):
-            raise Exception("timeout_add should not have been called")
-        def no_source_remove(*_args, **_kwargs):
-            raise Exception("source_remove should not have been called")
-        def no_scaling(*args):
-            return args
-        def get_None(*_args):
-            return None
-        def noop(*_args):
-            pass
-        #we have to suspend idle_add to make this synchronous
-        #we can do this because this method must be running in the UI thread already:
-        noclient.idle_add = no_idle_add
-        noclient.timeout_add = no_timeout_add
-        noclient.source_remove = no_source_remove
-        noclient.sp = noclient.sx = noclient.sy = noclient.srect = no_scaling
-        noclient.xscale = noclient.yscale = 1
-        noclient.server_window_decorations = True
-        noclient.mmap_enabled = False
-        noclient.mmap = None
-        noclient.readonly = False
-        noclient.encoding_defaults = {}
-        noclient.get_window_frame_sizes = get_None
-        noclient._focused = None
-        noclient.request_frame_extents = noop
+        noclient = FakeClient()
         #test with alpha, but not on win32
         #because we can't do alpha on win32 with opengl
         metadata = typedict({b"has-alpha" : not WIN32})
-        window = gl_client_window_class(noclient, None, None, 2**32-1, -100, -100, w, h, w, h,
+        window = gl_client_window_class(noclient, None, None, 2**32-1, x, y, w, h, w, h,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
@@ -100,7 +123,6 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         bpp = len(pixel_format)
         options = typedict({"pixel_format" : pixel_format})
         stride = bpp*w
-        img_data = b"\0"*stride*h
         coding = "rgb32"
         widget = window_backing._backing
         widget.realize()
@@ -111,9 +133,25 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
                 "message"   : message,
                 })
         log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
-        window.draw_region(0, 0, w, h, coding, img_data, stride, 1, options, [paint_callback])
+        pix = AtomicInteger(0x7f)
+        REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", 0)
+        def draw():
+            img_data = bytes([pix.increase() % 256]*stride*h)
+            window.draw_region(0, 0, w, h, coding, img_data, stride, 1, options, [paint_callback])
+            return REPAINT_DELAY>0
         #the paint code is actually synchronous here,
         #so we can check the present_fbo() result:
+        if show:
+            widget.show()
+            window.show()
+            from gi.repository import Gtk, GLib
+            def window_close_event(*_args):
+                Gtk.main_quit()
+            noclient.window_close_event = window_close_event
+            GLib.timeout_add(REPAINT_DELAY, draw)
+            Gtk.main()
+        else:
+            draw()
         if window_backing.last_present_fbo_error:
             return {
                 "success" : False,
