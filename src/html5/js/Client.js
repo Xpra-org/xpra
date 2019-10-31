@@ -1786,9 +1786,9 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.connected = true;
 }
 
-XpraClient.prototype._process_encodings = function(packet) {
+XpraClient.prototype._process_encodings = function(packet, ctx) {
 	var caps = packet[1];
-	this.log("update encodings:", caps);
+	ctx.log("update encodings:", caps);
 }
 
 
