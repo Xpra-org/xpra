@@ -497,6 +497,7 @@ class ServerBase(ServerBaseClass):
             except ImportError:
                 log("no codecs", exc_info=True)
             else:
+                self.wait_for_threaded_init()
                 updict(capabilities, "encoding", codec_versions, "version")
                 for k,v in self.get_encoding_info().items():
                     if k=="":

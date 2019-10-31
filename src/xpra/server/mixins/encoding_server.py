@@ -65,10 +65,6 @@ class EncodingServer(StubServerMixin):
         getVideoHelper().cleanup()
 
 
-    def parse_hello(self, _ss, _caps, _send_ui):
-        self.wait_for_threaded_init()
-
-
     def get_server_features(self, _source=None):
         return {
             "auto-video-encoding"   : True,     #from v4.0, clients assume this is available

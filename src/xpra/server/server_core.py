@@ -1947,6 +1947,7 @@ class ServerCore:
         return id_info
 
     def send_hello_info(self, proto):
+        self.wait_for_threaded_init()
         #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
         #(ie: see server_base)
         log.info("processing structured info request from %s", proto._conn)
