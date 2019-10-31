@@ -1,4 +1,4 @@
-v3.0.2 (2019-10-30)
+v3.0.2 (2019-10-31)
 ======================
 	-- fix clipboard synchronization issue with MS Windows clients properly
 	-- fix Pillow 6.x compatibility with MS Windows packaging
@@ -7,6 +7,8 @@ v3.0.2 (2019-10-30)
 	-- fix remote logging failures with some message formats
 	-- fix lost screen updates
 	-- fix GTK scaling causing window geometry issues
+	-- fix HTML5 clipboard data sent from polling events
+	-- show python interpreter version on about dialog
 	-- re-instante ancient popup window workaround (was disabled by mistake)
 	-- don't use av-synchronization for text and picture content types
 	-- workaround Fedora packaging causing gratuitious conflicts

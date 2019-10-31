@@ -866,7 +866,7 @@ fi
 
 
 %changelog
-* Wed Oct 30 2019 Antoine Martin <antoine@xpra.org> 3.0.2-2
+* Thu Oct 31 2019 Antoine Martin <antoine@xpra.org> 3.0.2-1
 - fix clipboard synchronization issue with MS Windows clients properly
 - fix Pillow 6.x compatibility with MS Windows packaging
 - fix null bytes in X11 error text properly
@@ -874,6 +874,8 @@ fi
 - fix remote logging failures with some message formats
 - fix lost screen updates
 - fix GTK scaling causing window geometry issues
+- fix HTML5 clipboard data sent from polling events
+- show python interpreter version on about dialog
 - re-instante ancient popup window workaround (was disabled by mistake)
 - don't use av-synchronization for text and picture content types
 - workaround Fedora packaging causing gratuitious conflicts

@@ -6,11 +6,13 @@ xpra (3.0.2-1) UNRELEASED; urgency=low
   * fix remote logging failures with some message formats
   * fix lost screen updates
   * fix GTK scaling causing window geometry issues
+  * fix HTML5 clipboard data sent from polling events
+  * show python interpreter version on about dialog
   * re-instante ancient popup window workaround (was disabled by mistake)
   * don't use av-synchronization for text and picture content types
   * workaround Fedora packaging causing gratuitious conflicts
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 30 Oct 2019 10:02:25 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 31 Oct 2019 19:20:56 +0700
 
 xpra (3.0.1-1) UNRELEASED; urgency=low
   * correct clipboard fix
