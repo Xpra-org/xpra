@@ -541,6 +541,7 @@ class ServerBase(ServerBaseClass):
         self.get_all_info(info_callback, proto, None)
 
     def send_hello_info(self, proto):
+        self.wait_for_threaded_init()
         start = monotonic_time()
         def cb(proto, info):
             self.do_send_info(proto, info)
