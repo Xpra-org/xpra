@@ -303,6 +303,7 @@ XpraClient.prototype.init_packet_handlers = function() {
 		'challenge': this._process_challenge,
 		'startup-complete': this._process_startup_complete,
 		'hello': this._process_hello,
+		'encodings': this._process_encodings,
 		'ping': this._process_ping,
 		'ping_echo': this._process_ping_echo,
 		'info-response': this._process_info_response,
@@ -1130,6 +1131,7 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.flush"			: true,
 		"encoding.transparency"		: true,
 		"encoding.scrolling"		: true,
+		"encoding.packet"		    : true,
 		//"encoding.scrolling.min-percent" : 30,
 		//"encoding.min-speed"		: 80,
 		//"encoding.min-quality"	: 50,
@@ -1783,6 +1785,12 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.on_connect();
 	ctx.connected = true;
 }
+
+XpraClient.prototype._process_encodings = function() {
+	var caps = packet[1];
+	this.log("update encodings:", caps);
+}
+
 
 XpraClient.prototype.process_xdg_menu = function() {
 	this.log("received xdg start menu data");
