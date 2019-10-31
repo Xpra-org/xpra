@@ -921,7 +921,7 @@ class GTKTrayMenuBase:
                 #pass it on:
                 saved_process_encodings(*args)
                 #re-generate the menu with the correct server properties:
-                set_encodingsmenuitem()
+                GLib.idle_add(set_encodingsmenuitem)
             self.client._process_encodings = process_encodings
         return encodings
 
