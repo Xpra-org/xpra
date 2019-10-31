@@ -1420,7 +1420,7 @@ XpraClient.prototype._poll_clipboard = function(e) {
 			if (clipboard_buffer!=client.clipboard_buffer) {
 				client.debug("clipboard", "clipboard contents have changed");
 				client.clipboard_buffer = clipboard_buffer;
-				client.send_clipboard_token();
+				client.send_clipboard_token(clipboard_buffer);
 			}
 		}, function(err) {
 			client.debug("clipboard", "paste event failed:", err);
@@ -1444,7 +1444,7 @@ XpraClient.prototype._poll_clipboard = function(e) {
 		if (clipboard_buffer!=this.clipboard_buffer) {
 			this.debug("clipboard", "clipboard contents have changed");
 			this.clipboard_buffer = clipboard_buffer;
-			this.send_clipboard_token();
+			this.send_clipboard_token(clipboard_buffer);
 		}
 	}
 }
