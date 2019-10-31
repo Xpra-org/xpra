@@ -487,7 +487,8 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--fake-xinerama", action="store", metavar="path|auto|no",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
-                          help="Setup fake xinerama support for the session. You can specify the path to the libfakeXinerama.so library or a boolean."
+                          help="Setup fake xinerama support for the session. "+
+                          "You can specify the path to the libfakeXinerama.so library or a boolean."
                           +" Default: %s." % enabled_str(defaults.fake_xinerama))
     else:
         ignore({
@@ -1316,7 +1317,8 @@ def do_validate_encryption(auth, tcp_auth,
         raise InitException("encryption %s cannot be used without an authentication module or keyfile"
                             +" (see --encryption-keyfile option)" % encryption)
     if tcp_encryption and not tcp_encryption_keyfile and not env_key and not tcp_auth:
-        raise InitException("tcp-encryption %s cannot be used without a tcp authentication module or keyfile "  % tcp_encryption
+        raise InitException("tcp-encryption %s cannot be used " % tcp_encryption+
+                            "without a tcp authentication module or keyfile "
                             +" (see --tcp-encryption-keyfile option)")
     if pass_key and env_key and pass_key==env_key:
         raise InitException("encryption and authentication should not use the same value")
