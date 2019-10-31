@@ -97,8 +97,8 @@ class AppindicatorTray(TrayBase):
             return
         finally:
             if fd:
-                os.close(fd)
                 os.fchmod(fd, 0o644)
+                os.close(fd)
         self.do_set_icon_from_file(self.tmp_filename)
 
     def do_set_icon_from_file(self, filename):
