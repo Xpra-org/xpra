@@ -1414,9 +1414,11 @@ def abs_paths(options):
                 continue
             setattr(options, f, os.path.abspath(v))
 
-def fixup_options(options):
+
+def fixup_options(options, skip_encodings=False):
+    if not skip_encodings:
+        fixup_encodings(options)
     fixup_pings(options)
-    fixup_encodings(options)
     fixup_compression(options)
     fixup_packetencoding(options)
     fixup_video_all_or_none(options)

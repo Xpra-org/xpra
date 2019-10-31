@@ -1252,9 +1252,9 @@ def do_parse_cmdline(cmdline, defaults):
                 args[1] = address
                 break
 
-    #special case for things stored as lists, but command line option is a CSV string:
-    #and may have "none" or "all" special values
-    fixup_options(options)
+    NEED_ENCODING_MODES = ("attach", "start", "listen", "launcher",
+                           "bug-report", "encoding", "gui-info")
+    fixup_options(options, skip_encodings=len(args)==0 or args[0] not in NEED_ENCODING_MODES)
 
     try:
         options.dpi = int(options.dpi)
