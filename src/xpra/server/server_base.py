@@ -998,8 +998,6 @@ class ServerBase(ServerBaseClass):
                 if not ss:
                     proto.close()
             self.idle_add(invalid_packet)
-        except KeyboardInterrupt:
-            raise
         except Exception:
             netlog.error("Error processing a '%s' packet", packet_type)
             netlog.error(" received from %s:", proto)
