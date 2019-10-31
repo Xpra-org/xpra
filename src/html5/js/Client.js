@@ -132,6 +132,9 @@ XpraClient.prototype.init_state = function(container) {
 	if (CLIPBOARD_IMAGES && navigator.clipboard && navigator.clipboard.write) {
 		this.clipboard_targets.push("image/png");
 	}
+	else {
+		this.log("no clipboard write support: no images, navigator.clipboard=", navigator.clipboard);
+	}
 	// printing / file-transfer:
 	this.remote_printing = false;
 	this.remote_file_transfer = false;
