@@ -53,6 +53,7 @@ class EncodingsMixin(StubSourceMixin):
         self.encoding = None                        #the default encoding for all windows
         self.encodings = ()                         #all the encodings supported by the client
         self.core_encodings = ()
+        self.encodings_packet = False               #supports delayed encodings initialization?
         self.window_icon_encodings = ["premult_argb32"]
         self.rgb_formats = ("RGB",)
         self.encoding_options = typedict()
@@ -268,6 +269,7 @@ class EncodingsMixin(StubSourceMixin):
         log("default batch config: %s", dbc)
 
         #encodings:
+        self.encodings_packet = c.boolget("encodings.packet", False)
         self.encodings = c.strlistget("encodings")
         self.core_encodings = c.strlistget("encodings.core", self.encodings)
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
@@ -351,21 +353,20 @@ class EncodingsMixin(StubSourceMixin):
             self.default_encoding_options["min-speed"] = ms
         log("default encoding options: %s", self.default_encoding_options)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
-        #check for mmap:
-        if getattr(self, "mmap_size", 0)==0:
-            self.wait_for_threaded_init()
-            others = tuple(x for x in self.core_encodings
-                           if x in self.server_core_encodings and x!=self.encoding)
-            if self.encoding=="auto":
-                s = "automatic picture encoding enabled"
-            else:
-                s = "using %s as primary encoding" % self.encoding
-            if others:
-                log.info(" %s, also available:", s)
-                log.info("  %s", csv(others))
-            else:
-                log.warn(" %s", s)
-                log.warn("  no other encodings are available!")
+
+    def print_encoding_info(self):
+        others = tuple(x for x in self.core_encodings
+                       if x in self.server_core_encodings and x!=self.encoding)
+        if self.encoding=="auto":
+            s = "automatic picture encoding enabled"
+        else:
+            s = "using %s as primary encoding" % self.encoding
+        if others:
+            log.info(" %s, also available:", s)
+            log.info("  %s", csv(others))
+        else:
+            log.warn(" %s", s)
+            log.warn("  no other encodings are available!")
 
     def parse_proxy_video(self):
         self.wait_for_threaded_init()

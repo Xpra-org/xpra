@@ -901,6 +901,7 @@ class GTKTrayMenuBase:
     def make_encodingsmenuitem(self):
         encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
         set_sensitive(encodings, False)
+        self.encodings_submenu = None
         def set_encodingsmenuitem(*args):
             log("set_encodingsmenuitem%s", args)
             set_sensitive(encodings, not self.client.mmap_enabled)
@@ -909,8 +910,19 @@ class GTKTrayMenuBase:
                 encodings.set_label("Encoding")
                 encodings.set_tooltip_text("memory mapped transfers are in use so picture encoding is disabled")
             else:
-                encodings.set_submenu(self.make_encodingssubmenu())
+                self.encodings_submenu = self.make_encodingssubmenu()
+                encodings.set_submenu(self.encodings_submenu)
         self.client.after_handshake(set_encodingsmenuitem)
+        #FUGLY warning: we want to update the menu if we get an 'encodings' packet,
+        #so we inject our handler:
+        saved_process_encodings = getattr(self.client, "_process_encodings")
+        if saved_process_encodings:
+            def process_encodings(*args):
+                #pass it on:
+                saved_process_encodings(*args)
+                #re-generate the menu with the correct server properties:
+                set_encodingsmenuitem()
+            self.client._process_encodings = process_encodings
         return encodings
 
     def make_encodingssubmenu(self):
@@ -934,15 +946,6 @@ class GTKTrayMenuBase:
         #these menus may need updating now:
         self.set_qualitymenu()
         self.set_speedmenu()
-
-    def reset_encoding_options(self, encodings_menu):
-        for x in encodings_menu.get_children():
-            if isinstance(x, Gtk.CheckMenuItem):
-                encoding = x.get_label()
-                active = encoding==self.client.encoding
-                if active!=x.get_active():
-                    x.set_active(active)
-                set_sensitive(x, encoding in self.client.server_encodings)
 
 
     def make_scalingmenuitem(self):

@@ -11,7 +11,7 @@ from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.config import parse_bool_or_int
 from xpra.net import compression
-from xpra.util import envint, envbool, updict, csv
+from xpra.util import envint, envbool, updict, csv, typedict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -83,12 +83,21 @@ class Encodings(StubClientMixin):
             log.error("error on video cleanup", exc_info=True)
 
 
+    def init_authenticated_packet_handlers(self):
+        self.add_packet_handler("encodings", self._process_encodings, False)
+
+
+    def _process_encodings(self, packet):
+        caps = typedict(packet[1])
+        self._parse_server_capabilities(caps)
+
     def get_caps(self) -> dict:
         caps = {
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
             "encodings.window-icon"     : self.get_window_icon_encodings(),
             "encodings.cursor"          : self.get_cursor_encodings(),
+            "encodings.packet"          : True,
             }
         updict(caps, "batch",           self.get_batch_caps())
         updict(caps, "encoding",        self.get_encodings_caps())
@@ -96,7 +105,11 @@ class Encodings(StubClientMixin):
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
-        self.server_encodings = c.strlistget("encodings")
+        self._parse_server_capabilities(c)
+        return True
+
+    def _parse_server_capabilities(self, c):
+        self.server_encodings = c.strlistget("encodings", ["rgb32", "rgb24"])
         self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
         #server is telling us to try to avoid those:
         self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)
@@ -105,14 +118,13 @@ class Encodings(StubClientMixin):
         self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
         e = c.strget("encoding")
-        if e:
+        if e and not c.boolget("encodings.delayed"):
             if self.encoding and e!=self.encoding:
                 if self.encoding not in self.server_core_encodings:
                     log.warn("server does not support %s encoding and has switched to %s", self.encoding, e)
                 else:
                     log.info("server is using %s encoding instead of %s", e, self.encoding)
             self.encoding = e
-        return True
 
 
     def get_batch_caps(self):

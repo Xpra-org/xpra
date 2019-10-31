@@ -7,7 +7,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from threading import Thread
+from threading import Thread, Lock
 
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
@@ -106,6 +106,8 @@ class ServerBase(ServerBaseClass):
         self.sharing = None
         self.lock = None
         self.init_thread = None
+        self.init_thread_callbacks = []
+        self.init_thread_lock = Lock()
 
         self.idle_timeout = 0
         #duplicated from Server Source...
@@ -171,10 +173,27 @@ class ServerBase(ServerBaseClass):
                     c.threaded_setup(self)
                 except Exception:
                     log.error("Error during threaded setup of %s", c, exc_info=True)
+        import time
+        time.sleep(10)
         #populate the platform info cache:
         from xpra.version_util import get_platform_info
         get_platform_info()
+        with self.init_thread_lock:
+            for cb in self.init_thread_callbacks:
+                try:
+                    cb()
+                except Exception as e:
+                    log("threaded_init()", exc_info=True)
+                    log.error("Error in initialization thread callback %s", cb)
+                    log.error(" %s", e)
         log("threaded_init() end")
+
+    def after_threaded_init(self, callback):
+        with self.init_thread_lock:
+            if not self.init_thread or not self.init_thread.is_alive():
+                callback()
+            else:
+                self.init_thread_callbacks.append(callback)
 
     def wait_for_threaded_init(self):
         if not self.init_thread:
@@ -497,14 +516,29 @@ class ServerBase(ServerBaseClass):
             except ImportError:
                 log("no codecs", exc_info=True)
             else:
-                self.wait_for_threaded_init()
-                updict(capabilities, "encoding", codec_versions, "version")
-                for k,v in self.get_encoding_info().items():
-                    if k=="":
-                        k = "encodings"
-                    else:
-                        k = "encodings.%s" % k
-                    capabilities[k] = v
+                def add_encoding_caps(d):
+                    updict(d, "encoding", codec_versions, "version")
+                    for k,v in self.get_encoding_info().items():
+                        if k=="":
+                            k = "encodings"
+                        else:
+                            k = "encodings.%s" % k
+                        d[k] = v
+                if server_source.encodings_packet:
+                    #we can send it later,
+                    #when the init thread has finished:
+                    def send_encoding_caps():
+                        d = {}
+                        add_encoding_caps(d)
+                        #make sure the 'hello' packet goes out first:
+                        self.idle_add(server_source.send_async, "encodings", d)
+                    self.after_threaded_init(send_encoding_caps)
+                else:
+                    self.wait_for_threaded_init()
+                    add_encoding_caps(capabilities)
+                #check for mmap:
+                if getattr(self, "mmap_size", 0)==0:
+                    self.after_threaded_init(server_source.print_encoding_info)
         if server_source.wants_display:
             capabilities.update({
                          "actual_desktop_size"  : (root_w, root_h),
