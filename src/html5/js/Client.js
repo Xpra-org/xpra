@@ -1131,7 +1131,7 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.flush"			: true,
 		"encoding.transparency"		: true,
 		"encoding.scrolling"		: true,
-		"encoding.packet"		    : true,
+		"encodings.packet"		    : true,
 		//"encoding.scrolling.min-percent" : 30,
 		//"encoding.min-speed"		: 80,
 		//"encoding.min-quality"	: 50,
