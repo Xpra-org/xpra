@@ -46,7 +46,10 @@ class AppindicatorTray(TrayBase):
         self.tray_widget = Indicator(self.tooltip, filename, APPLICATION_STATUS)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
-        self.tray_widget.set_attention_icon("xpra.png")
+        try:
+            self.tray_widget.set_attention_icon_full("xpra.png", self.tooltip)
+        except AttributeError:
+            self.tray_widget.set_attention_icon("xpra.png")
         if filename:
             self.set_icon_from_file(filename)
         if not self._has_icon:
@@ -114,7 +117,10 @@ class AppindicatorTray(TrayBase):
         #remove extension (wtf?)
         noext = os.path.splitext(icon_name)[0]
         log("do_set_icon_from_file(%s) setting icon=%s", filename, noext)
-        self.tray_widget.set_icon(noext)
+        try:
+            self.tray_widget.set_icon_full(noext, self.tooltip)
+        except AttributeError:
+            self.tray_widget.set_icon(noext)
         self._has_icon = True
         self.icon_timestamp = monotonic_time()
 
@@ -142,7 +148,7 @@ def main():
 
         from gi.repository import Gtk
         menu = Gtk.Menu()
-        item = Gtk.MenuItem("Some Menu Item Here")
+        item = Gtk.MenuItem(label="Some Menu Item Here")
         menu.append(item)
         menu.show_all()
         a = AppindicatorTray(None, None, menu, "test", "xpra.png", None, None, None, Gtk.main_quit)
