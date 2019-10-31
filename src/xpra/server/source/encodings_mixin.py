@@ -353,6 +353,7 @@ class EncodingsMixin(StubSourceMixin):
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #check for mmap:
         if getattr(self, "mmap_size", 0)==0:
+            self.wait_for_threaded_init()
             others = tuple(x for x in self.core_encodings
                            if x in self.server_core_encodings and x!=self.encoding)
             if self.encoding=="auto":
@@ -367,6 +368,7 @@ class EncodingsMixin(StubSourceMixin):
                 log.warn("  no other encodings are available!")
 
     def parse_proxy_video(self):
+        self.wait_for_threaded_init()
         from xpra.codecs.enc_proxy.encoder import Encoder
         proxy_video_encodings = self.encoding_options.get("proxy.video.encodings")
         proxylog("parse_proxy_video() proxy.video.encodings=%s", proxy_video_encodings)
