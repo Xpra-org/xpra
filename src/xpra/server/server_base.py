@@ -173,8 +173,6 @@ class ServerBase(ServerBaseClass):
                     c.threaded_setup(self)
                 except Exception:
                     log.error("Error during threaded setup of %s", c, exc_info=True)
-        import time
-        time.sleep(10)
         #populate the platform info cache:
         from xpra.version_util import get_platform_info
         get_platform_info()
