@@ -79,7 +79,8 @@ class AppindicatorTray(TrayBase):
         self.clean_last_tmp_icon()
         #use a temporary file (yuk)
         from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
-        tray_icon = GdkPixbuf.Pixbuf.new_from_data(pixels, GdkPixbuf.Colorspace.RGB, has_alpha, 8, w, h, rowstride, None, None)
+        tray_icon = GdkPixbuf.Pixbuf.new_from_data(pixels, GdkPixbuf.Colorspace.RGB,
+                                                   has_alpha, 8, w, h, rowstride, None, None)
         png_data = pixbuf_save_to_memory(tray_icon)
         tmp_dir = osexpand(get_xpra_tmp_dir())
         if not os.path.exists(tmp_dir):
