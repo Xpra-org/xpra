@@ -320,7 +320,7 @@ def load_device(device_id):
     log("created context=%s", context)
     free, total = driver.mem_get_info()
     log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
-    tpct = 100*free/total
+    tpct = 100*free//total
     SMmajor, SMminor = device.compute_capability()
     compute = (SMmajor<<4) + SMminor
     return device, context, compute, tpct
