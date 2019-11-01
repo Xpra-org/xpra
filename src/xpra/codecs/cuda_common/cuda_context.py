@@ -36,6 +36,11 @@ def device_info(d):
         return "None"
     return "%s @ %s" % (d.name(), d.pci_bus_id())
 
+def pci_bus_id(d):
+    if not d:
+        return "None"
+    return d.pci_bus_id()
+
 def device_name(d):
     if not d:
         return "None"
@@ -136,8 +141,13 @@ def get_gpu_list(list_type):
         return True
     if "none" in v:
         return []
+    def dev(x):
+        try:
+            return int(x)
+        except ValueError:
+            return x.strip()
     try:
-        return [int(x.strip()) for x in v]
+        return [dev(x) for x in v]
     except ValueError:
         log("get_gpu_list(%s)", list_type, exc_info=True)
         log.error("Error: invalid value for '%s' CUDA preference", list_type)
@@ -174,9 +184,7 @@ def init_all_devices():
     da = driver.device_attribute
     cf = driver.ctx_flags
     for i in range(ngpus):
-        if enabled_gpus not in (None, True) and i not in enabled_gpus:
-            log("device %i is not in the list of enabled gpus, skipped", i)
-            continue
+        #shortcut if this GPU number is disabled:
         if disabled_gpus is not None and i in disabled_gpus:
             log("device %i is in the list of disabled gpus, skipped", i)
             continue
@@ -193,12 +201,23 @@ def init_all_devices():
                     log.warn("Warning: device '%s' is blacklisted and will not be used", devinfo)
                     continue
             log(" + testing device %s: %s", i, devinfo)
+            devname = device_name(device)
+            pci = pci_bus_id(device)
+            DEVICE_NAME[i] = devname
             DEVICE_INFO[i] = devinfo
-            DEVICE_NAME[i] = device_name(device)
             host_mem = device.get_attribute(da.CAN_MAP_HOST_MEMORY)
             if not host_mem:
                 log.warn("skipping device %s (cannot map host memory)", devinfo)
                 continue
+
+            if enabled_gpus not in (None, True) and \
+                i not in enabled_gpus and devname not in enabled_gpus and pci not in enabled_gpus:
+                log("device %i '%s' / '%s' is not in the list of enabled gpus, skipped", i, devname, pci)
+                continue
+            if disabled_gpus is not None and (devname in disabled_gpus or pci in disabled_gpus):
+                log("device '%s' / '%s' is in the list of disabled gpus, skipped", i, devname, pci)
+                continue
+
             context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
             try:
                 log("   created context=%s", context)
