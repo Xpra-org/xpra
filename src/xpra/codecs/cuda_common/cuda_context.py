@@ -153,6 +153,25 @@ def get_gpu_list(list_type):
         log.error("Error: invalid value for '%s' CUDA preference", list_type)
         return None
 
+driver_init_done = None
+def driver_init():
+    global driver_init_done
+    if driver_init_done is None:
+        log.info("CUDA initialization (this may take a few seconds)")
+        try:
+            driver.init()
+            driver_init_done = True
+            log("CUDA driver version=%s", driver.get_driver_version())
+        except Exception as e:
+            log.error("Error: cannot initialize CUDA")
+            log.error(" %s", e)
+        driver_init_done = False
+    return driver_init_done
+
+def nodevices():
+    log.info("CUDA %s / PyCUDA %s, no devices found",
+             ".".join(str(x) for x in driver.get_version()), pycuda.VERSION_TEXT)
+
 
 DEVICES = None
 def init_all_devices():
@@ -166,19 +185,12 @@ def init_all_devices():
     if disabled_gpus is True or enabled_gpus==[]:
         log("all devices are disabled!")
         return DEVICES
-    log.info("CUDA initialization (this may take a few seconds)")
     log("enabled: %s, disabled: %s", csv(enabled_gpus), csv(disabled_gpus))
-    try:
-        driver.init()
-    except Exception as e:
-        log.error("Error: cannot initialize CUDA")
-        log.error(" %s", e)
+    if not driver_init():
         return DEVICES
-    log("CUDA driver version=%s", driver.get_driver_version())
     ngpus = driver.Device.count()
     if ngpus==0:
-        log.info("CUDA %s / PyCUDA %s, no devices found",
-                 ".".join(str(x) for x in driver.get_version()), pycuda.VERSION_TEXT)
+        nodevices()
         return DEVICES
     cuda_device_blacklist = get_pref("blacklist")
     da = driver.device_attribute
