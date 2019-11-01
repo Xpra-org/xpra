@@ -194,14 +194,12 @@ def init_all_devices():
         return DEVICES
     cuda_device_blacklist = get_pref("blacklist")
     da = driver.device_attribute
-    cf = driver.ctx_flags
     for i in range(ngpus):
         #shortcut if this GPU number is disabled:
         if disabled_gpus is not None and i in disabled_gpus:
             log("device %i is in the list of disabled gpus, skipped", i)
             continue
         device = None
-        context = None
         devinfo = "gpu %i" % i
         try:
             device = driver.Device(i)
@@ -230,47 +228,53 @@ def init_all_devices():
                 log("device '%s' / '%s' is in the list of disabled gpus, skipped", i, devname, pci)
                 continue
 
-            context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
-            try:
-                log("   created context=%s", context)
-                log("   api version=%s", context.get_api_version())
-                free, total = driver.mem_get_info()
-                log("   memory: free=%sMB, total=%sMB",  int(free//1024//1024), int(total//1024//1024))
-                log("   multi-processors: %s, clock rate: %s",
-                    device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
-                log("   max block sizes: (%s, %s, %s)",
-                    device.get_attribute(da.MAX_BLOCK_DIM_X),
-                    device.get_attribute(da.MAX_BLOCK_DIM_Y),
-                    device.get_attribute(da.MAX_BLOCK_DIM_Z),
-                    )
-                log("   max grid sizes: (%s, %s, %s)",
-                    device.get_attribute(da.MAX_GRID_DIM_X),
-                    device.get_attribute(da.MAX_GRID_DIM_Y),
-                    device.get_attribute(da.MAX_GRID_DIM_Z),
-                    )
-                max_width = device.get_attribute(da.MAXIMUM_TEXTURE2D_WIDTH)
-                max_height = device.get_attribute(da.MAXIMUM_TEXTURE2D_HEIGHT)
-                log("   maximum texture size: %sx%s", max_width, max_height)
-                log("   max pitch: %s", device.get_attribute(da.MAX_PITCH))
-                SMmajor, SMminor = device.compute_capability()
-                compute = (SMmajor<<4) + SMminor
-                log("   compute capability: %#x (%s.%s)", compute, SMmajor, SMminor)
-                if i==0:
-                    #we print the list info "header" from inside the loop
-                    #so that the log output is bunched up together
-                    log.info("CUDA %s / PyCUDA %s, found %s device%s:",
-                             ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus, engs(ngpus))
-                if SMmajor>=2:
-                    DEVICES.append(i)
-                else:
-                    log.info("  this device is too old!")
-                log.info("  + %s (memory: %s%% free, compute: %s.%s)",
-                         device_info(device), 100*free//total, SMmajor, SMminor)
-            finally:
-                context.pop()
+            if check_device(i, device):
+                DEVICES.append(i)
         except Exception as e:
             log.error("error on device %s: %s", devinfo, e)
     return DEVICES
+
+def check_device(i, device):
+    cf = driver.ctx_flags
+    context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
+    try:
+        log("   created context=%s", context)
+        log("   api version=%s", context.get_api_version())
+        free, total = driver.mem_get_info()
+        log("   memory: free=%sMB, total=%sMB",  int(free//1024//1024), int(total//1024//1024))
+        log("   multi-processors: %s, clock rate: %s",
+            device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
+        log("   max block sizes: (%s, %s, %s)",
+            device.get_attribute(da.MAX_BLOCK_DIM_X),
+            device.get_attribute(da.MAX_BLOCK_DIM_Y),
+            device.get_attribute(da.MAX_BLOCK_DIM_Z),
+            )
+        log("   max grid sizes: (%s, %s, %s)",
+            device.get_attribute(da.MAX_GRID_DIM_X),
+            device.get_attribute(da.MAX_GRID_DIM_Y),
+            device.get_attribute(da.MAX_GRID_DIM_Z),
+            )
+        max_width = device.get_attribute(da.MAXIMUM_TEXTURE2D_WIDTH)
+        max_height = device.get_attribute(da.MAXIMUM_TEXTURE2D_HEIGHT)
+        log("   maximum texture size: %sx%s", max_width, max_height)
+        log("   max pitch: %s", device.get_attribute(da.MAX_PITCH))
+        SMmajor, SMminor = device.compute_capability()
+        compute = (SMmajor<<4) + SMminor
+        log("   compute capability: %#x (%s.%s)", compute, SMmajor, SMminor)
+        if i==0:
+            #we print the list info "header" from inside the loop
+            #so that the log output is bunched up together
+            log.info("CUDA %s / PyCUDA %s, found %s device%s:",
+                     ".".join([str(x) for x in driver.get_version()]), pycuda.VERSION_TEXT, ngpus, engs(ngpus))
+        log.info("  + %s (memory: %s%% free, compute: %s.%s)",
+                 device_info(device), 100*free//total, SMmajor, SMminor)
+        if SMmajor<2:
+            log.info("  this device is too old!")
+            return False
+        return True
+    finally:
+        context.pop()
+
 
 def get_devices():
     global DEVICES
@@ -302,6 +306,9 @@ def select_device(preferred_device_id=-1, min_compute=0):
             if tpct<MIN_FREE_MEMORY:
                 log.warn("Warning: GPU device %i is low on memory: %i%%", device_id, tpct)
             return device_id, device
+    return select_best_free_memory(min_compute)
+
+def select_best_free_memory(min_compute=0):
     #load preferences:
     preferred_device_name = get_pref("device-name")
     devices = init_all_devices()
