@@ -307,7 +307,7 @@ def select_device(preferred_device_id=-1, min_compute=0):
             l = log
             if len(devices)>1:
                 l = log.info
-            l("selected device %s: %s", device_id, device_info(device))
+            l("selected device %s: %s", selected_device_id, device_info(selected_device))
             return selected_device_id, selected_device
     return -1, None
 
