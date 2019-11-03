@@ -162,6 +162,7 @@ Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra < 1.8
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
+Requires:			libjpeg-turbo
 Requires:			python3-cryptography
 Requires:			python3-gobject
 Recommends:			python3-inotify
