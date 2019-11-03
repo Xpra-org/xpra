@@ -18,21 +18,8 @@ log = Logger("opengl")
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
-#for testing:
-#GREYLIST["vendor"].append("NVIDIA Corporation")
-#WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
-#frequent crashes on OSX with GT 650M: (see ticket #808)
-#if OSX:
-#    GREYLIST.setdefault("vendor", []).append("NVIDIA Corporation")
-
-
-DEFAULT_ALPHA = True
-GL_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", DEFAULT_ALPHA)
-#not working with gtk3 yet?
-CAN_DOUBLE_BUFFER = True
-#needed on win32?:
-DEFAULT_DOUBLE_BUFFERED = WIN32 or CAN_DOUBLE_BUFFER
-DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
+GL_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", True)
+DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 
 CRASH = envbool("XPRA_OPENGL_FORCE_CRASH", False)
 TIMEOUT = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)

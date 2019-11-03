@@ -37,5 +37,14 @@ BLACKLIST = {
         ]
     }
 
+
+#for testing:
+#GREYLIST["vendor"].append("NVIDIA Corporation")
+#WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
+#frequent crashes on OSX with GT 650M: (see ticket #808)
+#if OSX:
+#    GREYLIST.setdefault("vendor", []).append("NVIDIA Corporation")
+
+
 class OpenGLFatalError(ImportError):
     pass
