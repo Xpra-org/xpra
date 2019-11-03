@@ -45,6 +45,9 @@ class EncodingServer(StubServerMixin):
         getVideoHelper().set_modules(video_encoders=opts.video_encoders, csc_modules=opts.csc_modules)
 
     def setup(self):
+        #always load pillow early,
+        #so we have png and jpeg support before calling threaded_setup
+        load_codec("enc_pillow")
         self.init_encodings()
 
     def threaded_setup(self):

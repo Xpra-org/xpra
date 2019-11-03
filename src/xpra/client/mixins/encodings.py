@@ -23,6 +23,9 @@ MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 VIDEO_MAX_SIZE = tuple(int(x) for x in os.environ.get("XPRA_VIDEO_MAX_SIZE", "4096,4096").replace("x", ",").split(","))
 
+#we assume that any server will support at least those:
+DEFAULT_ENCODINGS = os.environ.get("XPRA_DEFAULT_ENCODINGS", "rgb32,rgb24,jpeg,png").split(",")
+
 
 """
 Mixin for adding encodings to a client
@@ -109,7 +112,7 @@ class Encodings(StubClientMixin):
         return True
 
     def _parse_server_capabilities(self, c):
-        self.server_encodings = c.strlistget("encodings", ["rgb32", "rgb24"])
+        self.server_encodings = c.strlistget("encodings", DEFAULT_ENCODINGS)
         self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
         #server is telling us to try to avoid those:
         self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)
