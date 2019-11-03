@@ -6,7 +6,6 @@
 
 import os
 import time
-import struct
 from ctypes import c_char_p
 
 from OpenGL import version as OpenGL_version
@@ -24,7 +23,7 @@ from OpenGL.GL import (
     GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST,
-    glLineStipple, GL_LINE_STIPPLE, GL_POINTS,
+    glLineStipple, GL_LINE_STIPPLE,
     glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE,
     glHint,
     glBlendFunc,
