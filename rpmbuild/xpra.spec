@@ -179,6 +179,7 @@ Recommends:         python3-brotli
 Recommends:         python3-cpuinfo
 Requires:			libwebp
 BuildRequires:		libwebp-devel
+BuildRequires:		libjpeg-turbo-devel
 BuildRequires:		libyuv-devel
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
