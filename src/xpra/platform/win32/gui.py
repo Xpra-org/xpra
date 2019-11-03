@@ -12,6 +12,8 @@ import types
 import ctypes
 from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT
+from ctypes import CDLL, pythonapi, c_void_p, py_object
+from ctypes.util import find_library
 
 from xpra.client import mixin_features
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener
@@ -36,7 +38,6 @@ from xpra.platform.win32.common import (
     )
 from xpra.util import AdHocStruct, csv, envint, envbool, typedict
 from xpra.os_util import get_util_logger, strtobytes
-
 from xpra.log import Logger
 
 log = Logger("win32")
@@ -52,8 +53,6 @@ SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY",
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 
 
-from ctypes import CDLL, pythonapi, c_void_p, py_object
-from ctypes.util import find_library
 PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
 PyCapsule_GetPointer.restype = c_void_p
 PyCapsule_GetPointer.argtypes = [py_object]
@@ -76,7 +75,7 @@ except ImportError as e:
 try:
     dwmapi = WinDLL("dwmapi", use_last_error=True)
     DwmGetWindowAttribute = dwmapi.DwmGetWindowAttribute
-except:
+except Exception:
     #win XP:
     DwmGetWindowAttribute = None
 
@@ -97,8 +96,12 @@ WHEEL = envbool("XPRA_WHEEL", True)
 WHEEL_DELTA = envint("XPRA_WIN32_WHEEL_DELTA", 120)
 assert WHEEL_DELTA>0
 
-log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, GEOMETRY=%s, LANGCHANGE=%s, DPI_AWARE=%s, DPI_AWARENESS=%s, FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
-    CONSOLE_EVENT_LISTENER, USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, GEOMETRY, LANGCHANGE, DPI_AWARE, DPI_AWARENESS, FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
+log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s",
+    CONSOLE_EVENT_LISTENER, USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER)
+log("win32 gui settings: UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, GEOMETRY=%s, LANGCHANGE=%s",
+    UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, GEOMETRY, LANGCHANGE)
+log("win32 gui settings: DPI_AWARE=%s, DPI_AWARENESS=%s, FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
+    DPI_AWARENESS, FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
 
 
 def do_init():
