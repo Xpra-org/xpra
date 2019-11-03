@@ -15,6 +15,7 @@ from xpra.log import Logger
 log = Logger("gtk", "window")
 paintlog = Logger("paint")
 metalog = Logger("metadata")
+geomlog = Logger("geometry")
 
 GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.MENU,
@@ -110,7 +111,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
                 setattr(geom, field, float(v))
                 mask |= int(name_to_hint.get(k, 0))
         gdk_hints = Gdk.WindowHints(mask)
-        metalog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
+        geomlog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
         self.set_geometry_hints(None, geom, gdk_hints)
 
     def queue_draw_area(self, x, y, width, height):
