@@ -53,7 +53,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 
 from xpra.os_util import (
     monotonic_time, strtobytes, hexstr,
-    POSIX, PYTHON2, OSX,
+    POSIX, PYTHON2, PYTHON3, OSX,
     DummyContextManager,
     )
 from xpra.util import envint, envbool, repr_ellipsized
@@ -76,7 +76,7 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
-DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", False)
+DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", PYTHON3)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", OSX)
