@@ -86,7 +86,6 @@ UNDECORATED_STYLE = WINDOW_HOOKS and envbool("XPRA_WIN32_UNDECORATED_STYLE", Tru
 CLIP_CURSOR = WINDOW_HOOKS and envbool("XPRA_WIN32_CLIP_CURSOR", True)
 #GTK3 is fixed, so we don't need this hook:
 MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", False)
-GEOMETRY = WINDOW_HOOKS and envbool("XPRA_WIN32_GEOMETRY", True)
 LANGCHANGE = WINDOW_HOOKS and envbool("XPRA_WIN32_LANGCHANGE", True)
 
 DPI_AWARE = envbool("XPRA_DPI_AWARE", True)
@@ -98,8 +97,8 @@ assert WHEEL_DELTA>0
 
 log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s",
     CONSOLE_EVENT_LISTENER, USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER)
-log("win32 gui settings: UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, GEOMETRY=%s, LANGCHANGE=%s",
-    UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, GEOMETRY, LANGCHANGE)
+log("win32 gui settings: UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, LANGCHANGE=%s",
+    UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, LANGCHANGE)
 log("win32 gui settings: DPI_AWARE=%s, DPI_AWARENESS=%s, FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
     DPI_AWARENESS, FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
 
@@ -527,8 +526,8 @@ def cache_pointer_offset(self, event):
 
 
 def add_window_hooks(window):
-    log("add_window_hooks(%s) WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s, MAX_SIZE_HINT=%s, GEOMETRY=%s",
-            window, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE, MAX_SIZE_HINT, GEOMETRY)
+    log("add_window_hooks(%s) WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s, MAX_SIZE_HINT=%s, MAX_SIZE_HINT=%s",
+            window, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE, MAX_SIZE_HINT, MAX_SIZE_HINT)
     if not WINDOW_HOOKS:
         #allows us to disable the win32 hooks for testing
         return
@@ -578,7 +577,7 @@ def add_window_hooks(window):
         win32hooks.max_size = None
         win32hooks.setup()
 
-        if GEOMETRY:
+        if MAX_SIZE_HINT:
             #save original geometry function:
             window.__apply_geometry_hints = window.apply_geometry_hints
             window.apply_geometry_hints = types.MethodType(apply_geometry_hints, window)
