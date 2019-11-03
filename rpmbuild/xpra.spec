@@ -257,6 +257,7 @@ BuildRequires:		libXrandr-devel
 BuildRequires:		libXext-devel
 BuildRequires:		pygtk2-devel
 BuildRequires:		pygobject2-devel
+BuildRequires:		libyuv-devel
 BuildRequires:		turbojpeg-devel
 BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
@@ -366,6 +367,7 @@ Requires:			python3-rencode
 Requires:			python3-numpy
 Requires:			libyuv
 Requires:			libvpx
+Requires:			turbojpeg
 Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra < 1.8
 Requires:			x264-xpra
@@ -388,6 +390,7 @@ Recommends:         python3-cpuinfo
 Requires:			libwebp
 BuildRequires:		libwebp-devel
 BuildRequires:		libyuv-devel
+BuildRequires:		turbojpeg-devel
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3
@@ -398,7 +401,6 @@ BuildRequires:		pygobject3-devel
 BuildRequires:		python3-cairo-devel
 BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
-BuildRequires:		libyuv-devel
 BuildRequires:		gtk3-devel
 BuildRequires:		gobject-introspection-devel
 %if 0%{?run_tests}
