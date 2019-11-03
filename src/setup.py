@@ -1736,6 +1736,9 @@ membuffers_c = [memalign_c, buffers_c, xxhash_c]
 if modules_ENABLED:
     add_packages("xpra.buffers")
     buffers_pkgconfig = pkgconfig(optimize=3)
+    if BITS==32:
+        #this may well be sub-optimal:
+        add_to_keywords(buffers_pkgconfig, "extra_compile_args", "-mfpmath=387")
     if cython_ENABLED:
         cython_add(Extension("xpra.buffers.membuf",
                     ["xpra/buffers/membuf.pyx"]+membuffers_c, **buffers_pkgconfig))
