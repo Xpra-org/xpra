@@ -17,9 +17,6 @@ log = Logger("printing")
 RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
 
 
-def err(*args, **kwargs):
-    log.error(*args, **kwargs)
-
 def get_printers():
     return {}
 
@@ -96,8 +93,8 @@ if not WIN32:
         assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
     except Exception as e:
         log("cannot load pycups", exc_info=True)
-        err("Error: printing disabled:")
-        err(" %s", e)
+        log.warn("Warning: printer forwarding disabled:")
+        log.warn(" %s", e)
         del e
 
 platform_import(globals(), "printing", False,
