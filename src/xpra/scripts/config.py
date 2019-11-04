@@ -1001,7 +1001,7 @@ def get_defaults():
                     "av-sync"           : True,
                     "exit-ssh"          : True,
                     "dbus-control"      : not WIN32 and not OSX,
-                    "opengl"            : "probe",
+                    "opengl"            : "probe" if not WIN32 else "no",
                     "mdns"              : not WIN32,
                     "swap-keys"         : OSX,  #only used on osx
                     "desktop-fullscreen": False,
