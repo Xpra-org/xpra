@@ -33,6 +33,11 @@ Provides:		python-lz4 = %{version}-%{release}
 Obsoletes:      python-lz4 < %{version}-%{release}
 Conflicts:		python-lz4 < %{version}-%{release}
 
+#Fedora 31 builds a package that cannot be installed if we let its automagic run:
+%if 0%{?fedora}>=31
+AutoReqProv: no
+%endif
+
 %description
 This package provides Python2 bindings for the lz4 compression library
 http://code.google.com/p/lz4/ by Yann Collet.
