@@ -145,10 +145,11 @@
 	</distutils>
 
 	<distutils id="python3-parsing" python3="1">
-		<branch repo="files.pythonhosted.org"
-			module="/packages/7e/24/eaa8d7003aee23eda270099eeec754d7bf4399f75c6a011ef948304f66a2/pyparsing-2.4.2.tar.gz"
-			hash="sha256:6f98a7b9397e206d78cc01df10131398f1c8b8510a2f4d97d9abd82e1aacdd80"
-			version="2.4.2"/>
+		<branch repo="github.com"
+			module="/pyparsing/pyparsing/archive/pyparsing_2.4.3.tar.gz"
+			hash="sha256:082d6a1661cfa7ff818184f4e0496ef3f555205f06accc80e6fea958b2ec2af9"
+			checkoutdir="pyparsing-pyparsing_2.4.3"			
+			version="2.4.3"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
