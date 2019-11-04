@@ -103,9 +103,9 @@
 	</autotools>
 
 	<autotools id="faad2" autogenargs="" autogen-sh="configure">
-		<branch module="/knik0/faad2/archive/2_9_0.tar.gz"
-			version="2.9.0" checkoutdir="faad2-2_9_0"
-			hash="sha256:be30fbb0ea7999fe04ea7a5d5298eec15c256ddff4d5d7c584d5344fb9b0d2d4"
+		<branch module="/knik0/faad2/archive/2_9_1.tar.gz"
+			version="2.9.1" checkoutdir="faad2-2_9_1"
+			hash="sha256:7fa33cff76abdda5a220ca5de0b2e05a77354f3b97f735193c2940224898aa9a"
 			repo="github.com"/>
 	</autotools>
 
