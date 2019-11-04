@@ -76,7 +76,7 @@ class GLXWindowContext:
             GLX.glXMakeCurrent(self.xdisplay, 0, null_context)
 
     def swap_buffers(self):
-        assert self.valid
+        assert self.valid, "GLX window context is no longer valid"
         GLX.glXSwapBuffers(self.xdisplay, self.xid)
 
     def __repr__(self):
