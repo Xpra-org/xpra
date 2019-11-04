@@ -846,6 +846,7 @@ def build_xpra_conf(install_dir):
             'printing'              : bstr(printing_ENABLED),
             'dbus_control'          : bstr(dbus_ENABLED),
             'mmap'                  : bstr(True),
+            'opengl'                : "no" if WIN32 else "probe",
             }
     def convert_templates(subdirs):
         dirname = os.path.join(*(["etc", "xpra"] + subdirs))
