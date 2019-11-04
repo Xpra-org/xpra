@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
-gtk = import_gtk()
-gdk = import_gdk()
 
 width = 400
 height = 200
@@ -11,6 +8,7 @@ height = 200
 def main():
     PY2 = sys.version_info[0]==2
     if PY2:
+        import gtk
         w = gtk.Window(gtk.WINDOW_TOPLEVEL)
         w.set_default_size(499, 316)
         w.set_title("xterm size hints")
@@ -25,12 +23,16 @@ def main():
                 }
         w.set_geometry_hints(None, **hints)
     else:
-        w = gtk.Window(type=gtk.WindowType.TOPLEVEL)
+        import gi
+        gi.require_version('Gdk', '3.0')
+        gi.require_version('Gtk', '3.0')
+        from gi.repository import Gtk, Gdk
+        w = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         w.set_default_size(499, 316)
         w.set_title("xterm size hints")
-        w.connect("delete_event", gtk.main_quit)
-        geom = gdk.Geometry()
-        wh = gdk.WindowHints
+        w.connect("delete_event", Gtk.main_quit)
+        geom = Gdk.Geometry()
+        wh = Gdk.WindowHints
         geom.min_width = 25
         geom.min_height = 17
         geom.base_width = 19
@@ -42,8 +44,9 @@ def main():
             geom.max_width = 32767
             geom.max_height = 32764
             mask |= wh.MAX_SIZE
-        gdk_hints = gdk.WindowHints(mask)
+        gdk_hints = Gdk.WindowHints(mask)
         w.set_geometry_hints(None, geom, gdk_hints)
+        gtk = Gtk
     da = gtk.DrawingArea()
     #da.connect("click", show)
     def configure_event(w, event):
