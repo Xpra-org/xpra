@@ -89,7 +89,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Tue Oct 08 2018 Antoine Martin <antoine@xpra.org> - 1.1.0-27.xpra4
+* Tue Oct 08 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-27.xpra4
 - remove opensuse support, fix shebang
 
 * Mon Sep 17 2018 Antoine Martin <antoine@xpra.org> - 1.1.0-27.xpra1
