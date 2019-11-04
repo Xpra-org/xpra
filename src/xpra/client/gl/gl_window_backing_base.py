@@ -1067,10 +1067,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 glBindTexture(target, 0)
                 glDisable(target)
                 self.paint_box(options.strget("encoding"), options.intget("delta", -1)>=0, x, y, width, height)
-                fire_paint_callbacks(callbacks)
                 # Present update to screen
                 self.present_fbo(x, y, width, height, options.intget("flush", 0))
                 # present_fbo has reset state already
+            fire_paint_callbacks(callbacks)
             return
         except GLError as e:
             message = "OpenGL %s paint failed: %r" % (rgb_format, e)
