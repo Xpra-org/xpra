@@ -13,6 +13,8 @@ def main():
         w.set_default_size(499, 316)
         w.set_title("xterm size hints")
         w.connect("delete_event", gtk.main_quit)
+        da = gtk.DrawingArea()
+        w.add(da)
         hints = {
             "min_width" : 25,
             "min_height" : 17,
@@ -31,6 +33,8 @@ def main():
         w.set_default_size(499, 316)
         w.set_title("xterm size hints")
         w.connect("delete_event", Gtk.main_quit)
+        da = gtk.DrawingArea()
+        w.add(da)
         geom = Gdk.Geometry()
         wh = Gdk.WindowHints
         geom.min_width = 25
@@ -47,8 +51,6 @@ def main():
         gdk_hints = Gdk.WindowHints(mask)
         w.set_geometry_hints(None, geom, gdk_hints)
         gtk = Gtk
-    da = gtk.DrawingArea()
-    #da.connect("click", show)
     def configure_event(w, event):
         #print("configure_event(%s, %s)" % (w, event))
         print("event geometry:        %s" % ((event.x, event.y, event.width, event.height),))
@@ -61,7 +63,6 @@ def main():
         w, h = w.get_size()
         print("drawing area geometry: %s" % ((x, y, w, h),))
     w.connect("configure_event", configure_event)
-    w.add(da)
     w.show_all()
     gtk.main()
 

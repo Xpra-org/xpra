@@ -132,7 +132,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
                 mask |= int(name_to_hint.get(k, 0))
         gdk_hints = Gdk.WindowHints(mask)
         metalog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
-        self.set_geometry_hints(None, geom, gdk_hints)
+        self.set_geometry_hints(self.drawing_area, geom, gdk_hints)
 
     def queue_draw_area(self, x, y, width, height):
         window = self.get_window()
