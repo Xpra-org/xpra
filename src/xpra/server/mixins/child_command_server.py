@@ -95,6 +95,7 @@ class ChildCommandServer(StubServerMixin):
         try:
             import pyinotify
         except ImportError as e:
+            log("setup_menu_watcher() cannot import pyinotify", exc_info=True)
             log.warn("Warning: cannot watch for application menu changes without pyinotify:")
             log.warn(" %s", e)
             return
