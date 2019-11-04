@@ -868,7 +868,7 @@ fi
 
 
 %changelog
-* Thu Oct 31 2019 Antoine Martin <antoine@xpra.org> 3.0.2-1
+* Mon Nov 04 2019 Antoine Martin <antoine@xpra.org> 3.0.2-1
 - fix clipboard synchronization issue with MS Windows clients properly
 - fix Pillow 6.x compatibility with MS Windows packaging
 - fix null bytes in X11 error text properly
@@ -877,6 +877,15 @@ fi
 - fix lost screen updates
 - fix GTK scaling causing window geometry issues
 - fix HTML5 clipboard data sent from polling events
+- fix CUDA device logging with multiple devices
+- fix 32-bit build errors on xxhash
+- fix RPM jpeg and libyuv dependencies
+- fix OpenGL window not refreshing with Python 3
+- fix OpenGL context held for too long
+- fix SSH connection errors when 'port' is specified in the ssh config
+- fix faac and faad2 security issues in MS Windows and MacOS builds
+- fix window size hints misapplied with GTK3 on MS Windows and Wayland
+- disable OpenGL acceleration with GTK3 builds on MS Windows (for now, pending bug)
 - show python interpreter version on about dialog
 - re-instante ancient popup window workaround (was disabled by mistake)
 - don't use av-synchronization for text and picture content types
