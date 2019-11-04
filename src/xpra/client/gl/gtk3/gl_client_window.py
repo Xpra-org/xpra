@@ -108,3 +108,5 @@ class GLClientWindowBase(GTK3ClientWindow):
         self.init_widget_events(widget)
         self.add(widget)
         self.drawing_area = widget
+        #maybe redundant?:
+        self.apply_geometry_hints(self.geometry_hints)
