@@ -5,7 +5,7 @@
 
 Name:           pygtkglext
 Version:        1.1.0
-Release:        27.xpra4%{?dist}
+Release:        31.xpra1%{?dist}
 Summary:        Python bindings for GtkGLExt
 License:        LGPLv2+
 Group:          System Environment/Libraries
@@ -48,11 +48,13 @@ mv tmp README
 
 
 %build
+export PYTHON=/usr/bin/python2
 %configure
 make %{?_smp_mflags}
 
 
 %install
+export PYTHON=/usr/bin/python2
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT INSTALL="%{__install} -p"
 if [ %{python2_sitelib} != %{python2_sitearch} ]; then
@@ -89,6 +91,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Noc 04 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra1
+- Fedora 31 rebuild
+
 * Tue Oct 08 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-27.xpra4
 - remove opensuse support, fix shebang
 
