@@ -6,7 +6,7 @@
 #opengl = no
 #opengl = gtk, native
 #opengl = auto
-opengl = probe
+opengl = %(opengl)s
 
 # How we handle server authentication requests:
 #challenge-handlers=none
