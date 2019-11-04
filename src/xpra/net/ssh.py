@@ -260,6 +260,10 @@ def ssh_paramiko_connect_to(display_desc):
                 host = host_config.get("hostname", host)
                 username = host_config.get("username", username)
                 port = host_config.get("port", port)
+                try:
+                    port = int(port)
+                except ValueError:
+                    raise InitException("invalid port specified: '%s'" % port)
                 proxycommand = host_config.get("proxycommand")
                 keyfiles = host_config.get("identityfile")
                 if proxycommand:
