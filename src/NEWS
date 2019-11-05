@@ -1,4 +1,4 @@
-v3.0.2 (2019-11-04)
+v3.0.2 (2019-11-05)
 ======================
 	-- fix clipboard synchronization issue with MS Windows clients properly
 	-- fix Pillow 6.x compatibility with MS Windows packaging
@@ -16,6 +16,7 @@ v3.0.2 (2019-11-04)
 	-- fix SSH connection errors when 'port' is specified in the ssh config
 	-- fix faac and faad2 security issues in MS Windows and MacOS builds
 	-- fix window size hints misapplied with GTK3 on MS Windows and Wayland
+	-- disable OpenGL acceleration on old Intel chipsets
 	-- disable OpenGL acceleration with GTK3 builds on MS Windows (for now, pending bug)
 	-- show python interpreter version on about dialog
 	-- re-instante ancient popup window workaround (was disabled by mistake)
