@@ -27,7 +27,8 @@ BLACKLIST = {
     "renderer" :
         [
             "Software Rasterizer",
-            #"Mesa DRI Intel(R) Ivybridge Desktop"
+            "Mesa DRI Intel(R) Ivybridge Desktop",
+            "Mesa DRI Intel(R) Haswell Mobile",
         ],
     "vendor"    : [
         #"VMware, Inc.",
