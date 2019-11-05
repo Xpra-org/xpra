@@ -1843,7 +1843,7 @@ if xinput_ENABLED:
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models")
-gtk2_deprecated = WIN32 or (is_Fedora() and int(get_distribution_version_id())>=31) or getUbuntuVersion()>=(19, 10)
+gtk2_deprecated = True #WIN32 or (is_Fedora() and int(get_distribution_version_id())>=31) or getUbuntuVersion()>=(19, 10)
 if gtk_x11_ENABLED:
     toggle_packages(PYTHON3, "xpra.x11.gtk3")
     toggle_packages(not PYTHON3, "xpra.x11.gtk2")
