@@ -1864,7 +1864,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self.resize(w, h)
             return
         #we have to move:
-        mw, mh = self._client.get_root_size()
         if not self.get_realized():
             geomlog("window was not realized yet")
             self.realize()
@@ -1876,6 +1875,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         geomlog("window origin=%ix%i, root origin=%ix%i, actual position=%ix%i", ox, oy, rx, ry, ax, ay)
         #validate against edge of screen (ensure window is shown):
         if CLAMP_WINDOW_TO_SCREEN:
+            mw, mh = self._client.get_root_size()
             if (ax + w)<=0:
                 ax = -w + 1
             elif ax >= mw:
@@ -1886,7 +1886,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 ay = -y + 1
             elif ay >= mh:
                 ay = mh -1
-        geomlog("validated window position for total screen area %ix%i : %ix%i", mw, mh, ax, ay)
+            geomlog("validated window position for total screen area %ix%i : %ix%i", mw, mh, ax, ay)
         if self._size==(w, h):
             #just move:
             geomlog("window size unchanged: %ix%i, using move(%i, %i)", w, h, ax, ay)
