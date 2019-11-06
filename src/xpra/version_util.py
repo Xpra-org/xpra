@@ -152,7 +152,11 @@ def do_get_platform_info() -> dict:
     ld = get_linux_distribution()
     if ld:
         info["linux_distribution"] = ld
-    release = platform_release(pp.release())
+    try:
+        release = platform_release(pp.release())
+    except OSError:
+        log("do_get_platform_info()", exc_info=True)
+        release = "unknown"
     info.update({
             ""          : sys.platform,
             "name"      : platform_name(sys.platform, info.get("linux_distribution") or release),
