@@ -8,8 +8,8 @@
               href="http://iweb.dl.sf.net/project/"/>
 
   <autotools id="liborc" autogen-sh="configure">
-    <branch module="orc/orc-0.4.29.tar.xz" version="0.4.29"
-            hash="sha256:4f8901f9144b5ec17dffdb33548b5f4c7f8049b0d1023be3462cdd64ec5a3ab2"/>
+    <branch module="orc/orc-0.4.31.tar.xz" version="0.4.31"
+            hash="sha256:a0ab5f10a6a9ae7c3a6b4218246564c3bf00d657cbdf587e6d34ec3ef0616075"/>
   </autotools>
 
   <autotools id="faad2" autogen-sh="autoreconf"
