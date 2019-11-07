@@ -1737,7 +1737,8 @@ membuffers_c = [memalign_c, buffers_c, xxhash_c]
 if modules_ENABLED:
     add_packages("xpra.buffers")
     buffers_pkgconfig = pkgconfig(optimize=3)
-    if BITS==32:
+    import platform
+    if platform.machine()=="i386":
         #this may well be sub-optimal:
         add_to_keywords(buffers_pkgconfig, "extra_compile_args", "-mfpmath=387")
     if cython_ENABLED:
