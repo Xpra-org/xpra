@@ -85,6 +85,10 @@ def main(script_file, cmdline):
 
     #some environment variables cause us problems if set:
     unsetenv("GDK_SCALE")
+    #client side decorations break window geometry,
+    #disable this "feature" unless explicitly enabled:
+    if os.environ.get("GTK_CSD") is None:
+        os.environ["GTK_CSD"] = "0"
 
     if envbool("XPRA_NOMD5", False):
         import hashlib
