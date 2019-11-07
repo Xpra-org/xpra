@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Gdk
 
 
 def colored_cursor(size=64, x=32, y=32):
 	#create a custom cursor:
 	#first get a colormap and then allocate the colors
 	#black and white for drawing on the bitmaps:
-	pm = gtk.gdk.Pixmap(None, size, size, 1)
-	mask = gtk.gdk.Pixmap(None, size, size, 1)
-	colormap = gtk.gdk.colormap_get_system()
+	pm = Gdk.Pixmap(None, size, size, 1)
+	mask = Gdk.Pixmap(None, size, size, 1)
+	colormap = Gdk.colormap_get_system()
 	black = colormap.alloc_color('black')
 	white = colormap.alloc_color('white')
 	# Create two GCs - one each for black and white:
@@ -22,19 +25,19 @@ def colored_cursor(size=64, x=32, y=32):
 	pm.draw_arc(wgc,True,0,2,size,size/2,0,360*64)
 	mask.draw_rectangle(wgc,True,0,0,size,size)
 	# Then create and set the cursor using unallocated colors:
-	green = gtk.gdk.color_parse('green')
-	red = gtk.gdk.color_parse('red')
-	return gtk.gdk.Cursor(pm,mask,green,red, x, y)
+	green = Gdk.color_parse('green')
+	red = Gdk.color_parse('red')
+	return Gdk.Cursor(pm,mask,green,red, x, y)
 
 def main():
 	cursor = colored_cursor()
-	win = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	win.connect("delete_event", gtk.mainquit)
+	win = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+	win.connect("delete_event", Gtk.mainquit)
 	win.set_title("Cursor Hotspot Test")
 	win.set_size_request(320, 240)
-	def onclick (box, event):
+	def onclick(_box, event):
 		print("%s" % ((event.x, event.y), ))
-	btn = gtk.Button("hello")
+	btn = Gtk.Button("hello")
 	btn.connect('button-press-event', onclick)
 	win.add(btn)
 	win.show_all()

@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 
-from gi.repository import Gtk, Gdk
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Gdk, GLib
 
-from xpra.gtk_common.gtk_util import (
-    gtk_main,
-    WINDOW_TOPLEVEL, GRAB_STATUS_STRING, WINDOW_EVENT_MASK, BUTTON_RELEASE_MASK,
-    )
+from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING
 
-from gi.repository import GLib
 
 def main():
-	window = Gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(600, 200)
 	window.connect("delete_event", Gtk.main_quit)
-	window.add_events(WINDOW_EVENT_MASK)
+	window.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
 	vbox = Gtk.VBox(False, 0)
 	hbox = Gtk.HBox(False, 0)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=10)
@@ -41,7 +40,7 @@ def main():
 	def grab_pointer(*args):
 		action_label.set_text("grab_pointer%s" % str(args))
 		def do_grab():
-			event_mask = BUTTON_RELEASE_MASK
+			event_mask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
 			v = Gdk.pointer_grab(window.get_window(), False, event_mask, None, None, 0)
 			#Gdk.BUTTON_PRESS_MASK | Gdk.BUTTON_RELEASE_MASK | Gdk.KEY_PRESS_MASK \
 			#Gdk.KEY_RELEASE_MASK | Gdk.ENTER_NOTIFY_MASK)
@@ -87,7 +86,7 @@ def main():
 
 	window.add(vbox)
 	window.show_all()
-	gtk_main()
+	Gtk.main()
 	return 0
 
 

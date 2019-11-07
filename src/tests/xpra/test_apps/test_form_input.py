@@ -3,20 +3,21 @@
 # Copyright (C) 2013 Antoine Martin <antoine@xpra.org>
 
 import sys
-import pygtk
-pygtk.require('2.0')
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Gdk, GLib
 
 
 class TestForm(object):
 
 	def	__init__(self):
-		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-		self.window.connect("destroy", gtk.main_quit)
+		self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+		self.window.connect("destroy", Gtk.main_quit)
 		self.window.set_default_size(320, 200)
 		self.window.set_border_width(20)
 
-		entry = gtk.Entry(max=100)
+		entry = Gtk.Entry(max=100)
 		entry.set_width_chars(32)
 
 		self.window.add(entry)
@@ -25,7 +26,7 @@ class TestForm(object):
 
 def main():
 	TestForm()
-	gtk.main()
+	Gtk.main()
 
 
 if __name__ == "__main__":
