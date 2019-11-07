@@ -5,7 +5,7 @@
 import sys
 import subprocess
 
-from simulate_console_typing import print_text
+from test.xpra.test_apps.simulate_console_typing import print_text
 
 def simulate_commands(commands):
 	prompt = "localhost> $ "

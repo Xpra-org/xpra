@@ -27,11 +27,6 @@ class FPSWindow(gtk.Window):
         self.queue_draw()
         return True
 
-    def do_expose_event(self, widget, event):
-        #cannot use self
-        context = self.window.cairo_create()
-        self.draw(self, context)
-
     def draw(self, widget, cr):
         w, h = widget.get_size()
         c = 0.2
