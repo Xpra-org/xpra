@@ -10,7 +10,7 @@ height = 200
 
 def main():
     w = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
-    w.set_default_size(499, 316)
+    w.set_default_size(-1, -1)
     w.set_title("eclipse size hints")
     w.connect("delete_event", Gtk.main_quit)
     da = Gtk.DrawingArea()
