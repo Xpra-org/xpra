@@ -11,7 +11,7 @@ from urllib.parse import unquote
 import cairo
 from gi.repository import Gtk, Gdk, Gio
 
-from xpra.os_util import bytestostr, is_X11, monotonic_time, WIN32, OSX, POSIX
+from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import (
     AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
@@ -903,7 +903,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         elif HAS_X11_BINDINGS:
             xid = self.get_window().get_xid()
             with xlog:
-                X11Window.setClassHint(xid, wmclass_class, wmclass_name)
+                X11Window.setClassHint(xid, strtobytes(wmclass_class), strtobytes(wmclass_name))
                 log("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
 
     def set_shape(self, shape):
