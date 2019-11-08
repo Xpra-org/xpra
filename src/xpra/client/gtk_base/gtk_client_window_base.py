@@ -1915,8 +1915,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             y += self.window_offset[1]
             #TODO: check this doesn't move it off-screen!
         self._resize_counter = resize_counter
-        window = self.get_window()
-        if window.get_position()==(x, y):
+        wx, wy = self.get_drawing_area_geometry()[:2]
+        if (wx, wy)==(x, y):
             #same location, just resize:
             if self._size==(w, h):
                 geomlog("window unchanged")
@@ -1930,6 +1930,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             geomlog("window was not realized yet")
             self.realize()
         #adjust for window frame:
+        window = self.get_window()
         ox, oy = window.get_origin()[-2:]
         rx, ry = window.get_root_origin()
         ax = x - (ox - rx)
