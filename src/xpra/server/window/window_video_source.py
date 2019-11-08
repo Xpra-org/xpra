@@ -648,10 +648,11 @@ class WindowVideoSource(WindowSource):
         #returns the number of pixels in the region update
         #don't refresh the video region as part of normal refresh,
         #use subregion refresh for that
+        sarr = super().add_refresh_region
         vr = self.video_subregion.rectangle
         if vr is None:
             #no video region, normal code path:
-            return super().add_refresh_region(region)
+            return sarr(region)
         if vr.contains_rect(region):
             #all of it is in the video region:
             self.video_subregion.add_video_refresh(region)
@@ -659,12 +660,12 @@ class WindowVideoSource(WindowSource):
         ir = vr.intersection_rect(region)
         if ir is None:
             #region is outside video region, normal code path:
-            return super().add_refresh_region(region)
+            return sarr(region)
         #add intersection (rectangle in video region) to video refresh:
         self.video_subregion.add_video_refresh(ir)
         #add any rectangles not in the video region
         #(if any: keep track if we actually added anything)
-        return sum(super().add_refresh_region(r) for r in region.substract_rect(vr))
+        return sum(sarr(r) for r in region.substract_rect(vr))
 
     def matches_video_subregion(self, width, height):
         vr = self.video_subregion.rectangle
