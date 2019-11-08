@@ -17,9 +17,9 @@ WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS",
                                 "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 for x in WINDOW_SIGNALS:
     addsignalhandler(x, cb)
-def sigpipe(*_args):
+def sig_exit(*_args):
 	sys.exit(1)
-addsignalhandler("SIGPIPE", sigpipe)
-addsignalhandler("SIGHUP", sigpipe)
+addsignalhandler("SIGPIPE", sig_exit)
+addsignalhandler("SIGHUP", sig_exit)
 
 sys.stdin.readline()
