@@ -12,7 +12,7 @@ try:
 except ImportError:
     from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
 
-from xpra.os_util import bytestostr, is_X11, monotonic_time, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX, PYTHON3
 from xpra.util import (
     AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
@@ -948,7 +948,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         elif HAS_X11_BINDINGS:
             xid = get_xwindow(self.get_window())
             with xlog:
-                X11Window.setClassHint(xid, wmclass_class, wmclass_name)
+                X11Window.setClassHint(xid, strtobytes(wmclass_class), strtobytes(wmclass_name))
                 log("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
 
     def set_shape(self, shape):
