@@ -19,13 +19,13 @@
 
 
 Name:           python2-xxhash
-Version:        1.4.2
+Version:        1.4.3
 Release:        1%{?dist}
 URL:            https://github.com/ifduyue/python-xxhash
 Summary:        xxhash Bindings for Python
 License:        BSD
 Group:          Development/Languages/Python
-Source:         https://files.pythonhosted.org/packages/7a/88/b7f2ce590944d6e879182ecf971f3f2562cd0db23b2de2f1d3110e4ec1b3/xxhash-%{version}.tar.gz
+Source:         https://files.pythonhosted.org/packages/df/02/89b90fd83d5e882697d26b07c0cebc14caa4953d1aeeaee07f777fd33799/xxhash-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %if 0%{?fedora}%{?el8}
 BuildRequires:  python2-devel
@@ -89,6 +89,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Nov 12 2019 Antoine Martin <antoine@nagafix.co.uk> - 1.4.3-1
+- new upstream release
+
 * Sun Oct 13 2019 Antoine Martin <antoine@nagafix.co.uk> - 1.4.2-1
 - new upstream release
 
