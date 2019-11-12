@@ -7,7 +7,7 @@ import curses
 from datetime import datetime, timedelta
 
 from xpra import __version__
-from xpra.util import typedict, std, envint, csv
+from xpra.util import typedict, std, envint, csv, engs
 from xpra.os_util import platform_name, bytestostr
 from xpra.client.gobject_client_base import MonitorXpraClient
 from xpra.log import Logger
@@ -51,10 +51,16 @@ class TopClient(MonitorXpraClient):
         curses.endwin()
 
     def update_screen(self):
+        self.stdscr.clear()
+        try:
+            self.do_update_screen()
+        finally:
+            self.stdscr.refresh()
+
+    def do_update_screen(self):
         #c = self.stdscr.getch()
         #if c==curses.KEY_RESIZE:
-        self.stdscr.clear()
-        _, width = self.stdscr.getmaxyx()
+        height, width = self.stdscr.getmaxyx()
         #log.info("update_screen() %ix%i", height, width)
         title = "Xpra top %s" % __version__
         try:
@@ -68,6 +74,8 @@ class TopClient(MonitorXpraClient):
         sli = self.server_last_info
         try:
             self.stdscr.addstr(0, x, title, curses.A_BOLD)
+            if height<=1:
+                return
             server_info = self.dictget("server")
             build = self.dictget("build")
             v = build.strget("version")
@@ -91,6 +99,8 @@ class TopClient(MonitorXpraClient):
                     std(proxy_version or "unknown")
                     )
             self.stdscr.addstr(1, 0, server_str)
+            if height<=2:
+                return
             #load and uptime:
             now = datetime.now()
             uptime = ""
@@ -107,17 +117,28 @@ class TopClient(MonitorXpraClient):
                 load_average = ", load average: %1.2f, %1.2f, %1.2f" % float_load
             self.stdscr.addstr(2, 0, "xpra top - %s%s, %2i users%s" % (
                                now.strftime("%H:%M:%S"), uptime, nclients, load_average))
+            if height<=3:
+                return
             thread_info = self.dictget("threads")
             self.stdscr.addstr(3, 0, "%i threads" % thread_info.intget("count"))
+            if height<=4:
+                return
             #cursor:
             cursor_info = self.dictget("cursor")
             cx, cy = cursor_info.intlistget("position", (0, 0))
             self.stdscr.addstr(4, 0, "cursor at %ix%i" % (cx, cy))
+            if height<=5:
+                return
 
             hpos = 6
             for client_no in range(nclients):
                 ci = self.get_client_info(client_no)
                 l = len(ci)
+                if hpos+2+l>height:
+                    if hpos<height:
+                        more = nclients-client_no
+                        self.stdscr.addstr(hpos, 0, "%i client%s not shown" % (more, engs(more)), curses.A_BOLD)
+                    break
                 self.box(self.stdscr, 1, hpos, width-2, 2+l)
                 for i, info in enumerate(ci):
                     info_text, color = info
@@ -125,13 +146,21 @@ class TopClient(MonitorXpraClient):
                     self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
 
-            hpos += 1
             windows = self.dictget("windows")
-            self.stdscr.addstr(hpos, 0, "%i windows" % len(windows))
-            hpos += 1
-            for win in windows.values():
+            if hpos<height-3:
+                hpos += 1
+                self.stdscr.addstr(hpos, 0, "%i windows" % len(windows))
+                hpos += 1
+            wins = tuple(windows.values())
+            nwindows = len(wins)
+            for win_no, win in enumerate(wins):
                 wi = self.get_window_info(typedict(win))
                 l = len(wi)
+                if hpos+2+l>height:
+                    if hpos<height:
+                        more = nwindows-win_no
+                        self.stdscr.addstr(hpos, 0, "terminal window is too small: %i window%s not shown" % (more, engs(more)), curses.A_BOLD)
+                    break
                 self.box(self.stdscr, 1, hpos, width-2, 2+l)
                 for i, info in enumerate(wi):
                     info_text, color = info
@@ -142,9 +171,6 @@ class TopClient(MonitorXpraClient):
             import traceback
             self.stdscr.addstr(0, 0, str(e))
             self.stdscr.addstr(0, 1, traceback.format_exc())
-            self.stdscr.refresh()
-        else:
-            self.stdscr.refresh()
 
     def dictget(self, *parts):
         d = self.server_last_info
