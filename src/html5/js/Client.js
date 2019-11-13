@@ -775,6 +775,8 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		}
 	}
 
+	this._poll_clipboard(event);
+
 	if (this.topwindow != null) {
 		//send via a timer so we get a chance to capture the clipboard value,
 		//before we send control-V to the server:

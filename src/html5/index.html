@@ -212,12 +212,6 @@
 			var float_menu_padding = 20;
 			var float_menu_width = (float_menu_item_size*4) + float_menu_padding;
 
-			// disable right click menu:
-			window.oncontextmenu = function(e) {
-				//showCustomMenu();
-				return false;
-			}
-
 			var cdebug = function () {
 				Utilities.clog.apply(Utilities, arguments);
 			}
@@ -1024,6 +1018,12 @@
 						$('#fullscreen_button').attr('data-icon', 'fullscreen');
 					}
 				});
+				// disable right click menu:
+				window.oncontextmenu = function(e) {
+					client._poll_clipboard(e);
+					//showCustomMenu();
+					return false;
+				}
 			});
 		</script>
 	</body>
