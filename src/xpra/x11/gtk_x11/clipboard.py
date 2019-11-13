@@ -48,6 +48,23 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 sizeof_long = struct.calcsize(b'@L')
 
 BLACKLISTED_CLIPBOARD_CLIENTS = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
+def parse_translated_targets(v):
+    trans = {}
+    #we can't use ";" or "/" as separators
+    #because those are used in mime-types
+    #and we use "," and ":" ourselves..
+    for entry in v.split("#"):
+        parts = entry.split(":", 1)
+        if len(parts)!=2:
+            log.warn("Warning: invalid clipboard translated target:")
+            log.warn(" '%s'", entry)
+            continue
+        src_target = parts[0]
+        dst_targets = parts[1].split(",")
+        trans[src_target] = dst_targets
+    return trans
+TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRANSLATED_TARGETS",
+                                                             "text/plain;charset=utf-8:UTF8_STRING,text/plain"))
 
 
 def xatoms_to_strings(data):
@@ -385,11 +402,17 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
 
         if self.targets and target not in self.targets:
             log.info("client is requesting an unknown target: '%s'", target)
-            log.info(" valid targets: %s", csv(self.targets))
-            if must_discard_extra(target):
-                log.info(" dropping the request")
-                nodata()
-                return
+            translated_targets = TRANSLATED_TARGETS.get(target, ())
+            can_translate = tuple(x for x in translated_targets if x in self.targets)
+            if can_translate:
+                target = can_translate[0]
+                log.info(" using '%s' instead", target)
+            else:
+                log.info(" valid targets: %s", csv(self.targets))
+                if must_discard_extra(target):
+                    log.info(" dropping the request")
+                    nodata()
+                    return
 
         target_data = self.target_data.get(target)
         if target_data and not self._have_token:
