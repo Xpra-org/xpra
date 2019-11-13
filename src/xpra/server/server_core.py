@@ -1383,14 +1383,17 @@ class ServerCore:
         except (IOError, ValueError) as e:
             httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=True)
             err = e.args[0]
-            if err==errno.EPIPE:
+            if err==1 and line1 and line1[0]==0x16:
+                l = httplog
+            elif err==errno.EPIPE:
                 l = httplog
             else:
                 l = httplog.error
-            l("Error: %s request failure", req_info)
+                l("Error: %s request failure", req_info)
+                l(" errno=%s", err)
             l(" for client %s:", pretty_socket(frominfo))
-            if line1 and line1[0]>=128:
-                l(" request: '%s'", hexstr(line1))
+            if line1 and line1[0]>=128 or line1[0]==0x16:
+                l(" request as hex: '%s'", hexstr(line1))
             else:
                 l(" request: '%s'", nonl(bytestostr(line1)))
             l(" %s", e)
