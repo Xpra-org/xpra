@@ -1406,8 +1406,8 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 
 XpraClient.prototype._poll_clipboard = function(e) {
 	//see if the clipboard contents have changed:
-	this.debug("clipboard", "poll clipboard, navigator.clipboard=", navigator.clipboard);
 	if (navigator.clipboard && navigator.clipboard.readText) {
+		this.debug("clipboard", "polling using", navigator.clipboard.readText);
 		var client = this;
 		//warning: this can take a while,
 		//so we may send the click before the clipboard contents...
@@ -1430,6 +1430,7 @@ XpraClient.prototype._poll_clipboard = function(e) {
 		if (!clipboardData) {
 			clipboardData = window.clipboardData;
 			if (!clipboardData) {
+				this.debug("clipboard", "polling: no data available")
 				return;
 			}
 		}
