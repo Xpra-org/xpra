@@ -334,7 +334,6 @@ function doConnect() {
 }
 
 function fill_form(default_settings) {
-	console.log("fill_form(", default_settings, ")");
 	var getparam = function(prop) {
 		var v = Utilities.getparam(prop);
 		if (v==null && prop in default_settings) {
