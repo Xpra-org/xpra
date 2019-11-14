@@ -1,3 +1,18 @@
+v3.0.3 (2019-11-14)
+======================
+	-- fix clipboard synchronization with HTML5 client
+	-- fix missing video screen updates with 32-bit browsers: disable video
+	-- fix for X11 applications requesting invalid clipboard targets
+	-- fix "xpra top" errors when the terminal window is too small
+	-- fix compilation on non-i386 32-bit platforms
+	-- fix platform query errors causing command failures
+	-- fix Python2 builds: ignore GTK2 deprecation warnings
+	-- fix XSetClassHint call with Python 3
+	-- fix window move + resize shortcut
+	-- disable CSD on MS Windows (GTK3 CSD bug workaround)
+	-- re-enable OpenGL on MS Windows (was GTK3 bug)
+
+
 v3.0.2 (2019-11-05)
 ======================
 	-- fix clipboard synchronization issue with MS Windows clients properly

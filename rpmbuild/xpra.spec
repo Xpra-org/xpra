@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.2
+%define version 3.0.3
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -13,7 +13,7 @@
 %{!?revision_no: %define revision_no 1}
 
 %define CFLAGS -O2
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265- pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
 
 %{!?update_firewall: %define update_firewall 1}
 %{!?run_tests: %define run_tests 1}
@@ -519,7 +519,7 @@ rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
 	%{build_args} \
-	--without-html5 --without-printing --without-cuda_kernels
+- without-html5 --without-printing --without-cuda_kernels
 popd
 %endif
 
@@ -549,7 +549,7 @@ rm -rf $RPM_BUILD_ROOT
 pushd xpra-%{version}-python2
 %{__python2} setup.py install \
 	%{build_args} \
-	--prefix /usr --skip-build --root %{buildroot}
+- prefix /usr --skip-build --root %{buildroot}
 #fix permissions on shared objects
 find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #remove the tests, not meant to be installed in the first place
@@ -570,8 +570,8 @@ popd
 pushd xpra-%{version}-python3
 %{__python3} setup.py install \
 	%{build_args} \
-	--without-html5 --without-printing --without-cuda_kernels \
-	--prefix /usr --skip-build --root %{buildroot}
+- without-html5 --without-printing --without-cuda_kernels \
+- prefix /usr --skip-build --root %{buildroot}
 popd
 #fix permissions on shared objects
 find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
@@ -770,7 +770,7 @@ fi
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
-	firewall-cmd --zone=${ZONE}	--list-ports | grep "14500/tcp" >> /dev/null 2>&1
+	firewall-cmd --zone=${ZONE}- list-ports | grep "14500/tcp" >> /dev/null 2>&1
 	if [ $? != "0" ]; then
 		firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent >> /dev/null 2>&1
 		if [ $? == "0" ]; then
@@ -868,6 +868,19 @@ fi
 
 
 %changelog
+* Tue Nov 05 2019 Antoine Martin <antoine@xpra.org> 3.0.3-1
+-  fix clipboard synchronization with HTML5 client
+-  fix missing video screen updates with 32-bit browsers: disable video
+-  fix for X11 applications requesting invalid clipboard targets
+-  fix "xpra top" errors when the terminal window is too small
+-  fix compilation on non-i386 32-bit platforms
+-  fix platform query errors causing command failures
+-  fix Python2 builds: ignore GTK2 deprecation warnings
+-  fix XSetClassHint call with Python 3
+-  fix window move + resize shortcut
+-  disable CSD on MS Windows (GTK3 CSD bug workaround)
+-  re-enable OpenGL on MS Windows (was GTK3 bug)
+
 * Tue Nov 05 2019 Antoine Martin <antoine@xpra.org> 3.0.2-1
 - fix clipboard synchronization issue with MS Windows clients properly
 - fix Pillow 6.x compatibility with MS Windows packaging
@@ -928,7 +941,7 @@ fi
 - update to xxhash 0.7.2
 - consistent use of quotes in endpoint logging
 
-* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0.2
+* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0.3
 - Python 3 port complete, now the default: #1571, #2195
 - much nicer HTML5 client user interface: #2269
 - Window handling:
@@ -1420,7 +1433,7 @@ fi
 - fix re-stride code for compatibility with ancient clients
 - fix timer reference leak causing some warnings
 
-* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0.2
+* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0.3
 - Python3 / GTK3 client support
 - NVENC module included in binary builds
 - support for enhanced dummy driver with DPI option
@@ -2077,7 +2090,7 @@ fi
 - "xpra info" to report the number of clients connected
 - use xpra's own icon for its own windows (about and info dialogs)
 
-* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0.2
+* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0.3
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
 - fix vpx encoder memory leak
