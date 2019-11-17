@@ -623,7 +623,8 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
             glDisable(target)
             fire_paint_callbacks(callbacks, True)
-            self.present_fbo(0, 0, bw, bh, flush)
+            if not self.draw_needs_refresh:
+                self.present_fbo(0, 0, bw, bh, flush)
 
     def copy_fbo(self, w, h, sx=0, sy=0, dx=0, dy=0):
         #copy from offscreen to tmp:
@@ -1041,7 +1042,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 glDisable(target)
                 self.paint_box(options.strget("encoding"), options.intget("delta", -1)>=0, x, y, width, height)
                 # Present update to screen
-                self.present_fbo(x, y, width, height, options.intget("flush", 0))
+                if not self.draw_needs_refresh:
+                    self.present_fbo(x, y, width, height, options.intget("flush", 0))
                 # present_fbo has reset state already
             fire_paint_callbacks(callbacks)
             return
@@ -1095,7 +1097,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.paint_box(encoding, False, x, y, width, height)
                 fire_paint_callbacks(callbacks, True)
                 # Present it on screen
-                self.present_fbo(x, y, width, height, flush)
+                if not self.draw_needs_refresh:
+                    self.present_fbo(x, y, width, height, flush)
             img.free()
             return
         except GLError as e:
