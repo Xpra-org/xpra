@@ -1252,7 +1252,8 @@ def do_parse_cmdline(cmdline, defaults):
                 args[1] = address
                 break
 
-    NEED_ENCODING_MODES = ("attach", "start", "listen", "launcher",
+    NEED_ENCODING_MODES = ("attach", "start", "start-desktop", "shadow",
+                           "listen", "launcher",
                            "bug-report", "encoding", "gui-info")
     fixup_options(options, skip_encodings=len(args)==0 or args[0] not in NEED_ENCODING_MODES)
 
