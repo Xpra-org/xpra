@@ -1453,7 +1453,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
         app.hello_extra = {"connect" : False}
         app.start_new_session = sns
     else:
-        if POSIX and os.environ.get("GDK_BACKEND") is None:
+        if POSIX and os.environ.get("GDK_BACKEND") is None and not OSX:
             os.environ["GDK_BACKEND"] = "x11"
         if opts.opengl=="probe":
             opts.opengl = run_opengl_probe()

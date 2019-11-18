@@ -602,7 +602,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if POSIX:
         if xrd:
             os.environ["XDG_RUNTIME_DIR"] = xrd
-        os.environ["XDG_SESSION_TYPE"] = "x11"
+        if not OSX:
+            os.environ["XDG_SESSION_TYPE"] = "x11"
         if not starting_desktop:
             os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
         configure_imsettings_env(opts.input_method)
