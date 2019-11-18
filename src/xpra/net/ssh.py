@@ -11,6 +11,7 @@ from subprocess import PIPE, Popen
 
 from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
 from xpra.platform.paths import get_ssh_known_hosts_files
+from xpra.platform.gui import force_focus
 from xpra.platform import get_username
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
@@ -57,6 +58,7 @@ def keymd5(k):
 def dialog_run(dialog):
     from gi.repository import GLib
     if is_main_thread():
+        force_focus()
         dialog.show()
         try:
             return dialog.run()
@@ -68,6 +70,7 @@ def dialog_run(dialog):
     e = Event()
     code = []
     def main_thread_run():
+        force_focus()
         dialog.show()
         try:
             r = dialog.run()
