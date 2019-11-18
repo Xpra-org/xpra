@@ -521,6 +521,11 @@ def take_screenshot():
     buf.close()
     return w, h, "png", image.get_rowstride(), data
 
+def force_focus(duration=500):
+    enable_focus_workaround()
+    GLib.timeout_add(duration, disable_focus_workaround)
+
+
 def show_with_focus_workaround(show_cb):
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
