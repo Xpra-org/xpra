@@ -523,7 +523,9 @@ def take_screenshot():
 
 def force_focus(duration=500):
     enable_focus_workaround()
-    GLib.timeout_add(duration, disable_focus_workaround)
+    from xpra.gtk_common.gobject_compat import import_glib
+    glib = import_glib()
+    glib.timeout_add(duration, disable_focus_workaround)
 
 
 def show_with_focus_workaround(show_cb):
