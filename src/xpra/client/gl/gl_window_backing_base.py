@@ -76,7 +76,7 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
-DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", PYTHON3)
+DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", OSX)
@@ -630,7 +630,8 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
             glDisable(target)
             fire_paint_callbacks(callbacks, True)
-            self.present_fbo(0, 0, bw, bh, flush)
+            if not self.draw_needs_refresh:
+                self.present_fbo(0, 0, bw, bh, flush)
 
     def copy_fbo(self, w, h, sx=0, sy=0, dx=0, dy=0):
         #copy from offscreen to tmp:
@@ -1068,7 +1069,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 glDisable(target)
                 self.paint_box(options.strget("encoding"), options.intget("delta", -1)>=0, x, y, width, height)
                 # Present update to screen
-                self.present_fbo(x, y, width, height, options.intget("flush", 0))
+                if not self.draw_needs_refresh:
+                    self.present_fbo(x, y, width, height, options.intget("flush", 0))
                 # present_fbo has reset state already
             fire_paint_callbacks(callbacks)
             return
@@ -1122,7 +1124,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.paint_box(encoding, False, x, y, width, height)
                 fire_paint_callbacks(callbacks, True)
                 # Present it on screen
-                self.present_fbo(x, y, width, height, flush)
+                if not self.draw_needs_refresh:
+                    self.present_fbo(x, y, width, height, flush)
             img.free()
             return
         except GLError as e:
