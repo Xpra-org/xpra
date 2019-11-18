@@ -298,7 +298,7 @@ class WindowServer(StubServerMixin):
             ss.refresh(wid, window, opts)
 
     def _idle_refresh_all_windows(self, proto):
-        self.idle_add(self._refresh_windows, proto, self._id_to_window)
+        self.idle_add(self._refresh_windows, proto, self._id_to_window, {})
 
 
     def get_window_position(self, _window):
