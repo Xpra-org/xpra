@@ -37,7 +37,7 @@ def do_ready():
     pass
 
 
-def force_focus():
+def force_focus(duration):
     #only implemented on macos
     pass
 
