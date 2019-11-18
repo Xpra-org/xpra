@@ -1129,7 +1129,7 @@ cdef GUID c_parseguid(src) except *:
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
         part = parts[i]
         binv = binascii.unhexlify(part)
-        log("c_parseguid bytes(%s)=%r", part, binv)
+        #log("c_parseguid bytes(%s)=%r", part, binv)
         v = 0
         for j in range(s):
             c = binv[j]
