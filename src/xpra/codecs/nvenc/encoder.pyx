@@ -2236,13 +2236,14 @@ cdef class Encoder:
             finally:
                 self.cuda_context.pop()
         except driver.LogicError as e:
+            log("compress_image%s", (image, quality, speed, options, retry), exc_info=True)
             if retry>0:
                 raise
             log.warn("Warning: PyCUDA %s", e)
             del e
             self.clean()
             self.init_cuda()
-            return self.convert_image(image, options, retry+1)
+            return self.compress_image(image, options, retry+1)
 
     cdef do_compress_image(self, image, options={}):
         cdef unsigned int stride, w, h
