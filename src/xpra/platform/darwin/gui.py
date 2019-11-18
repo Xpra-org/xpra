@@ -521,7 +521,7 @@ def take_screenshot():
     buf.close()
     return w, h, "png", image.get_rowstride(), data
 
-def force_focus(duration=500):
+def force_focus(duration=2000):
     enable_focus_workaround()
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
