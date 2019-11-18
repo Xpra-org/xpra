@@ -37,6 +37,11 @@ def do_ready():
     pass
 
 
+def force_focus(duration=500):
+    #only implemented on macos
+    pass
+
+
 def use_stdin():
     stdin = sys.stdin
     return stdin and stdin.isatty()
@@ -277,6 +282,7 @@ get_info = get_info_base
 platform_import(globals(), "gui", False,
                 "do_ready",
                 "do_init",
+                "force_focus",
                 "gl_check",
                 "use_stdin",
                 "get_wm_name",

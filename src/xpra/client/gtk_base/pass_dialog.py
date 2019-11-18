@@ -12,6 +12,7 @@ from xpra.gtk_common.gobject_compat import (
     import_gtk, import_pango, import_glib,
     register_os_signals,
     )
+from xpra.platform.gui import force_focus
 from xpra.os_util import get_util_logger
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, pixbuf_new_from_file, window_defaults,
@@ -99,8 +100,11 @@ class PasswordInputDialogWindow(object):
     def show(self):
         log("show()")
         self.window.show_all()
-        glib.idle_add(self.window.present)
-        glib.idle_add(self.password_input.grab_focus)
+        def show():
+            force_focus()
+            self.present()
+            self.password_input.grab_focus()
+        glib.idle_add(show)
 
     def destroy(self, *args):
         log("destroy%s", args)

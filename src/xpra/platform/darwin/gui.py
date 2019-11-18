@@ -568,7 +568,8 @@ def wait_for_open_handlers(show_cb, open_file_cb, open_url_cb, delay=OPEN_SIGNAL
         global __osx_open_signal
         log("may_show() osx open signal=%s", __osx_open_signal)
         if not __osx_open_signal:
-            show_with_focus_workaround(show_cb)
+            force_focus()
+            show_cb()
     glib.timeout_add(delay, may_show)
 
 def register_file_handler(handler):
