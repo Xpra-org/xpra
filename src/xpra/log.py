@@ -422,3 +422,21 @@ class CaptureHandler(logging.Handler):
 
     def createLock(self):
         self.lock = None
+
+class SIGPIPEStreamHandler(logging.StreamHandler):
+    def flush(self):
+        try:
+            super().flush()
+        except BrokenPipeError:
+            pass
+
+    def emit(self, record):
+        try:
+            super().emit(record)
+        except BrokenPipeError:
+            pass
+
+    def handleError(self, record):
+        etype = sys.exc_info()[0]
+        if not isinstance(etype, BrokenPipeError):
+            super().handleError(record)

@@ -173,8 +173,12 @@ def configure_logging(options, mode):
         pass
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
-    from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
-    setloghandler(logging.StreamHandler(to))
+    from xpra.log import (
+        setloghandler, enable_color, enable_format,
+        LOG_FORMAT, NOPREFIX_FORMAT,
+        SIGPIPEStreamHandler,
+        )
+    setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
         "start", "start-desktop", "upgrade", "upgrade-desktop",
         "attach", "listen", "shadow", "proxy",
