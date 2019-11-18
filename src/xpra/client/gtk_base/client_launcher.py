@@ -1138,7 +1138,7 @@ def do_main(argv):
             app.reset_errors()
         if not app.config.autoconnect or app.config.debug:
             if OSX and not has_file:
-                from xpra.platform.darwin.gui import wait_for_open_handlers, show_with_focus_workaround
+                from xpra.platform.darwin.gui import wait_for_open_handlers, force_focus
                 def open_file(filename):
                     log("open_file(%s)", filename)
                     app.update_options_from_file(filename)
@@ -1150,7 +1150,8 @@ def do_main(argv):
                         app.__osx_open_signal = True
                         GLib.idle_add(app.do_connect)
                     else:
-                        show_with_focus_workaround(app.show)
+                        force_focus()
+                        app.show()
                 def open_URL(url):
                     log("open_URL(%s)", url)
                     app.__osx_open_signal = True

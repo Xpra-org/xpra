@@ -11,6 +11,7 @@ from gi.repository import Pango, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import add_close_accel, color_parse
+from xpra.platform.gui import force_focus
 from xpra.platform.paths import get_icon_dir
 from xpra.os_util import get_util_logger
 
@@ -98,6 +99,7 @@ def show_confirm_dialog(argv):
     app = ConfirmDialogWindow(title, prompt, info, icon, buttons)
     register_os_signals(app.quit)
     gui_ready()
+    force_focus()
     app.show_all()
     app.present()
     return app.run()

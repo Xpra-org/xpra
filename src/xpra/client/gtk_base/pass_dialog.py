@@ -12,6 +12,7 @@ from gi.repository import GLib, Pango, Gtk, GdkPixbuf
 from xpra.os_util import get_util_logger
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
 from xpra.platform.paths import get_icon_dir
 
 log = get_util_logger()
@@ -67,8 +68,11 @@ class PasswordInputDialogWindow(Gtk.Dialog):
     def show(self):
         log("PasswordInputDialogWindow.show()")
         self.show_all()
-        GLib.idle_add(self.present)
-        GLib.idle_add(self.password_input.grab_focus)
+        def show():
+            force_focus()
+            self.present()
+            self.password_input.grab_focus()
+        GLib.idle_add(show)
 
     def quit(self, *args):
         log("quit%s", args)
