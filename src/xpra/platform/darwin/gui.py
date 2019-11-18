@@ -483,7 +483,7 @@ def take_screenshot():
     buf.close()
     return w, h, "png", image.get_rowstride(), data
 
-def force_focus(duration=500):
+def force_focus(duration=2000):
     enable_focus_workaround()
     GLib.timeout_add(duration, disable_focus_workaround)
 
