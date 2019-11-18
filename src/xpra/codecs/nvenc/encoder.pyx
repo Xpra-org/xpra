@@ -2224,6 +2224,7 @@ cdef class Encoder:
             finally:
                 self.cuda_context.pop()
         except driver.LogicError as e:
+            log("compress_image%s", (image, quality, speed, options, retry), exc_info=True)
             if retry>0:
                 raise
             log.warn("Warning: PyCUDA %s", e)
