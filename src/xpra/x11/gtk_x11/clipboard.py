@@ -295,7 +295,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 owner = X11Window.XGetSelectionOwner(self._selection)
                 self.owned = owner==self.xid
                 if not self.owned:
-                    log.warn("we failed to get ownership of the '%s' selection", self._selection)
+                    log.warn("Warning: we failed to get ownership of the '%s' clipboard selection", self._selection)
                 else:
                     #send announcement:
                     root = get_default_root_window()
