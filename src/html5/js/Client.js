@@ -17,6 +17,7 @@
 
 var XPRA_CLIENT_FORCE_NO_WORKER = false;
 var CLIPBOARD_IMAGES = true;
+var CLIPBOARD_EVENT_DELAY = 100;
 
 function XpraClient(container) {
 	// the container div is the "screen" on the HTML page where we
@@ -65,6 +66,8 @@ XpraClient.prototype.init_settings = function(container) {
 	this.file_transfer = false;
 	this.keyboard_layout = null;
 	this.printing = false;
+	this.key_packets = [];
+	this.clipboard_delayed_event_time = 0;
 
 	this.bandwidth_limit = 0;
 	this.reconnect = true;
@@ -783,22 +786,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	//if (keyname=="Control_L" || keyname=="Control_R")
 	this._poll_clipboard(event);
 
-	if (this.topwindow != null) {
-		//send via a timer so we get a chance to capture the clipboard value,
-		//before we send control-V to the server:
-		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
-		var me = this;
-		setTimeout(function () {
-			me.send(packet);
-			if (pressed && Utilities.isMacOS() && raw_modifiers.includes("meta") && ostr!="meta") {
-				//macos will swallow the key release event if the meta modifier is pressed,
-				//so simulate one immediately:
-				packet = ["key-action", me.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
-				me.debug("keyboard", packet);
-				me.send(packet);
-			}
-		}, 0);
-	}
+	var allow_default = false;
 	if (this.clipboard_enabled) {
 		//allow some key events that need to be seen by the browser
 		//for handling the clipboard:
@@ -812,23 +800,52 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		//let the OS see Control (or Meta on macos) and Shift:
 		if (clipboard_modifier_keys.indexOf(keyname)>=0) {
 			this.debug("keyboard", "passing clipboard modifier key event to browser:", keyname);
-			return true;
+			allow_default = true;
 		}
 		//let the OS see Shift + Insert:
 		if (shift && keyname=="Insert") {
 			this.debug("keyboard", "passing clipboard combination Shift+Insert to browser");
-			return true;
+			allow_default = true;
 		}
 		var clipboard_mod_set = raw_modifiers.includes(clipboard_modifier);
 		if (clipboard_mod_set) {
 			var l = keyname.toLowerCase();
 			if (l=="c" || l=="x" || l=="v") {
 				this.debug("keyboard", "passing clipboard combination to browser:", clipboard_modifier, "+", keyname);
-				return true;
+				allow_default = true;
+				if (l=="v") {
+					this.clipboard_delayed_event_time = Utilities.monotonicTime()+CLIPBOARD_EVENT_DELAY;
+				}
 			}
 		}
 	}
-	return false;
+
+	if (this.topwindow != null) {
+		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
+		this.key_packets.push(packet);
+		if (pressed && Utilities.isMacOS() && raw_modifiers.includes("meta") && ostr!="meta") {
+			//macos will swallow the key release event if the meta modifier is pressed,
+			//so simulate one immediately:
+			packet = ["key-action", me.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
+			this.key_packets.push(packet);
+		}
+
+		//if there is a chance that we're in the process of handling
+		//a clipboard event (a click or control-v)
+		//then we send with a slight delay:
+		var delay = 0;
+		var now = Utilities.monotonicTime();
+		if (this.clipboard_delayed_event_time>now) {
+			delay = this.clipboard_delayed_event_time-now;
+		}
+		var me = this;
+		setTimeout(function () {
+			while (me.key_packets.length>0) {
+				me.send(me.key_packets.shift());
+			}
+		}, delay);
+	}
+	return allow_default;
 }
 
 
@@ -1303,7 +1320,10 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
-	this._poll_clipboard(e);
+	var send_delay = 0;
+	if (this._poll_clipboard(e)) {
+		send_delay = CLIPBOARD_EVENT_DELAY;
+	}
 	var mouse = this.getMouse(e, window),
 		x = Math.round(mouse.x),
 		y = Math.round(mouse.y);
@@ -1327,8 +1347,9 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 	}
 	var me = this;
 	setTimeout(function() {
+		this.clipboard_delayed_event_time = Utilities.monotonicTime()+CLIPBOARD_EVENT_DELAY;
 		me.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
-	}, 0);
+	}, send_delay);
 }
 
 XpraClient.prototype._window_mouse_scroll = function(ctx, e, window) {
@@ -1422,29 +1443,32 @@ XpraClient.prototype._poll_clipboard = function(e) {
 		}, function(err) {
 			client.debug("clipboard", "paste event failed:", err);
 		});
+		return false;
 	}
-	else {
-		var datatype = "text/plain";
-		var clipboardData = (e.originalEvent || e).clipboardData;
-		//IE: must use window.clipboardData because the event clipboardData is null!
+	//fallback code:
+	var datatype = "text/plain";
+	var clipboardData = (e.originalEvent || e).clipboardData;
+	//IE: must use window.clipboardData because the event clipboardData is null!
+	if (!clipboardData) {
+		clipboardData = window.clipboardData;
 		if (!clipboardData) {
-			clipboardData = window.clipboardData;
-			if (!clipboardData) {
-				this.debug("clipboard", "polling: no data available")
-				return;
-			}
-		}
-		if (Utilities.isIE()) {
-			datatype = "Text";
-		}
-		var clipboard_buffer = unescape(encodeURIComponent(clipboardData.getData(datatype)));
-		this.debug("clipboard", "paste event, data=", clipboard_buffer);
-		if (clipboard_buffer!=this.clipboard_buffer) {
-			this.debug("clipboard", "clipboard contents have changed");
-			this.clipboard_buffer = clipboard_buffer;
-			this.send_clipboard_token(clipboard_buffer);
+			this.debug("clipboard", "polling: no data available")
+			return false;
 		}
 	}
+	if (Utilities.isIE()) {
+		datatype = "Text";
+	}
+	var clipboard_buffer = unescape(encodeURIComponent(clipboardData.getData(datatype)));
+	this.debug("clipboard", "paste event, data=", clipboard_buffer);
+	if (clipboard_buffer==this.clipboard_buffer) {
+		return false;
+	}
+	this.debug("clipboard", "clipboard contents have changed");
+	this.clipboard_buffer = clipboard_buffer;
+	this.send_clipboard_token(clipboard_buffer);
+	this.clipboard_delayed_event_time = Utilities.monotonicTime()+CLIPBOARD_EVENT_DELAY;
+	return true;
 }
 
 
