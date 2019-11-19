@@ -471,6 +471,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         if self.owned or not self._can_send or xid==0:
             return
+        self.do_owner_changed()
         self.schedule_emit_token()
 
     def schedule_emit_token(self):
@@ -532,8 +533,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def do_owner_changed(self):
         log("do_owner_changed()")
-        if not self._enabled:
-            return
         self.target_data = {}
         self.targets = ()
 
