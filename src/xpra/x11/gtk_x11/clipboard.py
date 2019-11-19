@@ -412,7 +412,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     return
 
         target_data = self.target_data.get(target)
-        if target_data and not self._have_token:
+        if target_data and self._have_token:
             #we have it already
             dtype, dformat, data = target_data
             dtype = bytestostr(dtype)
