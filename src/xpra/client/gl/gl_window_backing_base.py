@@ -77,7 +77,7 @@ WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
-FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", 50)
+FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", OSX)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
@@ -362,14 +362,15 @@ class GLWindowBackingBase(WindowBackingBase):
         #no idea why, but we have to wait a bit to show it:
         from gi.repository import GLib
         del context
-        def redraw():
-            context = self.gl_context()
-            if not context:
-                return
-            with context:
-                self.pending_fbo_paint = ((0, 0, bw, bh), )
-                self.do_present_fbo()
-        GLib.timeout_add(FBO_RESIZE_DELAY, redraw)
+        if FBO_RESIZE_DELAY>=0:
+            def redraw():
+                context = self.gl_context()
+                if not context:
+                    return
+                with context:
+                    self.pending_fbo_paint = ((0, 0, bw, bh), )
+                    self.do_present_fbo()
+            GLib.timeout_add(FBO_RESIZE_DELAY, redraw)
 
     def gl_marker(self, *msg):
         log(*msg)
