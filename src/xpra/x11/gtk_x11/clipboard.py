@@ -380,7 +380,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             nodata()
             return
         if must_discard(target):
-            log.info("clipboard %s discarding invalid target '%s'", self._selection, target)
+            log.info("clipboard %s rejecting request for invalid target '%s'", self._selection, target)
             nodata()
             return
 

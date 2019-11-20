@@ -50,7 +50,7 @@ DISCARD_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets("DISCARD", 
     )))
 #targets some applications are known to request,
 #even when the peer did not expose them as valid targets,
-#rather forwarding the request and then timing out,
+#rather than forwarding the request and then timing out,
 #we will just drop them
 DISCARD_EXTRA_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets("DISCARD_EXTRA", (
     r"^SAVE_TARGETS$",
