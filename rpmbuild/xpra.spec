@@ -868,18 +868,25 @@ fi
 
 
 %changelog
-* Tue Nov 05 2019 Antoine Martin <antoine@xpra.org> 3.0.3-1
--  fix clipboard synchronization with HTML5 client
--  fix missing video screen updates with 32-bit browsers: disable video
--  fix for X11 applications requesting invalid clipboard targets
--  fix "xpra top" errors when the terminal window is too small
--  fix compilation on non-i386 32-bit platforms
--  fix platform query errors causing command failures
--  fix Python2 builds: ignore GTK2 deprecation warnings
--  fix XSetClassHint call with Python 3
--  fix window move + resize shortcut
--  disable CSD on MS Windows (GTK3 CSD bug workaround)
--  re-enable OpenGL on MS Windows (was GTK3 bug)
+* Thu Nov 21 2019 Antoine Martin <antoine@xpra.org> 3.0.3-1
+- fix clipboard synchronization with HTML5 client
+- fix missing video screen updates with 32-bit browsers: disable video
+- fix for X11 applications requesting invalid clipboard targets
+- fix "xpra top" errors when the terminal window is too small
+- fix compilation on non-i386 32-bit platforms
+- fix platform query errors causing command failures
+- fix Python2 builds: ignore GTK2 deprecation warnings
+- fix XSetClassHint call with Python 3
+- fix window move + resize shortcut
+- fix focus of SSH dialogs with MacOS clients
+- fix window repaints with GTK3
+- fix error and missing refresh after changing quality or speed settings
+- fix NVENC temporary failure retry code path
+- fix SSH start for shadow and start-desktop subcommands from MacOS
+- fix fullscreen / maximized windows on MacOS
+- fix bogus screen dimensions with GTK3 on MacOS
+- disable CSD on MS Windows (GTK3 CSD bug workaround)
+- re-enable OpenGL on MS Windows (was GTK3 bug)
 
 * Tue Nov 05 2019 Antoine Martin <antoine@xpra.org> 3.0.2-1
 - fix clipboard synchronization issue with MS Windows clients properly

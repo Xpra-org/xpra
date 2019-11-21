@@ -1,4 +1,4 @@
-v3.0.3 (2019-11-14)
+v3.0.3 (2019-11-21)
 ======================
 	-- fix clipboard synchronization with HTML5 client
 	-- fix missing video screen updates with 32-bit browsers: disable video
@@ -9,6 +9,13 @@ v3.0.3 (2019-11-14)
 	-- fix Python2 builds: ignore GTK2 deprecation warnings
 	-- fix XSetClassHint call with Python 3
 	-- fix window move + resize shortcut
+	-- fix focus of SSH dialogs with MacOS clients
+	-- fix window repaints with GTK3
+	-- fix error and missing refresh after changing quality or speed settings
+	-- fix NVENC temporary failure retry code path
+	-- fix SSH start for shadow and start-desktop subcommands from MacOS
+	-- fix fullscreen / maximized windows on MacOS
+	-- fix bogus screen dimensions with GTK3 on MacOS
 	-- disable CSD on MS Windows (GTK3 CSD bug workaround)
 	-- re-enable OpenGL on MS Windows (was GTK3 bug)
 
