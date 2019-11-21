@@ -360,6 +360,16 @@ class GLWindowBackingBase(WindowBackingBase):
             mag_filter = self.get_init_magfilter()
             self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
         self._backing.queue_draw_area(0, 0, bw, bh)
+        if FBO_RESIZE_DELAY>=0:
+            def redraw():
+                context = self.gl_context()
+                if not context:
+                    return
+                with context:
+                    self.pending_fbo_paint = ((0, 0, bw, bh), )
+                    self.do_present_fbo()
+            from gi.repository import GLib
+            GLib.timeout_add(FBO_RESIZE_DELAY, redraw)
 
 
     def gl_marker(self, *msg):
