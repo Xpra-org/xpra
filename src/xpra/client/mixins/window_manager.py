@@ -1308,10 +1308,14 @@ class WindowClient(StubClientMixin):
         if self._suspended_at>0:
             elapsed = max(0, time()-self._suspended_at)
             self._suspended_at = 0
+        self.send_refresh_all()
+        if elapsed<1:
+            #not really suspended
+            #happens on macos when switching workspace!
+            return
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", str(delta).lstrip("0:"))
         #this will reset the refresh rate too:
-        self.send_refresh_all()
         if self.opengl_enabled:
             #with opengl, the buffers sometimes contain garbage after resuming,
             #this should create new backing buffers:
