@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import strtobytes
-from xpra.util import get_screen_info
+from xpra.util import get_screen_info, envint, first_time, iround
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -67,8 +67,41 @@ class ClientDisplayMixin(StubSourceMixin):
 
 
     def set_screen_sizes(self, screen_sizes):
+        log("set_screen_sizes(%s)", screen_sizes)
         self.screen_sizes = screen_sizes or []
-        log("client screen sizes: %s", screen_sizes)
+        #validate dpi / screen size in mm
+        #(ticket 2480: GTK3 on macos can return bogus values)
+        MIN_DPI = envint("XPRA_MIN_DPI", 10)
+        MAX_DPI = envint("XPRA_MIN_DPI", 500)
+        def dpi(size_pixels, size_mm):
+            if size_mm==0:
+                return 0
+            return int(size_pixels * 254 / size_mm / 10)
+        for i,screen in enumerate(screen_sizes):
+            if len(screen)<10:
+                continue
+            sw, sh, wmm, hmm, monitors = screen[1:6]
+            xdpi = dpi(sw, wmm)
+            ydpi = dpi(sh, hmm)
+            if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
+                warn = first_time("invalid-screen-size-%ix%i" % (wmm, hmm))
+                if warn:
+                    log.warn("Warning: sanitizing invalid screen size %ix%i mm", wmm, hmm)
+                if monitors:
+                    #[plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
+                    wmm = sum(monitor[5] for monitor in monitors)
+                    hmm = sum(monitor[6] for monitor in monitors)
+                if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
+                    #still invalid, generate one from DPI=96
+                    wmm = iround(sw*254/10/96.0)
+                    hmm = iround(sh*254/10/96.0)
+                if warn:
+                    log.warn(" using %ix%i mm", wmm, hmm)
+                screen = list(screen)
+                screen[3] = wmm
+                screen[4] = hmm
+                screen_sizes[i] = tuple(screen)
+        log("client validated screen sizes: %s", screen_sizes)
 
     def set_desktops(self, desktops, desktop_names):
         self.desktops = desktops or 1
