@@ -7,7 +7,7 @@
 import os.path
 import array
 
-from xpra.util import iround, first_time
+from xpra.util import iround, first_time, envint
 from xpra.os_util import (
     strtobytes, bytestostr,
     WIN32, OSX, PYTHON2, POSIX,
@@ -928,6 +928,12 @@ def get_screen_sizes(xscale=1, yscale=1):
     display = display_get_default()
     if not display:
         return ()
+    MIN_DPI = envint("XPRA_MIN_DPI", 10)
+    MAX_DPI = envint("XPRA_MIN_DPI", 500)
+    def dpi(size_pixels, size_mm):
+        if size_mm==0:
+            return 0
+        return int(size_pixels * 254 / size_mm / 10)
     n_screens = display.get_n_screens()
     get_n_monitors = getattr(display, "get_n_monitors", None)
     if get_n_monitors:
@@ -965,8 +971,25 @@ def get_screen_sizes(xscale=1, yscale=1):
         if workarea:
             work_x, work_y, work_width, work_height = swork(*workarea)  #pylint: disable=not-an-iterable
         screenlog(" workarea=%s", workarea)
+        wmm = screen.get_width_mm()
+        hmm = screen.get_height_mm()
+        xdpi = dpi(sw, wmm)
+        ydpi = dpi(sh, hmm)
+        if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
+            warn = first_time("invalid-screen-size-%ix%i" % (wmm, hmm))
+            if warn:
+                log.warn("Warning: invalid screen size %ix%imm", wmm, hmm)
+            if n_monitors>0:
+                wmm = sum(display.get_monitor(i).get_width_mm() for i in range(n_monitors))
+                hmm = sum(display.get_monitor(i).get_height_mm() for i in range(n_monitors))
+            if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
+                #still invalid, generate one from DPI=96
+                wmm = iround(sw*254/10/96.0)
+                hmm = iround(sh*254/10/96.0)
+            if warn:
+                log.warn(" using %ix%i mm", wmm, hmm)
         item = (screen.make_display_name(), xs(sw), ys(sh),
-                    screen.get_width_mm(), screen.get_height_mm(),
+                    wmm, hmm,
                     monitors,
                     work_x, work_y, work_width, work_height)
         screenlog(" screen: %s", item)
