@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 
 from xpra.util import envbool
 
