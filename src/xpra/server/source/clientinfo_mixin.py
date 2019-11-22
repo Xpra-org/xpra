@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import std
+from xpra.util import std, typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import platform_name
 from xpra.log import Logger
@@ -44,6 +44,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.client_session_type = None
         self.client_session_type_full = None
         self.client_connection_data = {}
+        self.client_opengl = {}
         self.proxy_hostname = None
         self.proxy_platform = None
         self.proxy_release = None
@@ -72,6 +73,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.client_session_type = c.strget("session-type")
         self.client_session_type_full = c.strget("session-type.full", "")
         self.client_setting_change = c.boolget("setting-change")
+        self.client_opengl = typedict(c.dictget("opengl"))
         self.proxy_hostname = c.strget("proxy.hostname")
         self.proxy_platform = c.strget("proxy.platform")
         self.proxy_release = c.strget("proxy.platform.sysrelease")
@@ -81,6 +83,7 @@ class ClientInfoMixin(StubSourceMixin):
 
     def get_connect_info(self):
         cinfo = []
+        #client platform / version info:
         pinfo = ""
         if self.client_platform:
             pinfo = " %s" % platform_name(self.client_platform, self.client_linux_distribution or self.client_release)
@@ -95,6 +98,19 @@ class ClientInfoMixin(StubSourceMixin):
         cinfo.append("%s%s client version %s%s%s" % (
             std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr)
         )
+        #opengl info:
+        log.warn("opengl info: %s", self.client_opengl)
+        if self.client_opengl:
+            msg = "OpenGL is "
+            if not self.client_opengl.boolget("enabled"):
+                msg += "disabled"
+            else:
+                msg += "enabled"
+                driver_info = self.client_opengl.strget("renderer") or self.client_opengl.strget("vendor")
+                if driver_info:
+                    msg += " with %s" % driver_info
+            cinfo.append(msg)
+        #connection info:
         msg = ""
         if self.hostname:
             msg += "connected from '%s'" % std(self.hostname)
@@ -104,6 +120,7 @@ class ClientInfoMixin(StubSourceMixin):
                 msg += " - '%s'" % std(self.name)
         if msg:
             cinfo.append(msg)
+        #proxy info
         if self.client_proxy:
             msg = "via %s proxy version %s" % (
                 platform_name(self.proxy_platform, self.proxy_release),

@@ -777,6 +777,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     "icons.size"        : (64, 64),     #size we want
                     "icons.max_size"    : (128, 128),   #limit
                     })
+        capabilities["opengl"] = self.opengl_props
         from xpra.client import window_backing_base
         if self._protocol._conn.socktype=="udp":
             #lossy protocol means we can't use delta regions:
@@ -1036,6 +1037,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             for x in str(e).split("\n"):
                 opengllog.error(" %s", x)
             self.opengl_props["info"] = str(e)
+            self.opengl_props["enabled"] = False
             self.opengl_setup_failure(body=str(e))
 
         if warnings:
@@ -1117,6 +1119,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 self.video_max_size = (mvs, mvs)
             elif self.client_supports_opengl:
                 opengllog("OpenGL supported with %s, but not enabled", driver_info)
+            self.opengl_props["enabled"] = self.opengl_enabled
         except ImportError as e:
             err("OpenGL accelerated rendering is not available:", e)
         except RuntimeError as e:
