@@ -99,7 +99,6 @@ class ClientInfoMixin(StubSourceMixin):
             std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr)
         )
         #opengl info:
-        log.warn("opengl info: %s", self.client_opengl)
         if self.client_opengl:
             msg = "OpenGL is "
             if not self.client_opengl.boolget("enabled"):
