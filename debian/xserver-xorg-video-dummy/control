@@ -18,6 +18,7 @@ Build-Depends:
 Standards-Version: 3.9.8
 
 Package: xserver-xorg-video-dummy
+Version: 0.3.8-5+xpra1
 Architecture: any
 Depends:
  ${shlibs:Depends},

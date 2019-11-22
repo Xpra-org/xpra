@@ -1,3 +1,7 @@
+xserver-xorg-video-dummy (1:0.3.8-5+xpra1) UNRELEASED; urgency=low
+
+  * make it easier to distinguish xpra builds of this driver
+
 xserver-xorg-video-dummy (1:0.3.8-5) UNRELEASED; urgency=low
 
   * add fix pointer limits patch
