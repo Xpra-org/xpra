@@ -5,8 +5,8 @@
 %global srcname PyOpenGL
 
 Name:           python3-pyopengl
-Version:        3.1.1a1
-Release:        10xpra2%{?dist}
+Version:        3.1.3rc1
+Release:        1xpra1%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -89,6 +89,9 @@ popd
 
 
 %changelog
+* Mon Nov 25 2019 Antoine Martin <antoine@xpra.org> - 3.1.3rc1-1xpra1
+- new upstream pre-release
+
 * Wed Sep 18 2019 Antoine Martin <antoine@xpra.org> - 3.1.1a1-10xpra2
 - remove python2 support
 
