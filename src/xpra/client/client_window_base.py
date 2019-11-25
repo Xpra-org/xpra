@@ -25,7 +25,6 @@ iconlog = Logger("icon")
 alphalog = Logger("alpha")
 
 
-REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
@@ -652,7 +651,7 @@ class ClientWindowBase(ClientWidgetBase):
             return
         #only register this callback if we actually need it:
         if backing.draw_needs_refresh:
-            if not REPAINT_ALL:
+            if not backing.repaint_all:
                 self.pending_refresh.append((x, y, width, height))
             if options.intget("flush", 0)==0:
                 callbacks.append(self.after_draw_refresh)
@@ -664,7 +663,7 @@ class ClientWindowBase(ClientWidgetBase):
         backing = self._backing
         if not backing:
             return
-        if REPAINT_ALL or self._client.xscale!=1 or self._client.yscale!=1 or is_Wayland():
+        if backing.repaint_all or self._client.xscale!=1 or self._client.yscale!=1 or is_Wayland():
             #easy: just repaint the whole window:
             rw, rh = self.get_size()
             self.idle_add(self.queue_draw_area, 0, 0, rw, rh)
