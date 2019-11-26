@@ -129,11 +129,10 @@
 	</distutils>
 
 	<distutils id="python-parsing">
-		<branch repo="github.com"
-			module="/packages/95/b7/1b8f7dbea6688a8ae97c6265e346120bb2a1888facaf58552ddbcbe502e3/pyparsing-2.4.4.tar.gz"
-                        hash="sha256:4acadc9a2b96c19fe00932a38ca63e601180c39a189a696abce1eaab641447e1"
-                        checkoutdir="pyparsing-pyparsing_2.4.4"                 
-                        version="2.4.4"/>
+		<branch repo="pypi.python.org"
+			module="/packages/00/32/8076fa13e832bb4dcff379f18f228e5a53412be0631808b9ca2610c0f566/pyparsing-2.4.5.tar.gz"
+			hash="sha256:4ca62001be367f01bd3e92ecbb79070272a9d4964dce6a48a82ff0b8bc7e683a"
+			version="2.4.5"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
