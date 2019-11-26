@@ -255,6 +255,10 @@ class GLWindowBackingBase(WindowBackingBase):
         self.bit_depth = self.get_bit_depth(pixel_depth)
         self.init_formats()
         self.draw_needs_refresh = DRAW_REFRESH
+        #the correct check would be this:
+        #self.repaint_all = self.is_double_buffered() or bw!=ww or bh!=wh
+        #but we're meant to be using double-buffered everywhere, so don't bother:
+        self.repaint_all = True
         self._backing.show()
 
     def init_gl_config(self, window_alpha):

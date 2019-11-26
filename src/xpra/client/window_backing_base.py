@@ -52,6 +52,7 @@ INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
 PAINT_BOX = envint("XPRA_PAINT_BOX", 0) or envint("XPRA_OPENGL_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
+REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 
 
 #ie:
@@ -128,6 +129,7 @@ class WindowBackingBase(object):
         self.jpeg_decoder = get_codec("dec_jpeg")
         self.webp_decoder = get_codec("dec_webp")
         self.draw_needs_refresh = True
+        self.repaint_all = REPAINT_ALL
         self.mmap = None
         self.mmap_enabled = False
 
