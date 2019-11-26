@@ -2048,7 +2048,6 @@ class ServerCore:
                 "config-vars"       : sysconfig.get_config_vars(),
                 "paths"             : sysconfig.get_paths(),
                 }
-            
         up("server", si)
 
         ni = get_net_info()
@@ -2062,7 +2061,8 @@ class ServerCore:
                        ""                   : self._html,
                        "dir"                : self._www_dir or "",
                        "http-headers-dir"   : self._http_headers_dir or "",
-                       }
+                       },
+                   "mdns"           : self.mdns,
                    })
         up("network", ni)
         up("threads",   self.get_thread_info(proto))
