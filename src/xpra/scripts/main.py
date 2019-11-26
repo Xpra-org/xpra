@@ -83,8 +83,8 @@ def main(script_file, cmdline):
     if "XPRA_ALT_PYTHON_RETRY" in os.environ:
         del os.environ["XPRA_ALT_PYTHON_RETRY"]
 
-    #some environment variables cause us problems if set:
-    unsetenv("GDK_SCALE")
+    #turn off gdk scaling to make sure we get the actual window geometry:
+    os.environ["GDK_SCALE"]="1"
     #client side decorations break window geometry,
     #disable this "feature" unless explicitly enabled:
     if PYTHON3 and os.environ.get("GTK_CSD") is None:
