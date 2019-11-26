@@ -86,7 +86,7 @@ class Keyboard(KeyboardBase):
             return {}
         locale = {}
         for line in out.splitlines():
-            parts = line.lstrip(" ").split(": ")
+            parts = line.lstrip(b" ").split(b": ")
             if len(parts)==2:
                 locale[parts[0]]=parts[1]
         log("locale(%s)=%s", out, locale)
