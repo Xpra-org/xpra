@@ -2039,7 +2039,8 @@ class ServerCore(object):
                        ""                   : self._html,
                        "dir"                : self._www_dir or "",
                        "http-headers-dir"   : self._http_headers_dir or "",
-                       }
+                       },
+                   "mdns"           : self.mdns,
                    })
         up("network", ni)
         up("threads",   self.get_thread_info(proto))
