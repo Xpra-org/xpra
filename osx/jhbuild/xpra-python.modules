@@ -438,9 +438,9 @@
 
 	<distutils id="python-ldap3">
 		<branch repo="pypi.python.org"
-			module="/packages/79/66/d297c6f3c30b69c813c06e8933769c2732c83d35ca584107346d81ab2eee/ldap3-2.6.tar.gz"
-			hash="sha256:0533eefc18d5ce0532f07fe1ce4e1f27128e1073845a6bf39fef2c828a401bb8"
-			version="2.6">
+			module="/packages/de/d8/2457e098ba4d93e42773e19f6dcf3748653392e51cdd6926e4a48cfbf9cd/ldap3-2.6.1.tar.gz"
+			hash="sha256:27cb673e7afcb539f6adcae5a3ecac4e74eb37ca0a2d50dc98f29a3829eee529"
+			version="2.6.1">
 		</branch>
 		<dependencies>
 			<dep package="python-pyasn1"/>
@@ -452,9 +452,9 @@
 
 	<distutils id="python-ldap">
 		<branch repo="pypi.python.org"
-			module="/packages/7f/1c/28d721dff2fcd2fef9d55b40df63a00be26ec8a11e8c6fc612ae642f9cfd/python-ldap-3.1.0.tar.gz"
-			hash="sha256:41975e79406502c092732c57ef0c2c2eb318d91e8e765f81f5d4ab6c1db727c5"
-			version="3.1.0">
+			module="/packages/ea/93/596f875e003c770447f4b99267820a0c769dd2dc3ae3ed19afe460fcbad0/python-ldap-3.2.0.tar.gz"
+			hash="sha256:7d1c4b15375a533564aad3d3deade789221e450052b21ebb9720fb822eccdb8e"
+			version="3.2.0">
 		</branch>
 		<dependencies>
 			<dep package="python-pyasn1"/>
