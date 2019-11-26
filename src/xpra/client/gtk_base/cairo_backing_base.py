@@ -10,7 +10,7 @@ from gi.repository import GLib, Gdk
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
 from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
-from xpra.os_util import memoryview_to_bytes, strtobytes, WIN32
+from xpra.os_util import memoryview_to_bytes, strtobytes
 from xpra.util import envbool
 from xpra.log import Logger
 
@@ -24,8 +24,7 @@ for attr in dir(cairo):
 
 class CairoBackingBase(WindowBackingBase):
 
-    #transparency with GTK is not supported on MS Windows with PYGTK:
-    HAS_ALPHA = envbool("XPRA_ALPHA", not WIN32)
+    HAS_ALPHA = envbool("XPRA_ALPHA", True)
 
     def __init__(self, wid, window_alpha, _pixel_depth=0):
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
