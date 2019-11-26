@@ -356,6 +356,13 @@ class ChildCommandServer(StubServerMixin):
             if not proc_info:
                 continue
             cmd = proc_info.command
+            if self.exec_wrapper:
+                #strip exec wrapper
+                l = len(self.exec_wrapper)
+                if len(cmd)>l and cmd[:l]==self.exec_wrapper:
+                    cmd = cmd[l:]
+            elif len(cmd)>1 and cmd[0] in ("vglrun", "nohup",):
+                cmd.pop(0)
             bcmd = os.path.basename(cmd[0])
             if bcmd not in cmd_names:
                 cmd_names.append(bcmd)
