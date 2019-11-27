@@ -31,6 +31,7 @@ MIN_SCALING = envfloat("XPRA_MIN_SCALING", "0.1")
 MAX_SCALING = envfloat("XPRA_MAX_SCALING", "8")
 SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
+SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
 
 def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
@@ -170,14 +171,18 @@ class DisplayClient(StubClientMixin):
             }
 
     def get_screen_caps(self):
-        return {
+        caps = {
             "antialias"    : get_antialias_info(),
-            "icc"          : self.get_icc_info(),
-            "display-icc"  : self.get_display_icc_info(),
             "cursor" : {
                 "size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
                 },
             }
+        if SYNC_ICC:
+            caps.update({
+            "icc"          : self.get_icc_info(),
+            "display-icc"  : self.get_display_icc_info(),
+            })
+        return caps
 
     #this is the format we should be moving towards
     #with proper namespace:
