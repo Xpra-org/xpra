@@ -24,6 +24,7 @@ dbuslog = Logger("dbus")
 X11Keyboard = X11KeyboardBindings()
 
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
+SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
 
 def _get_antialias_hintstyle(antialias):
@@ -190,6 +191,8 @@ class X11ServerBase(X11ServerCore):
 
 
     def set_icc_profile(self):
+        if not SYNC_ICC:
+            return
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
         if len(ui_clients)!=1:
             screenlog("%i UI clients, resetting ICC profile to default", len(ui_clients))
