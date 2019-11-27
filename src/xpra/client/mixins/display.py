@@ -14,7 +14,7 @@ from xpra.platform.gui import (
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.os_util import monotonic_time
 from xpra.util import (
-    iround, envint, envfloat, log_screen_sizes, engs, flatten_dict,
+    iround, envint, envfloat, envbool, log_screen_sizes, engs, flatten_dict,
     XPRA_SCALING_NOTIFICATION_ID,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
