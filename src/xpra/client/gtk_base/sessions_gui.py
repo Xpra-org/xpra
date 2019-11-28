@@ -232,11 +232,12 @@ class SessionsGUI(Gtk.Window):
             log("populate_table: record[%i]=%s", i, record)
             uuid = td.strget("uuid", "")
             display = td.strget("display", "")
-            platform = td.strget("platform", "")
-            dtype = td.strget("type", "")
             if domain=="local" and host.endswith(".local"):
                 host = host[:-len(".local")]
-            key = (uuid, uuid or i, host, display, platform, dtype)
+            if uuid:
+                key = uuid
+            else:
+                key = (host, display)
             log("populate_table: key[%i]=%s", i, key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
             #older servers expose the "session-name" as "session":
@@ -246,10 +247,22 @@ class SessionsGUI(Gtk.Window):
                 session_names[key] = session_name
         for key, recs in d.items():
             if isinstance(key, tuple):
-                uuid, _, host, display, platform, dtype = key
+                host, display = key
             else:
-                display = key
-                uuid, host, platform, dtype = None, None, sys.platform, None
+                uuid = key
+                host, platform, dtype = None, sys.platform, None
+                #try to find a valid host name:
+                hosts = [rec[5] for rec in recs if not rec[5].startswith("local")]
+                if not hosts:
+                    hosts = [rec[5] for rec in recs]
+                host = hosts[0]
+            platform, dtype = None, None
+            for rec in recs:
+                td = typedict(rec[-1])
+                if not platform:
+                    platform = td.strget("platform", "")
+                if not dtype:
+                    dtype = td.strget("type", "")
             title = uuid
             if display:
                 title = display
