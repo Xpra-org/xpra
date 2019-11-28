@@ -311,7 +311,7 @@ class ApplicationWindow:
         hbox.pack_start(align_password_scb, True, True)
         vbox_proxy.pack_start(hbox)
 
-        # coniditonal stuff that goes away for "normal" ssh
+        # condiditonal stuff that goes away for "normal" ssh
         vbox.pack_start(vbox_proxy)
 
         # Username@Host:Port (main)
