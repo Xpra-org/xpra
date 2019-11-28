@@ -164,7 +164,7 @@ class DisplayClient(StubClientMixin):
                     }
         if dpi:
             caps[""] = dpi
-        log("get_gpi_caps()=%s", caps)
+        log("get_dpi_caps()=%s", caps)
         return caps
 
     def get_scaling_caps(self):
