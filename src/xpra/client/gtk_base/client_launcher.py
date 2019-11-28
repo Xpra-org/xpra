@@ -648,10 +648,16 @@ class ApplicationWindow:
                 # sshpass cannot do different username/passwords for proxy and destination
                 if not sshpass:
                     self.check_boxes_hbox.show()
+                    p = self.password_entry.get_text()
+                    pp = self.proxy_password_entry.get_text()
+                    u = self.username_entry.get_text()
+                    pu = self.proxy_username_entry.get_text()
                 else:
                     self.check_boxes_hbox.hide()
-                    self.password_scb.set_active(True)
-                    self.username_scb.set_active(True)
+                    p = pp = None
+                    u = pu = None
+                self.password_scb.set_active(p==pp)
+                self.username_scb.set_active(u==pu)
         else:
             self.password_hbox.hide()
             if sshtossh:
@@ -1040,9 +1046,6 @@ class ApplicationWindow:
                 #then select it in the combo:
                 if index>=0:
                     self.encoding_combo.set_history(index)
-        self.username_entry.set_text(self.config.username)
-        self.password_entry.set_text(self.config.password)
-        self.host_entry.set_text(self.config.host)
         def get_port(vstr, default_port=""):
             try:
                 iport = int(vstr)
@@ -1060,11 +1063,20 @@ class ApplicationWindow:
         #proxy bits:
         self.proxy_host_entry.set_text(self.config.proxy_host)
         self.proxy_port_entry.set_text(get_port(self.config.proxy_port))
-        self.proxy_username_entry.set_text(self.config.proxy_username)
-        self.proxy_password_entry.set_text(self.config.proxy_password)
+        username = self.config.username
+        proxy_username = self.config.proxy_username
+        self.username_scb.set_active(username==proxy_username)
+        self.proxy_username_entry.set_text(proxy_username)
+        password = self.config.password
+        proxy_password = self.config.proxy_password
+        self.password_scb.set_active(password==proxy_password)
+        self.proxy_password_entry.set_text(proxy_password)
         if self.is_putty:
             self.proxy_key_entry.set_text(self.config.proxy_key)
         self.sharing.set_active(bool(self.config.sharing))
+        self.username_entry.set_text(username)
+        self.password_entry.set_text(password)
+        self.host_entry.set_text(self.config.host)
 
     def close_window(self, *_args):
         w = self.window
