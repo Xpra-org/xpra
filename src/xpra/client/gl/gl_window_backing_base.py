@@ -1179,15 +1179,15 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP"):
             #not ready to render yet
             return
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[shader])
         self.gl_marker("painting planar update, format %s", self.pixel_format)
-        divs = get_subsampling_divs(self.pixel_format)
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[shader])
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         for texture, index in ((GL_TEXTURE0, TEX_Y), (GL_TEXTURE1, TEX_U), (GL_TEXTURE2, TEX_V)):
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
 
         tw, th = self.texture_size
+        divs = get_subsampling_divs(self.pixel_format)
         log("%s.render_planar_update(..) texture_size=%s, size=%s", self, self.texture_size, self.size)
         glBegin(GL_QUADS)
         for x,y in ((0, 0), (0, rh), (rw, rh), (rw, 0)):
