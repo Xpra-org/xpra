@@ -840,9 +840,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     cursorlog("Gdk.Cursor.new_from_name(%s, %s)=%s", display, cursor_name, cursor)
                 else:
                     gdk_cursor = cursor_types.get(cursor_name.upper())
+                    cursorlog("gdk_cursor(%s)=%s", cursor_name, gdk_cursor)
                     if gdk_cursor:
-                        cursorlog("gdk_cursor(%s)=%s", cursor_name, gdk_cursor)
-                    if gdk_cursor is not None:
                         try:
                             cursor = Gdk.Cursor.new_for_display(display, gdk_cursor)
                             cursorlog("Cursor.new_for_display(%s, %s)=%s", display, gdk_cursor, cursor)
