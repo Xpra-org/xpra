@@ -115,7 +115,7 @@ def get_prefs():
                         if name in ("enabled-devices", "disabled-devices"):
                             for v in value.split(","):
                                 c_prefs.setdefault(name, []).append(v.strip())
-                        elif name in ("device-id", "device-name"):
+                        elif name in ("device-id", "device-name", "load-balancing"):
                             c_prefs[name] = value
             except Exception as e:
                 log.error("Error: cannot read cuda configuration file '%s':", conf_file)
