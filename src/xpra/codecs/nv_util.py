@@ -32,6 +32,10 @@ def wrap_nvml_init(nvmlInit):
 def get_nvml_driver_version():
     try:
         from pynvml import nvmlInit, nvmlShutdown, nvmlSystemGetDriverVersion
+    except ImportError as e:
+        log("cannot use nvml to query the kernel module version:")
+        log(" %s", e)
+    else:
         try:
             if wrap_nvml_init(nvmlInit):
                 try:
@@ -44,9 +48,6 @@ def get_nvml_driver_version():
             log("get_nvml_driver_version() pynvml error", exc_info=True)
             log.warn("Warning: failed to query the NVidia kernel module version using NVML:")
             log.warn(" %s", e)
-    except ImportError as e:
-        log("cannot use nvml to query the kernel module version:")
-        log(" %s", e)
     return ()
 
 
