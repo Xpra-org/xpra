@@ -514,8 +514,9 @@ def main():
 
     from xpra.platform import program_context
     with program_context("CUDA-Info", "CUDA Info"):
+        pycuda_info = get_pycuda_info()
         log.info("pycuda_info")
-        print_nested_dict(get_pycuda_info(), print_fn=log.info)
+        print_nested_dict(pycuda_info, print_fn=log.info)
         log.info("cuda_info")
         print_nested_dict(get_cuda_info(), print_fn=log.info)
         log.info("preferences:")
