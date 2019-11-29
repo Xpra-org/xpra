@@ -169,10 +169,11 @@ def driver_init():
             if ngpus==0:
                 log.info("CUDA %s / PyCUDA %s, no devices found",
                          ".".join(str(x) for x in driver.get_version()), pycuda.VERSION_TEXT)
+            driver_init_done = True
         except Exception as e:
             log.error("Error: cannot initialize CUDA")
             log.error(" %s", e)
-        driver_init_done = False
+            driver_init_done = False
     return driver_init_done
 
 
@@ -214,6 +215,7 @@ def init_all_devices():
     return DEVICES
 
 def check_device(i, device, min_compute=0):
+    ngpus = driver.Device.count()
     da = driver.device_attribute
     devinfo = device_info(device)
     devname = device_name(device)
