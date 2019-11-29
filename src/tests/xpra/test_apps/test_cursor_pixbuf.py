@@ -36,7 +36,7 @@ def main():
 		print("%s : %s" % (info, cursor)) 
 		w.get_window().set_cursor(cursor)
 		cursors.append((info, cursor))
-	b.connect("clicked", clicked)
+	b.connect("clicked", change_cursor)
 	w.add(b)
 	w.show_all()
 	change_cursor()
