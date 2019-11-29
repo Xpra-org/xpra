@@ -1122,9 +1122,10 @@ class GLWindowBackingBase(WindowBackingBase):
 
         divs = get_subsampling_divs(pixel_format)
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
+            self.gl_marker("Creating new planar textures, pixel format %s (was %s), texture size %s (was %s)",
+                           pixel_format, self.pixel_format, (width, height), self.texture_size)
             self.pixel_format = pixel_format
             self.texture_size = (width, height)
-            self.gl_marker("Creating new planar textures, pixel format %s", pixel_format)
             # Create textures of the same size as the window's
             for texture, index in ((GL_TEXTURE0, TEX_Y), (GL_TEXTURE1, TEX_U), (GL_TEXTURE2, TEX_V)):
                 (div_w, div_h) = divs[index]
