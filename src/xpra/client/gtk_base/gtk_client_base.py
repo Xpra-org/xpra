@@ -836,20 +836,25 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             cursor_name = bytestostr(cursor_data[9])
             if cursor_name and USE_LOCAL_CURSORS:
                 cursor = Gdk.Cursor.new_from_name(display, cursor_name)
-                if not cursor:
+                if cursor:
+                    cursorlog("Gdk.Cursor.new_from_name(%s, %s)=%s", display, cursor_name, cursor)
+                else:
                     gdk_cursor = cursor_types.get(cursor_name.upper())
+                    if gdk_cursor:
+                        cursorlog("gdk_cursor(%s)=%s", cursor_name, gdk_cursor)
                     if gdk_cursor is not None:
                         try:
                             cursor = Gdk.Cursor.new_for_display(display, gdk_cursor)
                             cursorlog("Cursor.new_for_display(%s, %s)=%s", display, gdk_cursor, cursor)
-                            pixbuf = cursor.get_image()
-                            cursorlog("image=%s", pixbuf)
                         except TypeError as e:
                             log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
                             if first_time("cursor:%s" % cursor_name.upper()):
                                 log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
                 global missing_cursor_names
-                if not cursor and cursor_name not in missing_cursor_names:
+                if cursor:
+                    pixbuf = cursor.get_image()
+                    cursorlog("image=%s", pixbuf)
+                elif cursor_name not in missing_cursor_names:
                     cursorlog("cursor name '%s' not found", cursor_name)
                     missing_cursor_names.add(cursor_name)
         #create cursor from the pixel data:
