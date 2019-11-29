@@ -521,7 +521,7 @@ def main():
         log.info("preferences:")
         print_nested_dict(get_prefs(), print_fn=log.info)
         log.info("device automatically selected:")
-        log.info(" %s", select_device()[1])
+        log.info(" %s", device_info(select_device()[1]))
 
 if __name__ == "__main__":
     main()
