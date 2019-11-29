@@ -55,7 +55,8 @@ grablog = Logger("client", "grab")
 missing_cursor_names = set()
 
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
-USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", True)
+#GTK3 bug: we can't get the cursor pixel data on win32
+USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", not WIN32)
 EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
