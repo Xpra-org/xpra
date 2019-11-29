@@ -94,7 +94,12 @@ def codec_import_check(name, description, top_module, class_module, classnames):
             log("", exc_info=True)
     except Exception as e:
         codec_errors[name] = str(e)
-        log.warn(" cannot load %s (%s): %s missing from %s", name, description, classname, class_module, exc_info=True)
+        if classname:
+            log.warn(" cannot load %s (%s): %s missing from %s",
+                     name, description, classname, class_module, exc_info=True)
+        else:
+            log.warn(" cannot load %s (%s)",
+                     name, description, exc_info=True)
     return None
 codec_versions = {}
 def add_codec_version(name, top_module, version="get_version()", alt_version="__version__"):
