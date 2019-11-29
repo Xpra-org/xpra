@@ -847,7 +847,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                         if first_time("cursor:%s" % cursor_name.upper()):
                             log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
                 global missing_cursor_names
-                if cursor_name not in missing_cursor_names:
+                if not cursor and cursor_name not in missing_cursor_names:
                     cursorlog("cursor name '%s' not found", cursor_name)
                     missing_cursor_names.add(cursor_name)
         #create cursor from the pixel data:
