@@ -16,7 +16,7 @@ log = Logger("paint", "mouse")
 
 def setup_cairo_context(context, ww, wh, w, h, offset_x=0, offset_y=0):
     if w!=ww or h!=wh:
-        context.scale(float(ww)/w, float(wh)/h)
+        context.scale(ww/w, wh/h)
     if offset_x!=0 or offset_y!=0:
         context.translate(offset_x, offset_y)
     context.set_operator(cairo.OPERATOR_SOURCE)

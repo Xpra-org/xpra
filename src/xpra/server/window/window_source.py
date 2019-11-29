@@ -800,7 +800,7 @@ class WindowSource(WindowIconSource):
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
-        pcmult = float(min(20, 0.5+self.statistics.packet_count))/20.0
+        pcmult = min(20, 0.5+self.statistics.packet_count)/20.0
         max_rgb_threshold = 32*1024
         min_rgb_threshold = 2048
         cv = self.global_statistics.congestion_value
@@ -1200,7 +1200,7 @@ class WindowSource(WindowIconSource):
         # - when quality is low, we can refresh more slowly
         # - when speed is low, we can also refresh slowly
         # - delay a lot more when we have bandwidth issues
-        sizef = sqrt(float(ww*wh)/(1000*1000))      #more than 1 megapixel -> delay more
+        sizef = sqrt(ww*wh/(1000*1000))      #more than 1 megapixel -> delay more
         qf = (150-self._current_quality)/100.0
         sf = (150-self._current_speed)/100.0
         cf = (100+cv*500)/100.0    #high congestion value -> very high delay
@@ -1222,7 +1222,7 @@ class WindowSource(WindowIconSource):
         self.do_set_auto_refresh_delay(min_delay, delay)
         rs = AUTO_REFRESH_SPEED
         rq = AUTO_REFRESH_QUALITY
-        bits_per_pixel = float(bwl)/(1+ww*wh)
+        bits_per_pixel = bwl/(1+ww*wh)
         if self._current_quality<70 and (cv>0.1 or (bwl>0 and bits_per_pixel<1)):
             #when bandwidth is scarce, don't use lossless refresh,
             #switch to almost-lossless:
@@ -1409,10 +1409,10 @@ class WindowSource(WindowIconSource):
         event_min_time = now-self.batch_config.time_unit
         all_pixels = tuple(pixels for _,event_time,pixels in self.global_statistics.damage_last_events
                            if event_time>event_min_time)
-        eratio = float(len(all_pixels)) / self.batch_config.max_events
+        eratio = len(all_pixels) / self.batch_config.max_events
         if eratio>1.0:
             return True
-        pratio = float(sum(all_pixels)) / self.batch_config.max_pixels
+        pratio = sum(all_pixels) / self.batch_config.max_pixels
         if pratio>1.0:
             return True
         try:

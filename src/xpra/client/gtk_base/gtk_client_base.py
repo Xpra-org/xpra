@@ -899,7 +899,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             else:
                 cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
                 cursor_pixbuf = pixbuf.scale_simple(fw, fh, GdkPixbuf.InterpType.BILINEAR)
-                xratio, yratio = float(w)/fw, float(h)/fh
+                xratio, yratio = w/fw, h/fh
                 x, y = iround(x/xratio), iround(y/yratio)
         else:
             sx, sy, sw, sh = x, y, w, h
@@ -912,9 +912,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if 0<cmaxw<sw or 0<cmaxh<sh:
                 ratio = 1.0
                 if cmaxw>0:
-                    ratio = max(ratio, float(w)/cmaxw)
+                    ratio = max(ratio, w/cmaxw)
                 if cmaxh>0:
-                    ratio = max(ratio, float(h)/cmaxh)
+                    ratio = max(ratio, h/cmaxh)
                 cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
                 sx, sy = iround(x/ratio), iround(y/ratio)
                 sw, sh = min(cmaxw, iround(w/ratio)), min(cmaxh, iround(h/ratio))

@@ -679,7 +679,7 @@ class XI2_Window:
         if dx!=0 or dy!=0:
             xinputlog("do_xi_motion(%s, %s) wheel deltas: dx=%i, dy=%i", event, device, dx, dy)
             #normalize (xinput is always using 15 degrees?)
-            client.wheel_event(wid, float(dx)/XINPUT_WHEEL_DIV, float(dy)/XINPUT_WHEEL_DIV, event.device)
+            client.wheel_event(wid, dx/XINPUT_WHEEL_DIV, dy/XINPUT_WHEEL_DIV, event.device)
 
     def get_pointer_extra_args(self, event):
         def intscaled(f):

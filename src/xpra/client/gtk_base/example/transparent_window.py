@@ -43,11 +43,11 @@ class TransparentWindow(Gtk.Window):
         cr.set_source_rgba(1.0, 0.2, 0.2, 0.6)
         # Python <2.4 doesn't have conditional expressions
         if width < height:
-            radius = float(width)/2 - 0.8
+            radius = width/2 - 0.8
         else:
-            radius = float(height)/2 - 0.8
+            radius = height/2 - 0.8
 
-        cr.arc(float(width)/2, float(height)/2, radius, 0, 2.0*3.14)
+        cr.arc(width/2, height/2, radius, 0, 2.0*3.14)
         cr.fill()
         cr.stroke()
 

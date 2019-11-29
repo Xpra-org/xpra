@@ -512,7 +512,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def get_init_magfilter(self):
         rw, rh = self.render_size
         w, h = self.size
-        if float(rw)/w!=rw//w or float(rh)/h!=rh//h:
+        if rw/w!=rw//w or rh/h!=rh//h:
             #non integer scaling, use linear magnification filter:
             return GL_LINEAR
         return GL_NEAREST
@@ -1095,8 +1095,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 # Update FBO texture
                 x_scale, y_scale = 1, 1
                 if width!=enc_width or height!=enc_height:
-                    x_scale = float(width)/enc_width
-                    y_scale = float(height)/enc_height
+                    x_scale = width/enc_width
+                    y_scale = height/enc_height
 
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale, shader)
                 self.paint_box(encoding, False, x, y, width, height)

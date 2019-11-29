@@ -50,7 +50,7 @@ class TransparentColorWindow(Gtk.Window):
             #top and bottom thirds as a shade to transparent on the edges:
             shade_h = h//2//3
             for i in range(shade_h):
-                alpha = i/float(shade_h)
+                alpha = i/shade_h
                 cr.set_source_rgba(r, g, b, alpha)
                 cr.rectangle(x, y+i, x+w//2, 1)
                 cr.fill()

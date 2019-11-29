@@ -107,14 +107,14 @@ class ColorTest:
         def normv(v):
             assert 0<=v<=M
             iv = int(v) & mask
-            return max(0, float(iv)/M)
+            return max(0, iv/M)
         def paint_block(R=M, G=M, B=M):
-            y = 1.0-float(self.index)/(blocks/2.0)
+            y = 1.0-self.index/(blocks/2.0)
             bw = 2.0/w
             bh = 2.0/blocks
             self.index += 1
             for i in range(w):
-                v = float(i)/float(w)
+                v = i/w
                 r = normv(R*v)
                 g = normv(G*v)
                 b = normv(B*v)

@@ -294,7 +294,7 @@ class ClientWindowBase(ClientWidgetBase):
             if opacity<0:
                 opacity = 1
             else:
-                opacity = min(1, opacity/float(0xffffffff))
+                opacity = min(1, opacity/0xffffffff)
             #requires gtk>=2.12!
             if hasattr(self, "set_opacity"):
                 self.set_opacity(opacity)
@@ -466,7 +466,7 @@ class ClientWindowBase(ClientWidgetBase):
                 v = size_constraints.intpair(a)
                 if v:
                     v1, v2 = v
-                    hints[h] = float(v1*self._client.xscale)/float(v2*self._client.yscale)
+                    hints[h] = (v1*self._client.xscale)/(v2*self._client.yscale)
         #apply max-size override if needed:
         w,h = max_window_size
         if w>0 and h>0 and not self._fullscreen:

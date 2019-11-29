@@ -341,8 +341,8 @@ class DisplayClient(StubClientMixin):
         #calculate the minimum scaling to fit it:
         def clamp(v):
             return max(MIN_SCALING, min(MAX_SCALING, v))
-        x = clamp(float(w)/max_w)
-        y = clamp(float(h)/max_h)
+        x = clamp(w/max_w)
+        y = clamp(h/max_h)
         def mint(v):
             #prefer int over float,
             #and even tolerate a 0.1% difference to get it:
@@ -515,7 +515,7 @@ class DisplayClient(StubClientMixin):
 
     def scaleset(self, xscale=1, yscale=1):
         scalinglog("scaleset(%s, %s) current scaling: %s, %s", xscale, yscale, self.xscale, self.yscale)
-        self.scale_change(float(xscale)/self.xscale, float(yscale)/self.yscale)
+        self.scale_change(xscale/self.xscale, yscale/self.yscale)
 
     def scale_change(self, xchange=1, ychange=1):
         scalinglog("scale_change(%s, %s)", xchange, ychange)

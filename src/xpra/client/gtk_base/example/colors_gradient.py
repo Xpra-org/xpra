@@ -59,13 +59,13 @@ class ColorGradientWindow(Gtk.Window):
         def normv(v):
             assert 0<=v<=M
             iv = int(v) & mask
-            return max(0, float(iv)/M)
+            return max(0, iv/M)
         def paint_block(R=M, G=M, B=M, label=""):
             y = h*self.index//blocks
             self.index += 1
             cr.set_operator(cairo.OPERATOR_SOURCE)
             for i in range(w):
-                v = float(i)/float(w)
+                v = i/w
                 cr.save()
                 r = normv(R*v)
                 g = normv(G*v)

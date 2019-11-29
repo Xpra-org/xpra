@@ -1989,7 +1989,7 @@ cdef class Encoder:
         cdef double t = self.time
         info["total_time_ms"] = int(self.time*1000.0)
         if self.frames>0 and t>0:
-            pps = float(self.width) * float(self.height) * float(self.frames) / t
+            pps = self.width * self.height * self.frames / t
             info["pixels_per_second"] = int(pps)
         info["free_memory"] = int(self.free_memory)
         info["total_memory"] = int(self.total_memory)

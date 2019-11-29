@@ -127,7 +127,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
 
     #backlog factor:
     _, pixels_backlog, _ = statistics.get_client_backlog()
-    pb_ratio = float(pixels_backlog)/low_limit
+    pb_ratio = pixels_backlog/low_limit
     pixels_bl_s = 100 - int(100*logp(pb_ratio/4))    #4 frames behind or more -> compress more
 
     #megapixels per second:
@@ -175,7 +175,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     lim = now-1.0
     lde = tuple(w*h for t,_,_,w,h in tuple(statistics.last_damage_events) if t>=lim)
     pixels = sum(lde)
-    mpixels_per_s = float(pixels)/(1024*1024)
+    mpixels_per_s = pixels/(1024*1024)
     pps = 0.0
     pixel_rate_s = 100
     if len(lde)>5 and mpixels_per_s>=1:
@@ -193,7 +193,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
         #below N Mbps, lower the speed ceiling,
         #so we will compress better:
         N = 10
-        bandwidth_s = int(100*sqrt(float(bandwidth_limit)/(N*1000*1000)))
+        bandwidth_s = int(100*sqrt(bandwidth_limit/(N*1000*1000)))
 
     gcv = global_statistics.congestion_value
     congestion_s = 100
@@ -207,7 +207,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     ads = statistics.avg_decode_speed or 0
     dec_lat = 0
     if ads>0:
-        dec_lat = min_decode_speed/float(ads)
+        dec_lat = min_decode_speed/ads
 
     ms = min(100, max(min_speed, 0))
     max_speed = max(ms, min(pixels_bl_s, dam_lat_s, pixel_rate_s, bandwidth_s, congestion_s))
@@ -252,7 +252,7 @@ def get_target_quality(window_dimensions, batch,
 
     #backlog factor:
     packets_backlog, pixels_backlog, _ = statistics.get_client_backlog()
-    pb_ratio = float(pixels_backlog)/low_limit
+    pb_ratio = pixels_backlog/low_limit
     pixels_bl_q = 1 - logp(pb_ratio/4)    #4 frames behind or more -> min quality
 
     #bandwidth limit factor:
@@ -278,7 +278,7 @@ def get_target_quality(window_dimensions, batch,
             #if the min-speed is high, reduce tolerance:
             tolerance = 10-int(min_speed//10)
             ref_delay = max(0, tolerance+N*(batch.START_DELAY*10 + batch.min_delay*recs) // (recs+10))
-            batch_q = float(N * ref_delay) / max(1, batch.min_delay, batch.delay)
+            batch_q = (N * ref_delay) / max(1, batch.min_delay, batch.delay)
 
     #latency limit factor:
     latency_q = 1
@@ -305,13 +305,13 @@ def get_target_quality(window_dimensions, batch,
             #but only if there is no backlog:
             if packets_backlog==0:
                 smooth = 150
-                comp_boost = logp((float(smooth+ascore)/(smooth+rscore)))-1.0
+                comp_boost = logp(((smooth+ascore)/(smooth+rscore)))-1.0
         else:
             #lower the quality
             #more so if the compression is not doing very well:
             mult = (1000 + rscore)/2000.0           #mult should be in the range 0.5 to ~1.0
             smooth = 50
-            comp_boost = -logp((float(smooth+rscore)/(smooth+ascore))-1.0) * mult
+            comp_boost = -logp(((smooth+rscore)/(smooth+ascore))-1.0) * mult
         info["compression-ratio"] = ascore, rscore
         target = max(0, target+comp_boost)
 
@@ -334,7 +334,7 @@ def get_target_quality(window_dimensions, batch,
                                        for lim in range(1,11))
             pixl5 = sum(v for lim,v in damage_pixel_count if lim<=5)
             pixn5 = sum(v for lim,v in damage_pixel_count if lim>5)
-            pctpixdamaged = float(pixl5)/(ww*wh)
+            pctpixdamaged = pixl5/(ww*wh)
             log("get_target_quality: target=%3i%% (window %4ix%-4i) pctpixdamaged=%3i%%, dpc=%s",
                 100*target, ww, wh, pctpixdamaged*100, damage_pixel_count)
             if pctpixdamaged<0.5:

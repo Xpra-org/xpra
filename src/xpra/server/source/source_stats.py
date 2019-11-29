@@ -188,7 +188,7 @@ class GlobalPerformanceStatistics:
         mayaddfac(*queue_inspect("compression-work-queue", self.compression_work_qsizes))
         if self.mmap_size>0:
             #full: effective range is 0.0 to ~1.2
-            full = 1.0-float(self.mmap_free_size)/self.mmap_size
+            full = 1.0-self.mmap_free_size/self.mmap_size
             #aim for ~33%
             mayaddfac("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2)
         if self.congestion_value>0:

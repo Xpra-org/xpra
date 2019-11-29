@@ -1343,7 +1343,7 @@ class WindowVideoSource(WindowSource):
             otime = lde[0][0]
             if now>otime:
                 pixels = sum(w*h for _,w,h in lde)
-                return int(float(pixels)/(width*height)/(now - otime))
+                return int(pixels/(width*height)/(now - otime))
         return 0
 
     def calculate_scaling(self, width, height, max_w=4096, max_h=4096):
@@ -1359,7 +1359,7 @@ class WindowVideoSource(WindowSource):
             #sort them from smallest scaling to highest:
             sopts = {}
             for num, den in SCALING_OPTIONS:
-                sopts[float(num)/den] = (num, den)
+                sopts[num/den] = (num, den)
             for ratio in reversed(sorted(sopts.keys())):
                 num, den = sopts[ratio]
                 if num==1 and den==1:
@@ -1428,7 +1428,7 @@ class WindowVideoSource(WindowSource):
                     for num, denom in SCALING_OPTIONS:
                         #scaled pixels per second value:
                         spps = pps*(num**2)/(denom**2)
-                        ratio = float(target)/spps
+                        ratio = target/spps
                         #ideal ratio is 1, measure distance from 1:
                         score = int(abs(1-ratio)*100)
                         if self.actual_scaling and self.actual_scaling==(num, denom) and (num!=1 or denom!=1):
@@ -1486,10 +1486,10 @@ class WindowVideoSource(WindowSource):
         if scaling is None:
             scaling = 1, 1
         v, u = scaling
-        if float(v)/u>1.0:
+        if v/u>1.0:
             #never upscale before encoding!
             scaling = 1, 1
-        elif float(v)/float(u)<0.1:
+        elif v/u<0.1:
             #don't downscale more than 10 times! (for each dimension - that's 100 times!)
             scaling = 1, 10
         scalinglog("calculate_scaling%s=%s (q=%s, s=%s, scaling_control=%s)",

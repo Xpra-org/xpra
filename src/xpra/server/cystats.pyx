@@ -163,10 +163,10 @@ def calculate_for_target(metric, float target_value, float avg_value, float rece
     """
     assert aim>0.0 and aim<1.0
     #target factor: how far are we from 'target'
-    cdef double d = float(div)
-    cdef double target_factor = (float(recent_value)/d)/(slope+float(target_value)/d)
+    cdef double d = div
+    cdef double target_factor = (recent_value/d)/(slope+target_value/d)
     #average factor: how far are we from the 'average'
-    cdef double avg_factor = (float(recent_value)/d)/(slope+float(avg_value)/d)
+    cdef double avg_factor = (recent_value/d)/(slope+avg_value/d)
     #aimed average: combine the two factors above with the 'aim' weight distribution:
     cdef double aimed_average = target_factor*(1.0-aim) + avg_factor*aim
     factor = smoothing(aimed_average)

@@ -390,7 +390,7 @@ cdef class Encoder:
             raise Exception("failed to create vpx encoder config")
         log("%s codec defaults:", self.encoding)
         self.log_cfg()
-        self.initial_bitrate_per_pixel = float(self.cfg.rc_target_bitrate) / self.cfg.g_w / self.cfg.g_h
+        self.initial_bitrate_per_pixel = self.cfg.rc_target_bitrate / self.cfg.g_w / self.cfg.g_h
         log("initial_bitrate_per_pixel(%i, %i, %i)=%.3f", self.cfg.g_w, self.cfg.g_h, self.cfg.rc_target_bitrate, self.initial_bitrate_per_pixel)
 
         self.update_cfg()

@@ -30,7 +30,7 @@ def scoreinout(ww, wh, region, incount, outcount):
     total = incount+outcount
     assert total>0
     #proportion of damage events that are within this region:
-    inregion = float(incount)/total
+    inregion = incount/total
     #devaluate by taking into account the number of pixels in the area
     #so that a large video region only wins if it really
     #has a larger proportion of the pixels
@@ -42,7 +42,7 @@ def scoreinout(ww, wh, region, incount, outcount):
     width = min(ww, region.width)
     height = min(wh, region.height)
     #proportion of pixels in this region relative to the whole window:
-    inwindow = float(width*height) / (ww*wh)
+    inwindow = (width*height) / (ww*wh)
     ratio = inregion / inwindow
     score = 100.0*inregion
     #if the region has at least 35% of updates, boost it with window ratio
@@ -409,7 +409,7 @@ class VideoSubregion:
             rect_pixels = rect.width*rect.height
             #sslog("damaged_ratio: not damaged pixels(%s)=%i, rect pixels(%s)=%i",
             #     rects, not_damaged_pixels, rect, rect_pixels)
-            return max(0, min(1, 1.0-float(not_damaged_pixels)/float(rect_pixels)))
+            return max(0, min(1, 1.0-not_damaged_pixels/rect_pixels))
 
         scores = {None : 0}
         def score_region(info, region, ignore_size=0, d_ratio=0):

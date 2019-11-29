@@ -47,8 +47,8 @@ class AnimatedColorWindow(Gtk.Window):
         cr.fill()
 
         def paint_block(x, y, w, h, Rm=1.0, Gm=1.0, Bm=1.0, label=""):
-            bw = float(w)/16
-            bh = float(h)/16
+            bw = w/16
+            bh = h/16
             cr.set_operator(cairo.OPERATOR_SOURCE)
             for i in range(256):
                 v = ((self.counter+i) % 256) / 256.0

@@ -680,7 +680,7 @@ cdef class Encoder:
                 "ratio_pct" : int(100.0 * self.bytes_out / self.bytes_in),
                 })
         if self.frames>0 and self.time>0:
-            pps = float(self.width) * float(self.height) * float(self.frames) / self.time
+            pps = self.width * self.height * self.frames / self.time
             info.update({
                 "total_time_ms"     : int(self.time*1000.0),
                 "pixels_per_second" : int(pps),

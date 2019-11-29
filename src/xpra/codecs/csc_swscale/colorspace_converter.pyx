@@ -346,7 +346,7 @@ cdef class ColorspaceConverter:
         if self.dst_format:
             info["dst_format"] = self.dst_format
         if self.frames>0 and self.time>0:
-            pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
+            pps = self.src_width * self.src_height * self.frames / self.time
             info["total_time_ms"] = int(self.time*1000.0)
             info["pixels_per_second"] = int(pps)
         return info
