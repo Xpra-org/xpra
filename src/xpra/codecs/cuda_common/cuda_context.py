@@ -189,10 +189,11 @@ def init_all_devices():
     if disabled_gpus is True or enabled_gpus==[]:
         log("all devices are disabled!")
         return DEVICES
-    log("enabled: %s, disabled: %s", csv(enabled_gpus), csv(disabled_gpus))
+    log("init_all_devices() enabled: %s, disabled: %s", csv(enabled_gpus), csv(disabled_gpus))
     if not driver_init():
         return DEVICES
     ngpus = driver.Device.count()
+    log("init_all_devices() ngpus=%s", ngpus)
     if ngpus==0:
         return DEVICES
     for i in range(ngpus):
