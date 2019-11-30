@@ -325,6 +325,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def print_screen_info(self):
         super().print_screen_info()
         root_w, root_h = get_root_size()
+        log.info(" initial resolution: %ix%i", root_w, root_h)
         sss = get_screen_sizes()
         log_screen_sizes(root_w, root_h, sss)
 
