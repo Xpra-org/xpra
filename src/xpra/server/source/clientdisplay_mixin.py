@@ -93,8 +93,8 @@ class ClientDisplayMixin(StubSourceMixin):
                     hmm = sum(monitor[6] for monitor in monitors)
                 if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
                     #still invalid, generate one from DPI=96
-                    wmm = iround(sw*254/10/96.0)
-                    hmm = iround(sh*254/10/96.0)
+                    wmm = iround(sw*25.4/96)
+                    hmm = iround(sh*25.4/96)
                 if warn:
                     log.warn(" using %ix%i mm", wmm, hmm)
                 screen = list(screen)
