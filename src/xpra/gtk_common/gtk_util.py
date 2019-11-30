@@ -317,6 +317,8 @@ def get_screen_sizes(xscale=1, yscale=1):
             if n_monitors>0:
                 wmm = sum(display.get_monitor(i).get_width_mm() for i in range(n_monitors))
                 hmm = sum(display.get_monitor(i).get_height_mm() for i in range(n_monitors))
+                xdpi = dpi(sw, wmm)
+                ydpi = dpi(sh, hmm)
             if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
                 #still invalid, generate one from DPI=96
                 wmm = iround(sw*25.4/96)

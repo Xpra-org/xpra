@@ -91,6 +91,8 @@ class ClientDisplayMixin(StubSourceMixin):
                     #[plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
                     wmm = sum(monitor[5] for monitor in monitors)
                     hmm = sum(monitor[6] for monitor in monitors)
+                    xdpi = dpi(sw, wmm)
+                    ydpi = dpi(sh, hmm)
                 if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
                     #still invalid, generate one from DPI=96
                     wmm = iround(sw*25.4/96)
