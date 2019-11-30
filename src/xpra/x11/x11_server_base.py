@@ -62,6 +62,7 @@ class X11ServerBase(X11ServerCore):
         self._xsettings_manager = None
         self._xsettings_enabled = False
         self.display_pid = 0
+        self.icc_profile = b""
 
     def do_init(self, opts):
         super().do_init(opts)
@@ -190,6 +191,19 @@ class X11ServerBase(X11ServerCore):
         self.update_server_settings()
 
 
+    def get_info(self, proto=None, client_uuids=None):
+        info = super().get_info(proto=proto, client_uuids=client_uuids)
+        info.setdefault("display", {})["icc"] = self.get_icc_info()
+        return info
+
+    def get_icc_info(self):
+        icc_info = {
+            "sync"  : SYNC_ICC,
+            }
+        if SYNC_ICC:
+            icc_info["profile"] = self.icc_profile
+        return icc_info
+
     def set_icc_profile(self):
         if not SYNC_ICC:
             return
@@ -210,6 +224,7 @@ class X11ServerBase(X11ServerCore):
             return
         screenlog("set_icc_profile() icc data for %s: %s (%i bytes)",
                   ui_clients[0], hexstr(data or ""), len(data or ""))
+        self.icc_profile = data
         from xpra.x11.gtk_x11.prop import prop_set
         prop_set(self.root_window, "_ICC_PROFILE", ["u32"], [ord(x) for x in data])
         prop_set(self.root_window, "_ICC_PROFILE_IN_X_VERSION", "u32", 0*100+4) #0.4 -> 0*100+4*1
@@ -219,6 +234,7 @@ class X11ServerBase(X11ServerCore):
         from xpra.x11.gtk_x11.prop import prop_del
         prop_del(self.root_window, "_ICC_PROFILE")
         prop_del(self.root_window, "_ICC_PROFILE_IN_X_VERSION")
+        self.icc_profile = b""
 
 
     def reset_settings(self):
