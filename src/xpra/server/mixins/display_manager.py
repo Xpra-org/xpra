@@ -192,6 +192,7 @@ class DisplayManager(StubServerMixin):
         return root_w, root_h
 
     def _process_desktop_size(self, proto, packet):
+        log("new desktop size from %s: %s", proto, packet)
         width, height = packet[1:3]
         ss = self.get_server_source(proto)
         if ss is None:
