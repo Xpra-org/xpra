@@ -236,7 +236,7 @@ def get_version():
     v = vpx_codec_version_str()
     vstr = bytestostr(v)
     log("vpx_codec_version_str()=%s", vstr)
-    return vstr
+    return vstr.lstrip("v")
 
 def get_type():
     return "vpx"

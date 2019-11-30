@@ -120,7 +120,9 @@ def get_abi_version():
 
 def get_version():
     v = vpx_codec_version_str()
-    return bytestostr(v)
+    vstr = bytestostr(v)
+    log("vpx_codec_version_str()=%s", vstr)
+    return vstr.lstrip("v")
 
 def get_type():
     return "vpx"
