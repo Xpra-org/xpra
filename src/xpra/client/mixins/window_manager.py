@@ -866,14 +866,17 @@ class WindowClient(StubClientMixin):
     def reinit_window_icons(self):
         #make sure the window icons are the ones we want:
         iconlog("reinit_window_icons()")
-        for window in self._id_to_window.values():
-            reset_icon = getattr(window, "reset_icon", None)
-            if reset_icon:
-                reset_icon()
+        for wid in tuple(self._id_to_window.keys()):
+            window = self._id_to_window.get(wid)
+            if window:
+                reset_icon = getattr(window, "reset_icon", None)
+                if reset_icon:
+                    reset_icon()
 
     def reinit_windows(self, new_size_fn=None):
         #now replace all the windows with new ones:
-        for wid, window in self._id_to_window.items():
+        for wid in tuple(self._id_to_window.keys()):
+            window = self._id_to_window.get(wid)
             if window:
                 self.reinit_window(wid, window, new_size_fn)
         self.send_refresh_all()
