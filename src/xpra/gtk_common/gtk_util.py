@@ -313,7 +313,7 @@ def get_screen_sizes(xscale=1, yscale=1):
         if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
             warn = first_time("invalid-screen-size-%ix%i" % (wmm, hmm))
             if warn:
-                log.warn("Warning: invalid screen size %ix%imm", wmm, hmm)
+                log.warn("Warning: ignoring invalid screen size %ix%imm", wmm, hmm)
             if n_monitors>0:
                 wmm = sum(display.get_monitor(i).get_width_mm() for i in range(n_monitors))
                 hmm = sum(display.get_monitor(i).get_height_mm() for i in range(n_monitors))

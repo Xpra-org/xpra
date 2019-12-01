@@ -86,7 +86,7 @@ class ClientDisplayMixin(StubSourceMixin):
             if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
                 warn = first_time("invalid-screen-size-%ix%i" % (wmm, hmm))
                 if warn:
-                    log.warn("Warning: sanitizing invalid screen size %ix%i mm", wmm, hmm)
+                    log.warn("Warning: ignoring invalid screen size %ix%i mm", wmm, hmm)
                 if monitors:
                     #[plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
                     wmm = sum(monitor[5] for monitor in monitors)
