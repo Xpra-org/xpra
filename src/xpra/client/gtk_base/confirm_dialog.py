@@ -37,7 +37,7 @@ class ConfirmDialogWindow(object):
             self.window = gtk.Window(WINDOW_POPUP)
         window_defaults(self.window)
         self.window.set_position(WIN_POS_CENTER)
-        self.window.connect("destroy", self.quit)
+        self.window.connect("delete-event", self.quit)
         self.window.set_default_size(400, 150)
         self.window.set_title(title)
         #self.window.set_modal(True)
@@ -66,6 +66,7 @@ class ConfirmDialogWindow(object):
 
         # Buttons:
         self.exit_code = 0
+        return True
         if buttons:
             hbox = gtk.HBox(False, 0)
             al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)

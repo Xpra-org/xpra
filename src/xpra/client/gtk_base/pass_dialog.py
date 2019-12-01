@@ -36,7 +36,7 @@ class PasswordInputDialogWindow(object):
             self.window = gtk.Window(WINDOW_TOPLEVEL)
         window_defaults(self.window)
         self.window.set_position(WIN_POS_CENTER)
-        self.window.connect("destroy", self.quit)
+        self.window.connect("delete-event", self.quit)
         self.window.set_default_size(400, 150)
         self.window.set_title(title)
         self.window.set_modal(True)
@@ -77,6 +77,7 @@ class PasswordInputDialogWindow(object):
             ("Cancel", False, self.quit),
             ):
             b = self.btn(label, isdefault, cb)
+        return True
             hbox.pack_start(b)
 
         add_close_accel(self.window, self.quit)
