@@ -28,7 +28,10 @@ from xpra.os_util import (
     bytestostr, monotonic_time, memoryview_to_bytes,
     OSX, POSIX, is_Ubuntu,
     )
-from xpra.util import iround, envint, envbool, typedict, make_instance, updict
+from xpra.util import (
+    iround, envint, envbool, typedict,
+    make_instance, updict, repr_ellipsized, csv,
+    )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -433,6 +436,15 @@ class WindowClient(StubClientMixin):
                 raise Exception("invalid cursor packet: %s items" % len(packet))
             encoding = packet[1]
             if not isinstance(encoding, bytes):
+                log.warn("Warning: received an invalid cursor packet:")
+                tmp_packet = list(packet)
+                try:
+                    tmp_packet[9] = ".."
+                except IndexError:
+                    pass
+                log.warn(" %s", repr_ellipsized(tmp_packet))
+                log.warn(" data types:")
+                log.warn(" %s", csv(type(x) for x in packet))
                 raise Exception("invalid cursor packet format: cursor type is a %s" % type(encoding))
             #trim packet-type:
             new_cursor = packet[1:]
