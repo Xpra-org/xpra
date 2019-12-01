@@ -450,17 +450,19 @@ class DisplayClient(StubClientMixin):
         sss = self.get_screen_sizes(self.xscale, self.yscale)
         ndesktops = get_number_of_desktops()
         desktop_names = get_desktop_names()
-        log("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
+        log("get_screen_settings() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
         if self.dpi>0:
             #use command line value supplied, but scale it:
             xdpi = ydpi = self.dpi
+            log("get_screen_settings() dpi=%s", self.dpi)
         else:
             #not supplied, use platform detection code:
             xdpi = self.get_xdpi()
             ydpi = self.get_ydpi()
+            log("get_screen_settings() xdpi=%s, ydpi=%s", get_xdpi(), get_ydpi())
         xdpi = self.cx(xdpi)
         ydpi = self.cy(ydpi)
-        log("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
+        log("get_screen_settings() scaled: xdpi=%s, ydpi=%s", xdpi, ydpi)
         return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
 
     def update_screen_size(self):
