@@ -68,7 +68,7 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def set_screen_sizes(self, screen_sizes):
         log("set_screen_sizes(%s)", screen_sizes)
-        self.screen_sizes = list(screen_sizes or [])
+        self.screen_sizes = list(screen_sizes)
         #validate dpi / screen size in mm
         #(ticket 2480: GTK3 on macos can return bogus values)
         MIN_DPI = envint("XPRA_MIN_DPI", 10)
@@ -77,7 +77,7 @@ class ClientDisplayMixin(StubSourceMixin):
             if size_mm==0:
                 return 0
             return int(size_pixels * 254 / size_mm / 10)
-        for i,screen in enumerate(screen_sizes):
+        for i,screen in enumerate(list(screen_sizes)):
             if len(screen)<10:
                 continue
             sw, sh, wmm, hmm, monitors = screen[1:6]
@@ -102,8 +102,8 @@ class ClientDisplayMixin(StubSourceMixin):
                 screen = list(screen)
                 screen[3] = wmm
                 screen[4] = hmm
-                screen_sizes[i] = tuple(screen)
-        log("client validated screen sizes: %s", screen_sizes)
+                self.screen_sizes[i] = tuple(screen)
+        log("client validated screen sizes: %s", self.screen_sizes)
 
     def set_desktops(self, desktops, desktop_names):
         self.desktops = desktops or 1
