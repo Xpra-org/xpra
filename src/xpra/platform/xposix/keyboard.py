@@ -9,7 +9,7 @@ from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.log import Logger
-from xpra.os_util import is_X11, is_Wayland
+from xpra.os_util import is_X11, is_Wayland, bytestostr
 
 log = Logger("keyboard", "posix")
 
@@ -81,7 +81,7 @@ class Keyboard(KeyboardBase):
         if not out:
             return {}
         locale = {}
-        for line in out.splitlines():
+        for line in bytestostr(out).splitlines():
             parts = line.lstrip(" ").split(": ")
             if len(parts)==2:
                 locale[parts[0]]=parts[1]
