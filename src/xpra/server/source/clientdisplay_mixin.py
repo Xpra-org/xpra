@@ -59,7 +59,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_mode_size = c.intpair("desktop_mode_size")
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.screen_resize_bigger = c.boolget("screen-resize-bigger", True)
-        self.set_screen_sizes(c.listget("screen_sizes"))
+        self.set_screen_sizes(c.tupleget("screen_sizes"))
         self.set_desktops(c.intget("desktops", 1), c.strlistget("desktop.names"))
         self.show_desktop_allowed = c.boolget("show-desktop")
         self.icc = c.dictget("icc", {})
@@ -68,7 +68,7 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def set_screen_sizes(self, screen_sizes):
         log("set_screen_sizes(%s)", screen_sizes)
-        self.screen_sizes = screen_sizes or []
+        self.screen_sizes = list(screen_sizes or [])
         #validate dpi / screen size in mm
         #(ticket 2480: GTK3 on macos can return bogus values)
         MIN_DPI = envint("XPRA_MIN_DPI", 10)

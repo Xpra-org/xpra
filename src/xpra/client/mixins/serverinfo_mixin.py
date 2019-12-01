@@ -36,7 +36,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform_release = c.strget("platform.release")
         self._remote_platform_platform = c.strget("platform.platform")
         #linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
-        pld = c.listget("platform.linux_distribution")
+        pld = c.tupleget("platform.linux_distribution")
         if pld and len(pld)==3:
             def san(v):
                 if isinstance(v, int):

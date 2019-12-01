@@ -357,12 +357,18 @@ class typedict(dict):
             return default_value
 
     def strlistget(self, k : str, default_value=[], min_items=None, max_items=None):
-        return self.listget(k, default_value, str, min_items, max_items)
+        return self._listget(k, default_value, str, min_items, max_items)
 
     def intlistget(self, k : str, default_value=[], min_items=None, max_items=None):
-        return self.listget(k, default_value, int, min_items, max_items)
+        return self._listget(k, default_value, int, min_items, max_items)
 
-    def listget(self, k : str, default_value=[], item_type=None, min_items=None, max_items=None):
+    def tupleget(self, k : str, default_value=(), item_type=None, min_items=None, max_items=None):
+        v = self._listget(k, default_value, item_type, min_items, max_items)
+        if isinstance(v, list):
+            v = tuple(v)
+        return v
+
+    def _listget(self, k : str, default_value, item_type=None, min_items=None, max_items=None):
         v = self.capsget(k)
         if v is None:
             return default_value

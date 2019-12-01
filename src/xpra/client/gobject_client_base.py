@@ -392,7 +392,7 @@ class ControlXpraClient(CommandConnectClient):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not respond")
 
     def do_command(self):
-        cr = self.server_capabilities.listget("command_response")
+        cr = self.server_capabilities.tupleget("command_response")
         if cr is None:
             self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support control command")
             return

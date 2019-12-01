@@ -397,7 +397,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_command(metadata.strget("command"))
 
         if b"x11-property" in metadata:
-            self.set_x11_property(*metadata.listget("x11-property"))
+            self.set_x11_property(*metadata.tupleget("x11-property"))
 
 
     def set_x11_property(self, *x11_property):

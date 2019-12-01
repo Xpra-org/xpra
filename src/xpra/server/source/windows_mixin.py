@@ -139,7 +139,7 @@ class WindowsMixin(StubSourceMixin):
 
         #window filters:
         try:
-            for object_name, property_name, operator, value in c.listget("window-filters"):
+            for object_name, property_name, operator, value in c.tupleget("window-filters"):
                 self.add_window_filter(object_name, property_name, operator, value)
         except Exception as e:
             filterslog.error("Error parsing window-filters: %s", e)

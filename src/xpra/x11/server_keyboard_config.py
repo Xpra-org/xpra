@@ -53,7 +53,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.xkbmap_mod_managed = []
         self.xkbmap_mod_pointermissing = []
         self.xkbmap_mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
-        self.xkbmap_keycodes = []
+        self.xkbmap_keycodes = ()
         self.xkbmap_x11_keycodes = []
         self.xkbmap_layout = None
         self.xkbmap_variant = None
@@ -146,7 +146,7 @@ class KeyboardConfig(KeyboardConfigBase):
         for x in ("print", "query"):
             parse_option(x, props.strget)
         #lists:
-        parse_option("keycodes", props.listget)
+        parse_option("keycodes", props.tupleget)
         #dicts:
         for x in ("mod_meanings", "x11_keycodes", "query_struct"):
             parse_option(x, props.dictget, {})

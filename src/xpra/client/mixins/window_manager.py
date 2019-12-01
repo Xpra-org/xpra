@@ -306,7 +306,7 @@ class WindowClient(StubClientMixin):
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_cursors and self.client_supports_cursors
-        self.default_cursor_data = c.listget("cursor.default", None)
+        self.default_cursor_data = c.tupleget("cursor.default", None)
         self.server_bell = c.boolget("bell")          #added in 0.5, default to True!
         self.bell_enabled = self.server_bell and self.client_supports_bell
         if c.boolget("windows", True):

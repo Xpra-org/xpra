@@ -276,7 +276,7 @@ class AudioServer(StubServerMixin):
                 self.sound_properties = query_sound()
                 assert self.sound_properties, "query did not return any data"
                 def vinfo(k):
-                    val = self.sound_properties.listget(k)
+                    val = self.sound_properties.tupleget(k)
                     assert val, "%s not found in sound properties" % bytestostr(k)
                     return ".".join(bytestostr(x) for x in val[:3])
                 bits = self.sound_properties.intget("python.bits", 32)
