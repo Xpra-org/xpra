@@ -362,7 +362,7 @@ def is_WSL() -> bool:
 def get_generic_os_name() -> str:
     for k,v in {
             "linux"     : "linux",
-            "darwin"    : "osx",
+            "darwin"    : "macos",
             "win"       : "win32",
             "freebsd"   : "freebsd",
             }.items():
