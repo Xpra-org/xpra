@@ -7,6 +7,7 @@
 
 import sys
 import datetime
+import platform
 from collections import deque
 from gi.repository import GLib, Gtk, Gdk
 
@@ -15,7 +16,6 @@ from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monoton
 from xpra.util import prettify_plug_name, typedict, csv, engs, iround
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
-from xpra.scripts.config import python_platform
 from xpra.client import mixin_features
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label,
@@ -164,7 +164,7 @@ class SessionInfo(Gtk.Window):
                 s.append(platform_platform)
             return "\n".join(s)
         distro = get_linux_distribution()
-        LOCAL_PLATFORM_NAME = make_os_str(sys.platform, python_platform.release(), python_platform.platform(), distro)
+        LOCAL_PLATFORM_NAME = make_os_str(sys.platform, platform.release(), platform.platform(), distro)
         SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform,
                                            self.client._remote_platform_release,
                                            self.client._remote_platform_platform,
@@ -225,7 +225,7 @@ class SessionInfo(Gtk.Window):
         tb.new_row("GDK",       client_vinfo("gdk"),        server_vinfo("gdk"))
         tb.new_row("Cairo",     client_vinfo("cairo"),      server_vinfo("cairo"))
         tb.new_row("Pango",     client_vinfo("pango"),      server_vinfo("pango"))
-        tb.new_row("Python", slabel(python_platform.python_version()), slabel(server_version_info("server.python.version")))
+        tb.new_row("Python", slabel(platform.python_version()), slabel(server_version_info("server.python.version")))
 
         try:
             from xpra.sound.wrapper import query_sound

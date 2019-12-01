@@ -9,6 +9,7 @@ import binascii
 import os
 import sys
 import numpy
+import platform
 from collections import deque
 import ctypes
 from ctypes import cdll as loader, POINTER
@@ -1376,8 +1377,7 @@ def get_info():
     if v:
         info["kernel_module_version"] = v
     if LINUX:
-        from xpra.scripts.config import python_platform
-        info["kernel_version"] = python_platform.uname()[2]
+        info["kernel_version"] = platform.uname()[2]
     if last_context_failure>0:
         info["last_failure"] = int(monotonic_time()-last_context_failure)
     return info

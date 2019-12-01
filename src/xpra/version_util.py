@@ -7,10 +7,10 @@
 import sys
 import os
 import socket
+import platform
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
-from xpra.scripts.config import python_platform
 from xpra.util import updict, envbool, get_util_logger
 from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
 
@@ -131,7 +131,7 @@ def get_version_info_full() -> dict:
 
 def do_get_platform_info() -> dict:
     from xpra.os_util import platform_name, platform_release
-    pp = sys.modules.get("platform", python_platform)
+    pp = sys.modules.get("platform", platform)
     def get_processor_name():
         if pp.system() == "Windows":
             return pp.processor()

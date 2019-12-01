@@ -11,6 +11,7 @@ import sys
 import errno
 import socket
 import signal
+import platform
 import threading
 import traceback
 from weakref import WeakKeyDictionary
@@ -22,7 +23,7 @@ from xpra.version_util import (
     )
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
-from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import InitException, parse_bool, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES
 from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection,
@@ -1996,7 +1997,7 @@ class ServerCore:
             "mode"              : self.get_server_mode(),
             "session-type"      : self.session_type,
             "type"              : "Python",
-            "python"            : {"version" : python_platform.python_version()},
+            "python"            : {"version" : platform.python_version()},
             "start_time"        : int(self.start_time),
             "current_time"      : int(now),
             "elapsed_time"      : int(now - self.start_time),

@@ -7,6 +7,7 @@
 import os.path
 import sys
 import ctypes
+import platform
 
 from xpra.os_util import get_util_logger
 
@@ -78,8 +79,7 @@ def do_get_system_conf_dirs():
     return [os.path.join(get_program_data_dir(), "Xpra")]
 
 def do_get_ssh_conf_dirs():
-    from xpra.scripts.config import python_platform
-    if python_platform.architecture()[0]=="32bit":
+    if platform.architecture()[0]=="32bit":
         system32 = "SysNative"
     else:
         system32 = "System32"

@@ -305,15 +305,15 @@ def get_linux_distribution():
         #linux_distribution is deprecated in Python 3.5 and it causes warnings,
         #so use our own code first:
         import subprocess
-        cmd = ["lsb_release", "-a"]
+        cmd = ["xlsb_release", "-a"]
         try:
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out = p.communicate()[0]
             assert p.returncode==0 and out
         except Exception:
             try:
-                from xpra.scripts.config import python_platform
-                _linux_distribution = python_platform.linux_distribution()
+                import platform
+                _linux_distribution = platform.linux_distribution()
             except Exception:
                 _linux_distribution = ("unknown", "unknown", "unknown")
         else:

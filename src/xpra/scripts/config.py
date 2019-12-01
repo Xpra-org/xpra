@@ -7,10 +7,6 @@
 import sys
 import os
 
-#this is here so we can expose the python "platform" module
-#before we import xpra.platform
-import platform as python_platform
-assert python_platform
 from xpra.util import csv
 from xpra.os_util import (
     WIN32, OSX, POSIX,
