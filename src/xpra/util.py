@@ -356,8 +356,8 @@ class typedict(dict):
         except ValueError:
             return default_value
 
-    def strlistget(self, k : str, default_value=[], min_items=None, max_items=None):
-        return self._listget(k, default_value, str, min_items, max_items)
+    def strtupleget(self, k : str, default_value=(), min_items=None, max_items=None):
+        return self.tupleget(k, default_value, str, min_items, max_items)
 
     def inttupleget(self, k : str, default_value=(), min_items=None, max_items=None):
         return self.tupleget(k, default_value, int, min_items, max_items)

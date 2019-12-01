@@ -86,7 +86,7 @@ class InputServer(StubServerMixin):
             self.key_repeat = c.intpair("key_repeat", (0, 0))
             self.set_keyboard_repeat(self.key_repeat)
             #always clear modifiers before setting a new keymap
-            ss.make_keymask_match(c.strlistget("modifiers", []))
+            ss.make_keymask_match(c.strtupleget("modifiers"))
         else:
             self.set_keyboard_repeat(None)
             self.key_repeat = (0, 0)

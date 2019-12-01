@@ -47,7 +47,7 @@ class RPCClient(StubClientMixin):
             default_rpc_types = ["dbus"]
         else:
             default_rpc_types = []
-        self.server_rpc_types = c.strlistget("rpc-types", default_rpc_types)
+        self.server_rpc_types = c.strtupleget("rpc-types", default_rpc_types)
         return True
 
     def process_ui_capabilities(self):

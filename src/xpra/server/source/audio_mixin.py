@@ -63,8 +63,8 @@ class AudioMixin(StubSourceMixin):
         self.pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.pulseaudio_cookie_hash = c.strget("sound.pulseaudio.cookie-hash")
         self.pulseaudio_server = c.strget("sound.pulseaudio.server")
-        self.sound_decoders = c.strlistget("sound.decoders", [])
-        self.sound_encoders = c.strlistget("sound.encoders", [])
+        self.sound_decoders = c.strtupleget("sound.decoders", [])
+        self.sound_encoders = c.strtupleget("sound.encoders", [])
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
         self.sound_bundle_metadata = c.boolget("sound.bundle-metadata")
@@ -166,7 +166,7 @@ class AudioMixin(StubSourceMixin):
             return None
         try:
             from xpra.sound.wrapper import start_sending_sound
-            plugins = self.sound_properties.strlistget("plugins", [])
+            plugins = self.sound_properties.strtupleget("plugins")
             ss = start_sending_sound(plugins, self.sound_source_plugin,
                                      None, codec, volume, True, [codec],
                                      self.pulseaudio_server, self.pulseaudio_id)

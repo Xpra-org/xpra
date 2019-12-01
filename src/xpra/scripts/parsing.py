@@ -1204,7 +1204,7 @@ def do_parse_cmdline(cmdline, defaults):
         from xpra.sound.gstreamer_util import NAME_TO_INFO_PLUGIN
         try:
             from xpra.sound.wrapper import query_sound
-            source_plugins = query_sound().strlistget("sources", ())
+            source_plugins = query_sound().strtupleget("sources", ())
             source_default = query_sound().strget("source.default", "")
         except Exception as e:
             raise InitInfo(e) from None
@@ -1338,7 +1338,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     if not props:
         return ["sound is not supported - gstreamer not present or not accessible"]
     codec_help = []
-    all_speaker_codecs = props.strlistget("encoders" if is_server else "decoders")
+    all_speaker_codecs = props.strtupleget("encoders" if is_server else "decoders")
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
@@ -1346,7 +1346,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     elif invalid_sc:
         codec_help.append("WARNING: some of the specified speaker codecs are not available: %s" % csv(invalid_sc))
 
-    all_microphone_codecs = props.strlistget("decoders" if is_server else "encoders")
+    all_microphone_codecs = props.strtupleget("decoders" if is_server else "encoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:

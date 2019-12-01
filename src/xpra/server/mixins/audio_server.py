@@ -288,8 +288,8 @@ class AudioServer(StubServerMixin):
                 soundlog.error(" %s", e)
                 self.speaker_allowed = False
                 self.microphone_allowed = False
-        encoders = self.sound_properties.strlistget("encoders", [])
-        decoders = self.sound_properties.strlistget("decoders", [])
+        encoders = self.sound_properties.strtupleget("encoders")
+        decoders = self.sound_properties.strtupleget("decoders")
         self.speaker_codecs = sound_option_or_all("speaker-codec", self.speaker_codecs, encoders)
         self.microphone_codecs = sound_option_or_all("microphone-codec", self.microphone_codecs, decoders)
         if not self.speaker_codecs:

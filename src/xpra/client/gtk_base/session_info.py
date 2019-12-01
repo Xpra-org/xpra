@@ -233,8 +233,8 @@ class SessionInfo(Gtk.Window):
         except Exception:
             log("cannot load sound information: %s", exc_info=True)
             props = typedict()
-        gst_version = props.strlistget("gst.version")
-        pygst_version = props.strlistget("pygst.version")
+        gst_version = props.strtupleget("gst.version")
+        pygst_version = props.strtupleget("pygst.version")
         tb.new_row("GStreamer", slabel(make_version_str(gst_version)), slabel(server_version_info("sound.gst.version")))
         tb.new_row("pygst", slabel(make_version_str(pygst_version)), slabel(server_version_info("sound.pygst.version")))
         def gllabel(prop="opengl", default_value="n/a"):
@@ -789,11 +789,11 @@ class SessionInfo(Gtk.Window):
         def codec_info(enabled, codecs):
             if not enabled:
                 return "n/a"
-            return ", ".join(codecs or [])
+            return ", ".join(codecs or ())
         if mixin_features.audio:
-            self.server_speaker_codecs_label.set_text(codec_info(scaps.boolget("sound.send", False), scaps.strlistget("sound.encoders", [])))
+            self.server_speaker_codecs_label.set_text(codec_info(scaps.boolget("sound.send", False), scaps.strtupleget("sound.encoders")))
             self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
-            self.server_microphone_codecs_label.set_text(codec_info(scaps.boolget("sound.receive", False), scaps.strlistget("sound.decoders", [])))
+            self.server_microphone_codecs_label.set_text(codec_info(scaps.boolget("sound.receive", False), scaps.strtupleget("sound.decoders")))
             self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
         def encliststr(v):
             v = list(v)
@@ -802,7 +802,7 @@ class SessionInfo(Gtk.Window):
             except ValueError:
                 pass
             return csv(sorted(v))
-        se = scaps.strlistget("encodings.core", scaps.strlistget("encodings"))
+        se = scaps.strtupleget("encodings.core", scaps.strtupleget("encodings"))
         self.server_encodings_label.set_text(encliststr(se))
         if mixin_features.encoding:
             self.client_encodings_label.set_text(encliststr(self.client.get_core_encodings()))

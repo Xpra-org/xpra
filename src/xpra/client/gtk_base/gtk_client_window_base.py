@@ -487,7 +487,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if metadata.get("skip-taskbar") and self.is_awt(metadata):
                     metalog("forcing POPUP type for Java AWT skip-taskbar window, transient-for=%s", transient_for)
                     return True
-        window_types = metadata.strlistget("window-type", [])
+        window_types = metadata.strtupleget("window-type")
         popup_types = tuple(POPUP_TYPE_HINTS.intersection(window_types))
         metalog("popup_types(%s)=%s", window_types, popup_types)
         if popup_types:

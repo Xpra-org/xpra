@@ -751,7 +751,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         padding = caps.strget("cipher.padding", DEFAULT_PADDING)
         #server may tell us what it supports,
         #either from hello response or from challenge packet:
-        self.server_padding_options = caps.strlistget("cipher.padding.options", [DEFAULT_PADDING])
+        self.server_padding_options = caps.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
         if not cipher or not cipher_iv:
             self.warn_and_quit(EXIT_ENCRYPTION,
                                "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
@@ -832,7 +832,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if not c.parse_server_capabilities(self):
                 return False
         self.server_client_shutdown = self.server_capabilities.boolget("client-shutdown", True)
-        self.server_compressors = self.server_capabilities.strlistget("compressors", ["zlib"])
+        self.server_compressors = self.server_capabilities.strtupleget("compressors", ("zlib",))
         return True
 
     def parse_network_capabilities(self):

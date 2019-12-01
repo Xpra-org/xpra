@@ -405,7 +405,7 @@ class UIXpraClient(ClientBaseClass):
                 log.warn("Warning: cannot start new commands")
                 log.warn(" the feature is currently disabled on the server")
         self.server_commands_info = c.boolget("server-commands-info")
-        self.server_commands_signals = c.strlistget("server-commands-signals")
+        self.server_commands_signals = c.strtupleget("server-commands-signals")
         self.server_readonly = c.boolget("readonly")
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
@@ -417,7 +417,7 @@ class UIXpraClient(ClientBaseClass):
             self.keyboard_helper.send = nosend
 
         i = platform_name(self._remote_platform,
-                          c.strlistget("platform.linux_distribution") or c.strget("platform.release", ""))
+                          c.strtupleget("platform.linux_distribution") or c.strget("platform.release", ""))
         r = self._remote_version
         if self._remote_revision:
             r += "-r%s" % self._remote_revision

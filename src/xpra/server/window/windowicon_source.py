@@ -45,7 +45,7 @@ class WindowIconSource:
 
         self.window_icon_data = None
         self.send_window_icon_timer = 0
-        self.theme_default_icons = icons_encoding_options.strlistget("default.icons", [])
+        self.theme_default_icons = icons_encoding_options.strtupleget("default.icons")
         self.window_icon_greedy = icons_encoding_options.boolget("greedy", False)
         self.window_icon_size = icons_encoding_options.intpair("size", (64, 64))
         self.window_icon_max_size = icons_encoding_options.intpair("max_size", self.window_icon_size)

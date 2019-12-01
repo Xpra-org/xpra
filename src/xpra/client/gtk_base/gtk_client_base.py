@@ -1189,7 +1189,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             reftype = "leader-wid"
             ref = leader_wid
         if ref<0:
-            ci = metadata.strlistget("class-instance")
+            ci = metadata.strtupleget("class-instance")
             if ci:
                 reftype = "class"
                 ref = "|".join(ci)

@@ -152,7 +152,7 @@ class KeyboardConfig(KeyboardConfigBase):
             parse_option(x, props.dictget, {})
         #lists of strings:
         for x in ("mod_managed", "mod_pointermissing"):
-            parse_option(x, props.strlistget)
+            parse_option(x, props.strtupleget)
         parse_option("raw", props.boolget)
         #older clients don't specify if they support layout groups safely
         #(MS Windows clients used base-1)

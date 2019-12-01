@@ -236,7 +236,7 @@ class TopClient(MonitorXpraClient):
             ]
         if not wi.boolget("shown"):
             attrs.insert(0, "hidden")
-        info = (title, g_str, csv(attrs), csv(wi.strlistget("window-type", ("NORMAL",))))
+        info = (title, g_str, csv(attrs), csv(wi.strtupleget("window-type", ("NORMAL",))))
         return tuple((x, WHITE) for x in info if x)
 
     def box(self, window, x, y, w, h):

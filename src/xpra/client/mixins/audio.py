@@ -87,7 +87,7 @@ class AudioClient(StubClientMixin):
                     self.sound_properties = query_sound()
                     assert self.sound_properties, "query did not return any data"
                     def vinfo(k):
-                        val = self.sound_properties.strlistget(k)
+                        val = self.sound_properties.strtupleget(k)
                         assert val, "%s not found in sound properties" % k
                         return ".".join(val[:3])
                     bits = self.sound_properties.intget("python.bits", 32)
@@ -99,8 +99,8 @@ class AudioClient(StubClientMixin):
                     log.error(" %s", e)
                     self.speaker_allowed = False
                     self.microphone_allowed = False
-        encoders = self.sound_properties.strlistget("encoders", [])
-        decoders = self.sound_properties.strlistget("decoders", [])
+        encoders = self.sound_properties.strtupleget("encoders")
+        decoders = self.sound_properties.strtupleget("decoders")
         self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, decoders)
         self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, encoders)
         if not self.speaker_codecs:
@@ -174,8 +174,8 @@ class AudioClient(StubClientMixin):
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.server_pulseaudio_server = c.strget("sound.pulseaudio.server")
-        self.server_sound_decoders = c.strlistget("sound.decoders", ())
-        self.server_sound_encoders = c.strlistget("sound.encoders", ())
+        self.server_sound_decoders = c.strtupleget("sound.decoders")
+        self.server_sound_encoders = c.strtupleget("sound.encoders")
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")

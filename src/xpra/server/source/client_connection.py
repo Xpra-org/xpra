@@ -279,7 +279,7 @@ class ClientConnection(ClientConnectionClass):
         log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
-        self.control_commands = c.strlistget("control_commands")
+        self.control_commands = c.strtupleget("control_commands")
         self.xdg_menu_update = c.boolget("xdg-menu-update")
         bandwidth_limit = c.intget("bandwidth-limit", 0)
         server_bandwidth_limit = self.server_bandwidth_limit

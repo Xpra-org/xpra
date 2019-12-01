@@ -108,7 +108,7 @@ class ClipboardClient(StubClientMixin):
             from xpra.clipboard.clipboard_core import ALL_CLIPBOARDS
         except ImportError:
             ALL_CLIPBOARDS = []
-        self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
+        self.server_clipboards = c.strtupleget("clipboards", ALL_CLIPBOARDS)
         log("server clipboard: supported=%s, direction=%s",
                      self.server_clipboard, self.server_clipboard_direction)
         log("client clipboard: supported=%s, direction=%s",
@@ -116,7 +116,7 @@ class ClipboardClient(StubClientMixin):
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
         self.server_clipboard_contents_slice_fix = c.boolget("clipboard.contents-slice-fix")
-        self.server_clipboard_preferred_targets = c.strlistget("clipboard.preferred-targets", ())
+        self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         if not self.server_clipboard_contents_slice_fix:
             log.info("server clipboard does not include contents slice fix")
         return True

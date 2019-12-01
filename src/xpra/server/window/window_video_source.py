@@ -110,7 +110,7 @@ class WindowVideoSource(WindowSource):
         self.scroll_encoding = SCROLL_ENCODING
         self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
         self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
-        self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
+        self.supports_video_b_frames = self.encoding_options.strtupleget("video_b_frames", ())
         self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
         self.video_stream_file = None
@@ -360,7 +360,7 @@ class WindowVideoSource(WindowSource):
             if x not in self.core_encodings:
                 exclude.append(x)
                 continue
-            csc_modes = self.full_csc_modes.strlistget(x)
+            csc_modes = self.full_csc_modes.strtupleget(x)
             if not csc_modes or x not in self.core_encodings:
                 exclude.append(x)
                 if not init:
@@ -1253,7 +1253,7 @@ class WindowVideoSource(WindowSource):
         for encoding in encodings:
             #these are the CSC modes the client can handle for this encoding:
             #we must check that the output csc mode for each encoder is one of those
-            supported_csc_modes = self.full_csc_modes.strlistget(encoding)
+            supported_csc_modes = self.full_csc_modes.strtupleget(encoding)
             if not supported_csc_modes:
                 scorelog(" no supported csc modes for %s", encoding)
                 continue
@@ -1680,7 +1680,7 @@ class WindowVideoSource(WindowSource):
         self._csc_encoder = csce
         enc_start = monotonic_time()
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
-        dst_formats = tuple(bytestostr(x) for x in self.full_csc_modes.strlistget(encoder_spec.encoding))
+        dst_formats = tuple(bytestostr(x) for x in self.full_csc_modes.strtupleget(encoder_spec.encoding))
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
@@ -2056,7 +2056,7 @@ class WindowVideoSource(WindowSource):
             if self.is_cancelled():
                 return None
             #just for diagnostics:
-            supported_csc_modes = self.full_csc_modes.strlistget(encoding)
+            supported_csc_modes = self.full_csc_modes.strtupleget(encoding)
             encoder_specs = vh.get_encoder_specs(encoding)
             encoder_types = []
             ecsc = []

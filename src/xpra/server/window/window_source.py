@@ -177,13 +177,13 @@ class WindowSource(WindowIconSource):
         self.client_bit_depth = encoding_options.intget("bit-depth", 24)
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
-        self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [])
+        self.client_refresh_encodings = encoding_options.strtupleget("auto_refresh_encodings")
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
         self.send_window_size = encoding_options.boolget("send-window-size", False)
         self.supports_delta = ()
         if not window.is_tray() and DELTA:
-            self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
+            self.supports_delta = [x for x in encoding_options.strtupleget("supports_delta") if x in ("png", "rgb24", "rgb32")]
             if self.supports_delta:
                 self.delta_buckets = min(25, encoding_options.intget("delta_buckets", 1))
                 self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
@@ -674,12 +674,12 @@ class WindowSource(WindowIconSource):
     def do_set_client_properties(self, properties):
         self.maximized = properties.boolget("maximized", False)
         self.client_bit_depth = properties.intget("bit-depth", self.client_bit_depth)
-        self.client_refresh_encodings = properties.strlistget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
+        self.client_refresh_encodings = properties.strtupleget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
         self.full_frames_only = self.is_tray or properties.boolget("encoding.full_frames_only", self.full_frames_only)
         self.supports_transparency = HAS_ALPHA and properties.boolget("encoding.transparency", self.supports_transparency)
-        self.encodings = properties.strlistget("encodings", self.encodings)
-        self.core_encodings = properties.strlistget("encodings.core", self.core_encodings)
-        rgb_formats = properties.strlistget("encodings.rgb_formats", self.rgb_formats)
+        self.encodings = properties.strtupleget("encodings", self.encodings)
+        self.core_encodings = properties.strtupleget("encodings.core", self.core_encodings)
+        rgb_formats = properties.strtupleget("encodings.rgb_formats", self.rgb_formats)
         if not self.supports_transparency:
             #remove rgb formats with alpha
             rgb_formats = [x for x in rgb_formats if x.find("A")<0]
@@ -2427,7 +2427,7 @@ class WindowSource(WindowIconSource):
         #the native webp encoder only takes BGRX / BGRA as input,
         #but the client may be able to swap channels,
         #so it may be able to process RGBX / RGBA:
-        client_rgb_formats = self.full_csc_modes.strlistget("webp", ("BGRA", "BGRX", ))
+        client_rgb_formats = self.full_csc_modes.strtupleget("webp", ("BGRA", "BGRX", ))
         if pixel_format not in client_rgb_formats:
             if not rgb_reformat(image, client_rgb_formats, self.supports_transparency):
                 raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (

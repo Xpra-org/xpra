@@ -1685,8 +1685,8 @@ class ServerCore:
                 auth_failed(str(e))
                 return
 
-        digest_modes = c.strlistget("digest", ("hmac", ))
-        salt_digest_modes = c.strlistget("salt-digest", ("xor",))
+        digest_modes = c.strtupleget("digest", ("hmac", ))
+        salt_digest_modes = c.strtupleget("salt-digest", ("xor",))
         #client may have requested encryption:
         cipher = c.strget("cipher")
         cipher_iv = c.strget("cipher.iv")
@@ -1696,7 +1696,7 @@ class ServerCore:
             from xpra.net.crypto import DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS, new_cipher_caps
             iterations = c.intget("cipher.key_stretch_iterations")
             padding = c.strget("cipher.padding", DEFAULT_PADDING)
-            padding_options = c.strlistget("cipher.padding.options", [DEFAULT_PADDING])
+            padding_options = c.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
             if cipher not in ENCRYPTION_CIPHERS:
                 authlog.warn("unsupported cipher: %s", cipher)
                 auth_failed("unsupported cipher")
@@ -1807,7 +1807,7 @@ class ServerCore:
     def auth_verified(self, proto, packet, auth_caps):
         capabilities = packet[1]
         c = typedict(capabilities)
-        command_req = c.strlistget("command_request")
+        command_req = c.strtupleget("command_request")
         if command_req:
             #call from UI thread:
             authlog("auth_verified(..) command request=%s", command_req)

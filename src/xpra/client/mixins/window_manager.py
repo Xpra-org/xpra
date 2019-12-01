@@ -316,12 +316,12 @@ class WindowClient(StubClientMixin):
                     log.warn("Warning: server does not support auto-refresh!")
         else:
             log.warn("Warning: window forwarding is not enabled on this server")
-        self.server_window_signals = c.strlistget("window.signals")
-        self.server_window_states = c.strlistget("window.states", [
+        self.server_window_signals = c.strtupleget("window.signals")
+        self.server_window_states = c.strtupleget("window.states", (
             "iconified", "fullscreen",
             "above", "below",
             "sticky", "iconified", "maximized",
-            ])
+            ))
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
         #input devices:
         self.server_input_devices = c.strget("input-devices")
@@ -757,7 +757,7 @@ class WindowClient(StubClientMixin):
         if not OR_FORCE_GRAB:
             return False
         window_types = metadata.get("window-type", [])
-        wm_class = metadata.strlistget("class-instance", [None, None], 2, 2)
+        wm_class = metadata.strtupleget("class-instance", (None, None), 2, 2)
         c = None
         if wm_class:
             c = wm_class[0]
@@ -1075,7 +1075,7 @@ class WindowClient(StubClientMixin):
             if window:
                 metadata = getattr(window, "_metadata", {})
                 log("window_close_event(%i) metadata=%s", wid, metadata)
-                class_instance = metadata.strlistget("class-instance", (None, None), 2, 2)
+                class_instance = metadata.strtupleget("class-instance", (None, None), 2, 2)
                 title = metadata.get("title", "")
                 log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
                 matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]

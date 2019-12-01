@@ -270,16 +270,16 @@ class EncodingsMixin(StubSourceMixin):
 
         #encodings:
         self.encodings_packet = c.boolget("encodings.packet", False)
-        self.encodings = c.strlistget("encodings")
-        self.core_encodings = c.strlistget("encodings.core", self.encodings)
+        self.encodings = c.strtupleget("encodings")
+        self.core_encodings = c.strtupleget("encodings.core", self.encodings)
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
         #we can't assume that the window mixin is loaded,
         #or that the ui_client flag exists:
         send_ui = getattr(self, "ui_client", True) and getattr(self, "send_windows", True)
         if send_ui and not self.core_encodings:
             raise ClientException("client failed to specify any supported encodings")
-        self.window_icon_encodings = c.strlistget("encodings.window-icon", ["premult_argb32"])
-        self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
+        self.window_icon_encodings = c.strtupleget("encodings.window-icon", ("premult_argb32",))
+        self.rgb_formats = c.strtupleget("encodings.rgb_formats", ("RGB",))
         #skip all other encoding related settings if we don't send pixels:
         if not send_ui:
             log("windows/pixels forwarding is disabled for this client")
@@ -379,7 +379,7 @@ class EncodingsMixin(StubSourceMixin):
                     #make a new spec based on spec_props:
                     spec_prop = typedict(spec_prop)
                     input_colorspace = spec_prop.strget("input_colorspace")
-                    output_colorspaces = spec_prop.strlistget("output_colorspaces")
+                    output_colorspaces = spec_prop.strtupleget("output_colorspaces")
                     if not input_colorspace or not output_colorspaces:
                         log.warn("Warning: invalid proxy video encoding '%s':", encoding)
                         log.warn(" missing colorspace attributes")

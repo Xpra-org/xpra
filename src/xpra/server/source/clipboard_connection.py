@@ -47,9 +47,9 @@ class ClipboardConnection(StubSourceMixin):
             self.clipboard_enabled, self.clipboard_notifications)
         self.clipboard_greedy = c.boolget("clipboard.greedy")
         self.clipboard_want_targets = c.boolget("clipboard.want_targets")
-        self.clipboard_client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
+        self.clipboard_client_selections = c.strtupleget("clipboard.selections", CLIPBOARDS)
         self.clipboard_contents_slice_fix = c.boolget("clipboard.contents-slice-fix")
-        self.clipboard_preferred_targets = c.strlistget("clipboard.preferred-targets", ())
+        self.clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         log("client clipboard: greedy=%s, want_targets=%s, client_selections=%s, contents_slice_fix=%s",
             self.clipboard_greedy, self.clipboard_want_targets,
             self.clipboard_client_selections, self.clipboard_contents_slice_fix)

@@ -105,7 +105,7 @@ class ClipboardProtocolHelperCore:
         self.clipboard_contents_slice_fix = False
         self.disabled_by_loop = []
         self.filter_res = []
-        filter_res = d.strlistget("filters")
+        filter_res = d.strtupleget("filters")
         if filter_res:
             for x in filter_res:
                 try:
@@ -120,10 +120,10 @@ class ClipboardProtocolHelperCore:
         self.init_translation(kwargs)
         self._want_targets = False
         self.init_packet_handlers()
-        self.init_proxies(d.strlistget("clipboards.local", CLIPBOARDS))
+        self.init_proxies(d.strtupleget("clipboards.local", CLIPBOARDS))
         remote_loop_uuids = d.dictget("remote-loop-uuids", {})
         self.verify_remote_loop_uuids(remote_loop_uuids)
-        self.remote_clipboards = d.strlistget("clipboards.remote", CLIPBOARDS)
+        self.remote_clipboards = d.strtupleget("clipboards.remote", CLIPBOARDS)
 
     def init_translation(self, kwargs):
         def getselection(name):

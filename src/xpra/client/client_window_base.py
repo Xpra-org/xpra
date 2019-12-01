@@ -216,7 +216,7 @@ class ClientWindowBase(ClientWidgetBase):
         #WARNING: "class-instance" needs to go first because others may realize the window
         #(and GTK doesn't set the "class-instance" once the window is realized)
         if b"class-instance" in metadata:
-            self.set_class_instance(*self._metadata.strlistget("class-instance", ("xpra", "Xpra"), 2, 2))
+            self.set_class_instance(*self._metadata.strtupleget("class-instance", ("xpra", "Xpra"), 2, 2))
             self.reset_icon()
 
         if b"title" in metadata:
@@ -278,7 +278,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         #apply window-type hint if window has not been mapped yet:
         if b"window-type" in metadata and not self.is_mapped():
-            window_types = metadata.strlistget("window-type")
+            window_types = metadata.strtupleget("window-type")
             self.set_window_type(window_types)
 
         if b"role" in metadata:
@@ -531,7 +531,7 @@ class ClientWindowBase(ClientWidgetBase):
         for window_type in window_types:
             #win32 workaround:
             if AWT_DIALOG_WORKAROUND and window_type=="DIALOG" and self._metadata.boolget("skip-taskbar"):
-                wm_class = self._metadata.strlistget("class-instance", (None, None), 2, 2)
+                wm_class = self._metadata.strtupleget("class-instance", (None, None), 2, 2)
                 if wm_class and len(wm_class)==2 and wm_class[0] and wm_class[0].startswith("sun-awt-X11"):
                     #replace "DIALOG" with "NORMAL":
                     if "NORMAL" in window_types:
@@ -692,7 +692,7 @@ class ClientWindowBase(ClientWidgetBase):
     def can_have_spinner(self):
         if self._backing is None:
             return False
-        window_types = self._metadata.strlistget("window-type")
+        window_types = self._metadata.strtupleget("window-type")
         if not window_types:
             return False
         return ("NORMAL" in window_types) or \

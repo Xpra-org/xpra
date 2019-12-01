@@ -457,7 +457,7 @@ class ProxyInstance:
             if self.cipher:
                 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, DEFAULT_PADDING
                 crypto_backend_init()
-                padding_options = self.caps.strlistget("cipher.padding.options", [DEFAULT_PADDING])
+                padding_options = self.caps.strtupleget("cipher.padding.options", [DEFAULT_PADDING])
                 auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key, padding_options)
                 caps.update(auth_caps)
             #may need to bump packet size:
@@ -712,7 +712,7 @@ class ProxyInstance:
             enclog("creating new video encoder %s for window %s", spec, wid)
             ve = spec.make_instance()
             #dst_formats is specified with first frame only:
-            dst_formats = client_options.strlistget("dst_formats")
+            dst_formats = client_options.strtupleget("dst_formats")
             if dst_formats is not None:
                 #save it in case we timeout the video encoder,
                 #so we can instantiate it again, even from a frame no>1

@@ -65,7 +65,7 @@ class TestTypeDict(unittest.TestCase):
             1 : 1,
             "boolvalue" : True,
             "intpair" : (1, 2),
-            "strlist" : ["a", "b"],
+            "strtuple" : ["a", "b"],
             })
         v = d.capsget("bytekey")
         self.assertIsNotNone(v)
@@ -74,7 +74,7 @@ class TestTypeDict(unittest.TestCase):
         self.assertEqual(d.intget(1), 1)
         self.assertEqual(d.boolget("boolvalue"), True)
         self.assertEqual(d.intpair("intpair"), (1, 2))
-        self.assertEqual(d.strlistget("strlist"), ["a", "b"])
+        self.assertEqual(d.strtupleget("strtuple"), ("a", "b"))
         #now test defaults:
         self.assertEqual(d.boolget("invalidkey"), False)
         self.assertEqual(d.boolget("invalidkey", False), False)
@@ -117,8 +117,8 @@ class TestTypeDict(unittest.TestCase):
         self._test_values_type(d, d.dictget, [dict])
 
     #def intpair(self, k, default_value=None):
-    #def strlistget(self, k, default_value=[]):
-    #def intlistget(self, k, default_value=[]):
+    #def strtupleget(self, k, default_value=[]):
+    #def inttupleget(self, k, default_value=[]):
     #def listget(self, k, default_value=[], item_type=None, max_items=None):
 
 

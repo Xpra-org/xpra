@@ -272,7 +272,7 @@ def sanitize_name(name):
 
 def add_printer(name, options, info, location, attributes, success_cb=None):
     log("add_printer%s", (name, options, info, location, attributes, success_cb))
-    mimetypes = options.strlistget("mimetypes", (DEFAULT_MIMETYPE,))
+    mimetypes = options.strtupleget("mimetypes", (DEFAULT_MIMETYPE,))
     if not mimetypes:
         log.error("Error: no mimetypes specified for printer '%s'", name)
         return

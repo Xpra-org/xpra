@@ -101,7 +101,7 @@ class ServerCommandsWindow:
                     continue
                 #some records aren't procinfos:
                 pi = typedict(procinfo)
-                command = pi.strlistget("command")
+                command = pi.strtupleget("command")
                 pid = pi.intget("pid", 0)
                 returncode = pi.intget("returncode", None)
                 if pid>0 and command:

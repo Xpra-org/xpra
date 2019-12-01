@@ -85,7 +85,7 @@ class WebcamForwarder(StubClientMixin):
     def parse_server_capabilities(self):
         c = self.server_capabilities
         self.server_webcam = c.boolget("webcam")
-        self.server_webcam_encodings = c.strlistget("webcam.encodings", ("png", "jpeg"))
+        self.server_webcam_encodings = c.strtupleget("webcam.encodings", ("png", "jpeg"))
         self.server_virtual_video_devices = c.intget("virtual-video-devices")
         log("webcam server support: %s (%i devices, encodings: %s)",
             self.server_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
