@@ -305,7 +305,7 @@ def get_linux_distribution():
         #linux_distribution is deprecated in Python 3.5 and it causes warnings,
         #so use our own code first:
         import subprocess
-        cmd = ["xlsb_release", "-a"]
+        cmd = ["lsb_release", "-a"]
         try:
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out = p.communicate()[0]
