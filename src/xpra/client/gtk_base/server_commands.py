@@ -64,9 +64,7 @@ class ServerCommandsWindow:
             btn("Start New", "Run a command on the server", self.client.show_start_new_command, "forward.png")
         btn("Close", "", self.close, "quit.png")
 
-        def accel_close(*_args):
-            self.close()
-        add_close_accel(self.window, accel_close)
+        add_close_accel(self.window, self.close)
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
@@ -176,14 +174,10 @@ class ServerCommandsWindow:
         self.window.present()
         self.schedule_timer()
 
-    def hide(self):
-        log("hide()")
-        self.window.hide()
-        self.cancel_timer()
-
     def close(self, *args):
         log("close%s", args)
-        self.hide()
+        self.window.hide()
+        self.cancel_timer()
         return True
 
     def destroy(self, *args):
@@ -256,7 +250,7 @@ def main():
         client.show_start_new_command = show_start_new_command
 
         app = ServerCommandsWindow(client)
-        app.hide = app.quit
+        app.close = app.quit
         register_os_signals(app.quit)
         try:
             gui_ready()
