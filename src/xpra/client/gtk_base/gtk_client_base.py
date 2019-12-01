@@ -403,7 +403,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             def run_command_cb(command, sharing=True):
                 self.send_start_command(command, command, False, sharing)
             self.start_new_command = getStartNewCommand(run_command_cb,
-                                                        self.server_sharing and self.server_window_filters,
+                                                        self.server_sharing,
                                                         self.server_xdg_menu)
         self.start_new_command.show()
 
