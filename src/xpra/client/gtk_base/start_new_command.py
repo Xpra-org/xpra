@@ -56,6 +56,7 @@ class StartNewCommand(object):
         vbox = gtk.VBox(False, 0)
         vbox.set_spacing(0)
 
+        self.entry = None
         if xdg_menu:
             # or use menus if we have xdg data:
             hbox = gtk.HBox(False, 20)
@@ -135,7 +136,7 @@ class StartNewCommand(object):
         category = self.category_combo.get_active_text()
         entries = typedict(self.xdg_menu.dictget(category.encode("utf-8"), {})).dictget("Entries", {})
         log("command_changed(%s) category=%s, entries=%s", args, category, entries)
-        if entries:
+        if entries and self.entry:
             command_name = self.command_combo.get_active_text()
             command_props = typedict(entries).dictget(command_name.encode("utf-8"), {})
             log("command properties=%s", command_props)
