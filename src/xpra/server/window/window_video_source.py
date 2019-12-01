@@ -111,7 +111,7 @@ class WindowVideoSource(WindowSource):
         self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
         self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
-        self.video_max_size = self.encoding_options.intlistget("video_max_size", (8192, 8192), 2, 2)
+        self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
         self.video_stream_file = None
 

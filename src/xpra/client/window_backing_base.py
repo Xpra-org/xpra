@@ -203,7 +203,7 @@ class WindowBackingBase:
     def gravity_adjust(self, x, y, options):
         #if the window size has changed,
         #adjust the coordinates honouring the window gravity:
-        window_size = options.intlistget("window-size", None)
+        window_size = options.inttupleget("window-size", None)
         g = self.gravity
         log("gravity_adjust%s window_size=%s, size=%s, gravity=%s",
             (x, y, options), window_size, self.size, GRAVITY_STR.get(g, "unknown"))

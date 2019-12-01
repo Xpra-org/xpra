@@ -388,7 +388,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_strut(metadata.dictget("strut", {}))
 
         if b"fullscreen-monitors" in metadata:
-            self.set_fullscreen_monitors(metadata.intlistget("fullscreen-monitors"))
+            self.set_fullscreen_monitors(metadata.inttupleget("fullscreen-monitors"))
 
         if b"shape" in metadata:
             self.set_shape(metadata.dictget("shape", {}))

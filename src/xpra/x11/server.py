@@ -474,7 +474,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", ss.window_frame_sizes)
         frame = None
         if ss.window_frame_sizes:
-            frame = ss.window_frame_sizes.intlistget("frame", (0, 0, 0, 0), 4, 4)
+            frame = ss.window_frame_sizes.inttupleget("frame", (0, 0, 0, 0), 4, 4)
         if self._wm:
             self._wm.set_default_frame_extents(frame)
 
@@ -832,7 +832,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         changes = []
         if "frame" in new_window_state:
             #the size of the window frame may have changed
-            frame = nws.intlistget("frame", (0, 0, 0, 0))
+            frame = nws.inttupleget("frame", (0, 0, 0, 0))
             window.set_property("frame", frame)
         #boolean: but not a wm_state and renamed in the model... (iconic vs inconified!)
         iconified = nws.boolget("iconified")

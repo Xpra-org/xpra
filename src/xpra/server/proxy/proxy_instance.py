@@ -681,7 +681,7 @@ class ProxyInstance:
                 ve.clean()
                 ve = None
         #scaling and depth are proxy-encoder attributes:
-        scaling = client_options.intlistget("scaling", (1, 1))
+        scaling = client_options.inttupleget("scaling", (1, 1))
         depth   = client_options.intget("depth", 24)
         rowstride = client_options.intget("rowstride", rowstride)
         quality = client_options.intget("quality", -1)

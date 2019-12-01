@@ -111,7 +111,7 @@ class TopClient(MonitorXpraClient):
             clients_info = self.dictget("clients")
             nclients = clients_info.intget("")
             load_average = ""
-            load = sli.intlistget("load")
+            load = sli.inttupleget("load")
             if load and len(load)==3:
                 float_load = tuple(v/1000.0 for v in load)
                 load_average = ", load average: %1.2f, %1.2f, %1.2f" % float_load
@@ -125,7 +125,7 @@ class TopClient(MonitorXpraClient):
                 return
             #cursor:
             cursor_info = self.dictget("cursor")
-            cx, cy = cursor_info.intlistget("position", (0, 0))
+            cx, cy = cursor_info.inttupleget("position", (0, 0))
             self.stdscr.addstr(4, 0, "cursor at %ix%i" % (cx, cy))
             if height<=5:
                 return
@@ -219,7 +219,7 @@ class TopClient(MonitorXpraClient):
 
     def get_window_info(self, wi):
         #version info:
-        geom = tuple(wi.intlistget("geometry"))
+        geom = wi.inttupleget("geometry")
         g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
         sc = wi.dictget("size-constraints")
         if sc:

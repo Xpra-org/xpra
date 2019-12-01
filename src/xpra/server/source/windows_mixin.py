@@ -131,8 +131,8 @@ class WindowsMixin(StubSourceMixin):
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes", {}))
-        self.window_min_size = c.intlistget("window.min-size", (0, 0))
-        self.window_max_size = c.intlistget("window.max-size", (0, 0))
+        self.window_min_size = c.inttupleget("window.min-size", (0, 0))
+        self.window_max_size = c.inttupleget("window.max-size", (0, 0))
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s",
             self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)

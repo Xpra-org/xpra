@@ -345,7 +345,7 @@ class typedict(dict):
         return v
 
     def intpair(self, k : str, default_value=None):
-        v = self.intlistget(k, default_value)
+        v = self.inttupleget(k, default_value)
         if v is None:
             return default_value
         if len(v)!=2:
@@ -359,8 +359,8 @@ class typedict(dict):
     def strlistget(self, k : str, default_value=[], min_items=None, max_items=None):
         return self._listget(k, default_value, str, min_items, max_items)
 
-    def intlistget(self, k : str, default_value=[], min_items=None, max_items=None):
-        return self._listget(k, default_value, int, min_items, max_items)
+    def inttupleget(self, k : str, default_value=(), min_items=None, max_items=None):
+        return self.tupleget(k, default_value, int, min_items, max_items)
 
     def tupleget(self, k : str, default_value=(), item_type=None, min_items=None, max_items=None):
         v = self._listget(k, default_value, item_type, min_items, max_items)
