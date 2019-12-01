@@ -122,8 +122,6 @@ class _codec_spec:
             instances = tuple(self.instances.keys())
             log.warn("Warning: already %s active instances of %s: %s",
                      cur, self.codec_class, instances)
-            from xpra.util import dump_references
-            dump_references(log, instances)
         else:
             log("make_instance() %s - instance count=%s", self.codec_type, cur)
         v = self.codec_class()

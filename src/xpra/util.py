@@ -566,63 +566,6 @@ def dump_frames(frames, logger=None):
                 logger("%s", l)
 
 
-def dump_references(log, instances, exclude=[]):
-    import gc
-    import inspect
-    frame = inspect.currentframe()
-    exclude.append(instances)
-    exclude.append([frame])
-    exclude = [[frame],]
-    rexclude = exclude
-    np = sys.modules.get("numpy")
-    if np:
-        rexclude = []
-        skip_types = (np.ndarray, np.generic)
-        for v in exclude:
-            rexclude.append(tuple(x for x in v if not isinstance(x, skip_types)))
-    del exclude
-    gc.collect()
-    try:
-        log.info("dump references for %i instances:", len(instances))
-        for j, instance in enumerate(instances):
-            referrers = tuple(x for x in gc.get_referrers(instance) if not any(y for y in rexclude if x in y))
-            log.info("* %i : %s, type=%s, with %i referers",
-                     j, repr_ellipsized(str(instance)), type(instance), len(referrers))
-            j += 1
-            for i, r in enumerate(referrers):
-                log.info("  [%s] in %s", i, type(r))
-                if inspect.isframe(r):
-                    log.info("    frame info: %s", str(inspect.getframeinfo(r))[:1024])
-                elif isinstance(r, (list, tuple)):
-                    listref = gc.get_referrers(r)
-                    lr = len(r)
-                    if lr<=128:
-                        log.info("    %i %s items: %s", lr, type(r), csv(repr_ellipsized(str(x)) for x in r))
-                    elif lr<512:
-                        log.info("    %i %s items: %s..", lr, type(r), repr_ellipsized(csv(r)))
-                    else:
-                        log.info("    %i %s items", lr, type(r))
-                    ll = len(listref)
-                    if ll<128:
-                        log.info("    %i referrers: %s", ll, csv(repr_ellipsized(str(x)) for x in listref))
-                    elif ll<512:
-                        log.info("    %i referrers: %s", ll, repr_ellipsized(csv(listref)))
-                    else:
-                        log.info("    %i referrers", ll)
-                elif isinstance(r, dict):
-                    if len(r)>64:
-                        log.info("    %s items: %s", len(r), repr_ellipsized(str(r)))
-                        continue
-                    for k,v in r.items():
-                        if k is instance:
-                            log.info("    key with value=%s", repr_ellipsized(str(v)))
-                        elif v is instance:
-                            log.info("    for key=%s", repr_ellipsized(str(k)))
-                else:
-                    log.info("     %s", repr_ellipsized(str(r)))
-    finally:
-        del frame
-
 def detect_leaks():
     try:
         from pympler import tracker
