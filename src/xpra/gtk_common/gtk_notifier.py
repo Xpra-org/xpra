@@ -132,7 +132,6 @@ class GTK_Notifier(NotifierBase):
         image = None
         if icon and icon[0]=="png":
             img_data = icon[3]
-            from gi.repository import GdkPixbuf
             loader = GdkPixbuf.PixbufLoader()
             loader.write(img_data)
             loader.close()
