@@ -172,7 +172,7 @@ class ApplicationWindow:
     def do_create_window(self):
         self.window = Gtk.Window()
         self.window.set_border_width(20)
-        self.window.connect("destroy", self.destroy)
+        self.window.connect("delete-event", self.destroy)
         self.window.set_default_size(400, 260)
         self.window.set_title("Xpra Launcher")
 
@@ -1011,6 +1011,7 @@ class ApplicationWindow:
         self.clean_client()
         self.close_window()
         gtk_main_quit_really()
+        return False
 
     def update_options_from_URL(self, url):
         from xpra.scripts.parsing import parse_URL

@@ -35,7 +35,7 @@ class BugReport:
     def setup_window(self):
         self.window = Gtk.Window()
         self.window.set_border_width(20)
-        self.window.connect("destroy", self.close)
+        self.window.connect("delete-event", self.close)
         self.window.set_default_size(400, 300)
         self.window.set_title("Xpra Bug Report")
 
@@ -230,6 +230,7 @@ class BugReport:
         log("close%s", args)
         self.hide()
         self.window = None
+        return True
 
     def destroy(self, *args):
         log("destroy%s", args)

@@ -24,7 +24,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         super().__init__()
         self.set_border_width(20)
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.connect("destroy", self.quit)
+        self.connect("delete-event", self.quit)
         self.set_default_size(400, 150)
         self.set_title(title)
         add_close_accel(self, self.cancel)
@@ -77,6 +77,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
+        return True
 
     def cancel(self, *args):
         log("cancel%s", args)

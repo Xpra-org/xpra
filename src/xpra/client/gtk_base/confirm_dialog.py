@@ -25,7 +25,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
         super().__init__()
         self.set_border_width(20)
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.connect("destroy", self.quit)
+        self.connect("delete-event", self.quit)
         self.set_default_size(400, 150)
         self.set_title(title)
         add_close_accel(self, self.quit)
@@ -66,6 +66,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
+        return True
 
 
 def show_confirm_dialog(argv):

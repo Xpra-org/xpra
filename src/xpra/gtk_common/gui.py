@@ -233,7 +233,7 @@ class StartSession(Gtk.Window):
         icon = get_pixbuf("xpra")
         if icon:
             self.set_icon(icon)
-        self.connect("destroy", self.close)
+        self.connect("delete-event", self.close)
         add_close_accel(self, self.close)
 
         vbox = Gtk.VBox(False, 0)
@@ -434,6 +434,7 @@ class StartSession(Gtk.Window):
     def close(self, *args):
         log("close%s", args)
         self.hide()
+        return True
 
 
     def run_command(self, *_args):
