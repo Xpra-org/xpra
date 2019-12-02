@@ -432,11 +432,14 @@ class SIGPIPEStreamHandler(logging.StreamHandler):
 
     def emit(self, record):
         try:
-            super().emit(record)
+            msg = self.format(record)
+            stream = self.stream
+            # issue 35046: merged two stream.writes into one.
+            stream.write(msg + self.terminator)
+            self.flush()
+        except RecursionError:  # See issue 36272
+            raise
         except BrokenPipeError:
             pass
-
-    def handleError(self, record):
-        etype = sys.exc_info()[0]
-        if not isinstance(etype, BrokenPipeError):
-            super().handleError(record)
+        except Exception:
+            self.handleError(record)
