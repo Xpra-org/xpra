@@ -18,7 +18,7 @@ import shlex
 import traceback
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import csv, envbool, envint, unsetenv, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
+from xpra.util import csv, envbool, envint, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
 from xpra.exit_codes import EXIT_STR, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED
 from xpra.os_util import (
     get_util_logger, getuid, getgid,
