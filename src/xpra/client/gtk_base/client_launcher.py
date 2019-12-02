@@ -1150,31 +1150,35 @@ def do_main(argv):
         if not has_file:
             app.reset_errors()
         if not app.config.autoconnect or app.config.debug:
-            if OSX and not has_file:
+            if OSX:
                 from xpra.platform.darwin.gui import wait_for_open_handlers, force_focus
-                def open_file(filename):
-                    log("open_file(%s)", filename)
-                    app.update_options_from_file(filename)
-                    #the compressors and packet encoders cannot be changed from the UI
-                    #so apply them now:
-                    configure_network(app.config)
-                    app.update_gui_from_config()
-                    if app.config.autoconnect:
+                if has_file:
+                    force_focus()
+                    app.show()
+                else:
+                    def open_file(filename):
+                        log("open_file(%s)", filename)
+                        app.update_options_from_file(filename)
+                        #the compressors and packet encoders cannot be changed from the UI
+                        #so apply them now:
+                        configure_network(app.config)
+                        app.update_gui_from_config()
+                        if app.config.autoconnect:
+                            app.__osx_open_signal = True
+                            GLib.idle_add(app.do_connect)
+                        else:
+                            force_focus()
+                            app.show()
+                    def open_URL(url):
+                        log("open_URL(%s)", url)
                         app.__osx_open_signal = True
+                        app.update_options_from_URL(url)
+                        #the compressors and packet encoders cannot be changed from the UI
+                        #so apply them now:
+                        configure_network(app.config)
+                        app.update_gui_from_config()
                         GLib.idle_add(app.do_connect)
-                    else:
-                        force_focus()
-                        app.show()
-                def open_URL(url):
-                    log("open_URL(%s)", url)
-                    app.__osx_open_signal = True
-                    app.update_options_from_URL(url)
-                    #the compressors and packet encoders cannot be changed from the UI
-                    #so apply them now:
-                    configure_network(app.config)
-                    app.update_gui_from_config()
-                    GLib.idle_add(app.do_connect)
-                wait_for_open_handlers(app.show, open_file, open_URL)
+                    wait_for_open_handlers(app.show, open_file, open_URL)
             else:
                 app.show()
         gui_ready()
