@@ -40,8 +40,8 @@ class GTK3ClientWindow(GTKClientWindowBase):
     OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
 
-    def init_widget_events(self, widget):
-        GTKClientWindowBase.init_widget_events(self, widget)
+    def init_window(self, metadata):
+        super().init_window(metadata)
         self.connect("draw", self._do_draw)
 
     def get_backing_class(self):
