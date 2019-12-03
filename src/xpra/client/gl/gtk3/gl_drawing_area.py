@@ -24,8 +24,8 @@ class GLDrawingArea(GLWindowBackingBase):
     def idle_add(self, *args, **kwargs):
         GLib.idle_add(*args, **kwargs)
 
-    def init_gl_config(self, window_alpha):
-        self.context = GLContext(window_alpha)  #pylint: disable=not-callable
+    def init_gl_config(self):
+        self.context = GLContext(self._alpha_enabled)  #pylint: disable=not-callable
         self.window_context = None
 
     def is_double_buffered(self):

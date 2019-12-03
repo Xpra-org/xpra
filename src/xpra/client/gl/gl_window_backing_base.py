@@ -244,7 +244,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.last_present_fbo_error = None
 
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
-        self.init_gl_config(self._alpha_enabled)
+        self.init_gl_config()
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
         self.init_formats()
@@ -255,7 +255,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.repaint_all = True
         self._backing.show()
 
-    def init_gl_config(self, window_alpha):
+    def init_gl_config(self):
         raise NotImplementedError()
 
     def init_backing(self):
@@ -328,7 +328,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.size = bw, bh
             if CONTEXT_REINIT:
                 self.close_gl_config()
-                self.init_gl_config(self._alpha_enabled)
+                self.init_gl_config()
                 return
             if FBO_RESIZE:
                 self.resize_fbo(oldw, oldh, bw, bh)
