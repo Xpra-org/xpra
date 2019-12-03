@@ -69,6 +69,8 @@ CLOSED_EXCEPTIONS = ()
 def can_retry(e):
     if isinstance(e, socket.timeout):
         return "socket.timeout"
+    if isinstance(e, BrokenPipeError):
+        raise ConnectionClosedException(e) from None
     if isinstance(e, OSError):
         global CONTINUE_ERRNO
         code = e.args[0]
