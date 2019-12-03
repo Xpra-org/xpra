@@ -137,6 +137,8 @@ class AGLContext:
     def get_paint_context(self, gdk_window):
         nsview_ptr = get_nsview_ptr(gdk_window)
         if self.window_context and self.nsview_ptr!=nsview_ptr:
+            log("get_paint_context(%s) nsview_ptr has changed, was %#x, now %#x - destroying window context",
+                gdk_window, nsview_ptr, self.nsview_ptr)
             self.window_context.destroy()
             self.window_context = None
         if not self.window_context:
