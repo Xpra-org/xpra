@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT
@@ -42,7 +42,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
 
     def init_widget_events(self, widget):
         GTKClientWindowBase.init_widget_events(self, widget)
-        widget.connect("draw", self.drawing_area_draw)
+        self.connect("draw", self._do_draw)
 
     def get_backing_class(self):
         raise NotImplementedError()
@@ -114,25 +114,9 @@ class GTK3ClientWindow(GTKClientWindowBase):
         geomlog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
         self.set_geometry_hints(self.drawing_area, geom, gdk_hints)
 
-    def queue_draw_area(self, x, y, width, height):
-        window = self.get_window()
-        if not window:
-            log.warn("Warning: ignoring draw packet,")
-            log.warn(" received for a window which is not realized yet or gone already")
-            return
-        rect = Gdk.Rectangle()
-        rect.x = x
-        rect.y = y
-        rect.width = width
-        rect.height = height
-        self.drawing_area.get_window().invalidate_rect(rect, False)
 
-    def do_draw(self, context):
-        paintlog("do_draw(%s)", context)
-        Gtk.Window.do_draw(self, context)
-
-    def drawing_area_draw(self, widget, context):
-        paintlog("drawing_area_draw(%s, %s)", widget, context)
+    def _do_draw(self, widget, context):
+        paintlog("do_draw(%s, %s)", widget, context)
         backing = self._backing
         if self.get_mapped() and backing:
             self.paint_backing_offset_border(backing, context)
@@ -141,3 +125,4 @@ class GTK3ClientWindow(GTKClientWindowBase):
         self.cairo_paint_border(context, None)
         if not self._client.server_ok():
             self.paint_spinner(context)
+        return True

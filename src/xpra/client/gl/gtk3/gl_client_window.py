@@ -37,13 +37,6 @@ class GLClientWindowBase(GTK3ClientWindow):
             w, h = self.get_size()
             self.queue_draw_area(0, 0, w, h)
 
-    def queue_draw_area(self, x, y, w, h):
-        b = self._backing
-        if not b:
-            return
-        rect = (x, y, w, h)
-        b.gl_expose_rect(rect)
-
 
     def remove_backing(self):
         b = self._backing
