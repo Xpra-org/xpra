@@ -44,8 +44,6 @@ class GLClientWindowBase(GTK3ClientWindow):
         rect = (x, y, w, h)
         b.gl_expose_rect(rect)
 
-    def do_expose_event(self, event):
-        log("GL do_expose_event(%s)", event)
 
     def remove_backing(self):
         b = self._backing
