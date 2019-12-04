@@ -1760,7 +1760,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #if the window has been mapped already, the workspace should be set:
             workspace = self.get_window_workspace()
             if self._window_workspace!=workspace and workspace is not None:
-                workspacelog("configure event: changed workspace from %s to %s",
+                workspacelog("send_configure_event: changed workspace from %s to %s",
                              wn(self._window_workspace), wn(workspace))
                 self._window_workspace = workspace
                 props["workspace"] = workspace
