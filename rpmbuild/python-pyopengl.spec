@@ -9,7 +9,7 @@
 %global srcname PyOpenGL
 
 Name:           python2-pyopengl
-Version:        3.1.3rc1
+Version:        3.1.4
 Release:        1xpra1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
@@ -174,6 +174,9 @@ popd
 
 
 %changelog
+* Wed Dec 04 2019 Antoine Martin <antoine@xpra.org> - 3.1.4-1xpra1
+- new upstream release
+
 * Mon Nov 25 2019 Antoine Martin <antoine@xpra.org> - 3.1.3rc1-1xpra1
 - new upstream pre-release
 
