@@ -351,6 +351,7 @@ class GLWindowBackingBase(WindowBackingBase):
         #and then doing the gl_init() call but without initializing the offscreen fbo.
         sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
         with context:
+            context.update_geometry()
             #invert Y coordinates for OpenGL:
             sy = (oldh-h)-sy
             dy = (bh-h)-dy

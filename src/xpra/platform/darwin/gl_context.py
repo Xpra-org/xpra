@@ -48,6 +48,12 @@ class AGLWindowContext(object):
         assert self.gl_context
         self.gl_context.flushBuffer()
 
+    def update_geometry(self):
+        glc = self.gl_context
+        log.warn("update() gl_context=%s", glc)
+        if glc:
+            glc.update()
+
     def __del__(self):
         self.destroy()
 

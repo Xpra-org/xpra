@@ -60,6 +60,9 @@ class WGLWindowContext(object):
         self.paint_hdc = None
         self.ps = None
 
+    def update_geometry(self):
+        pass
+
     def swap_buffers(self):
         assert self.paint_hdc
         log("swap_buffers: calling SwapBuffers(%#x)", self.paint_hdc)
