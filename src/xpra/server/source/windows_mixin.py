@@ -256,7 +256,7 @@ class WindowsMixin(StubSourceMixin):
         self.last_cursor_sent = cursor_data[:9]
         w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
         #compress pixels if needed:
-        encoding = None
+        encoding = "raw"
         if pixels is not None:
             #convert bytearray to string:
             cpixels = strtobytes(pixels)
@@ -283,9 +283,7 @@ class WindowsMixin(StubSourceMixin):
             cursor_data[7] = cpixels
         cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
                   w, h, (encoding or "empty"), bytestostr(name), serial, delay, self.cursor_encodings)
-        args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
-        if self.cursor_encodings and encoding:
-            args = [encoding] + args
+        args = [encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
         self.send_more("cursor", *args)
 
     def send_empty_cursor(self):
