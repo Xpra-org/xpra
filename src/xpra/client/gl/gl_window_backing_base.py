@@ -450,64 +450,65 @@ class GLWindowBackingBase(WindowBackingBase):
             self.debug_setup = True
             self.gl_init_debug()
 
-        if not self.gl_setup:
-            mt = get_max_texture_size()
-            w, h = self.size
-            if w>mt or h>mt:
-                raise Exception("invalid texture dimensions %ix%i, maximum is %i" % (w, h, mt))
-            self.gl_marker("Initializing GL context for window size %s, backing size %s, max texture size=%i",
-                           self.render_size, self.size, mt)
-            # Initialize viewport and matrices for 2D rendering
-            x, _, _, y = self.offsets
-            glViewport(x, y, w, h)
-            glMatrixMode(GL_PROJECTION)
-            glLoadIdentity()
-            glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
-            glMatrixMode(GL_MODELVIEW)
-            # Mesa docs claim: this hint can improve the speed of texturing
-            #when perspective-correct texture coordinate interpolation isn't needed,
-            #such as when using a glOrtho() projection:
-            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
-            # Could be more optimal to use vertex arrays:
-            # glEnableClientState(GL_VERTEX_ARRAY)
-            # glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+        if self.gl_setup:
+            return
+        mt = get_max_texture_size()
+        w, h = self.size
+        if w>mt or h>mt:
+            raise Exception("invalid texture dimensions %ix%i, maximum is %i" % (w, h, mt))
+        self.gl_marker("Initializing GL context for window size %s, backing size %s, max texture size=%i",
+                       self.render_size, self.size, mt)
+        # Initialize viewport and matrices for 2D rendering
+        x, _, _, y = self.offsets
+        glViewport(x, y, w, h)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
+        glMatrixMode(GL_MODELVIEW)
+        # Mesa docs claim: this hint can improve the speed of texturing
+        #when perspective-correct texture coordinate interpolation isn't needed,
+        #such as when using a glOrtho() projection:
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
+        # Could be more optimal to use vertex arrays:
+        # glEnableClientState(GL_VERTEX_ARRAY)
+        # glEnableClientState(GL_TEXTURE_COORD_ARRAY)
 
-            # Clear background to transparent black
-            glClearColor(0.0, 0.0, 0.0, 0.0)
+        # Clear background to transparent black
+        glClearColor(0.0, 0.0, 0.0, 0.0)
 
-            # we don't use the depth (2D only):
-            glDisable(GL_DEPTH_TEST)
-            glDisable(GL_SCISSOR_TEST)
-            glDisable(GL_LIGHTING)
-            glDisable(GL_DITHER)
-            # only do alpha blending in present_fbo:
-            glDisable(GL_BLEND)
+        # we don't use the depth (2D only):
+        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_SCISSOR_TEST)
+        glDisable(GL_LIGHTING)
+        glDisable(GL_DITHER)
+        # only do alpha blending in present_fbo:
+        glDisable(GL_BLEND)
 
-            # Default state is good for YUV painting:
-            #  - fragment program enabled
-            #  - YUV fragment program bound
-            #  - render to offscreen FBO
-            if self.textures is None:
-                self.gl_init_textures()
+        # Default state is good for YUV painting:
+        #  - fragment program enabled
+        #  - YUV fragment program bound
+        #  - render to offscreen FBO
+        if self.textures is None:
+            self.gl_init_textures()
 
-            mag_filter = self.get_init_magfilter()
-            # Define empty tmp FBO
-            self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, w, h, mag_filter)
-            if not skip_fbo:
-                # Define empty FBO texture and set rendering to FBO
-                self.init_fbo(TEX_FBO, self.offscreen_fbo, w, h, mag_filter)
+        mag_filter = self.get_init_magfilter()
+        # Define empty tmp FBO
+        self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, w, h, mag_filter)
+        if not skip_fbo:
+            # Define empty FBO texture and set rendering to FBO
+            self.init_fbo(TEX_FBO, self.offscreen_fbo, w, h, mag_filter)
 
-            target = GL_TEXTURE_RECTANGLE_ARB
-            glBindTexture(target, 0)
+        target = GL_TEXTURE_RECTANGLE_ARB
+        glBindTexture(target, 0)
 
-            # Create and assign fragment programs
-            if not self.shaders:
-                self.gl_init_shaders()
+        # Create and assign fragment programs
+        if not self.shaders:
+            self.gl_init_shaders()
 
-            # Bind program 0 for YUV painting by default
-            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
-            self.gl_setup = True
-            log("gl_init() done")
+        # Bind program 0 for YUV painting by default
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
+        self.gl_setup = True
+        log("gl_init(%s) done", skip_fbo)
 
     def get_init_magfilter(self):
         rw, rh = self.render_size
@@ -632,6 +633,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.present_fbo(0, 0, bw, bh, flush)
 
     def copy_fbo(self, w, h, sx=0, sy=0, dx=0, dy=0):
+        log("copy_fbo%s", (w, h, sx, sy, dx, dy))
         #copy from offscreen to tmp:
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
         target = GL_TEXTURE_RECTANGLE_ARB
@@ -650,6 +652,7 @@ class GLWindowBackingBase(WindowBackingBase):
                           GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
     def swap_fbos(self):
+        log("swap_fbos()")
         #swap references to tmp and offscreen so tmp becomes the new offscreen:
         tmp = self.offscreen_fbo
         self.offscreen_fbo = self.tmp_fbo
