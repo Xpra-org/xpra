@@ -75,6 +75,9 @@ class GLXWindowContext:
             log("glXMakeCurrent: NULL for xid=%#x", self.xid)
             GLX.glXMakeCurrent(self.xdisplay, 0, null_context)
 
+    def update_geometry(self):
+        pass
+
     def swap_buffers(self):
         assert self.valid, "GLX window context is no longer valid"
         GLX.glXSwapBuffers(self.xdisplay, self.xid)
