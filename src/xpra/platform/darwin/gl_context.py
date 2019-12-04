@@ -156,6 +156,7 @@ class AGLContext:
 
     def destroy(self):
         c = self.window_context
+        log("AGLContext.destroy() window_context=%s", c)
         if c:
             self.window_context = None
             c.destroy()
@@ -166,7 +167,7 @@ class AGLContext:
         self.pixel_format = None
 
     def __repr__(self):
-        return "AGLContext(%s)" % self.pixel_format
+        return "AGLContext(%#x)" % (self.nsview_ptr or 0)
 
 
 GLContext = AGLContext
