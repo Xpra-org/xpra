@@ -338,6 +338,8 @@ class GLWindowBackingBase(WindowBackingBase):
             context = self.gl_context()
         except Exception:
             context = None
+        log("resize_fbo%s context=%s, offscreen_fbo=%s",
+            (oldw, oldh, bw, bh), context, self.offscreen_fbo)
         if context is None or self.offscreen_fbo is None:
             return
         #if we have a valid context and an existing offscreen fbo,
