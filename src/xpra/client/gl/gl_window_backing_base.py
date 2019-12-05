@@ -52,7 +52,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 
 from xpra.os_util import (
     monotonic_time, strtobytes, hexstr,
-    POSIX, OSX,
+    POSIX,
     DummyContextManager,
     )
 from xpra.util import envint, envbool, repr_ellipsized
