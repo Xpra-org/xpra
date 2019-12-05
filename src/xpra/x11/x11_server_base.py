@@ -201,7 +201,7 @@ class X11ServerBase(X11ServerCore):
             "sync"  : SYNC_ICC,
             }
         if SYNC_ICC:
-            icc_info["profile"] = self.icc_profile
+            icc_info["profile"] = hexstr(self.icc_profile)
         return icc_info
 
     def set_icc_profile(self):
