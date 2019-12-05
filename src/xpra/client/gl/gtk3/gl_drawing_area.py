@@ -69,7 +69,7 @@ class GLDrawingArea(GLWindowBackingBase):
             self.context = None
             c.destroy()
 
-    def cairo_draw(self, _context):
+    def draw_fbo(self, _context):
         w, h = self.size
         with self.gl_context():
             self.gl_init()

@@ -101,3 +101,13 @@ class GLClientWindowBase(GTK3ClientWindow):
         self.drawing_area = widget
         #maybe redundant?:
         self.apply_geometry_hints(self.geometry_hints)
+
+    def _do_draw(self, widget, context):
+        log("do_draw(%s, %s)", widget, context)
+        if not self.get_mapped():
+            return False
+        backing = self._backing
+        if not backing:
+            return False
+        backing.draw_fbo(context)
+        return True

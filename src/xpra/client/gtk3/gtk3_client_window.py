@@ -117,11 +117,14 @@ class GTK3ClientWindow(GTKClientWindowBase):
 
     def _do_draw(self, widget, context):
         paintlog("do_draw(%s, %s)", widget, context)
+        if not self.get_mapped():
+            return False
         backing = self._backing
-        if self.get_mapped() and backing:
-            self.paint_backing_offset_border(backing, context)
-            self.clip_to_backing(backing, context)
-            backing.cairo_draw(context)
+        if not backing:
+            return False
+        self.paint_backing_offset_border(backing, context)
+        self.clip_to_backing(backing, context)
+        backing.cairo_draw(context)
         self.cairo_paint_border(context, None)
         if not self._client.server_ok():
             self.paint_spinner(context)
