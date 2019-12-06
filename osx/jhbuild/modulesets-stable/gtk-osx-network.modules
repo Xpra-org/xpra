@@ -73,9 +73,9 @@
   <!-- Building with p11-kit support breaks g-ir-scanner, for some weird reason. -->
   <autotools id="gnutls" autogen-sh="configure"
              autogenargs="--disable-gtk-doc-html --without-p11-kit">
-    <branch repo="gnutls" version="3.6.9"
-    		hash="sha256:4331fca55817ecdd74450b908a6c29b4f05bb24dd13144c6284aa34d872e1fcb"
-            module="gcrypt/gnutls/v3.6/gnutls-3.6.9.tar.xz"/>
+    <branch repo="gnutls" version="3.6.11"
+    		hash="sha256:58a835e9944dad8f00393fc28123950b5444d4e6699bcd9b1395e238833d5d82"
+            module="gcrypt/gnutls/v3.6/gnutls-3.6.11.tar.xz"/>
     <dependencies>
       <dep package="libunistring"/>
       <dep package="libnettle"/>
@@ -85,9 +85,9 @@
   </autotools>
 
   <autotools id="libgcrypt" autogen-sh="configure">
-    <branch repo="gnutls" version="1.8.4"
-    		hash="sha256:f638143a0672628fde0cad745e9b14deb85dffb175709cacc1f4fe24b93f2227"
-            module="gcrypt/libgcrypt/libgcrypt-1.8.4.tar.bz2"/>
+    <branch repo="gnutls" version="1.8.5"
+    		hash="sha256:3b4a2a94cb637eff5bdebbcaf46f4d95c4f25206f459809339cdada0eb577ac3"
+            module="gcrypt/libgcrypt/libgcrypt-1.8.5.tar.bz2"/>
   </autotools>
 
   <autotools id="glib-networking" autogen-sh="configure"
@@ -109,8 +109,8 @@
   
   <autotools id="libsoup" autogen-sh="configure"
              autogenargs="set_more_warnings=no --enable-introspection=no">
-    <branch module="libsoup/2.66/libsoup-2.66.2.tar.xz" version="2.66.2"
-            hash="sha256:bd2ea602eba642509672812f3c99b77cbec2f3de02ba1cc8cb7206bf7de0ae2a">
+    <branch module="libsoup/2.68/libsoup-2.68.3.tar.xz" version="2.68.3"
+            hash="sha256:534bb08e35b0ff3702f3adfde87d3441e27c12f9f5ec351f056fe04cba02bafb">
     </branch>
     <dependencies>
       <dep package="libpsl"/>
