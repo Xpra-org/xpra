@@ -669,7 +669,7 @@
 
 	<distutils id="python3-pyobjc-framework-SystemConfiguration" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module=".org/packages/0b/f9/906d02f190fc7936db8ee2045cfba578893479a12a717eed5fbd43572fc8/pyobjc-framework-SystemConfiguration-6.1.tar.gz"
+			module="/packages/0b/f9/906d02f190fc7936db8ee2045cfba578893479a12a717eed5fbd43572fc8/pyobjc-framework-SystemConfiguration-6.1.tar.gz"
 			hash="sha256:2d5da94f569fd0cdea981035b343a18275378c433e998a92926b788534320cbf"
 			version="6.1"/>
 		<dependencies>
