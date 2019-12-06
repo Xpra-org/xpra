@@ -73,9 +73,9 @@
   <!-- Building with p11-kit support breaks g-ir-scanner, for some weird reason. -->
   <autotools id="gnutls" autogen-sh="configure"
              autogenargs="--disable-gtk-doc-html --without-p11-kit">
-    <branch repo="gnutls" version="3.6.9"
-    		hash="sha256:4331fca55817ecdd74450b908a6c29b4f05bb24dd13144c6284aa34d872e1fcb"
-            module="gcrypt/gnutls/v3.6/gnutls-3.6.9.tar.xz"/>
+    <branch repo="gnutls" version="3.6.11"
+    		hash="sha256:58a835e9944dad8f00393fc28123950b5444d4e6699bcd9b1395e238833d5d82"
+            module="gcrypt/gnutls/v3.6/gnutls-3.6.11.tar.xz"/>
     <dependencies>
       <dep package="libunistring"/>
       <dep package="libnettle"/>
