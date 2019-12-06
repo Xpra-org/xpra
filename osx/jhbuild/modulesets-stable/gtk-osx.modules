@@ -156,8 +156,8 @@
   </meson>
 
   <meson id="gdk-pixbuf" mesonargs="-Dx11=false -Dman=false">
-    <branch module="gdk-pixbuf/2.38/gdk-pixbuf-2.38.1.tar.xz" version="2.38.1"
-            hash="sha256:f19ff836ba991031610dcc53774e8ca436160f7d981867c8c3a37acfe493ab3a">
+    <branch module="gdk-pixbuf/2.40/gdk-pixbuf-2.40.0.tar.xz" version="2.40.0"
+            hash="sha256:1582595099537ca8ff3b99c6804350b4c058bb8ad67411bbaae024ee7cead4e6">
       <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/gdk-pixbuf-loader-name.patch" strip="1"/>
     </branch>
     <after>
