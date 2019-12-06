@@ -126,7 +126,7 @@
 	 <branch module="/releases/webp/libwebp-1.0.3.tar.gz"
 		 version="1.0.3"
 		 hash="sha256:e20a07865c8697bba00aebccc6f54912d6bc333bb4d604e6b07491c1a226b34f"
-		 repo="downloads.webmproject.org"/>
+		 repo="webm"/>
 	 <dependencies>
 		 <dep package="libjpeg"/>
 		 <dep package="libpng"/>
