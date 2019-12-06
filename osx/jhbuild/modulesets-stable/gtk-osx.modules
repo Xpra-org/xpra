@@ -144,8 +144,8 @@
   </meson>
   
   <meson id="atk">
-    <branch module="atk/2.32/atk-2.32.0.tar.xz" version="2.32.0"
-            hash="sha256:cb41feda7fe4ef0daa024471438ea0219592baf7c291347e5a858bb64e4091cc"/>
+    <branch module="atk/2.34/atk-2.34.1.tar.xz" version="2.34.1"
+            hash="sha256:d4f0e3b3d21265fcf2bc371e117da51c42ede1a71f6db1c834e6976bb20997cb"/>
     <dependencies>
     </dependencies>
     <after>
