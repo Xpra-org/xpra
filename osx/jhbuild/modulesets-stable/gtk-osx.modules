@@ -126,9 +126,9 @@
     </dependencies>
   </meson>
 
-  <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.42.4" module="pango/1.42/pango-1.42.4.tar.xz"
-            hash="sha256:1d2b74cd63e8bd41961f2f8d952355aa0f9be6002b52c8aa7699d9f5da597c9d">
+  <meson id="pango">
+    <branch version="1.44.7" module="pango/1.44/pango-1.44.7.tar.xz"
+            hash="sha256:66a5b6cc13db73efed67b8e933584509f8ddb7b10a8a40c3850ca4a985ea1b1f">
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -141,11 +141,11 @@
       <dep package="meta-gtk-osx-freetype"/>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
-  </autotools>
+  </meson>
   
-  <autotools id="atk" autogen-sh="configure">
-    <branch module="atk/2.28/atk-2.28.1.tar.xz" version="2.28.1"
-            hash="sha256:cd3a1ea6ecc268a2497f0cd018e970860de24a6d42086919d6bf6c8e8d53f4fc"/>
+  <meson id="atk">
+    <branch module="atk/2.32/atk-2.32.0.tar.xz" version="2.32.0"
+            hash="sha256:cb41feda7fe4ef0daa024471438ea0219592baf7c291347e5a858bb64e4091cc"/>
     <dependencies>
     </dependencies>
     <after>
@@ -153,17 +153,18 @@
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="gobject-introspection"/>
     </after>
-  </autotools>
+  </meson>
 
-  <autotools id="gdk-pixbuf" autogen-sh="configure">
-    <branch module="gdk-pixbuf/2.36/gdk-pixbuf-2.36.12.tar.xz" version="2.36.12"
-            hash="sha256:fff85cf48223ab60e3c3c8318e2087131b590fd6f1737e42cb3759a3b427a334">
+  <meson id="gdk-pixbuf" mesonargs="-Dx11=false -Dman=false">
+    <branch module="gdk-pixbuf/2.38/gdk-pixbuf-2.38.1.tar.xz" version="2.38.1"
+            hash="sha256:f19ff836ba991031610dcc53774e8ca436160f7d981867c8c3a37acfe493ab3a">
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/gdk-pixbuf-loader-name.patch" strip="1"/>
     </branch>
     <after>
       <dep package="pango"/>
       <dep package="gobject-introspection"/>
     </after>
-  </autotools>
+  </meson>
 
   <autotools id="gtk+" autogen-sh="autoreconf"
              autogenargs="--with-gdktarget=quartz --enable-quartz-relocation --disable-introspection">
