@@ -143,9 +143,9 @@
 
 	<distutils id="python-packaging">
 		<branch repo="pypi.python.org"
-			module="/packages/8b/3a/5bfe64c319be5775ed7ea3bc1a8e5667e0d57a740cc0498ce03e032eaf93/packaging-19.1.tar.gz"
-			hash="sha256:c491ca87294da7cc01902edbe30a5bc6c4c28172b5138ab4e4aa1b9d7bfaeafe"
-			version="19.1"/>
+			module="/packages/5a/2f/449ded84226d0e2fda8da9252e5ee7731bdf14cd338f622dfcd9934e0377/packaging-19.2.tar.gz"
+			hash="sha256:28b924174df7a2fa32c1953825ff29c61e2f5e082343165438812f00d3a7fc47"
+			version="19.2"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -155,11 +155,10 @@
 	</distutils>
 
 	<distutils id="python-asn1crypto">
-		<branch repo="github-tarball"
-			module="/wbond/asn1crypto/archive/0.24.0.tar.gz"
-			hash="sha256:d2a82bb3c29e1abcb376b59679510b58dd796c813f8983f2db9b45e9ab228190"
-			checkoutdir="asn1crypto-0.24.0"
-			version="0.24.0"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/c1/a9/86bfedaf41ca590747b4c9075bc470d0b2ec44fb5db5d378bc61447b3b6b/asn1crypto-1.2.0.tar.gz"
+			hash="sha256:87620880a477123e01177a1f73d0f327210b43a3cdbd714efcd2fa49a8d7b384"
+			version="1.2.0"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -170,9 +169,9 @@
 
 	<distutils id="python-cryptography">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/c2/95/f43d02315f4ec074219c6e3124a87eba1d2d12196c2767fadfdc07a83884/cryptography-2.7.tar.gz"
-			hash="sha256:e6347742ac8f35ded4a46ff835c60e68c22a536a8ae5c4422966d06946b6d4c6"
-			version="2.7"/>
+			module="/packages/be/60/da377e1bed002716fb2d5d1d1cab720f298cb33ecff7bf7adea72788e4e4/cryptography-2.8.tar.gz"
+			hash="sha256:3cda1f0ed8747339bbdf71b9f38ca74c7b592f24f65cdb3ab3765e4b02871651"
+			version="2.8"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="openssl"/>
@@ -290,9 +289,9 @@
 
 	<distutils id="python-paramiko">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/54/68/dde7919279d4ecdd1607a7eb425a2874ccd49a73a5a71f8aa4f0102d3eb8/paramiko-2.6.0.tar.gz"
-			hash="sha256:f4b2edfa0d226b70bd4ca31ea7e389325990283da23465d572ed1f70a7583041"
-			version="2.6.0"/>
+			module="/packages/d1/60/eec646bd557c9b0ae74f9559c44e470ae0cc70565a0008266785eca8e1be/paramiko-2.7.0.tar.gz"
+			hash="sha256:fba9c46340e3d690ad5a9d0dbf06677cd91425de3afa7e9c0c187298ee4ddd0d"
+			version="2.7.0"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="python-bcrypt"/>
@@ -358,9 +357,9 @@
 
 	<distutils id="python-test-runner">
 		<branch repo="pypi.python.org"
-			module="/packages/d9/6d/4b41a74b31720e25abd4799be72d54811da4b4d0233e38b75864dcc1f7ad/pytest-runner-5.1.tar.gz"
-			hash="sha256:25a013c8d84f0ca60bb01bd11913a3bcab420f601f0f236de4423074af656e7a"
-			version="5.1"/>
+			module="/packages/5b/82/1462f86e6c3600f2471d5f552fcc31e39f17717023df4bab712b4a9db1b3/pytest-runner-5.2.tar.gz"
+			hash="sha256:96c7e73ead7b93e388c5d614770d2bae6526efd997757d3543fe17b557a0942b"
+			version="5.2"/>
 		<dependencies>
 			<dep package="python"/>
 			<dep package="python-setuptools-scm"/>
@@ -507,9 +506,9 @@
 
 	<distutils id="python-decorator">
 		<branch repo="pypi.python.org"
-			module="https://files.pythonhosted.org/packages/ba/19/1119fe7b1e49b9c8a9f154c930060f37074ea2e8f9f6558efc2eeaa417a2/decorator-4.4.0.tar.gz"
-			hash="sha256:86156361c50488b84a3f148056ea716ca587df2f0de1d34750d35c21312725de"
-			version="4.4.0">
+			module="/packages/dc/c3/9d378af09f5737cfd524b844cd2fbb0d2263a35c11d712043daab290144d/decorator-4.4.1.tar.gz"
+			hash="sha256:54c38050039232e1db4ad7375cfce6748d7b41c29e95a081c8a6d2c30364a2ce"
+			version="4.4.1">
 		</branch>
 		<dependencies>
 			<dep package="python"/>
@@ -680,9 +679,9 @@
 
 	<distutils id="python-yaml">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/e3/e8/b3212641ee2718d556df0f23f78de8303f068fe29cdaa7a91018849582fe/PyYAML-5.1.2.tar.gz"
-			hash="sha256:01adf0b6c6f61bd11af6e10ca52b7d4057dd0be0343eb9283c878cf3af56aee4"
-			version="5.1.2"/>
+			module="/packages/8d/c9/e5be955a117a1ac548cdd31e37e8fd7b02ce987f9655f5c7563c656d5dcb/PyYAML-5.2.tar.gz"
+			hash="sha256:c0ee8eca2c582d29c3c2ec6e2c4f703d1b7f1fb10bc72317355a746057e7346c"
+			version="5.2"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -706,9 +705,9 @@
 
 	<distutils id="python-ipaddress">
 		<branch repo="pypi.python.org"
-			module="/packages/97/8d/77b8cedcfbf93676148518036c6b1ce7f8e14bf07e95d7fd4ddcb8cc052f/ipaddress-1.0.22.tar.gz"
-			hash="sha256:b146c751ea45cad6188dd6cf2d9b757f6f4f8d6ffb96a023e6f2e26eea02a72c"
-			version="1.0.22"/>
+			module="/packages/b9/9a/3e9da40ea28b8210dd6504d3fe9fe7e013b62bf45902b458d1cdc3c34ed9/ipaddress-1.0.23.tar.gz"
+			hash="sha256:b7f8e0369580bb4a24d5ba1d7cc29660a4a6987763faf1d8a8046830e020e7e2"
+			version="1.0.23"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
