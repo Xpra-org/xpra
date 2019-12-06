@@ -78,7 +78,7 @@
 	<distutils id="python3-zeroconf" python3="1">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/35/1a/63df0e17b10f55d5e352048705ba6d4a2a8afb622914441b98b6f966743f/zeroconf-0.24.0.tar.gz"
-			hash="sha256:e194df93ae5d5158fd62434e395fe73ef9eb9580e5d326aad06d02c56031b31a"
+			hash="sha256:b5542321c8f5344a806593e47a11b04d6c9d240cfc10492b6287ae9a0b1d1f3e"
 			version="0.24.0"/>
 		<dependencies>
 			<dep package="python3-ifaddr"/>
