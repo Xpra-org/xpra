@@ -12,7 +12,7 @@ try:
 except ImportError:
     from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
 
-from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX, PYTHON3, PYTHON2
 from xpra.util import (
     AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
@@ -937,6 +937,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         dtype = bytestostr(dtype)
         if dtype=="latin1":
             value = bytestostr(value)
+            if PYTHON2:
+               value = unicode(value)
         prop_set(gdk_window, prop_name, dtype, value)
 
     def set_class_instance(self, wmclass_name, wmclass_class):
