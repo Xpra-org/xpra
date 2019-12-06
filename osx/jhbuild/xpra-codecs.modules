@@ -81,7 +81,7 @@
 		</dependencies>
 	</autotools>
 
-	<autotools id="twolame" autogenargs="" autogen-sh="configure">
+	<autotools id="twolame" autogenargs="" autogen-sh="configure --disable-maintainer-mode" supports-non-srcdir-builds="no">
 		<branch module="https://github.com/njh/twolame/archive/0.4.0.tar.gz"
 			version="0.4.0" checkoutdir="twolame-0.4.0"
 			hash="sha256:9f3f03bc9e1038d900f86002c7dce4b49109b3a61544800fc62d71dc51829f05"
@@ -95,14 +95,14 @@
 			repo="winswitch.org"/>
 	</autotools>
 
-	<autotools id="faac" autogenargs="" autogen-sh="configure">
+	<autotools id="faac" autogenargs="" autogen-sh="autoreconf" supports-non-srcdir-builds="no">
 		<branch module="https:///knik0/faac/archive/1_30.tar.gz"
 			version="1.30" checkoutdir="faac-1_30"
 			hash="sha256:adc387ce588cca16d98c03b6ec1e58f0ffd9fc6eadb00e254157d6b16203b2d2"
 			repo="github.com"/>
 	</autotools>
 
-	<autotools id="faad2" autogenargs="" autogen-sh="configure">
+	<autotools id="faad2" autogenargs="" autogen-sh="autoreconf" supports-non-srcdir-builds="no">
 		<branch module="/knik0/faad2/archive/2_9_1.tar.gz"
 			version="2.9.1" checkoutdir="faad2-2_9_1"
 			hash="sha256:7fa33cff76abdda5a220ca5de0b2e05a77354f3b97f735193c2940224898aa9a"
