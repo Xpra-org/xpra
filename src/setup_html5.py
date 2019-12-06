@@ -69,7 +69,7 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
             ],
         }
     for k,files in glob_recurse("html5").items():
-        if (k!=""):
+        if k!="":
             k = os.sep+k
         for f in files:
             src = os.path.join(os.getcwd(), f)
