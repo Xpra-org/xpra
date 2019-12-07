@@ -233,8 +233,8 @@
 
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.24/gtk+-3.24.10.tar.xz" version="3.24.10"
-            hash="sha256:35a8f107e2b90fda217f014c0c15cb20a6a66678f6fd7e36556d469372c01b03">
+    <branch module="gtk+/3.24/gtk+-3.24.13.tar.xz" version="3.24.13"
+            hash="sha256:4c775c38cf1e3c534ef0ca52ca6c7a890fe169981af66141c713e054e68930a9">
     </branch>
     <dependencies>
       <dep package="glib"/>
