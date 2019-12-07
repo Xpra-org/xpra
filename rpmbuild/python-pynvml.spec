@@ -37,21 +37,30 @@ Python Bindings for the NVIDIA Management Library
 
 %prep
 %setup -q -n nvidia-ml-py-%{version}
-
-%build
-%{__python2} ./setup.py build
 %if 0%{?fedora}%{?el8}
 rm -fr %{py3dir}
-cp -r . %{py3dir}
-find %{py3dir} -name "*.py" -exec 2to3 -w {} \;
+mkdir %{py3dir}
+cp -r *py README.txt PKG-INFO %{py3dir}
 %endif
+
+%build
+%if 0%{?fedora}%{?el8}
+pushd %{py3dir}
+%{__python3} ./setup.py build
+popd
+%endif
+%{__python2} ./setup.py build
 
 %install
 %{__python2} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
+rm -f %{buildroot}/%{python2_sitelib}/__pycache__/example.*
+rm -f %{buildroot}/%{python2_sitelib}/example.py*
 %if 0%{?fedora}%{?el8}
 pushd %{py3dir}
 %{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 popd
+rm -f %{buildroot}/%{python3_sitelib}/__pycache__/example.*
+rm -f %{buildroot}/%{python3_sitelib}/example.py
 %endif
 
 %clean
@@ -60,16 +69,13 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root)
 %{python2_sitelib}/pynvml.py*
-%{python2_sitelib}/nvidia_smi.py*
 %{python2_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
 
 %if 0%{?fedora}%{?el8}
 %files -n python3-pynvml
 %defattr(-,root,root)
-%{python3_sitelib}/__pycache__/nvidia*
 %{python3_sitelib}/__pycache__/pynvml*
 %{python3_sitelib}/pynvml.py*
-%{python3_sitelib}/nvidia_smi.py*
 %{python3_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
 %endif
 
