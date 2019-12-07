@@ -7,10 +7,10 @@
   <repository type="tarball" name="sourceforge"
               href="http://iweb.dl.sf.net/project/"/>
 
-  <autotools id="liborc" autogen-sh="configure">
-    <branch module="orc/orc-0.4.30.tar.xz" version="0.4.30"
-            hash="sha256:ba41b92146a5691cd102eb79c026757d39e9d3b81a65810d2946a1786a1c4972"/>
-  </autotools>
+  <meson id="liborc">
+    <branch module="orc/orc-0.4.31.tar.xz" version="0.4.31"
+            hash="sha256:a0ab5f10a6a9ae7c3a6b4218246564c3bf00d657cbdf587e6d34ec3ef0616075"/>
+  </meson>
 
   <autotools id="faad2" autogen-sh="autoreconf"
              autogenargs="-without-bmp --without-xmms --without-drm --without-mpeg4ip">
