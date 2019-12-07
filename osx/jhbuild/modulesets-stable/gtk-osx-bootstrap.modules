@@ -27,6 +27,8 @@
               href="http://download.icu-project.org/files/"/>
   <repository type="tarball" name="ragel"
               href="http://www.colm.net/files/ragel/"/>
+  <repository name="webm" type="tarball"
+              href="http://downloads.webmproject.org/releases/"/>
 
   <autotools id='readline' autogen-sh="configure">
     <branch repo="ftp.gnu.org" module="readline/readline-8.0.tar.gz"
