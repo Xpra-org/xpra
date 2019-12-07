@@ -82,7 +82,7 @@
 		</dependencies>
 	</autotools>
 
-	<autotools id="bomutils" autogen-sh="" skip-autogen="true">
+	<autotools id="bomutils" autogen-sh="" skip-autogen="true" supports-non-srcdir-builds="no">
 		<branch module="/hogliux/bomutils/archive/debian/0.2-1.tar.gz"
 			version="0.2-1"
 			checkoutdir="bomutils-debian-0.2-1"
