@@ -122,18 +122,6 @@
     </dependencies>
   </autotools>
 
-  <autotools id="libwebp" autogen-sh="configure"  autogenargs="--enable-libwebpmux --enable-libwebpdecoder">
-	 <branch module="/releases/webp/libwebp-1.0.3.tar.gz"
-		 version="1.0.3"
-		 hash="sha256:e20a07865c8697bba00aebccc6f54912d6bc333bb4d604e6b07491c1a226b34f"
-		 repo="webm"/>
-	 <dependencies>
-		 <dep package="libjpeg"/>
-		 <dep package="libpng"/>
-		 <dep package="libtiff"/>
-	 </dependencies>
-  </autotools>
-
   <autotools id="icu55" autogen-sh="source/configure"
              autogenargs="--enable-rpath"
              makeargs='CFLAGS="$CFLAGS -DU_CHARSET_IS_UTF8=1 -DU_USING_ICU_NAMESPACE=0"'>
