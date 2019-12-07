@@ -195,7 +195,7 @@ module_autogenargs['cairo'] = '--enable-ft=no'
 #append_autogenargs('gst-plugins-good', '--enable-introspection=no --disable-deinterlace')
 
 #change moduleset
-moduleset="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/modulesets-stable/gtk-osx.modules"
+moduleset="http://xpra.org/svn/Xpra/tags/v3.0.x/osx/jhbuild/modulesets-stable/gtk-osx.modules"
 
 #tinderbox output if wanted
 #tinderbox_outputdir = os.path.expanduser("~/temp/tinderbox")
