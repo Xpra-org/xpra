@@ -27,21 +27,20 @@ Python Bindings for the NVIDIA Management Library
 %setup -q -n nvidia-ml-py-%{version}
 
 %build
-find %{py3dir} -name "*.py" -exec 2to3 -w {} \;
 %{__python3} ./setup.py build
 
 %install
 %{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
+rm -f %{buildroot}/%{python3_sitelib}/__pycache__/example.*
+rm -f %{buildroot}/%{python3_sitelib}/example.py
 
 %clean
 rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
-%{python3_sitelib}/__pycache__/nvidia*
 %{python3_sitelib}/__pycache__/pynvml*
 %{python3_sitelib}/pynvml.py*
-%{python3_sitelib}/nvidia_smi.py*
 %{python3_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
 
 %changelog
