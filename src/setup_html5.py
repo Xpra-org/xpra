@@ -61,10 +61,12 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
     symlinks = {
         "jquery.js"     : [
             "/usr/share/javascript/jquery/jquery.js",
+            "/usr/share/javascript/jquery/latest/jquery.js",
             "/usr/share/javascript/jquery/3/jquery.js",
             ],
         "jquery-ui.js"     : [
             "/usr/share/javascript/jquery-ui/jquery-ui.js",
+            "/usr/share/javascript/jquery-ui/latest/jquery-ui.js",
             "/usr/share/javascript/jquery-ui/3/jquery-ui.js",
             ],
         }
