@@ -227,9 +227,10 @@
 	</autotools>
 
 	<cmake id="utf8proc">
-		<branch module="/JuliaStrings/utf8proc/archive/v2.4.0.tar.gz"
+		<branch module="/JuliaStrings/utf8proc/tar.gz/v2.4.0"
 			hash="sha256:b2e5d547c1d94762a6d03a7e05cea46092aab68636460ff8648f1295e2cdfbd7"
 			version="2.4.0"
+			checkoutdir="utf8proc-2.4.0"
 			repo="github.com"/>
 	</cmake>
 
