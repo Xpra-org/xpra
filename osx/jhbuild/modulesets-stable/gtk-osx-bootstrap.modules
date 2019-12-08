@@ -27,6 +27,8 @@
               href="http://download.icu-project.org/files/"/>
   <repository type="tarball" name="ragel"
               href="http://www.colm.net/files/ragel/"/>
+  <repository name="webm" type="tarball"
+              href="http://downloads.webmproject.org/releases/"/>
 
   <autotools id='readline' autogen-sh="configure">
     <branch repo="ftp.gnu.org" module="readline/readline-8.0.tar.gz"
@@ -53,6 +55,17 @@
     </dependencies>
   </autotools>
 
+  <autotools id="libwebp" autogen-sh="configure"  autogenargs="--enable-libwebpmux --enable-libwebpdecoder" supports-non-srcdir-builds="no">
+	 <branch module="/releases/webp/libwebp-1.0.3.tar.gz"
+		 version="1.0.3"
+		 hash="sha256:e20a07865c8697bba00aebccc6f54912d6bc333bb4d604e6b07491c1a226b34f"
+		 repo="webm"/>
+	 <dependencies>
+		 <dep package="libjpeg"/>
+		 <dep package="libpng"/>
+	 </dependencies>
+  </autotools>
+
   <autotools id="libtiff" autogen-sh="configure" autogenargs="--without-x">
     <branch version="4.0.10" module="libtiff/tiff-4.0.10.tar.gz"
     	hash="sha156:2c52d11ccaf767457db0c46795d9c7d1a8d8f76f68b0b800a3dfe45786b996e4"
@@ -60,6 +73,7 @@
 	<patch file="https://raw.githubusercontent.com/totaam/gtk-osx-build/master/patches/tiff-nohtml.patch" strip="1" />
     </branch>
     <dependencies>
+      <dep package="libwebp"/>
       <dep package="libjpeg"/>
     </dependencies>
   </autotools>
@@ -152,7 +166,6 @@
     <branch repo="harfbuzz" module="harfbuzz-2.5.3.tar.xz" version="2.5.3">
     </branch>
     <dependencies>
-      <dep package="freetype-no-harfbuzz"/>
       <dep package="ragel"/>
       <dep package="glib"/>
       <dep package="icu"/>
@@ -160,18 +173,6 @@
     <after>
       <dep package="icu55"/>
     </after>
-  </autotools>
-
-  <autotools id="freetype-no-harfbuzz" autogen-sh="configure"
-             skip-autogen="never"
-             autogenargs="--without-bzip2 --without-harfbuzz">
-    <branch module="freetype/freetype-2.7.1.tar.gz" version="2.7.1"
-            repo="sourceforge">
-      <!--patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/freetype-2.5.3-ccexe_cflags.patch" strip="1"/-->
-    </branch>
-    <dependencies>
-      <dep package="zlib"/>
-    </dependencies>
   </autotools>
 
   <autotools id="freetype" autogen-sh="configure"
@@ -213,6 +214,7 @@
     <dependencies>
       <dep package="libpng"/>
       <dep package="libjpeg"/>
+      <dep package="libwebp"/>
       <dep package="libtiff"/>
       <dep package="gettext-runtime"/>
       <dep package="hicolor-icon-theme"/>
