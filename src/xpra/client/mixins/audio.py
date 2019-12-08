@@ -421,9 +421,10 @@ class AudioClient(StubClientMixin):
         if sound_sink!=self.sound_sink:
             log("sound_sink_error(%s, %s) not the current sink, ignoring it", sound_sink, error)
             return
-        self.may_notify_audio("Speaker forwarding error", error)
+        estr = bytestostr(error).replace("gst-resource-error-quark: ", "")
+        self.may_notify_audio("Speaker forwarding error", estr)
         log.warn("Error: stopping speaker:")
-        log.warn(" %s", bytestostr(error).replace("gst-resource-error-quark: ", ""))
+        log.warn(" %s", estr)
         self.stop_receiving_sound()
     def sound_process_stopped(self, sound_sink, *args):
         if self.exit_code is not None:
