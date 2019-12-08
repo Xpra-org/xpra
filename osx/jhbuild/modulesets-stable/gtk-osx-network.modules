@@ -10,6 +10,8 @@
   <repository name="sourceforge" type="tarball"
               href="http://downloads.sourceforge.net/sourceforge/"/>
   <repository name="gnutls" type="tarball" href="https://www.gnupg.org/ftp/"/>
+  <repository name="webm" type="tarball"
+              href="http://downloads.webmproject.org/releases/"/>
   <repository name="webkit.org" type="tarball"
               href="http://www.webkitgtk.org/releases/"/>
   <repository type="tarball" name="icu"
@@ -118,6 +120,17 @@
       <dep package="sqlite"/>
       <dep package="vala"/>
     </dependencies>
+  </autotools>
+
+  <autotools id="libwebp" autogen-sh="configure"  autogenargs="--enable-libwebpmux --enable-libwebpdecoder" supports-non-srcdir-builds="no">
+	 <branch module="/releases/webp/libwebp-1.0.3.tar.gz"
+		 version="1.0.3"
+		 hash="sha256:e20a07865c8697bba00aebccc6f54912d6bc333bb4d604e6b07491c1a226b34f"
+		 repo="webm"/>
+	 <dependencies>
+		 <dep package="libjpeg"/>
+		 <dep package="libpng"/>
+	 </dependencies>
   </autotools>
 
   <autotools id="icu55" autogen-sh="source/configure"
