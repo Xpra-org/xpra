@@ -227,10 +227,10 @@
 	</autotools>
 
 
-	<autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
-		<branch module="/dist/subversion/subversion-1.9.7.tar.bz2"
-			hash="sha256:c3b118333ce12e501d509e66bb0a47bcc34d053990acab45559431ac3e491623"
-			version="1.9.7"
+	<autotools id="subversion" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
+		<branch module="/dist/subversion/subversion-1.13.0.tar.bz2"
+			hash="sha256:bc50ce2c3faa7b1ae9103c432017df98dfd989c4239f9f8270bb3a314ed9e5bd"
+			version="1.13.0"
 			repo="apache.org"/>
 		<dependencies>
 			<dep package="apr-util"/>
@@ -249,7 +249,7 @@
 
 	<metamodule id="meta-osx-xpra-subversion">
 		<dependencies>
-			<dep package="xpra-svn"/>
+			<dep package="subversion"/>
 		</dependencies>
 	</metamodule>
 
