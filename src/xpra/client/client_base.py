@@ -588,11 +588,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if p and p.input_raw_packetcount==0:
             props = p.get_info()
             c = props.get("compression", "unknown")
-            e = props.get("encoder", "unknown")
+            e = props.get("encoder", "rencode")
             netlog.error("Error: failed to receive anything, not an xpra server?")
             netlog.error("  could also be the wrong protocol, username, password or port")
             netlog.error("  or the session was not found")
-            if c!="unknown" or e!="unknown":
+            if c!="unknown" or e!="rencode":
                 netlog.error("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
         if self.exit_code is None:
             self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
