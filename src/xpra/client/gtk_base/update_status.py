@@ -8,7 +8,7 @@
 import os.path
 import sys
 
-from xpra.platform.gui import init as gui_init
+from xpra.platform.gui import init as gui_init, force_focus
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
     window_defaults, WIN_POS_CENTER,
@@ -112,8 +112,11 @@ class UpdateStatusWindow(object):
 
     def show(self):
         log("show()")
-        self.window.show()
-        self.window.present()
+        def show():
+            force_focus()
+            self.window.show()
+            self.window.present()
+        glib.idle_add(show)
 
     def hide(self):
         log("hide()")

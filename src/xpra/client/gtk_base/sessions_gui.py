@@ -12,6 +12,7 @@ from collections import OrderedDict
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
+from xpra.platform.gui import force_focus
 from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import (
@@ -102,6 +103,13 @@ class SessionsGUI(gtk.Window):
         glib.timeout_add(5*1000, self.update)
         self.vbox.show()
         self.show()
+
+    def show(self):
+        self.show_all()
+        def show():
+            force_focus()
+            self.present()
+        glib.idle_add(show)
 
     def quit(self, *args):
         log("quit%s", args)
