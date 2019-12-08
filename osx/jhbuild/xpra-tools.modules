@@ -44,7 +44,7 @@
 			repo="cpan.org"/>
 	</autotools>
 
-	<autotools id="lz4" skip-autogen="true">
+	<autotools id="lz4" skip-autogen="true" supports-non-srcdir-builds="no">
 		<branch module="/lz4/lz4/tar.gz/v1.9.2"
 			version="1.9.2"
 			checkoutdir="lz4-1.9.2"
