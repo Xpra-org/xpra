@@ -14,7 +14,6 @@ BuildRequires:  kernel-headers
 BuildRequires:  libudev-devel
 
 
-%filter_provides_in %{python2_sitearch}/.*\.so$
 %filter_provides_in %{python3_sitearch}/.*\.so$
 %filter_setup
 
