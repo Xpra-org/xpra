@@ -10,26 +10,36 @@ xpra (3.0.3-1) UNRELEASED; urgency=low
   * fix compilation on non-i386 32-bit platforms
   * fix platform query errors causing command failures
   * fix Python2 builds: ignore GTK2 deprecation warnings
+  * fix X11 property synchronization with Python2 builds
   * fix XSetClassHint call with Python 3
   * fix window move + resize shortcut
   * fix ssh proxy options not preserved when loading session files
-  * fix focus of SSH dialogs with MacOS clients
+  * fix focus of dialogs with MacOS clients (ie: SSH dialogs)
   * fix error and missing refresh after changing quality or speed settings
   * fix NVENC error when pynvml is not installed
   * fix NVENC temporary failure retry code path
   * fix SSH start for shadow and start-desktop subcommands from MacOS
   * fix fullscreen / maximized windows on MacOS
   * fix bogus screen dimensions with GTK3 on MacOS
+  * fix client launcher helper script on MacOS
+  * fix window resizing with OpenGL on MacOS
   * fix DPI value from the command line with desktop-scaling
   * fix typo in man page
   * fix errors with some odd Python3 builds (subprocess.getoutput)
+  * fix cursor packets missing encoding attribute
+  * fix dangling symlink in html5 client Fedora RPM package
+  * fix notification error handling the speaker forwarding error message
+  * fix incorrect and unhelpful message on connection error
+  * fix openssl crypto DLL errors during MS Windows installation
+  * prevent conflict with Fedora downstream packaging of xpra
   * make it possible to disable colourspace synchronization
   * show mdns status in xpra info
+  * MacOS library updates (many, including Python 3.8.0)
   * support CUDA 10.2
   * disable CSD on MS Windows (GTK3 CSD bug workaround)
   * re-enable OpenGL on MS Windows (was GTK3 bug)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 02 Dec 2019 00:12:24 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 10 Dec 2019 00:42:56 +0700
 
 xpra (3.0.2-1) UNRELEASED; urgency=low
   * fix clipboard synchronization issue with MS Windows clients properly

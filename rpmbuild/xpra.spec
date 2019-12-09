@@ -868,7 +868,7 @@ fi
 
 
 %changelog
-* Mon Dec 02 2019 Antoine Martin <antoine@xpra.org> 3.0.3-1xpra1
+* Tue Dec 10 2019 Antoine Martin <antoine@xpra.org> 3.0.3-1xpra1
 - fix clipboard synchronization with HTML5 client
 - fix window repaints with GTK3
 - fix GDK scaling causing window painting issues (force off)
@@ -880,21 +880,31 @@ fi
 - fix compilation on non-i386 32-bit platforms
 - fix platform query errors causing command failures
 - fix Python2 builds: ignore GTK2 deprecation warnings
+- fix X11 property synchronization with Python2 builds
 - fix XSetClassHint call with Python 3
 - fix window move + resize shortcut
 - fix ssh proxy options not preserved when loading session files
-- fix focus of SSH dialogs with MacOS clients
+- fix focus of dialogs with MacOS clients (ie: SSH dialogs)
 - fix error and missing refresh after changing quality or speed settings
 - fix NVENC error when pynvml is not installed
 - fix NVENC temporary failure retry code path
 - fix SSH start for shadow and start-desktop subcommands from MacOS
 - fix fullscreen / maximized windows on MacOS
 - fix bogus screen dimensions with GTK3 on MacOS
+- fix client launcher helper script on MacOS
+- fix window resizing with OpenGL on MacOS
 - fix DPI value from the command line with desktop-scaling
 - fix typo in man page
 - fix errors with some odd Python3 builds (subprocess.getoutput)
+- fix cursor packets missing encoding attribute
+- fix dangling symlink in html5 client Fedora RPM package
+- fix notification error handling the speaker forwarding error message
+- fix incorrect and unhelpful message on connection error
+- fix openssl crypto DLL errors during MS Windows installation
+- prevent conflict with Fedora downstream packaging of xpra
 - make it possible to disable colourspace synchronization
 - show mdns status in xpra info
+- MacOS library updates (many, including Python 3.8.0)
 - support CUDA 10.2
 - disable CSD on MS Windows (GTK3 CSD bug workaround)
 - re-enable OpenGL on MS Windows (was GTK3 bug)
