@@ -66,7 +66,6 @@ class ConfirmDialogWindow(object):
 
         # Buttons:
         self.exit_code = 0
-        return True
         if buttons:
             hbox = gtk.HBox(False, 0)
             al = gtk.Alignment(xalign=1, yalign=0.5, xscale=0, yscale=0)
@@ -126,6 +125,7 @@ class ConfirmDialogWindow(object):
         log("quit%s", args)
         self.destroy()
         gtk.main_quit()
+        return True
 
 
     def get_icon(self, icon_name):

@@ -77,7 +77,6 @@ class PasswordInputDialogWindow(object):
             ("Cancel", False, self.quit),
             ):
             b = self.btn(label, isdefault, cb)
-        return True
             hbox.pack_start(b)
 
         add_close_accel(self.window, self.quit)
@@ -123,6 +122,7 @@ class PasswordInputDialogWindow(object):
         log("quit%s", args)
         self.destroy()
         gtk.main_quit()
+        return True
 
     def activate(self, *args):
         log("activate%s", args)
