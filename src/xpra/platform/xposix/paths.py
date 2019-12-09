@@ -21,7 +21,7 @@ def do_get_desktop_background_paths():
 
 def do_get_install_prefix():
     #special case for "user" installations, ie:
-    #$HOME/.local/lib/python2.7/site-packages/xpra/platform/paths.py
+    #$HOME/.local/lib/python3.8/site-packages/xpra/platform/paths.py
     try:
         base = site.getuserbase()
     except Exception:

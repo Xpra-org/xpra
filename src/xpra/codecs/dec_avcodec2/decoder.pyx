@@ -383,7 +383,6 @@ cdef class Decoder:
             return  False
         self.frames = 0
         #to keep track of images not freed yet:
-        #(we want a weakref.WeakSet() but this is python2.7+ only..)
         self.weakref_images = weakref.WeakSet()
         #register this decoder in the global dictionary:
         log("dec_avcodec.Decoder.init_context(%s, %s, %s) self=%s", width, height, colorspace, self.get_info())
