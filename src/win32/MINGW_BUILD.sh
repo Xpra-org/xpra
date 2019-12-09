@@ -365,6 +365,9 @@ if [ "${BUNDLE_OPENSSL}" == "1" ]; then
 	cp -fn "${MINGW_PREFIX}/bin/openssl.exe" "${DIST}/"
 	#use the old filename so we don't have to change the xpra.iss and the setup.py build system:
 	cp -fn "${MINGW_PREFIX}/ssl/openssl.cnf" "${DIST}/openssl.cfg"
+	#we need those libraries at the top level:
+	mv "${DIST}"/lib/libssl-*dll "${DIST}/"
+	mv "${DIST}"/lib/libcrypto-*dll "${DIST}/"
 fi
 
 if [ "${DO_VERPATCH}" == "1" ]; then
