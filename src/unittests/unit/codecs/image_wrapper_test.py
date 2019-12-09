@@ -41,12 +41,6 @@ class TestImageWrapper(unittest.TestCase):
                 v = (x+y)%256
                 for i in range(4):
                     av = sub_buf[y*(SW*4)+i]
-                    try:
-                        #python2 (char)
-                        av = ord(av)
-                    except TypeError:
-                        #python3 (int already)
-                        av = int(av)
                     if av!=v:
                         raise Exception("""expected value %#x for pixel (0, %i)
                                         of sub-image %s at (%i, 0), but got %#x""" % (v, y, sub, x, av))

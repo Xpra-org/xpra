@@ -2,9 +2,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2014 Antoine Martin <antoine@xpra.org>
 
-#need to find a generic way to discover tests
-#that works with python2.6 without introducing more dependencies
-#until then... this hack will do
 #runs all the files in "unit/" that end in "test.py"
 
 import sys

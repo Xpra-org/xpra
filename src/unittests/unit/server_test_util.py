@@ -83,7 +83,7 @@ class ServerTestUtil(ProcessTestUtil):
         pyexename = "python3"
         exe = bytestostr(xpra_cmd[0]).rstrip(".exe")
         if not (exe.endswith("python") or exe.endswith(pyexename)):
-            #prepend python2 / python3:
+            #prepend python / python3:
             cmd = [pyexename] + xpra_cmd + cls.default_xpra_args
         return cmd
 
