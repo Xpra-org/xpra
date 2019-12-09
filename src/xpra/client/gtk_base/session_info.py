@@ -218,9 +218,7 @@ class SessionInfo(Gtk.Window):
             k = "%s.version" % prop
             return slabel(server_version_info(k))
         tb.new_row("Glib",      client_vinfo("glib"),       server_vinfo("glib"))
-        tb.new_row("PyGlib",    client_vinfo("pyglib"),     server_vinfo("pyglib"))
         tb.new_row("Gobject",   client_vinfo("gobject"),    server_vinfo("gobject"))
-        tb.new_row("PyGTK",     client_vinfo("pygtk", ""),  server_vinfo("pygtk"))
         tb.new_row("GTK",       client_vinfo("gtk"),        server_vinfo("gtk"))
         tb.new_row("GDK",       client_vinfo("gdk"),        server_vinfo("gdk"))
         tb.new_row("Cairo",     client_vinfo("cairo"),      server_vinfo("cairo"))
