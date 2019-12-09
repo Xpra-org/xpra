@@ -28,11 +28,7 @@ def get_interface_index(host):
 def inet_ton(af, addr):
     if af==socket.AF_INET:
         return socket.inet_aton(addr)
-    inet_pton = getattr(socket, "inet_pton", None)
-    if not inet_pton:
-        #no ipv6 support with python2 on win32:
-        return None
-    return inet_pton(af, addr)   #@UndefinedVariable
+    return socket.inet_pton(af, addr)   #@UndefinedVariable
 
 
 class ZeroconfPublishers:
