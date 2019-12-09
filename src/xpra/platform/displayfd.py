@@ -12,14 +12,6 @@ from xpra.util import envint
 DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
 
 
-def eerrno(e):
-    try:
-        #python3:
-        return e.errno
-    except AttributeError:
-        #python2:
-        return e[0]
-
 def write_displayfd(w_pipe, display, timeout=10):
     import select   #@UnresolvedImport
     import errno
@@ -37,7 +29,7 @@ def write_displayfd(w_pipe, display, timeout=10):
                 buf = buf[count:]
                 log("wrote %i bytes, remains %s", count, buf)
         except (select.error, OSError) as e:
-            if eerrno(e)!=errno.EINTR:
+            if e.errno!=errno.EINTR:
                 raise
     if not buf:
         try:
@@ -72,7 +64,7 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
                 if buf and (buf.endswith(b'\n') or len(buf)>=8):
                     break
         except (select.error, OSError) as e:
-            if eerrno(e)!=errno.EINTR:
+            if e.errno!=errno.EINTR:
                 raise
     return buf
 
