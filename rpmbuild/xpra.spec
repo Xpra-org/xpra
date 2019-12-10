@@ -549,7 +549,7 @@ rm -rf $RPM_BUILD_ROOT
 pushd xpra-%{version}-python2
 %{__python2} setup.py install \
 	%{build_args} \
-- prefix /usr --skip-build --root %{buildroot}
+	--prefix /usr --skip-build --root %{buildroot}
 #fix permissions on shared objects
 find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #remove the tests, not meant to be installed in the first place
