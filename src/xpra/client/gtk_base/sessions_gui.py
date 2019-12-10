@@ -64,12 +64,12 @@ class SessionsGUI(Gtk.Window):
         self.warning.show()
         self.vbox.add(self.warning)
 
-        hbox = Gtk.HBox(False, 10)
+        self.password_box = Gtk.HBox(False, 10)
         self.password_label = Gtk.Label("Password:")
         al = Gtk.Alignment(xalign=1, yalign=0.5)
         al.add(self.password_label)
         al.show()
-        hbox.add(al)
+        self.password_box.add(al)
         self.password_entry = Gtk.Entry()
         self.password_entry.set_max_length(128)
         self.password_entry.set_width_chars(16)
@@ -77,9 +77,8 @@ class SessionsGUI(Gtk.Window):
         al = Gtk.Alignment(xalign=0, yalign=0.5)
         al.add(self.password_entry)
         al.show()
-        hbox.add(al)
-        hbox.show()
-        self.vbox.add(hbox)
+        self.password_box.add(al)
+        self.vbox.add(self.password_box)
 
         self.table = None
         self.records = []
@@ -129,11 +128,9 @@ class SessionsGUI(Gtk.Window):
 
     def populate(self):
         if self.local_info_cache:
-            self.password_entry.show()
-            self.password_label.show()
+            self.password_box.show()
         else:
-            self.password_entry.hide()
-            self.password_label.hide()
+            self.password_box.hide()
         self.populate_table()
 
     def poll_local_sessions(self):
