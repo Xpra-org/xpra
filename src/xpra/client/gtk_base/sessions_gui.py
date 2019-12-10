@@ -97,7 +97,7 @@ class SessionsGUI(Gtk.Window):
         self.show()
 
     def show(self):
-        self.show_all()
+        super().show()
         def show():
             force_focus()
             self.present()
@@ -127,10 +127,6 @@ class SessionsGUI(Gtk.Window):
         return True
 
     def populate(self):
-        if self.local_info_cache:
-            self.password_box.show()
-        else:
-            self.password_box.hide()
         self.populate_table()
 
     def poll_local_sessions(self):
@@ -219,7 +215,9 @@ class SessionsGUI(Gtk.Window):
             self.vbox.add(self.table)
             self.table.show()
             self.set_size_request(440, 200)
+            self.password_box.hide()
             return
+        self.password_box.show()
         self.set_size_request(-1, -1)
         tb = TableBuilder(1, 6, False)
         labels = [Gtk.Label(x) for x in (
