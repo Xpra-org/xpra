@@ -13,7 +13,7 @@
 %{!?revision_no: %define revision_no 1}
 
 %define CFLAGS -O2
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265- pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265 --pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
 
 %{!?update_firewall: %define update_firewall 1}
 %{!?run_tests: %define run_tests 1}
@@ -519,7 +519,7 @@ rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
 	%{build_args} \
-- without-html5 --without-printing --without-cuda_kernels
+	--without-html5 --without-printing --without-cuda_kernels
 popd
 %endif
 
@@ -570,8 +570,8 @@ popd
 pushd xpra-%{version}-python3
 %{__python3} setup.py install \
 	%{build_args} \
-- without-html5 --without-printing --without-cuda_kernels \
-- prefix /usr --skip-build --root %{buildroot}
+	--without-html5 --without-printing --without-cuda_kernels \
+	--prefix /usr --skip-build --root %{buildroot}
 popd
 #fix permissions on shared objects
 find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
@@ -770,7 +770,7 @@ fi
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
-	firewall-cmd --zone=${ZONE}- list-ports | grep "14500/tcp" >> /dev/null 2>&1
+	firewall-cmd --zone=${ZONE} --list-ports | grep "14500/tcp" >> /dev/null 2>&1
 	if [ $? != "0" ]; then
 		firewall-cmd --zone=${ZONE} --add-port=14500/tcp --permanent >> /dev/null 2>&1
 		if [ $? == "0" ]; then
