@@ -2000,6 +2000,7 @@ cdef class Encoder:
         raiseNVENC(r, "flushing encoder buffer")
 
     def compress_image(self, image, quality=-1, speed=-1, options={}, retry=0):
+        log("compress_image%s", (image, quality, speed, options, retry), exc_info=True)
         self.cuda_context.push()
         try:
             try:
@@ -2016,7 +2017,7 @@ cdef class Encoder:
             log.warn("PyCUDA error: %s", e)
             self.clean()
             self.init_cuda()
-            return self.convert_image(image, options, retry+1)
+            return self.compress_image(image, options, retry+1)
 
     cdef do_compress_image(self, image, options={}):
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
