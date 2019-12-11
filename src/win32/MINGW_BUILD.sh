@@ -137,31 +137,54 @@ fi
 
 if [ "${DO_SERVICE}" == "1" ]; then
 	echo "* Compiling system service shim"
+	if [ "${BITS}" == "64" ]; then
+		ARCH_DIRS="x64 x86"
+	else
+		ARCH_DIRS="x86"
+	fi
 	pushd "win32/service" > /dev/null
+	#the proper way would be to run vsvars64.bat
+	#but we only want to locate 3 commands,
+	#so we find them "by hand":
 	rm -f event_log.rc event_log.res MSG00409.bin Xpra-Service.exe
 	for KIT_DIR in "C:\Program Files\\Windows Kits" "C:\\Program Files (x86)\\Windows Kits"; do
 		for V in 8.1 10; do
-			if [ "${BITS}" == "64" ]; then
-				ARCH_DIRS="x64 x86"
-			else
-				ARCH_DIRS="x86"
+			VKIT_BIN_DIR="${KIT_DIR}\\$V\\bin"
+			if [ ! -d "${VKIT_BIN_DIR}" ]; then
+				continue
 			fi
 			for B in $ARCH_DIRS; do
-				MC="${KIT_DIR}\\$V\\bin\\$B\\mc.exe"
-				RC="${KIT_DIR}\\$V\\bin\\$B\\rc.exe"
+				MC="${VKIT_BIN_DIR}\\$B\\mc.exe"
+				RC="${VKIT_BIN_DIR}\\$B\\rc.exe"
+				if [ ! -e "$MC" ]; then
+					#try to find it in a versionned subdir:
+					MC=`find "${VKIT_BIN_DIR}" -name "mc.exe" | grep "$B/"`
+					RC=`find "${VKIT_BIN_DIR}" -name "rc.exe" | grep "$B/"`
+				fi
 				if [ -e "$MC" ]; then
 					echo "  using SDK $V $B found in:"
 					echo "  '$KIT_DIR'"
+					#echo "  mc=$MC"
+					#echo "  rc=$RC"
 					break 3
 				fi
 			done
 		done
 	done
 	for PF in "C:\\Program Files" "C:\\Program Files (x86)"; do
-		for VSV in 14.0 17.0 19.0; do
+		for VSV in 14.0 17.0 19.0 2019; do
 			LINK="$PF\\Microsoft Visual Studio $VSV\\VC\\bin\\link.exe"
 			if  [ -e "${LINK}" ]; then
 				break 2
+			fi
+			VSDIR="$PF\\Microsoft Visual Studio\\$VSV\\BuildTools\\VC\\Tools\\MSVC"
+			if [ -d "${VSDIR}" ]; then
+				for B in $ARCH_DIRS; do
+					LINK=`find "$VSDIR" -name "link.exe" | grep "$B/$B"`
+					if  [ -e "${LINK}" ]; then
+						break 3
+					fi
+				done
 			fi
 		done
 	done

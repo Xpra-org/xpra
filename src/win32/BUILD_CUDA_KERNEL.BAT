@@ -7,7 +7,9 @@ SET CUDA_BIN=xpra\codecs\cuda_common\%KERNEL%.fatbin
 
 SET NVCC_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\bin\
 SET NVCC=%NVCC_DIR%\nvcc.exe
+
 CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
+CALL "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 
 "%NVCC%" -fatbin -c %CUDA_SRC% -o %CUDA_BIN% ^
 	--use-local-env --machine 64 ^
