@@ -142,6 +142,9 @@ def main(script_file, cmdline):
         hashlib.algorithms_available.remove("md5")
         hashlib.md5 = nomd5
 
+    #turn off gdk scaling to make sure we get the actual window geometry:
+    os.environ["GDK_SCALE"]="1"
+
     try:
         try:
             defaults = make_defaults_struct()
