@@ -1,7 +1,10 @@
 #!/usr/bin/python2
 
+import os
 import sys
 from xpra.platform import program_context
+
+os.environ["GTK_CSD"] = "0"
 
 with program_context("Xpra-Launcher", "Xpra Connection Launcher"):
     from xpra.client.gtk_base.client_launcher import main
