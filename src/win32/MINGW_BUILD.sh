@@ -55,9 +55,12 @@ fi
 SIGNTOOL="${PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe"
 if [ ! -e "${SIGNTOOL}" ]; then
 	SIGNTOOL="${PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe"
-	if [ ! -e "${SIGNTOOL}" ]; then
-		SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
-	fi
+fi
+if [ ! -e "${SIGNTOOL}" ]; then
+	SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
+fi
+if [ ! -e "${SIGNTOOL}" ]; then
+	SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\10\\App Certification Kit\\signtool.exe"
 fi
 
 ################################################################################
