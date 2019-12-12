@@ -417,10 +417,13 @@ class SessionsGUI(Gtk.Window):
             #prefer order (from mode), then shorter host string:
             return "%s-%s" % (order.get(mode, mode), host_len)
         srecs = sorted(recs, key=cmp_key)
+        has_ws = False
         for rec in srecs:
             uri = self.get_uri(None, *rec)
             uri_menu.append_text(uri)
             d[uri] = rec
+            if uri.startswith("ws"):
+                has_ws = True
         def connect(*_args):
             uri = uri_menu.get_active_text()
             rec = d[uri]
@@ -431,7 +434,14 @@ class SessionsGUI(Gtk.Window):
         btn = imagebutton("Connect", icon, clicked_callback=connect)
         def uri_changed(*_args):
             uri = uri_menu.get_active_text()
-            bopen.set_sensitive(uri.startswith("ws"))
+            ws = uri.startswith("ws")
+            bopen.set_sensitive(ws)
+            if ws:
+                bopen.set_tooltip_text("")
+            elif not has_ws:
+                bopen.set_tooltip_text("no 'ws' or 'wss' URIs found")
+            else:
+                bopen.set_tooltip_text("select a 'ws' or 'wss' URI")
         uri_menu.connect("changed", uri_changed)
         uri_changed()
         def browser_open_option(*_args):
