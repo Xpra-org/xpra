@@ -19,7 +19,10 @@ import traceback
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
-from xpra.exit_codes import EXIT_STR, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED
+from xpra.exit_codes import (
+    EXIT_STR,
+    EXIT_OK, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED,
+    )
 from xpra.os_util import (
     get_util_logger, getuid, getgid,
     monotonic_time, setsid, bytestostr, use_tty,
@@ -360,7 +363,6 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                         #to start a new session and connect to it at the same time:
                         app = get_client_app(error_cb, options, args, "request-%s" % mode)
                         r = do_run_client(app)
-                        from xpra.exit_codes import EXIT_OK, EXIT_FAILURE
                         #OK or got a signal:
                         NO_RETRY = [EXIT_OK] + list(range(128, 128+16))
                         if app.completed_startup:
@@ -1370,9 +1372,19 @@ def connect_to_server(app, display_desc, opts):
             app.display_desc = display_desc
             protocol = app.setup_connection(conn)
             protocol.start()
+        except InitInfo as e:
+            log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            log.info("failed to connect:")
+            log.info(" %s", e)
+            GLib.idle_add(app.quit, EXIT_OK)
+        except InitExit as e:
+            log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            log.warn("Warning: failed to connect:")
+            log.warn(" %s", e)
+            GLib.idle_add(app.quit, e.status)
         except Exception as e:
-            log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            log.error("Error: failed to connect")
+            log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            log.error("Error: failed to connect:")
             log.error(" %s", e)
             GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
     def setup_connection():
