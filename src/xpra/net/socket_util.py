@@ -236,6 +236,7 @@ def create_sockets(opts, error_cb):
             from xpra.log import Logger
             sshlog = Logger("ssh")
             sshlog("import paramiko", exc_info=True)
+            ssh_upgrades = False
             sshlog.error("Error: cannot enable SSH socket upgrades:")
             sshlog.error(" %s", e)
     log("setting up SSL sockets: %s", csv(bind_ssl))
