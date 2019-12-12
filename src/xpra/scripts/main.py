@@ -1408,6 +1408,8 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 SSLEOFError = getattr(ssl, "SSLEOFError", None)
                 if SSLEOFError and isinstance(e, SSLEOFError):
                     return None
+                from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
+                status = EXIT_SSL_FAILURE
                 SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
                 if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
                     try:
@@ -1415,9 +1417,10 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                     except:
                         msg = str(e)
                     #ssllog.warn("host failed SSL verification: %s", msg)
+                    status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
                 else:
                     msg = str(e)
-                raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % msg)
+                raise InitExit(status, "SSL handshake failed: %s" % msg)
         return ssl_sock
     return do_wrap_socket
 
