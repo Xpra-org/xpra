@@ -403,7 +403,7 @@ class SessionsGUI(Gtk.Window):
         uri_menu = Gtk.ComboBoxText()
         uri_menu.set_size_request(340, 48)
         #sort by protocol so TCP comes first
-        order = {"socket" : 0, "ssh" : 1, "ssl" :2, "wss" : 3, "tcp" : 4, "ws" : 8}
+        order = {"socket" : 0, "ssh" : 1, "tcp" :2, "ssl" : 3, "ws" : 4, "wss" : 8}
         if WIN32:
             #on MS Windows, prefer ssh which has a GUI for accepting keys
             #and entering the password:
