@@ -236,6 +236,7 @@ def create_sockets(opts, error_cb):
             sshlog("import paramiko", exc_info=True)
             sshlog.error("Error: cannot enable SSH socket upgrades:")
             sshlog.error(" %s", e)
+            ssh_upgrades = False
     for socktype, defs in {
         "tcp"   : bind_tcp,
         "ssl"   : bind_ssl,
