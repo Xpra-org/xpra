@@ -106,11 +106,12 @@ def get_interface_info(int sockfd, ifname):
     if r >= 0:
         info["speed"] = edata.speed*1000*1000
         #info["duplex"] = duplex: DUPLEX_HALF, DUPLEX_FULL DUPLEX_NONE?
-    elif first_time("ethtool-%s" % ifname):
+    else:
+        if first_time("ethtool-%s" % ifname):
+            log.info("no ethtool interface speed available for %s", ifname)
         if ifname.startswith("wl"):
             info["adapter-type"] = "wireless"
-            return info
-        log.info("no ethtool interface speed available for %s", ifname)
+        return info
     cdef ethtool_drvinfo drvinfo
     drvinfo.cmd = ETHTOOL_GDRVINFO
     ifr.ifr_ifru.ifru_data = <void *> &drvinfo
