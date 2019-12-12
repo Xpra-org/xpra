@@ -200,6 +200,7 @@ class WindowClient(StubClientMixin):
                 btn = 4+i*2
                 invert = (
                     mw=="invert" or
+                    mw=="invertall" or
                     (btn==UP and mw=="inverty") or
                     (btn==LEFT and mw=="invertx") or
                     (btn==Z1 and mw=="invertz")

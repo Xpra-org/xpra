@@ -659,7 +659,8 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("mousewheel")
     group.add_option("--mousewheel", action="store",
                       dest="mousewheel", default=defaults.mousewheel,
-                      help="Mouse wheel forwarding, can be used to disable the device or invert some axes."
+                      help="Mouse wheel forwarding, can be used to disable the device ('no') or invert some axes "
+                      "('invert-all', 'invert-x', invert-y', 'invert-z')."
                       +" Default: %s." % defaults.webcam)
     from xpra.platform.features import INPUT_DEVICES
     if len(INPUT_DEVICES)>1:
