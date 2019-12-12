@@ -9,7 +9,7 @@ from time import sleep
 
 from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.scripts.main import InitExit
-from xpra.exit_codes import EXIT_SSL_FAILURE
+from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
 from xpra.os_util import (
     bytestostr, hexstr,
     getuid, get_username_for_uid, get_groups, get_group_id,
@@ -829,16 +829,18 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 SSLEOFError = getattr(ssl, "SSLEOFError", None)
                 if SSLEOFError and isinstance(e, SSLEOFError):
                     return None
+                status = EXIT_SSL_FAILURE
                 SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
                 if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
                     try:
                         msg = e.args[1].split(":", 2)[2]
                     except (ValueError, IndexError):
                         msg = str(e)
+                    status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
                     #ssllog.warn("host failed SSL verification: %s", msg)
                 else:
                     msg = str(e)
-                raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % msg)
+                raise InitExit(status, "SSL handshake failed: %s" % msg)
         return ssl_sock
     return do_wrap_socket
 
