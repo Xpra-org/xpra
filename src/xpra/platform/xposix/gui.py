@@ -36,7 +36,7 @@ def X11WindowBindings():
                 log.error(" %s", e)
     return _X11Window
 
-X11XI2 = None
+X11XI2 = False
 def X11XI2Bindings():
     global X11XI2
     if X11XI2 is False:
