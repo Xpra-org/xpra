@@ -16,7 +16,7 @@ import math
 from collections import deque
 
 from xpra.util import AdHocStruct, updict, rindex, iround, nonl, typedict, envbool, envint
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
