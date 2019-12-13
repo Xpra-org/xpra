@@ -398,7 +398,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
 
         if self.targets and target not in self.targets:
-            log.info("client is requesting an unknown target: '%s'", target)
+            log.info("client %s is requesting an unknown target: '%s'", wininfo, target)
             translated_targets = TRANSLATED_TARGETS.get(target, ())
             can_translate = tuple(x for x in translated_targets if x in self.targets)
             if can_translate:
