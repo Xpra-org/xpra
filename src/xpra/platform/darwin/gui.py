@@ -48,6 +48,7 @@ OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
 OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
 OSX_WHEEL_PRECISE_MULTIPLIER = envint("XPRA_OSX_WHEEL_PRECISE_MULTIPLIER", 1)
+OSX_WHEEL_DIVISOR = envint("XPRA_OSX_WHEEL_DIVISOR", 10)
 WHEEL = envbool("XPRA_WHEEL", True)
 NATIVE_NOTIFIER = envbool("XPRA_OSX_NATIVE_NOTIFIER", False)
 SUBPROCESS_NOTIFIER = envbool("XPRA_OSX_SUBPROCESS_NOTIFIER", False)
@@ -578,7 +579,7 @@ class Delegate(NSObject):
                 m = OSX_WHEEL_PRECISE_MULTIPLIER
             else:
                 m = OSX_WHEEL_MULTIPLIER
-            v = abs(distance)/10.0*m
+            v = m*abs(distance)/OSX_WHEEL_DIVISOR
             if v>1:
                 #cancel out some of the crazy fast scroll acceleration from macos:
                 v = math.sqrt(v)
