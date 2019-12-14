@@ -11,6 +11,7 @@ from uinput import (
     )
 
 from xpra.util import envint
+from xpra.os_util import bytestostr
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
@@ -45,7 +46,7 @@ class UInputDevice:
 
     def __init__(self, device, device_path):
         self.device = device
-        self.device_path = device_path
+        self.device_path = bytestostr(device_path)
         self.wheel_delta = {}
         #the first event always goes MIA:
         #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
