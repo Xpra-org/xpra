@@ -2,11 +2,9 @@
 
 from gi.repository import Gtk, Gdk
 
-from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
-
 
 def main():
-	window = Gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(320, 500)
 	window.connect("delete_event", Gtk.main_quit)
 	vbox = Gtk.VBox(False, 0)
@@ -99,7 +97,7 @@ def main():
 
 	window.add(vbox)
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 
