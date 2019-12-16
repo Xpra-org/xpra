@@ -1105,6 +1105,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             #GTK2 on OSX doesn't do alpha:
             if metadata.boolget("has-alpha", False):
                 return (self.ClientWindowClass,)
+            if not metadata.boolget("decorations", True):
+                return (self.ClientWindowClass,)
         return (self.GLClientWindowClass, self.ClientWindowClass)
 
     def toggle_opengl(self, *_args):

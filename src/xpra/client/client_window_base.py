@@ -107,6 +107,7 @@ class ClientWindowBase(ClientWidgetBase):
         #initialize gravity early:
         sc = typedict(metadata.dictget("size-constraints", {}))
         self.window_gravity = OVERRIDE_GRAVITY or sc.intget("gravity", DEFAULT_GRAVITY)
+        self.set_decorated(metadata.boolget("decorations", True))
 
 
     def get_desktop_workspace(self):
@@ -339,8 +340,14 @@ class ClientWindowBase(ClientWidgetBase):
                     self.deiconify()
 
         if b"decorations" in metadata:
-            self.set_decorated(metadata.boolget("decorations"))
-            self.apply_geometry_hints(self.geometry_hints)
+            decorated = metadata.boolget("decorations", True)
+            was_decorated = self.get_decorated()
+            if WIN32 and decorated!=was_decorated:
+                log.info("decorations flag toggled, now %s, re-initializing window", decorated)
+                self.idle_add(self._client.reinit_window, self._id, self)
+            else:
+                self.set_decorated(metadata.boolget("decorations"))
+                self.apply_geometry_hints(self.geometry_hints)
 
         if b"above" in metadata:
             above = metadata.boolget("above")
