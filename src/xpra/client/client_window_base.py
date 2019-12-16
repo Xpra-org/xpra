@@ -340,7 +340,7 @@ class ClientWindowBase(ClientWidgetBase):
             decorated = metadata.boolget("decorations", True)
             was_decorated = self.get_decorated()
             if WIN32 and decorated!=was_decorated:
-                log.error("decorations flag toggled, now %s, re-initializing window", decorated)
+                log.info("decorations flag toggled, now %s, re-initializing window", decorated)
                 self.idle_add(self._client.reinit_window, self._id, self)
             else:
                 self.set_decorated(metadata.boolget("decorations"))
