@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from gi.repository import Gtk, Gdk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Gdk	#pylint: disable=wrong-import-position
 
 
 def main():
@@ -12,12 +14,12 @@ def main():
 	def add_buttons(t1, cb1, t2, cb2):
 		hbox = Gtk.HBox(True, 10)
 		b1 = Gtk.Button(t1)
-		def vcb1(*args):
+		def vcb1(*_args):
 			cb1()
 		b1.connect('clicked', vcb1)
 		hbox.pack_start(b1, expand=True, fill=False, padding=5)
 		b2 = Gtk.Button(t2)
-		def vcb2(*args):
+		def vcb2(*_args):
 			cb2()
 		b2.connect('clicked', vcb2)
 		hbox.pack_start(b2, expand=True, fill=False, padding=5)
@@ -29,7 +31,7 @@ def main():
 	fsm_entry = Gtk.Entry()
 	fsm_entry.set_text("0,0,0,0")
 	hbox.add(fsm_entry)
-	def set_fsm(*args):
+	def set_fsm(*_args):
 		v = fsm_entry.get_text()
 		strs = v.split(",")
 		assert len(strs)==4, "the list of monitors must have 4 items!"

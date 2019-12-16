@@ -2,8 +2,7 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import Gtk	#pylint: disable=wrong-import-position
 
 
 width = 400
@@ -28,13 +27,13 @@ def main():
 		X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "_NET_SHOWING_DESKTOP", v)
 
 	b = Gtk.Button("Show Desktop")
-	def show_desktop(*args):
+	def show_desktop(*_args):
 		send_net_showing_desktop(1)
 	b.connect('clicked', show_desktop)
 	vbox.add(b)
 
 	b = Gtk.Button("Not Show Desktop")
-	def not_show_desktop(*args):
+	def not_show_desktop(*_args):
 		send_net_showing_desktop(0)
 	b.connect('clicked', not_show_desktop)
 	vbox.add(b)

@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
-from gi.repository import Gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk	#pylint: disable=wrong-import-position
 
-class TestWindow(gtk.Window):
+
+class TestWindow(Gtk.Window):
 	def __init__(self, window_type, x=100, y=100, w=100, h=100):
 		Gtk.Window.__init__(self, window_type)
 		self.move(x, y)
-		self.set_size_request(100, 100)
+		self.set_size_request(w, h)
 		self.connect("delete_event", Gtk.main_quit)
 		def hello(*_args):
 			print("hello!")

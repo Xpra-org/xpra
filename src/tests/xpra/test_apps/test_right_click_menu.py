@@ -2,9 +2,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Antoine Martin <antoine@xpra.org>
 
+import sys
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Gdk	#pylint: disable=wrong-import-position
 
 
 class TestForm(object):
@@ -33,7 +35,7 @@ class TestForm(object):
 
 def main():
 	TestForm()
-	gtk.main()
+	Gtk.main()
 
 
 if __name__ == "__main__":

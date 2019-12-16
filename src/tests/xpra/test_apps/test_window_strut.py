@@ -2,12 +2,15 @@
 
 #code found here:
 #http://stackoverflow.com/a/3859540/428751
+import gi
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
-from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL, get_root_size
+from xpra.gtk_common.gtk_util import get_root_size
+
 
 def main():
     rw, rh = get_root_size()
-    window = Gtk.Window(WINDOW_TOPLEVEL)
+    window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_default_size(100, rh)
     window.move(rw-100, 0)
     window.set_type_hint(Gdk.WINDOW_TYPE_HINT_DOCK)
