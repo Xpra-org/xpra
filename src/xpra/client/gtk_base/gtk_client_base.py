@@ -1153,6 +1153,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return (self.ClientWindowClass,)
             if metadata.boolget("has-alpha", False):
                 return (self.ClientWindowClass,)
+            if not metadata.boolget("decorations", True):
+                return (self.ClientWindowClass,)
         return (self.GLClientWindowClass, self.ClientWindowClass)
 
     def toggle_opengl(self, *_args):
