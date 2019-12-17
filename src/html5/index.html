@@ -449,6 +449,8 @@
 				var steal = getboolparam("steal", true);
 				var reconnect = getboolparam("reconnect", true);
 				var swap_keys = getboolparam("swap_keys", Utilities.isMacOS());
+				var scroll_reverse_x = getboolparam("scroll_reverse_x", false);
+				var scroll_reverse_y = getboolparam("scroll_reverse_y", Utilities.isMacOS());
 				try {
 					sessionStorage.removeItem("password");
 				}
@@ -516,6 +518,8 @@
 				client.reconnect = reconnect;
 				client.swap_keys = swap_keys;
 				client.on_connection_progress = connection_progress;
+				client.scroll_reverse_x = scroll_reverse_x;
+				client.scroll_reverse_y = scroll_reverse_y;
 				//example overrides:
 				//client.HELLO_TIMEOUT = 3600000;
 				//client.PING_TIMEOUT = 60000;

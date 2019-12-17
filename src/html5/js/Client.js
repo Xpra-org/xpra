@@ -126,6 +126,8 @@ XpraClient.prototype.init_state = function(container) {
 	this.wheel_delta_x = 0;
 	this.wheel_delta_y = 0;
 	this.mouse_grabbed = false;
+	this.scroll_reverse_x = false;
+	this.scroll_reverse_y = false;
 	// clipboard
 	this.clipboard_datatype = null;
 	this.clipboard_buffer = "";
@@ -1374,6 +1376,13 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	//clamp to prevent event floods:
 	var px = Math.min(1200, wheel.pixelX);
 	var py = Math.min(1200, wheel.pixelY);
+	if (this.scroll_reverse_x) {
+		px = -px;
+	}
+	if (this.scroll_reverse_y) {
+		py = -py;
+	}
+	
 	var apx = Math.abs(px);
 	var apy = Math.abs(py);
 	if (this.server_precise_wheel) {

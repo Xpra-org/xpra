@@ -236,6 +236,10 @@
 				  	<input type="checkbox" id="swap_keys"> <span>Swap command and control key</span>
 				  </li>
 				  <li class="list-group-item">
+				  	<input type="checkbox" id="scroll_reverse_y"> <span>Reverse vertical scrolling</span>
+				  	<input type="checkbox" id="scroll_reverse_x"> <span>Reverse horizontal scrolling</span>
+				  </li>
+				  <li class="list-group-item">
 				  	<input type="checkbox" id="floating_menu"> <span>Floating Menu</span>, <input type="checkbox" id="autohide"> <span>Auto Hide</span>, <input type="checkbox" id="clock"> <span>Server clock</span>
 				  </li>
 				  <li class="list-group-item">
@@ -322,6 +326,7 @@ function doConnect() {
 		"sound", "ignore_audio_blacklist",
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect", "swap_keys",
+		"scroll_reverse_x", "scroll_reverse_y",
 		"video", "mediasource_video",
 		"ssl", "insecure", "floating_menu", "autohide", "clock",
 		"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
@@ -527,6 +532,7 @@ function fill_form(default_settings) {
 			"exit_with_children", "exit_with_client",
 			"sharing", "steal", "reconnect", "swap_keys",
 			"video", "mediasource_video", "floating_menu", "autohide", "clock",
+			"scroll_reverse_x", "scroll_reverse_y",
 			"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network"];
 	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "floating_menu", "clock", "exit_with_children", "exit_with_client"];
 	if (Utilities.is_64bit()) {
@@ -534,6 +540,7 @@ function fill_form(default_settings) {
 	}
 	if (Utilities.isMacOS()) {
 		default_on.push("swap_keys");
+		default_on.push("scroll_reverse_x");
 	}
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
