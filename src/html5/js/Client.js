@@ -1387,7 +1387,7 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	var apy = Math.abs(py);
 	if (this.server_precise_wheel) {
 		if (apx>0) {
-			var btn_x = (px>=0) ? 6 : 7;
+			var btn_x = (px>=0) ? 7 : 6;
 			var xdist = Math.round(px*1000/120);
 			this.send(["wheel-motion", wid, btn_x, -xdist,
 				[x, y], modifiers, buttons]);
@@ -1416,7 +1416,7 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	//send synthetic click+release as many times as needed:
 	var wx = Math.abs(this.wheel_delta_x);
 	var wy = Math.abs(this.wheel_delta_y);
-	var btn_x = (this.wheel_delta_x>=0) ? 6 : 7;
+	var btn_x = (this.wheel_delta_x>=0) ? 7 : 6;
 	var btn_y = (this.wheel_delta_y>=0) ? 5 : 4;
 	while (wx>=120) {
 		wx -= 120;
