@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
+import sys
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk
-from gi.repository import Gdk
+from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position
 
 width = 400
 height = 200
@@ -36,7 +36,8 @@ def make_win(title="Test Geometry Hints",
 		mask |= Gdk.WindowHints.MAX_SIZE
 	window.set_geometry_hints(None, geom, Gdk.WindowHints(mask))
 	window.show_all()
-	fixup_window_style(window)
+	if sys.platform.startswith("win"):
+		fixup_window_style(window)
 
 def fixup_window_style(window):
 	from xpra.platform.win32.gui import get_window_handle

@@ -12,7 +12,7 @@ class StatusIcon:
         self.counter = 0
         self.statusicon.connect("activate", self.quit_cb)
         self.statusicon.connect("popup-menu", self.quit_cb)
-        self.statusicon.set_tooltip("StatusIcon Example")
+        self.statusicon.set_tooltip_text("StatusIcon Example")
         #generate tray image:
         s = 64
         w, h = s*2, s*2

@@ -12,7 +12,7 @@ def main():
 	window.connect("delete_event", Gtk.main_quit)
 	vbox = Gtk.VBox(False, 0)
 
-	btn = Gtk.Button("Create Transient")
+	btn = Gtk.Button(label="Create Transient")
 	def create_transient(*_args):
 		tw = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 		tw.set_size_request(200, 100)
@@ -23,13 +23,13 @@ def main():
 	btn.connect('clicked', create_transient)
 	vbox.pack_start(btn, expand=False, fill=False, padding=10)
 
-	btn = Gtk.Button("Create Transient (with 5 second delay)")
+	btn = Gtk.Button(label="Create Transient (with 5 second delay)")
 	def delayed_transient(*_args):
 		GLib.timeout_add(5000, create_transient)
 	btn.connect('clicked', delayed_transient)
 	vbox.pack_start(btn, expand=False, fill=False, padding=10)
 
-	btn = Gtk.Button("Create Root Transient")
+	btn = Gtk.Button(label="Create Root Transient")
 	def create_root_transient(*_args):
 		tw = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 		tw.set_size_request(200, 100)

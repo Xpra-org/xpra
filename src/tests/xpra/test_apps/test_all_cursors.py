@@ -3,13 +3,13 @@
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk
-from xpra.gtk_common.cursor_names import cursor_types
+from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position
+from xpra.gtk_common.cursor_names import cursor_types  #pylint: disable=wrong-import-position
 
 width = 400
 height = 200
 def main():
-	window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(width, height)
 	window.connect("delete_event", Gtk.main_quit)
 

@@ -5,6 +5,8 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position
 
+#FIXME: there is no Pixmap in GTK3!
+# needs rewrite using Pixbuf
 
 def colored_cursor(size=64, x=32, y=32):
 	#create a custom cursor:

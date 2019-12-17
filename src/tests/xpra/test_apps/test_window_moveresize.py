@@ -2,24 +2,25 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib   #pylint: disable=wrong-import-position
+gi.require_version('GdkX11', '3.0')
+from gi.repository import Gtk, GdkX11, GLib   #pylint: disable=wrong-import-position
 
 width = 400
 height = 200
 class MoveWindow(Gtk.Window):
 	def __init__(self, window_type):
-		Gtk.Window.__init__(self, window_type)
+		super().__init__(type=window_type)
 		self.set_size_request(width, height)
-		self.connect("delete_event", Gtk.mainquit)
+		self.connect("delete_event", Gtk.main_quit)
 		vbox = Gtk.VBox(False, 0)
 		hbox = Gtk.HBox(False, 0)
 		vbox.pack_start(hbox, expand=False, fill=False, padding=10)
 
-		gtk_btn = Gtk.Button("move+resize via GTK")
+		gtk_btn = Gtk.Button(label="move+resize via GTK")
 		hbox.pack_start(gtk_btn, expand=False, fill=False, padding=10)
 		gtk_btn.connect('clicked', self.moveresize_GTK)
 
-		x11_btn = Gtk.Button("move+resize via x11")
+		x11_btn = Gtk.Button(label="move+resize via x11")
 		hbox.pack_start(x11_btn, expand=False, fill=False, padding=10)
 		x11_btn.connect('clicked', self.moveresize_X11)
 
@@ -51,7 +52,8 @@ class MoveWindow(Gtk.Window):
 	def get_new_geometry(self):
 		x, y = self.get_position()
 		width, height = self.get_size()
-		maxx, maxy = Gtk.gdk.get_default_root_window().get_geometry()[2:4]
+		from xpra.gtk_common.gtk_util import get_default_root_window
+		maxx, maxy = get_default_root_window().get_geometry()[2:4]
 		new_x = (x+100) % (maxx-width)
 		new_y = (y+100) % (maxy-height)
 		width, height = self.get_size()
@@ -59,8 +61,8 @@ class MoveWindow(Gtk.Window):
 
 
 def main():
-	MoveWindow(Gtk.WINDOW_TOPLEVEL)
-	MoveWindow(Gtk.WINDOW_POPUP)
+	MoveWindow(Gtk.WindowType.TOPLEVEL)
+	MoveWindow(Gtk.WindowType.POPUP)
 	Gtk.main()
 
 

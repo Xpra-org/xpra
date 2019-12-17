@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-def test_dbus(display, wid=1, zones=[[100,100,20,20],]):
+def test_dbus(display, wid=1, zones=((100,100,20,20),)):
     import dbus     #@UnresolvedImport
     bus = dbus.SessionBus()
     server = 'org.xpra.Server%i' % display
@@ -18,17 +18,17 @@ def main():
     import sys
     try:
         DISPLAY = int(sys.argv[1])
-    except:
+    except ValueError:
         DISPLAY = 100
     try:
         wid = int(sys.argv[2])
-    except:
+    except ValueError:
         wid = 1
     try:
         zones = []
         for arg in sys.argv[3:]:
             zones.append([int(x.strip()) for x in arg.split(",")])
-    except:
+    except ValueError:
         zones = []
     test_dbus(DISPLAY, wid, zones)
 

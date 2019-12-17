@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from gi.repository import Gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk	#pylint: disable=wrong-import-position
 from xpra.gtk_common.gtk_util import choose_file
 
 def main():

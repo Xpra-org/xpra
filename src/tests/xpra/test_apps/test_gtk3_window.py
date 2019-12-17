@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import cairo
+from cairo import ImageSurface, Context, FORMAT_ARGB32, OPERATOR_CLEAR, OPERATOR_SOURCE
 from PIL import Image
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk                #@UnresolvedImport @UnusedImport
+from gi.repository import Gtk #pylint: disable=wrong-import-position
 
 W = 480
 H = 500
@@ -21,7 +21,7 @@ class TestGTK3Window(Gtk.Window):
         self.drawing_area.connect("draw", self.widget_draw)
         self.add(self.drawing_area)
         self.show_all()
-        self.backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H)
+        self.backing = ImageSurface(FORMAT_ARGB32, W, H)
         rgb_data = b"\120"*W*H*4
         self.paint_rgb(rgb_data, W, H)
         img = Image.open("./icons/xpra.png")
@@ -39,20 +39,20 @@ class TestGTK3Window(Gtk.Window):
         img.save(png, format="PNG")
         reader = BytesIO(png.getvalue())
         png.close()
-        img = cairo.ImageSurface.create_from_png(reader)
-        gc = cairo.Context(self.backing)
+        img = ImageSurface.create_from_png(reader)
+        gc = Context(self.backing)
         gc.rectangle(x, y, w, h)
         gc.clip()
-        gc.set_operator(cairo.OPERATOR_CLEAR)
+        gc.set_operator(OPERATOR_CLEAR)
         gc.rectangle(x, y, w, h)
         gc.fill()
-        gc.set_operator(cairo.OPERATOR_SOURCE)
+        gc.set_operator(OPERATOR_SOURCE)
         gc.translate(x, y)
         gc.rectangle(0, 0, w, h)
         gc.set_source_surface(img, x, y)
         gc.paint()
 
-    def widget_draw(self, widget, context, *args):
+    def widget_draw(self, widget, context, *_args):
         print("do_draw(%s, %s)" % (widget, context,))
         #Gtk.Window.do_draw(self, context)
         context.set_source_surface(self.backing, 0, 0)

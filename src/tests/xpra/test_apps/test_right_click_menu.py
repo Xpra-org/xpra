@@ -18,7 +18,7 @@ class TestForm(object):
 		self.window.set_border_width(20)
 		self.window.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
 
-		btn = Gtk.Button("hello")
+		btn = Gtk.Button(label="hello")
 		btn.connect("button_press_event", self.button_clicked)
 
 		self.window.add(btn)
@@ -27,10 +27,10 @@ class TestForm(object):
 	def button_clicked(self, widget, event):
 		print("button_clicked("+str(widget)+", "+str(event)+")")
 		menu = Gtk.Menu()
-		menu.append(Gtk.MenuItem("Foo"))
-		menu.append(Gtk.MenuItem("Bar"))
+		menu.append(Gtk.MenuItem(label="Foo"))
+		menu.append(Gtk.MenuItem(label="Bar"))
 		menu.show_all()
-		menu.popup(None, None, None, event.button, event.time)
+		menu.popup(None, None, None, None, event.button, event.time)
 
 
 def main():

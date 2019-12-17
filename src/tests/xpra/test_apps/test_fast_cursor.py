@@ -12,7 +12,7 @@ height = 200
 def main():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(width, height)
-	window.connect("delete_event", Gtk.mainquit)
+	window.connect("delete_event", Gtk.main_quit)
 
 	names = list(cursor_types.keys())
 	names = names[:2]+names[:2]+names[:2]+names[:2]+names[:2]+names[:2]+names[:2]+names[:2]+names[:2]

@@ -12,8 +12,8 @@ def main():
     win.set_title('Alpha Demo')
     win.connect('delete-event', Gtk.main_quit)
 
-    btn = Gtk.Button("Change Opacity")
-    def change_opacity(*args):
+    btn = Gtk.Button(label="Change Opacity")
+    def change_opacity(*_args):
         global opacity
         opacity = (opacity + 5) % 100
         btn.set_label("Change Opacity: %i%%" % opacity)

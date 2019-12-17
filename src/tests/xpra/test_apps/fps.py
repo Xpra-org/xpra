@@ -1,22 +1,24 @@
 #!/usr/bin/env python
 
-import cairo
+from cairo import OPERATOR_SOURCE  #pylint: disable=no-name-in-module
 
-from gi.repository import Gtk as gtk, GLib as glib   #@UnresolvedImport @UnusedImport
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, GLib #pylint: disable=wrong-import-position
 
 
 WIDTH, HEIGHT = 640, 640
 
-class FPSWindow(gtk.Window):
+class FPSWindow(Gtk.Window):
 
     def __init__(self):
         super().__init__()
         self.set_default_size(WIDTH, HEIGHT)
         self.set_app_paintable(True)
         self.counter = 0
-        self.connect("draw", self.draw)
-        self.connect("destroy", gtk.main_quit)
-        glib.timeout_add(10, self.repaint)
+        self.connect("draw", self._draw)
+        self.connect("destroy", Gtk.main_quit)
+        GLib.timeout_add(10, self.repaint)
 
 
     def on_key_press(self, *args):
@@ -27,22 +29,21 @@ class FPSWindow(gtk.Window):
         self.queue_draw()
         return True
 
-    def draw(self, widget, cr):
-        w, h = widget.get_size()
+    def _draw(self, widget, cr):
         c = 0.2
         def paint_block(x, y, w, h, div):
             split_h = self.counter//div % h
             #top half:
             if split_h>0:
                 cr.new_path()
-                cr.set_operator(cairo.OPERATOR_SOURCE)
+                cr.set_operator(OPERATOR_SOURCE)
                 cr.set_source_rgb(c, c, c)
                 cr.rectangle(x, y, w, split_h)
                 cr.fill()
             #bottom half:
             if split_h<h:
                 cr.new_path()
-                cr.set_operator(cairo.OPERATOR_SOURCE)
+                cr.set_operator(OPERATOR_SOURCE)
                 cr.set_source_rgb(0, 0, 0)
                 cr.rectangle(x, y+split_h, w, h-split_h)
                 cr.fill()
@@ -51,6 +52,7 @@ class FPSWindow(gtk.Window):
             cr.move_to(x+w/2-12, y+h/2+8)
             cr.show_text("1/%s" % div)
 
+        w, h = widget.get_size()
         paint_block(0, 0, w//2, h//2, 1)
         if self.counter%2==0:        #half-rate
             paint_block(w//2, 0, w//2, h//2, 2)
@@ -59,6 +61,6 @@ class FPSWindow(gtk.Window):
         if self.counter%8==0:        #one-eigth rate
             paint_block(w//2, h//2, w//2, h//2, 8)
 
-w = FPSWindow()
-w.show_all()
-gtk.main()
+window = FPSWindow()
+window.show_all()
+Gtk.main()

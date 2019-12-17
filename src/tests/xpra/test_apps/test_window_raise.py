@@ -22,7 +22,7 @@ def main():
 	def add_button(title, callback):
 		hbox = Gtk.HBox(False, 0)
 		vbox.pack_start(hbox, expand=False, fill=False, padding=10)
-		btn = Gtk.Button(title)
+		btn = Gtk.Button(label=title)
 		hbox.pack_start(btn, expand=False, fill=False, padding=10)
 		def on_clicked(*_args):
 			def after_delay():

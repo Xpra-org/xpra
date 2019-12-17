@@ -3,19 +3,19 @@
 # Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
 
 import sys
-import pygtk
-pygtk.require('2.0')
-import gtk
-import glib
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gtk, Gdk, GLib   #pylint: disable=wrong-import-position
 
 def main():
-    clipboard = gtk.clipboard_get()
+    clipboard = Gtk.Clipboard.get(Gdk.Atom.intern("CLIPBOARD", False))
     def request_image():
         image = clipboard.wait_for_image()
         print("image=%s" % image)
         return True
-    glib.timeout_add(1000, request_image)
-    gtk.main()
+    GLib.timeout_add(1000, request_image)
+    Gtk.main()
 
 if __name__ == "__main__":
     main()

@@ -2,10 +2,10 @@
 
 import sys
 
-from xpra.util import envbool
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk    #pylint: disable=wrong-import-position
+from xpra.util import envbool
 
 
 class StatusIcon:
@@ -17,10 +17,7 @@ class StatusIcon:
         self.statusicon.set_from_stock(Gtk.STOCK_HOME)
         self.statusicon.connect("popup-menu", self.popup_menu)
         self.statusicon.connect("activate", self.activate)
-        try:
-            self.statusicon.set_tooltip_text(tooltip)
-        except AttributeError:
-            self.statusicon.set_tooltip(tooltip)
+        self.statusicon.set_tooltip_text(tooltip)
         #build list of stock icons:
         self.stock = {}
         try:
@@ -40,9 +37,9 @@ class StatusIcon:
             traceback.print_stack()
             print("Failed to instantiate the notifier: %s" % e)
         self.nid = 1
-        for x in dir(gtk):
+        for x in dir(Gtk):
             if x.startswith("STOCK_"):
-                self.stock[x[len("STOCK_"):]] = getattr(gtk, x)
+                self.stock[x[len("STOCK_"):]] = getattr(Gtk, x)
 
     def activate(self, *_args):
         self.counter += 1
@@ -53,13 +50,13 @@ class StatusIcon:
     def popup_menu(self, icon, button, time):
         menu = Gtk.Menu()
         quit_menu = Gtk.MenuItem("Quit")
-        quit_menu.connect("activate", gtk.main_quit)
+        quit_menu.connect("activate", Gtk.main_quit)
         menu.append(quit_menu)
         notify_menu = Gtk.MenuItem("Send Notification")
         notify_menu.connect("activate", self.notify)
         menu.append(notify_menu)
         menu.show_all()
-        menu.popup(None, None, gtk.StatusIcon.position_menu, self.statusicon, button, time)
+        menu.popup(None, None, Gtk.StatusIcon.position_menu, self.statusicon, button, time)
 
     def notification_closed(self, nid, reason, text):
         print("notification_closed(%i, %i, %s)" % (nid, reason, text))

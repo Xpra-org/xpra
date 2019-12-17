@@ -36,7 +36,7 @@ def main():
 	window.connect("motion-notify-event", motion_notify)
 
 
-	grab_pointer_btn = Gtk.Button("grab pointer")
+	grab_pointer_btn = Gtk.Button(label="grab pointer")
 	def grab_pointer(*args):
 		action_label.set_text("grab_pointer%s" % str(args))
 		def do_grab():
@@ -53,7 +53,7 @@ def main():
 	grab_pointer_btn.connect('clicked', grab_pointer)
 	hbox.pack_start(grab_pointer_btn, expand=False, fill=False, padding=10)
 
-	ungrab_pointer_btn = Gtk.Button("ungrab pointer")
+	ungrab_pointer_btn = Gtk.Button(label="ungrab pointer")
 	def ungrab_pointer(*_args):
 		v = Gdk.pointer_ungrab(0)
 		action_label.set_text("pointer_ungrab(0)=%s" % GRAB_STATUS_STRING.get(v, v))
@@ -61,7 +61,7 @@ def main():
 	ungrab_pointer_btn.connect('clicked', ungrab_pointer)
 	hbox.pack_start(ungrab_pointer_btn, expand=False, fill=False, padding=10)
 
-	grab_keyboard_btn = Gtk.Button("grab keyboard")
+	grab_keyboard_btn = Gtk.Button(label="grab keyboard")
 	def grab_keyboard(*_args):
 		v = Gdk.keyboard_grab(window.get_window(), True, 0)
 		action_label.set_text("keyboard_grab(..)=%s" % GRAB_STATUS_STRING.get(v, v))
@@ -69,19 +69,19 @@ def main():
 	grab_keyboard_btn.connect('clicked', grab_keyboard)
 	hbox.pack_start(grab_keyboard_btn, expand=False, fill=False, padding=10)
 
-	ungrab_keyboard_btn = Gtk.Button("ungrab keyboard")
+	ungrab_keyboard_btn = Gtk.Button(label="ungrab keyboard")
 	def ungrab_keyboard(*_args):
 		v = Gdk.keyboard_ungrab(0)
 		action_label.set_text("keyboard_ungrab(0)=%s" % GRAB_STATUS_STRING.get(v, v))
 	ungrab_keyboard_btn.connect('clicked', ungrab_keyboard)
 	hbox.pack_start(ungrab_keyboard_btn, expand=False, fill=False, padding=10)
 
-	vbox.add(Gtk.Label("Last action:"))
-	action_label = Gtk.Label("")
+	vbox.add(Gtk.Label(label="Last action:"))
+	action_label = Gtk.Label(label="")
 	vbox.add(action_label)
 
-	vbox.add(Gtk.Label("Last event:"))
-	event_label = Gtk.Label("")
+	vbox.add(Gtk.Label(label="Last event:"))
+	event_label = Gtk.Label(label="")
 	vbox.add(event_label)
 
 	window.add(vbox)

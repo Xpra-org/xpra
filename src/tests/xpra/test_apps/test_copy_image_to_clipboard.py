@@ -7,7 +7,7 @@ import sys
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GdkPixbuf #pylint: disable=wrong-import-position
 
 count = 0
 def handle_owner_change(clipboard, event):
@@ -19,8 +19,8 @@ def handle_owner_change(clipboard, event):
 
 def main():
     assert os.path.exists(sys.argv[1])
-    image = Gdk.pixbuf_new_from_file(sys.argv[1])
-    clipboard = Gtk.clipboard_get()
+    image = GdkPixbuf.Pixbuf.new_from_file(sys.argv[1])
+    clipboard = Gtk.Clipboard.get(Gdk.Atom.intern("CLIPBOARD", False))
     clipboard.connect('owner-change', handle_owner_change)
     clipboard.set_image(image)
     clipboard.store()

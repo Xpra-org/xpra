@@ -12,23 +12,23 @@ from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
 class TestForm(object):
 
 	def	__init__(self):
-		self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+		self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 		self.window.connect("destroy", Gtk.main_quit)
 		self.window.set_default_size(320, 200)
 		self.window.set_border_width(20)
 
 		vbox = Gtk.VBox()
-		self.info = Gtk.Label("")
+		self.info = Gtk.Label(label="")
 		self.show_click_settings()
 		GLib.timeout_add(1000, self.show_click_settings)
 		vbox.pack_start(self.info, False, False, 0)
-		self.label = Gtk.Label("Ready")
+		self.label = Gtk.Label(label="Ready")
 		vbox.pack_start(self.label, False, False, 0)
 
 		self.eventbox = Gtk.EventBox()
 		self.eventbox.connect('button-press-event', self.button_press_event)
-		self.eventbox.add_events(Gdk.EventMask.BUTTON_PRESS)
-		self.eventbox.add_events(Gdk.EventMask.BUTTON_RELEASE)
+		self.eventbox.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+		self.eventbox.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
 		vbox.pack_start(self.eventbox, True, True, 0)
 
 		self.window.add(vbox)
@@ -49,12 +49,12 @@ class TestForm(object):
 		self.info.set_text("Time (ms): %s, Distance: %s" % (t, d))
 		return True
 
-	def button_press_event(self, obj, event):
-		if event.type == Gdk._3BUTTON_PRESS:
+	def button_press_event(self, _obj, event):
+		if event.type == Gdk.EventType._3BUTTON_PRESS:  #pylint: disable=protected-access
 			self.label.set_text("Triple Click!")
-		elif event.type == Gdk._2BUTTON_PRESS:
+		elif event.type == Gdk.EventType._2BUTTON_PRESS:  #pylint: disable=protected-access
 			self.label.set_text("Double Click!")
-		elif event.type == Gdk.BUTTON_PRESS:
+		elif event.type == Gdk.EventType.BUTTON_PRESS:
 			self.label.set_text("Click")
 		else:
 			self.label.set_text("Unexpected event: %s" % event)

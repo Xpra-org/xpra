@@ -13,12 +13,12 @@ def main():
 
 	def add_buttons(t1, cb1, t2, cb2):
 		hbox = Gtk.HBox(True, 10)
-		b1 = Gtk.Button(t1)
+		b1 = Gtk.Button(label=t1)
 		def vcb1(*_args):
 			cb1()
 		b1.connect('clicked', vcb1)
 		hbox.pack_start(b1, expand=True, fill=False, padding=5)
-		b2 = Gtk.Button(t2)
+		b2 = Gtk.Button(label=t2)
 		def vcb2(*_args):
 			cb2()
 		b2.connect('clicked', vcb2)
@@ -38,7 +38,7 @@ def main():
 		monitors = [int(x) for x in strs]
 		from xpra.platform.gui import set_fullscreen_monitors
 		set_fullscreen_monitors(window.get_window(), monitors)
-	set_fsm_btn = Gtk.Button("Set Fullscreen Monitors")
+	set_fsm_btn = Gtk.Button(label="Set Fullscreen Monitors")
 	set_fsm_btn.connect("clicked", set_fsm)
 	hbox.add(set_fsm_btn)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=2)

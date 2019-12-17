@@ -33,7 +33,7 @@ def main():
         win.speed = (win.speed - 20) % 100
         set_speed_hint()
     def add_button(label, cb):
-        btn = Gtk.Button(label)
+        btn = Gtk.Button(label=label)
         vbox.add(btn)
         btn.connect('button-press-event', cb)
     add_button("change quality", change_quality)

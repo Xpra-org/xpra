@@ -4,6 +4,8 @@ from gi.repository import Gtk, Gdk
 
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 
+#FIXME: there is no Pixmap in GTK3!
+# needs rewrite using Pixbuf
 
 class CursorWindow(Gtk.Window):
 

@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import gi
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk       #@UnresolvedImport
 
 #do_key_press_event(<Gdk.EventKey object at 0x0000000002f8f0e8 (void at 0x00000000029665a0)>) string=
@@ -13,10 +15,10 @@ from gi.repository import Gtk       #@UnresolvedImport
 
 class KeyEventWindow(Gtk.Window):
 
-    def do_key_press_event(self, event):
+    def do_key_press_event(self, event):  #pylint: disable=arguments-differ
         print("do_key_press_event(%s) string=%s" % (event, event.string))
 
-    def do_key_release_event(self, event):
+    def do_key_release_event(self, event):  #pylint: disable=arguments-differ
         print("do_key_release_event(%s) string=%s" % (event, event.string))
 
 if __name__ == "__main__":
