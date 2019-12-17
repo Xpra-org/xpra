@@ -150,7 +150,6 @@ class ServerBase(ServerBaseClass):
         self.sharing = opts.sharing
         self.lock = opts.lock
         self.idle_timeout = opts.idle_timeout
-        self.av_sync = opts.av_sync
         self.bandwidth_detection = opts.bandwidth_detection
 
     def setup(self):
