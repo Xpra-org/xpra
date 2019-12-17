@@ -39,6 +39,7 @@ class AudioServer(StubServerMixin):
         self.speaker_codecs = ()
         self.microphone_codecs = ()
         self.sound_properties = typedict()
+        self.av_sync = False
 
     def init(self, opts):
         self.sound_source_plugin = opts.sound_source
@@ -53,6 +54,8 @@ class AudioServer(StubServerMixin):
         self.pulseaudio_configure_commands = opts.pulseaudio_configure_commands
         log("AudioServer.init(..) supports speaker=%s, microphone=%s",
             self.supports_speaker, self.supports_microphone)
+        self.av_sync = opts.av_sync
+        log("AudioServer.init(..) av-sync=%s", self.av_sync)
 
     def setup(self):
         self.init_pulseaudio()
@@ -73,6 +76,10 @@ class AudioServer(StubServerMixin):
 
     def get_server_features(self, _source):
         return {
+            "av-sync" : {
+                ""          : self.av_sync,
+                "enabled"   : self.av_sync,
+               },
             "sound_sequence" : True,        #legacy flag
             "sound" : {
                 "ogg-latency-fix" : True,

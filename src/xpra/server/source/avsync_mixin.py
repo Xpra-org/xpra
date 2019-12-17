@@ -32,14 +32,6 @@ class AVSyncMixin(StubSourceMixin):
         self.av_sync_delta = AV_SYNC_DELTA
 
 
-    def get_server_features(self, _source):
-        return {
-            "av-sync" : {
-                ""          : self.av_sync,
-                "enabled"   : self.av_sync_enabled,
-                }
-            }
-
     def get_info(self):
         return {
             "av-sync" : {
@@ -55,7 +47,8 @@ class AVSyncMixin(StubSourceMixin):
         av_sync = c.boolget("av-sync")
         self.av_sync_enabled = self.av_sync and av_sync
         self.set_av_sync_delay(int(self.av_sync_enabled) * c.intget("av-sync.delay.default", DEFAULT_AV_SYNC_DELAY))
-        log("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
+        log("av-sync: server=%s, client=%s, enabled=%s, total=%s",
+                 self.av_sync, av_sync, self.av_sync_enabled, self.av_sync_delay_total)
 
 
     def set_av_sync_delta(self, delta):
