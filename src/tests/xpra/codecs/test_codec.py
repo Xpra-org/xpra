@@ -7,7 +7,6 @@
 import time
 import binascii
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.os_util import _buffer
 
 DEBUG = False
 
@@ -32,9 +31,7 @@ def dump_pixels(pixels):
         add = ["..."]
     else:
         v = pixels
-    if t==_buffer:
-        l = binascii.hexlify(v) + str(add)
-    elif t==bytearray:
+    if t==bytearray:
         l = binascii.hexlify(str(v)) + str(add)
     elif t==str:
         l = binascii.hexlify(v) + str(add)
@@ -46,10 +43,10 @@ def hextobytes(s):
     return bytearray(binascii.unhexlify(s))
 
 
-def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_strings=False, populate=False, seed=0):
+def make_rgb_input(src_format, w, h, use_strings=False, populate=False, seed=0):
     start = time.time()
     bpp = len(src_format)
-    assert bpp==3 or bpp==4
+    assert bpp in (3, 4)
     size = w*h*bpp
     if populate:
         pixels = bytearray(get_source_data(size, seed))

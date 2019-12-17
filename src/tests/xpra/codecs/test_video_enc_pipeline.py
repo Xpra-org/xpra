@@ -13,7 +13,11 @@ def test_load():
     # - make nvenc less desirable at HQ (maybe not?)
     # - make cuda csc beat swscale
     vep = getVideoHelper()
-    vep.may_init()
+    try:
+        vep.cleanup()
+    except Exception:
+        pass
+    vep.init()
 
 
 def main():

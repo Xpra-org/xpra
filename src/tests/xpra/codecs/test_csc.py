@@ -6,10 +6,9 @@
 
 import time
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.codec_constants import PIXEL_SUBSAMPLING, RGB_FORMATS
 #from tests.xpra.test_util import dump_resource_usage, dump_threads
 from tests.xpra.codecs.test_codec import dump_pixels, make_rgb_input, make_planar_input
-from xpra.codecs.codec_constants import PIXEL_SUBSAMPLING, RGB_FORMATS
-from xpra.os_util import _buffer
 
 
 DEBUG = False
@@ -27,9 +26,9 @@ def check_plane(info, data, expected, tolerance=3, pixel_stride=4, ignore_byte=-
     assert data is not None
     print("check_plane(%s, %s:%s, %s:%s" % (info, type(data), len(data), type(expected), len(expected)))
     #chop data to same size as expected sample:
-    if type(data) in (memoryview, _buffer, str):
+    if isinstance(data, (memoryview, str)):
         data = bytearray(data)
-    if type(expected) in (_buffer, str):
+    if isinstance(expected, str):
         expected = bytearray(expected)
     actual_data = data[:len(expected)]
     if actual_data==expected:

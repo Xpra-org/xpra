@@ -6,7 +6,7 @@
 
 
 def main():
-    from xpra.codecs.pillow.encode import selftest
+    from xpra.codecs.pillow.encoder import selftest
     #from xpra.codecs.pillow.encode import log
     #log.enable_debug()
     selftest(True)

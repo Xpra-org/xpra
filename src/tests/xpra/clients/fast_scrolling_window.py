@@ -4,11 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections import deque
 import gobject      #@UnresolvedImport
 import gtk          #@UnresolvedImport
 
 from xpra.client.gobject_client_base import CommandConnectClient
-from collections import deque
 from xpra.log import Logger
 
 log = Logger()

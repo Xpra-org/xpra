@@ -8,9 +8,9 @@ import sys
 import os.path
 import time
 import binascii
+from io import BytesIO
 
 from PIL import Image           #@UnresolvedImport
-from io import BytesIO
 
 
 def do_test_encode(rgb_data, w, h, encodings=("png", "png/P", "png/L", "jpeg", "webp"),
