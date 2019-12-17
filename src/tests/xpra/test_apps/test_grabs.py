@@ -3,9 +3,9 @@
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
 
-from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING
+from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING  #pylint: disable=wrong-import-position
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
 	def key_released(_window, event):
 		event_label.set_text("key_released: %s" % keyevent_info(event))
 	window.connect("key-press-event", key_pressed)
-	window.connect("key-release-event", key_pressed)
+	window.connect("key-release-event", key_released)
 
 	def motion_notify(_window, event):
 		event_label.set_text("motion: %i,%i" % (event.x_root, event.y_root))

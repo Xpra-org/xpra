@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk
 from xpra.gtk_common.cursor_names import cursor_types
 
@@ -16,7 +19,7 @@ def main():
 		cursor_combo.append_text(name)
 	window.add(cursor_combo)
 
-	def change_cursor(*args):
+	def change_cursor(*_args):
 		name = cursor_combo.get_active_text()
 		print("new cursor: %s" % name)
 		if name:
@@ -28,7 +31,7 @@ def main():
 
 	cursor_combo.connect("changed", change_cursor)
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

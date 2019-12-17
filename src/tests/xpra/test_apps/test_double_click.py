@@ -6,7 +6,7 @@ import sys
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
 
 
 class TestForm(object):
@@ -40,11 +40,11 @@ class TestForm(object):
 		#use undocumented constants found in source:
 		try:
 			t = screen.get_setting("gtk-double-click-time")
-		except:
+		except Exception:
 			t = ""
 		try:
 			d = screen.get_setting("gtk-double-click-distance")
-		except:
+		except Exception:
 			d = ""
 		self.info.set_text("Time (ms): %s, Distance: %s" % (t, d))
 		return True

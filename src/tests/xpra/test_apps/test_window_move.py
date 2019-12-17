@@ -1,24 +1,20 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk
-from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL, get_root_size
-
-gtk = import_gtk()
-
-def change_callback(self, window, entry):
-	print("text=%s" % entry.get_text())
-	window.set_title(entry.get_text())
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk   #pylint: disable=wrong-import-position
+from xpra.gtk_common.gtk_util import get_root_size
 
 width = 400
 height = 200
 def main():
-	window = gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(width, height)
-	window.connect("delete_event", gtk.main_quit)
-	vbox = gtk.VBox(False, 0)
-	hbox = gtk.HBox(False, 0)
+	window.connect("delete_event", Gtk.main_quit)
+	vbox = Gtk.VBox(False, 0)
+	hbox = Gtk.HBox(False, 0)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=10)
-	btn = gtk.Button("move me")
+	btn = Gtk.Button("move me")
 	hbox.pack_start(btn, expand=False, fill=False, padding=10)
 	def move(*_args):
 		x, y = window.get_position()
@@ -30,7 +26,7 @@ def main():
 	btn.connect('clicked', move)
 	window.add(vbox)
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

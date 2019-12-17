@@ -5,7 +5,7 @@
 import sys
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk  #pylint: disable=wrong-import-position
 
 
 class TestForm(object):
@@ -29,7 +29,7 @@ class TestForm(object):
 
 def main():
 	TestForm()
-	gtk.main()
+	Gtk.main()
 
 
 if __name__ == "__main__":

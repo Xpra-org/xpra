@@ -4,9 +4,10 @@
 
 import os
 import sys
-import pygtk
-pygtk.require('2.0')
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gtk, Gdk
 
 count = 0
 def handle_owner_change(clipboard, event):
@@ -18,12 +19,12 @@ def handle_owner_change(clipboard, event):
 
 def main():
     assert os.path.exists(sys.argv[1])
-    image = gtk.gdk.pixbuf_new_from_file(sys.argv[1])
-    clipboard = gtk.clipboard_get()
+    image = Gdk.pixbuf_new_from_file(sys.argv[1])
+    clipboard = Gtk.clipboard_get()
     clipboard.connect('owner-change', handle_owner_change)
     clipboard.set_image(image)
     clipboard.store()
-    gtk.main()
+    Gtk.main()
 
 if __name__ == "__main__":
     main()

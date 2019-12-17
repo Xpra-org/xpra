@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-from gi.repository import Gtk, Gdk
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position
 
-from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
 
 def main():
-	window = Gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(220, 120)
 	window.connect("delete_event", Gtk.main_quit)
 	vbox = Gtk.VBox(False, 0)
@@ -13,20 +15,20 @@ def main():
 	def add_buttons(t1, cb1, t2, cb2):
 		hbox = Gtk.HBox(True, 10)
 		b1 = Gtk.Button(t1)
-		def vcb1(*args):
+		def vcb1(*_args):
 			cb1()
 		b1.connect('clicked', vcb1)
 		hbox.pack_start(b1, expand=True, fill=False, padding=5)
 		b2 = Gtk.Button(t2)
-		def vcb2(*args):
+		def vcb2(*_args):
 			cb2()
 		b2.connect('clicked', vcb2)
 		hbox.pack_start(b2, expand=True, fill=False, padding=5)
 		vbox.pack_start(hbox, expand=False, fill=False, padding=2)
 
 	def send_maximized_wm_state(mode):
-		from xpra.x11.gtk2 import gdk_display_source
-		assert gdk_display_source
+		from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+		init_gdk_display_source()
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		X11Window = X11WindowBindings()
 		root = window.get_window().get_screen().get_root_window()

@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-import gtk
-from gtk import gdk
 import cairo
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Gdk,GdkPixbuf  #pylint: disable=wrong-import-position
 
 class StatusIcon:
     def __init__(self):
-        self.statusicon = gtk.StatusIcon()
+        self.statusicon = Gtk.StatusIcon()
         self.counter = 0
         self.statusicon.connect("activate", self.quit_cb)
         self.statusicon.connect("popup-menu", self.quit_cb)
@@ -14,7 +16,7 @@ class StatusIcon:
         #generate tray image:
         s = 64
         w, h = s*2, s*2
-        pixmap = gdk.Pixmap(gdk.get_default_root_window(), w, h)
+        pixmap = Gdk.Pixmap(Gdk.get_default_root_window(), w, h)
         cr = pixmap.cairo_create()
         cr.set_operator(cairo.OPERATOR_CLEAR)
         cr.fill()
@@ -30,17 +32,17 @@ class StatusIcon:
             cr.line_to(x, y+s)
             cr.close_path()
             cr.fill()
-        pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, w, h)
+        pixbuf = GdkPixbuf(Gdk.COLORSPACE_RGB, True, 8, w, h)
         pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, w, h)
         self.statusicon.set_from_pixbuf(pixbuf)
 
     def quit_cb(self, *args):
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
 def main():
     StatusIcon()
-    gtk.main()
+    Gtk.main()
 
 
 if __name__ == "__main__":

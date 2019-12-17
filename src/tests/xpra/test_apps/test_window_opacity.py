@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk
-gtk = import_gtk()
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk   #pylint: disable=wrong-import-position
 
 opacity = 50
 
 def main():
-    win = gtk.Window()
+    win = Gtk.Window()
 
     win.set_title('Alpha Demo')
-    win.connect('delete-event', gtk.main_quit)
+    win.connect('delete-event', Gtk.main_quit)
 
-    btn = gtk.Button("Change Opacity")
+    btn = Gtk.Button("Change Opacity")
     def change_opacity(*args):
         global opacity
         opacity = (opacity + 5) % 100
@@ -22,7 +23,7 @@ def main():
     change_opacity()
 
     win.show_all()
-    gtk.main()
+    Gtk.main()
     return 0
 
 

@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk	#pylint: disable=wrong-import-position
 
 WIDTH = 400
 HEIGHT = 200
 
 def make_win(width=WIDTH, height=HEIGHT):
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_title("Fixed Sized Window")
 	#window.set_size_request(width, height)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", Gtk.main_quit)
 	window.set_geometry_hints(window,
 							min_width=width, min_height=height,
 							max_width=width, max_height=height,
@@ -26,7 +28,7 @@ def main():
 		width = int(sys.argv[1])
 		height = int(sys.argv[2])
 	make_win(width, height)
-	gtk.main()
+	Gtk.main()
 
 
 if __name__ == "__main__":

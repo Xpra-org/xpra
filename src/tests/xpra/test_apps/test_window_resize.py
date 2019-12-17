@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-from gi.repository import GLib, Gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GLib	#pylint: disable=wrong-import-position
 
-
-def change_callback(self, window, entry):
-	print("text=%s" % entry.get_text())
-	window.set_title(entry.get_text())
 
 def make_window(OR=False):
 	class State(object):
@@ -27,7 +25,7 @@ def make_window(OR=False):
 	h_e = Gtk.Entry(max=64)
 	hbox.add(h_e)
 	set_size_btn = Gtk.Button("set size")
-	def set_size(*args):
+	def set_size(*_args):
 		w = int(w_e.get_text())
 		h = int(h_e.get_text())
 		print("resizing to %s x %s" % (w, h))
@@ -37,7 +35,7 @@ def make_window(OR=False):
 	vbox.add(hbox)
 
 	btn = Gtk.Button("auto resize me")
-	def resize(*args):
+	def resize(*_args):
 		state.width = max(200, (state.width+20) % 600)
 		state.height = max(200, (state.height+20) % 400)
 		print("resizing to %s x %s" % (state.width, state.height))
@@ -53,7 +51,7 @@ def make_window(OR=False):
 		window.resize(width, height)
 		state.counter -= 1
 		return state.counter>0
-	def resize_fast(*args):
+	def resize_fast(*_args):
 		state.counter = 200
 		GLib.idle_add(do_resize_fast)
 	btn.connect('clicked', resize_fast)
@@ -61,7 +59,7 @@ def make_window(OR=False):
 
 	window.add(vbox)
 	window.realize()
-	window.window.set_override_redirect(OR)
+	window.get_window().set_override_redirect(OR)
 	window.show_all()
 
 def main():

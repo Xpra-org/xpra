@@ -3,17 +3,18 @@
 import sys
 
 from xpra.util import envbool
-from xpra.gtk_common.gobject_compat import import_gtk
-gtk = import_gtk()
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk    #pylint: disable=wrong-import-position
 
 
 class StatusIcon:
     def __init__(self, name="test", tooltip="StatusIcon Example"):
         self.name = name
-        self.statusicon = gtk.StatusIcon()
+        self.statusicon = Gtk.StatusIcon()
         self.counter = 0
         self.statusicon.set_name(name)
-        self.statusicon.set_from_stock(gtk.STOCK_HOME)
+        self.statusicon.set_from_stock(Gtk.STOCK_HOME)
         self.statusicon.connect("popup-menu", self.popup_menu)
         self.statusicon.connect("activate", self.activate)
         try:
@@ -50,11 +51,11 @@ class StatusIcon:
         self.statusicon.set_from_stock(stock)
 
     def popup_menu(self, icon, button, time):
-        menu = gtk.Menu()
-        quit_menu = gtk.MenuItem("Quit")
+        menu = Gtk.Menu()
+        quit_menu = Gtk.MenuItem("Quit")
         quit_menu.connect("activate", gtk.main_quit)
         menu.append(quit_menu)
-        notify_menu = gtk.MenuItem("Send Notification")
+        notify_menu = Gtk.MenuItem("Send Notification")
         notify_menu.connect("activate", self.notify)
         menu.append(notify_menu)
         menu.show_all()
@@ -71,7 +72,8 @@ class StatusIcon:
         hints = {
             "image-path"    : "/usr/share/xpra/icons/encoding.png",
             }
-        self.notifier.show_notify("dbus-id", None, self.nid, self.name, 0, "", "Notification Summary", "Notification Body", actions, hints, 60*1000, "")
+        self.notifier.show_notify("dbus-id", None, self.nid, self.name, 0,
+                                  "", "Notification Summary", "Notification Body", actions, hints, 60*1000, "")
         self.nid += 1
 
 
@@ -85,7 +87,7 @@ def main():
     from xpra.platform import program_context
     with program_context(name, name):
         StatusIcon(name, tooltip)
-        gtk.main()
+        Gtk.main()
 
 
 if __name__ == "__main__":

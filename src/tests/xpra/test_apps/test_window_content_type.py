@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-from xpra.gtk_common.gobject_compat import import_gtk
-from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk	#pylint: disable=wrong-import-position
 
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()
-
-gtk = import_gtk()
 
 
 def change_callback(self, window, entry):
@@ -16,10 +15,10 @@ def change_callback(self, window, entry):
 		prop_set(window.get_window(), "_XPRA_CONTENT_TYPE", "latin1", entry.get_text().decode())
 
 def main():
-	window = gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(400, 100)
-	window.connect("delete_event", gtk.main_quit)
-	entry = gtk.Entry()
+	window.connect("delete_event", Gtk.main_quit)
+	entry = Gtk.Entry()
 	entry.set_max_length(50)
 	entry.connect("changed", change_callback, window, entry)
 	content_type = "text"
@@ -30,7 +29,7 @@ def main():
 	entry.show()
 	window.add(entry)
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 if __name__ == "__main__":

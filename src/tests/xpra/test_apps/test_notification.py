@@ -16,7 +16,9 @@ def notify(*_args):
     hints = {
         "image-path"    : "/usr/share/xpra/icons/encoding.png",
         }
-    notifier.show_notify("dbus-id", None, nid, "xpra test app", 0, "", "Notification %i Summary" % nid, "Notification %i Body" % nid, actions, hints, 60*1000, "")
+    notifier.show_notify("dbus-id", None, nid, "xpra test app", 0, "",
+                         "Notification %i Summary" % nid, "Notification %i Body" % nid,
+                         actions, hints, 60*1000, "")
     nid += 1
     return True
 

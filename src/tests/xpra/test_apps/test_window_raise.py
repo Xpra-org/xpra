@@ -1,31 +1,28 @@
 #!/usr/bin/env python
 
-from gi.repository import GLib
-
-from xpra.gtk_common.gobject_compat import import_gtk
-from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
-
-gtk = import_gtk()
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GLib	#pylint: disable=wrong-import-position
 
 width = 400
 height = 200
 
 def main():
-	other = gtk.Window(WINDOW_TOPLEVEL)
+	other = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	other.set_title("Other")
 	other.set_size_request(width/2, height/2)
-	other.connect("delete_event", gtk.main_quit)
+	other.connect("delete_event", Gtk.main_quit)
 	other.show_all()
 
-	window = gtk.Window(WINDOW_TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_title("Main")
 	window.set_size_request(width, height)
-	window.connect("delete_event", gtk.main_quit)
-	vbox = gtk.VBox(False, 0)
+	window.connect("delete_event", Gtk.main_quit)
+	vbox = Gtk.VBox(False, 0)
 	def add_button(title, callback):
-		hbox = gtk.HBox(False, 0)
+		hbox = Gtk.HBox(False, 0)
 		vbox.pack_start(hbox, expand=False, fill=False, padding=10)
-		btn = gtk.Button(title)
+		btn = Gtk.Button(title)
 		hbox.pack_start(btn, expand=False, fill=False, padding=10)
 		def on_clicked(*_args):
 			def after_delay():
@@ -38,7 +35,7 @@ def main():
 	add_button("raise Other in 5 seconds", other.present)
 	window.add(vbox)
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

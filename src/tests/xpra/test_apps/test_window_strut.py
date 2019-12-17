@@ -4,7 +4,7 @@
 #http://stackoverflow.com/a/3859540/428751
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position
 from xpra.gtk_common.gtk_util import get_root_size
 
 

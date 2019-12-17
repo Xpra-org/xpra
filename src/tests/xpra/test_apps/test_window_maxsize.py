@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk   #pylint: disable=wrong-import-position
 
 def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(300, 200)
 	window.max_width = 600
 	window.max_height = 400
-	window.connect("delete_event", gtk.mainquit)
-	vbox = gtk.VBox(False, 0)
-	btn = gtk.Button("change geometry hints")
+	window.connect("delete_event", Gtk.main_quit)
+	vbox = Gtk.VBox(False, 0)
+	btn = Gtk.Button("change geometry hints")
 	vbox.add(btn)
-	label = gtk.Label()
+	label = Gtk.Label()
 	vbox.add(label)
-	def change_hints(*args):
+	def change_hints(*_args):
 		window.max_width = max(400, (window.max_width + 100) % 800)
 		window.max_height = max(200, (window.max_width + 100) % 600)
 		window.set_geometry_hints(max_width=window.max_width, max_height=window.max_height)
@@ -24,7 +26,7 @@ def main():
 	window.show_all()
 
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

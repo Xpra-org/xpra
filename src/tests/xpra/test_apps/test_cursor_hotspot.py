@@ -3,7 +3,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position
 
 
 def colored_cursor(size=64, x=32, y=32):
@@ -42,7 +42,7 @@ def main():
 	win.add(btn)
 	win.show_all()
 	win.get_window().set_cursor(cursor)
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

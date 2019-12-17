@@ -1,32 +1,35 @@
 #!/usr/bin/env python
 
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk	#pylint: disable=wrong-import-position
 
-from xpra.util import MOVERESIZE_DIRECTION_STRING, MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, \
-						MOVERESIZE_SIZE_TOPRIGHT, MOVERESIZE_SIZE_RIGHT, MOVERESIZE_SIZE_BOTTOMRIGHT, \
-						MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, \
-						MOVERESIZE_MOVE, MOVERESIZE_CANCEL
+from xpra.util import (
+	MOVERESIZE_DIRECTION_STRING, MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, \
+	MOVERESIZE_SIZE_TOPRIGHT, MOVERESIZE_SIZE_RIGHT, MOVERESIZE_SIZE_BOTTOMRIGHT, \
+	MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, \
+	MOVERESIZE_MOVE, MOVERESIZE_CANCEL,
+	)
 
 width = 400
 height = 200
 def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	#window = gtk.Window(gtk.WINDOW_POPUP)
+	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(width, height)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", Gtk.main_quit)
 	window.realize()
 	root = window.get_window().get_screen().get_root_window()
 
 	def initiate(x_root, y_root, direction, button, source_indication):
 		print("initiate%s" % str((x_root, y_root, direction, button, source_indication)))
-		from xpra.x11.gtk2 import gdk_display_source
-		assert gdk_display_source
+		from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+		init_gdk_display_source()
 		from xpra.x11.bindings.core_bindings import X11CoreBindings					#@UnresolvedImport
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		event_mask = constants["SubstructureNotifyMask"] | constants["SubstructureRedirectMask"]
-		from xpra.gtk_common.gtk_util import get_xwindow
-		root_xid = get_xwindow(root)
-		xwin = get_xwindow(window.get_window())
+		root_xid = root.xid
+		xwin = window.get_window().xid
 		X11Core = X11CoreBindings()
 		X11Core.UngrabPointer()
 		X11Window = X11WindowBindings()
@@ -37,20 +40,20 @@ def main():
 		initiate(0, 0, MOVERESIZE_CANCEL, 0, 1)
 
 
-	table = gtk.Table(3, 3, True)
+	table = Gtk.Table(3, 3, True)
 	table.set_col_spacings(0)
 	table.set_row_spacings(0)
 
-	btn = gtk.Button("initiate move")
-	table.attach(btn, 1, 2, 1, 2, xoptions=gtk.FILL, yoptions=gtk.FILL)
-	def initiate_move(*args):
+	btn = Gtk.Button("initiate move")
+	table.attach(btn, 1, 2, 1, 2, xoptions=Gtk.FILL, yoptions=Gtk.FILL)
+	def initiate_move(*_args):
 		cancel()
 		x, y = root.get_pointer()[:2]
 		source_indication = 1	#normal
 		button = 1
 		direction = MOVERESIZE_MOVE
 		initiate(x, y, direction, button, source_indication)
-		gtk.timeout_add(5*1000, cancel)
+		Gtk.timeout_add(5*1000, cancel)
 	btn.connect('button-press-event', initiate_move)
 
 	def btn_callback(btn, event, direction):
@@ -59,10 +62,10 @@ def main():
 		source_indication = 1	#normal
 		button = 1
 		initiate(x, y, direction, button, source_indication)
-		gtk.timeout_add(5*1000, cancel)
+		Gtk.timeout_add(5*1000, cancel)
 	def add_button(x, y, direction):
-		btn = gtk.Button(MOVERESIZE_DIRECTION_STRING[direction])
-		table.attach(btn, x, x+1, y, y+1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=gtk.EXPAND|gtk.FILL)
+		btn = Gtk.Button(MOVERESIZE_DIRECTION_STRING[direction])
+		table.attach(btn, x, x+1, y, y+1, xoptions=Gtk.EXPAND|Gtk.FILL, yoptions=Gtk.EXPAND|Gtk.FILL)
 		btn.connect('button-press-event', btn_callback, direction)
 
 	for x,y,direction in (
@@ -80,7 +83,7 @@ def main():
 
 	window.add(table)
 	window.show_all()
-	gtk.main()
+	Gtk.main()
 	return 0
 
 

@@ -2,16 +2,19 @@
 
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()
-from xpra.gtk_common.gtk_util import import_gtk
-gtk = import_gtk()
+
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk   #pylint: disable=wrong-import-position
+
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.gtk_common.error import xsync
 
 def main():
-    win = gtk.Window()
+    win = Gtk.Window()
     win.set_size_request(400, 100)
     win.set_title("quality / speed hint")
-    vbox = gtk.VBox()
+    vbox = Gtk.VBox()
     win.add(vbox)
     def set_int_prop(prop_name, value):
         with xsync:
@@ -30,14 +33,14 @@ def main():
         win.speed = (win.speed - 20) % 100
         set_speed_hint()
     def add_button(label, cb):
-        btn = gtk.Button(label)
+        btn = Gtk.Button(label)
         vbox.add(btn)
         btn.connect('button-press-event', cb)
     add_button("change quality", change_quality)
     add_button("change speed", change_speed)
-    win.connect("destroy", gtk.main_quit)
+    win.connect("destroy", Gtk.main_quit)
     win.show_all()
-    gtk.main()
+    Gtk.main()
     return 0
 
 

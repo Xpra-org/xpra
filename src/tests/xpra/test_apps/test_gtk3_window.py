@@ -2,6 +2,8 @@
 
 import cairo
 from PIL import Image
+import gi
+gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk                #@UnresolvedImport @UnusedImport
 
 W = 480
