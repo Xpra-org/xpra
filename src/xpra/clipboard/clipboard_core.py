@@ -301,7 +301,8 @@ class ClipboardProtocolHelperCore:
             if len(packet)>=8:
                 target, dtype, dformat, wire_encoding, wire_data = packet[3:8]
                 if target:
-                    assert dformat in (8, 16, 32)
+                    assert dformat in (8, 16, 32), "invalid format '%s' for datatype=%s and wire encoding=%s" % (
+                        dformat, dtype, wire_encoding)
                     target = bytestostr(target)
                     wire_encoding = bytestostr(wire_encoding)
                     dtype = bytestostr(dtype)
