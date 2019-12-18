@@ -400,7 +400,6 @@ class X11ServerCore(GTKServerBase):
         except ImportError:
             pass
         #cursor:
-        log("do_get_info: adding cursor=%s", self.last_cursor_image)
         info.setdefault("cursor", {}).update(self.get_cursor_info())
         with xswallow:
             sinfo.update({
