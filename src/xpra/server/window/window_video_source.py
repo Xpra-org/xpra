@@ -178,8 +178,12 @@ class WindowVideoSource(WindowSource):
         self.av_sync_frame_delay = 0
         ve = self._video_encoder
         if ve:
+            #how many frames are buffered in the encoder, if any:
             d = ve.get_info().get("delayed", 0)
-            self.av_sync_frame_delay += 40 * d
+            if d>0:
+                #clamp the batch delay to a reasonable range:
+                frame_delay = min(100, max(10, self.batch_config.delay))
+                self.av_sync_frame_delay += frame_delay * d
             avsynclog("update_av_sync_frame_delay() video encoder=%s, delayed frames=%i, frame delay=%i",
                       ve, d, self.av_sync_frame_delay)
         self.may_update_av_sync_delay()
