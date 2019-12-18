@@ -261,7 +261,9 @@ class AudioMixin(StubSourceMixin):
                    "codec"              : codec,
                    "sequence"           : sound_source.sequence,
                    })
-        #self.update_av_sync_delay_total()
+        update_av_sync = getattr(self, "update_av_sync_delay_total", None)
+        if update_av_sync:
+            update_av_sync()  #pylint: disable=not-callable
 
     def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=None):
         log("new_sound_buffer(%s, %s, %s, %s) info=%s",
