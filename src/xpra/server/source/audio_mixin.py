@@ -476,6 +476,8 @@ class AudioMixin(StubSourceMixin):
                     from xpra.sound.gstreamer_util import ENCODER_LATENCY, RECORD_PIPELINE_LATENCY
                     encoder_latency = RECORD_PIPELINE_LATENCY + ENCODER_LATENCY.get(ss.codec, 0)
                     cinfo = "%s " % ss.codec
+                #processing overhead
+                encoder_latency += 100
             except Exception as e:
                 encoder_latency = 0
                 log("failed to get encoder latency for %s: %s", ss.codec, e)

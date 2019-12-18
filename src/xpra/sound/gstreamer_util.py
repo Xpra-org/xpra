@@ -193,7 +193,7 @@ MUXER_DEFAULT_OPTIONS = {
            }
 
 #based on the encoder options above:
-RECORD_PIPELINE_LATENCY = 75
+RECORD_PIPELINE_LATENCY = 25
 ENCODER_LATENCY = {
         VORBIS      : 0,
         VORBIS_OGG  : 0,
