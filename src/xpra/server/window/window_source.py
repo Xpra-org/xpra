@@ -155,11 +155,11 @@ class WindowSource(WindowIconSource):
         self.window = window                            #only to be used from the UI thread!
         self.global_statistics = statistics             #shared/global statistics from ClientConnection
         self.statistics = WindowPerformanceStatistics()
-        self.av_sync = av_sync
-        self.av_sync_delay = av_sync_delay
-        self.av_sync_delay_target = av_sync_delay
-        self.av_sync_delay_base = av_sync_delay
-        self.av_sync_frame_delay = 0
+        self.av_sync = av_sync                          #flag: enabled or not?
+        self.av_sync_delay = av_sync_delay              #the av-sync delay we actually use
+        self.av_sync_delay_target = av_sync_delay       #the av-sync delay we want at this point in time (can vary quickly)
+        self.av_sync_delay_base = av_sync_delay         #the total av-sync delay we are trying to achieve (including video encoder delay)
+        self.av_sync_frame_delay = 0                    #how long frames spend in the video encoder
         self.av_sync_timer = None
         self.encode_queue = []
         self.encode_queue_max_size = 10
