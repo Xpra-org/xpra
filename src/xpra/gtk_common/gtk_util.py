@@ -7,6 +7,10 @@
 import os.path
 import array
 import cairo
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
 from xpra.util import iround, first_time, envint
@@ -698,12 +702,12 @@ class TableBuilder:
         self.add_row(row_label, value1, value2, **kwargs)
 
 
-def choose_file(parent_window, title, action, action_button, callback=None, file_filter=None):
-    log("choose_file%s", (parent_window, title, action, action_button, callback, file_filter))
+def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN, callback=None, file_filter=None, multiple=True):
+    log("choose_files%s", (parent_window, title, action, action_button, callback, file_filter))
     chooser = Gtk.FileChooserDialog(title,
                                 parent=parent_window, action=action,
                                 buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, action_button, Gtk.ResponseType.OK))
-    chooser.set_select_multiple(False)
+    chooser.set_select_multiple(multiple)
     chooser.set_default_response(Gtk.ResponseType.OK)
     if file_filter:
         chooser.add_filter(file_filter)
@@ -711,7 +715,13 @@ def choose_file(parent_window, title, action, action_button, callback=None, file
     filenames = chooser.get_filenames()
     chooser.hide()
     chooser.destroy()
-    if response!=Gtk.ResponseType.OK or len(filenames)!=1:
+    if response!=Gtk.ResponseType.OK:
+        return None
+    return filenames
+
+def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN, callback=None, file_filter=None):
+    filenames = choose_files(parent_window, title, action, action_button, callback, file_filter, False)
+    if len(filenames)!=1:
         return None
     filename = filenames[0]
     if callback:

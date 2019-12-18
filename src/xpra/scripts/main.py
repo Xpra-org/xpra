@@ -482,6 +482,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_dialog(args)
         elif mode=="_pass":
             return run_pass(args)
+        elif mode=="send-file":
+            return run_send_file(args)
         elif mode=="opengl":
             return run_glcheck(options)
         elif mode=="opengl-probe":
@@ -1275,6 +1277,49 @@ def run_pass(extra_args):
     from xpra.client.gtk_base.pass_dialog import show_pass_dialog
     return show_pass_dialog(extra_args)
 
+def run_send_file(extra_args):
+    sockpath = os.environ.get("XPRA_SERVER_SOCKET")
+    if not sockpath:
+        display = os.environ.get("DISPLAY")
+        if display:
+            uri = "%s" % display
+        else:
+            raise InitException("cannot find xpra server to use")
+    else:
+        uri = "socket://%s" % sockpath
+    if extra_args:
+        files = extra_args
+    else:
+        import gi
+        gi.require_version('Gtk', '3.0')
+        from xpra.gtk_common.gtk_util import choose_files
+        files = choose_files(None, "Select Files to Send", multiple=True)
+        if not files:
+            return
+    filelog = Logger("file")
+    import subprocess
+    from xpra.platform.paths import get_xpra_command
+    xpra_cmd = get_xpra_command()
+    errors = 0
+    for f in files:
+        filelog("run_send_file(%s) sending '%s'", extra_args, f)
+        #xpra control :10 send-file /path/to/the-file-to-send open CLIENT_UUID
+        cmd = xpra_cmd + ["control", uri, "send-file", f]
+        filelog("cmd=%s", cmd)
+        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        if proc.returncode:
+            filelog.error("Error: failed to send file '%s'", f)
+            if stdout:
+                filelog.error(" %s", stdout.decode())
+            if stderr:
+                filelog.error(" %s", stderr)
+            errors += 1
+        else:
+            filelog.info("sent '%s'", f)
+    if errors:
+        return EXIT_FAILURE
+    return 0
 
 def get_sockpath(display_desc, error_cb):
     #if the path was specified, use that:
