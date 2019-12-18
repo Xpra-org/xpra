@@ -589,11 +589,11 @@ class SessionInfo(gtk.Window):
             info = ss.get_info()
             if info:
                 info = typedict(info)
-                def intlookup(k):
-                    return int(dictlook(info, k, 0))
-                self.sound_out_queue_cur.append(intlookup("queue.cur"))
-                self.sound_out_queue_min.append(intlookup("queue.min"))
-                self.sound_out_queue_max.append(intlookup("queue.max"))
+                def qlookup(attr):
+                    return int(newdictlook(info, ("queue", attr), 0))
+                self.sound_out_queue_cur.append(qlookup("cur"))
+                self.sound_out_queue_min.append(qlookup("min"))
+                self.sound_out_queue_max.append(qlookup("max"))
         return not self.is_closed
 
     def populate(self, *_args):
