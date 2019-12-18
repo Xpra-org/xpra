@@ -159,7 +159,7 @@ class WindowSource(WindowIconSource):
         self.av_sync = av_sync
         self.av_sync_delay = av_sync_delay
         self.av_sync_delay_target = av_sync_delay
-        self.av_sync_delay_base = 0
+        self.av_sync_delay_base = av_sync_delay
         self.av_sync_frame_delay = 0
         self.av_sync_timer = None
         self.encode_queue = []
