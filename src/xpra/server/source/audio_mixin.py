@@ -264,6 +264,10 @@ class AudioMixin(StubSourceMixin):
         update_av_sync = getattr(self, "update_av_sync_delay_total", None)
         if update_av_sync:
             update_av_sync()  #pylint: disable=not-callable
+            #run it again after 10 seconds,
+            #by that point the source info will actually be populated:
+            from gi.repository import GLib
+            GLib.timeout_add(10*1000, update_av_sync)
 
     def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=None):
         log("new_sound_buffer(%s, %s, %s, %s) info=%s",
