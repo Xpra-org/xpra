@@ -1290,8 +1290,6 @@ def run_send_file(extra_args):
     if extra_args:
         files = extra_args
     else:
-        import gi
-        gi.require_version('Gtk', '3.0')
         from xpra.gtk_common.gtk_util import choose_files
         files = choose_files(None, "Select Files to Send", multiple=True)
         if not files:
