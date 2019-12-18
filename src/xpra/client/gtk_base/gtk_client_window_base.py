@@ -884,16 +884,16 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def set_x11_property(self, prop_name, dtype, dformat, value):
         metalog("set_x11_property%s", (prop_name, dtype, dformat, value))
+        dtype = bytestostr(dtype)
+        if dtype=="latin1":
+            value = bytestostr(value)
         def do_set_prop():
             gdk_window = self.get_window()
             if not dtype and not dformat:
                 #remove prop
                 prop_del(gdk_window, prop_name)
-                return
-            dtype = bytestostr(dtype)
-            if dtype=="latin1":
-                value = bytestostr(value)
-            prop_set(gdk_window, prop_name, dtype, value)
+            else:
+                prop_set(gdk_window, prop_name, dtype, value)
         self.when_realized("x11-prop-%s" % prop_name, do_set_prop)
 
     def set_class_instance(self, wmclass_name, wmclass_class):
