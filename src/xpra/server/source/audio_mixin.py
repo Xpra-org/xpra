@@ -9,7 +9,7 @@ import os
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, POSIX
-from xpra.util import csv, envbool, flatten_dict, XPRA_AUDIO_NOTIFICATION_ID
+from xpra.util import csv, envbool, flatten_dict, typedict, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.log import Logger
 
 log = Logger("sound")
@@ -459,11 +459,14 @@ class AudioMixin(StubSourceMixin):
         ss = self.sound_source
         cinfo = ""
         if ss:
+            info = typedict(ss.info or {})
             try:
-                encoder_latency = ss.info.get("queue", {}).get("cur", 0)
-                log("server side queue level: %s", encoder_latency)
+                qdict = info.dictget("queue")
+                if qdict:
+                    q = typedict(qdict).intget("cur", 0)
+                    log("server side queue level: %s", q)
                 #get the latency from the source info, if it has it:
-                encoder_latency = ss.info.get("latency", -1)
+                encoder_latency = info.intget("latency", -1)
                 if encoder_latency<0:
                     #fallback to hard-coded values:
                     from xpra.sound.gstreamer_util import ENCODER_LATENCY, RECORD_PIPELINE_LATENCY
