@@ -590,7 +590,9 @@ class WindowBackingBase:
                     log.error(" %sx%s pixels using %s", width, height, vd.get_type())
                     log.error(" frame options:")
                     for k,v in options.items():
-                        log.error("   %s=%s", k, v)
+                        if isinstance(v, bytes):
+                            v = bytestostr(v)
+                        log.error("   %s=%s", bytestostr(k), v)
                 return
 
             x, y = self.gravity_adjust(x, y, options)
