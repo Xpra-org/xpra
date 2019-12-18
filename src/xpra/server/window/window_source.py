@@ -708,6 +708,8 @@ class WindowSource(WindowIconSource):
         #set the target then schedule a timer to gradually
         #get the actual value "av_sync_delay" moved towards it
         self.av_sync_delay_target = max(0, self.av_sync_delay_base - self.av_sync_frame_delay)
+        avsynclog("may_update_av_sync_delay() target=%s from base=%s, frame-delay=%s",
+                  self.av_sync_delay_target, self.av_sync_delay_base, self.av_sync_frame_delay)
         self.schedule_av_sync_update()
 
     def schedule_av_sync_update(self, delay=0):
