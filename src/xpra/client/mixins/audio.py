@@ -15,6 +15,7 @@ avsynclog = Logger("av-sync")
 log = Logger("client", "sound")
 
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
+DELTA_THRESHOLD = envint("XPRA_AV_SYNC_DELTA_THRESHOLD", 40)
 DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 
 
@@ -578,7 +579,7 @@ class AudioClient(StubClientMixin):
             delta = (self.queue_used_sent or 0)-queue_used
             #avsynclog("server sound sync: queue info=%s, last sent=%s, delta=%s",
             #    dict((k,v) for (k,v) in info.items() if k.startswith("queue")), self.queue_used_sent, delta)
-            if self.queue_used_sent is None or abs(delta)>=80:
+            if self.queue_used_sent is None or abs(delta)>=DELTA_THRESHOLD:
                 avsynclog("server sound sync: sending updated queue.used=%i (was %s)",
                           queue_used, (self.queue_used_sent or "unset"))
                 self.queue_used_sent = queue_used
