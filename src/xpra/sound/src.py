@@ -6,8 +6,8 @@
 
 import sys
 import os.path
-from gi.repository import GObject
 from queue import Queue
+from gi.repository import GObject
 
 from xpra.os_util import SIGNAMES, monotonic_time
 from xpra.util import csv, envint, envbool, envfloat, AtomicInteger
