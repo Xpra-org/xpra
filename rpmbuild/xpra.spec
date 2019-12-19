@@ -79,7 +79,6 @@ Patch0:				centos7-oldsystemd.patch
 Patch1:				selinux-nomap.patch
 Patch2:				centos7-oldturbojpeg.patch
 %endif
-Requires:			xpra-common >= %{version}-%{release}
 Requires:			xpra-html5
 %if 0%{?fedora}%{?el8}
 Requires:			python3-xpra-client = %{version}-%{release}
@@ -116,7 +115,7 @@ This package contains the files which are shared between all the xpra packages.
 Summary:			Common files for xpra client packages
 Group:				Networking
 BuildArch:			noarch
-Requires:			xpra-common = %{version}-%{release}
+Requires:			xpra-common >= %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
@@ -131,7 +130,7 @@ This package contains the files which are shared between all the xpra client pac
 Summary:			Common files for xpra server packages
 Group:				Networking
 BuildArch:			noarch
-Requires:			xpra-common
+Requires:			xpra-common >= %{version}-%{release}
 Requires:			xorg-x11-server-utils
 Requires:			xorg-x11-drv-dummy
 Requires:			xorg-x11-xauth
@@ -300,7 +299,7 @@ This package contains audio support for python2 builds of xpra.
 Summary:			python2 build of xpra client
 Group:				Networking
 Conflicts:			xpra < 2.1
-Requires:			xpra-common-client = %{version}-%{release}
+Requires:			xpra-common-client >= %{version}-%{release}
 Requires:			python2-xpra = %{version}-%{release}
 Requires:			pygtk2
 Requires:			python2-pyopengl
@@ -329,7 +328,7 @@ This package contains the python2 xpra client.
 %package -n python2-xpra-server
 Summary:			python2 build of xpra server
 Group:				Networking
-Requires:			xpra-common-server = %{version}-%{release}
+Requires:			xpra-common-server >= %{version}-%{release}
 Requires:			python2-xpra = %{version}-%{release}
 Requires:			pygtk2
 %{Recommends}:		cups-filters
