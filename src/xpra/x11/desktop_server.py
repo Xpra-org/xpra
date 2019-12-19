@@ -418,6 +418,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
                 "decorations"            : True,
                 "states"                 : ["iconified", "focused"],
                 })
+            capabilities["screen_sizes"] = get_screen_sizes()
         return capabilities
 
 

@@ -17,7 +17,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, is_Wayland
 from xpra.util import (
-    std, envbool, envint, typedict, updict, repr_ellipsized,
+    std, envbool, envint, typedict, updict, repr_ellipsized, log_screen_sizes, engs,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
 from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_OK, EXIT_CONNECTION_LOST
@@ -426,6 +426,16 @@ class UIXpraClient(ClientBaseClass):
         log.info("Xpra %s server version %s %i-bit", mode, std(r), bits)
         if i:
             log.info(" running on %s", std(i))
+        if c.boolget("desktop") or c.boolget("shadow"):
+            v = c.intpair("actual_desktop_size")
+            if v:
+                w, h = v
+                ss = c.tupleget("screen_sizes")
+                if ss:
+                    log.info(" remote desktop size is %sx%s with %s screen%s:", w, h, len(ss), engs(ss))
+                    log_screen_sizes(w, h, ss)
+                else:
+                    log.info(" remote desktop size is %sx%s", w, h)
         if c.boolget("proxy"):
             proxy_hostname = c.strget("proxy.hostname")
             proxy_platform = c.strget("proxy.platform")
