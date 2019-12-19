@@ -233,18 +233,42 @@ class ClientWindowBase(ClientWidgetBase):
                         "server-machine"  : getattr(self._client, "_remote_hostname", None) or "<unknown machine>",
                         "server-display"  : getattr(self._client, "_remote_display", None) or "<unknown display>",
                         }
+                    def getvar(var):
+                        #"hostname" is magic:
+                        #we try harder to find a useful value to show:
+                        if var=="hostname":
+                            #try to find the hostname:
+                            proto = getattr(self._client, "_protocol", None)
+                            if proto:
+                                conn = getattr(proto, "_conn", None)
+                                if conn:
+                                    hostname = conn.info.get("host") or bytestostr(conn.target)
+                                    if hostname:
+                                        return hostname
+                            for m in ("client-machine", "server-machine"):
+                                value = getvar(m)
+                                if value not in (
+                                    "localhost",
+                                    "localhost.localdomain",
+                                    "<unknown machine>",
+                                    "",
+                                    None):
+                                    return value
+                            return "<unknown machine>"
+                        value = self._metadata.bytesget(var)
+                        if value is None:
+                            return default_values.get(var, "<unknown %s>" % var)
+                        try:
+                            return value.decode("utf-8")
+                        except UnicodeDecodeError:
+                            return str(value)
                     def metadata_replace(match):
                         atvar = match.group(0)          #ie: '@title@'
                         var = atvar[1:len(atvar)-1]     #ie: 'title'
                         if not var:
                             #atvar = "@@"
                             return "@"
-                        default_value = default_values.get(var, "<unknown %s>" % var)
-                        value = self._metadata.bytesget(var, default_value)
-                        try:
-                            return value.decode("utf-8")
-                        except UnicodeDecodeError:
-                            return str(value)
+                        return getvar(var)
                     title = re.sub(r"@[\w\-]*@", metadata_replace, title)
             except Exception as e:
                 log.error("Error parsing window title:")

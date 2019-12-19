@@ -15,7 +15,7 @@ opengl = %(opengl)s
 challenge-handlers=all
 
 # Client window title:
-title = @title@ on @client-machine@
+title = @title@ on @hostname@
 
 # Icon used by the system tray:
 #tray-icon = /path/to/icon.png
