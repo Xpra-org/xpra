@@ -580,7 +580,11 @@ class AudioClient(StubClientMixin):
             ss.add_data(data, metadata, packet_metadata)
         if self.av_sync and self.server_av_sync:
             info = ss.get_info()
-            queue_used = info.get("queue.cur") or info.get("queue", {}).get("cur")
+            queue_used = info.get("queue.cur")
+            if queue_used is None:
+                qinfo = typedict(info).dictget("queue", None)
+                if qinfo:
+                    queue_used = typedict(qinfo).intget("cur", None)
             if queue_used is None:
                 return
             delta = (self.queue_used_sent or 0)-queue_used
