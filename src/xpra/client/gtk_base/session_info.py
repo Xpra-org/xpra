@@ -811,13 +811,13 @@ class SessionInfo(gtk.Window):
 
         def get_encoder_list(caps):
             from xpra.net import packet_encoding
-            return [x for x in packet_encoding.ALL_ENCODERS if caps.get(x)]
+            return [x for x in packet_encoding.ALL_ENCODERS if typedict(caps).rawget(x)]
         self.client_packet_encoders_label.set_text(", ".join(get_encoder_list(get_network_caps())))
         self.server_packet_encoders_label.set_text(", ".join(get_encoder_list(self.client.server_capabilities)))
 
         def get_compressor_list(caps):
             from xpra.net import compression
-            return [x for x in compression.ALL_COMPRESSORS if caps.get(x)]
+            return [x for x in compression.ALL_COMPRESSORS if typedict(caps).rawget(x)]
         self.client_packet_compressors_label.set_text(", ".join(get_compressor_list(get_network_caps())))
         self.server_packet_compressors_label.set_text(", ".join(get_compressor_list(self.client.server_capabilities)))
         return False
