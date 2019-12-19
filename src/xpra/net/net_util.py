@@ -46,14 +46,14 @@ def get_interfaces():
     netifaces = import_netifaces()
     if not netifaces:
         return []
-    return netifaces.interfaces()           #@UndefinedVariable
+    return netifaces.interfaces()           #@UndefinedVariable pylint: disable=no-member
 
 def get_interfaces_addresses():
     d = {}
     netifaces = import_netifaces()
     if netifaces:
         for iface in get_interfaces():
-            d[iface] = netifaces.ifaddresses(iface)     #@UndefinedVariable
+            d[iface] = netifaces.ifaddresses(iface)     #@UndefinedVariable pylint: disable=no-member
     return d
 
 def get_interface(address):
@@ -76,10 +76,10 @@ def get_gateways():
         return {}
     #versions older than 0.10.5 can crash when calling gateways()
     #https://bitbucket.org/al45tair/netifaces/issues/15/gateways-function-crash-segmentation-fault
-    if netifaces.version<'0.10.5':            #@UndefinedVariable
+    if netifaces.version<'0.10.5':            #@UndefinedVariable pylint: disable=no-member
         return {}
     try:
-        d = netifaces.gateways()            #@UndefinedVariable
+        d = netifaces.gateways()            #@UndefinedVariable pylint: disable=no-member
         AF_NAMES = {}
         for k in dir(netifaces):
             if k.startswith("AF_"):
@@ -110,7 +110,7 @@ def do_get_bind_IPs():
     ips = []
     netifaces = import_netifaces()
     assert netifaces
-    ifaces = netifaces.interfaces()            #@UndefinedVariable
+    ifaces = netifaces.interfaces()            #@UndefinedVariable pylint: disable=no-member
     log("ifaces=%s", ifaces)
     for iface in ifaces:
         if_ipmasks = []
@@ -135,7 +135,7 @@ def do_get_bind_ifacemask(iface):
     ipmasks = []
     netifaces = import_netifaces()
     assert netifaces
-    address_types = netifaces.ifaddresses(iface)    #@UndefinedVariable
+    address_types = netifaces.ifaddresses(iface)    #@UndefinedVariable pylint: disable=no-member
     for addresses in address_types.values():
         for address in addresses:
             if 'netmask' in address and 'addr' in address:
@@ -418,7 +418,7 @@ def main():
                 print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
             else:
                 print("* %s" % iface)
-            addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable
+            addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable pylint: disable=no-member
             for addr, defs in addresses.items():
                 if addr in (socket.AF_INET, socket.AF_INET6):
                     for d in defs:
