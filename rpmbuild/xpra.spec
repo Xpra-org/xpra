@@ -867,13 +867,17 @@ fi
 
 
 %changelog
-* Wed Dec 18 2019 Antoine Martin <antoine@xpra.org> 3.0.4-1xpra1
+* Thu Dec 19 2019 Antoine Martin <antoine@xpra.org> 3.0.4-1xpra1
 - fix missing undecorated windows on win32
 - fix av-sync
 - fix X11 property synchronization error due to race condition
 - fix XI2 bindings not loading
 - fix ssh upgrades wrongly claimed as supported when paramiko is not installed
 - fix 'wireless' network device detection on Linux
+- fix 'Sound Buffer' graph
+- fix errors caused by window title error handler
+- fix missing 'Packet Encoders' and 'Packet Compressors' with python3 clients
+- relax RPM dependencies to allow different versions to be installed simultaneously
 - add missing files to MANIFEST
 - distinguish certificate verification errors from other ssl errors
 

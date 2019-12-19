@@ -5,10 +5,14 @@ xpra (3.0.4-1) UNRELEASED; urgency=low
   * fix XI2 bindings not loading
   * fix ssh upgrades wrongly claimed as supported when paramiko is not installed
   * fix 'wireless' network device detection on Linux
+  * fix 'Sound Buffer' graph
+  * fix errors caused by window title error handler
+  * fix missing 'Packet Encoders' and 'Packet Compressors' with python3 clients
+  * relax RPM dependencies to allow different versions to be installed simultaneously
   * add missing files to MANIFEST
   * distinguish certificate verification errors from other ssl errors
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 17 Dec 2019 22:00:53 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 17 Dec 2019 19:17:41 +0700
 
 xpra (3.0.3-1) UNRELEASED; urgency=low
   * fix clipboard synchronization with HTML5 client
