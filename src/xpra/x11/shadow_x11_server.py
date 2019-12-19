@@ -6,8 +6,8 @@
 # later version. See the file COPYING for details.
 
 from xpra.x11.x11_server_core import X11ServerCore
-from xpra.os_util import monotonic_time, is_Wayland
-from xpra.util import envbool, envint
+from xpra.os_util import monotonic_time, is_Wayland, get_loaded_kernel_modules
+from xpra.util import envbool, envint, XPRA_DISPLAY_NOTIFICATION_ID
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
@@ -154,6 +154,29 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def do_get_cursor_data(self):
         return X11ServerCore.get_cursor_data(self)
+
+
+    def send_initial_data(self, ss, c, send_ui, share_count):
+        super().send_initial_data(ss, c, send_ui, share_count)
+        if getattr(ss, "ui_client", True) and getattr(ss, "send_windows", True):
+            self.verify_capture(ss)
+
+    def verify_capture(self, ss):
+        #verify capture works:
+        try:
+            capture = GTKImageCapture(self.root)
+            bdata = capture.take_screenshot()[-1]
+            nid = XPRA_DISPLAY_NOTIFICATION_ID
+            if any(b!=0 for b in bdata):
+                log("verify_capture(%s) succeeded", ss)
+                return
+            log.warn("Warning: shadow screen capture is blank")
+            body = "The shadow display capture is blank"
+            if get_loaded_kernel_modules("vboxguest", "vboxvideo"):
+                body += "\nthis may be caused by the VirtualBox video driver."
+            ss.may_notify(nid, "Shadow Failure", body, icon_name="server")
+        except Exception as e:
+            ss.may_notify(nid, "Shadow Error", "Error shadowing the display:\n%s" % e, icon_name="bugs")
 
 
     def make_hello(self, source):

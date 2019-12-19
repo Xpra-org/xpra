@@ -22,7 +22,7 @@ from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.x11.common import MAX_WINDOW_SIZE
-from xpra.os_util import monotonic_time, strtobytes, bytestostr
+from xpra.os_util import monotonic_time, strtobytes, bytestostr, get_loaded_kernel_modules
 from xpra.util import engs, csv, typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
@@ -185,10 +185,7 @@ class X11ServerCore(GTKServerBase):
         if self.opengl.lower()=="noprobe":
             gllog("query_opengl() skipped: %s", self.opengl)
             return
-        blacklisted_kernel_modules = []
-        for mod in ("vboxguest", "vboxvideo"):
-            if os.path.exists("/sys/module/%s" % mod):
-                blacklisted_kernel_modules.append(mod)
+        blacklisted_kernel_modules = get_loaded_kernel_modules("vboxguest", "vboxvideo")
         if blacklisted_kernel_modules:
             gllog.warn("Warning: skipped OpenGL probing,")
             gllog.warn(" found %i blacklisted kernel module%s:",

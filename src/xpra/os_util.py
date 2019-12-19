@@ -348,6 +348,15 @@ def is_kde() -> bool:
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("kde")>=0
 
 
+def get_loaded_kernel_modules(*modlist):
+    loaded = []
+    if LINUX and os.path.exists("/sys/module"):
+        for mod in modlist:
+            if os.path.exists("/sys/module/%s" % mod):
+                loaded.append(mod)
+    return loaded
+
+
 def is_WSL() -> bool:
     if not POSIX:
         return False
