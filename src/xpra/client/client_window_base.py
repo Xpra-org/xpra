@@ -252,7 +252,7 @@ class ClientWindowBase(ClientWidgetBase):
             except Exception as e:
                 log.error("Error parsing window title:")
                 log.error(" %s", e)
-                title = b""
+                title = ""
             self.set_title(title)
 
         if b"icon-title" in metadata:
