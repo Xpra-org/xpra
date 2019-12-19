@@ -780,8 +780,6 @@ class SessionInfo(Gtk.Window):
         self.server_speaker_codecs_label.set_size_request(lw, -1)
         self.client_microphone_codecs_label.set_size_request(lw, -1)
         self.server_microphone_codecs_label.set_size_request(lw, -1)
-        self.client_packet_encoders_label.set_size_request(lw, -1)
-        self.server_packet_encoders_label.set_size_request(lw, -1)
         #sound/video codec table:
         scaps = self.client.server_capabilities
         def codec_info(enabled, codecs):
