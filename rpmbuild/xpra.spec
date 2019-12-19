@@ -79,7 +79,7 @@ Patch0:				centos7-oldsystemd.patch
 Patch1:				selinux-nomap.patch
 Patch2:				centos7-oldturbojpeg.patch
 %endif
-Requires:			xpra-common = %{version}-%{release}
+Requires:			xpra-common >= %{version}-%{release}
 Requires:			xpra-html5
 %if 0%{?fedora}%{?el8}
 Requires:			python3-xpra-client = %{version}-%{release}
