@@ -191,7 +191,7 @@ This package contains Xpra's HTML5 client.
 Summary:			python2 build of xpra
 Group:				Networking
 Requires:			python2
-Requires:			xpra-common = %{version}-%{release}
+Requires:			xpra-common >= %{version}-%{release}
 Requires:			python2-lz4
 Requires:			python2-rencode
 Requires:			python2-pillow
