@@ -13,8 +13,9 @@ include xpra/x11/gtk3/gdk_x11_macros.h
 include xpra/codecs/cuda_common/*.cu
 include xpra/codecs/v4l2/video.h
 include xpra/codecs/dec_avcodec2/register_compat.*
-include udev/rules.d/71-xpra-virtual-pointer.rules
 recursive-include html5 *
+recursive-include content-categories *
+recursive-include content-type *
 recursive-include http-headers *
 recursive-include man *
 recursive-include patches *
@@ -22,6 +23,7 @@ recursive-include etc *
 recursive-include xdg *
 recursive-include cups *
 recursive-include dbus *
+recursive-include udev *
 recursive-include icons *
 recursive-include scripts *
 recursive-include selinux *
