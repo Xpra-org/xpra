@@ -8,7 +8,7 @@ import os
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, POSIX
+from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, POSIX, PYTHON3
 from xpra.util import csv, envbool, flatten_dict, typedict, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.log import Logger
 
@@ -266,8 +266,11 @@ class AudioMixin(StubSourceMixin):
             update_av_sync()  #pylint: disable=not-callable
             #run it again after 10 seconds,
             #by that point the source info will actually be populated:
-            from gi.repository import GLib
-            GLib.timeout_add(10*1000, update_av_sync)
+            if PYTHON3:
+                from gi.repository import GLib as glib
+            else:
+                import glib
+            glib.timeout_add(10*1000, update_av_sync)
 
     def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=None):
         log("new_sound_buffer(%s, %s, %s, %s) info=%s",
