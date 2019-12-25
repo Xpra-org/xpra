@@ -190,8 +190,14 @@ class TopClient(MonitorXpraClient):
         ctype = ci.strget("type", "unknown")
         title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.intget("revision"))
         chost = ci.strget("hostname")
+        conn_info = ""
         if chost:
-            title += ", connected from %s" % chost
+            conn_info = "connected from %s" % chost
+        cinfo = ci.dictget("connection")
+        if cinfo:
+            cinfo = typedict(cinfo)
+            conn_info += " using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
+            conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
         #batch delay:
         b_info = typedict(ci.dictget("batch", {}))
         bi_info = typedict(b_info.dictget("delay", {}))
@@ -220,6 +226,7 @@ class TopClient(MonitorXpraClient):
                 lcolor = RED
         return (
             (title, WHITE),
+            (conn_info, WHITE),
             (batch_info, bcolor),
             (latency_info, lcolor),
             )
