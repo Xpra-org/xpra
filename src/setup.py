@@ -936,6 +936,7 @@ def clean():
                    "xpra/codecs/jpeg/decoder.c",
                    "xpra/codecs/enc_ffmpeg/encoder.c",
                    "xpra/codecs/v4l2/pusher.c",
+                   "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/libav_common/av_log.c",
                    "xpra/codecs/webp/encode.c",
                    "xpra/codecs/webp/decode.c",
@@ -963,7 +964,7 @@ def clean():
             ]
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
-        if ext in (".c", ".cpp"):
+        if ext in (".c", ".cpp", ".pxi"):
             #clean the Cython annotated html files:
             CLEAN_FILES.append(p+".html")
             if WIN32:
