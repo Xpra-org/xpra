@@ -383,7 +383,7 @@ def check_xvfb_process(xvfb=None, cmd="Xvfb"):
     log.error("")
     return False
 
-def verify_display_ready(xvfb, display_name, shadowing_check=True):
+def verify_display_ready(xvfb, display_name, shadowing_check=True, log_errors=True):
     from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
@@ -392,16 +392,20 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True):
     except Exception as e:
         log = get_vfb_logger()
         log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)
-        log.error("Error: failed to connect to display %s" % display_name)
-        log.error(" %s", e)
+        if log_errors:
+            log.error("Error: failed to connect to display %s" % display_name)
+            log.error(" %s", e)
         return False
     if shadowing_check and not check_xvfb_process(xvfb):
         #if we're here, there is an X11 server, but it isn't the one we started!
         log = get_vfb_logger()
-        log.error("There is an X11 server already running on display %s:" % display_name)
-        log.error("You may want to use:")
-        log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
-        log.error("  'xpra --use-display start %s' to connect xpra to an existing X11 server only" % display_name)
-        log.error("")
+        log("verify_display_ready%s display exists, but the vfb process has terminated",
+                (xvfb, display_name, shadowing_check, log_errors))
+        if log_errors:
+            log.error("There is an X11 server already running on display %s:" % display_name)
+            log.error("You may want to use:")
+            log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
+            log.error("  'xpra --use-display start %s' to connect xpra to an existing X11 server only" % display_name)
+            log.error("")
         return False
     return True

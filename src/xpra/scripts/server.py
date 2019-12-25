@@ -15,7 +15,7 @@ import atexit
 import traceback
 
 from xpra.scripts.main import info, warn, no_gtk, validate_encryption, parse_env, configure_env
-from xpra.scripts.config import InitException, FALSE_OPTIONS
+from xpra.scripts.config import InitException, FALSE_OPTIONS, parse_bool
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
     FDChangeCaptureContext,
@@ -344,6 +344,22 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         gc.collect()
 
 
+def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True):
+    #check that we can access the X11 display:
+    from xpra.x11.vfb_util import verify_display_ready
+    if not verify_display_ready(xvfb, display_name, shadowing, log_errors):
+        return 1
+    from xpra.log import Logger
+    log = Logger("screen", "x11")
+    log("X11 display is ready")
+    no_gtk()
+    from xpra.x11.gtk_x11.gdk_display_source import verify_gdk_display
+    display = verify_gdk_display(display_name)
+    if not display:
+        return 1
+    log("GDK can access the display")
+    return 0
+
 def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     assert mode in (
         "start", "start-desktop",
@@ -367,13 +383,14 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if k.startswith("DBUS_"):
             del os.environ[k]
 
+    use_display = parse_bool("use-display", opts.use_display)
     starting  = mode == "start"
     starting_desktop = mode == "start-desktop"
     upgrading = mode == "upgrade"
     upgrading_desktop = mode == "upgrade-desktop"
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
-    clobber   = upgrading or upgrading_desktop or opts.use_display
+    clobber   = upgrading or upgrading_desktop or use_display
     start_vfb = not (shadowing or proxying or clobber)
 
     if not proxying and POSIX and not OSX:
@@ -418,7 +435,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             error_cb("too many extra arguments (%i): only expected a display number" % len(extra_args))
         if len(extra_args) == 1:
             display_name = extra_args[0]
-            if not shadowing and not proxying and not opts.use_display:
+            if not shadowing and not proxying and not use_display:
                 display_name_check(display_name)
         else:
             if proxying:
@@ -435,7 +452,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                         break
                 if not display_name:
                     error_cb("you must specify a free virtual display name to use with the proxy server")
-            elif opts.use_display:
+            elif use_display:
                 #only use automatic guess for xpra displays and not X11 displays:
                 display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
             else:
@@ -629,6 +646,13 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     xvfb = None
     xvfb_pid = None
     uinput_uuid = None
+    if start_vfb and use_display is None:
+        #use-display='auto' so we have to figure out
+        #if we have to start the vfb or not:
+        if not display_name:
+            use_display = False
+        else:
+            start_vfb = verify_display(None, display_name, log_errors=False)!=0
     if start_vfb:
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
@@ -767,17 +791,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if POSIX and not OSX:
             no_gtk()
             if starting or starting_desktop or shadowing:
-                #check that we can access the X11 display:
-                from xpra.x11.vfb_util import verify_display_ready
-                if not verify_display_ready(xvfb, display_name, shadowing):
-                    return 1
-                log("X11 display is ready")
-                no_gtk()
-                from xpra.x11.gtk_x11.gdk_display_source import verify_gdk_display
-                display = verify_gdk_display(display_name)
-                if not display:
-                    return 1
-                log("GDK can access the display")
+                r = verify_display(xvfb, display_name, shadowing)
+                if r:
+                    return r
         #on win32, this ensures that we get the correct screen size to shadow:
         from xpra.platform.gui import init as gui_init
         log("gui_init()")

@@ -95,7 +95,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         elif self.display:
             display = self.display
             connect_args = [display]
-            args.append("--use-display")
+            args.append("--use-display=yes")
         else:
             display = self.find_free_display()
             connect_args = [display]

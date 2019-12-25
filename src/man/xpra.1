@@ -943,12 +943,14 @@ Wrap server start commands with systemd-run.
 \fB--systemd-run-args\fP=\fIARGS\fP
 Command line arguments passed to systemd-run.
 .TP
-\fB--use-display\fP
+\fB--use-display\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Use an existing display rather than starting one with xvfb.
 You are responsible for starting the display yourself.
 This can also be used to rescue an existing display whose
 xpra server instance crashed or for running xpra against
 an accelerated X11 server.
+With \fIauto\fP, xpra will use the existing display
+if it is found.
 .TP
 \fB--displayfd\fP=\fIFD\fP
 The xpra server will write the display number back on this

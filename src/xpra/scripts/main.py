@@ -2146,7 +2146,7 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
                 #those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
                 args.append("%s%s" % (argname, ",".join(str(v) for v in ov)))
         elif ftype==bool:
-            if compat and x in ("exit-with-children", "use-display", "mmap-group"):
+            if compat and x in ("exit-with-children", "mmap-group"):
                 #older servers don't take a bool value for those options,
                 #it is disabled unless specified:
                 if ov:
@@ -2544,10 +2544,11 @@ def run_showconfig(options, args):
                        "start-after-connect", "start-child-after-connect",
                        "start-on-connect", "start-child-on-connect",
                        "start-on-last-client-exit", "start-child-on-last-client-exit",
+                       "use-display",
                        ]
         if WIN32:
             #"exit-ssh"?
-            HIDDEN += ["lpadmin", "daemon", "use-display", "mmap-group", "mdns"]
+            HIDDEN += ["lpadmin", "daemon", "mmap-group", "mdns"]
         if not OSX:
             HIDDEN += ["dock-icon", "swap-keys"]
     for opt in sorted(OPTION_TYPES.keys()):

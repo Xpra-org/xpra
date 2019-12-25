@@ -471,7 +471,7 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("fake-xinerama")
     legacy_bool_parse("use-display")
     if supports_server:
-        group.add_option("--use-display", action="store", metavar="yes|no",
+        group.add_option("--use-display", action="store", metavar="yes|no|auto",
                           dest="use_display", default=defaults.use_display,
                           help="Use an existing display rather than starting one with the xvfb command."
                           +" Default: %s" % enabled_str(defaults.use_display))

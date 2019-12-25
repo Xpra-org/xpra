@@ -42,7 +42,7 @@ class X11ServerTest(ServerTestUtil):
 		assert display not in self.dotxpra.displays(), "server socket for display should have been removed"
 		#now we can start it again using "--use-display"
 		log("start a new server on the same display")
-		server = self.check_start_server(display, "--use-display")
+		server = self.check_start_server(display, "--use-display=yes")
 		assert display in self.dotxpra.displays(), "server display not found"
 		#shut it down now
 		self.check_stop_server(server, "stop", display)
@@ -55,7 +55,7 @@ class X11ServerTest(ServerTestUtil):
 		time.sleep(1)
 		assert display in self.find_X11_displays()
 		#start server using this display:
-		server = self.check_start_server(display, "--use-display")
+		server = self.check_start_server(display, "--use-display=yes")
 		self.check_stop_server(server, "stop", display)
 		time.sleep(1)
 		assert pollwait(xvfb, 2) is None, "the Xvfb should not have been killed by xpra shutting down!"
