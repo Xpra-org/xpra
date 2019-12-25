@@ -120,7 +120,11 @@ class TopClient(MonitorXpraClient):
             if height<=3:
                 return
             thread_info = self.dictget("threads")
-            self.stdscr.addstr(3, 0, "%i threads" % thread_info.intget("count"))
+            rinfo = "%i threads" % thread_info.intget("count")
+            cpuinfo = self.dictget("cpuinfo")
+            if cpuinfo:
+                rinfo += ", %s" % cpuinfo.strget("hz_actual")
+            self.stdscr.addstr(3, 0, rinfo)
             if height<=4:
                 return
             #cursor:
@@ -185,6 +189,9 @@ class TopClient(MonitorXpraClient):
         #version info:
         ctype = ci.strget("type", "unknown")
         title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.intget("revision"))
+        chost = ci.strget("hostname")
+        if chost:
+            title += ", connected from %s" % chost
         #batch delay:
         b_info = typedict(ci.dictget("batch", {}))
         bi_info = typedict(b_info.dictget("delay", {}))
