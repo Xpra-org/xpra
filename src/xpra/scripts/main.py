@@ -1899,17 +1899,11 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
 
 
 def no_gtk():
-    gtk = sys.modules.get("gtk") or sys.modules.get("gi.repository.Gtk")
-    if gtk is None:
+    Gtk = sys.modules.get("gi.repository.Gtk")
+    if Gtk is None:
         #all good, not loaded
         return
-    try:
-        assert gtk.ver is None
-    except AttributeError:
-        #got an exception, probably using the gi bindings
-        #which insert a fake gtk module to trigger exceptions
-        return
-    raise Exception("the gtk module is already loaded: %s" % gtk)
+    raise Exception("the Gtk module is already loaded: %s" % Gtk)
 
 
 def run_glprobe(opts, show=False):
