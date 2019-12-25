@@ -39,7 +39,7 @@ def get_vfb_logger():
     global vfb_logger
     if not vfb_logger:
         from xpra.log import Logger
-        vfb_logger = Logger("server", "x11")
+        vfb_logger = Logger("server", "x11", "screen")
     return vfb_logger
 
 def osclose(fd):
