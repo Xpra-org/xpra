@@ -291,7 +291,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
     vsock_display = isdisplaytype(args, "vsock")
     display_is_remote = ssh_display or tcp_display or ssl_display or vsock_display
 
-    if mode in ("start", "start_desktop", "shadow") and not display_is_remote:
+    if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow") and not display_is_remote:
         systemd_run = parse_bool("systemd-run", options.systemd_run)
         if systemd_run is None:
             #detect if we should use it:
