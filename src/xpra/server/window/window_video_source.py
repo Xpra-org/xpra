@@ -43,6 +43,7 @@ TEXT_USE_VIDEO = envbool("XPRA_TEXT_USE_VIDEO", False)
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
 MIN_VIDEO_FPS = envint("XPRA_MIN_VIDEO_FPS", 10)
 MIN_VIDEO_EVENTS = envint("XPRA_MIN_VIDEO_EVENTS", 20)
+ENCODE_QUEUE_MIN_GAP = envint("XPRA_ENCODE_QUEUE_MIN_GAP", 5)
 
 VIDEO_TIMEOUT = envint("XPRA_VIDEO_TIMEOUT", 10)
 VIDEO_NODETECT_TIMEOUT = envint("XPRA_VIDEO_NODETECT_TIMEOUT", 10*60)
@@ -1015,7 +1016,7 @@ class WindowVideoSource(WindowSource):
         if not still_due:
             avsynclog("encode_from_queue: nothing due")
             return
-        first_due = max(0, min(still_due))
+        first_due = max(ENCODE_QUEUE_MIN_GAP, min(still_due))
         avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i, actual=%i, for wid=%i)",
                   first_due, still_due, self.av_sync_delay, av_delay, self.wid)
         self.idle_add(self.schedule_encode_from_queue, first_due)
