@@ -225,14 +225,17 @@ class AvahiPublisher:
             log.warn("Warning: cannot update mdns record")
             log.warn(" publisher has already been stopped")
             return
+        #prevent avahi from choking on ints:
+        txt_strs = dict((k,str(v)) for k,v in txt.items())
         def reply_handler(*args):
             log("reply_handler%s", args)
             log("update_txt(%s) done", txt)
         def error_handler(*args):
             log("error_handler%s", args)
             log.warn("Warning: failed to update mDNS TXT record")
-        #prevent avahi from choking on ints:
-        txt_strs = dict((k,str(v)) for k,v in txt.items())
+            log.warn(" with '%s'", txt_strs)
+            log.warn(" for name '%s'", self.name)
+            log.warn(" host=%s, port=%s", self.host, self.port)
         txt_array = avahi.dict_to_txt_array(txt_strs)
         self.group.UpdateServiceTxt(self.interface,
             avahi.PROTO_UNSPEC, dbus.UInt32(0), self.name, self.stype, self.domain,
