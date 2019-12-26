@@ -104,7 +104,7 @@ def save_fakeXinerama_config(supported=True, source="", ss=()):
     for filename in fakeXinerama_config_files:
         try:
             with open(filename, 'wb') as f:
-                f.write(strtobytes(contents))
+                f.write(contents.encode("utf8"))
         except Exception as e:
             log("writing to '%s'", filename, exc_info=True)
             log.warn("Error writing fake xinerama file '%s':", filename)
