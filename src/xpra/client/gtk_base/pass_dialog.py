@@ -102,7 +102,7 @@ class PasswordInputDialogWindow(object):
         self.window.show_all()
         def show():
             force_focus()
-            self.present()
+            self.window.present()
             self.password_input.grab_focus()
         glib.idle_add(show)
 
