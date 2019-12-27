@@ -7,7 +7,7 @@ import os
 from collections import deque
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import envint
+from xpra.util import envint, obsc
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import hexstr, POSIX
 from xpra.log import Logger
@@ -136,7 +136,7 @@ class SysAuthenticatorBase(object):
         salt = self.get_response_salt(client_salt)
         password = gendigest("xor", challenge_response, salt)
         log("authenticate_check(%s, %s) xor(%s)=%s",
-            repr(challenge_response), repr(client_salt), repr(salt), repr(password))
+            obsc(repr(challenge_response)), repr(client_salt), repr(salt), repr(password))
         #warning: enabling logging here would log the actual system password!
         #log.info("authenticate(%s, %s) password=%s (%s)",
         #    hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
