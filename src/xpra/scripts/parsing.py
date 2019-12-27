@@ -216,24 +216,7 @@ def do_parse_cmdline(cmdline, defaults):
     ##
     ## NOTE NOTE NOTE
     #################################################################
-    command_options = [
-                        "\t%prog attach [DISPLAY]\n",
-                        "\t%prog detach [DISPLAY]\n",
-                        "\t%prog screenshot filename [DISPLAY]\n",
-                        "\t%prog info [DISPLAY]\n",
-                        "\t%prog control DISPLAY command [arg1] [arg2]..\n",
-                        "\t%prog print DISPLAY filename\n",
-                        "\t%prog version [DISPLAY]\n"
-                        "\t%prog showconfig\n"
-                        "\t%prog list\n"
-                        "\t%prog sessions\n"
-                        "\t%prog launcher\n"
-                        "\t%prog stop [DISPLAY]\n"
-                        "\t%prog exit [DISPLAY]\n"
-                      ]
-    if supports_mdns:
-        command_options.append("\t%prog list-mdns\n")
-        command_options.append("\t%prog mdns-gui\n")
+    command_options = []
     server_modes = []
     if supports_server:
         server_modes.append("start")
@@ -248,6 +231,26 @@ def do_parse_cmdline(cmdline, defaults):
         command_options.append("\t%prog shadow [DISPLAY]\n")
     if not supports_server:
         command_options.append("(This xpra installation does not support starting local servers.)")
+
+    command_options += [
+                        "\t%prog attach [DISPLAY]\n",
+                        "\t%prog detach [DISPLAY]\n",
+                        "\t%prog info [DISPLAY]\n",
+                        "\t%prog version [DISPLAY]\n"
+                        "\t%prog stop [DISPLAY]\n"
+                        "\t%prog exit [DISPLAY]\n"
+                        "\t%prog screenshot filename [DISPLAY]\n",
+                        "\t%prog control DISPLAY command [arg1] [arg2]..\n",
+                        "\t%prog print DISPLAY filename\n",
+                        "\t%prog showconfig\n"
+                        "\t%prog list\n"
+                        "\t%prog sessions\n"
+                        "\t%prog launcher\n"
+                      ]
+    if supports_mdns:
+        command_options.append("\t%prog list-mdns\n")
+        command_options.append("\t%prog mdns-gui\n")
+    command_options.append("\t%prog\n")
 
     version = "xpra v%s" % full_version_str()
     parser = ModifiedOptionParser(version=version, usage="\n" + "".join(command_options))
