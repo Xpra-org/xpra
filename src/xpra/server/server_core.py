@@ -2058,7 +2058,7 @@ class ServerCore:
                     except ModuleNotFoundError:
                         log("sysconfig.%s", fn, exc_info=True)
                         if first_time(fn):
-                            log.warn("Warning: failed to collect %s sysconfig information")
+                            log.warn("Warning: failed to collect %s sysconfig information", attr)
                     except Exception:
                         log.error("Error calling sysconfig.%s", fn, exc_info=True)
             if sysinfo:
