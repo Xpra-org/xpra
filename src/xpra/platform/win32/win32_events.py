@@ -172,7 +172,7 @@ class Win32EventListener:
 
     def WndProc(self, hWnd, msg, wParam, lParam):
         callbacks = self.event_callbacks.get(msg)
-        event_name = KNOWN_WM_EVENTS.get(msg, hex(msg))
+        event_name = KNOWN_WM_EVENTS.get(msg, hex(int(msg)))
         log("callbacks for event %s: %s", event_name, callbacks)
         if hWnd==self.hwnd:
             if callbacks:
