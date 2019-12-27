@@ -548,7 +548,14 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode == "showsetting":
             return run_showsetting(options, args)
         else:
-            error_cb("invalid mode '%s'" % mode)
+            from xpra.scripts.parsing import get_usage
+            if mode!="help":
+                print("invalid subcommand '%s'" % (mode,))
+            print("Usage:")
+            for x in get_usage():
+                print("\txpra %s" % x)
+            print()
+            print("see 'man xpra' or 'xpra --help' for more details")
             return 1
     except KeyboardInterrupt as e:
         info("\ncaught %s, exiting" % repr(e))

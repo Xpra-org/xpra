@@ -203,6 +203,50 @@ def parse_URL(url):
     return address, options
 
 
+def get_server_modes():
+    server_modes = []
+    if supports_server:
+        server_modes.append("start")
+        server_modes.append("start-desktop")
+        server_modes.append("upgrade")
+    if supports_shadow:
+        server_modes.append("shadow")
+    return server_modes
+
+
+def get_usage():
+    command_options = []
+    if supports_server:
+        command_options = ["start [DISPLAY]",
+                           "start-desktop [DISPLAY]",
+                           "upgrade [DISPLAY]",
+                           ] + command_options
+    if supports_shadow:
+        command_options.append("shadow [DISPLAY]")
+    if not supports_server:
+        command_options.append("(This xpra installation does not support starting local servers.)")
+
+    command_options += [
+                        "attach [DISPLAY]",
+                        "detach [DISPLAY]",
+                        "info [DISPLAY]",
+                        "version [DISPLAY]",
+                        "stop [DISPLAY]",
+                        "exit [DISPLAY]",
+                        "screenshot filename [DISPLAY]",
+                        "control DISPLAY command [arg1] [arg2]..",
+                        "print DISPLAY filename",
+                        "showconfig",
+                        "list",
+                        "sessions",
+                        "launcher",
+                      ]
+    if supports_mdns:
+        command_options.append("list-mdns")
+        command_options.append("mdns-gui")
+    command_options.append("")
+    return command_options
+
 def parse_cmdline(cmdline):
     defaults = make_defaults_struct()
     return do_parse_cmdline(cmdline, defaults)
@@ -216,44 +260,10 @@ def do_parse_cmdline(cmdline, defaults):
     ##
     ## NOTE NOTE NOTE
     #################################################################
-    command_options = []
-    server_modes = []
-    if supports_server:
-        server_modes.append("start")
-        server_modes.append("start-desktop")
-        server_modes.append("upgrade")
-        command_options = ["\t%prog start [DISPLAY]\n",
-                           "\t%prog start-desktop [DISPLAY]\n",
-                           "\t%prog upgrade [DISPLAY]\n",
-                           ] + command_options
-    if supports_shadow:
-        server_modes.append("shadow")
-        command_options.append("\t%prog shadow [DISPLAY]\n")
-    if not supports_server:
-        command_options.append("(This xpra installation does not support starting local servers.)")
-
-    command_options += [
-                        "\t%prog attach [DISPLAY]\n",
-                        "\t%prog detach [DISPLAY]\n",
-                        "\t%prog info [DISPLAY]\n",
-                        "\t%prog version [DISPLAY]\n"
-                        "\t%prog stop [DISPLAY]\n"
-                        "\t%prog exit [DISPLAY]\n"
-                        "\t%prog screenshot filename [DISPLAY]\n",
-                        "\t%prog control DISPLAY command [arg1] [arg2]..\n",
-                        "\t%prog print DISPLAY filename\n",
-                        "\t%prog showconfig\n"
-                        "\t%prog list\n"
-                        "\t%prog sessions\n"
-                        "\t%prog launcher\n"
-                      ]
-    if supports_mdns:
-        command_options.append("\t%prog list-mdns\n")
-        command_options.append("\t%prog mdns-gui\n")
-    command_options.append("\t%prog\n")
 
     version = "xpra v%s" % full_version_str()
-    parser = ModifiedOptionParser(version=version, usage="\n" + "".join(command_options))
+    usage_strs = ["\t%%prog %s\n" % x for x in get_usage()]
+    parser = ModifiedOptionParser(version=version, usage="\n" + "".join(usage_strs))
     hidden_options = {
                       "display"         : defaults.display,
                       "wm-name"         : defaults.wm_name,
@@ -269,7 +279,7 @@ def do_parse_cmdline(cmdline, defaults):
             hidden_options[k.replace("-", "_")] = v
     group = optparse.OptionGroup(parser, "Server Options",
                 "These options are only relevant on the server when using the %s mode." %
-                " or ".join(["'%s'" % x for x in server_modes]))
+                " or ".join(["'%s'" % x for x in get_server_modes()]))
     parser.add_option_group(group)
     #we support remote start, so we need those even if we don't have server support:
     group.add_option("--start", action="append",
