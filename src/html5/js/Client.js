@@ -847,6 +847,10 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 			}
 		}, delay);
 	}
+	if (keyname=="F11") {
+		this.debug("keyboard", "allowing default handler for", keyname);
+		allow_default = true;
+	}
 	return allow_default;
 }
 
