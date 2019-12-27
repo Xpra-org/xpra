@@ -846,6 +846,10 @@ XpraClient.prototype._get_keycodes = function() {
 	var kc;
 	for(var keycode in CHARCODE_TO_NAME) {
 		kc = parseInt(keycode);
+	}
+	if (keyname=="F11") {
+		this.debug("keyboard", "allowing default handler for", keyname);
+		allow_default = true;
 		keycodes.push([kc, CHARCODE_TO_NAME[keycode], kc, 0, 0]);
 	}
 	//show("keycodes="+keycodes.toSource());
