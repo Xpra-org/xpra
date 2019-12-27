@@ -1,3 +1,12 @@
+xpra (3.0.5-1) UNRELEASED; urgency=low
+  * fix fake Xinerama errors with unicode monitor names
+  * fix av-sync backport for python2 servers
+  * add more missing files to MANIFEST
+  * add v4l2 codec files to clean target
+  * add logging to gtk display cleanup
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 27 Dec 2019 11:01:46 +0100
+
 xpra (3.0.4-1) UNRELEASED; urgency=low
   * fix missing undecorated windows on win32
   * fix av-sync

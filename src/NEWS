@@ -1,3 +1,12 @@
+v3.0.5 (2019-12-27)
+======================
+	-- fix fake Xinerama errors with unicode monitor names
+	-- fix av-sync backport for python2 servers
+	-- add more missing files to MANIFEST
+	-- add v4l2 codec files to clean target
+	-- add logging to gtk display cleanup
+
+
 v3.0.4 (2019-12-19)
 ======================
 	-- fix missing undecorated windows on win32

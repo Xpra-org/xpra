@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.4
+%define version 3.0.5
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -867,6 +867,13 @@ fi
 
 
 %changelog
+* Fri Dec 27 2019 Antoine Martin <antoine@xpra.org> 3.0.5-1xpra1
+- fix fake Xinerama errors with unicode monitor names
+- fix av-sync backport for python2 servers
+- add more missing files to MANIFEST
+- add v4l2 codec files to clean target
+- add logging to gtk display cleanup
+
 * Thu Dec 19 2019 Antoine Martin <antoine@xpra.org> 3.0.4-1xpra1
 - fix missing undecorated windows on win32
 - fix av-sync
@@ -982,7 +989,7 @@ fi
 - update to xxhash 0.7.2
 - consistent use of quotes in endpoint logging
 
-* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0.4
+* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0.5
 - Python 3 port complete, now the default: #1571, #2195
 - much nicer HTML5 client user interface: #2269
 - Window handling:
@@ -1474,7 +1481,7 @@ fi
 - fix re-stride code for compatibility with ancient clients
 - fix timer reference leak causing some warnings
 
-* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0.4
+* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0.5
 - Python3 / GTK3 client support
 - NVENC module included in binary builds
 - support for enhanced dummy driver with DPI option
@@ -2131,7 +2138,7 @@ fi
 - "xpra info" to report the number of clients connected
 - use xpra's own icon for its own windows (about and info dialogs)
 
-* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0.4
+* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0.5
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
 - fix vpx encoder memory leak
