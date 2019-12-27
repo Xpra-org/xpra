@@ -2043,12 +2043,26 @@ class ServerCore:
         si = self.get_server_info()
         if SYSCONFIG:
             import sysconfig
-            si["sysconfig"] = {
-                "platform"          : sysconfig.get_platform(),
-                "python-version"    : sysconfig.get_python_version(),
-                "config-vars"       : sysconfig.get_config_vars(),
-                "paths"             : sysconfig.get_paths(),
-                }
+            sysinfo = {}
+            for attr in (
+                "platform",
+                "python-version",
+                "config-vars",
+                "paths",
+                ):
+                fn = "get_%s" % attr.replace("-", "_")
+                getter = getattr(sysconfig, fn, None)
+                if getter:
+                    try:
+                        sysinfo[attr] = getter()
+                    except ModuleNotFoundError:
+                        log("sysconfig.%s", fn, exc_info=True)
+                        if first_time(fn):
+                            log.warn("Warning: failed to collect %s sysconfig information")
+                    except Exception:
+                        log.error("Error calling sysconfig.%s", fn, exc_info=True)
+            if sysinfo:
+                si["sysconfig"] = sysinfo
         up("server", si)
 
         ni = get_net_info()
