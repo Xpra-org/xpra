@@ -989,7 +989,7 @@ fi
 - update to xxhash 0.7.2
 - consistent use of quotes in endpoint logging
 
-* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0.5
+* Sat Sep 21 2019 Antoine Martin <antoine@xpra.org> 3.0-1
 - Python 3 port complete, now the default: #1571, #2195
 - much nicer HTML5 client user interface: #2269
 - Window handling:
@@ -1481,7 +1481,7 @@ fi
 - fix re-stride code for compatibility with ancient clients
 - fix timer reference leak causing some warnings
 
-* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0.5
+* Thu May 22 2014 Antoine Martin <antoine@xpra.org> 0.13.0-1
 - Python3 / GTK3 client support
 - NVENC module included in binary builds
 - support for enhanced dummy driver with DPI option
@@ -2138,7 +2138,7 @@ fi
 - "xpra info" to report the number of clients connected
 - use xpra's own icon for its own windows (about and info dialogs)
 
-* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0.5
+* Sun May 20 2012 Antoine Martin <antoine@xpra.org> 0.3.0-1
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
 - fix vpx encoder memory leak
