@@ -91,12 +91,16 @@ class GTKServerBase(ServerBase):
         from xpra.os_util import getUbuntuVersion, is_Ubuntu, PYTHON2
         safe_close = PYTHON2 or self.session_type!="shadow" or not is_Ubuntu() or getUbuntuVersion()>(16, 4)
         close = envbool("XPRA_CLOSE_GTK_DISPLAY", safe_close)
+        log("close_gtk_display() safe_close=%s, close=%s, gdk_mod=%s",
+            safe_close, close, gdk_mod)
         if close and gdk_mod:
             if is_gtk3():
                 displays = gdk.DisplayManager.get().list_displays()
             else:
                 displays = gdk.display_manager_get().list_displays()
+            log("close_gtk_display() displays=%s", displays)
             for d in displays:
+                log("close_gtk_display() closing %s", d)
                 d.close()
 
 
