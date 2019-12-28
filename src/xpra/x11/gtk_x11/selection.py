@@ -134,7 +134,7 @@ class ManagerSelection(GObject.GObject):
                 Gtk.main()
                 log("...they did.")
         window = get_pywindow(self.clipboard, self._xwindow)
-        window.set_title("Xpra-ManagerSelection")
+        window.set_title("Xpra-ManagerSelection-%s" % self.atom)
 
     def do_xpra_destroy_event(self, event):
         remove_event_receiver(event.window, self)
