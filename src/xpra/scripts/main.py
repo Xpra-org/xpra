@@ -1423,12 +1423,12 @@ def connect_to_server(app, display_desc, opts):
             protocol = app.setup_connection(conn)
             protocol.start()
         except InitInfo as e:
-            log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             log.info("failed to connect:")
             log.info(" %s", e)
             GLib.idle_add(app.quit, EXIT_OK)
         except InitExit as e:
-            log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             log.warn("Warning: failed to connect:")
             log.warn(" %s", e)
             GLib.idle_add(app.quit, e.status)
