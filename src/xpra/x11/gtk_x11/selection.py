@@ -90,6 +90,8 @@ class ManagerSelection(GObject.GObject):
 
         # Ask ourselves when we acquired the selection:
         def wait_for_contents(clipboard, target):
+            log("ManagerSelection.acquire(%s) wait_for_contents(%s, %s)",
+                when, clipboard, target)
             atom = Gdk.Atom.intern(target, False)
             return clipboard.wait_for_contents(atom)
         timestamp_atom = Gdk.Atom.intern("TIMESTAMP", False)
@@ -104,6 +106,7 @@ class ManagerSelection(GObject.GObject):
         else:
             ts_num = 0      #CurrentTime
             log.warn("invalid data for 'TIMESTAMP': %s", ([hex(ord(x)) for x in ts_data]))
+        log("selection timestamp(%s)=%s", ts_data, ts_num)
         # Calculate the X atom for this selection:
         selection_xatom = get_xatom(self.atom)
         # Ask X what window we used:
