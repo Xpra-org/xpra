@@ -1173,7 +1173,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
     if dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
-            raise InitException("unix domain sockets are not available on this operating system")
+            raise InitExit(EXIT_UNSUPPORTED, "unix domain sockets are not available on this operating system")
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(SOCKET_TIMEOUT)
         def sockpathfail_cb(msg):
@@ -1184,7 +1184,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             sock.connect(sockpath)
         except Exception as e:
             get_util_logger().debug("failed to connect using %s%s", sock.connect, sockpath, exc_info=True)
-            raise InitException("failed to connect to '%s':\n %s" % (sockpath, e)) from None
+            raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to '%s':\n %s" % (sockpath, e)) from None
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
