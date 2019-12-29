@@ -9,8 +9,9 @@
 # selection, we can either abort or steal it.  Once we have it, if someone
 # else steals it, then we should exit.
 
+import sys
 from struct import pack, unpack, calcsize
-from gi.repository import GObject, Gtk, Gdk
+from gi.repository import GObject, Gtk, Gdk, GLib
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.error import xsync, XError
@@ -21,9 +22,13 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,         #@UnresolvedImport
     remove_event_receiver,      #@UnresolvedImport
     )
+from xpra.exit_codes import EXIT_TIMEOUT
+from xpra.util import envint
 from xpra.log import Logger
 
 log = Logger("x11", "util")
+
+SELECTION_EXIT_TIMEOUT = envint("XPRA_SELECTION_EXIT_TIMEOUT", 20)
 
 StructureNotifyMask = constants["StructureNotifyMask"]
 XNone = constants["XNone"]
@@ -48,6 +53,7 @@ class ManagerSelection(GObject.GObject):
         atom = Gdk.Atom.intern(selection, False)
         self.clipboard = Gtk.Clipboard.get(atom)
         self._xwindow = None
+        self.exit_timer = None
 
     def _owner(self):
         return X11WindowBindings().XGetSelectionOwner(self.atom)
@@ -131,11 +137,21 @@ class ManagerSelection(GObject.GObject):
             else:
                 log("Waiting for previous owner to exit...")
                 add_event_receiver(window, self)
+                self.exit_timer = GLib.timeout_add(SELECTION_EXIT_TIMEOUT*1000, self.exit_timeout)
                 Gtk.main()
+                if self.exit_timer:
+                    GLib.source_remove(self.exit_timer)
+                    self.exit_timer = None
                 log("...they did.")
         window = get_pywindow(self.clipboard, self._xwindow)
         window.set_title("Xpra-ManagerSelection-%s" % self.atom)
         self.clipboard.connect("owner-change", self._owner_change)
+
+    def exit_timeout(self):
+        self.exit_timer = None
+        log.error("selection timeout")
+        log.error(" the current owner did not exit")
+        sys.exit(EXIT_TIMEOUT)
 
     def _owner_change(self, clipboard, event):
         log("owner_change(%s, %s)", clipboard, event)
