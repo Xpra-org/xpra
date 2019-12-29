@@ -25,7 +25,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,         #@UnresolvedImport
     remove_event_receiver,      #@UnresolvedImport
     )
-from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gobject, is_gtk3
 from xpra.log import Logger
 
 log = Logger("x11", "util")
@@ -77,7 +77,13 @@ class ManagerSelection(gobject.GObject):
         if when is self.IF_UNOWNED and old_owner != XNone:
             raise AlreadyOwned
 
-        set_clipboard_data(self.clipboard, "VERSION")
+        if is_gtk3():
+            set_clipboard_data(self.clipboard, "VERSION")
+        else:
+            self.clipboard.set_with_data([("VERSION", 0, 0)],
+	                                     self._get,
+	                                     self._clear,
+	                                     None)
 
         # Having acquired the selection, we have to announce our existence
         # (ICCCM 2.8, still).  The details here probably don't matter too
@@ -133,6 +139,24 @@ class ManagerSelection(gobject.GObject):
                 log("...they did.")
         window = get_pywindow(self.clipboard, self._xwindow)
         window.set_title("Xpra-ManagerSelection")
+        if is_gtk3():
+            #we can't use set_with_data(..),
+            #so we have to listen for owner-change:
+            self.clipboard.connect("owner-change", self._owner_change)
+
+    def _owner_change(self, clipboard, event):
+        log("owner_change(%s, %s)", clipboard, event)
+        if str(event.selection)!=self.atom:
+            #log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
+            return
+        if event.owner:
+	        owner = event.owner.get_xid()
+	        if owner==self._xwindow:
+	            log("_owner_change(..) we still own %s", event.selection)
+	            return
+        if self._xwindow:
+            self._xwindow = None
+            self.emit("selection-lost")
 
     def do_xpra_destroy_event(self, event):
         remove_event_receiver(event.window, self)
