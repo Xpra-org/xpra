@@ -142,10 +142,11 @@ class ManagerSelection(GObject.GObject):
         if str(event.selection)!=self.atom:
             #log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
             return
-        owner = event.owner.get_xid()
-        if owner==self._xwindow:
-            log("_owner_change(..) we still own %s", event.selection)
-            return
+        if event.owner:
+	        owner = event.owner.get_xid()
+	        if owner==self._xwindow:
+	            log("_owner_change(..) we still own %s", event.selection)
+	            return
         if self._xwindow:
             self._xwindow = None
             self.emit("selection-lost")
