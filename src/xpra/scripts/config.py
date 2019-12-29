@@ -866,7 +866,7 @@ def get_defaults():
 
     GLOBAL_DEFAULTS = {
                     "encoding"          : "auto",
-                    "title"             : "@title@ on @client-machine@",
+                    "title"             : "@title@ on @hostname@",
                     "username"          : username,
                     "password"          : "",
                     "wm-name"           : DEFAULT_NET_WM_NAME,
