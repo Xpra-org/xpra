@@ -90,6 +90,8 @@ class GTKServerBase(ServerBase):
         #bug 2328: python3 shadow server segfault on Ubuntu 16.04
         from xpra.os_util import getUbuntuVersion, is_Ubuntu
         safe_close = self.session_type!="shadow" or not is_Ubuntu() or getUbuntuVersion()>(16, 4)
+        if WIN32:
+            safe_close = False
         close = envbool("XPRA_CLOSE_GTK_DISPLAY", safe_close)
         log("close_gtk_display() safe_close=%s, close=%s, gdk_mod=%s",
             safe_close, close, gdk_mod)
