@@ -875,6 +875,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         log.error("Error: cannot start the %s server", app.session_type, exc_info=True)
         log.error(str(e))
         log.info("")
+        if upgrading or upgrading_desktop:
+            #something abnormal occurred,
+            #don't kill the vfb on exit:
+            from xpra.server import EXITING_CODE
+            app._upgrading = EXITING_CODE
         app.cleanup()
         return 1
 
