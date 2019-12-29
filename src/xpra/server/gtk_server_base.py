@@ -10,7 +10,7 @@ import sys
 import os.path
 
 from xpra.util import flatten_dict, envbool
-from xpra.os_util import monotonic_time, register_SIGUSR_signals
+from xpra.os_util import monotonic_time, register_SIGUSR_signals, WIN32
 from xpra.gtk_common.gobject_compat import (
     import_gdk, import_glib, is_gtk3,
     register_os_signals,
