@@ -131,7 +131,8 @@ class TrayClient(StubClientMixin):
         if p:
             conn = getattr(p, "_conn", None)
             if conn:
-                t.append(bytestostr(conn.target))
+                cinfo = conn.get_info()
+                t.append(cinfo.get("endpoint", bytestostr(conn.target)))
         if not t:
             t.insert(0, "Xpra")
         v = "\n".join(t)
