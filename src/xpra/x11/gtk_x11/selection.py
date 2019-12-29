@@ -76,7 +76,10 @@ class ManagerSelection(GObject.GObject):
         if when is self.IF_UNOWNED and old_owner != XNone:
             raise AlreadyOwned
 
-        #only strings with GTK3?
+        #we can only set strings with GTK3,
+        # we should try to be compliant with ICCCM version 2.0 (see section 4.3)
+        # and use this format instead:
+        # outdata.set("INTEGER", 32, pack("@ii", 2, 0))
         thestring = "VERSION"
         self.clipboard.set_text(thestring, len(thestring))
 
@@ -170,14 +173,6 @@ class ManagerSelection(GObject.GObject):
     def do_xpra_destroy_event(self, event):
         remove_event_receiver(event.window, self)
         Gtk.main_quit()
-
-    def _get(self, _clipboard, outdata, _which, _userdata):
-        # We are compliant with ICCCM version 2.0 (see section 4.3)
-        outdata.set("INTEGER", 32, pack("@ii", 2, 0))
-
-    def _clear(self, _clipboard, _userdata):
-        self._xwindow = None
-        self.emit("selection-lost")
 
     def window(self):
         if self._xwindow is None:
