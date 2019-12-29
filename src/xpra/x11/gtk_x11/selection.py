@@ -21,9 +21,12 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,         #@UnresolvedImport
     remove_event_receiver,      #@UnresolvedImport
     )
+from xpra.os_util import hexstr
 from xpra.log import Logger
 
 log = Logger("x11", "util")
+log.enable_debug()
+log.info("gello")
 
 StructureNotifyMask = constants["StructureNotifyMask"]
 XNone = constants["XNone"]
@@ -105,7 +108,7 @@ class ManagerSelection(GObject.GObject):
             ts_num = unpack("@L", ts_data[:Lsize])[0]
         else:
             ts_num = 0      #CurrentTime
-            log.warn("invalid data for 'TIMESTAMP': %s", ([hex(ord(x)) for x in ts_data]))
+            log.warn("invalid data for 'TIMESTAMP': %s", hexstr(ts_data))
         log("selection timestamp(%s)=%s", ts_data, ts_num)
         # Calculate the X atom for this selection:
         selection_xatom = get_xatom(self.atom)
@@ -135,6 +138,12 @@ class ManagerSelection(GObject.GObject):
                 log("...they did.")
         window = get_pywindow(self.clipboard, self._xwindow)
         window.set_title("Xpra-ManagerSelection-%s" % self.atom)
+        self.clipboard.connect("owner-change", self._owner_change)
+
+    def _owner_change(self, *args):
+        if self._xwindow:
+            self._xwindow = None
+            self.emit("selection-lost")
 
     def do_xpra_destroy_event(self, event):
         remove_event_receiver(event.window, self)

@@ -17,7 +17,7 @@ gi.require_version('Pango', '1.0')
 from gi.repository import GLib, Gdk, Gtk
 
 from xpra.util import flatten_dict, envbool
-from xpra.os_util import monotonic_time, register_SIGUSR_signals
+from xpra.os_util import monotonic_time, register_SIGUSR_signals, WIN32
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.quit import (
     gtk_main_quit_really,
