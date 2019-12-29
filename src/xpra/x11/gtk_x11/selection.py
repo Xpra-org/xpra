@@ -135,6 +135,20 @@ class ManagerSelection(GObject.GObject):
                 log("...they did.")
         window = get_pywindow(self.clipboard, self._xwindow)
         window.set_title("Xpra-ManagerSelection-%s" % self.atom)
+        self.clipboard.connect("owner-change", self._owner_change)
+
+    def _owner_change(self, clipboard, event):
+        log("owner_change(%s, %s)", clipboard, event)
+        if str(event.selection)!=self.atom:
+            #log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
+            return
+        owner = event.owner.get_xid()
+        if owner==self._xwindow:
+            log("_owner_change(..) we still own %s", event.selection)
+            return
+        if self._xwindow:
+            self._xwindow = None
+            self.emit("selection-lost")
 
     def do_xpra_destroy_event(self, event):
         remove_event_receiver(event.window, self)
