@@ -26,7 +26,6 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 from xpra.log import Logger
 
 log = Logger("x11", "window")
-log.enable_debug()
 
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
@@ -202,7 +201,6 @@ class Wm(GObject.GObject):
             mode = self._wm_selection.FORCE
         else:
             mode = self._wm_selection.IF_UNOWNED
-        log.warn("acquire: replace=%s", replace_other_wm)
         self._wm_selection.acquire(mode)
         self._cm_wm_selection.acquire(mode)
 
