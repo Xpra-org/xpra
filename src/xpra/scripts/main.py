@@ -550,7 +550,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         else:
             from xpra.scripts.parsing import get_usage
             if mode!="help":
-                print("invalid subcommand '%s'" % (mode,))
+                print("Invalid subcommand '%s'" % (mode,))
             print("Usage:")
             for x in get_usage():
                 print("\txpra %s" % x)
