@@ -552,8 +552,12 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             if mode!="help":
                 print("Invalid subcommand '%s'" % (mode,))
             print("Usage:")
+            from xpra.platform.features import LOCAL_SERVERS_SUPPORTED
+            if not LOCAL_SERVERS_SUPPORTED:
+                print("(this xpra installation does not support starting local servers)")
+            cmd = os.path.basename(sys.argv[0])
             for x in get_usage():
-                print("\txpra %s" % x)
+                print("\t%s %s" % (cmd, x))
             print()
             print("see 'man xpra' or 'xpra --help' for more details")
             return 1

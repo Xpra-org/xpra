@@ -215,16 +215,14 @@ def get_server_modes():
 
 
 def get_usage():
-    command_options = []
+    command_options = [""]
     if supports_server:
-        command_options = ["start [DISPLAY]",
+        command_options += ["start [DISPLAY]",
                            "start-desktop [DISPLAY]",
                            "upgrade [DISPLAY]",
-                           ] + command_options
+                           ]
     if supports_shadow:
         command_options.append("shadow [DISPLAY]")
-    if not supports_server:
-        command_options.append("(This xpra installation does not support starting local servers.)")
 
     command_options += [
                         "attach [DISPLAY]",
@@ -244,7 +242,6 @@ def get_usage():
     if supports_mdns:
         command_options.append("list-mdns")
         command_options.append("mdns-gui")
-    command_options.append("")
     return command_options
 
 def parse_cmdline(cmdline):
@@ -263,6 +260,8 @@ def do_parse_cmdline(cmdline, defaults):
 
     version = "xpra v%s" % full_version_str()
     usage_strs = ["\t%%prog %s\n" % x for x in get_usage()]
+    if not supports_server:
+        usage_strs = ["(this xpra installation does not support starting local servers)\n"]+usage_strs
     parser = ModifiedOptionParser(version=version, usage="\n" + "".join(usage_strs))
     hidden_options = {
                       "display"         : defaults.display,
