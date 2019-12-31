@@ -89,8 +89,15 @@ class GLXWindowContext:
 class GLXContext:
 
     def __init__(self, alpha=False):
+        self.props = {}
+        self.xdisplay = None
+        self.context = None
+        self.bit_depth = 0
         from gi.repository import Gdk
         display = Gdk.Display.get_default()
+        if not display:
+            log.warn("Warning: GLXContext: no default display")
+            return
         screen = display.get_default_screen()
         bpc = 8
         attrs = c_attrs({
@@ -101,7 +108,6 @@ class GLXContext:
             GLX.GLX_ALPHA_SIZE      : int(alpha)*bpc,
             GLX.GLX_DOUBLEBUFFER    : int(DOUBLE_BUFFERED),
             })
-        self.props = {}
         self.xdisplay = get_xdisplay()
         xvinfo = GLX.glXChooseVisual(self.xdisplay, screen.get_number(), attrs)
         def getconfig(attrib):
@@ -154,6 +160,12 @@ class GLXContext:
 
     def check_support(self, force_enable=False):
         i = self.props
+        if not self.xdisplay:
+            return {
+                "success"   : False,
+                "safe"      : False,
+                "message"   : "cannot access X11 display",
+                }
         from gi.repository import Gtk
         tmp = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         tmp.resize(1, 1)
