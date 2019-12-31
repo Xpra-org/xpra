@@ -164,6 +164,7 @@ class GLXContext:
             return {
                 "success"   : False,
                 "safe"      : False,
+                "enabled"   : False,
                 "message"   : "cannot access X11 display",
                 }
         from gi.repository import Gtk
