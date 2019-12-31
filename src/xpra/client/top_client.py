@@ -191,7 +191,7 @@ class TopClient(MonitorXpraClient):
     def get_client_info(self, ci):
         #version info:
         ctype = ci.strget("type", "unknown")
-        title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.intget("revision"))
+        title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.strget("revision"))
         #batch delay:
         b_info = typedict(ci.dictget("batch", {}))
         bi_info = typedict(b_info.dictget("delay", {}))
