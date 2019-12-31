@@ -131,8 +131,17 @@ class TopClient(MonitorXpraClient):
                 return
 
             hpos = 6
-            for client_no in range(nclients):
-                ci = self.get_client_info(client_no)
+            client_info = self.slidictget("client")
+            client_no = 0
+            while True:
+                ci = client_info.dictget(client_no)
+                if not ci:
+                    break
+                client_no +=1
+                ci = typedict(ci)
+                if not ci.boolget("windows", True):
+                    continue
+                ci = self.get_client_info(ci)
                 l = len(ci)
                 if hpos+2+l>height:
                     if hpos<height:
@@ -179,9 +188,7 @@ class TopClient(MonitorXpraClient):
             parts = parts[1:]
         return d
 
-    def get_client_info(self, client_no):
-        client_info = self.dictget("client")
-        ci = typedict(client_info.dictget(client_no))
+    def get_client_info(self, ci):
         #version info:
         ctype = ci.strget("type", "unknown")
         title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.intget("revision"))
