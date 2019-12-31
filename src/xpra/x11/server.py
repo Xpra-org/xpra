@@ -972,6 +972,11 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 pwid = packet[10]
                 pointer = packet[11]
                 modifiers = packet[12]
+                if pwid==wid and window.is_OR():
+                    #some clients may send the OR window wid
+                    #this causes focus issues (see #1999)
+                    pwid = -1
+                mouselog("configure pointer data: %s", (pwid, pointer, modifiers))
                 if self._process_mouse_common(proto, pwid, pointer):
                     #only update modifiers if the window is in focus:
                     if self._has_focus==wid:
