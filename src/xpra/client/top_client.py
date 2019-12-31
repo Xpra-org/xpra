@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from xpra import __version__
 from xpra.util import typedict, std, envint, csv, engs
-from xpra.os_util import platform_name, bytestostr
+from xpra.os_util import platform_name, bytestostr, monotonic_time
 from xpra.client.gobject_client_base import MonitorXpraClient
 from xpra.simple_stats import std_unit
 from xpra.common import GRAVITY_STR
@@ -29,6 +29,7 @@ class TopClient(MonitorXpraClient):
         super().__init__(*args)
         self.info_request_pending = False
         self.server_last_info = typedict()
+        self.server_last_info_time = 0
         #curses init:
         self.stdscr = curses.initscr()
         self.stdscr.keypad(True)
@@ -126,7 +127,14 @@ class TopClient(MonitorXpraClient):
             cpuinfo = self.slidictget("cpuinfo")
             if cpuinfo:
                 rinfo += ", %s" % cpuinfo.strget("hz_actual")
-            self.stdscr.addstr(3, 0, rinfo)
+            elapsed = monotonic_time()-self.server_last_info_time
+            color = WHITE
+            if self.server_last_info_time==0:
+                rinfo += " - no server data"
+            elif elapsed>2:
+                rinfo += " - last updated %i seconds ago" % elapsed
+                color = RED
+            self.stdscr.addstr(3, 0, rinfo, curses.color_pair(color))
             if height<=4:
                 return
             #cursor:
@@ -348,5 +356,6 @@ class TopClient(MonitorXpraClient):
     def _process_info_response(self, packet):
         self.info_request_pending = False
         self.server_last_info = typedict(packet[1])
+        self.server_last_info_time = monotonic_time()
         #log.info("server_last_info=%s", self.server_last_info)
         self.update_screen()
