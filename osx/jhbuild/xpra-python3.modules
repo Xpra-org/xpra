@@ -264,9 +264,9 @@
 
 	<distutils id="python3-numpy" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/b7/6f/24647f014eef9b67a24adfcbcd4f4928349b4a0f8393b3d7fe648d4d2de3/numpy-1.16.6.zip"
-			version="1.16.6"
-			hash="sha256:e5cf3fdf13401885e8eea8170624ec96225e2174eb0c611c6f26dd33b489e3ff"/>
+			module="/packages/31/0a/5df350c29a06835d534a6c4f5681075304da38d85f1c69e5226a635a67ce/numpy-1.18.0.zip"
+			version="1.18.0"
+			hash="sha256:a9d72d9abaf65628f0f31bbb573b7d9304e43b1e6bbae43149c17737a42764c4"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
