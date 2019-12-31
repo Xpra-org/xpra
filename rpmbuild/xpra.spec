@@ -870,9 +870,22 @@ fi
 * Fri Dec 27 2019 Antoine Martin <antoine@xpra.org> 3.0.5-1xpra1
 - fix fake Xinerama errors with unicode monitor names
 - fix av-sync backport for python2 servers
+- fix errors when the dbus submodule is not installed
+- fix RFB server key handling
+- fix exit code for unsupported sockets
+- fix tray title with openssh and plink SSH backends
+- fix crashes on win32 shadow exit
+- fix 'xpra upgrade'
+- fix focus problems with OR windows
+- fix wrong client info shown in 'xpra top'
+- fix 'xpra top' error that scrambled the output, flickering
+- allow F11 through to the browser to make it easier to go fullscreen
+- prevent sshfp dns errors from causing ssh connection failures
+- obscure passwords from log files
+- remove duplicated attribute from xpra info
+- better wayland mode detection
 - add more missing files to MANIFEST
 - add v4l2 codec files to clean target
-- add logging to gtk display cleanup
 
 * Thu Dec 19 2019 Antoine Martin <antoine@xpra.org> 3.0.4-1xpra1
 - fix missing undecorated windows on win32
