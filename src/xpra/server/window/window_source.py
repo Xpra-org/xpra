@@ -483,7 +483,6 @@ class WindowSource(WindowIconSource):
                 "idle"                  : self.is_idle,
                 "dimensions"            : self.window_dimensions,
                 "suspended"             : self.suspended or False,
-                "content"               : self.content_type,
                 "bandwidth-limit"       : self.bandwidth_limit,
                 "av-sync"               : {
                                            "enabled"    : self.av_sync,
