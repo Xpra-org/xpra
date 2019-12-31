@@ -124,9 +124,12 @@ class GLXContext:
         self.bit_depth = sum(getconfig(x) for x in (
             GLX.GLX_RED_SIZE, GLX.GLX_GREEN_SIZE, GLX.GLX_BLUE_SIZE, GLX.GLX_ALPHA_SIZE))
         self.props["depth"] = self.bit_depth
-        self.props["has-depth-buffer"] = getconfig(GLX.GLX_DEPTH_SIZE)>0
-        self.props["has-stencil-buffer"] = getconfig(GLX.GLX_STENCIL_SIZE)>0
-        self.props["has-alpha"] = getconfig(GLX.GLX_ALPHA_SIZE)>0
+        #hide those because we don't use them
+        #and because they're misleading: 'has-alpha' may be False
+        #even when we have RGBA support (and therefore very likely to have alpha..)
+        #self.props["has-depth-buffer"] = getconfig(GLX.GLX_DEPTH_SIZE)>0
+        #self.props["has-stencil-buffer"] = getconfig(GLX.GLX_STENCIL_SIZE)>0
+        #self.props["has-alpha"] = getconfig(GLX.GLX_ALPHA_SIZE)>0
         for attrib,name in GLX_ATTRIBUTES.items():
             v = getconfig(attrib)
             if name in ("stereo", "double-buffered", "rgba"):
