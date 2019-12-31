@@ -139,14 +139,29 @@ class TopClient(MonitorXpraClient):
             self.stdscr.addstr(3, 0, rinfo, curses.color_pair(color))
             if height<=4:
                 return
-            #cursor:
+            #display:
+            dinfo = []
+            server = self.slidictget("server")
+            rws = server.intpair("root_window_size", None)
+            if rws:
+                sinfo = "%ix%i display" % (rws[0], rws[1])
+                mds = server.intpair("max_desktop_size")
+                if mds:
+                    sinfo += " (max %ix%i)" % (mds[0], mds[1])
+                dinfo.append(sinfo)
             cursor_info = self.slidictget("cursor")
-            cx, cy = cursor_info.inttupleget("position", (0, 0))
-            self.stdscr.addstr(4, 0, "cursor at %ix%i" % (cx, cy))
+            if cursor_info:
+                cx, cy = cursor_info.inttupleget("position", (0, 0))
+                dinfo.append("cursor at %ix%i" % (cx, cy))
+            self.stdscr.addstr(4, 0, csv(dinfo))
             if height<=5:
                 return
+            hpos = 5
+            gl_info = self.get_gl_info(self.slidictget("opengl"))
+            if gl_info:
+                self.stdscr.addstr(5, 0, gl_info)
+                hpos += 1
 
-            hpos = 6
             if hpos<height-3:
                 hpos += 1
                 if nclients==0:
@@ -218,21 +233,7 @@ class TopClient(MonitorXpraClient):
             cinfo = typedict(cinfo)
             conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
-        gl_info = None
-        gli = ci.dictget("opengl")
-        if gli:
-            gli = typedict(gli)
-            if not gli.boolget("enabled"):
-                gl_info = "OpenGL disabled %s" % gli.strget("message")
-            else:
-                vinfo = ".".join(str(x) for x in gli.inttupleget("opengl", ()))
-                gl_info = "OpenGL %s enabled: %s" % (vinfo, gli.strget("renderer") or gli.strget("vendor"))
-                depth = gli.intget("depth")
-                if depth not in (0, 24):
-                    gl_info += ", %ibits" % depth
-                modes = gli.strtupleget("display_mode")
-                if modes:
-                    gl_info += ", %s" % "+".join(modes)
+        gl_info = self.get_gl_info(ci.dictget("opengl"))
         #batch delay:
         b_info = typedict(ci.dictget("batch", {}))
         bi_info = typedict(b_info.dictget("delay", {}))
@@ -320,9 +321,29 @@ class TopClient(MonitorXpraClient):
         if not wi.boolget("shown"):
             attrs.insert(0, "hidden")
         wtype = wi.strtupleget("window-type", ("NORMAL",))
-        tinfo = "-".join(csv(x) for x in (wtype, attrs) if x)
+        tinfo = " - ".join(csv(x) for x in (wtype, attrs) if x)
         info = (title, g_str, tinfo)
         return tuple((x, WHITE) for x in info if x)
+
+    def get_gl_info(self, gli):
+        if not gli:
+            return None
+        gli = typedict(gli)
+        if not gli.boolget("enabled", True):
+            return "OpenGL disabled %s" % gli.strget("message")
+        vinfo = gli.capsget("opengl")
+        if isinstance(vinfo, (tuple, list)):
+            vinfo = ".".join(str(x) for x in vinfo)
+        gl_info = "OpenGL %s enabled: %s" % (vinfo, gli.strget("renderer") or gli.strget("vendor"))
+        depth = gli.intget("depth")
+        if depth not in (0, 24):
+            gl_info += ", %ibits" % depth
+        modes = gli.capsget("display_mode")
+        if modes:
+            if isinstance(modes, (tuple, list)):
+                modes = csv(bytestostr(x) for x in modes)
+            gl_info += " - %s" % modes
+        return gl_info
 
     def box(self, window, x, y, w, h):
         window.hline(y, x, curses.ACS_HLINE, w-1)               #@UndefinedVariable
