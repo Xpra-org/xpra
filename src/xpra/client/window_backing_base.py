@@ -13,36 +13,24 @@ from xpra.util import typedict, csv, envint, envbool, repr_ellipsized, first_tim
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import bytestostr
+from xpra.common import (
+    NorthWestGravity,
+    NorthGravity,
+    NorthEastGravity,
+    WestGravity,
+    CenterGravity,
+    EastGravity,
+    SouthWestGravity,
+    SouthGravity,
+    SouthEastGravity,
+    StaticGravity,
+    GRAVITY_STR,
+    )
 try:
     from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 except ImportError:
     from xpra.util import xor as xor_str
 from xpra.log import Logger
-
-#X11 constants we use for gravity:
-NorthWestGravity = 1
-NorthGravity     = 2
-NorthEastGravity = 3
-WestGravity      = 4
-CenterGravity    = 5
-EastGravity      = 6
-SouthWestGravity = 7
-SouthGravity     = 8
-SouthEastGravity = 9
-StaticGravity    = 10
-
-GRAVITY_STR = {
-    NorthWestGravity : "NorthWest",
-    NorthGravity     : "North",
-    NorthEastGravity : "NorthEast",
-    WestGravity      : "West",
-    CenterGravity    : "Center",
-    EastGravity      : "East",
-    SouthWestGravity : "SouthWest",
-    SouthGravity     : "South",
-    SouthEastGravity : "SouthEast",
-    StaticGravity    : "South",
-    }
 
 log = Logger("paint")
 deltalog = Logger("delta")
