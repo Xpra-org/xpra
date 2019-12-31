@@ -208,6 +208,21 @@ class TopClient(MonitorXpraClient):
             cinfo = typedict(cinfo)
             conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
+        gl_info = None
+        gli = ci.dictget("opengl")
+        if gli:
+            gli = typedict(gli)
+            if not gli.boolget("enabled"):
+                gl_info = "OpenGL disabled %s" % gli.strget("message")
+            else:
+                vinfo = ".".join(str(x) for x in gli.inttupleget("opengl", ()))
+                gl_info = "OpenGL %s enabled: %s" % (vinfo, gli.strget("renderer") or gli.strget("vendor"))
+                depth = gli.intget("depth")
+                if depth not in (0, 24):
+                    gl_info += ", %ibits" % depth
+                modes = gli.strtupleget("display_mode")
+                if modes:
+                    gl_info += ", %s" % "+".join(modes)
         #batch delay:
         b_info = typedict(ci.dictget("batch", {}))
         bi_info = typedict(b_info.dictget("delay", {}))
@@ -241,6 +256,7 @@ class TopClient(MonitorXpraClient):
         return tuple((s, c) for s,c in (
             (title, WHITE),
             (conn_info, WHITE),
+            (gl_info, WHITE),
             (csv(audio_info), WHITE),
             (batch_info, bcolor),
             (latency_info, lcolor),
