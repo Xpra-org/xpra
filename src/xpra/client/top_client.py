@@ -30,6 +30,7 @@ class TopClient(MonitorXpraClient):
         self.info_request_pending = False
         self.server_last_info = typedict()
         self.server_last_info_time = 0
+        self.info_timer = 0
         #curses init:
         self.stdscr = curses.initscr()
         self.stdscr.keypad(True)
@@ -47,6 +48,7 @@ class TopClient(MonitorXpraClient):
         self.update_screen()
 
     def cleanup(self):
+        self.cancel_info_timer()
         MonitorXpraClient.cleanup(self)
         self.stdscr.keypad(False)
         curses.nocbreak()
@@ -318,7 +320,7 @@ class TopClient(MonitorXpraClient):
         if not wi.boolget("shown"):
             attrs.insert(0, "hidden")
         wtype = wi.strtupleget("window-type", ("NORMAL",))
-        tinfo = "%s - %s" % (csv(wtype), csv(attrs))
+        tinfo = "-".join(csv(x) for x in (wtype, attrs) if x)
         info = (title, g_str, tinfo)
         return tuple((x, WHITE) for x in info if x)
 
@@ -343,6 +345,8 @@ class TopClient(MonitorXpraClient):
             self.info_request_pending = True
             window_ids = ()    #no longer used or supported by servers
             self.send("info-request", [self.uuid], window_ids, categories)
+        if not self.info_timer:
+            self.info_timer = self.timeout_add(REFRESH_RATE+2, self.info_timeout)
         return True
 
     def init_packet_handlers(self):
@@ -354,8 +358,19 @@ class TopClient(MonitorXpraClient):
         self.update_screen()
 
     def _process_info_response(self, packet):
+        self.cancel_info_timer()
         self.info_request_pending = False
         self.server_last_info = typedict(packet[1])
         self.server_last_info_time = monotonic_time()
         #log.info("server_last_info=%s", self.server_last_info)
         self.update_screen()
+
+    def cancel_info_timer(self):
+        it = self.info_timer
+        if it:
+            self.info_timer = None
+            self.source_remove(it)
+
+    def info_timeout(self):
+        self.update_screen()
+        return True
