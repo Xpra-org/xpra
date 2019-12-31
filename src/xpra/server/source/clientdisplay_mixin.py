@@ -33,6 +33,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktops = 1
         self.desktop_names = ()
         self.show_desktop_allowed = False
+        self.opengl_props = {}
 
     def get_info(self) -> dict:
         info = {
@@ -40,6 +41,7 @@ class ClientDisplayMixin(StubSourceMixin):
             "desktops"      : self.desktops,
             "desktop_names" : self.desktop_names,
             "randr_notify"  : self.randr_notify,
+            "opengl"        : self.opengl_props,
             }
         info.update(get_screen_info(self.screen_sizes))
         if self.desktop_mode_size:
@@ -64,6 +66,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.show_desktop_allowed = c.boolget("show-desktop")
         self.icc = c.dictget("icc", {})
         self.display_icc = c.dictget("display-icc", {})
+        self.opengl_props = c.dictget("opengl", {})
 
 
     def set_screen_sizes(self, screen_sizes):

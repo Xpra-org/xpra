@@ -360,6 +360,7 @@ class UIXpraClient(ClientBaseClass):
             updict(caps, prefix, c, flatten_dicts=False)
         u("control_commands",   self.get_control_commands_caps())
         u("platform",           get_platform_info())
+        u("opengl",             self.opengl_props)
         return caps
 
 
