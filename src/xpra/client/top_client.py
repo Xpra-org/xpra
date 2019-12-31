@@ -10,6 +10,7 @@ from xpra import __version__
 from xpra.util import typedict, std, envint, csv, engs
 from xpra.os_util import platform_name, bytestostr
 from xpra.client.gobject_client_base import MonitorXpraClient
+from xpra.simple_stats import std_unit
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -76,8 +77,8 @@ class TopClient(MonitorXpraClient):
             self.stdscr.addstr(0, x, title, curses.A_BOLD)
             if height<=1:
                 return
-            server_info = self.dictget("server")
-            build = self.dictget("build")
+            server_info = self.slidictget("server")
+            build = self.slidictget("build")
             v = build.strget("version")
             revision = build.strget("revision")
             if v and revision:
@@ -86,7 +87,7 @@ class TopClient(MonitorXpraClient):
             python_info = typedict(server_info.dictget("python", {}))
             bits = python_info.intget("bits", 32)
             server_str = "Xpra %s server%s %i-bit" % (mode, std(v), bits)
-            proxy_info = self.dictget("proxy")
+            proxy_info = self.slidictget("proxy")
             if proxy_info:
                 proxy_platform_info = typedict(proxy_info.dictget("platform", {}))
                 proxy_platform = proxy_platform_info.strget("")
@@ -108,7 +109,7 @@ class TopClient(MonitorXpraClient):
             if elapsed_time:
                 td = timedelta(seconds=elapsed_time)
                 uptime = " up %s" % str(td).lstrip("0:")
-            clients_info = self.dictget("clients")
+            clients_info = self.slidictget("clients")
             nclients = clients_info.intget("")
             load_average = ""
             load = sli.inttupleget("load")
@@ -119,22 +120,26 @@ class TopClient(MonitorXpraClient):
                                now.strftime("%H:%M:%S"), uptime, nclients, load_average))
             if height<=3:
                 return
-            thread_info = self.dictget("threads")
+            thread_info = self.slidictget("threads")
             rinfo = "%i threads" % thread_info.intget("count")
-            cpuinfo = self.dictget("cpuinfo")
+            cpuinfo = self.slidictget("cpuinfo")
             if cpuinfo:
                 rinfo += ", %s" % cpuinfo.strget("hz_actual")
             self.stdscr.addstr(3, 0, rinfo)
             if height<=4:
                 return
             #cursor:
-            cursor_info = self.dictget("cursor")
+            cursor_info = self.slidictget("cursor")
             cx, cy = cursor_info.inttupleget("position", (0, 0))
             self.stdscr.addstr(4, 0, "cursor at %ix%i" % (cx, cy))
             if height<=5:
                 return
 
             hpos = 6
+            if hpos<height-3:
+                hpos += 1
+                self.stdscr.addstr(hpos, 0, "%i client%s:" % (nclients, engs(nclients)))
+                hpos += 1
             for client_no in range(nclients):
                 ci = self.get_client_info(client_no)
                 l = len(ci)
@@ -150,10 +155,10 @@ class TopClient(MonitorXpraClient):
                     self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
 
-            windows = self.dictget("windows")
+            windows = self.slidictget("windows")
             if hpos<height-3:
                 hpos += 1
-                self.stdscr.addstr(hpos, 0, "%i windows" % len(windows))
+                self.stdscr.addstr(hpos, 0, "%i window%s:" % (len(windows), engs(windows)))
                 hpos += 1
             wins = tuple(windows.values())
             nwindows = len(wins)
@@ -176,15 +181,16 @@ class TopClient(MonitorXpraClient):
             self.stdscr.addstr(0, 0, str(e))
             self.stdscr.addstr(0, 1, traceback.format_exc())
 
-    def dictget(self, *parts):
-        d = self.server_last_info
-        while parts:
-            d = typedict(d.dictget(parts[0], {}))
-            parts = parts[1:]
+    def slidictget(self, *parts):
+        return self.dictget(self.server_last_info, *parts)
+    def dictget(self, dictinstance, *parts):
+        d = dictinstance
+        for part in parts:
+            d = typedict(d.dictget(part, {}))
         return d
 
     def get_client_info(self, client_no):
-        client_info = self.dictget("client")
+        client_info = self.slidictget("client")
         ci = typedict(client_info.dictget(client_no))
         #version info:
         ctype = ci.strget("type", "unknown")
@@ -213,7 +219,7 @@ class TopClient(MonitorXpraClient):
         elif bcur>100:
             bcolor = RED
         #client latency:
-        pl = self.dictget("connection", "client", "ping_latency")
+        pl = self.slidictget("connection", "client", "ping_latency")
         lcur = pl.intget("cur")
         lavg = pl.intget("avg")
         lmin = pl.intget("min")
@@ -224,12 +230,40 @@ class TopClient(MonitorXpraClient):
                 lcolor = YELLOW
             elif lcur>3*lmin:
                 lcolor = RED
+        audio_info = []
+        for mode in ("speaker", "microphone"):
+            audio_info.append(self._audio_info(ci, mode))
+        audio_info.append(self._avsync_info(ci))
         return (
             (title, WHITE),
             (conn_info, WHITE),
+            (csv(audio_info), WHITE),
             (batch_info, bcolor),
             (latency_info, lcolor),
             )
+
+    def _audio_info(self, ci, mode="speaker"):
+        minfo = self.dictget(ci, "sound", mode)
+        if not minfo:
+            return "%s off" % mode
+        minfo = typedict(minfo)
+        audio_info = "%s: %s" % (mode, minfo.strget("codec_description") or minfo.strget("codec") or minfo.strget("state", "unknown"))
+        bitrate = minfo.intget("bitrate")
+        if bitrate:
+            audio_info += " %sbps" % std_unit(bitrate)
+        return audio_info
+
+    def _avsync_info(self, ci):
+        avsf = self.slidictget("features", "av-sync")
+        if not avsf or not avsf.boolget("", False):
+            return "av-sync: not supported by server"
+        if not avsf.boolget("enabled", False):
+            return "av-sync: disabled by server"
+        #client specific attributes:
+        avsi = self.dictget(ci, "av-sync")
+        if not avsi.boolget("", False):
+            return "av-sync: disabled by client"
+        return "av-sync: enabled - video delay: %ims" % (avsi.intget("total", 0))
 
     def get_window_info(self, wi):
         #version info:
