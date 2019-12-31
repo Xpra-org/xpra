@@ -230,7 +230,7 @@ class TopClient(MonitorXpraClient):
     def get_client_info(self, ci):
         #version info:
         ctype = ci.strget("type", "unknown")
-        title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.intget("revision"))
+        title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.strget("revision"))
         chost = ci.strget("hostname")
         conn_info = ""
         if chost:
