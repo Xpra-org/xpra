@@ -139,7 +139,10 @@ class TopClient(MonitorXpraClient):
             hpos = 6
             if hpos<height-3:
                 hpos += 1
-                self.stdscr.addstr(hpos, 0, "%i client%s:" % (nclients, engs(nclients)))
+                if nclients==0:
+                    self.stdscr.addstr(hpos, 0, "no clients connected")
+                else:
+                    self.stdscr.addstr(hpos, 0, "%i client%s connected:" % (nclients, engs(nclients)))
                 hpos += 1
             for client_no in range(nclients):
                 ci = self.get_client_info(client_no)
@@ -199,11 +202,11 @@ class TopClient(MonitorXpraClient):
         chost = ci.strget("hostname")
         conn_info = ""
         if chost:
-            conn_info = "connected from %s" % chost
+            conn_info = "connected from %s " % chost
         cinfo = ci.dictget("connection")
         if cinfo:
             cinfo = typedict(cinfo)
-            conn_info += " using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
+            conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
         #batch delay:
         b_info = typedict(ci.dictget("batch", {}))
@@ -235,13 +238,13 @@ class TopClient(MonitorXpraClient):
         for mode in ("speaker", "microphone"):
             audio_info.append(self._audio_info(ci, mode))
         audio_info.append(self._avsync_info(ci))
-        return (
+        return tuple((s, c) for s,c in (
             (title, WHITE),
             (conn_info, WHITE),
             (csv(audio_info), WHITE),
             (batch_info, bcolor),
             (latency_info, lcolor),
-            )
+            ) if s)
 
     def _audio_info(self, ci, mode="speaker"):
         minfo = self.dictget(ci, "sound", mode)
@@ -291,11 +294,8 @@ class TopClient(MonitorXpraClient):
         if not wi.boolget("shown"):
             attrs.insert(0, "hidden")
         wtype = wi.strtupleget("window-type", ("NORMAL",))
-        tinfo = csv(wtype)
-        ct = wi.strget("content-type")
-        if ct:
-            tinfo += " - content type: %s" % ct
-        info = (title, g_str, csv(attrs), tinfo)
+        tinfo = "%s - %s" % (csv(wtype), csv(attrs))
+        info = (title, g_str, tinfo)
         return tuple((x, WHITE) for x in info if x)
 
     def box(self, window, x, y, w, h):
