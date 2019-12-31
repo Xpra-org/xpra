@@ -781,10 +781,14 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if not shadowing and POSIX and not OSX and not clobber:
         no_gtk()
         assert starting or starting_desktop or proxying
-        from xpra.server.dbus.dbus_start import start_dbus
-        dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
-        if dbus_env:
-            os.environ.update(dbus_env)
+        try:
+            from xpra.server.dbus.dbus_start import start_dbus
+        except ImportError as e:
+            log("dbus components are not installed: %s", e)
+        else:
+            dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
+            if dbus_env:
+                os.environ.update(dbus_env)
 
     display = None
     if not proxying:

@@ -113,6 +113,14 @@ class X11ServerBase(X11ServerCore):
 
 
     def init_dbus(self, dbus_pid, dbus_env):
+        try:
+            from xpra.server.dbus import dbus_start
+            assert dbus_start
+        except ImportError as e:
+            log("init_dbus(%s, %s)", dbus_pid, dbus_env, exc_info=True)
+            log.warn("Warning: cannot initialize dbus")
+            log.warn(" %s", e)
+            return
         from xpra.server.dbus.dbus_start import (
             get_saved_dbus_pid, get_saved_dbus_env,
             save_dbus_pid, save_dbus_env,
