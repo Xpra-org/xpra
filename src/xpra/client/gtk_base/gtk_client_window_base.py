@@ -818,10 +818,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #if we're changing the maximized state
             state_updates["maximized"] = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
         if event.changed_mask & self.WINDOW_STATE_FOCUSED:
-            if not self.is_OR():
-                state_updates["focused"] = bool(event.new_window_state & Gdk.WindowState.FOCUSED)
-            else:
-                focuslog("OR window %i focus changed to: %s", self._id, bool(event.new_window_state & Gdk.WindowState.FOCUSED))
+            state_updates["focused"] = bool(event.new_window_state & Gdk.WindowState.FOCUSED)
         self.update_window_state(state_updates)
 
     def update_window_state(self, state_updates):
@@ -1834,8 +1831,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         sx, sy, sw, sh = cx(x), cy(y), cx(w), cy(h)
         packet = ["configure-window", self._id, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
         if self._client.window_configure_pointer:
-            #window id is redundant (now that we removed an OSX focus workaround)
-            packet.append(self._id)
+            pwid = self._id
+            if self.is_OR():
+                pwid = -1
+            packet.append(pwid)
             packet.append(self._client.get_mouse_position())
             packet.append(self._client.get_current_modifiers())
         geomlog("%s", packet)
