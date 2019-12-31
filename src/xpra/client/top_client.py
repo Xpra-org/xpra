@@ -11,6 +11,7 @@ from xpra.util import typedict, std, envint, csv, engs
 from xpra.os_util import platform_name, bytestostr
 from xpra.client.gobject_client_base import MonitorXpraClient
 from xpra.simple_stats import std_unit
+from xpra.common import GRAVITY_STR
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -271,7 +272,12 @@ class TopClient(MonitorXpraClient):
         g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
         sc = wi.dictget("size-constraints")
         if sc:
-            g_str += " - %s" % csv("%s=%s" % (bytestostr(k), v) for k,v in sc.items())
+            def sc_str(k, v):
+                k = bytestostr(k)
+                if k=="gravity":
+                    v = GRAVITY_STR.get(v, v)
+                return "%s=%s" % (k, str(v))
+            g_str += " - %s" % csv(sc_str(k, v) for k,v in sc.items())
         title = wi.strget("title", "")
         attrs = [
             x for x in (
