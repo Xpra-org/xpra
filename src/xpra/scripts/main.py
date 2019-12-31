@@ -1653,8 +1653,12 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 may_notify(XPRA_FAILURE_NOTIFICATION_ID, summary, body, icon_name="disconnected")  #pylint: disable=not-callable
             app.cleanup()
             raise
-    display_desc = pick_display(error_cb, opts, extra_args)
-    connect_to_server(app, display_desc, opts)
+    try:
+        display_desc = pick_display(error_cb, opts, extra_args)
+        connect_to_server(app, display_desc, opts)
+    except Exception:
+        app.cleanup()
+        raise
     return app
 
 def run_opengl_probe():
