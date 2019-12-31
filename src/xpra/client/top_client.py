@@ -31,6 +31,7 @@ class TopClient(MonitorXpraClient):
         self.stdscr = curses.initscr()
         self.stdscr.keypad(True)
         self.stdscr.nodelay(True)
+        self.stdscr.clear()
         curses.noecho()
         curses.cbreak()
         curses.start_color()
@@ -51,7 +52,7 @@ class TopClient(MonitorXpraClient):
         curses.endwin()
 
     def update_screen(self):
-        self.stdscr.clear()
+        self.stdscr.erase()
         try:
             self.do_update_screen()
         finally:
