@@ -177,7 +177,13 @@ class TopClient(MonitorXpraClient):
                     break
                 client_no +=1
                 ci = typedict(ci)
-                if not ci.boolget("windows", True):
+                session_id = ci.strget("session-id")
+                if session_id:
+                    #don't show ourselves:
+                    if session_id==self.session_id:
+                        continue
+                elif not ci.boolget("windows", True):
+                    #for older servers, hide any client that doesn't display windows:
                     continue
                 ci = self.get_client_info(ci)
                 l = len(ci)

@@ -6,6 +6,7 @@
 
 import os
 import sys
+import uuid
 import signal
 import socket
 import string
@@ -124,6 +125,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.server_capabilities = None
         self.completed_startup = False
         self.uuid = get_user_uuid()
+        self.session_id = uuid.uuid4().hex
         self.init_packet_handlers()
         self.have_more = noop
         sanity_checks()
@@ -375,6 +377,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "websocket.multi-packet": True,
                 "hostname"              : socket.gethostname(),
                 "uuid"                  : self.uuid,
+                "session-id"            : self.session_id,
                 "username"              : self.username,
                 "name"                  : get_name(),
                 "client_type"           : self.client_type(),

@@ -22,6 +22,7 @@ class ClientInfoMixin(StubSourceMixin):
 
     def init_state(self):
         self.uuid = ""
+        self.session_id = ""
         self.machine_id = ""
         self.hostname = ""
         self.username = ""
@@ -53,6 +54,7 @@ class ClientInfoMixin(StubSourceMixin):
 
     def parse_client_caps(self, c):
         self.uuid = c.strget("uuid")
+        self.session_id = c.strget("session-id")
         self.machine_id = c.strget("machine_id")
         self.hostname = c.strget("hostname")
         self.username = c.strget("username")
@@ -138,6 +140,7 @@ class ClientInfoMixin(StubSourceMixin):
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
                 "session-type"      : self.client_session_type,
                 "session-type.full" : self.client_session_type_full,
+                "session-id"        : self.session_id,
                 "uuid"              : self.uuid,
                 "hostname"          : self.hostname or "",
                 "argv"              : self.argv,
