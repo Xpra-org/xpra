@@ -307,7 +307,7 @@ def set_server_features(opts):
     server_features.mmap            = b(opts.mmap)
     server_features.input_devices   = not opts.readonly and impcheck("keyboard")
     server_features.commands        = impcheck("server.control_command")
-    server_features.dbus            = opts.dbus_proxy and impcheck("dbus")
+    server_features.dbus            = opts.dbus_proxy and impcheck("dbus", "server.dbus")
     server_features.encoding        = impcheck("codecs")
     server_features.logging         = b(opts.remote_logging)
     #server_features.network_state   = ??
