@@ -16,12 +16,14 @@ class AnimatedColorWindow(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 320)
         self.set_app_paintable(True)
-        self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
+        self.set_events(Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
         self.counter = 0
-        self.increase = False
+        self.increase = True
+        self.last_event = None
         self.connect("draw", self.area_draw)
         self.connect("destroy", Gtk.main_quit)
-        self.connect("key_press_event", self.on_key_press)
+        self.connect("key_press_event", self.on_press)
+        self.connect("button_press_event", self.on_press)
         self.show_all()
         GLib.timeout_add(50, self.repaint)
 
@@ -29,7 +31,10 @@ class AnimatedColorWindow(Gtk.Window):
         cr = self.get_window().cairo_create()
         self.area_draw(self, cr)
 
-    def on_key_press(self, *_args):
+    def on_press(self, _window, event):
+        if event==self.last_event:
+            return
+        self.last_event = event
         self.increase = not self.increase
 
     def repaint(self):

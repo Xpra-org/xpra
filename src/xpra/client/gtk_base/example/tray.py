@@ -24,6 +24,10 @@ class FakeApplication:
         self.mmap_enabled = False
         self.windows_enabled = True
         self.readonly = False
+        self.opengl_enabled = False
+        self.modal_windows = False
+        self.server_bell = False
+        self.server_cursors = False
         self.server_readonly = False
         self.server_client_shutdown = True
         self.server_sharing = True
@@ -35,6 +39,15 @@ class FakeApplication:
         self.server_webcam = True
         self.server_sound_send = True
         self.server_sound_receive = True
+        self.server_clipboard = False
+        self.server_bandwidth_limit_change = 0
+        self.server_encodings = ["png", "rgb"]
+        self.server_encodings_problematic = []
+        self.server_encodings_with_quality = []
+        self.server_encodings_with_speed = []
+        self.server_start_new_commands = True
+        self.server_xdg_menu = False
+        self.server_commands_info = None        
         self.speaker_allowed = True
         self.speaker_enabled = True
         self.microphone_enabled = True
@@ -64,6 +77,10 @@ class FakeApplication:
         self.yscale = 1.0
         self.quality = 80
         self.speed = 50
+        self.encoding = "png"
+        def noop(*_args):
+            pass
+        self._process_encodings = noop
         try:
             from xpra.client.gtk3.tray_menu import GTK3TrayMenu as GTKTrayMenu
         except ImportError as e:

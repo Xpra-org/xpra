@@ -41,9 +41,9 @@ class FontWindow(Gtk.Window):
         layout = PangoCairo.create_layout(cr)
         pctx = layout.get_context()
         print("PangoContext: %s (%s)" % (pctx, type(pctx)))
-        print("PangoContext: %s" % dir(pctx))
+        #print("PangoContext: %s" % dir(pctx))
         print(" font map=%s" % pctx.get_font_map())
-        print(" families=%s" % pctx.list_families())
+        #print(" families=%s" % pctx.list_families())
         print(" font description=%s" % pctx.get_font_description())
         print(" language=%s" % pctx.get_language())
         print(" get_base_dir=%s" % pctx.get_base_dir())
@@ -77,7 +77,7 @@ class FontWindow(Gtk.Window):
                     vdata = v.get_data()
                     ndata = none.get_data()
                     for i in range(len(vdata)):
-                        vdata[i] = chr(ord(vdata[i]) ^ ord(ndata[i]))
+                        vdata[i] = vdata[i] ^ ndata[i]
                     #paint the resulting image:
                     cr.set_operator(cairo.OPERATOR_SOURCE)
                     cr.set_source_surface(v, (x+2)*bw, (y+yoffset)*bh)

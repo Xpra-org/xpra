@@ -19,7 +19,7 @@ class BellWindow(Gtk.Window):
         self.set_default_size(320, 120)
         self.set_title("Test System Bell")
         self.connect("destroy", Gtk.main_quit)
-        btn = Gtk.Button("default bell")
+        btn = Gtk.Button(label="default bell")
         btn.connect('clicked', self.bell)
         self.add(btn)
         self.show_all()
