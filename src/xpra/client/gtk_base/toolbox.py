@@ -60,29 +60,56 @@ class ToolboxGUI(Gtk.Window):
         self.vbox = Gtk.VBox(False, 10)
         self.add(self.vbox)
 
-        self.vbox.add(label("Colors:", font="sans 16"))
+        self.vbox.add(self.label("Colors:"))
         hbox = Gtk.HBox(False, 10)
         self.vbox.add(hbox)
         epath = "./example/"
         hbox.add(self.button("Squares", "Shows RGB+Grey squares in a window", epath+"colors_plain.py"))
-        hbox.add(self.button("Animated Squares", "Shows RGB+Grey squares animated", epath+"colors.py"))
-        hbox.add(self.button("Gradient", "Shows color gradients and visualize bit depth clipping", epath+"colors_gradient.py"))
+        hbox.add(self.button("Animated", "Shows RGB+Grey squares animated", epath+"colors.py"))
+        hbox.add(self.button("Bit Depth", "Shows color gradients and visualize bit depth clipping", epath+"colors_gradient.py"))
         #hbox.add(self.button("GL Colors Gradient", "Shows gradients and visualize bit depth clipping", "encoding.png", None))
 
-        self.vbox.add(label("Transparency:", font="sans 16"))
+        self.vbox.add(self.label("Transparency:"))
         hbox = Gtk.HBox(False, 10)
         self.vbox.add(hbox)
         hbox.add(self.button("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window.py"))
         hbox.add(self.button("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors.py"))
 
-        self.vbox.add(label("Misc:", font="sans 16"))
+        self.vbox.add(self.label("Widgets:"))
+        hbox = Gtk.HBox(False, 10)
+        self.vbox.add(hbox)
+        hbox.add(self.button("Text Entry", "Simple text entry widget", epath+"text_entry.py"))
+        hbox.add(self.button("File Selector", "Open the file selector widget", epath+"file_chooser.py"))
+        hbox.add(self.button("Header Bar", "Window with a custom header bar", epath+"header_bar.py"))
+
+        self.vbox.add(self.label("Events:"))
+        hbox = Gtk.HBox(False, 10)
+        self.vbox.add(hbox)
+        hbox.add(self.button("Grabs", "Test keyboard and pointer grabs", epath+"grabs.py"))
+        hbox.add(self.button("Clicks", "Double and triple click events", epath+"clicks.py"))
+        hbox.add(self.button("Focus", "Shows window focus events", epath+"window_focus.py"))
+
+        self.vbox.add(self.label("Windows:"))
+        hbox = Gtk.HBox(False, 10)
+        self.vbox.add(hbox)
+        hbox.add(self.button("States", "Toggle various window attributes", epath+"window_states.py"))
+        hbox.add(self.button("Title", "Update the window title", epath+"window_title.py"))
+        hbox.add(self.button("Opacity", "Change window opacity", epath+"window_opacity.py"))
+        hbox.add(self.button("Transient", "Show transient windows", epath+"window_transient.py"))
+        hbox.add(self.button("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect.py"))
+
+        self.vbox.add(self.label("Misc:"))
         hbox = Gtk.HBox(False, 10)
         self.vbox.add(hbox)
         hbox.add(self.button("Tray", "Show a system tray icon", epath+"tray.py"))
         hbox.add(self.button("Font Rendering", "Render characters with and without anti-aliasing", epath+"fontrendering.py"))
         hbox.add(self.button("Bell", "Test system bell", epath+"bell.py"))
+        hbox.add(self.button("Cursors", "Show named cursors", epath+"cursors.py"))
 
         self.vbox.show_all()
+
+    def label(self, text):
+        return label(text, font="sans 14")
 
     def button(self, label, tooltip, module):
         def cb(_btn):
