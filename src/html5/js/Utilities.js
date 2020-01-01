@@ -167,20 +167,20 @@ var Utilities = {
 			return "us";
 		}
 		var layout = LANGUAGE_TO_LAYOUT[v];
-		if (layout) {
-			return layout;
+		if (!layout) {
+			//ie: v="en_GB";
+			v = v.split(',')[0];
+			var l = v.split('-', 2);
+			if (l.length === 1){
+				l = v.split('_', 2);
+			}
+			//ie: "en"
+			layout=l[1].toLowerCase();
+			var tmp = LANGUAGE_TO_LAYOUT[v];
+			if (tmp) {
+				layout = tmp;
+			}
 		}
-		//ie: v="en_GB";
-		v = v.split(',')[0];
-		var l = v.split('-', 2);
-		if (l.length === 1){
-			l = v.split('_', 2);
-		}
-		if (l.length === 1){
-			return '';
-		}
-		//ie: "gb"
-		layout=l[1].toLowerCase();
 		console.debug("getKeyboardLayout()=", layout);
 		return layout;
 	},
@@ -637,4 +637,6 @@ var MOVERESIZE_DIRECTION_JS_NAME = {
 //convert a language code into an X11 keyboard layout code:
 var LANGUAGE_TO_LAYOUT = {
 		"da"	: "dk",
+		"en_GB"	: "gb",
+		"en"	: "us",
 }
