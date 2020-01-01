@@ -526,6 +526,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode=="version-info":
             from xpra.scripts import version
             return version.main()
+        elif mode=="toolbox":
+            from xpra.client.gtk_base import toolbox
+            return toolbox.main()
         elif mode=="colors-test":
             from xpra.client.gtk_base.example import colors
             return colors.main()
