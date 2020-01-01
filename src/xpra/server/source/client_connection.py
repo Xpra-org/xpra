@@ -13,7 +13,7 @@ from queue import Queue
 
 from xpra.make_thread import start_thread
 from xpra.os_util import monotonic_time
-from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, typedict, AtomicInteger
+from xpra.util import merge_dicts, notypedict, envbool, envint, typedict, AtomicInteger
 from xpra.net.compression import compressed_wrapper, Compressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.clientinfo_mixin import ClientInfoMixin
