@@ -790,7 +790,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             if dbus_env:
                 os.environ.update(dbus_env)
 
-    display = None
     if not proxying:
         if POSIX and not OSX:
             no_gtk()
