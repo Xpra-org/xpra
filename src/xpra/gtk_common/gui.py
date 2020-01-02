@@ -19,7 +19,6 @@ from xpra.platform.paths import get_icon_dir, get_xpra_command
 from xpra.os_util import OSX, WIN32, platform_name
 from xpra.log import Logger
 from xpra.gtk_common.about import about
-from json import tool
 
 log = Logger("client", "util")
 
