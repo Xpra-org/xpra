@@ -192,7 +192,6 @@ class GUI(Gtk.Window):
 
 
     def show_about(self, *_args):
-        from xpra.gtk_common.about import about
         about()
 
     def start_shadow(self, *_args):
