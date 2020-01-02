@@ -28,7 +28,10 @@ log = Logger("client", "util")
 def exec_command(cmd):
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
-    proc = subprocess.Popen(cmd, env=env)
+    creationflags = 0
+    if WIN32:
+        creationflags = subprocess.CREATE_NO_WINDOW
+    proc = subprocess.Popen(cmd, env=env, creationflags=creationflags)
     log("exec_command(%s)=%s", cmd, proc)
     return proc
 
