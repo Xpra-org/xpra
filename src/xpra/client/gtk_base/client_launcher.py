@@ -175,36 +175,23 @@ class ApplicationWindow:
         self.window.connect("delete-event", self.destroy)
         self.window.set_default_size(400, 260)
         self.window.set_title("Xpra Launcher")
-
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
-        vbox = Gtk.VBox(False, 0)
-        vbox.set_spacing(15)
-
-        #top row:
-        hbox = Gtk.HBox(False, 0)
-        # About dialog (and window icon):
-        icon_pixbuf = self.get_icon("xpra.png")
-        if icon_pixbuf:
-            self.window.set_icon(icon_pixbuf)
-            logo_button = self.image_button("", "About", icon_pixbuf, about)
-            hbox.pack_start(logo_button, expand=False, fill=False)
-        # Bug report tool link:
-        icon_pixbuf = self.get_icon("bugs.png")
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "Session Launcher"
+        self.window.set_titlebar(hb)
+        hb.add(self.button("About", "help-about", about))
         self.bug_tool = None
-        if icon_pixbuf:
-            def bug(*_args):
-                if self.bug_tool is None:
-                    from xpra.client.gtk_base.bug_report import BugReport
-                    self.bug_tool = BugReport()
-                    self.bug_tool.init(show_about=False)
-                self.bug_tool.show()
-            bug_button = self.image_button("", "Bug Report", icon_pixbuf, bug)
-            hbox.pack_start(bug_button, expand=False, fill=False)
-        # Session browser link:
-        icon_pixbuf = self.get_icon("mdns.png")
-        self.mdns_gui = None
-        if icon_pixbuf and has_mdns():
+        def bug(*_args):
+            if self.bug_tool is None:
+                from xpra.client.gtk_base.bug_report import BugReport
+                self.bug_tool = BugReport()
+                self.bug_tool.init(show_about=False)
+            self.bug_tool.show()
+        hb.add(self.button("Bug Report", "bugs", bug))
+        if has_mdns():
+            self.mdns_gui = None
             def mdns(*_args):
                 if self.mdns_gui is None:
                     from xpra.client.gtk_base.mdns_gui import mdns_sessions
@@ -215,14 +202,16 @@ class ApplicationWindow:
                     self.mdns_gui.do_quit = close_mdns
                 else:
                     self.mdns_gui.present()
-            mdns_button = self.image_button("", "Browse Sessions", icon_pixbuf, mdns)
-            hbox.pack_start(mdns_button, expand=False, fill=False)
+            hb.add(self.button("Browse Sessions", "mdns", mdns))
+        hb.show_all()
+
+        vbox = Gtk.VBox(False, 0)
+        vbox.set_spacing(15)
 
         # Title
         label = Gtk.Label("Connect to xpra server")
         label.modify_font(Pango.FontDescription("sans 14"))
-        hbox.pack_start(label, expand=True, fill=True)
-        vbox.pack_start(hbox)
+        vbox.pack_start(label)
 
         # Mode:
         hbox = Gtk.HBox(False, 5)
@@ -438,6 +427,31 @@ class ApplicationWindow:
         self.advanced_options_toggled()
         self.window.vbox = vbox
         self.window.add(vbox)
+
+    def button(self, tooltip, icon_name, callback):
+        button = Gtk.Button()
+        theme = Gtk.IconTheme.get_default()
+        try:
+            pixbuf = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
+        except:
+            pixbuf = None
+        if not pixbuf:
+            icon_filename = os.path.join(get_icon_dir(), "%s.png" % icon_name)
+            if os.path.exists(icon_filename):
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+            if pixbuf:
+                for size in (16, 32, 48):
+                    scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
+                    Gtk.IconTheme.add_builtin_icon(icon_name, size, scaled)
+                pixbuf = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
+        if pixbuf:
+            image = Gtk.Image.new_from_pixbuf(pixbuf)
+            button.add(image)
+        button.set_tooltip_text(tooltip)
+        def clicked(*_args):
+            callback()
+        button.connect("clicked", clicked)
+        return button
 
     def accel_close(self, *args):
         log("accel_close%s", args)
