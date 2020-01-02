@@ -66,7 +66,7 @@ class GUI(Gtk.Window):
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
-        hb.props.title = "HeaderBar example"
+        hb.props.title = "Xpra"
         self.set_titlebar(hb)
         hb.add(self.button("About", "help-about", about))
         try:
