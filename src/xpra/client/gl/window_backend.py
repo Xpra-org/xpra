@@ -188,14 +188,13 @@ def main():
     try:
         opengl_props, gl_client_window_module = get_gl_client_window_module(True)
         log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
-        if True:
-            gl_client_window_class = gl_client_window_module.GLClientWindow
-            pixel_depth = 0
-            log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
-            #if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
-            #    pixel_depth = 0
-            draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=True)
-            opengl_props.update(draw_result)
+        gl_client_window_class = gl_client_window_module.GLClientWindow
+        pixel_depth = 0
+        log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
+        #if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
+        #    pixel_depth = 0
+        draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=True)
+        opengl_props.update(draw_result)
         return 0
     except Exception:
         log("do_run_glcheck(..)", exc_info=True)
