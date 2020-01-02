@@ -200,7 +200,7 @@ def _get_xpra_exe_command(*cmd_options):
     for cmd in cmd_options:
         exe_name = "%s.exe" % cmd
         if sys.executable.lower().endswith(exe_name):
-            #prefer the same executable we were launch from:
+            #prefer the same executable we were launched from:
             return [sys.executable]
         #try to find it in exe dir:
         exe = os.path.join(exe_dir, exe_name)
@@ -214,6 +214,8 @@ def _get_xpra_exe_command(*cmd_options):
             #the python interpreter to use with the scripts:
             py = os.path.join(mingw, "bin", "python3.exe")
             if os.path.exists(py):
+                if cmd.lower() in ("python", "python3"):
+                    return [py]
                 #ie: /e/Xpra/trunk/src/dist/scripts/xpra
                 script = os.path.join(os.getcwd(), "scripts", cmd.lower())
                 if os.path.exists(script) and os.path.isfile(script):
@@ -236,3 +238,6 @@ def do_get_xpra_command():
     if sl.endswith("xpra_cmd.exe") or sl.endswith("xpra.exe"):
         return [sys.executable]
     return _get_xpra_exe_command("Xpra", "Xpra_cmd")
+
+def do_get_python_execfile_command():
+    return _get_xpra_exe_command("Python_execfile_gui", "Python")

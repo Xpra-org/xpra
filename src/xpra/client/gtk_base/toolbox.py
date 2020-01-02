@@ -18,8 +18,8 @@ from xpra.gtk_common.gtk_util import (
     add_window_accel, imagebutton,
     label,
     )
-from xpra.platform.paths import get_icon_dir
-from xpra.os_util import OSX
+from xpra.platform.paths import get_icon_dir, get_python_execfile_command
+from xpra.os_util import OSX, WIN32
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -63,7 +63,7 @@ class ToolboxGUI(Gtk.Window):
         self.vbox.add(self.label("Colors:"))
         hbox = Gtk.HBox(False, 10)
         self.vbox.add(hbox)
-        epath = "./example/"
+        epath = "example/"
         cpath = "../"
         gpath = "../../gtk_common/"
         hbox.add(self.button("Squares", "Shows RGB+Grey squares in a window", epath+"colors_plain.py"))
@@ -120,12 +120,20 @@ class ToolboxGUI(Gtk.Window):
     def label(self, text):
         return label(text, font="sans 14")
 
-    def button(self, label, tooltip, module):
+    def button(self, label, tooltip, relpath):
         def cb(_btn):
             cp = os.path.dirname(__file__)
-            script = os.path.join(cp, module)
-            #TODO: win32 needs a python runner command
-            exec_command(script)
+            script = os.path.join(cp, relpath)
+            if WIN32 and os.path.sep=="/":
+                script = script.replace("/", "\\")
+            if not os.path.exists(script):
+                if os.path.exists(script+"c"):
+                    script += "c"
+                else:
+                    log.warn("Warning: cannot find '%s'", os.path.basename(relpath))
+                    return
+            cmd = get_python_execfile_command()+[script]
+            exec_command(cmd)
         return imagebutton(label, None,
                            tooltip, clicked_callback=cb,
                            icon_size=48)

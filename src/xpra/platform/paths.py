@@ -12,7 +12,6 @@ import sys
 from xpra.platform import platform_import
 
 
-
 def valid_dir(path):
     try:
         return bool(path) and os.path.exists(path) and os.path.isdir(path)
@@ -254,6 +253,15 @@ def get_sound_command():
 def do_get_sound_command():
     return get_xpra_command()
 
+def get_python_execfile_command():
+    envvalue = os.environ.get("XPRA_PYTHON_COMMAND")
+    if envvalue:
+        import shlex
+        return shlex.split(envvalue)
+    return do_get_python_execfile_command()
+def do_get_python_execfile_command():
+    return ["python"]
+
 
 platform_import(globals(), "paths", True,
                 "do_get_resources_dir",
@@ -278,6 +286,7 @@ platform_import(globals(), "paths", False,
                 "do_get_xpra_tmp_dir",
                 "do_get_script_bin_dirs",
                 "do_get_desktop_background_paths",
+                "do_get_python_execfile_command",
                 )
 
 def get_info():
@@ -311,6 +320,7 @@ def get_info():
         "nodock_command"    : get_nodock_command(),
         "sound_command"     : get_sound_command(),
         "sshpass_command"   : get_sshpass_command(),
+        "python-execfile"   : get_python_execfile_command(),
         }
 
 

@@ -23,5 +23,12 @@ if not os.path.exists(filename):
 cwd = os.getcwd()
 if cwd not in sys.path:
     sys.path.append(cwd)
-exec(open(filename).read())
+fdata = open(filename, 'rb').read()
+if filename.endswith(".pyc"):
+    from importlib.util import MAGIC_NUMBER
+    assert fdata.startswith(MAGIC_NUMBER), "not a python compiled file, or version mismatch"
+    import marshal
+    #16 is the magic value for python 3.8:
+    fdata = marshal.loads(fdata[16:])
+exec(fdata)
 ret(0)
