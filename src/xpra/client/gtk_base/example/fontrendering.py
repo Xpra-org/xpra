@@ -30,7 +30,7 @@ class FontWindow(Gtk.Window):
     def __init__(self):
         super().__init__()
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_default_size(1600, 1200)
+        self.set_default_size(800, 600)
         self.set_app_paintable(True)
         self.connect("draw", self.area_draw)
         self.connect("destroy", Gtk.main_quit)
