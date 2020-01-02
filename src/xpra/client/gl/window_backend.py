@@ -4,9 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import typedict, envint, AdHocStruct, AtomicInteger
+import sys
+import os.path
+from io import BytesIO
+from math import cos, sin
+
+from xpra.util import typedict, envint, AdHocStruct, AtomicInteger, iround
 from xpra.os_util import WIN32
 from xpra.log import Logger
+from xpra.platform.paths import get_icon_filename
 
 log = Logger("opengl", "paint")
 
@@ -84,6 +90,8 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         if show:
             x, y = 100, 100
         w, h = 250, 250
+        from xpra.codecs.loader import load_codec
+        load_codec("dec_pillow")
         from xpra.client.window_border import WindowBorder
         border = WindowBorder()
         default_cursor_data = None
@@ -115,10 +123,39 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
                 })
         log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
         pix = AtomicInteger(0x7f)
-        REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", 0)
+        REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", int(show)*16)
+        gl_icon = get_icon_filename("opengl", ext="png")
+        icon_data = None
+        if os.path.exists(gl_icon):
+            from PIL import Image
+            img = Image.open(gl_icon)
+            img.load()
+            icon_w, icon_h = img.size
+            icon_stride = icon_w * 4
+            noalpha = Image.new("RGB", img.size, (255, 255, 255))
+            noalpha.paste(img, mask=img.split()[3]) # 3 is the alpha channel
+            buf = BytesIO()
+            noalpha.save(buf, format="JPEG")
+            icon_data = buf.getvalue()
+            buf.close()
+            icon_format = "jpeg"
+        if not icon_data:
+            icon_w = 32
+            icon_h = 32
+            icon_stride = icon_w * 4
+            icon_data = bytes([0])*icon_stride*icon_h
+            icon_format = "rgb32"
         def draw():
-            img_data = bytes([pix.increase() % 256]*stride*h)
-            window.draw_region(0, 0, w, h, coding, img_data, stride, 1, options, [paint_callback])
+            v = pix.increase()
+            img_data = bytes([v % 256]*stride*h)
+            options["flush"] = 1
+            window.draw_region(0, 0, w, h, coding, img_data, stride, v, options, [paint_callback])
+            options["flush"] = 0
+            mx = w//2-icon_w//2
+            my = h//2-icon_h//2
+            x = iround(mx*(1+sin(v/100)))
+            y = iround(my*(1+cos(v/100)))
+            window.draw_region(x, y, icon_w, icon_h, icon_format, icon_data, icon_stride, v, options, [paint_callback])
             return REPAINT_DELAY>0
         #the paint code is actually synchronous here,
         #so we can check the present_fbo() result:
@@ -143,3 +180,27 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
             window.destroy()
     log("test_gl_client_window(..) draw_result=%s", draw_result)
     return draw_result
+
+
+
+def main():
+    log = Logger("opengl")
+    try:
+        opengl_props, gl_client_window_module = get_gl_client_window_module(True)
+        log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
+        if True:
+            gl_client_window_class = gl_client_window_module.GLClientWindow
+            pixel_depth = 0
+            log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
+            #if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
+            #    pixel_depth = 0
+            draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=True)
+            opengl_props.update(draw_result)
+        return 0
+    except Exception:
+        log("do_run_glcheck(..)", exc_info=True)
+        return 1
+
+if __name__ == "__main__":
+    r = main()
+    sys.exit(r)

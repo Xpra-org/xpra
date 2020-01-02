@@ -64,16 +64,19 @@ class ToolboxGUI(Gtk.Window):
         hbox = Gtk.HBox(False, 10)
         self.vbox.add(hbox)
         epath = "./example/"
+        cpath = "../"
+        gpath = "../../gtk_common/"
         hbox.add(self.button("Squares", "Shows RGB+Grey squares in a window", epath+"colors_plain.py"))
         hbox.add(self.button("Animated", "Shows RGB+Grey squares animated", epath+"colors.py"))
         hbox.add(self.button("Bit Depth", "Shows color gradients and visualize bit depth clipping", epath+"colors_gradient.py"))
         #hbox.add(self.button("GL Colors Gradient", "Shows gradients and visualize bit depth clipping", "encoding.png", None))
 
-        self.vbox.add(self.label("Transparency:"))
+        self.vbox.add(self.label("Transparency and Rendering"))
         hbox = Gtk.HBox(False, 10)
         self.vbox.add(hbox)
         hbox.add(self.button("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window.py"))
         hbox.add(self.button("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors.py"))
+        hbox.add(self.button("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl/window_backend.py"))
 
         self.vbox.add(self.label("Widgets:"))
         hbox = Gtk.HBox(False, 10)
@@ -97,6 +100,12 @@ class ToolboxGUI(Gtk.Window):
         hbox.add(self.button("Opacity", "Change window opacity", epath+"window_opacity.py"))
         hbox.add(self.button("Transient", "Show transient windows", epath+"window_transient.py"))
         hbox.add(self.button("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect.py"))
+
+        self.vbox.add(self.label("Keyboard and Clipboard:"))
+        hbox = Gtk.HBox(False, 10)
+        self.vbox.add(hbox)
+        hbox.add(self.button("Keyboard", "Keyboard event viewer", gpath+"gtk_view_keyboard.py"))
+        hbox.add(self.button("Clipboard", "Clipboard event viewer", gpath+"gtk_view_clipboard.py"))
 
         self.vbox.add(self.label("Misc:"))
         hbox = Gtk.HBox(False, 10)
