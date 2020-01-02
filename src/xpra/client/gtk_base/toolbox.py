@@ -132,16 +132,12 @@ class ToolboxGUI(Gtk.Window):
 
     def quit(self, *args):
         log("quit%s", args)
-        self.do_quit()
-
-    def do_quit(self):
-        log("do_quit()")
         Gtk.main_quit()
 
     def app_signal(self, signum):
         self.exit_code = 128 + signum
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
-        self.do_quit()
+        self.quit()
 
     def show_about(self, *_args):
         from xpra.gtk_common.about import about
@@ -167,7 +163,7 @@ def main():
             gui.show()
         Gtk.main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
-        return 0
+        return gui.exit_code
 
 
 if __name__ == "__main__":

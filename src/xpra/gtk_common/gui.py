@@ -7,7 +7,7 @@
 import sys
 import os.path
 import subprocess
-from gi.repository import GLib, Pango, Gtk, Gdk, GdkPixbuf
+from gi.repository import GLib, Pango, Gtk, Gdk, Gio, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
@@ -18,6 +18,8 @@ from xpra.gtk_common.gtk_util import (
 from xpra.platform.paths import get_icon_dir, get_xpra_command
 from xpra.os_util import OSX, WIN32, platform_name
 from xpra.log import Logger
+from xpra.gtk_common.about import about
+from json import tool
 
 log = Logger("client", "util")
 
@@ -62,6 +64,27 @@ class GUI(Gtk.Window):
         self.exit_code = 0
         self.start_session = None
         Gtk.Window.__init__(self)
+
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "HeaderBar example"
+        self.set_titlebar(hb)
+        hb.add(self.button("About", "help-about", about))
+        try:
+            from xpra.client.gtk_base.toolbox import ToolboxGUI
+        except ImportError:
+            pass
+        else:
+            def show():
+                w = None
+                def hide(*_args):
+                    w.hide()
+                ToolboxGUI.quit = hide
+                w = ToolboxGUI()
+                w.show()
+            hb.add(self.button("Toolbox", "applications-utilities", show))
+            hb.show_all()
+
         self.set_title(title)
         self.set_border_width(10)
         self.set_resizable(True)
@@ -129,6 +152,17 @@ class GUI(Gtk.Window):
             self.reset_cursors()
         self.connect("focus-in-event", focus_in)
         self.connect("focus-out-event", focus_out)
+
+    def button(self, tooltip, icon_name, callback):
+        button = Gtk.Button()
+        icon = Gio.ThemedIcon(name=icon_name)
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        button.add(image)
+        button.set_tooltip_text(tooltip)
+        def clicked(*_args):
+            callback()
+        button.connect("clicked", clicked)
+        return button
 
     def quit(self, *args):
         log("quit%s", args)
