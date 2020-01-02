@@ -2,16 +2,11 @@
 
 import os
 from datetime import datetime
+from collections import deque
+
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Pango	#pylint: disable=wrong-import-position
-from collections import deque
-
-from xpra.gtk_common.error import xlog
-from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter
-from xpra.x11.bindings.window_bindings import X11WindowBindings  #pylint: disable=no-name-in-module
-
 
 def main():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
@@ -46,14 +41,19 @@ def main():
 	window.connect("focus-in-event", focus_in)
 	window.connect("focus-out-event", focus_out)
 	window.connect("notify::has-toplevel-focus", has_toplevel_focus)
-	#x11 focus events:
-	gdk_win = window.get_window()
-	xid = gdk_win.get_xid()
-	init_gdk_display_source()
-	os.environ["XPRA_X11_DEBUG_EVENTS"] = "FocusIn,FocusOut"
-	init_x11_filter()
-	with xlog:
-		X11WindowBindings().selectFocusChange(xid)
+	if os.name=="posix":
+		from xpra.gtk_common.error import xlog
+		from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+		from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter
+		from xpra.x11.bindings.window_bindings import X11WindowBindings  #pylint: disable=no-name-in-module
+		#x11 focus events:
+		gdk_win = window.get_window()
+		xid = gdk_win.get_xid()
+		init_gdk_display_source()
+		os.environ["XPRA_X11_DEBUG_EVENTS"] = "FocusIn,FocusOut"
+		init_x11_filter()
+		with xlog:
+			X11WindowBindings().selectFocusChange(xid)
 
 	Gtk.main()
 	return 0
