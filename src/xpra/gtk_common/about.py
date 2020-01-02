@@ -61,7 +61,7 @@ def about(on_close=None):
         close_about()
         #the about function may be called as a widget callback
         #so avoid calling the widget as if it was a function!
-        if on_close and hasattr(on_close, '__call__'):
+        if on_close and callable(on_close):
             on_close()
     dialog.connect("response", close)
     add_close_accel(dialog, close)
