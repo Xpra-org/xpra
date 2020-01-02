@@ -721,7 +721,7 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
 
 def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN, callback=None, file_filter=None):
     filenames = choose_files(parent_window, title, action, action_button, callback, file_filter, False)
-    if len(filenames)!=1:
+    if not filenames or len(filenames)!=1:
         return None
     filename = filenames[0]
     if callback:
