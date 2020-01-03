@@ -66,13 +66,8 @@ ClientConnectionClass = type('ClientConnectionClass', CC_BASES, {})
 
 log = Logger("server")
 elog = Logger("encoding")
-keylog = Logger("keyboard")
-mouselog = Logger("mouse")
-timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
-statslog = Logger("stats")
 notifylog = Logger("notify")
-netlog = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
 log("ClientConnectionClass%s", CC_BASES)
