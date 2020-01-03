@@ -339,7 +339,7 @@ class UIXpraClient(ClientBaseClass):
         caps["session-type"] = get_session_type()
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
-        if MMAP_SUPPORTED and not is_Wayland():
+        if MMAP_SUPPORTED and POSIX and not is_Wayland():
             #we may be running inside another server!
             try:
                 from xpra.server.server_uuid import get_uuid
