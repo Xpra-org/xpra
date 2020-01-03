@@ -7,7 +7,6 @@ import os
 
 from xpra.util import envbool
 from xpra.exit_codes import EXIT_MMAP_TOKEN_FAILURE
-from xpra.platform.features import MMAP_SUPPORTED
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -35,17 +34,16 @@ class MmapClient(StubClientMixin):
         self.mmap_group = None
         self.mmap_tempfile = None
         self.mmap_delete = False
-        self.supports_mmap = MMAP_SUPPORTED
+        self.supports_mmap = True
 
 
     def init(self, opts):
-        if MMAP_SUPPORTED:
-            self.mmap_group = opts.mmap_group
-            if os.path.isabs(opts.mmap):
-                self.mmap_filename = opts.mmap
-                self.supports_mmap = True
-            else:
-                self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
+        self.mmap_group = opts.mmap_group
+        if os.path.isabs(opts.mmap):
+            self.mmap_filename = opts.mmap
+            self.supports_mmap = True
+        else:
+            self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
 
 
     def cleanup(self):

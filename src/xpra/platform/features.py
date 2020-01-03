@@ -13,7 +13,6 @@ from xpra.util import envbool
 LOCAL_SERVERS_SUPPORTED = False
 SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
-MMAP_SUPPORTED = True
 SYSTEM_TRAY_SUPPORTED = True
 REINIT_WINDOWS = False
 
@@ -61,7 +60,6 @@ _features_list_ = [
                    "LOCAL_SERVERS_SUPPORTED",
                    "SHADOW_SUPPORTED",
                    "CAN_DAEMONIZE",
-                   "MMAP_SUPPORTED",
                    "SYSTEM_TRAY_SUPPORTED",
                    "REINIT_WINDOWS",
                    "COMMAND_SIGNALS",
