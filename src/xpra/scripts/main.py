@@ -1231,7 +1231,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     if dtype == "vsock":
         cid, iport = display_desc["vsock"]
         from xpra.net.vsock import (        #pylint: disable=no-name-in-module
-            connect_vsocket,
+            connect_vsocket,                #@UnresolvedImport
             CID_TYPES, CID_ANY, PORT_ANY,    #@UnresolvedImport
             )
         sock = connect_vsocket(cid=cid, port=iport)
