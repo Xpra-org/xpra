@@ -1606,7 +1606,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 def handle_new_connection(conn):
                     #see if this is a redirection:
                     netlog = get_network_logger()
-                    peek_data, line1 = peek_connection(conn)
+                    line1 = peek_connection(conn)[1]
                     netlog("handle_new_connection(%s) line1=%s", conn, line1)
                     if line1:
                         from xpra.net.common import SOCKET_TYPES
