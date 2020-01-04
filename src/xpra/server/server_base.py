@@ -507,7 +507,7 @@ class ServerBase(ServerBaseClass):
 
     def send_hello(self, server_source, root_w, root_h, server_cipher):
         capabilities = self.make_hello(server_source)
-        if server_source.wants_encodings:
+        if server_source.wants_encodings and server_features.windows:
             try:
                 from xpra.codecs.loader import codec_versions
             except ImportError:
