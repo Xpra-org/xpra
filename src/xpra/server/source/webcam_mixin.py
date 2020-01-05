@@ -7,7 +7,6 @@
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.util import envint, csv
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.codecs.pillow.decoder import HEADERS, open_only
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -17,6 +16,7 @@ MAX_WEBCAM_DEVICES = envint("XPRA_MAX_WEBCAM_DEVICES", 1)
 
 def valid_encodings(args):
     #ensure that the encodings specified can be validated using HEADERS
+    from xpra.codecs.pillow.decoder import HEADERS
     encodings = []
     for x in args:
         x = bytestostr(x)
@@ -36,6 +36,11 @@ class WebcamMixin(StubSourceMixin):
     def is_needed(cls, caps):
         #the 'webcam' capability was only added in v4,
         #so we have to enabled the mixin:
+        try:
+            from xpra.codecs.pillow.decoder import HEADERS
+            assert HEADERS
+        except ImportError:
+            return False
         return True
 
     def __init__(self):
@@ -168,6 +173,7 @@ class WebcamMixin(StubSourceMixin):
             self.send_webcam_stop(device_id, "not started")
             return False
         try:
+            from xpra.codecs.pillow.decoder import open_only
             assert encoding in self.webcam_encodings, "invalid encoding specified: %s (must be one of %s)" % (encoding, self.webcam_encodings)
             rgb_pixel_format = "BGRX"       #BGRX
             img = open_only(data, (encoding,))

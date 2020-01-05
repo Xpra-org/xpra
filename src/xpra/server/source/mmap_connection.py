@@ -4,14 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-
-from xpra.os_util import WIN32
-from xpra.simple_stats import std_unit
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.log import Logger
-
-log = Logger("mmap")
 
 
 class MMAP_Connection(StubSourceMixin):
@@ -53,6 +46,10 @@ class MMAP_Connection(StubSourceMixin):
 
 
     def parse_client_caps(self, c):
+        import os
+        from xpra.os_util import WIN32
+        from xpra.log import Logger
+        log = Logger("mmap")
         self.mmap_client_namespace = c.boolget("mmap.namespace", False)
         sep = "." if self.mmap_client_namespace else "_"
         def mmapattr(k):
@@ -117,6 +114,7 @@ class MMAP_Connection(StubSourceMixin):
                                      self.mmap_client_token_index,
                                      self.mmap_client_token_bytes)
         if self.mmap_size>0:
+            from xpra.simple_stats import std_unit
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
     def get_caps(self) -> dict:

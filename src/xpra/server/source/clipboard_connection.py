@@ -7,7 +7,6 @@
 
 from collections import deque
 
-from xpra.net.compression import Compressible, compressed_wrapper
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
 from xpra.util import envint
@@ -122,6 +121,7 @@ class ClipboardConnection(StubSourceMixin):
         self.queue_encode((True, self.compress_clipboard, packet))
 
     def compress_clipboard(self, packet):
+        from xpra.net.compression import Compressible, compressed_wrapper
         #Note: this runs in the 'encode' thread!
         packet = list(packet)
         for i, item in enumerate(packet):
