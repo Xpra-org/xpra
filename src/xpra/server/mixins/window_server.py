@@ -7,6 +7,7 @@
 
 from xpra.util import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.log import Logger
 
 log = Logger("window")
@@ -179,18 +180,21 @@ class WindowServer(StubServerMixin):
         if not wid:
             return  #window is already gone
         for ss in self._server_sources.values():
-            ss.window_metadata(wid, window, pspec.name)
+            if isinstance(ss, WindowsMixin):
+                ss.window_metadata(wid, window, pspec.name)
 
 
     def _remove_window(self, window):
         wid = self._window_to_id[window]
         log("remove_window: %s - %s", wid, window)
         for ss in self._server_sources.values():
-            ss.lost_window(wid, window)
+            if isinstance(ss, WindowsMixin):
+                ss.lost_window(wid, window)
         del self._window_to_id[window]
         del self._id_to_window[wid]
         for ss in self._server_sources.values():
-            ss.remove_window(wid, window)
+            if isinstance(ss, WindowsMixin):
+                ss.remove_window(wid, window)
         try:
             del self.client_properties[wid]
         except KeyError:
@@ -211,6 +215,8 @@ class WindowServer(StubServerMixin):
     def _do_send_new_window_packet(self, ptype, window, geometry):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
+            if not isinstance(ss, WindowsMixin):
+                continue
             wprops = self.client_properties.get(wid, {}).get(ss.uuid)
             x, y, w, h = geometry
             #adjust if the transient-for window is not mapped in the same place by the client we send to:
@@ -251,7 +257,8 @@ class WindowServer(StubServerMixin):
     def refresh_window_area(self, window, x, y, width, height, options=None):
         wid = self._window_to_id[window]
         for ss in tuple(self._server_sources.values()):
-            ss.damage(wid, window, x, y, width, height, options)
+            if isinstance(ss, WindowsMixin):
+                ss.damage(wid, window, x, y, width, height, options)
 
     def _process_buffer_refresh(self, proto, packet):
         """ can be used for requesting a refresh, or tuning batch config, or both """

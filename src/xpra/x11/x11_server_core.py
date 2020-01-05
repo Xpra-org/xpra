@@ -801,8 +801,10 @@ class X11ServerCore(GTKServerBase):
             return
         cursorlog("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
+        from xpra.server.source.windows_mixin import WindowsMixin
         for ss in self._server_sources.values():
-            ss.send_cursor()
+            if isinstance(ss, WindowsMixin):
+                ss.send_cursor()
 
 
     def _motion_signaled(self, model, event):
