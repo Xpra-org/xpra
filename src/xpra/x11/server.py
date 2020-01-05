@@ -471,11 +471,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def parse_hello_ui_window_settings(self, ss, _caps):
-        window_frame_sizes = getattr(ss, "window_frame_sizes", None)
-        framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", window_frame_sizes)
+        #FIXME: with multiple users, don't set any frame size?
         frame = None
-        if window_frame_sizes:
-            frame = window_frame_sizes.inttupleget("frame", (0, 0, 0, 0), 4, 4)
+        from xpra.server.source.windows_mixin import WindowsMixin
+        if isinstance(ss, WindowsMixin):
+            window_frame_sizes = ss.window_frame_sizes
+            framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", window_frame_sizes)
+            if window_frame_sizes:
+                frame = window_frame_sizes.inttupleget("frame", (0, 0, 0, 0), 4, 4)
         if self._wm:
             self._wm.set_default_frame_extents(frame)
 
