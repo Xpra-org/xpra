@@ -163,6 +163,8 @@ class AudioClient(StubClientMixin):
         return caps
 
     def get_avsync_capabilities(self):
+        if not self.av_sync:
+            return {}
         return {
             ""              : self.av_sync,
             "delay.default" : max(0, DEFAULT_AV_SYNC_DELAY + AV_SYNC_DELTA),
