@@ -289,36 +289,30 @@ class typedict(dict):
         get_util_logger().warn(msg, *args, **kwargs)
 
     def rawget(self, key, default=None):
-        v = self.get(key)
+        if key in self:
+            return self[key]
         #py3k and bytes as keys...
-        if v is None and isinstance(key, str):
+        if isinstance(key, str):
             from xpra.os_util import strtobytes
-            v = self.get(strtobytes(key), default)
-        return v
-
-    def capsget(self, key : str, default=None):
-        v = self.rawget(key, default)
-        if isinstance(v, bytes):
-            from xpra.os_util import bytestostr
-            v = bytestostr(v)
-        return v
+            return self.get(strtobytes(key), default)
+        return default
 
     def strget(self, k, default=None):
-        v = self.capsget(k, default)
+        v = self.rawget(k, default)
         if v is None:
             return default
         from xpra.os_util import bytestostr
         return bytestostr(v)
 
     def bytesget(self, k : str, default=None):
-        v = self.capsget(k, default)
+        v = self.rawget(k, default)
         if v is None:
             return default
         from xpra.os_util import strtobytes
         return strtobytes(v)
 
     def intget(self, k : str, d=0):
-        v = self.capsget(k)
+        v = self.rawget(k)
         if v is None:
             return d
         try:
@@ -330,13 +324,13 @@ class typedict(dict):
             return d
 
     def boolget(self, k : str, default_value=False):
-        v = self.capsget(k)
+        v = self.rawget(k)
         if v is None:
             return default_value
         return bool(v)
 
     def dictget(self, k : str, default_value=None):
-        v = self.capsget(k, default_value)
+        v = self.rawget(k, default_value)
         if v is None:
             return default_value
         if not isinstance(v, dict):
@@ -370,7 +364,7 @@ class typedict(dict):
         return v
 
     def _listget(self, k : str, default_value, item_type=None, min_items=None, max_items=None):
-        v = self.capsget(k)
+        v = self.rawget(k)
         if v is None:
             return default_value
         if not isinstance(v, (list, tuple)):

@@ -343,20 +343,24 @@ class TopClient(MonitorXpraClient):
         if not gli:
             return None
         gli = typedict(gli)
+        def strget(key, sep="."):
+            #fugly warning:
+            #depending on where we get the gl info from,
+            #the value might be a list of strings,
+            #or a byte string...
+            v = gli.rawget(key)
+            if isinstance(v, (tuple, list)):
+                return sep.join(bytestostr(x) for x in v)
+            return bytestostr(v)
         if not gli.boolget("enabled", True):
             return "OpenGL disabled %s" % gli.strget("message")
-        vinfo = gli.capsget("opengl")
-        if isinstance(vinfo, (tuple, list)):
-            vinfo = ".".join(str(x) for x in vinfo)
-        gl_info = "OpenGL %s enabled: %s" % (vinfo, gli.strget("renderer") or gli.strget("vendor"))
+        gl_info = "OpenGL %s enabled: %s" % (strget("opengl"), gli.strget("renderer") or gli.strget("vendor"))
         depth = gli.intget("depth")
         if depth not in (0, 24):
             gl_info += ", %ibits" % depth
-        modes = gli.capsget("display_mode")
+        modes = gli.rawget("display_mode")
         if modes:
-            if isinstance(modes, (tuple, list)):
-                modes = csv(bytestostr(x) for x in modes)
-            gl_info += " - %s" % modes
+            gl_info += " - %s" % strget("display_mode", ", ")
         return gl_info
 
     def box(self, window, x, y, w, h):

@@ -804,12 +804,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.info("error in hello packet", exc_info=True)
             self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)
 
-    def capsget(self, capabilities, key, default):
-        v = capabilities.get(strtobytes(key), default)
-        if isinstance(v, bytes):
-            v = bytestostr(v)
-        return v
-
 
     def server_connection_established(self):
         netlog("server_connection_established()")
