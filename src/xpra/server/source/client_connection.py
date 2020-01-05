@@ -13,64 +13,15 @@ from queue import Queue
 
 from xpra.make_thread import start_thread
 from xpra.os_util import monotonic_time
-from xpra.util import merge_dicts, notypedict, envbool, envint, typedict, AtomicInteger
+from xpra.util import notypedict, envbool, envint, typedict, AtomicInteger
 from xpra.net.compression import compressed_wrapper, Compressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
-from xpra.server.source.clientinfo_mixin import ClientInfoMixin
-from xpra.server import server_features
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
-CC_BASES = [ClientInfoMixin]
-#TODO: notifications mixin
-if server_features.clipboard:
-    from xpra.server.source.clipboard_connection import ClipboardConnection
-    CC_BASES.append(ClipboardConnection)
-if server_features.audio:
-    from xpra.server.source.audio_mixin import AudioMixin
-    CC_BASES.append(AudioMixin)
-if server_features.webcam:
-    from xpra.server.source.webcam_mixin import WebcamMixin
-    CC_BASES.append(WebcamMixin)
-if server_features.fileprint:
-    from xpra.server.source.fileprint_mixin import FilePrintMixin
-    CC_BASES.append(FilePrintMixin)
-if server_features.mmap:
-    from xpra.server.source.mmap_connection import MMAP_Connection
-    CC_BASES.append(MMAP_Connection)
-if server_features.input_devices:
-    from xpra.server.source.input_mixin import InputMixin
-    CC_BASES.append(InputMixin)
-if server_features.dbus:
-    from xpra.server.source.dbus_mixin import DBUS_Mixin
-    CC_BASES.append(DBUS_Mixin)
-if server_features.network_state:
-    from xpra.server.source.networkstate_mixin import NetworkStateMixin
-    CC_BASES.append(NetworkStateMixin)
-if server_features.display:
-    from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
-    CC_BASES.append(ClientDisplayMixin)
-if server_features.windows:
-    from xpra.server.source.windows_mixin import WindowsMixin
-    CC_BASES.append(WindowsMixin)
-    #must be after windows mixin so it can assume "self.send_windows" is set
-    if server_features.encoding:
-        from xpra.server.source.encodings_mixin import EncodingsMixin
-        CC_BASES.append(EncodingsMixin)
-    if server_features.audio and server_features.av_sync:
-        from xpra.server.source.avsync_mixin import AVSyncMixin
-        CC_BASES.append(AVSyncMixin)
-from xpra.server.source.idle_mixin import IdleMixin
-CC_BASES.append(IdleMixin)
-CC_BASES = tuple(CC_BASES)
-ClientConnectionClass = type('ClientConnectionClass', CC_BASES, {})
-
 log = Logger("server")
-elog = Logger("encoding")
-proxylog = Logger("proxy")
 notifylog = Logger("notify")
 bandwidthlog = Logger("bandwidth")
-
-log("ClientConnectionClass%s", CC_BASES)
 
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
@@ -100,10 +51,9 @@ items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
 
-class ClientConnection(ClientConnectionClass):
+class ClientConnection(StubSourceMixin):
 
-    def __init__(self, protocol, disconnect_cb, session_name, server,
-                 idle_add, timeout_add, source_remove,
+    def __init__(self, protocol, disconnect_cb, session_name,
                  setting_changed,
                  socket_dir, unix_socket_paths, log_disconnect, bandwidth_limit, bandwidth_detection,
                  ):
@@ -114,16 +64,6 @@ class ClientConnection(ClientConnectionClass):
         self.close_event = Event()
         self.disconnect = disconnect_cb
         self.session_name = session_name
-
-        for bc in CC_BASES:
-            try:
-                bc.__init__(self)
-                bc.init_from(self, protocol, server)
-            except Exception as e:
-                raise Exception("failed to initialize %s: %s" % (bc, e)) from None
-
-        for c in CC_BASES:
-            c.init_state(self)
 
         #holds actual packets ready for sending (already encoded)
         #these packets are picked off by the "protocol" via 'next_packet()'
@@ -141,9 +81,6 @@ class ClientConnection(ClientConnectionClass):
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
-        self.idle_add = idle_add
-        self.timeout_add = timeout_add
-        self.source_remove = source_remove
 
         self.setting_changed = setting_changed
         # network constraints:
@@ -153,17 +90,15 @@ class ClientConnection(ClientConnectionClass):
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
 
-        self.init()
-
+    def run(self):
         # ready for processing:
         self.queue_encode = self.start_queue_encode
-        protocol.set_packet_source(self.next_packet)
-
+        self.protocol.set_packet_source(self.next_packet)
 
     def __repr__(self):
         return  "%s(%i : %s)" % (type(self).__name__, self.counter, self.protocol)
 
-    def init(self):
+    def init_state(self):
         self.hello_sent = False
         self.info_namespace = False
         self.send_notifications = False
@@ -191,10 +126,8 @@ class ClientConnection(ClientConnectionClass):
     def is_closed(self):
         return self.close_event.isSet()
 
-    def close(self):
+    def cleanup(self):
         log("%s.close()", self)
-        for c in CC_BASES:
-            c.cleanup(self)
         self.close_event.set()
         self.protocol = None
 
@@ -254,19 +187,7 @@ class ClientConnection(ClientConnectionClass):
                 ws.bandwidth_limit = max(MIN_BANDWIDTH//10, bandwidth_limit*weight//total_weight)
 
 
-    def parse_hello(self, c):
-        self.ui_client = c.boolget("ui_client", True)
-        self.wants_encodings = c.boolget("wants_encodings", self.ui_client)
-        self.wants_display = c.boolget("wants_display", self.ui_client)
-        self.wants_events = c.boolget("wants_events", False)
-        self.wants_aliases = c.boolget("wants_aliases", True)
-        self.wants_versions = c.boolget("wants_versions", True)
-        self.wants_features = c.boolget("wants_features", True)
-        self.wants_default_cursor = c.boolget("wants_default_cursor", False)
-
-        for mixin in CC_BASES:
-            mixin.parse_client_caps(self, c)
-
+    def parse_client_caps(self, c):
         #general features:
         self.info_namespace = c.boolget("info-namespace")
         self.send_notifications = c.boolget("notifications")
@@ -288,14 +209,6 @@ class ClientConnection(ClientConnectionClass):
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
                      server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
 
-        cinfo = self.get_connect_info()
-        for i,ci in enumerate(cinfo):
-            log.info("%s%s", ["", " "][int(i>0)], ci)
-        if self.client_proxy:
-            from xpra.version_util import version_compat_check
-            msg = version_compat_check(self.proxy_version)
-            if msg:
-                proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
         if getattr(self, "mmap_size", 0)>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
@@ -430,14 +343,6 @@ class ClientConnection(ClientConnectionClass):
         self.send(*parts, **kwargs)
 
 
-    def send_hello(self, server_capabilities):
-        capabilities = server_capabilities.copy()
-        for bc in CC_BASES:
-            merge_dicts(capabilities, bc.get_caps(self))
-        self.send("hello", capabilities)
-        self.hello_sent = True
-
-
     ######################################################################
     # info:
     def get_info(self) -> dict:
@@ -459,13 +364,6 @@ class ClientConnection(ClientConnectionClass):
                          "connection"       : p.get_info(),
                          })
         info.update(self.get_features_info())
-        for bc in CC_BASES:
-            try:
-                merge_dicts(info, bc.get_info(self))
-            except Exception as e:
-                log("merge_dicts on %s", bc, exc_info=True)
-                log.error("Error: cannot add information from %s:", bc)
-                log.error(" %s", e)
         return info
 
     def get_features_info(self) -> dict:

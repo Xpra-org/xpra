@@ -396,9 +396,9 @@ class ServerBase(ServerBaseClass):
         send_ui = ui_client and not is_request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
-    def get_client_connection_class(self, _caps):
-        from xpra.server.source.client_connection import ClientConnection
-        return ClientConnection
+    def get_client_connection_class(self, caps):
+        from xpra.server.source.client_connection_factory import get_client_connection_class
+        return get_client_connection_class(caps)
 
 
     def _process_hello_ui(self, ss, c, auth_caps, send_ui, share_count):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,16 @@ Base class for client-connection mixins.
 Defines the default interface methods that each mixin may override.
 """
 class StubSourceMixin:
+
+    """
+    Is this mixin needed for the caps given?
+    """
+    @classmethod
+    def is_needed(cls, caps):
+        return True
+
+    def __init__(self, *_args):
+        pass
 
     """
     Initialize state attributes.
