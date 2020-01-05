@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,6 +19,11 @@ PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xp
 
 
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
+
+    @classmethod
+    def is_needed(cls, caps):
+        return bool(caps.boolget("file-transfer") or caps.boolget("printing"))
+
 
     def init_state(self):
         self.printers = {}

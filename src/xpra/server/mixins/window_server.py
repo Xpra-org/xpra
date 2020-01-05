@@ -95,8 +95,12 @@ class WindowServer(StubServerMixin):
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         for ss in tuple(self._server_sources.values()):
-            cminw, cminh = ss.window_min_size
-            cmaxw, cmaxh = ss.window_max_size
+            cmin = getattr(ss, "window_min_size", None)
+            cmax = getattr(ss, "window_max_size", None)
+            if not cmin or not cmax:
+                continue
+            cminw, cminh = cmin
+            cmaxw, cmaxh = cmax
             minw = max(minw, cminw)
             minh = max(minh, cminh)
             if cmaxw>0:
@@ -117,9 +121,13 @@ class WindowServer(StubServerMixin):
 
 
     def send_initial_data(self, ss, caps, send_ui, share_count):
-        if send_ui:
-            self.send_initial_windows(ss, share_count>0)
-            self.send_initial_cursors(ss, share_count>0)
+        if not send_ui:
+            return
+        if not hasattr(ss, "new_window"):
+            #no window source mixin
+            return
+        self.send_initial_windows(ss, share_count>0)
+        self.send_initial_cursors(ss, share_count>0)
 
 
     def is_shown(self, _window):

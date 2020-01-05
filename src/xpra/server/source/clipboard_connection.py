@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -22,8 +22,10 @@ MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 
 class ClipboardConnection(StubSourceMixin):
 
-    def init_from(self, _protocol, _server):
-        pass
+    @classmethod
+    def is_needed(cls, caps):
+        return caps.boolget("clipboard")
+
 
     def init_state(self):
         self.clipboard_enabled = False

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -38,6 +38,11 @@ Handle window forwarding:
 etc
 """
 class WindowsMixin(StubSourceMixin):
+
+    @classmethod
+    def is_needed(cls, caps):
+        return caps.boolget("windows")
+
 
     def __init__(self):
         self.get_transient_for = None

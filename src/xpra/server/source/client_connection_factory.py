@@ -110,7 +110,12 @@ def get_client_connection_class(caps):
             self.hello_sent = True
 
         def get_info(self) -> dict:
-            info = {}
+            def module_name(m):
+                name = str(m.__name__.split(".")[-1])
+                return name.replace("Mixin", "").replace("Connection", "").rstrip("_")
+            info = {
+                "modules"   : tuple(module_name(x) for x in CC_BASES),
+                }
             for bc in CC_BASES:
                 log("%s.get_info()", bc)
                 try:

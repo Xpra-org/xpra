@@ -82,6 +82,12 @@ class WebcamForwarder(StubClientMixin):
         log("webcam forwarding: %s", self.webcam_forwarding)
 
 
+    def get_caps(self) -> dict:
+        if not self.webcam_forwarding:
+            return {}
+        return {"webcam" : True}
+
+
     def parse_server_capabilities(self):
         c = self.server_capabilities
         self.server_webcam = c.boolget("webcam")

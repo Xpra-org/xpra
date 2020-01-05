@@ -128,7 +128,7 @@ class ClipboardServer(StubServerMixin):
 
     def parse_hello_ui_clipboard(self, ss):
         #take the clipboard if no-one else has it yet:
-        if not ss.clipboard_enabled:
+        if not getattr(ss, "clipboard_enabled", False):
             log("client does not support clipboard")
             return
         if not self._clipboard_helper:
@@ -141,6 +141,10 @@ class ClipboardServer(StubServerMixin):
         self.set_clipboard_source(ss)
 
     def set_clipboard_source(self, ss):
+        if not getattr(ss, "clipboard_enabled", False):
+            #don't use this client as clipboard source!
+            #(its clipboard is disabled)
+            return
         if self._clipboard_client==ss:
             return
         self._clipboard_client = ss
@@ -158,6 +162,7 @@ class ClipboardServer(StubServerMixin):
             ch.enable_selections(ss.clipboard_client_selections)
             ch.set_clipboard_contents_slice_fix(ss.clipboard_contents_slice_fix)
             ch.set_preferred_targets(ss.clipboard_preferred_targets)
+            ch.send_tokens(ss.clipboard_client_selections)
         else:
             ch.enable_selections([])
 
@@ -170,13 +175,6 @@ class ClipboardServer(StubServerMixin):
 
     def set_session_driver(self, source):
         self.set_clipboard_source(source)
-        ch = self._clipboard_helper
-        if not source or not ch:
-            return
-        log("set_session_driver(%s) clipboard_enabled=%s, clipboard helper=%s", source, source.clipboard_enabled, ch)
-        if source.clipboard_enabled:
-            log("selections: %s", source.clipboard_client_selections)
-            ch.send_tokens(source.clipboard_client_selections)
 
 
     def _process_clipboard_packet(self, proto, packet):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -32,6 +32,11 @@ Store information about the client's support for encodings.
 Runs the encode thread.
 """
 class EncodingsMixin(StubSourceMixin):
+
+    @classmethod
+    def is_needed(cls, caps):
+        return bool(caps.strtupleget("encodings"))
+
 
     def __init__(self):
         self.server_core_encodings = []

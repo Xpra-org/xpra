@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -163,8 +163,10 @@ class AudioClient(StubClientMixin):
         return caps
 
     def get_avsync_capabilities(self):
+        if not self.av_sync:
+            return {}
         return {
-            ""              : self.av_sync,
+            ""              : True,
             "delay.default" : max(0, DEFAULT_AV_SYNC_DELAY + AV_SYNC_DELTA),
             }
 

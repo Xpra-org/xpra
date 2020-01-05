@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -471,10 +471,11 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def parse_hello_ui_window_settings(self, ss, _caps):
-        framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", ss.window_frame_sizes)
+        window_frame_sizes = getattr(ss, "window_frame_sizes", None)
+        framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", window_frame_sizes)
         frame = None
-        if ss.window_frame_sizes:
-            frame = ss.window_frame_sizes.inttupleget("frame", (0, 0, 0, 0), 4, 4)
+        if window_frame_sizes:
+            frame = window_frame_sizes.inttupleget("frame", (0, 0, 0, 0), 4, 4)
         if self._wm:
             self._wm.set_default_frame_extents(frame)
 

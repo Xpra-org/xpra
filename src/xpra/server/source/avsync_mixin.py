@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,6 +15,14 @@ DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 
 
 class AVSyncMixin(StubSourceMixin):
+
+    @classmethod
+    def is_needed(cls, caps):
+        if not (caps.boolget("sound.send") or caps.boolget("sound.receive")):
+            #no audio!
+            return False
+        return caps.boolget("av-sync") and caps.boolget("windows")
+
 
     def __init__(self):
         self.av_sync = False

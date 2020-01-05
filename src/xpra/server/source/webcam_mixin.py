@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,6 +31,12 @@ def valid_encodings(args):
 Handle webcam forwarding.
 """
 class WebcamMixin(StubSourceMixin):
+
+    @classmethod
+    def is_needed(cls, caps):
+        #the 'webcam' capability was only added in v4,
+        #so we have to enabled the mixin:
+        return True
 
     def __init__(self):
         self.webcam_enabled = False
