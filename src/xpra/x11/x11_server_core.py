@@ -844,9 +844,11 @@ class X11ServerCore(GTKServerBase):
             except KeyError:
                 pass
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
+        from xpra.server.source.windows_mixin import WindowsMixin
         for ss in self._server_sources.values():
-            name = strtobytes(event.bell_name or "")
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
+            if isinstance(ss, WindowsMixin):
+                name = strtobytes(event.bell_name or "")
+                ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def get_screen_number(self, _wid):
