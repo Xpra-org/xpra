@@ -15,7 +15,7 @@ from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type,
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
-from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, is_Wayland
+from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, POSIX, is_Wayland
 from xpra.util import (
     std, envbool, envint, typedict, updict, repr_ellipsized,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
