@@ -818,7 +818,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #if we're changing the maximized state
             state_updates["maximized"] = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
         if event.changed_mask & self.WINDOW_STATE_FOCUSED:
-            state_updates["focused"] = bool(event.new_window_state & Gdk.WindowState.FOCUSED)
+            state_updates["focused"] = bool(event.new_window_state & self.WINDOW_STATE_FOCUSED)
         self.update_window_state(state_updates)
 
     def update_window_state(self, state_updates):
