@@ -867,7 +867,8 @@ fi
 
 
 %changelog
-* Fri Dec 27 2019 Antoine Martin <antoine@xpra.org> 3.0.5-1xpra1
+* Tue Jan 07 2020 Antoine Martin <antoine@xpra.org> 3.0.5-1xpra1
+- fix missing undecorated opengl windows on win32 with GTK3 (correct fix)
 - fix fake Xinerama errors with unicode monitor names
 - fix av-sync backport for python2 servers
 - fix errors when the dbus submodule is not installed
@@ -879,13 +880,18 @@ fi
 - fix focus problems with OR windows
 - fix wrong client info shown in 'xpra top'
 - fix 'xpra top' error that scrambled the output, flickering
+- fix X11 keyboard query against secondary screens
+- skip trying to load X11 components on non-X11 platforms
 - allow F11 through to the browser to make it easier to go fullscreen
 - prevent sshfp dns errors from causing ssh connection failures
 - obscure passwords from log files
 - remove duplicated attribute from xpra info
+- remove unused loggers
+- expose av-sync and webcam client capabilities
 - better wayland mode detection
 - add more missing files to MANIFEST
 - add v4l2 codec files to clean target
+- add logging to gtk display cleanup
 
 * Thu Dec 19 2019 Antoine Martin <antoine@xpra.org> 3.0.4-1xpra1
 - fix missing undecorated windows on win32
