@@ -1101,11 +1101,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return (self.ClientWindowClass,)
             if metadata.boolget("has-alpha", False):
                 return (self.ClientWindowClass,)
+            if not metadata.boolget("decorations", True):
+                return (self.ClientWindowClass,)
         if OSX and not PYTHON3:
             #GTK2 on OSX doesn't do alpha:
             if metadata.boolget("has-alpha", False):
-                return (self.ClientWindowClass,)
-            if not metadata.boolget("decorations", True):
                 return (self.ClientWindowClass,)
         return (self.GLClientWindowClass, self.ClientWindowClass)
 
