@@ -132,7 +132,7 @@ class TopClient(MonitorXpraClient):
                 return
 
             hpos = 6
-            client_info = self.slidictget("client")
+            client_info = self.dictget("client")
             client_no = 0
             while True:
                 ci = client_info.dictget(client_no)
