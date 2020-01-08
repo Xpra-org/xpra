@@ -461,7 +461,12 @@ message_map = {
 def NotifyIconWndProc(hwnd, msg, wParam, lParam):
     instance = win32NotifyIcon.instances.get(hwnd)
     fn = message_map.get(msg)
-    log("NotifyIconWndProc%s instance=%s, message(%i)=%s", (int(hwnd), int(msg), int(wParam), int(lParam)), instance, msg, fn)
+    def i(v):
+        try:
+            return int(v)
+        except:
+            return v
+    log("NotifyIconWndProc%s instance=%s, message(%i)=%s", (i(hwnd), i(msg), i(wParam), i(lParam)), instance, msg, fn)
     #log("potential matching win32 constants for message: %s", [x for x in dir(win32con) if getattr(win32con, x)==msg])
     if instance and fn:
         return fn(instance, hwnd, msg, wParam, lParam) or 0
