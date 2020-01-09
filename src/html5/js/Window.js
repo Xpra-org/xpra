@@ -420,7 +420,7 @@ XpraWindow.prototype.update_zindex = function() {
 		z = 0;
 	}
 	else if (this.override_redirect || this.client.server_is_desktop || this.client.server_is_shadow) {
-		z = 15000;
+		z = 30000;
 	}
 	else if (this.windowtype=="DROPDOWN" || this.windowtype=="TOOLTIP" ||
 			this.windowtype=="POPUP_MENU" || this.windowtype=="MENU" ||
