@@ -97,7 +97,7 @@ def get_info() -> dict:
 def decompress(coding, img_data, options):
     # can be called from any thread
     actual = get_image_type(img_data)
-    if actual!=coding:
+    if not actual or not coding.startswith(actual):
         raise Exception("expected %s image data but received %s" % (coding, actual or "unknown"))
     buf = BytesIO(img_data)
     img = Image.open(buf)
