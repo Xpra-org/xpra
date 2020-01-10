@@ -16,6 +16,7 @@ from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.server import server_features
+from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
@@ -473,7 +474,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def parse_hello_ui_window_settings(self, ss, _caps):
         #FIXME: with multiple users, don't set any frame size?
         frame = None
-        from xpra.server.source.windows_mixin import WindowsMixin
         if isinstance(ss, WindowsMixin):
             window_frame_sizes = ss.window_frame_sizes
             framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", window_frame_sizes)
@@ -813,7 +813,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         #x_root, y_root, direction, button, source_indication = event.data
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
-            ss.initiate_moveresize(wid, window, *event.data)
+            if isinstance(ss, WindowsMixin):
+                ss.initiate_moveresize(wid, window, *event.data)
 
 
     def _raised_window(self, window, event):
@@ -824,7 +825,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if self._has_focus==wid:
             return
         for ss in self._server_sources.values():
-            ss.raise_window(wid, window)
+            if isinstance(ss, WindowsMixin):
+                ss.raise_window(wid, window)
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
@@ -919,7 +921,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if self._desktop_manager.is_shown(window):
             geomlog("client %s unmapped window %s - %s", ss, wid, window)
             for ss in self._server_sources.values():
-                ss.unmap_window(wid, window)
+                if isinstance(ss, WindowsMixin):
+                    ss.unmap_window(wid, window)
             window.unmap()
             iconified = len(packet)>=3 and bool(packet[2])
             if iconified and not window.get_property("iconic"):
