@@ -8,7 +8,7 @@
 import os
 
 from xpra.util import prettify_plug_name
-from xpra.os_util import find_lib, find_lib_ldconfig, strtobytes, LINUX, POSIX
+from xpra.os_util import find_lib, find_lib_ldconfig, LINUX, POSIX
 from xpra.version_util import XPRA_VERSION
 from xpra.log import Logger
 
