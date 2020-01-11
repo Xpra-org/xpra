@@ -771,7 +771,7 @@ def build_xpra_conf(install_dir):
     #generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
     fake_xinerama = "no"
-    if POSIX and not OSX:
+    if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
         from xpra.x11.fakeXinerama import find_libfakeXinerama
         fake_xinerama = find_libfakeXinerama() or "auto"
     from xpra.platform.features import DEFAULT_ENV
