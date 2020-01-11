@@ -87,6 +87,7 @@ class X11ServerCore(GTKServerBase):
         self.pointer_device_map = {}
         self.keys_pressed = {}
         self.last_mouse_user = None
+        self.libfakeXinerama_so = None
         self.x11_filter = False
         GTKServerBase.__init__(self)
         log("XShape=%s", X11Window.displayHasXShape())
@@ -116,12 +117,7 @@ class X11ServerCore(GTKServerBase):
 
     def x11_init(self):
         clean_keyboard_state()
-        if self.fake_xinerama in FALSE_OPTIONS:
-            self.libfakeXinerama_so = None
-        elif os.path.isabs(self.fake_xinerama):
-            self.libfakeXinerama_so = self.fake_xinerama
-        else:
-            self.libfakeXinerama_so = find_libfakeXinerama()
+        self.init_fake_xinerama()
         if not X11Keyboard.hasXFixes() and self.cursors:
             log.error("Error: cursor forwarding support disabled")
         if not X11Keyboard.hasXTest():
@@ -136,6 +132,13 @@ class X11ServerCore(GTKServerBase):
         self.x11_filter = init_x11_filter()
         assert self.x11_filter
 
+    def init_fake_xinerama(self):
+        if self.fake_xinerama in FALSE_OPTIONS:
+            self.libfakeXinerama_so = None
+        elif os.path.isabs(self.fake_xinerama):
+            self.libfakeXinerama_so = self.fake_xinerama
+        else:
+            self.libfakeXinerama_so = find_libfakeXinerama()
 
     def init_randr(self):
         self.randr = RandR.has_randr()

@@ -138,6 +138,12 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         #this would call up to GTKServerBase.init(opts) again:
         X11ServerCore.do_init(self, opts)
 
+    def init_fake_xinerama(self):
+        #don't enable fake xinerama with shadow servers,
+        #we want to keep whatever settings they have
+        self.libfakeXinerama_so = None
+
+
     def cleanup(self):
         GTKShadowServerBase.cleanup(self)
         X11ServerCore.cleanup(self)     #@UndefinedVariable
