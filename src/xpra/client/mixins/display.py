@@ -561,7 +561,7 @@ class DisplayClient(StubClientMixin):
                 "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
                 " would overflow the server's screen: %i x %i" % (maxw, maxh),
                 ]
-            self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), "scaling")
+            self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), icon_name="scaling")
             scalinglog.warn("Warning: %s", summary)
             for m in messages:
                 scalinglog.warn(" %s", m)
