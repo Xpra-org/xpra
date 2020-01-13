@@ -7,6 +7,7 @@ import sys
 import time
 import os
 import socket
+import signal
 from subprocess import PIPE, Popen
 
 from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
@@ -119,7 +120,10 @@ def confirm_key(info=()):
     log("confirm_key(%s) will use stdin prompt", nonl(info))
     prompt = "Are you sure you want to continue connecting (yes/NO)? "
     sys.stderr.write(os.linesep.join(info)+os.linesep+prompt)
-    v = sys.stdin.readline().rstrip(os.linesep)
+    try:
+        v = sys.stdin.readline().rstrip(os.linesep)
+    except KeyboardInterrupt:
+        sys.exit(128+signal.SIGINT)
     return v and v.lower() in ("y", "yes")
 
 def input_pass(prompt):
@@ -131,7 +135,10 @@ def input_pass(prompt):
         icon = get_icon_filename("authentication", "png") or ""
         return dialog_pass("Password Input", prompt, icon)
     from getpass import getpass
-    return getpass(prompt)
+    try:
+        return getpass(prompt)
+    except KeyboardInterrupt:
+        sys.exit(128+signal.SIGINT)
 
 
 class SSHSocketConnection(SocketConnection):
