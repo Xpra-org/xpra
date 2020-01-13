@@ -316,7 +316,7 @@ def get_linux_distribution():
         except Exception:
             try:
                 import platform
-                _linux_distribution = platform.linux_distribution()
+                _linux_distribution = platform.linux_distribution()  #pylint: disable=deprecated-method
             except Exception:
                 _linux_distribution = ("unknown", "unknown", "unknown")
         else:
