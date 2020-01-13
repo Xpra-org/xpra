@@ -135,6 +135,6 @@ class TrayClient(StubClientMixin):
                 t.append(cinfo.get("endpoint", bytestostr(conn.target)))
         if not t:
             t.insert(0, u"Xpra")
-        v = u"\n".join(t)
+        v = u"\n".join(str(x) for x in t)
         log("get_tray_title()=%s (items=%s)", nonl(v), tuple(strtobytes(x) for x in t))
         return v
