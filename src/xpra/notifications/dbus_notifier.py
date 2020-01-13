@@ -83,6 +83,7 @@ class DBUS_Notifier(NotifierBase):
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)
                 self.actual_notification_id[nid] = int(notification_id)
             dbus_hints = self.parse_hints(hints)
+            log("calling %s%s", self.dbusnotify.Notify, (app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout))
             self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout,
                  reply_handler = NotifyReply,
                  error_handler = self.NotifyError)
