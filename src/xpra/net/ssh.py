@@ -16,7 +16,10 @@ from xpra.platform.gui import force_focus
 from xpra.platform import get_username
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
-from xpra.exit_codes import EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE
+from xpra.exit_codes import (
+    EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE,
+    EXIT_CONNECTION_FAILED, EXIT_TIMEOUT,
+    )
 from xpra.os_util import (
     bytestostr, osexpand, monotonic_time, load_binary_file,
     setsid, nomodule_context, umask_context, is_main_thread,
@@ -253,7 +256,7 @@ def ssh_paramiko_connect_to(display_desc):
                 try:
                     port = int(port)
                 except ValueError:
-                    raise InitException("invalid port specified: '%s'" % port)
+                    raise InitExit("invalid ssh port specified: '%s'" % port, EXIT_SSH_FAILURE)
                 proxycommand = host_config.get("proxycommand")
                 keyfiles = host_config.get("identityfile")
                 if proxycommand:
@@ -297,7 +300,7 @@ def ssh_paramiko_connect_to(display_desc):
                 middle_transport.start_client()
             except SSHException as e:
                 log("start_client()", exc_info=True)
-                raise InitException("SSH negotiation failed: %s" % e) from None
+                raise InitExit("SSH negotiation failed: %s" % e, EXIT_SSH_FAILURE) from None
             proxy_host_config = ssh_config.lookup(host)
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
@@ -312,7 +315,7 @@ def ssh_paramiko_connect_to(display_desc):
                 transport.start_client()
             except SSHException as e:
                 log("start_client()", exc_info=True)
-                raise InitException("SSH negotiation failed: %s" % e)
+                raise InitExit("SSH negotiation failed: %s" % e, EXIT_SSH_FAILURE)
             do_ssh_paramiko_connect_to(transport, host,
                                        username, password,
                                        host_config or ssh_config.lookup("*"),
@@ -341,7 +344,7 @@ def ssh_paramiko_connect_to(display_desc):
             transport.start_client()
         except SSHException as e:
             log("start_client()", exc_info=True)
-            raise InitException("SSH negotiation failed: %s" % e) from None
+            raise InitExit("SSH negotiation failed: %s" % e, EXIT_SSH_FAILURE) from None
         do_ssh_paramiko_connect_to(transport, host, username, password,
                                    host_config or ssh_config.lookup("*"),
                                    keyfiles)
@@ -641,7 +644,7 @@ keymd5(host_key),
 
     if not transport.is_authenticated():
         transport.close()
-        raise InitException("SSH Authentication on %s failed" % host)
+        raise InitExit("SSH Authentication on %s failed" % host, EXIT_CONNECTION_FAILED)
 
 
 def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None, socket_dir=None, display_as_args=None):
@@ -654,7 +657,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             chan.set_name("find %s" % xpra_cmd)
         except SSHException as e:
             log("open_session", exc_info=True)
-            raise InitException("failed to open SSH session: %s" % e) from None
+            raise InitExit("failed to open SSH session: %s" % e, EXIT_SSH_FAILURE) from None
         cmd = "which %s" % xpra_cmd
         log("exec_command('%s')", cmd)
         chan.exec_command(cmd)
@@ -663,7 +666,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
         while not chan.exit_status_ready():
             if monotonic_time()-start>10:
                 chan.close()
-                raise InitException("SSH test command '%s' timed out" % cmd)
+                raise InitExit("SSH test command '%s' timed out" % cmd, EXIT_TIMEOUT)
             log("exit status is not ready yet, sleeping")
             time.sleep(0.01)
         r = chan.recv_exit_status()
@@ -687,7 +690,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             chan.set_name("run-xpra")
         except SSHException as e:
             log("open_session", exc_info=True)
-            raise InitException("failed to open SSH session: %s" % e) from None
+            raise InitExit("failed to open SSH session: %s" % e, EXIT_SSH_FAILURE) from None
         else:
             log("channel exec_command(%s)" % cmd)
             chan.exec_command(cmd)
