@@ -313,6 +313,7 @@ def get_info():
         "xpra-module"       : XPRA_MODULE_PATH,
         "app"               : {"default" : {"dir"   : default_get_app_dir()}},
         "desktop-background": get_desktop_background_paths(),
+        "ssh-known-hosts"   : get_ssh_known_hosts_files(),
         "resources"         : get_resources_dir(),
         "icons"             : get_icon_dir(),
         "home"              : os.path.expanduser("~"),
