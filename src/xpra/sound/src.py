@@ -240,11 +240,7 @@ class SoundSource(SoundPipeline):
         return GST_FLOW_OK
 
     def on_new_sample(self, _bus):
-        #Gst 1.0
         sample = self.sink.emit("pull-sample")
-        return self.emit_buffer(sample)
-
-    def emit_buffer(self, sample):
         buf = sample.get_buffer()
         pts = normv(buf.pts)
         if self.min_timestamp>0 and pts<self.min_timestamp:
