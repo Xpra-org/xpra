@@ -213,7 +213,7 @@ class SoundSink(SoundPipeline):
         now = monotonic_time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
-            return 1
+            return True
         self.underruns += 1
         gstlog("queue_underrun")
         self.queue_state = "underrun"
@@ -228,7 +228,7 @@ class SoundSink(SoundPipeline):
                 self.set_max_level()
                 self.set_min_level()
         self.emit_info()
-        return 1
+        return True
 
     def get_level_range(self, mintime=2, maxtime=10):
         now = monotonic_time()
@@ -244,7 +244,7 @@ class SoundSink(SoundPipeline):
         now = monotonic_time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring overrun during startup")
-            return 1
+            return True
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
         log("queue_overrun level=%ims", clt)
         now = monotonic_time()
@@ -256,7 +256,7 @@ class SoundSink(SoundPipeline):
             self.set_max_level()
             self.overrun_events.append(now)
         self.overruns += 1
-        return 1
+        return True
 
     def set_min_level(self):
         if not self.queue:
