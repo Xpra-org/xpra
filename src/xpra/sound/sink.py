@@ -415,7 +415,7 @@ class SoundSink(SoundPipeline):
                 d = normv(d)
                 if d>0:
                     buf.duration = normv(d)
-        if self.push_buffer(buf):
+        if self.push_buffer(buf)==GST_FLOW_OK:
             self.inc_buffer_count()
             self.inc_byte_count(len(data))
             return True
@@ -438,12 +438,12 @@ class SoundSink(SoundPipeline):
         #buf.offset_end = offset_end
         #buf.set_caps(gst.caps_from_string(caps))
         r = self.src.emit("push-buffer", buf)
-        if r!=gst.FlowReturn.OK:
-            if self.queue_state != "error":
-                log.error("Error pushing buffer: %s", r)
-                self.update_state("error")
-                self.emit('error', "push-buffer error: %s" % r)
-            return GST_FLOW_OK
+        if r==gst.FlowReturn.OK:
+            return r
+        if self.queue_state!="error":
+            log.error("Error pushing buffer: %s", r)
+            self.update_state("error")
+            self.emit('error', "push-buffer error: %s" % r)
         return 1
 
 GObject.type_register(SoundSink)
