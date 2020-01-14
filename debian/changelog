@@ -1,3 +1,14 @@
+xpra (3.0.6-1) UNRELEASED; urgency=low
+  * fix notification logging errors during shutdown
+  * fix window stacking order with html5 client and override redirect windows
+  * fix png/P and png/L decoding
+  * fix very slow startup on Debian due to missing libfakeXinerama
+  * fix display scaling notification warning
+  * fix errors generating the tray title string
+  * add missing entry to path information tool
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 14 Jan 2020 19:28:35 +0700
+
 xpra (3.0.5-1) UNRELEASED; urgency=low
   * fix missing undecorated opengl windows on win32 with GTK3 (correct fix)
   * fix fake Xinerama errors with unicode monitor names

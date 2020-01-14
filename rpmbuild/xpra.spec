@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.5
+%define version 3.0.6
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -867,6 +867,15 @@ fi
 
 
 %changelog
+* Tue Jan 14 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
+- fix notification logging errors during shutdown
+- fix window stacking order with html5 client and override redirect windows
+- fix png/P and png/L decoding
+- fix very slow startup on Debian due to missing libfakeXinerama
+- fix display scaling notification warning
+- fix errors generating the tray title string
+- add missing entry to path information tool
+
 * Tue Jan 07 2020 Antoine Martin <antoine@xpra.org> 3.0.5-1xpra1
 - fix missing undecorated opengl windows on win32 with GTK3 (correct fix)
 - fix fake Xinerama errors with unicode monitor names
