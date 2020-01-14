@@ -17,6 +17,7 @@ from xpra.sound.gstreamer_util import (
     get_default_sink, get_sink_plugins,
     MP3, CODEC_ORDER, gst, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS,
+    GST_FLOW_OK,
     )
 from xpra.net.compression import decompress_by_name
 from xpra.scripts.config import InitExit
@@ -237,7 +238,7 @@ class SoundSink(SoundPipeline):
             minl = min(filtered)
             #range of the levels recorded:
             return maxl-minl
-        return 0
+        return GST_FLOW_OK
 
     def queue_overrun(self, *_args):
         now = monotonic_time()
@@ -338,7 +339,7 @@ class SoundSink(SoundPipeline):
         if self.src:
             self.src.emit('end-of-stream')
         self.cleanup()
-        return 0
+        return GST_FLOW_OK
 
     def get_info(self) -> dict:
         info = SoundPipeline.get_info(self)
@@ -442,7 +443,7 @@ class SoundSink(SoundPipeline):
                 log.error("Error pushing buffer: %s", r)
                 self.update_state("error")
                 self.emit('error', "push-buffer error: %s" % r)
-            return 0
+            return GST_FLOW_OK
         return 1
 
 GObject.type_register(SoundSink)

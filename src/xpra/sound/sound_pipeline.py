@@ -5,7 +5,7 @@
 
 #must be done before importing gobject!
 #pylint: disable=wrong-import-position
-from xpra.sound.gstreamer_util import import_gst
+from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
 gst = import_gst()
 from gi.repository import GLib, GObject
 
@@ -161,7 +161,7 @@ class SoundPipeline(GObject.GObject):
     def get_volume(self):
         if self.volume:
             return int(self.volume.get_property("volume")*100)
-        return 0
+        return GST_FLOW_OK
 
 
     def start(self):
@@ -354,7 +354,7 @@ class SoundPipeline(GObject.GObject):
         else:
             self.gstlogwarn("unhandled bus message type %s: %s", t, message)
         self.emit_info()
-        return 0
+        return GST_FLOW_OK
 
     def parse_element_message(self, message):
         structure = message.get_structure()

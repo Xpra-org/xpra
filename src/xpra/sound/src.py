@@ -20,6 +20,7 @@ from xpra.sound.gstreamer_util import (
     MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT,
     SOURCE_NEEDS_AUDIOCONVERT, ENCODER_CANNOT_USE_CUTTER, CUTTER_NEEDS_CONVERT,
     CUTTER_NEEDS_RESAMPLE, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM,
+    GST_FLOW_OK,
     )
 from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
@@ -236,7 +237,7 @@ class SoundSource(SoundPipeline):
 
     def on_new_preroll(self, _appsink):
         gstlog('new preroll')
-        return 0
+        return GST_FLOW_OK
 
     def on_new_sample(self, _bus):
         #Gst 1.0
@@ -248,10 +249,10 @@ class SoundSource(SoundPipeline):
         pts = normv(buf.pts)
         if self.min_timestamp>0 and pts<self.min_timestamp:
             gstlog("cutter: skipping buffer with pts=%s (min-timestamp=%s)", pts, self.min_timestamp)
-            return 0
+            return GST_FLOW_OK
         if self.max_timestamp>0 and pts>self.max_timestamp:
             gstlog("cutter: skipping buffer with pts=%s (max-timestamp=%s)", pts, self.max_timestamp)
-            return 0
+            return GST_FLOW_OK
         size = buf.get_size()
         data = buf.extract_dup(0, size)
         duration = normv(buf.duration)
@@ -274,7 +275,7 @@ class SoundSource(SoundPipeline):
             self.info.update(ts_info)
         if pts==-1 and duration==-1 and BUNDLE_METADATA and len(self.pending_metadata)<10:
             self.pending_metadata.append(data)
-            return 0
+            return GST_FLOW_OK
         return self._emit_buffer(data, metadata)
 
     def _emit_buffer(self, data, metadata):
@@ -300,7 +301,7 @@ class SoundSource(SoundPipeline):
             self.file.flush()
         if self.state=="stopped":
             #don't bother
-            return 0
+            return GST_FLOW_OK
         if JITTER>0:
             #will actually emit the buffer after a random delay
             if self.jitter_queue.empty():
@@ -313,7 +314,7 @@ class SoundSource(SoundPipeline):
                 self.jitter_queue.put((x, {}))
             self.pending_metadata = []
             self.jitter_queue.put((data, metadata))
-            return 0
+            return GST_FLOW_OK
         log("emit_buffer data=%s, len=%i, metadata=%s", type(data), len(data), metadata)
         return self.do_emit_buffer(data, metadata)
 
@@ -354,7 +355,7 @@ class SoundSource(SoundPipeline):
         self.idle_emit("new-buffer", data, metadata, self.pending_metadata)
         self.pending_metadata = []
         self.emit_info()
-        return 0
+        return GST_FLOW_OK
 
 GObject.type_register(SoundSource)
 
