@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,13 +11,13 @@ from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.scripts.main import InitExit
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
 from xpra.os_util import (
-    bytestostr, hexstr,
+    hexstr,
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
     )
 from xpra.util import (
     envint, envbool, csv, parse_simple_dict,
-    repr_ellipsized,
+    repr_ellipsized, ellipsizer,
     DEFAULT_PORT,
     )
 
@@ -185,9 +185,9 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS):
     log("socket %s peek: got %i bytes", conn, len(peek_data))
     if peek_data:
         line1 = peek_data.splitlines()[0]
-        log("socket peek=%s", repr_ellipsized(peek_data, limit=512))
+        log("socket peek=%s", ellipsizer(peek_data, limit=512))
         log("socket peek hex=%s", hexstr(peek_data[:128]))
-        log("socket peek line1=%s", repr_ellipsized(bytestostr(line1)))
+        log("socket peek line1=%s", ellipsizer(line1))
     return peek_data, line1
 
 
@@ -723,7 +723,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         except (TypeError, binascii.Error):
             import base64
             cadata = base64.b64decode(cadata)
-    ssllog("ssl_wrap_socket_fn: cadata=%s", repr_ellipsized(cadata))
+    ssllog("ssl_wrap_socket_fn: cadata=%s", ellipsizer(cadata))
 
     kwargs = {
               "server_side"             : server_side,
@@ -795,7 +795,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             #so we use a temporary file instead:
             import tempfile
             with tempfile.NamedTemporaryFile(prefix='cadata') as f:
-                ssllog("ssl_wrap_socket_fn: loading cadata '%s'", repr_ellipsized(cadata))
+                ssllog("ssl_wrap_socket_fn: loading cadata '%s'", ellipsizer(cadata))
                 ssllog(" using temporary file '%s'", f.name)
                 f.file.write(cadata)
                 f.file.flush()

@@ -1,13 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
-from xpra.util import nonl, csv, std, envbool, print_nested_dict, repr_ellipsized
+from xpra.util import nonl, csv, std, envbool, print_nested_dict, ellipsizer
 from xpra.os_util import POSIX, bytestostr
 from xpra.log import Logger
 
@@ -368,8 +368,8 @@ class KeyboardHelper:
         log("layout=%s, layouts=%s, variant=%s, variants=%s",
             self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants)
         log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), self.xkbmap_query_struct)
-        log("keycodes=%s", repr_ellipsized(str(self.xkbmap_keycodes)))
-        log("x11 keycodes=%s", repr_ellipsized(str(self.xkbmap_x11_keycodes)))
+        log("keycodes=%s", ellipsizer(self.xkbmap_keycodes))
+        log("x11 keycodes=%s", ellipsizer(self.xkbmap_x11_keycodes))
         log("mod managed: %s", self.xkbmap_mod_managed)
         log("mod meanings: %s", self.xkbmap_mod_meanings)
         log("mod pointermissing: %s", self.xkbmap_mod_pointermissing)

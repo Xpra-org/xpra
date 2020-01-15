@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import re
 import os.path
 
-from xpra.util import repr_ellipsized
+from xpra.util import ellipsizer
 from xpra.os_util import load_binary_file, OSX, POSIX, LINUX
 from xpra.platform.paths import get_app_dir, get_user_conf_dirs
 from xpra.log import Logger
@@ -194,7 +194,7 @@ def load_command_to_type():
         log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type)
         if xdg_menu and categories_to_type:
             for category, category_props in xdg_menu.items():
-                log("category %s: %s", category, repr_ellipsized(str(category_props)))
+                log("category %s: %s", category, ellipsizer(category_props))
                 entries = category_props.get("Entries", {})
                 for name, props in entries.items():
                     command = props.get("TryExec") or props.get("Exec")

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -21,7 +21,7 @@ from xpra.os_util import (
     monotonic_time, bytestostr, strtobytes,
     )
 from xpra.util import (
-    flatten_dict, typedict, updict, repr_ellipsized, envint, envbool,
+    flatten_dict, typedict, updict, ellipsizer, envint, envbool,
     csv, first_time, SERVER_SHUTDOWN,
     )
 from xpra.version_util import XPRA_VERSION
@@ -64,7 +64,7 @@ class ProxyInstance:
             session_options,
             video_encoder_modules,
             disp_desc, cipher, encryption_key,
-            "%s: %s.." % (type(caps), repr_ellipsized(str(caps)))))
+            "%s: %s.." % (type(caps), ellipsizer(caps))))
         self.uuid = get_hex_uuid()
         self.client_protocol = None
         self.server_protocol = None

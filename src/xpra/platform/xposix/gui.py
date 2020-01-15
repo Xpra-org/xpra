@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import sys
 import struct
 
 from xpra.os_util import bytestostr, hexstr
-from xpra.util import iround, envbool, envint, csv, repr_ellipsized
+from xpra.util import iround, envbool, envint, csv, ellipsizer
 from xpra.os_util import is_unity, is_gnome, is_kde, is_Fedora, is_X11, is_Wayland
 from xpra.log import Logger
 
@@ -312,7 +312,7 @@ def get_workarea():
             if not workarea:
                 return None
             screenlog("get_workarea() _NET_WORKAREA=%s (%s), len=%s",
-                      repr_ellipsized(workarea), type(workarea), len(workarea))
+                      ellipsizer(workarea), type(workarea), len(workarea))
             #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
             sizeof_long = struct.calcsize(b"@L")
             if len(workarea)<(d+1)*4*sizeof_long:

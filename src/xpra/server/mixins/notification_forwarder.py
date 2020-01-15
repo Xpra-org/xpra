@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -8,7 +8,7 @@
 import os.path
 
 from xpra.os_util import OSX, POSIX
-from xpra.util import repr_ellipsized
+from xpra.util import ellipsizer
 from xpra.make_thread import start_thread
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -112,7 +112,7 @@ class NotificationForwarder(StubServerMixin):
                 app_icon = ""
             log("notify_callback%s icon=%s",
                 (dbus_id, nid, app_name, replaces_nid, app_icon,
-                 summary, body, actions, hints, expire_timeout), repr_ellipsized(str(icon)))
+                 summary, body, actions, hints, expire_timeout), ellipsizer(icon))
             for ss in self._server_sources.values():
                 ss.notify(dbus_id, nid, app_name, replaces_nid, app_icon,
                           summary, body, actions, hints, expire_timeout, icon)

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from gi.repository import GLib
 
 from xpra.net.compression import Compressible
 from xpra.os_util import POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid
-from xpra.util import csv, envint, envbool, repr_ellipsized, typedict
+from xpra.util import csv, envint, envbool, repr_ellipsized, ellipsizer, typedict
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.log import Logger, is_debug_enabled
 
@@ -452,7 +452,7 @@ class ClipboardProtocolHelperCore:
         munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
         if is_debug_enabled("clipboard"):
             log("clipboard raw -> wire: %r -> %r",
-                (dtype, dformat, repr_ellipsized(str(data))), repr_ellipsized(str(munged)))
+                (dtype, dformat, ellipsizer(data)), ellipsizer(munged))
         wire_encoding, wire_data = munged
         if wire_encoding is None:
             no_contents()
@@ -483,8 +483,7 @@ class ClipboardProtocolHelperCore:
         log("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
         if log.is_debug_enabled():
-            def r(x):
-                return repr_ellipsized(str(x))
+            r = ellipsizer
             log("clipboard wire -> raw: %s -> %s", (dtype, dformat, wire_encoding, r(wire_data)), r(raw_data))
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 

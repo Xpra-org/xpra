@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -35,7 +35,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     flatten_dict, typedict, updict, parse_simple_dict,
-    repr_ellipsized,nonl,
+    repr_ellipsized, ellipsizer, nonl,
     envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc,
     )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
@@ -797,7 +797,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return
         try:
             self.server_capabilities = typedict(packet[1])
-            netlog("processing hello from server: %s", repr_ellipsized(str(self.server_capabilities)))
+            netlog("processing hello from server: %s", ellipsizer(self.server_capabilities))
             if not self.server_connection_established():
                 self.warn_and_quit(EXIT_FAILURE, "failed to establish connection")
         except Exception as e:
@@ -866,7 +866,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def _process_gibberish(self, packet):
-        log("process_gibberish(%s)", repr_ellipsized(packet))
+        log("process_gibberish(%s)", ellipsizer(packet))
         message, data = packet[1:3]
         p = self._protocol
         show_as_text = p and p.input_packetcount==0 and all(c in string.printable for c in bytestostr(data))
@@ -890,7 +890,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_invalid(self, packet):
         message, data = packet[1:3]
         netlog.info("Received invalid packet: %s", message)
-        netlog(" data: %s", repr_ellipsized(data))
+        netlog(" data: %s", ellipsizer(data))
         self.quit(EXIT_PACKET_FAILURE)
 
 

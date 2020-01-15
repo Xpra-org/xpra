@@ -22,7 +22,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     typedict,
-    repr_ellipsized,
+    ellipsizer,
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT
     )
 from xpra.queue_scheduler import QueueScheduler
@@ -78,9 +78,9 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.client_state = client_state
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
                                video_encoder_modules,
-                               client_conn, disp_desc, repr_ellipsized(str(client_state)),
+                               client_conn, disp_desc, ellipsizer(client_state),
                                cipher, encryption_key, server_conn,
-                               "%s: %s.." % (type(caps), repr_ellipsized(str(caps))), message_queue))
+                               "%s: %s.." % (type(caps), ellipsizer(caps)), message_queue))
         self.message_queue = message_queue
         #for handling the local unix domain socket:
         self.control_socket_cleanup = None

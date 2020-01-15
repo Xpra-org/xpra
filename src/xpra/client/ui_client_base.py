@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -16,7 +16,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, POSIX, is_Wayland
 from xpra.util import (
-    std, envbool, envint, typedict, updict, repr_ellipsized, log_screen_sizes, engs,
+    std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
 from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_OK, EXIT_CONNECTION_LOST
@@ -486,7 +486,7 @@ class UIXpraClient(ClientBaseClass):
                 log.error("Error processing handshake callback %s", cb, exc_info=True)
 
     def after_handshake(self, cb, *args):
-        log("after_handshake(%s, %s) on_handshake=%s", cb, args, repr_ellipsized(str(self._on_handshake)))
+        log("after_handshake(%s, %s) on_handshake=%s", cb, args, ellipsizer(self._on_handshake))
         if self._on_handshake is None:
             #handshake has already occurred, just call it:
             self.idle_add(cb, *args)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import sys
 from ctypes.wintypes import HDC
 from ctypes import WinDLL, c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER
 
-from xpra.util import repr_ellipsized
+from xpra.util import ellipsizer
 from xpra.os_util import strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
@@ -97,7 +97,7 @@ def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
 	log = Logger("printing", "win32")
 	log("pdfium=%s", pdfium)
 	buf = c_char_p(pdf_data)
-	log("pdf data buffer: %s", repr_ellipsized(pdf_data))
+	log("pdf data buffer: %s", ellipsizer(pdf_data))
 	log("FPDF_InitLibraryWithConfig=%s", FPDF_InitLibraryWithConfig)
 	config = FPDF_LIBRARY_CONFIG()
 	config.m_pUserFontPaths = None

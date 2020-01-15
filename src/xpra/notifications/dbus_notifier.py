@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.util import repr_ellipsized, csv
+from xpra.util import ellipsizer, csv
 from xpra.os_util import bytestostr
 from xpra.dbus.helper import native_to_dbus
 from xpra.notifications.notifier_base import NotifierBase, log
@@ -73,7 +73,7 @@ class DBUS_Notifier(NotifierBase):
         self.may_retry = True
         try:
             icon_string = self.get_icon_string(nid, app_icon, icon)
-            log("get_icon_string%s=%s", (nid, app_icon, repr_ellipsized(str(icon))), icon_string)
+            log("get_icon_string%s=%s", (nid, app_icon, ellipsizer(icon)), icon_string)
             try:
                 app_str = self.app_name_format % app_name
             except TypeError:

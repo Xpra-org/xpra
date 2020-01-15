@@ -599,16 +599,25 @@ def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
     print("%i %s%s" % (pid, prefix, mem))
 
 
+class ellipsizer:
+    def __init__(self, obj, limit=100):
+        self.obj = obj
+        self.limit = limit
+    def __str__(self):
+        return repr_ellipsized(self.obj, self.limit)
+    def __repr__(self):
+        return repr_ellipsized(self.obj, self.limit)
+
 def repr_ellipsized(obj, limit=100):
     if isinstance(obj, str):
         if len(obj)>limit>6:
             return obj[:limit//2-2]+" .. "+obj[2-limit//2:]
         return obj
-    if isinstance(obj, bytes) and len(obj) > limit:
-        s = binascii.hexlify(obj)
-        if len(s)<=limit or limit<=6:
-            return s
-        return s[:limit//2-2]+b" .. "+s[2-limit//2:]
+    if isinstance(obj, bytes):
+        s = binascii.hexlify(obj).decode()
+        if len(s)>limit>6:
+            return s[:limit//2-2]+" .. "+s[2-limit//2:]
+        return s
     return repr_ellipsized(repr(obj))
 
 

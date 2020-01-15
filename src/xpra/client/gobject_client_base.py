@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,7 +10,7 @@ from gi.repository import GObject
 
 from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict,
-    disconnect_is_an_error, repr_ellipsized, DONE, first_time,
+    disconnect_is_an_error, ellipsizer, DONE, first_time,
     )
 from xpra.os_util import bytestostr, get_hex_uuid, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
@@ -147,7 +147,7 @@ class CommandConnectClient(GObjectXpraClient):
         #don't bother parsing the network caps:
         #* it could cause errors if the caps are missing
         #* we don't care about sending anything back after hello
-        log("server_capabilities: %s", repr_ellipsized(str(self.server_capabilities)))
+        log("server_capabilities: %s", ellipsizer(self.server_capabilities))
         log("protocol state: %s", self._protocol.save_state())
         self.do_command()
         return True

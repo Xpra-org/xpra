@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from gi.repository import GLib
 
 from xpra.clipboard.clipboard_core import ClipboardProtocolHelperCore
-from xpra.util import repr_ellipsized, envint
+from xpra.util import repr_ellipsized, ellipsizer, envint
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
 
@@ -54,7 +54,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     ############################################################################
     def _send_clipboard_token_handler(self, proxy, packet_data=()):
         if log.is_debug_enabled():
-            log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(str(packet_data)))
+            log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
         packet = ["clipboard-token", proxy._selection]
         if packet_data:
             #append 'TARGETS' unchanged:
@@ -109,6 +109,6 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         GLib.source_remove(timer)
         proxy = self._get_proxy(selection)
         log("clipboard got contents%s: proxy=%s for selection=%s",
-            (request_id, dtype, dformat, repr_ellipsized(str(data))), proxy, selection)
+            (request_id, dtype, dformat, ellipsizer(data)), proxy, selection)
         if proxy:
             proxy.got_contents(target, dtype, dformat, data)
