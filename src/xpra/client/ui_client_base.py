@@ -369,7 +369,8 @@ class UIXpraClient(ClientBaseClass):
     def setup_connection(self, conn):
         protocol = super().setup_connection(conn)
         for c in CLIENT_BASES:
-            c.setup_connection(self, conn)
+            if c!=XpraClientBase:
+                c.setup_connection(self, conn)
         return protocol
 
     def server_connection_established(self):
