@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#pylint: disable=wrong-import-position
+
 import sys
 import os.path
 import subprocess
@@ -63,61 +65,54 @@ class ToolboxGUI(Gtk.Window):
         self.vbox = Gtk.VBox(False, 10)
         self.add(self.vbox)
 
-        self.vbox.add(self.label("Colors:"))
-        hbox = Gtk.HBox(False, 10)
-        self.vbox.add(hbox)
         epath = "example/"
         cpath = "../"
         gpath = "../../gtk_common/"
-        hbox.add(self.button("Squares", "Shows RGB+Grey squares in a window", epath+"colors_plain.py"))
-        hbox.add(self.button("Animated", "Shows RGB+Grey squares animated", epath+"colors.py"))
-        hbox.add(self.button("Bit Depth", "Shows color gradients and visualize bit depth clipping", epath+"colors_gradient.py"))
-        #hbox.add(self.button("GL Colors Gradient", "Shows gradients and visualize bit depth clipping", "encoding.png", None))
 
-        self.vbox.add(self.label("Transparency and Rendering"))
-        hbox = Gtk.HBox(False, 10)
-        self.vbox.add(hbox)
-        hbox.add(self.button("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window.py"))
-        hbox.add(self.button("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors.py"))
-        hbox.add(self.button("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl/window_backend.py"))
+        def addhbox(blabel, buttons):
+            self.vbox.add(self.label(blabel))
+            hbox = Gtk.HBox(False, 10)
+            self.vbox.add(hbox)
+            for button in buttons:
+                hbox.add(self.button(*button))
 
-        self.vbox.add(self.label("Widgets:"))
-        hbox = Gtk.HBox(False, 10)
-        self.vbox.add(hbox)
-        hbox.add(self.button("Text Entry", "Simple text entry widget", epath+"text_entry.py"))
-        hbox.add(self.button("File Selector", "Open the file selector widget", epath+"file_chooser.py"))
-        hbox.add(self.button("Header Bar", "Window with a custom header bar", epath+"header_bar.py"))
-
-        self.vbox.add(self.label("Events:"))
-        hbox = Gtk.HBox(False, 10)
-        self.vbox.add(hbox)
-        hbox.add(self.button("Grabs", "Test keyboard and pointer grabs", epath+"grabs.py"))
-        hbox.add(self.button("Clicks", "Double and triple click events", epath+"clicks.py"))
-        hbox.add(self.button("Focus", "Shows window focus events", epath+"window_focus.py"))
-
-        self.vbox.add(self.label("Windows:"))
-        hbox = Gtk.HBox(False, 10)
-        self.vbox.add(hbox)
-        hbox.add(self.button("States", "Toggle various window attributes", epath+"window_states.py"))
-        hbox.add(self.button("Title", "Update the window title", epath+"window_title.py"))
-        hbox.add(self.button("Opacity", "Change window opacity", epath+"window_opacity.py"))
-        hbox.add(self.button("Transient", "Show transient windows", epath+"window_transient.py"))
-        hbox.add(self.button("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect.py"))
-
-        self.vbox.add(self.label("Keyboard and Clipboard:"))
-        hbox = Gtk.HBox(False, 10)
-        self.vbox.add(hbox)
-        hbox.add(self.button("Keyboard", "Keyboard event viewer", gpath+"gtk_view_keyboard.py"))
-        hbox.add(self.button("Clipboard", "Clipboard event viewer", gpath+"gtk_view_clipboard.py"))
-
-        self.vbox.add(self.label("Misc:"))
-        hbox = Gtk.HBox(False, 10)
-        self.vbox.add(hbox)
-        hbox.add(self.button("Tray", "Show a system tray icon", epath+"tray.py"))
-        hbox.add(self.button("Font Rendering", "Render characters with and without anti-aliasing", epath+"fontrendering.py"))
-        hbox.add(self.button("Bell", "Test system bell", epath+"bell.py"))
-        hbox.add(self.button("Cursors", "Show named cursors", epath+"cursors.py"))
-
+        addhbox("Colors:", (
+            ("Squares", "Shows RGB+Grey squares in a window", epath+"colors_plain.py"),
+            ("Animated", "Shows RGB+Grey squares animated", epath+"colors.py"),
+            ("Bit Depth", "Shows color gradients and visualize bit depth clipping", epath+"colors_gradient.py"),
+            ))
+        addhbox("Transparency and Rendering", (
+            ("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window.py"),
+            ("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors.py"),
+            ("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl/window_backend.py"),
+            ))
+        addhbox("Widgets:", (
+            ("Text Entry", "Simple text entry widget", epath+"text_entry.py"),
+            ("File Selector", "Open the file selector widget", epath+"file_chooser.py"),
+            ("Header Bar", "Window with a custom header bar", epath+"header_bar.py"),
+            ))
+        addhbox("Events:", (
+            ("Grabs", "Test keyboard and pointer grabs", epath+"grabs.py"),
+            ("Clicks", "Double and triple click events", epath+"clicks.py"),
+            ("Focus", "Shows window focus events", epath+"window_focus.py"),
+            ))
+        addhbox("Windows:", (
+            ("States", "Toggle various window attributes", epath+"window_states.py"),
+            ("Title", "Update the window title", epath+"window_title.py"),
+            ("Opacity", "Change window opacity", epath+"window_opacity.py"),
+            ("Transient", "Show transient windows", epath+"window_transient.py"),
+            ("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect.py"),
+            ))
+        addhbox("Keyboard and Clipboard:", (
+            ("Keyboard", "Keyboard event viewer", gpath+"gtk_view_keyboard.py"),
+            ("Clipboard", "Clipboard event viewer", gpath+"gtk_view_clipboard.py"),
+            ))
+        addhbox("Misc:", (
+                ("Tray", "Show a system tray icon", epath+"tray.py"),
+                ("Font Rendering", "Render characters with and without anti-aliasing", epath+"fontrendering.py"),
+                ("Bell", "Test system bell", epath+"bell.py"),
+                ("Cursors", "Show named cursors", epath+"cursors.py"),
+                ))
         self.vbox.show_all()
 
     def label(self, text):
