@@ -10,8 +10,6 @@ log = Logger("encoder", "webp")
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport memalign, memory_as_pybuffer  #pylint: disable=syntax-error
-from xpra.os_util import bytestostr
-
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from libc.stdlib cimport free

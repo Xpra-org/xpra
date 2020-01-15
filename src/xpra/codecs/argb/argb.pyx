@@ -1,12 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
-from xpra.os_util import bytestostr
 from xpra.util import first_time
 from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
@@ -473,7 +472,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
             return True
-    warning_key = "format-not-handled-%s" % bytestostr(pixel_format)
+    warning_key = "format-not-handled-%s" % pixel_format
     if first_time(warning_key):
         log.warn("Warning: no matching argb function,")
         log.warn(" cannot convert %s to one of: %s", pixel_format, rgb_formats)

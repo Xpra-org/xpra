@@ -119,8 +119,8 @@ def get_abi_version():
     return VPX_DECODER_ABI_VERSION
 
 def get_version():
-    v = vpx_codec_version_str()
-    vstr = bytestostr(v)
+    b = vpx_codec_version_str()
+    vstr = b.decode("latin1")
     log("vpx_codec_version_str()=%s", vstr)
     return vstr.lstrip("v")
 
@@ -203,7 +203,7 @@ cdef class Decoder:
         dec_cfg.threads = self.max_threads
         if vpx_codec_dec_init_ver(self.context, codec_iface, &dec_cfg,
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
-            raise Exception("failed to instantiate %s decoder with ABI version %s: %s" % (encoding, VPX_DECODER_ABI_VERSION, bytestostr(vpx_codec_error(self.context))))
+            raise Exception("failed to instantiate %s decoder with ABI version %s: %s" % (encoding, VPX_DECODER_ABI_VERSION, self.codec_error_str()))
         log("vpx_codec_dec_init_ver for %s succeeded with ABI version %s", encoding, VPX_DECODER_ABI_VERSION)
 
     def __repr__(self):
@@ -275,12 +275,12 @@ cdef class Decoder:
         with nogil:
             ret = vpx_codec_decode(self.context, buf, buf_len, NULL, 0)
         if ret!=VPX_CODEC_OK:
-            log.error("Error: vpx_codec_decode: %s", bytestostr(vpx_codec_error(self.context)))
+            log.error("Error: vpx_codec_decode: %s", self.codec_error_str())
             return None
         with nogil:
             img = vpx_codec_get_frame(self.context, &iter)
         if img==NULL:
-            log.error("Error: vpx_codec_get_frame: %s", bytestostr(vpx_codec_error(self.context)))
+            log.error("Error: vpx_codec_get_frame: %s", self.codec_error_str())
             return None
         strides = []
         pixels = []
@@ -308,6 +308,9 @@ cdef class Decoder:
         cdef double elapsed = 1000*(monotonic_time()-start)
         log("%s frame %4i decoded in %3ims", self.encoding, self.frames, elapsed)
         return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3)
+
+    def codec_error_str(self):
+        return vpx_codec_error(self.context).decode("latin1")
 
 
 def selftest(full=False):

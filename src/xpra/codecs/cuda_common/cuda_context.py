@@ -11,7 +11,7 @@ import pycuda               #@UnresolvedImport
 from pycuda import driver   #@UnresolvedImport
 
 from xpra.util import engs, print_nested_dict, envint, csv, first_time
-from xpra.os_util import monotonic_time, bytestostr, load_binary_file
+from xpra.os_util import monotonic_time, load_binary_file
 from xpra.log import Logger
 
 log = Logger("cuda")
@@ -106,7 +106,7 @@ def get_prefs():
                 c_prefs = {}
                 with open(conf_file, "rb") as f:
                     for line in f:
-                        sline = bytestostr(line.strip().rstrip(b'\r\n').strip())
+                        sline = line.strip().rstrip(b'\r\n').strip().decode("latin1")
                         props = sline.split("=", 1)
                         if len(props)!=2:
                             continue

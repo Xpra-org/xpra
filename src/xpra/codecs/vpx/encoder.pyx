@@ -233,8 +233,8 @@ def get_abi_version():
     return VPX_ENCODER_ABI_VERSION
 
 def get_version():
-    v = vpx_codec_version_str()
-    vstr = bytestostr(v)
+    b = vpx_codec_version_str()
+    vstr = b.decode("latin1")
     log("vpx_codec_version_str()=%s", vstr)
     return vstr.lstrip("v")
 
@@ -259,12 +259,13 @@ def get_output_colorspaces(encoding, input_colorspace):
 generation = AtomicInteger()
 def get_info():
     global CODECS, MAX_SIZE
+    b = vpx_codec_build_config()
     info = {
         "version"       : get_version(),
         "encodings"     : CODECS,
         "abi_version"   : get_abi_version(),
         "counter"       : generation.get(),
-        "build_config"  : bytestostr(vpx_codec_build_config()),
+        "build_config"  : b.decode("latin1"),
         }
     for e, maxsize in MAX_SIZE.items():
         info["%s.max-size" % e] = maxsize
@@ -424,7 +425,7 @@ cdef class Encoder:
             free(self.context)
             self.context = NULL
             log("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
-            raise Exception("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, bytestostr(vpx_codec_error(self.context))))
+            raise Exception("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, self.codec_error_str()))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
         cdef vpx_codec_err_t ctrl
         if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
@@ -447,6 +448,8 @@ cdef class Encoder:
             self.file = open(filename, 'wb')
             log.info("saving %s stream to %s", encoding, filename)
 
+    def codec_error_str(self):
+        return vpx_codec_error(self.context).decode("latin1")
 
     def codec_control(self, info, int attr, int value):
         cdef vpx_codec_err_t ctrl = vpx_codec_control_(self.context, attr, value)

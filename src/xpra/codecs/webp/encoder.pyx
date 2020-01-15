@@ -14,7 +14,6 @@ from libc.stdlib cimport free   #pylint: disable=syntax-error
 from libc.string cimport memset #pylint: disable=syntax-error
 
 from xpra.buffers.membuf cimport object_as_buffer
-from xpra.os_util import bytestostr
 
 from xpra.util import envbool, envint
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)

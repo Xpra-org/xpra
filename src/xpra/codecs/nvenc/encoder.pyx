@@ -16,7 +16,7 @@ from ctypes import cdll as loader, POINTER
 from threading import Lock
 from pycuda import driver
 
-from xpra.os_util import WIN32, OSX, LINUX, bytestostr, strtobytes
+from xpra.os_util import WIN32, OSX, LINUX, strtobytes
 from xpra.make_thread import start_thread
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time
 from xpra.codecs.cuda_common.cuda_context import (
@@ -1105,9 +1105,9 @@ cdef guidstr(GUID guid):
         parts.append(b)
     parts.append(bytearray(guid.get("Data4")[:2]))
     parts.append(bytearray(guid.get("Data4")[2:8]))
-    s = b"-".join(binascii.hexlify(b).upper() for b in parts)
+    s = "-".join(binascii.hexlify(b).upper().decode("latin1") for b in parts)
     #log.info("guidstr(%s)=%s", guid, s)
-    return bytestostr(s)
+    return s
 
 cdef GUID c_parseguid(src) except *:
     #just as ugly as above - shoot me now

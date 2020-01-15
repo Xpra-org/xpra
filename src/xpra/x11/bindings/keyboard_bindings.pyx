@@ -227,7 +227,8 @@ cdef extern from "X11/extensions/xfixeswire.h":
 cdef NS(char *v):
     if v==NULL:
         return "NULL"
-    return bytestostr(v)
+    b = v
+    return b.decode("latin1")
 
 cdef s(const char *v):
     pytmp = v[:]
@@ -285,7 +286,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef XkbRF_VarDefsRec rdefs
         cdef XkbComponentNamesRec rnames
         cdef char *locale = setlocale(LC_ALL, NULL)
-        log("setxkbmap: using locale=%s", bytestostr(locale))
+        log("setxkbmap: using locale=%s", NS(locale))
 
         #we have to use a temporary value for older versions of Cython:
         v = strtobytes(model or "")

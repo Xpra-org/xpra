@@ -274,7 +274,7 @@ def get_license_keys(version=0, basefilename="nvenc"):
                 with open(keys_file, "rb") as f:
                     fkeys = []
                     for line in f:
-                        sline = bytestostr(line.strip().rstrip(b'\r\n').strip())
+                        sline = line.strip().rstrip(b'\r\n').strip().decode("latin1")
                         if not sline:
                             log("skipping empty line")
                             continue

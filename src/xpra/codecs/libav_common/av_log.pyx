@@ -57,7 +57,8 @@ cdef av_error_str(int errnum):
     if av_strerror(errnum, err_str, 128)==0:
         while i<128 and err_str[i]!=0:
             i += 1
-        return bytestostr(err_str[:i])
+        b = err_str[:i]
+        return b.decode("latin1")
     return "error %s" % errnum
 
 
