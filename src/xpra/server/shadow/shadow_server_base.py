@@ -12,7 +12,7 @@ from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
-from xpra.util import envint, envbool, DONE
+from xpra.util import envint, envbool, DONE, XPRA_NEW_USER_NOTIFICATION_ID
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -173,7 +173,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         notifylog("notify_new_user(%s) notifier=%s", ss, self.notifier)
         if self.notifier:
             tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
-            nid = 0
+            nid = XPRA_NEW_USER_NOTIFICATION_ID
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
             actions = []
