@@ -238,9 +238,9 @@
 
 	<distutils id="python3-py2app" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/4d/a2/c01b3eb13163be0fe3065c0c5461f75e702ab0dc66a7f42f8987884448a5/py2app-0.19.tar.gz"
-			hash="sha256:f3b9f4deb466998304fedea739bfa7bc553a1887656f7ee6accb2899e9e45b52"
-			version="0.19"/>
+			module="/packages/b8/42/a68d4fa9839229cebec6f616c27c0912010f8563f72073227789e038309c/py2app-0.20.tar.gz"
+			hash="sha256:46ce0a1551c621a976ba12b4fe4e655ab39339fa1e75784cdafb4295b269bb91"
+			version="0.20"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -548,9 +548,9 @@
 
 	<distutils id="python3-macholib" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/72/60/2b22bef6edfb2864f7c0dc1d55b75e70ba1c3670899bead37e059e29b738/macholib-1.11.tar.gz"
-			hash="sha256:c4180ffc6f909bf8db6cd81cff4b6f601d575568f4d5dee148c830e9851eb9db"
-			version="1.11"/>
+			module="/packages/0d/fe/61e8f6b569c8273a8f2dd73921738239e03a2acbfc55be09f8793261f269/macholib-1.14.tar.gz"
+			hash="sha256:0c436bc847e7b1d9bda0560351bf76d7caf930fb585a828d13608839ef42c432"
+			version="1.14"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -561,9 +561,9 @@
 
 	<distutils id="python3-modulegraph" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/64/76/0af68379caf5cc5a7757a3874c136327ef213aefe808fb50fa8860c36940/modulegraph-0.17.tar.gz"
-			hash="sha256:d2824588c489c0ba6f815c066950400755e8e287da64bcddae4c0d6e76f8f5f3"
-			version="0.17"/>
+			module="/packages/0a/e6/3aeee6d736951e6ca0c5d9196b65a6745c61c750baff674f381e5d455a30/modulegraph-0.18.tar.gz"
+			hash="sha256:11c03dac1368bb9e7f780b58d251a0880c30b5a14816b6f88ec5a6fe1e3e5611"
+			version="0.18"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -574,9 +574,9 @@
 
 	<distutils id="python3-altgraph" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/da/a4/6c508ac94d7a65859a7a47e6fbde4aa6b81d0f0863aa45861241e782391c/altgraph-0.16.1.tar.gz"
-			hash="sha256:ddf5320017147ba7b810198e0b6619bd7b5563aa034da388cea8546b877f9b0c"
-			version="0.16.1"/>
+			module="/packages/22/5a/ac50b52581bbf0d8f6fd50ad77d20faac19a2263b43c60e7f3af8d1ec880/altgraph-0.17.tar.gz"
+			hash="sha256:1f05a47122542f97028caf78775a095fbe6a2699b5089de8477eb583167d69aa"
+			version="0.17"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
