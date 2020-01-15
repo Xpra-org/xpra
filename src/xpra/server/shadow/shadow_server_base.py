@@ -12,7 +12,7 @@ from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
-from xpra.util import envint, envbool, DONE, XPRA_NEW_USER_NOTIFICATION_ID
+from xpra.util import envint, envbool, DONE, XPRA_STARTUP_NOTIFICATION_ID, XPRA_NEW_USER_NOTIFICATION_ID
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -25,6 +25,7 @@ NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
 CURSORS = envbool("XPRA_CURSORS", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
+NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
 
 
 SHADOWSERVER_BASE_CLASS = object
@@ -64,6 +65,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.session_name = opts.session_name
         else:
             self.guess_session_name()
+
+    def run(self):
+        from gi.repository import GLib
+        GLib.timeout_add(1000, self.notify_startup_complete)
+        super().run()
 
     def cleanup(self):
         for wid in self.mapped:
@@ -158,6 +164,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 break
             except Exception:
                 notifylog("failed to instantiate %s", x, exc_info=True)
+        self.notify_startup()
 
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants
@@ -186,6 +193,28 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def get_notification_tray(self):
         return None
+
+    def notify_startup(self):
+        self.do_notify_startup("Xpra shadow server is starting up")
+
+    def notify_startup_complete(self):
+        self.do_notify_startup("Xpra shadow server is ready", replaces_nid=XPRA_STARTUP_NOTIFICATION_ID)
+
+    def do_notify_startup(self, title, body="", replaces_nid=0):
+        #overriden here so we can show the notification
+        #directly on the screen we shadow
+        notifylog("do_notify_startup%s", (title, body, replaces_nid))
+        if self.notifier:
+            tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
+            nid = XPRA_STARTUP_NOTIFICATION_ID
+            actions = []
+            hints = {}
+            icon = None
+            icon_filename = os.path.join(get_icon_dir(), "server-connected.png")
+            if os.path.exists(icon_filename):
+                icon = parse_image_path(icon_filename)
+            self.notifier.show_notify("", tray, nid, "Xpra", replaces_nid, "",
+                                      title, body, actions, hints, 10*1000, icon)
 
 
     ############################################################################
