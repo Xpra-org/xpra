@@ -249,7 +249,7 @@ def create_sockets(opts, error_cb):
         for (host, iport), options in defs.items():
             add_tcp_socket(socktype, host, iport, options)
     log("setting up UDP sockets: %s", csv(bind_udp))
-    for (host, iport), options in bind_udp:
+    for (host, iport), options in bind_udp.items():
         add_udp_socket("udp", host, iport, options)
     log("setting up vsock sockets: %s", csv(bind_vsock))
     for (cid, iport), options in bind_vsock:
