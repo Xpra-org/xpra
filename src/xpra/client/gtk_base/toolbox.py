@@ -56,6 +56,7 @@ class ToolboxGUI(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_wmclass("xpra-toolbox", "Xpra-Toolbox")
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
@@ -65,9 +66,7 @@ class ToolboxGUI(Gtk.Window):
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         button.add(image)
         button.set_tooltip_text("About")
-        def clicked(*_args):
-            about()
-        button.connect("clicked", clicked)
+        button.connect("clicked", self.show_about)
         hb.add(button)
         hb.show_all()
         self.set_titlebar(hb)
@@ -79,7 +78,6 @@ class ToolboxGUI(Gtk.Window):
         if pixbuf:
             self.set_icon(pixbuf)
         add_close_accel(self, self.quit)
-        add_window_accel(self, 'F1', self.show_about)
         self.connect("delete_event", self.quit)
 
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
