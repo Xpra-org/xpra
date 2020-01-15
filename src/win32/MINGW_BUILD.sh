@@ -31,6 +31,7 @@ BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	DO_TESTS="0"
 	DO_SERVICE="0"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x264 --without-nvenc --without-nvfbc"
 	shift
 fi
 
@@ -286,10 +287,22 @@ mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
 for prefix in lib avcodec avformat avutil swscale swresample zlib1 xvidcore; do
 	find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
 done
-for x in openblas gfortran quadmath; do
-	mv -f ./lib/numpy/core/lib$x*.dll ./lib/
-	mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/
-done
+if [ "${CLIENT_ONLY}" ]; then
+	rm -fr ./lib/numpy
+else
+	for x in openblas gfortran quadmath; do
+		mv -f ./lib/numpy/core/lib$x*.dll ./lib/
+		mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/
+	done
+	#trim tests from numpy
+	pushd ./lib/numpy > /dev/null
+	rm -fr ./f2py/docs ./tests ./doc
+	for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing compat fft; do
+		rm -fr ./$x/tests
+	done
+	popd > /dev/null
+fi
+rm lib/libx265*.dll
 mv lib/nacl/libsodium*dll ./lib/
 #gstreamer uses its own lib dir, so this does not belong in the root:
 mv ./libgst*.dll ./lib/gstreamer-1.0/
@@ -318,13 +331,6 @@ popd > /dev/null
 pushd ${DIST}/lib > /dev/null
 #remove test bits we don't need:
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
-#trim tests from numpy
-pushd numpy > /dev/null
-rm -fr ./f2py/docs ./tests ./doc
-for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing compat fft; do
-	rm -fr ./$x/tests
-done
-popd > /dev/null
 #remove source:
 find xpra -name "*.pyx" -exec rm {} \;
 find xpra -name "*.c" -exec rm {} \;
