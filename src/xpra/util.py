@@ -600,15 +600,16 @@ def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
 
 
 def repr_ellipsized(obj, limit=100):
-    if isinstance(obj, str) and len(obj) > limit:
-        try:
-            s = repr(obj)
-        except ValueError:
-            s = binascii.hexlify(obj)
+    if isinstance(obj, str):
+        if len(obj)>limit>6:
+            return obj[:limit//2-2]+" .. "+obj[2-limit//2:]
+        return obj
+    if isinstance(obj, bytes) and len(obj) > limit:
+        s = binascii.hexlify(obj)
         if len(s)<=limit or limit<=6:
             return s
-        return s[:limit//2-2]+" .. "+s[2-limit//2:]
-    return repr(obj)
+        return s[:limit//2-2]+b" .. "+s[2-limit//2:]
+    return repr_ellipsized(repr(obj))
 
 
 def rindex(alist, avalue):
