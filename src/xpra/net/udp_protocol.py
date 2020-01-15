@@ -175,7 +175,8 @@ class UDPProtocol(Protocol):
         if self._closed:
             return False
         missing = self._get_missing()
-        packet = ("udp-control", self.mtu, self.asynchronous_receive_enabled, self.last_sequence, self.highest_sequence, missing, tuple(self.cancel))
+        packet = ("udp-control", self.mtu, self.asynchronous_receive_enabled,
+                  self.last_sequence, self.highest_sequence, missing, tuple(self.cancel))
         log("send_control() packet(%s)=%s", self.pending_packets, packet)
         def send_control_failed():
             #resend a new one
@@ -225,7 +226,8 @@ class UDPProtocol(Protocol):
         return missing
 
     def process_control(self, mtu, remote_async_receive, last_seq, high_seq, missing, cancel):
-        log("process_control(%i, %i, %i, %i, %s, %s) current seq=%i", mtu, remote_async_receive, last_seq, high_seq, missing, cancel, self.output_packetcount)
+        log("process_control(%i, %i, %i, %i, %s, %s) current seq=%i",
+            mtu, remote_async_receive, last_seq, high_seq, missing, cancel, self.output_packetcount)
         con = self._conn
         if not con:
             return
@@ -364,7 +366,7 @@ class UDPProtocol(Protocol):
             if any(x is None for x in ip.chunks):
                 #one of the chunks is still missing
                 log("process_udp_data: sequence %i, got chunk %i but still missing: %s",
-                    seqno, chunk, [i for i,x in enumerate(ip.chunks) if x is None])
+                    seqno, chunk, repr_ellipsized(tuple(i for i,x in enumerate(ip.chunks) if x is None)))
                 self.schedule_control(self.jitter)
                 return
             #all the data is here!
