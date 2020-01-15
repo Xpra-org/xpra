@@ -12,7 +12,7 @@ import subprocess
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk, GdkPixbuf, Gio
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
@@ -20,6 +20,7 @@ from xpra.gtk_common.gtk_util import (
     add_window_accel, imagebutton,
     label,
     )
+from xpra.gtk_common.about import about
 from xpra.platform.paths import get_icon_dir, get_python_execfile_command
 from xpra.os_util import OSX, WIN32
 from xpra.log import Logger
@@ -55,14 +56,33 @@ class ToolboxGUI(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_pixbuf("xpra")
-        if icon:
-            self.set_icon(icon)
+
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "Xpra"
+        button = Gtk.Button()
+        icon = Gio.ThemedIcon(name="help-about")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        button.add(image)
+        button.set_tooltip_text("About")
+        def clicked(*_args):
+            about()
+        button.connect("clicked", clicked)
+        hb.add(button)
+        hb.show_all()
+        self.set_titlebar(hb)
+
+        icon_name = "applications-utilities"
+        self.set_icon_name(icon_name)
+        icon_theme = Gtk.IconTheme.get_default()
+        pixbuf = icon_theme.load_icon(icon_name, 96, 0) or get_pixbuf("xpra")
+        if pixbuf:
+            self.set_icon(pixbuf)
         add_close_accel(self, self.quit)
         add_window_accel(self, 'F1', self.show_about)
         self.connect("delete_event", self.quit)
 
-        self.vbox = Gtk.VBox(False, 10)
+        self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
 
         epath = "example/"
@@ -71,7 +91,7 @@ class ToolboxGUI(Gtk.Window):
 
         def addhbox(blabel, buttons):
             self.vbox.add(self.label(blabel))
-            hbox = Gtk.HBox(False, 10)
+            hbox = Gtk.HBox(homogeneous=False, spacing=10)
             self.vbox.add(hbox)
             for button in buttons:
                 hbox.add(self.button(*button))
