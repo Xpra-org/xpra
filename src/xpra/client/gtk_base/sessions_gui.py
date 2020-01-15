@@ -8,7 +8,7 @@ import sys
 import os.path
 import socket
 import subprocess
-from gi.repository import Pango, GLib, Gtk, GdkPixbuf
+from gi.repository import Pango, GLib, Gtk, GdkPixbuf, Gio
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
@@ -28,6 +28,12 @@ from xpra.log import Logger
 log = Logger("client", "util")
 
 
+def get_pixbuf(icon_name):
+    icon_filename = os.path.join(get_icon_dir(), icon_name)
+    if os.path.exists(icon_filename):
+        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+    return None
+
 class SessionsGUI(Gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
@@ -40,11 +46,25 @@ class SessionsGUI(Gtk.Window):
         self.set_decorated(True)
         self.set_size_request(800, 220)
         self.set_position(Gtk.WindowPosition.CENTER)
-        icon = self.get_pixbuf("xpra")
-        if icon:
-            self.set_icon(icon)
+        self.set_wmclass("xpra-sessions-gui", "Xpra-Sessions-GUI")
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
+        icon = get_pixbuf("browse.png")
+        if icon:
+            self.set_icon(icon)
+
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "Xpra"
+        button = Gtk.Button()
+        icon = Gio.ThemedIcon(name="help-about")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        button.add(image)
+        button.set_tooltip_text("About")
+        button.connect("clicked", self.show_about)
+        hb.add(button)
+        hb.show_all()
+        self.set_titlebar(hb)
 
         self.clients = {}
         self.clients_disconnecting = set()
@@ -119,6 +139,11 @@ class SessionsGUI(Gtk.Window):
 
     def cleanup(self):
         self.destroy()
+
+
+    def show_about(self, *_args):
+        from xpra.gtk_common.about import about
+        about()
 
 
     def update(self):

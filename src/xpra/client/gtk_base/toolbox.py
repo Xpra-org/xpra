@@ -17,10 +17,9 @@ from gi.repository import Gtk, GdkPixbuf, Gio
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
     add_close_accel,
-    add_window_accel, imagebutton,
+    imagebutton,
     label,
     )
-from xpra.gtk_common.about import about
 from xpra.platform.paths import get_icon_dir, get_python_execfile_command
 from xpra.os_util import OSX, WIN32
 from xpra.log import Logger

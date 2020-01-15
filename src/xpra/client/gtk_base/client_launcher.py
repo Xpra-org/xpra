@@ -114,6 +114,12 @@ def has_mdns():
 def noop(*args):
     log("noop%s", args)
 
+def get_pixbuf(icon_name):
+    icon_filename = os.path.join(get_icon_dir(), icon_name)
+    if os.path.exists(icon_filename):
+        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+    return None
+
 
 class ApplicationWindow:
 
@@ -176,6 +182,11 @@ class ApplicationWindow:
         self.window.set_default_size(400, 260)
         self.window.set_title("Xpra Launcher")
         self.window.set_position(Gtk.WindowPosition.CENTER)
+        self.window.set_wmclass("xpra-launcher-gui", "Xpra-Launcher-GUI")
+        add_close_accel(self.window, self.destroy)
+        icon = get_pixbuf("connect.png")
+        if icon:
+            self.window.set_icon(icon)
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
@@ -422,7 +433,6 @@ class ApplicationWindow:
             self.connect_btn.set_image(scaled_image(connect_icon, 24))
         hbox.pack_start(self.connect_btn)
 
-        add_close_accel(self.window, self.accel_close)
         vbox.show_all()
         self.advanced_options_toggled()
         self.window.vbox = vbox
