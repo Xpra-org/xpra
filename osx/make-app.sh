@@ -32,8 +32,8 @@ LIBDIR="${RSCDIR}/lib"
 
 echo "*******************************************************************************"
 echo "Deleting existing xpra modules and temporary directories"
-PYTHON_PREFIX=`python${PYTHON_MAJOR_VERSION}-config --prefix`
-PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python${PYTHON_MAJOR_VERSION}*/site-packages | sort | tail -n 1`
+PYTHON_PREFIX=`python3-config --prefix`
+PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python3*/site-packages | sort | tail -n 1`
 rm -fr "${PYTHON_PACKAGES}/xpra"*
 rm -fr image/* dist
 ln -sf ../src/dist ./dist
@@ -103,7 +103,7 @@ if [ "$?" != "0" ]; then
 	exit 1
 fi
 echo "py2app forgets AVFoundation, do it by hand:"
-rsync -rplogt ${JHBUILD_PREFIX}/lib/python${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}/site-packages/AVFoundation ./dist/xpra.app/Contents/Resources/lib/python${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}/
+rsync -rplogt ${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/AVFoundation ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
 echo "OK"
 popd
 
@@ -146,7 +146,7 @@ echo
 echo "*******************************************************************************"
 echo "make python softlink without version number"
 pushd ${LIBDIR} || exit 1
-ln -sf python${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} python
+ln -sf python3.${PYTHON_MINOR_VERSION} python
 cd python
 rmdir config
 if [ "${ZIP_MODULES}" != "1" ]; then
@@ -155,7 +155,7 @@ if [ "${ZIP_MODULES}" != "1" ]; then
 		unzip -nq site-packages.zip
 		rm site-packages.zip
 	else
-		unzip -nq ../python${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}.zip
+		unzip -nq ../python3${PYTHON_MINOR_VERSION}.zip
 	fi
 fi
 popd
