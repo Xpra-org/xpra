@@ -77,8 +77,7 @@ fi
 
 #figure out the full xpra version:
 PYTHON_VERSION=`${PYTHON} --version | awk '{print $2}'`
-PYTHON_MAJOR_VERSION=`${PYTHON} -c 'import sys;print(sys.version_info[0])'`
-echo "Python${PYTHON_MAJOR_VERSION} version ${PYTHON_VERSION}"
+echo "Python version ${PYTHON_VERSION}"
 VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`${PYTHON} -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION))"`
 NUMREVISION=`${PYTHON} -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION).rstrip('M'))"`
@@ -106,9 +105,7 @@ else
 	APPID="Xpra_is1"
 	BITS="64"
 fi
-if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-	BUILD_TYPE="-Python3${BUILD_TYPE}"
-fi
+BUILD_TYPE="-Python3${BUILD_TYPE}"
 echo
 echo
 
@@ -236,8 +233,8 @@ else
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc"
 fi
 
-echo "* Building Python ${PYTHON_MAJOR_VERSION} Cython modules"
-BUILD_LOG="win32/Python${PYTHON_MAJOR_VERSION}-build.log"
+echo "* Building Python3 Cython modules"
+BUILD_LOG="win32/Python3-build.log"
 ${PYTHON} ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& ${BUILD_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: build failed, see ${BUILD_LOG}:"
@@ -310,25 +307,16 @@ mv ./libgst*.dll ./lib/gstreamer-1.0/
 mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
 #and the gstreamer support libraries look like plugins but those are actual DLLs:
 mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
-if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-	#move most DLLs to /lib
-	mv *dll lib/
-	#but keep the core DLLs (python, gcc, etc):
-	cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
-	pushd lib > /dev/null
-else
-	mv lib/PIL/*dll ./lib/
-	mv lib/*dll ./
-	pushd . > /dev/null
-fi
+#move most DLLs to /lib
+mv *dll lib/
+#but keep the core DLLs (python, gcc, etc):
+cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
+pushd lib > /dev/null
 #remove all the pointless duplication:
 for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
-popd > /dev/null
-popd > /dev/null
 
-pushd ${DIST}/lib > /dev/null
 #remove test bits we don't need:
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
 #remove source:
@@ -346,9 +334,6 @@ rmdir xpra/*/*/* 2> /dev/null
 rmdir xpra/*/* 2> /dev/null
 rmdir xpra/* 2> /dev/null
 #zip up some modules:
-if [ "${PYTHON_MAJOR_VERSION}" != "3" ]; then
-	rm -fr gtk-3.0 lib2to3
-fi
 if [ "${ZIP_MODULES}" == "1" ]; then
 	#these modules contain native code or data files,
 	#so they will require special treatment:
@@ -359,6 +344,7 @@ if [ "${ZIP_MODULES}" == "1" ]; then
 			http enum sqlite3 winreg copyreg _thread _dummythread builtins importlib \
 			logging queue urllib xml xmlrpc pyasn1_modules concurrent pynvml collections > /dev/null
 fi
+popd > /dev/null
 popd > /dev/null
 
 
