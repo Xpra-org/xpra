@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import socket
 import struct
 import random
 
-from xpra.os_util import LINUX, monotonic_time, memoryview_to_bytes
+from xpra.os_util import LINUX, monotonic_time, memoryview_to_bytes, hexstr
 from xpra.util import envint, repr_ellipsized
 from xpra.make_thread import start_thread
 from xpra.net.protocol import Protocol, READ_BUFFER_SIZE
@@ -45,7 +45,7 @@ class PendingPacket:
         self.chunk_gap = 0
         self.chunks = chunks
     def __repr__(self):
-        return ("PendingPacket(%i: %s chunks)" % (self.seqno, len(self.chunks or [])))
+        return "PendingPacket(%i: %s chunks)" % (self.seqno, len(self.chunks or b""))
 
 
 class UDPListener:
@@ -317,8 +317,12 @@ class UDPProtocol(Protocol):
             * otherwise queue it up and keep track of any missing sequence numbers,
               schedule a udp-control packet to notify the other end of what we're missing
         """
-        #log("process_udp_data%s %i bytes", (uuid, seqno, synchronous, chunk, chunks, repr_ellipsized(data), bfrom), len(data))
-        assert uuid==self.uuid
+        #log("process_udp_data%s %i bytes",
+        #    (uuid, seqno, synchronous, chunk, chunks, repr_ellipsized(data), bfrom), len(data))
+        def h(v):
+            uuid_bin = struct.pack("!Q", v)
+            return hexstr(uuid_bin)
+        assert uuid==self.uuid, "unexpected uuid in header, should be %s but received %s" % (h(self.uuid), h(uuid))
         if seqno<=self.last_sequence:
             log("skipping duplicate packet %5i.%i", seqno, chunk)
             return
@@ -562,7 +566,6 @@ class UDPSocketConnection(SocketConnection):
         """
             don't close the socket, we don't own it
         """
-        pass
 
 class MTUExceeded(IOError):
     pass
