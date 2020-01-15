@@ -69,7 +69,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def run(self):
         from gi.repository import GLib
         GLib.timeout_add(1000, self.notify_startup_complete)
-        super().run()
+        return super().run()
 
     def cleanup(self):
         for wid in self.mapped:
