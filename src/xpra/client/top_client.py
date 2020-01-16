@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,10 +7,8 @@ import os
 import sys
 import curses
 import signal
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
-
-from gi.repository import GLib
 
 from xpra import __version__
 from xpra.util import typedict, std, envint, csv, engs
@@ -31,6 +29,9 @@ WHITE = 0
 GREEN = 1
 YELLOW = 2
 RED = 3
+
+Escape = 27
+EXIT_KEYS = (Escape, ord("q"), ord("Q"))
 
 def get_title():
     title = "Xpra top %s" % __version__
@@ -93,23 +94,60 @@ class TopClient:
         self.socket_dirs = opts.socket_dirs
         self.socket_dir = opts.socket_dir
         self.position = 0
+        self.selected_session = None
+        self.exit_code = None
+        self.subprocess_exit_code = None
         self.dotxpra = DotXpra(self.socket_dir, self.socket_dirs)
-        self.update_screen()
-        self.update_timer = GLib.timeout_add(5*1000, self.update_screen)
 
     def run(self):
-        register_os_signals(self.signal_handler)
-        self.glib_mainloop = GLib.MainLoop()
-        self.glib_mainloop.run()
-        return 0
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(signum, self.signal_handler)
+        self.update_loop()
+        self.cleanup()
+        return self.exit_code
 
     def signal_handler(self, *_args):
-        self.cleanup()
-        sys.exit(128+signal.SIGINT)
+        self.exit_code = 128+signal.SIGINT
 
     def cleanup(self):
         curses_clean(self.stdscr)
-        GLib.source_remove(self.update_timer)
+
+    def update_loop(self):
+        while self.exit_code is None:
+            self.update_screen()
+            curses.halfdelay(50)
+            v = self.stdscr.getch()
+            #print("v=%s" % (v,))
+            if v in EXIT_KEYS:
+                self.exit_code = 0
+            elif v==258:    #down arrow
+                self.position += 1
+            elif v==259:    #up arrow
+                self.position = max(self.position-1, 0)
+            elif v==10 and self.selected_session:
+                #show this session:
+                cmd = get_nodock_command()+["top"]
+                try:
+                    self.cleanup()
+                    proc = Popen(cmd)
+                    exit_code = proc.wait()
+                    #TODO: show exit code, especially if non-zero
+                finally:
+                    self.stdscr = curses_init()
+            elif v in (ord("s"), ord("S")):
+                self.run_subcommand("stop")
+            elif v in (ord("a"), ord("A")):
+                self.run_subcommand("attach")
+            elif v in (ord("d"), ord("D")):
+                self.run_subcommand("detach")
+
+    def run_subcommand(self, subcommand):
+        cmd = get_nodock_command()+[subcommand, self.selected_session]
+        try:
+            Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
+        except:
+            pass
+
 
     def update_screen(self):
         self.stdscr.erase()
@@ -139,6 +177,8 @@ class TopClient:
                 for state, display, path in sessions:
                     displays.setdefault(display, []).append((state, path))
             self.stdscr.addstr(hpos, 0, "found %i display%s" % (len(displays), engs(displays)))
+            self.position = min(len(displays), self.position)
+            self.selected_session = None
             hpos += 1
             if height<=hpos:
                 return
@@ -152,7 +192,11 @@ class TopClient:
                     break
                 self.box(1, hpos, width-2, l+2, open_top=i>0, open_bottom=i<n-1)
                 hpos += 1
-                attr = curses.A_REVERSE if i==self.position else 0
+                if i==self.position:
+                    self.selected_session = display
+                    attr = curses.A_REVERSE
+                else:
+                    attr = 0
                 for s in info:
                     s = s.ljust(width-4)
                     self.stdscr.addstr(hpos, 2, s, attr)
@@ -256,6 +300,9 @@ class TopSessionClient(MonitorXpraClient):
             self.do_update_screen()
         finally:
             self.stdscr.refresh()
+        v = self.stdscr.getch()
+        if v in EXIT_KEYS:
+            self.quit(0)
 
     def do_update_screen(self):
         #c = self.stdscr.getch()
