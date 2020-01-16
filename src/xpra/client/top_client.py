@@ -3,13 +3,22 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import sys
 import curses
+import signal
+from subprocess import Popen, PIPE
 from datetime import datetime, timedelta
+
+from gi.repository import GLib
 
 from xpra import __version__
 from xpra.util import typedict, std, envint, csv, engs
-from xpra.os_util import platform_name, bytestostr, monotonic_time
+from xpra.os_util import platform_name, bytestostr, monotonic_time, POSIX
 from xpra.client.gobject_client_base import MonitorXpraClient
+from xpra.gtk_common.gobject_compat import register_os_signals
+from xpra.platform.dotxpra import DotXpra
+from xpra.platform.paths import get_nodock_command
 from xpra.simple_stats import std_unit
 from xpra.common import GRAVITY_STR
 from xpra.log import Logger
@@ -62,12 +71,162 @@ def curses_err(stdscr, e):
     stdscr.addstr(0, 0, str(e))
     for i, l in enumerate(traceback.format_exc().split("\n")):
         try:
-            stdscr.addstr(0, i+1, l)
+            stdscr.addstr(i+1, 0, l)
         except Exception:
             pass
 
+def box(stdscr, x, y, w, h, ul, ur, ll, lr):
+    stdscr.hline(y, x, curses.ACS_HLINE, w-1)               #@UndefinedVariable
+    stdscr.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)     #@UndefinedVariable
+    stdscr.vline(y, x, curses.ACS_VLINE, h)                 #@UndefinedVariable
+    stdscr.vline(y, x + w -1, curses.ACS_VLINE, h)          #@UndefinedVariable
+    stdscr.addch(y, x, ul)
+    stdscr.addch(y, x + w - 1, ur)
+    stdscr.addch(y + h - 1, x, ll)
+    stdscr.addch(y + h - 1, x + w - 1, lr)
 
-class TopClient(MonitorXpraClient):
+
+class TopClient:
+
+    def __init__(self, opts):
+        self.stdscr = curses_init()
+        self.socket_dirs = opts.socket_dirs
+        self.socket_dir = opts.socket_dir
+        self.position = 0
+        self.dotxpra = DotXpra(self.socket_dir, self.socket_dirs)
+        self.update_screen()
+        self.update_timer = GLib.timeout_add(5*1000, self.update_screen)
+
+    def run(self):
+        register_os_signals(self.signal_handler)
+        self.glib_mainloop = GLib.MainLoop()
+        self.glib_mainloop.run()
+        return 0
+
+    def signal_handler(self, *_args):
+        self.cleanup()
+        sys.exit(128+signal.SIGINT)
+
+    def cleanup(self):
+        curses_clean(self.stdscr)
+        GLib.source_remove(self.update_timer)
+
+    def update_screen(self):
+        self.stdscr.erase()
+        try:
+            self.do_update_screen()
+        finally:
+            self.stdscr.refresh()
+        return True
+
+    def do_update_screen(self):
+        #c = self.stdscr.getch()
+        #if c==curses.KEY_RESIZE:
+        height, width = self.stdscr.getmaxyx()
+        #log.info("update_screen() %ix%i", height, width)
+        title = get_title()
+        x = max(0, width//2-len(title)//2)
+        try:
+            hpos = 0
+            self.stdscr.addstr(hpos, x, title, curses.A_BOLD)
+            hpos += 1
+            if height<=hpos:
+                return
+            sd = self.dotxpra.socket_details()
+            #group them by display instead of socket dir:
+            displays = {}
+            for sessions in sd.values():
+                for state, display, path in sessions:
+                    displays.setdefault(display, []).append((state, path))
+            self.stdscr.addstr(hpos, 0, "found %i display%s" % (len(displays), engs(displays)))
+            hpos += 1
+            if height<=hpos:
+                return
+            n = len(displays)
+            for i, (display, state_paths) in enumerate(displays.items()):
+                if height<=hpos:
+                    return
+                info = self.get_display_info(display, state_paths)
+                l = len(info)
+                if height<=hpos+l+2:
+                    break
+                self.box(1, hpos, width-2, l+2, open_top=i>0, open_bottom=i<n-1)
+                hpos += 1
+                attr = curses.A_REVERSE if i==self.position else 0
+                for s in info:
+                    s = s.ljust(width-4)
+                    self.stdscr.addstr(hpos, 2, s, attr)
+                    hpos += 1
+        except Exception as e:
+            curses_err(self.stdscr, e)
+
+    def get_display_info(self, display, state_paths):
+        info = [display]
+        valid_path = None
+        for state, path in state_paths:
+            sinfo = "%40s : %s" % (path, state)
+            if POSIX:
+                from pwd import getpwuid
+                from grp import getgrgid
+                try:
+                    stat = os.stat(path)
+                    #if stat.st_uid!=os.getuid():
+                    sinfo += "  uid=%s" % getpwuid(stat.st_uid).pw_name
+                    #if stat.st_gid!=os.getgid():
+                    sinfo += "  gid=%s" % getgrgid(stat.st_gid).gr_name
+                except Exception as e:
+                    sinfo += "(stat error: %s)" % e
+            info.append(sinfo)
+            if state==DotXpra.LIVE:
+                valid_path = path
+        if valid_path:
+            d = self.get_display_id_info(valid_path)
+            name = d.get("session-name")
+            uuid = d.get("uuid")
+            stype = d.get("session-type")
+            error = d.get("error")
+            if error:
+                info[0] = "%s  %s" % (display, error)
+            else:
+                info[0] = "%s  %s" % (display, name)
+                info.insert(1, "uuid=%s, type=%s" % (uuid, stype))
+        return info
+
+    def get_display_id_info(self, path):
+        d = {}
+        try:
+            cmd = get_nodock_command()+["id", "socket://%s" % path]
+            proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+            out, err = proc.communicate()
+            for line in bytestostr(out or err).splitlines():
+                try:
+                    k,v = line.split("=", 1)
+                    d[k] = v
+                except ValueError:
+                    continue
+            return d
+        except Exception as e:
+            d["error"] = str(e)
+        return d
+
+
+    def box(self, x, y, w, h, open_top=False, open_bottom=False):
+        if open_top:
+            ul = curses.ACS_LTEE        #@UndefinedVariable
+            ur = curses.ACS_RTEE        #@UndefinedVariable
+        else:
+            ul = curses.ACS_ULCORNER    #@UndefinedVariable
+            ur = curses.ACS_URCORNER    #@UndefinedVariable
+        if open_bottom:
+            ll = curses.ACS_LTEE        #@UndefinedVariable
+            lr = curses.ACS_RTEE        #@UndefinedVariable
+        else:
+            ll = curses.ACS_LLCORNER    #@UndefinedVariable
+            lr = curses.ACS_LRCORNER    #@UndefinedVariable
+        box(self.stdscr, x, y, w, h, ul, ur, ll, lr)
+
+
+class TopSessionClient(MonitorXpraClient):
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -77,6 +236,14 @@ class TopClient(MonitorXpraClient):
         self.info_timer = 0
         self.stdscr = curses_init()
         self.update_screen()
+
+    def run(self):
+        register_os_signals(self.signal_handler)
+        return super().run()
+
+    def signal_handler(self, *_args):
+        self.cleanup()
+        sys.exit(128+signal.SIGINT)
 
     def cleanup(self):
         self.cancel_info_timer()
@@ -213,7 +380,7 @@ class TopClient(MonitorXpraClient):
                         more = nclients-client_no
                         self.stdscr.addstr(hpos, 0, "%i client%s not shown" % (more, engs(more)), curses.A_BOLD)
                     break
-                self.box(self.stdscr, 1, hpos, width-2, 2+l)
+                self.box(1, hpos, width-2, 2+l)
                 for i, info in enumerate(ci):
                     info_text, color = info
                     cpair = curses.color_pair(color)
@@ -236,7 +403,7 @@ class TopClient(MonitorXpraClient):
                         self.stdscr.addstr(hpos, 0, "terminal window is too small: %i window%s not shown" % \
                                            (more, engs(more)), curses.A_BOLD)
                     break
-                self.box(self.stdscr, 1, hpos, width-2, 2+l)
+                self.box(1, hpos, width-2, 2+l)
                 for i, info in enumerate(wi):
                     info_text, color = info
                     cpair = curses.color_pair(color)
@@ -384,15 +551,10 @@ class TopClient(MonitorXpraClient):
             gl_info += " - %s" % strget("display_mode", ", ")
         return gl_info
 
-    def box(self, window, x, y, w, h):
-        window.hline(y, x, curses.ACS_HLINE, w-1)               #@UndefinedVariable
-        window.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)     #@UndefinedVariable
-        window.vline(y, x, curses.ACS_VLINE, h)                 #@UndefinedVariable
-        window.vline(y, x + w -1, curses.ACS_VLINE, h)          #@UndefinedVariable
-        window.addch(y, x, curses.ACS_ULCORNER)                 #@UndefinedVariable
-        window.addch(y, x + w - 1, curses.ACS_URCORNER)         #@UndefinedVariable
-        window.addch(y + h - 1, x, curses.ACS_LLCORNER)         #@UndefinedVariable
-        window.addch(y + h - 1, x + w - 1, curses.ACS_LRCORNER) #@UndefinedVariable
+    def box(self, x, y, w, h):
+        box(self.stdscr, x, y, w, h,
+            ul=curses.ACS_ULCORNER, ur=curses.ACS_URCORNER,     #@UndefinedVariable
+            ll=curses.ACS_LLCORNER, lr=curses.ACS_LRCORNER)     #@UndefinedVariable
 
 
     def do_command(self):

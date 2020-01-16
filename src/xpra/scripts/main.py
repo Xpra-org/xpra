@@ -441,13 +441,33 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode in (
             "attach", "listen", "detach",
             "screenshot", "version", "info", "id",
-            "control", "_monitor", "top", "print",
+            "control", "_monitor", "print",
             "connect-test", "request-start", "request-start-desktop", "request-shadow",
             ):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit"):
             nox()
             return run_stopexit(mode, error_cb, options, args)
+        elif mode == "top":
+            from xpra.client.top_client import TopClient, TopSessionClient
+            display_desc = None
+            if args:
+                try:
+                    display_desc = pick_display(error_cb, options, args)
+                except Exception:
+                    pass
+            if not display_desc:
+                #show all sessions:
+                app = TopClient(options)
+            else:
+                #show the display we picked automatically:
+                app = TopSessionClient(options)
+                try:
+                    connect_to_server(app, display_desc, options)
+                except:
+                    app.cleanup()
+                    raise
+            return app.run()
         elif mode == "list":
             return run_list(error_cb, options, args)
         elif mode == "list-mdns" and supports_mdns:
@@ -1489,9 +1509,6 @@ def get_client_app(error_cb, opts, extra_args, mode):
     elif mode=="_monitor":
         from xpra.client.gobject_client_base import MonitorXpraClient
         app = MonitorXpraClient(opts)
-    elif mode == "top":
-        from xpra.client.top_client import TopClient
-        app = TopClient(opts)
     elif mode=="control":
         from xpra.client.gobject_client_base import ControlXpraClient
         if len(extra_args)<=1:
