@@ -23,6 +23,50 @@ GREEN = 1
 YELLOW = 2
 RED = 3
 
+def get_title():
+    title = "Xpra top %s" % __version__
+    try:
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
+        title += "-r%s" % REVISION
+        if LOCAL_MODIFICATIONS:
+            title += "M"
+    except ImportError:
+        pass
+    return title
+
+def curses_init():
+    stdscr = curses.initscr()
+    stdscr.keypad(True)
+    stdscr.nodelay(True)
+    stdscr.clear()
+    curses.noecho()
+    curses.cbreak()
+    curses.start_color()
+    curses.use_default_colors()
+    #for i in range(0, curses.COLORS):
+    #    curses.init_pair(i+1, i, -1)
+    curses.init_pair(WHITE, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(YELLOW, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(RED, curses.COLOR_RED, curses.COLOR_BLACK)
+    return stdscr
+
+def curses_clean(stdscr):
+    stdscr.keypad(False)
+    curses.nocbreak()
+    curses.echo()
+    curses.endwin()
+
+def curses_err(stdscr, e):
+    import traceback
+    stdscr.addstr(0, 0, str(e))
+    for i, l in enumerate(traceback.format_exc().split("\n")):
+        try:
+            stdscr.addstr(0, i+1, l)
+        except Exception:
+            pass
+
+
 class TopClient(MonitorXpraClient):
 
     def __init__(self, *args):
@@ -31,30 +75,13 @@ class TopClient(MonitorXpraClient):
         self.server_last_info = typedict()
         self.server_last_info_time = 0
         self.info_timer = 0
-        #curses init:
-        self.stdscr = curses.initscr()
-        self.stdscr.keypad(True)
-        self.stdscr.nodelay(True)
-        self.stdscr.clear()
-        curses.noecho()
-        curses.cbreak()
-        curses.start_color()
-        curses.use_default_colors()
-        #for i in range(0, curses.COLORS):
-        #    curses.init_pair(i+1, i, -1)
-        curses.init_pair(WHITE, curses.COLOR_WHITE, curses.COLOR_BLACK)
-        curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        curses.init_pair(YELLOW, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-        curses.init_pair(RED, curses.COLOR_RED, curses.COLOR_BLACK)
+        self.stdscr = curses_init()
         self.update_screen()
 
     def cleanup(self):
         self.cancel_info_timer()
         MonitorXpraClient.cleanup(self)
-        self.stdscr.keypad(False)
-        curses.nocbreak()
-        curses.echo()
-        curses.endwin()
+        curses_clean(self.stdscr)
 
     def update_screen(self):
         self.stdscr.erase()
@@ -68,14 +95,7 @@ class TopClient(MonitorXpraClient):
         #if c==curses.KEY_RESIZE:
         height, width = self.stdscr.getmaxyx()
         #log.info("update_screen() %ix%i", height, width)
-        title = "Xpra top %s" % __version__
-        try:
-            from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-            title += "-r%s" % REVISION
-            if LOCAL_MODIFICATIONS:
-                title += "M"
-        except ImportError:
-            pass
+        title = get_title()
         x = max(0, width//2-len(title)//2)
         sli = self.server_last_info
         try:
@@ -213,7 +233,8 @@ class TopClient(MonitorXpraClient):
                 if hpos+2+l>height:
                     if hpos<height:
                         more = nwindows-win_no
-                        self.stdscr.addstr(hpos, 0, "terminal window is too small: %i window%s not shown" % (more, engs(more)), curses.A_BOLD)
+                        self.stdscr.addstr(hpos, 0, "terminal window is too small: %i window%s not shown" % \
+                                           (more, engs(more)), curses.A_BOLD)
                     break
                 self.box(self.stdscr, 1, hpos, width-2, 2+l)
                 for i, info in enumerate(wi):
@@ -222,9 +243,7 @@ class TopClient(MonitorXpraClient):
                     self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
         except Exception as e:
-            import traceback
-            self.stdscr.addstr(0, 0, str(e))
-            self.stdscr.addstr(0, 1, traceback.format_exc())
+            curses_err(self.stdscr, e)
 
     def slidictget(self, *parts):
         return self.dictget(self.server_last_info, *parts)
@@ -292,7 +311,9 @@ class TopClient(MonitorXpraClient):
         if not minfo:
             return "%s off" % mode
         minfo = typedict(minfo)
-        audio_info = "%s: %s" % (mode, minfo.strget("codec_description") or minfo.strget("codec") or minfo.strget("state", "unknown"))
+        audio_info = "%s: %s" % (mode, minfo.strget("codec_description") or \
+                                 minfo.strget("codec") or \
+                                 minfo.strget("state", "unknown"))
         bitrate = minfo.intget("bitrate")
         if bitrate:
             audio_info += " %sbps" % std_unit(bitrate)
