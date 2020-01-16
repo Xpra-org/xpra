@@ -1947,6 +1947,7 @@ class ServerCore:
             "session-name"  : self.session_name,
             "uuid"          : self.uuid,
             "platform"      : sys.platform,
+            "pid"           : os.getpid(),
             }
         display = os.environ.get("DISPLAY")
         if display:
