@@ -237,13 +237,13 @@ class UDPProtocol(Protocol):
         #first, we can free all the packets that have been processed by the other end:
         #(resend cache and fail callback)
         if last_seq>=0:
-            done = [x for x in self.fail_cb.keys() if x<=last_seq]
+            done = [x for x in self.fail_cb if x<=last_seq]
             for x in done:
                 try:
                     del self.fail_cb[x]
                 except KeyError:
                     pass
-            done = [x for x in self.resend_cache.keys() if x<=last_seq]
+            done = [x for x in self.resend_cache if x<=last_seq]
             for x in done:
                 try:
                     del self.resend_cache[x]
@@ -339,7 +339,7 @@ class UDPProtocol(Protocol):
                 return
         self.highest_sequence = max(self.highest_sequence, seqno)
         if self.pending_packets or (synchronous and seqno!=self.last_sequence+1) or chunk!=0 or chunks!=1:
-            assert chunk>=0 and chunks>0 and chunk<chunks, "invalid chunk: %i/%i" % (chunk, chunks)
+            assert 0<chunk<chunks, "invalid chunk: %i/%i" % (chunk, chunks)
             #slow path: add chunk to incomplete packet
             now = monotonic_time()
             ip = self.pending_packets.get(seqno)
