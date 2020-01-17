@@ -361,7 +361,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/cuda
 %endif
 %{_datadir}/man/man1/xpra*
-%{_datadir}/appdata/xpra.appdata.xml
+%{_datadir}/metainfo/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 %{_datadir}/icons/xpra-mdns.png
 %{_datadir}/icons/xpra-shadow.png
