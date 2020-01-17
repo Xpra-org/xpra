@@ -49,7 +49,7 @@ from xpra.make_thread import start_thread
 from xpra.util import (
     first_time,
     csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
-    repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat,
+    ellipsizer, dump_all_frames, nonl, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
     )
