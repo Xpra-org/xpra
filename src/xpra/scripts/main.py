@@ -450,23 +450,22 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_stopexit(mode, error_cb, options, args)
         elif mode == "top":
             from xpra.client.top_client import TopClient, TopSessionClient
-            display_desc = None
+            app = None
             if args:
                 try:
                     display_desc = pick_display(error_cb, options, args)
                 except Exception:
                     pass
-            if not display_desc:
+                else:
+                    #show the display we picked automatically:
+                    app = TopSessionClient(options)
+                    try:
+                        connect_to_server(app, display_desc, options)
+                    except Exception:
+                        app = None
+            if not app:
                 #show all sessions:
                 app = TopClient(options)
-            else:
-                #show the display we picked automatically:
-                app = TopSessionClient(options)
-                try:
-                    connect_to_server(app, display_desc, options)
-                except:
-                    app.cleanup()
-                    raise
             return app.run()
         elif mode == "list":
             return run_list(error_cb, options, args)
