@@ -126,7 +126,7 @@ class TopClient:
                 self.position = max(self.position-1, 0)
             elif v==10 and self.selected_session:
                 #show this session:
-                cmd = get_nodock_command()+["top"]
+                cmd = get_nodock_command()+["top", self.selected_session]
                 try:
                     self.cleanup()
                     proc = Popen(cmd)
