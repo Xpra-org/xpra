@@ -181,7 +181,7 @@ class UDPProtocol(Protocol):
             #resend a new one
             self.cancel_control_timer()
             self.send_control()
-        self._send_async(packet, False, send_control_failed)
+        self._add_packet_to_queue(packet, fail_cb=self.send_control_failed, synchronous=False)
         self.cancel = set()
         self.schedule_control()
         return False
@@ -411,29 +411,11 @@ class UDPProtocol(Protocol):
             self._read_queue_put(data)
 
 
-    def _send_async(self, packet, sync=False, fail_cb=None):
-        """ used by send_control to bypass the regular queuing functions,
-            and force enable synchronous=False
-        """
-        #log("_send_async(%s, %s) encoder=%s, compressor=%s", packet, sync, self._encoder, self._compress)
-        log("_send_async(%s, %s)", packet, sync)
-        chunks = self.encode(packet)
-        if len(chunks)>1:
-            return Protocol.send_now(self, packet)
-        proto_flags,index,level,data = chunks[0]
-        from xpra.net.header import pack_header
-        payload_size = len(data)
-        header_and_data = pack_header(proto_flags, level, index, payload_size) + data
-        with self._write_lock:
-            if self._write_thread is None:
-                self.start_write_thread()
-            self._write_queue.put((header_and_data, None, None, fail_cb, sync))
-
-    def raw_write(self, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, _more=False):
+    def raw_write(self, packet_type, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, _more=False):
         """ make sure we don't enable asynchronous mode until the other end is read """
-        if not self.asynchronous_send_enabled:
+        if packet_type!="udp-control" and not self.asynchronous_send_enabled:
             synchronous = True
-        Protocol.raw_write(self, items, start_cb, end_cb, fail_cb, synchronous)
+        Protocol.raw_write(self, packet_type, items, start_cb, end_cb, fail_cb, synchronous)
 
     def write_buffers(self, buf_data, fail_cb, synchronous):
         """
