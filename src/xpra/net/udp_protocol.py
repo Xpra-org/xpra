@@ -37,6 +37,10 @@ _header_struct = struct.Struct(b'!QQHHH')
 _header_size = _header_struct.size
 
 
+def h(v):
+    uuid_bin = struct.pack("!Q", v)
+    return hexstr(uuid_bin)
+
 class PendingPacket:
     def __init__(self, seqno, start_time, chunks=None):
         self.seqno = seqno
@@ -321,9 +325,6 @@ class UDPProtocol(Protocol):
         """
         #log("process_udp_data%s %i bytes",
         #    (uuid, seqno, synchronous, chunk, chunks, ellipsizer(data), bfrom), len(data))
-        def h(v):
-            uuid_bin = struct.pack("!Q", v)
-            return hexstr(uuid_bin)
         assert uuid==self.uuid, "unexpected uuid in header, should be %s but received %s" % (h(self.uuid), h(uuid))
         if seqno<=self.last_sequence:
             log("skipping duplicate packet %5i.%i", seqno, chunk)
@@ -339,7 +340,7 @@ class UDPProtocol(Protocol):
                 return
         self.highest_sequence = max(self.highest_sequence, seqno)
         if self.pending_packets or (synchronous and seqno!=self.last_sequence+1) or chunk!=0 or chunks!=1:
-            assert 0<chunk<chunks, "invalid chunk: %i/%i" % (chunk, chunks)
+            assert 0<=chunk<chunks, "invalid chunk: %i/%i" % (chunk, chunks)
             #slow path: add chunk to incomplete packet
             now = monotonic_time()
             ip = self.pending_packets.get(seqno)
@@ -367,7 +368,8 @@ class UDPProtocol(Protocol):
                 #one of the chunks is still missing
                 log("process_udp_data: sequence %i, got chunk %i but still missing: %s",
                     seqno, chunk, ellipsizer(tuple(i for i,x in enumerate(ip.chunks) if x is None)))
-                self.schedule_control(self.jitter)
+                delay = max(10, min(len(ip.chunks)//10, 100))*self.jitter//10
+                self.schedule_control(delay)
                 return
             #all the data is here!
             del self.pending_packets[seqno]
@@ -471,8 +473,8 @@ class UDPProtocol(Protocol):
         chunks = l // maxpayload
         if l % maxpayload > 0:
             chunks += 1
-        log("UDP.write_buf(%s, %i bytes, %s, %s) seq=%i, mtu=%s, maxpayload=%i, chunks=%i, data=%s",
-            con, l, fail_cb, synchronous, seqno, mtu, maxpayload, chunks, ellipsizer(data))
+        log("UDP.write_buf(%s, %6i bytes, %s, %5s) uuid=%s, seq=%-5i, mtu=%5s, maxpayload=%5i, chunks=%-3i, data=%s",
+            con, l, fail_cb, synchronous, h(self.uuid), seqno, mtu, maxpayload, chunks, ellipsizer(data))
         chunk = 0
         offset = 0
         if fail_cb:
@@ -519,7 +521,8 @@ class UDPServerProtocol(UDPProtocol):
 class UDPClientProtocol(UDPProtocol):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, uuid = random.randint(0, 2**64-1))
+        UDP_CLIENT_UUID = envint("XPRA_UDP_CLIENT_UUID", 0)
+        super().__init__(*args, uuid = UDP_CLIENT_UUID or random.randint(0, 2**64-1))
 
     def con_write(self, data, fail_cb):
         """ After successfully writing some data, update the mtu value """
@@ -540,8 +543,8 @@ class UDPClientProtocol(UDPProtocol):
             Splits and parses the UDP frame header from the packet,
             then process the packed using process_udp_data
         """
-        #log.info("UDPClientProtocol.read_queue_put(%s)", ellipsizer(buf))
         uuid, seqno, synchronous, chunk, chunks = _header_struct.unpack_from(buf[:_header_size])
+        #log("UDPClientProtocol: header uuid=%s", uuid)
         data = buf[_header_size:]
         bfrom = None        #not available here..
         self.process_udp_data(uuid, seqno, synchronous, chunk, chunks, data, bfrom)
