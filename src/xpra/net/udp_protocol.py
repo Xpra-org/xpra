@@ -233,7 +233,7 @@ class UDPProtocol(Protocol):
 
     def process_control(self, mtu, remote_async_receive, last_seq, high_seq, missing, cancel):
         log("process_control(%i, %i, %i, %i, %s, %s) current seq=%i",
-            mtu, remote_async_receive, last_seq, high_seq, missing, cancel, self.output_packetcount)
+            mtu, remote_async_receive, last_seq, high_seq, ellipsizer(missing), cancel, self.output_packetcount)
         con = self._conn
         if not con:
             return
@@ -301,9 +301,10 @@ class UDPProtocol(Protocol):
                     self.cancel.add(seqno)
                     fail_cb_seq()
                     continue
+            log("resending: %s", ellipsizer(missing_chunks))
             for c in missing_chunks:
                 data = resend_cache.get(c)
-                log("resend data[%i][%i]=%s", seqno, c, ellipsizer(data))
+                #log("resend data[%i][%i]=%s", seqno, c, ellipsizer(data))
                 if data is None:
                     log.error("Error: cannot resend chunk %i of packet sequence %i", c, seqno)
                     log.error(" data missing from packet resend cache")
@@ -353,6 +354,7 @@ class UDPProtocol(Protocol):
                 self.pending_packets[seqno] = ip
             else:
                 ip.last_time = now
+            log("process_udp_data: sequence %i, got chunk %i/%i (%i bytes)", seqno, chunk+1, chunks, len(data))
             ip.chunks[chunk] = data
             if seqno!=self.last_sequence+1:
                 #we're waiting for a packet and this is not it,
@@ -376,8 +378,8 @@ class UDPProtocol(Protocol):
             #all the data is here!
             del self.pending_packets[seqno]
             data = b"".join(ip.chunks)
-        log("process_udp_data: adding packet sequence %5i to read queue (got final chunk %i, synchronous=%s)",
-            seqno, chunk, synchronous!=0)
+        log("process_udp_data: packet sequence %5i : %i bytes added to read queue (got final chunk %i, synchronous=%s)",
+            seqno, len(data), chunk, synchronous!=0)
         if seqno==self.last_sequence+1:
             self.last_sequence = seqno
         else:
@@ -475,7 +477,7 @@ class UDPProtocol(Protocol):
         chunks = l // maxpayload
         if l % maxpayload > 0:
             chunks += 1
-        log("UDP.write_buf(%s, %6i bytes, %s, %5s) uuid=%s, seq=%-5i, mtu=%5s, maxpayload=%5i, chunks=%-3i, data=%s",
+        log("UDP.write_buf(%s, %6i bytes, %s, %5s) uuid=%s, seq=%-5i, mtu=%5s, maxpayload=%5i, chunks=%-5i, data=%s",
             con, l, fail_cb, synchronous, h(self.uuid), seqno, mtu, maxpayload, chunks, ellipsizer(data))
         chunk = 0
         offset = 0
