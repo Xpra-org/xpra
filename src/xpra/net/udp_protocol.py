@@ -368,11 +368,22 @@ class UDPProtocol(Protocol):
                     #we have to wait for the missing chunks / packets
                     log("process_udp_data: queuing %i as we're still waiting for %i", seqno, self.last_sequence+1)
                     return
-            if any(x is None for x in ip.chunks):
-                #one of the chunks is still missing
-                log("process_udp_data: sequence %i, got chunk %i but still missing: %s",
-                    seqno, chunk, ellipsizer(tuple(i for i,x in enumerate(ip.chunks) if x is None)))
-                delay = max(10, min(len(ip.chunks)//10, 100))*self.jitter//10
+            missing = tuple(i for i, x in enumerate(ip.chunks) if x is None)
+            if missing:
+                #some chunks are missing
+                log("process_udp_data: total received: %i bytes, still missing %s chunks",
+                    sum(len(x or b"") for x in ip.chunks), ellipsizer(missing))
+                if min(missing)<chunk:
+                    #out of order, so more likely to really be missing
+                    delay = max(10, min(len(ip.chunks)//10, 100))*self.jitter//10
+                else:
+                    #still in correct order, so likely to arrive,
+                    #wait longer before sending the control packet:
+                    now = monotonic_time()
+                    elapsed = now-ip.start_time
+                    lm = len(missing)
+                    received = len(ip.chunks)-lm
+                    delay = self.jitter+min(1000, int(lm*elapsed/received))
                 self.schedule_control(delay)
                 return
             #all the data is here!
