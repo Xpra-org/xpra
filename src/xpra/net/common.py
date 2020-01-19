@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
-from xpra.util import repr_ellipsized, envint
+from xpra.util import repr_ellipsized, envint, envbool
 from xpra.log import Logger
 log = Logger("network")
 
@@ -48,22 +48,26 @@ def get_log_packets(exclude=False):
 
 LOG_PACKETS = get_log_packets()
 NOLOG_PACKETS = get_log_packets(True)
+LOG_PACKET_TYPE = envbool("XPRA_LOG_PACKET_TYPE", False)
 
 PACKET_LOG_MAX_SIZE = envint("XPRA_PACKET_LOG_MAX_SIZE", 500)
 
 def _may_log_packet(packet_type, packet):
-    if packet_type in NOLOG_PACKETS:
-        return
-    if packet_type in LOG_PACKETS or "*" in LOG_PACKETS:
-        s = str(packet)
-        if len(s)>PACKET_LOG_MAX_SIZE:
-            s = repr_ellipsized(s, PACKET_LOG_MAX_SIZE)
-        log.info(s)
+    if LOG_PACKET_TYPE:
+        log.info("%s", packet_type)
+    if LOG_PACKETS or NOLOG_PACKETS:
+        if packet_type in NOLOG_PACKETS:
+            return
+        if packet_type in LOG_PACKETS or "*" in LOG_PACKETS:
+            s = str(packet)
+            if len(s)>PACKET_LOG_MAX_SIZE:
+                s = repr_ellipsized(s, PACKET_LOG_MAX_SIZE)
+            log.info(s)
 
 def noop(*_args):
     pass
 
-if LOG_PACKETS or NOLOG_PACKETS:
+if LOG_PACKETS or NOLOG_PACKETS or LOG_PACKET_TYPE:
     may_log_packet = _may_log_packet
 else:
     may_log_packet = noop
