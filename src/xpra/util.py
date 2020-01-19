@@ -614,7 +614,10 @@ def repr_ellipsized(obj, limit=100):
             return obj[:limit//2-2]+" .. "+obj[2-limit//2:]
         return obj
     if isinstance(obj, bytes):
-        s = binascii.hexlify(obj).decode()
+        try:
+            s = repr(obj)
+        except Exception:
+            s = binascii.hexlify(obj).decode()
         if len(s)>limit>6:
             return s[:limit//2-2]+" .. "+s[2-limit//2:]
         return s
