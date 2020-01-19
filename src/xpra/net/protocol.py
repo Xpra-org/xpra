@@ -16,7 +16,7 @@ from queue import Queue
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
-from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
+from xpra.net.common import ConnectionClosedException,may_log_packet    #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net.compression import (
@@ -623,6 +623,7 @@ class Protocol:
             packets.append((proto_flags, 0, cl, cdata))
         else:
             packets.append((proto_flags, 0, 0, main_packet))
+        may_log_packet(True, packet_type, packet)
         return packets
 
     def set_compression_level(self, level):

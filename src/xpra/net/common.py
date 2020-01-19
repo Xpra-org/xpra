@@ -52,9 +52,9 @@ LOG_PACKET_TYPE = envbool("XPRA_LOG_PACKET_TYPE", False)
 
 PACKET_LOG_MAX_SIZE = envint("XPRA_PACKET_LOG_MAX_SIZE", 500)
 
-def _may_log_packet(packet_type, packet):
+def _may_log_packet(sending, packet_type, packet):
     if LOG_PACKET_TYPE:
-        log.info("%s", packet_type)
+        log.info("%s %s", "sending  " if sending else "receiving", packet_type)
     if LOG_PACKETS or NOLOG_PACKETS:
         if packet_type in NOLOG_PACKETS:
             return

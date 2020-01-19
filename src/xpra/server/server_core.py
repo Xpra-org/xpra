@@ -2116,7 +2116,7 @@ class ServerCore:
         handler = None
         try:
             packet_type = bytestostr(packet[0])
-            may_log_packet(packet_type, packet)
+            may_log_packet(False, packet_type, packet)
             handler = self._default_packet_handlers.get(packet_type)
             if handler:
                 netlog("process packet %s", packet_type)
