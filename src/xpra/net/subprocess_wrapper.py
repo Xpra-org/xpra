@@ -46,7 +46,7 @@ if FAULT_RATE>0:
         _counter += 1
         if (_counter % FAULT_RATE)==0:
             log.warn("injecting fault in %s", p)
-            p.raw_write("Wrapper JUNK! added by fault injection code")
+            p.raw_write("junk", "Wrapper JUNK! added by fault injection code")
     INJECT_FAULT = DO_INJECT_FAULT
 
 

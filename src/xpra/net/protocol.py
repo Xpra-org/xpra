@@ -325,7 +325,7 @@ class Protocol:
                 self._read_thread.start()
         self.idle_add(start_network_read_thread)
         if SEND_INVALID_PACKET:
-            self.timeout_add(SEND_INVALID_PACKET*1000, self.raw_write, SEND_INVALID_PACKET_DATA)
+            self.timeout_add(SEND_INVALID_PACKET*1000, self.raw_write, "invalid", SEND_INVALID_PACKET_DATA)
 
 
     def send_disconnect(self, reasons, done_callback=None):
@@ -441,7 +441,7 @@ class Protocol:
                 items[0] = frame_header + item0
             else:
                 items.insert(0, frame_header)
-        self.raw_write(items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
+        self.raw_write(packet_type, items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
 
     def make_xpra_header(self, _packet_type, proto_flags, level, index, payload_size):
         return pack_header(proto_flags, level, index, payload_size)
@@ -453,7 +453,7 @@ class Protocol:
     def start_write_thread(self):
         self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
-    def raw_write(self, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
+    def raw_write(self, packet_type, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
         """ Warning: this bypasses the compression and packet encoder! """
         if self._write_thread is None:
             self.start_write_thread()

@@ -169,7 +169,7 @@ class WebSocketProtocol(Protocol):
         item = encode_hybi_header(OPCODE_PONG, len(payload)) + memoryview_to_bytes(payload)
         items = (item, )
         with self._write_lock:
-            self.raw_write(items)
+            self.raw_write("ws-ping", items)
 
     def _process_ws_pong(self, payload):
         log("_process_ws_pong(%r)", payload)
