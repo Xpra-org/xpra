@@ -182,14 +182,16 @@ class UDPProtocol(Protocol):
         packet = ("udp-control", self.mtu, self.asynchronous_receive_enabled,
                   self.last_sequence, self.highest_sequence, missing, tuple(self.cancel))
         log("send_control() packet(%s)=%s", self.pending_packets, ellipsizer(packet))
-        def send_control_failed():
-            #resend a new one
-            self.cancel_control_timer()
-            self.send_control()
-        self._send_async(packet, False, send_control_failed)
+        self._send_async(packet, False, self.send_control_failed)
         self.cancel = set()
         self.schedule_control()
         return False
+
+    def send_control_failed(self):
+        log("send_control_failed()")
+        #resend a new one
+        self.cancel_control_timer()
+        self.send_control()
 
     def _get_missing(self):
         """ the packets and chunks we are missing """
