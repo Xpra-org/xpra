@@ -20,6 +20,7 @@ log = Logger("exec")
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
 MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
+EXPORT_XDG_MENU_DATA = envint("XPRA_EXPORT_XDG_MENU_DATA", True)
 
 
 """
@@ -164,6 +165,8 @@ class ChildCommandServer(StubServerMixin):
 
     def _get_xdg_menu_data(self, force_reload=False):
         if not self.start_new_commands or not POSIX or OSX:
+            return None
+        if not EXPORT_XDG_MENU_DATA:
             return None
         from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
         return load_xdg_menu_data(force_reload)
