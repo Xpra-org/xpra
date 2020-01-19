@@ -618,7 +618,7 @@ def repr_ellipsized(obj, limit=100):
         if len(s)>limit>6:
             return s[:limit//2-2]+" .. "+s[2-limit//2:]
         return s
-    return repr_ellipsized(repr(obj))
+    return repr_ellipsized(repr(obj), limit)
 
 
 def rindex(alist, avalue):
