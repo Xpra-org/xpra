@@ -2128,7 +2128,7 @@ class ServerCore:
             proto.close()
         except KeyboardInterrupt:
             raise
-        except:
+        except Exception:
             netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
                          packet_type, handler, exc_info=True)
 
