@@ -1,6 +1,6 @@
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
-%{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?py3dir: %global py3dir %{_builddir}/python3-%{name}-%{version}-%{release}}
 %define with_python3 0%{?fedora}%{?el8}
 
@@ -78,7 +78,7 @@ popd
 %endif
 
 %{__python2} setup.py install -O1 --skip-build --root %{buildroot}
-rm -rf %{buildroot}%{python_sitelib}/setuptools/tests
+rm -rf %{buildroot}%{python2_sitelib}/setuptools/tests
 
 
 %clean
@@ -94,7 +94,7 @@ rm -rf %{buildroot}
 %{_bindir}/cython
 %{_bindir}/cythonize
 %{_bindir}/cygdb
-%{python_sitearch}/*
+%{python2_sitearch}/*
 %doc *.txt Demos Tools
 %if %{with_python3}
 %files -n python3-Cython
