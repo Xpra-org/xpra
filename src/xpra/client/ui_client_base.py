@@ -1449,6 +1449,8 @@ class UIXpraClient(XpraClientBase):
             "sound.ogg-latency-fix"     : True,
             "av-sync"                   : self.av_sync,
             "av-sync.delay.default"     : 0,    #start at 0 and rely on sound-control packets to set the correct value
+            #webcam:
+            "webcam"                    : self.webcam_forwarding,
             })
         updict(capabilities, "window", {
             "raise"                     : True,
