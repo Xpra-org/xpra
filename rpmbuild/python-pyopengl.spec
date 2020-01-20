@@ -1,5 +1,5 @@
 # Remove private provides from .so files in the python_sitearch directory
-%global __provides_exclude_from ^%{python_sitearch}/.*\\.so$
+%global __provides_exclude_from ^%{python2_sitearch}/.*\\.so$
 %{!?__python2: %define __python2 python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -32,6 +32,7 @@ Provides:       PyOpenGL-accelerate = %{version}-%{release}
 Conflicts:		PyOpenGL-accelerate < %{version}-%{release}
 
 %if 0%{?fedora}%{?el8}
+%global __provides_exclude_from ^(%{python3_sitearch}|%{python2_sitearch})/.*\\.so$
 %define with_python3 1
 Requires:       python2-numpy
 BuildRequires:  python2-setuptools

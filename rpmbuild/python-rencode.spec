@@ -1,5 +1,5 @@
 # Remove private provides from .so files in the python_sitearch directory
-%global __provides_exclude_from ^(%{python3_sitearch}|%{python2_sitearch})/.*\\.so$
+%global __provides_exclude_from ^%{python_sitearch}/.*\\.so$
 %{!?__python2: %define __python2 python2}
 %{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -9,6 +9,7 @@
 #CentOS does not have Python3 support:
 %if 0%{?fedora}%{?el8}
 %define with_python3 1
+%global __provides_exclude_from ^(%{python3_sitearch}|%{python2_sitearch})/.*\\.so$
 %endif
 
 Name:           python2-rencode
