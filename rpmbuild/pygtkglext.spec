@@ -91,7 +91,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Mon Noc 04 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra1
+* Mon Nov 04 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra1
 - Fedora 31 rebuild
 
 * Tue Oct 08 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-27.xpra4
