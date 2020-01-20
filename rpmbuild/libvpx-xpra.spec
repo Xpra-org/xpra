@@ -12,6 +12,11 @@ BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:	yasm
 #Requires:
 
+%if 0%{?el8}{?fedora}
+echo "Fedora and RHEL8 should use system packages"
+exit 1
+%endif
+
 %description
 vpx library for xpra
 
