@@ -7,7 +7,7 @@
 
 #this spec file is for Fedora, openSUSE and CentOS
 #CentOS does not have Python3 support:
-%if 0%{?fedora}%{?suse_version}%{?el8}
+%if 0%{?fedora}%{?el8}
 %define with_python3 1
 %endif
 
@@ -26,15 +26,9 @@ Patch1:         python-rencode-nowheelreq.patch
 Patch2:         python-rencode-rename.patch
 
 
-%if 0%{?suse_version}
-%{!?py3dir: %global py3dir %{_builddir}/python3-%{name}-%{version}-%{release}}
-BuildRequires:  python2-devel
-BuildRequires:  python2-Cython
-%else
 BuildRequires:  python2-devel
 BuildRequires:  python2-Cython
 BuildRequires:  python2-pbr
-%endif
 %if 0%{?with_python3}
 BuildRequires:  python3-devel
 BuildRequires:  python3-Cython
