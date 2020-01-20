@@ -151,7 +151,7 @@ Requires: x264-xpra
 Requires: ffmpeg-xpra
 Requires: python2-pynvml
 Requires: %{numpy}
-Requires: xpra-common = %{version}-%{build_no}%{dist}
+Requires: xpra-common >= %{version}-%{build_no}%{dist}
 %if 0%{?el6}%{?el7}
 #sshpass is not available!
 %else
