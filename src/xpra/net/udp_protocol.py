@@ -356,14 +356,15 @@ class UDPProtocol(Protocol):
                 ip.last_time = now
             log("process_udp_data: sequence %i, got chunk %i/%i (%i bytes)", seqno, chunk+1, chunks, len(data))
             ip.chunks[chunk] = data
-            if seqno!=self.last_sequence+1:
+            if seqno>self.last_sequence+1:
                 #we're waiting for a packet and this is not it,
                 #make sure any gaps are marked as incomplete:
                 for i in range(self.last_sequence+1, seqno):
                     if i not in self.pending_packets and i not in self.can_skip:
                         self.pending_packets[i] = PendingPacket(i, now)
                 #make sure we request the missing packets:
-                self.schedule_control(self.jitter)
+                mcount = seqno-self.last_sequence
+                self.schedule_control(self.jitter*2//mcount)
                 if synchronous:
                     #we have to wait for the missing chunks / packets
                     log("process_udp_data: queuing %i as we're still waiting for %i", seqno, self.last_sequence+1)
