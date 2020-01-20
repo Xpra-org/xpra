@@ -10,6 +10,11 @@ License:        GPLv2+ and BSD
 URL:            https://code.google.com/p/lz4/
 Source0:        https://github.com/%{name}/%{name}/archive/v%{version}.tar.gz
 
+%if 0%{?el8}{?fedora}
+echo "Fedora and RHEL8 should use system packages"
+exit 1
+%endif
+
 %if 0%{?rhel}
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 %endif
