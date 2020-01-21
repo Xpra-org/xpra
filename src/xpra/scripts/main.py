@@ -26,7 +26,7 @@ from xpra.exit_codes import (
 from xpra.os_util import (
     get_util_logger, getuid, getgid,
     monotonic_time, setsid, bytestostr, use_tty,
-    WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu, getUbuntuVersion,
+    WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
 from xpra.scripts.parsing import (
     info, warn, error,
@@ -295,7 +295,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         systemd_run = parse_bool("systemd-run", options.systemd_run)
         if systemd_run is None:
             #detect if we should use it:
-            if is_Ubuntu() and getUbuntuVersion()>=(18,) and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")):
+            if is_Ubuntu() and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")):
                 #would fail
                 systemd_run = False
             else:

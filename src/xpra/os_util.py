@@ -331,16 +331,6 @@ def get_linux_distribution():
                 return tuple([bytestostr(x) for x in v])
     return _linux_distribution
 
-def getUbuntuVersion():
-    distro = get_linux_distribution()
-    if distro and len(distro)==3 and distro[0]=="Ubuntu":
-        ur = distro[1]  #ie: "12.04"
-        try:
-            return tuple(int(x) for x in ur.split("."))  #ie: (12, 4)
-        except ValueError:
-            pass
-    return ()
-
 def is_unity() -> bool:
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("unity")>=0
 
@@ -828,8 +818,6 @@ def main():
     if LINUX:
         log.info("linux_distribution=%s", get_linux_distribution())
         log.info("Ubuntu=%s", is_Ubuntu())
-        if is_Ubuntu():
-            log.info("Ubuntu version=%s", getUbuntuVersion())
         log.info("Unity=%s", is_unity())
         log.info("Fedora=%s", is_Fedora())
         log.info("systemd=%s", is_systemd_pid1())

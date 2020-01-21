@@ -11,7 +11,7 @@ from xpra.util import csv
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
-    is_CentOS, is_RedHat, is_Fedora, is_Debian, is_Ubuntu, getUbuntuVersion,
+    is_CentOS, is_RedHat, is_Fedora, is_Debian,
     )
 
 def warn(msg):
@@ -165,12 +165,6 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
     if Xdummy_ENABLED is True:
         return Xorg_suid_check()
     debug("Xdummy support unspecified, will try to detect")
-
-    if is_Ubuntu():
-        rnum = getUbuntuVersion()
-        if rnum<(16, 10):
-            debug("Warning: Ubuntu Xenial breaks Xorg/Xdummy usage - using Xvfb fallback")
-            return get_Xvfb_command()
     return Xorg_suid_check()
 
 
@@ -806,7 +800,7 @@ def get_default_pulseaudio_command():
     #we don't enable memfd on Ubuntu 16.04,
     #we just don't disable it (because the option does not exist!):
     from xpra.util import envbool
-    MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", is_Ubuntu() and getUbuntuVersion()<=(16, 4))
+    MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", True)
     if not MEMFD:
         cmd.append("--enable-memfd=no")
     return cmd
