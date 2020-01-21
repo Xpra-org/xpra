@@ -332,8 +332,8 @@
 
 	<distutils id="python3-setuptools-scm" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/83/44/53cad68ce686585d12222e6769682c4bdb9686808d2739671f9175e2938b/setuptools_scm-3.3.3.tar.gz"
-			hash="sha256:bd25e1fb5e4d603dcf490f1fde40fb4c595b357795674c3e5cb7f6217ab39ea5"
+			module="/e0/e4/92594bcbc7c06b1afba1543d4fcdbf71b4d4d7b2e18c512725fbc1ac0a8c/setuptools_scm-3.4.2.tar.gz"
+			hash="sha256:88c14b4912dae5c9d1a79900aa4f51f25fba5b318538edbb61c867ab5d5b6da5"
 			version="3.3.3"/>
 		<dependencies>
 			<dep package="python3"/>
