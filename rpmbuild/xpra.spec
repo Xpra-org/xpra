@@ -106,7 +106,6 @@ Requires(preun):	systemd-units
 Requires(postun):	systemd-units
 Recommends:		which
 Recommends:		libfakeXinerama
-Recommends:		gtk2-immodule-xim
 Recommends:		mesa-dri-drivers
 Recommends:		redhat-menus
 Recommends:		gnome-menus
