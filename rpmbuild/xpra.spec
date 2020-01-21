@@ -141,7 +141,6 @@ Requires(preun):	systemd-units
 Requires(postun):	systemd-units
 %{Recommends}:		which
 %{Recommends}:		libfakeXinerama
-%{Recommends}:		gtk2-immodule-xim
 %{Recommends}:		mesa-dri-drivers
 %if 0%{?fedora}%{?el8}
 #allows the server to use software opengl:
@@ -333,6 +332,7 @@ Requires:			python2-xpra = %{version}-%{release}
 Requires:			pygtk2
 %{Recommends}:		cups-filters
 %{Recommends}:		dbus-x11
+%{Recommends}:		gtk2-immodule-xim
 %if %{with_cuda}
 %{Recommends}:		python2-pycuda
 %{Recommends}:		python2-pynvml
