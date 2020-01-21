@@ -662,15 +662,6 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     ]
         elif get_gcc_version()>=[4, 4]:
             eifd = ["-Werror"]
-            if is_Debian() or is_Ubuntu() or is_Raspbian():
-                #needed on Debian and Ubuntu to avoid this error:
-                #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1:
-                # error: function declaration isn't a prototype [-Werror=strict-prototypes]
-                eifd.append("-Wno-error=strict-prototypes")
-                #the cython version shipped with Xenial emits warnings:
-                if (14,4)<getUbuntuVersion()<=(16,4):
-                    eifd.append("-Wno-error=shift-count-overflow")
-                    eifd.append("-Wno-error=sign-compare")
             if NETBSD:
                 #see: http://trac.cython.org/ticket/395
                 eifd += ["-fno-strict-aliasing"]
