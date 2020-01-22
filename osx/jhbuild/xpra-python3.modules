@@ -587,9 +587,9 @@
 
 	<distutils id="python3-pyopengl" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/d7/8a/5db9096aa6506e405309c400bd0feb41997689cbba30683479c30dba6355/PyOpenGL-3.1.4.tar.gz"
-			hash="sha256:0bdf5ed600df30c8830455702338902528717c0af85ac5914f1dc5aa0bfa6eee"
-			version="3.1.4"/>
+			module="/packages/b8/73/31c8177f3d236e9a5424f7267659c70ccea604dab0585bfcd55828397746/PyOpenGL-3.1.5.tar.gz"
+			hash="sha256:4107ba0d0390da5766a08c242cf0cf3404c377ed293c5f6d701e457c57ba3424"
+			version="3.1.5"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -600,9 +600,9 @@
 
 	<distutils id="python3-pyopengl-accelerate" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/a3/43/ab02c99786e14280ab937d0f954b1c229e29c310a5e88c7a79d5f04490f0/PyOpenGL-accelerate-3.1.4.tar.gz"
-			hash="sha256:fc214178fac0ff07e20360500abf2fc049b683c60ff94a93cf981bf27de2c4f9"
-			version="3.1.4"/>
+			module="/packages/a2/3c/f42a62b7784c04b20f8b88d6c8ad04f4f20b0767b721102418aad94d8389/PyOpenGL-accelerate-3.1.5.tar.gz"
+			hash="sha256:12e5518b0216a478527c7ce5ddce623c3d0517adeb87226da767772e8b7f2f06"
+			version="3.1.5"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>

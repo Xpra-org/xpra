@@ -5,13 +5,13 @@
 %global srcname PyOpenGL
 
 Name:           python3-pyopengl
-Version:        3.1.4
+Version:        3.1.5
 Release:        1xpra1%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
-Source0:        https://pypi.python.org/packages/source/P/%{srcname}/%{srcname}-%{version}.tar.gz
-Source1:        https://pypi.python.org/packages/source/P/%{srcname}-accelerate/%{srcname}-accelerate-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/b8/73/31c8177f3d236e9a5424f7267659c70ccea604dab0585bfcd55828397746/%{srcname}-%{version}.tar.gz
+Source1:        https://files.pythonhosted.org/packages/a2/3c/f42a62b7784c04b20f8b88d6c8ad04f4f20b0767b721102418aad94d8389/%{srcname}-accelerate-%{version}.tar.gz
 
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
@@ -89,6 +89,9 @@ popd
 
 
 %changelog
+* Wed Jan 22 2020 Antoine Martin <antoine@xpra.org> - 3.1.5-1xpra1
+- new upstream release
+
 * Wed Dec 04 2019 Antoine Martin <antoine@xpra.org> - 3.1.4-1xpra1
 - new upstream release
 
