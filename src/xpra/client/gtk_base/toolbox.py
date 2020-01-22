@@ -21,7 +21,7 @@ from xpra.gtk_common.gtk_util import (
     label,
     )
 from xpra.platform.paths import get_icon_dir, get_python_execfile_command
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX, WIN32, is_X11
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -120,6 +120,10 @@ class ToolboxGUI(Gtk.Window):
             ("Transient", "Show transient windows", epath+"window_transient.py"),
             ("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect.py"),
             ))
+        if is_X11():
+            addhbox("X11:", (
+                ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize.py"),
+                ))
         addhbox("Keyboard and Clipboard:", (
             ("Keyboard", "Keyboard event viewer", gpath+"gtk_view_keyboard.py"),
             ("Clipboard", "Clipboard event viewer", gpath+"gtk_view_clipboard.py"),
