@@ -23,7 +23,7 @@ def main():
 	root = window.get_window().get_screen().get_root_window()
 
 	def initiate(x_root, y_root, direction, button, source_indication):
-		print("initiate%s" % str((x_root, y_root, direction, button, source_indication)))
+		#print("initiate%s" % str((x_root, y_root, direction, button, source_indication)))
 		from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 		init_gdk_display_source()
 		from xpra.x11.bindings.core_bindings import X11CoreBindings					#@UnresolvedImport
@@ -41,21 +41,19 @@ def main():
 		initiate(0, 0, MOVERESIZE_CANCEL, 0, 1)
 
 
-	table = Gtk.Table(3, 3, True)
-	table.set_col_spacings(0)
-	table.set_row_spacings(0)
+	table = Gtk.Table(n_rows=3, n_columns=3, homogeneous=True)
 
 	FILL = Gtk.AttachOptions.FILL
 	EXPAND = Gtk.AttachOptions.EXPAND
-	btn = Gtk.Button("initiate move")
+	btn = Gtk.Button(label="initiate move")
 	table.attach(btn, 1, 2, 1, 2, xoptions=FILL, yoptions=FILL)
 	def initiate_move(*_args):
 		cancel()
-		x, y = root.get_pointer()[:2]
+		pos = root.get_pointer()
 		source_indication = 1	#normal
 		button = 1
 		direction = MOVERESIZE_MOVE
-		initiate(x, y, direction, button, source_indication)
+		initiate(pos.x, pos.y, direction, button, source_indication)
 		GLib.timeout_add(5*1000, cancel)
 	btn.connect('button-press-event', initiate_move)
 
@@ -67,7 +65,7 @@ def main():
 		initiate(x, y, direction, button, source_indication)
 		GLib.timeout_add(5*1000, cancel)
 	def add_button(x, y, direction):
-		btn = Gtk.Button(MOVERESIZE_DIRECTION_STRING[direction])
+		btn = Gtk.Button(label=MOVERESIZE_DIRECTION_STRING[direction])
 		table.attach(btn, x, x+1, y, y+1, xoptions=EXPAND|FILL, yoptions=EXPAND|FILL)
 		btn.connect('button-press-event', btn_callback, direction)
 
