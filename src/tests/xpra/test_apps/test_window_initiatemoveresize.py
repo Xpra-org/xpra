@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+#pylint: disable=wrong-import-position
+
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk	#pylint: disable=wrong-import-position
+from gi.repository import Gtk, GLib
 
 from xpra.util import (
 	MOVERESIZE_DIRECTION_STRING, MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, \
@@ -28,8 +29,8 @@ def main():
 		from xpra.x11.bindings.core_bindings import X11CoreBindings					#@UnresolvedImport
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		event_mask = constants["SubstructureNotifyMask"] | constants["SubstructureRedirectMask"]
-		root_xid = root.xid
-		xwin = window.get_window().xid
+		root_xid = root.get_xid()
+		xwin = window.get_window().get_xid()
 		X11Core = X11CoreBindings()
 		X11Core.UngrabPointer()
 		X11Window = X11WindowBindings()
@@ -44,8 +45,10 @@ def main():
 	table.set_col_spacings(0)
 	table.set_row_spacings(0)
 
+	FILL = Gtk.AttachOptions.FILL
+	EXPAND = Gtk.AttachOptions.EXPAND
 	btn = Gtk.Button("initiate move")
-	table.attach(btn, 1, 2, 1, 2, xoptions=Gtk.FILL, yoptions=Gtk.FILL)
+	table.attach(btn, 1, 2, 1, 2, xoptions=FILL, yoptions=FILL)
 	def initiate_move(*_args):
 		cancel()
 		x, y = root.get_pointer()[:2]
@@ -53,7 +56,7 @@ def main():
 		button = 1
 		direction = MOVERESIZE_MOVE
 		initiate(x, y, direction, button, source_indication)
-		Gtk.timeout_add(5*1000, cancel)
+		GLib.timeout_add(5*1000, cancel)
 	btn.connect('button-press-event', initiate_move)
 
 	def btn_callback(btn, event, direction):
@@ -62,10 +65,10 @@ def main():
 		source_indication = 1	#normal
 		button = 1
 		initiate(x, y, direction, button, source_indication)
-		Gtk.timeout_add(5*1000, cancel)
+		GLib.timeout_add(5*1000, cancel)
 	def add_button(x, y, direction):
 		btn = Gtk.Button(MOVERESIZE_DIRECTION_STRING[direction])
-		table.attach(btn, x, x+1, y, y+1, xoptions=Gtk.EXPAND|Gtk.FILL, yoptions=Gtk.EXPAND|Gtk.FILL)
+		table.attach(btn, x, x+1, y, y+1, xoptions=EXPAND|FILL, yoptions=EXPAND|FILL)
 		btn.connect('button-press-event', btn_callback, direction)
 
 	for x,y,direction in (
