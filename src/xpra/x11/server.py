@@ -812,9 +812,17 @@ class XpraServer(GObject.GObject, X11ServerBase):
         assert len(event.data)==5
         #x_root, y_root, direction, button, source_indication = event.data
         wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
-                ss.initiate_moveresize(wid, window, *event.data)
+        #find clients that handle windows:
+        wsources = [ss for ss in self._server_sources.values() is isinstance(ss, WindowsMixin)]
+        if not wsources:
+            return
+        #prefer the "UI driver" if we find it:
+        driversources = [ss for ss in wsources if self.ui_driver==ss.uuid]
+        if driversources:
+            driversources[0].initiate_moveresize(wid, window, *event.data)
+            return
+        #otherwise, fallback to the first one:
+        wsources[0].initiate_moveresize(wid, window, *event.data)
 
 
     def _raised_window(self, window, event):
