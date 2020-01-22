@@ -743,7 +743,8 @@ def is_systemd_pid1() -> bool:
 
 
 def get_ssh_port() -> int:
-    #FIXME: how do we find out which port ssh is on?
+    #on Linux we can run "ssh -T | grep port"
+    #but this usually requires root permissions to access /etc/ssh/sshd_config
     if WIN32:
         return 0
     return 22
@@ -805,9 +806,9 @@ def get_peercred(sock):
             log.error("Error getting peer credentials: %s", e)
             return None
     elif FREEBSD:
-        #TODO: use getpeereid
+        log.warn("Warning: peercred is not yet implemented for FreeBSD")
+        #use getpeereid
         #then pwd to get the gid?
-        pass
     return None
 
 
