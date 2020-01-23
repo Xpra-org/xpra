@@ -1,19 +1,21 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import ctypes
 from ctypes.wintypes import HANDLE
 
-from xpra.platform.win32.common import GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout, GetIntSystemParametersInfo
+from xpra.platform.win32.common import GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout, GetIntSystemParametersInfo, GetKeyboardLayoutName
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
-from xpra.keyboard.layouts import WIN32_LAYOUTS
+from xpra.keyboard.layouts import WIN32_LAYOUTS, WIN32_KEYBOARDS
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.util import csv, envint, envbool
+from xpra.os_util import bytestostr
 from xpra.log import Logger
+from ctypes import create_string_buffer
 
 log = Logger("keyboard")
 
@@ -110,7 +112,28 @@ class Keyboard(KeyboardBase):
         return  {}, [], ["lock"]
 
     def get_layout_spec(self):
+        KL_NAMELENGTH = 9
+        name_buf = create_string_buffer(KL_NAMELENGTH)
         layout = None
+        if GetKeyboardLayoutName(name_buf):
+            try:
+                #win32 API returns a hex string
+                ival = int(name_buf.value, 16)
+            except ValueError:
+                log.warn("Warning: failed to parse keyboard layout code '%s'", bytestostr(name_buf.value))
+            else:
+                log.info("keyboard layout code %#x", ival)
+                for val in (ival, ival & 0xffff):
+                    kbdef = WIN32_KEYBOARDS.get(val)
+                    if kbdef:
+                        layout, descr = kbdef
+                        if layout=="??":
+                            log.info("identified as '%s'", descr)
+                            log.warn("Warning: the X11 codename is not known")
+                            layout = "us"
+                        else:
+                            log.info("identified as '%s' : %s", descr, layout)
+                        break
         layouts = []
         variant = None
         variants = None
@@ -137,7 +160,7 @@ class Keyboard(KeyboardBase):
                 log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)", layout, variants, code, kbid, hkl)
             if not layout:
                 log("unknown keyboard layout for kbid: %i (%#x)", kbid, hkl)
-            else:
+            elif layout not in layouts:
                 layouts.append(layout)
         except Exception as e:
             log.error("Error: failed to detect keyboard layout:")

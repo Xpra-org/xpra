@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -168,128 +168,205 @@ WIN32_LAYOUTS = {
 #based on
 #https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-language-pack-default-values
 WIN32_KEYBOARDS = {
-    0x0000041c  : "al",     #Albania
-    0x00000401  : "ar",     #Arabic (101)
-    0x00010401  : "ar",     #Arabic (102)
-    0x00020401  : "ar",     #Arabic (102) AZERTY
-    0x0000042b  : "am",     #Armenian Eastern
-    0x0002042b  : "am",     #Armenian Phonetic
-    0x0003042b  : "am",     #Armenian Typewriter
-    0x0001042b  : "am",     #Armenian Western
-    0x0000044d  : "in",     #Assamese - Inscript
-    0x0001042c  : "az",     #Azerbaijani (Standard)
-    0x0000082c  : "az",     #Azerbaijani Cyrillic
-    0x0000042c  : "az",     #Azerbaijani Latin
-    0x0000046d  : "ru",     #Bashkir
-    0x00000423  : "by",     #Belarusian
-    0x0001080c  : "be",     #Belgian (Comma)
-    0x00000813  : "be",     #Belgian (Period)
-    0x0000080c  : "be",     #Belgian French
-    0x00000445  : "bd",     #Bangla (Bangladesh)
-    0x00020445  : "bd",     #Bangla (India)
-    0x00010445  : "bd",     #Bangla (India - Legacy)
-    0x0000201a  : "ba",     #Bosnian (Cyrillic)
-    #0x000b0c00  : "",       #Buginese
-    0x00030402  : "bg",     #Bulgarian
-    0x00010402  : "bg",     #Bulgarian (Latin)
-    0x00020402  : "bg",     #Bulgarian (phonetic layout)
-    0x00040402  : "bg",     #Bulgarian (phonetic traditional)
-    0x00000402  : "bg",     #Bulgarian (Typewriter)
-    0x00001009  : "ca",     #Canadian French
-    0x00000c0c  : "ca",     #Canadian French (Legacy)
-    0x00011009  : "ca",     #Canadian Multilingual Standard
-    0x0000085f  : "fr",     #Central Atlas Tamazight
-    0x00000429  : "ku",     #Central Kurdish
-    0x0000045c  : "us",     #Cherokee Nation
-    0x0001045c  : "us",     #Cherokee Nation Phonetic
-    0x00000804  : "cn",     #Chinese (Simplified) - US Keyboard
-    0x00000404  : "cn",     #Chinese (Traditional) - US Keyboard
-    0x00000c04  : "cn",     #Chinese (Traditional, Hong Kong S.A.R.)
-    0x00001404  : "cn",     #Chinese (Traditional Macao S.A.R.) US Keyboard
-    0x00001004  : "cn",     #Chinese (Simplified, Singapore) - US keyboard
-    0x0000041a  : "hr",     #Croatian
-    0x00000405  : "cz",     #Czech
-    0x00010405  : "cz",     #Czech (QWERTY)
-    0x00020405  : "cz",     #Czech Programmers
-    0x00000406  : "dk",     #Danish
-    0x00000439  : "in",     #Devanagari-INSCRIPT
-    0x00000465  : "in",     #Divehi Phonetic
-    0x00010465  : "in",     #Divehi Typewriter
-    0x00000413  : "nl",     #Dutch
-    0x00000C51  : "dz",     #Dzongkha
-    0x00000425  : "ee",     #Estonian
-    0x00000438  : "fo",     #Faeroese
-    0x0000040b  : "fi",     #Finnish
-    0x0001083b  : "fi",     #Finnish with Sami
-    0x0000040c  : "fr",     #French
-    #0x00120c00  : "??",     #Futhark
-    0x00000437  : "ge",     #Georgian
-    0x00020437  : "ge",     #Georgian (Ergonomic)
-    0x00010437  : "ge",     #Georgian (QWERTY)
-    0x00030437  : "ge",     #Georgian Ministry of Education and Science Schools
-    0x00040437  : "ge",     #Georgian (Old Alphabets)
-    0x00000407  : "de",     #German
-    0x00010407  : "de",     #German (IBM)
-    #0x000c0c00  : "??",     #Gothic
-    0x00000408  : "gr",     #Greek
-    0x00010408  : "gr",     #Greek (220)
-    0x00030408  : "gr",     #Greek (220) Latin
-    0x00020408  : "gr",     #Greek (319)
-    0x00040408  : "gr",     #Greek (319) Latin
-    0x00050408  : "gr",     #Greek Latin
-    0x00060408  : "gr",     #Greek Polytonic
-    #0x0000046f  : "??",     #Greenlandic
-    #0x00000474  : "??",     #Guarani
-    0x00000447  : "in",     #Gujarati
-    0x00000468  : "gh",     #Hausa
-    0x0000040d  : "il",     #Hebrew
-    0x00010439  : "in",     #Hindi Traditional
-    0x0000040e  : "hu",     #Hungarian
-    0x0001040e  : "hu",     #Hungarian 101-key
-    0x0000040f  : "is",     #Icelandic
-    0x00000470  : "ng",     #Igbo
-    0x00004009  : "in",     #India
-    0x0000085d  : "ca",     #Inuktitut - Latin
-    0x0001045d  : "ca",     #Inuktitut - Naqittaut
-    0x00001809  : "ie",     #Ireland
-    0x00000410  : "it",     #Italian
-    0x00010410  : "it",     #Italian
-    0x00000411  : "jp",     #Japanese
-    #0x00110c00  : "??",     #Javanese
-    0x0000044b  : "in",     #Kannada
-    0x0000043f  : "kz",     #Kazakh
-    0x00000453  : "kh",     #Khmer
-    0x00010453  : "kh",     #Khmer (NIDA)
-    0x00000412  : "kr",     #Korean
-    0x00000440  : "kg",     #Kyrgyz Cyrillic
-    0x00000454  : "la",     #Lao
-    0x0000080a  : "latam",  #Latin American
-    0x00020426  : "lv",     #Latvian (Standard)
-    0x00010426  : "lv",     #Latvian (Legacy)
-    #0x00070c00  : "??",     #Lisu (Basic)
-    #0x00080c00  : "??",     #Lisu (Standard)
-    0x00010427  : "lt",     #Lithuanian
-    0x00000427  : "lt",     #Lithuanian IBM
-    0x00020427  : "lt",     #Lithuanian Standard
-    0x0000046e  : "de",     #Luxembourgish
-    0x0000042f  : "mk",     #Macedonia (FYROM)
-    0x0001042f  : "mk",     #Macedonia (FYROM) - Standard
-    0x0000044c  : "in",     #Malayalam
-    0x0000043a  : "mt",     #Maltese 47-Key
-    0x0001043a  : "mt",     #Maltese 48-key
-    0x00000481  : "mao",    #Maori
-    0x0000044e  : "in",     #Marathi
-    0x00000850  : "mn",     #Mongolian (Mongolian Script - Legacy)
-    0x00020850  : "mn",     #Mongolian (Mongolian Script - Standard)
-    0x00000450  : "mn",     #Mongolian Cyrillic
-    0x00010c00  : "mm",     #Myanmar
-    0x00090c00  : "??",     #N'ko
-    0x00000461  : "np",     #Nepali
-    0x00020c00  : "th",     #New Tai Lue
-    0x00000414  : "no",     #Norwegian
-    0x0000043b  : "no",     #Norwegian with Sami
-    0x00000448  : "in",     #Odia
-    0x000d0c00  : "in",     #Ol Chiki    
+    0x0000041c  : ("al", "Albania"),
+    0x00000401  : ("ar", "Arabic (101)"),
+    0x00010401  : ("ar", "Arabic (102)"),
+    0x00020401  : ("ar", "Arabic (102) AZERTY"),
+    0x0000042b  : ("am", "Armenian Eastern"),
+    0x0002042b  : ("am", "Armenian Phonetic"),
+    0x0003042b  : ("am", "Armenian Typewriter"),
+    0x0001042b  : ("am", "Armenian Western"),
+    0x0000044d  : ("in", "Assamese - Inscript"),
+    0x0001042c  : ("az", "Azerbaijani (Standard)"),
+    0x0000082c  : ("az", "Azerbaijani Cyrillic"),
+    0x0000042c  : ("az", "Azerbaijani Latin"),
+    0x0000046d  : ("ru", "Bashkir"),
+    0x00000423  : ("by", "Belarusian"),
+    0x0001080c  : ("be", "Belgian (Comma)"),
+    0x00000813  : ("be", "Belgian (Period)"),
+    0x0000080c  : ("be", "Belgian French"),
+    0x00000445  : ("bd", "Bangla (Bangladesh)"),
+    0x00020445  : ("bd", "Bangla (India)"),
+    0x00010445  : ("bd", "Bangla (India - Legacy)"),
+    0x0000201a  : ("ba", "Bosnian (Cyrillic)"),
+    0x000b0c00  : ("??", "Buginese"),
+    0x00030402  : ("bg", "Bulgarian"),
+    0x00010402  : ("bg", "Bulgarian (Latin)"),
+    0x00020402  : ("bg", "Bulgarian (phonetic layout)"),
+    0x00040402  : ("bg", "Bulgarian (phonetic traditional)"),
+    0x00000402  : ("bg", "Bulgarian (Typewriter)"),
+    0x00001009  : ("ca", "Canadian French"),
+    0x00000c0c  : ("ca", "Canadian French (Legacy)"),
+    0x00011009  : ("ca", "Canadian Multilingual Standard"),
+    0x0000085f  : ("fr", "Central Atlas Tamazight"),
+    0x00000429  : ("ku", "Central Kurdish"),
+    0x0000045c  : ("us", "Cherokee Nation"),
+    0x0001045c  : ("us", "Cherokee Nation Phonetic"),
+    0x00000804  : ("cn", "Chinese (Simplified) - US Keyboard"),
+    0x00000404  : ("cn", "Chinese (Traditional) - US Keyboard"),
+    0x00000c04  : ("cn", "Chinese (Traditional, Hong Kong S.A.R.)"),
+    0x00001404  : ("cn", "Chinese (Traditional Macao S.A.R.) US Keyboard"),
+    0x00001004  : ("cn", "Chinese (Simplified, Singapore) - US keyboard"),
+    0x0000041a  : ("hr", "Croatian"),
+    0x00000405  : ("cz", "Czech"),
+    0x00010405  : ("cz", "Czech (QWERTY)"),
+    0x00020405  : ("cz", "Czech Programmers"),
+    0x00000406  : ("dk", "Danish"),
+    0x00000439  : ("in", "Devanagari-INSCRIPT"),
+    0x00000465  : ("in", "Divehi Phonetic"),
+    0x00010465  : ("in", "Divehi Typewriter"),
+    0x00000413  : ("nl", "Dutch"),
+    0x00000C51  : ("dz", "Dzongkha"),
+    0x00000425  : ("ee", "Estonian"),
+    0x00000438  : ("fo", "Faeroese"),
+    0x0000040b  : ("fi", "Finnish"),
+    0x0001083b  : ("fi", "Finnish with Sami"),
+    0x0000040c  : ("fr", "French"),
+    0x00120c00  : ("??", "Futhark"),
+    0x00000437  : ("ge", "Georgian"),
+    0x00020437  : ("ge", "Georgian (Ergonomic)"),
+    0x00010437  : ("ge", "Georgian (QWERTY)"),
+    0x00030437  : ("ge", "Georgian Ministry of Education and Science Schools"),
+    0x00040437  : ("ge", "Georgian (Old Alphabets)"),
+    0x00000407  : ("de", "German"),
+    0x00010407  : ("de", "German (IBM)"),
+    0x000c0c00  : ("??", "Gothic"),
+    0x00000408  : ("gr", "Greek"),
+    0x00010408  : ("gr", "Greek (220)"),
+    0x00030408  : ("gr", "Greek (220) Latin"),
+    0x00020408  : ("gr", "Greek (319)"),
+    0x00040408  : ("gr", "Greek (319) Latin"),
+    0x00050408  : ("gr", "Greek Latin"),
+    0x00060408  : ("gr", "Greek Polytonic"),
+    0x0000046f  : ("??", "Greenlandic"),
+    0x00000474  : ("??", "Guarani"),
+    0x00000447  : ("in", "Gujarati"),
+    0x00000468  : ("gh", "Hausa"),
+    0x0000040d  : ("il", "Hebrew"),
+    0x00010439  : ("in", "Hindi Traditional"),
+    0x0000040e  : ("hu", "Hungarian"),
+    0x0001040e  : ("hu", "Hungarian 101-key"),
+    0x0000040f  : ("is", "Icelandic"),
+    0x00000470  : ("ng", "Igbo"),
+    0x00004009  : ("in", "India"),
+    0x0000085d  : ("ca", "Inuktitut - Latin"),
+    0x0001045d  : ("ca", "Inuktitut - Naqittaut"),
+    0x00001809  : ("ie", "Ireland"),
+    0x00000410  : ("it", "Italian"),
+    0x00010410  : ("it", "Italian"),
+    0x00000411  : ("jp", "Japanese"),
+    0x00110c00  : ("??", "Javanese"),
+    0x0000044b  : ("in", "Kannada"),
+    0x0000043f  : ("kz", "Kazakh"),
+    0x00000453  : ("kh", "Khmer"),
+    0x00010453  : ("kh", "Khmer (NIDA)"),
+    0x00000412  : ("kr", "Korean"),
+    0x00000440  : ("kg", "Kyrgyz Cyrillic"),
+    0x00000454  : ("la", "Lao"),
+    0x0000080a  : ("latam", "Latin American"),
+    0x00020426  : ("lv", "Latvian (Standard)"),
+    0x00010426  : ("lv", "Latvian (Legacy)"),
+    0x00070c00  : ("??", "Lisu (Basic)"),
+    0x00080c00  : ("??", "Lisu (Standard)"),
+    0x00010427  : ("lt", "Lithuanian"),
+    0x00000427  : ("lt", "Lithuanian IBM"),
+    0x00020427  : ("lt", "Lithuanian Standard"),
+    0x0000046e  : ("de", "Luxembourgish"),
+    0x0000042f  : ("mk", "Macedonia (FYROM)"),
+    0x0001042f  : ("mk", "Macedonia (FYROM) - Standard"),
+    0x0000044c  : ("in", "Malayalam"),
+    0x0000043a  : ("mt", "Maltese 47-Key"),
+    0x0001043a  : ("mt", "Maltese 48-key"),
+    0x00000481  : ("mao", "Maori"),
+    0x0000044e  : ("in", "Marathi"),
+    0x00000850  : ("mn", "Mongolian (Mongolian Script - Legacy)"),
+    0x00020850  : ("mn", "Mongolian (Mongolian Script - Standard)"),
+    0x00000450  : ("mn", "Mongolian Cyrillic"),
+    0x00010c00  : ("mm", "Myanmar"),
+    0x00090c00  : ("??", "N'ko"),
+    0x00000461  : ("np", "Nepali"),
+    0x00020c00  : ("th", "New Tai Lue"),
+    0x00000414  : ("no", "Norwegian"),
+    0x0000043b  : ("no", "Norwegian with Sami"),
+    0x00000448  : ("in", "Odia"),
+    0x000d0c00  : ("in", "Ol Chiki"),
+    0x000f0c00  : ("??", "Old Italic"),
+    0x000e0c00  : ("??", "Osmanya"),
+    0x00000463  : ("af", "Pashto (Afghanistan)"),
+    0x00000429  : ("ir", "Persian"),
+    0x00050429  : ("ir", "Persian (Standard)"),
+    0x000a0c00  : ("cn", "Phags-pa"),
+    0x00010415  : ("pl", "Polish (214)"),
+    0x00000415  : ("pl", "Polish (Programmers)"),
+    0x00000816  : ("pt", "Portuguese"),
+    0x00000416  : ("pt", "Portuguese (Brazilian ABNT),"),
+    0x00010416  : ("pt", "Portuguese (Brazilian ABNT2)"),
+    0x00000446  : ("in", "Punjabi"),
+    0x00000418  : ("ro", "Romanian (Legacy)"),
+    0x00020418  : ("ro", "Romanian (Programmers)"),
+    0x00010418  : ("ro", "Romanian (Standard)"),
+    0x00000419  : ("ru", "Russian"),
+    0x00020419  : ("ru", "Russian - Mnemonic"),
+    0x00010419  : ("ru", "Russian (Typewriter)"),
+    0x00000485  : ("ru", "Sakha"),
+    0x0002083b  : ("fi", "Sami Extended Finland-Sweden"),
+    0x0001043b  : ("no", "Sami Extended Norway"),
+    0x00011809  : ("gb", "Scottish Gaelic"),
+    0x00000c1a  : ("ru", "Serbian (Cyrillic)"),
+    0x0000081a  : ("rs", "Serbian (Latin)"),
+    0x0000046c  : ("za", "Sesotho sa Leboa"),
+    0x00000432  : ("za", "Setswana"),
+    0x0000045b  : ("in", "Sinhala"),
+    0x0001045b  : ("in", "Sinhala - wij 9"),
+    0x0000041b  : ("sk", "Slovak"),
+    0x0001041b  : ("sk", "Slovak (QWERTY)"),
+    0x00000424  : ("si", "Slovenian"),
+    0x00100c00  : ("in", "Sora"),
+    0x0001042e  : ("de", "Sorbian Extended"),
+    0x0002042e  : ("de", "Sorbian Standard"),
+    0x0000042e  : ("de", "Sorbian Standard (Legacy)"),
+    0x0000040a  : ("es", "Spanish"),
+    0x0001040a  : ("es", "Spanish Variation"),
+    0x0000041d  : ("se", "Swedish"),
+    0x0000083b  : ("se", "Swedish with Sami"),
+    0x0000100c  : ("fr", "Swiss French"),
+    0x00000807  : ("de", "Swiss German"),
+    0x0000045a  : ("sy", "Syriac"),
+    0x0001045a  : ("sy", "Syriac Phonetic"),
+    0x00030c00  : ("cn", "Tai Le"),
+    0x00000428  : ("tj", "Tajik"),
+    0x00000449  : ("in", "Tamil"),
+    0x00010444  : ("ru", "Tatar"),
+    0x00000444  : ("ru", "Tatar (Legacy)"),
+    0x0000044a  : ("in", "Telugu"),
+    0x0000041e  : ("th", "Thai Kedmanee"),
+    0x0002041e  : ("th", "Thai Kedmanee (non-ShiftLock)"),
+    0x0001041e  : ("th", "Thai Pattachote"),
+    0x0003041e  : ("th", "Thai Pattachote (non-ShiftLock)"),
+    0x00010451  : ("cn", "Tibetan (PRC - Standard)"),
+    0x00000451  : ("cn", "Tibetan (PRC - Legacy)"),
+    0x00050c00  : ("ma", "Tifinagh (Basic)"),
+    0x00060c00  : ("ma", "Tifinagh (Full)"),
+    0x0001041f  : ("tr", "Turkish F"),
+    0x0000041f  : ("tr", "Turkish Q"),
+    0x00000442  : ("tm", "Turkmen"),
+    0x00010408  : ("tr", "Uyghur    "),
+    0x00000480  : ("tr", "Uyghur (Legacy)"),
+    0x00000422  : ("ua", "Ukrainian"),
+    0x00020422  : ("ua", "Ukrainian (Enhanced)"),
+    0x00000809  : ("gb", "United Kingdom"),
+    0x00000452  : ("gb", "United Kingdom Extended"),
+    0x00010409  : ("us", "United States - Dvorak"),
+    0x00020409  : ("us", "United States - International"),
+    0x00030409  : ("us", "United States-Dvorak for left hand"),
+    0x00040409  : ("us", "United States-Dvorak for right hand"),
+    0x00000409  : ("us", "United States - English"),
+    0x00000420  : ("in", "Urdu"),
+    0x00000843  : ("ru", "Uzbek Cyrillic"),
+    0x0000042a  : ("vn", "Vietnamese"),
+    0x00000488  : ("fr", "Wolof"),
+    0x00000485  : ("tr", "Yakut"),
+    0x0000046a  : ("??", "Yoruba"),
     }
 
 # This is generated from the table above so we can
