@@ -156,7 +156,7 @@ class InputServer(StubServerMixin):
         modifiers = tuple(bytestostr(x) for x in modifiers)
         self.set_ui_driver(ss)
         self.set_keyboard_layout_group(group)
-        keycode = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers)
+        keycode = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, group)
         keylog("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
         self._focus(ss, wid, None)
@@ -174,8 +174,8 @@ class InputServer(StubServerMixin):
                 keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.user_event()
 
-    def get_keycode(self, ss, client_keycode, keyname, pressed, modifiers):
-        return ss.get_keycode(client_keycode, keyname, pressed, modifiers)
+    def get_keycode(self, ss, client_keycode, keyname, pressed, modifiers, group):
+        return ss.get_keycode(client_keycode, keyname, pressed, modifiers, group)
 
     def fake_key(self, keycode, press):
         pass
@@ -246,13 +246,16 @@ class InputServer(StubServerMixin):
     def _process_key_repeat(self, proto, packet):
         if self.readonly:
             return
-        wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
         ss = self.get_server_source(proto)
         if ss is None:
             return
+        wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
         keyname = bytestostr(keyname)
         modifiers = tuple(bytestostr(x) for x in modifiers)
-        keycode = ss.get_keycode(client_keycode, keyname, modifiers)
+        group = 0
+        if len(packet)>=7:
+            group = packet[6]
+        keycode = ss.get_keycode(client_keycode, keyname, modifiers, group)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         ss.make_keymask_match(modifiers)
         if not ss.keyboard_config.sync:

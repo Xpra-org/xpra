@@ -23,7 +23,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return []
 
 
-    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers):
+    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
         global KEYCODES
         keycode = KEYCODES.get(keyname, -1)
         if keycode==-1:

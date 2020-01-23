@@ -157,7 +157,7 @@ class RFBServer:
             return
         modifiers = []
         keyval = 0
-        keycode = source.keyboard_config.get_keycode(0, keyname, pressed, modifiers)
+        keycode = source.keyboard_config.get_keycode(0, keyname, pressed, modifiers, 0)
         log("rfb keycode(%s)=%s", keyname, keycode)
         if keycode:
             is_mod = source.keyboard_config.is_modifier(keycode)

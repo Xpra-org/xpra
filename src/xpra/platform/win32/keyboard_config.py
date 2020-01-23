@@ -36,9 +36,9 @@ class KeyboardConfig(KeyboardConfigBase):
         return "win32.KeyboardConfig"
 
 
-    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers):
+    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
         keycode = KEYCODES.get(keyname, -1)
-        log("get_keycode%s=%s", (client_keycode, keyname, pressed, modifiers), keycode)
+        log("get_keycode%s=%s", (client_keycode, keyname, pressed, modifiers, group), keycode)
         return keycode
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):

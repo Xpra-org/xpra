@@ -407,7 +407,7 @@ class KeyboardConfig(KeyboardConfigBase):
             log("set_default_keymap: modifier_map=%s", self.modifier_map)
 
 
-    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers):
+    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
         if not self.enabled:
             log("ignoring keycode since keyboard is turned off")
             return -1
@@ -427,10 +427,19 @@ class KeyboardConfig(KeyboardConfigBase):
                         mode = 1
                         break
             level = int(shift) + int(mode)*2
-            keycode = self.keycode_translation.get((keyname, level))
+            levels = []
+            if group:
+                levels.append(level+4)
+            levels.append(level)
+            for level in levels:
+                keycode = self.keycode_translation.get((keyname, level))
+                if keycode:
+                    log("get_keycode(%s, %s, %s, %s)=%i (level=%i)",
+                        client_keycode, keyname, modifiers, group, keycode, level)
+                    break
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, client_keycode)
-            log("get_keycode(%s, %s, %s)=%i (level=%i)", client_keycode, keyname, modifiers, keycode, level)
+                log("get_keycode(%s, %s)=%i (keyname translation)", client_keycode, keyname, keycode)
         return keycode
 
 
