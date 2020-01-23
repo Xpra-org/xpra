@@ -1157,7 +1157,7 @@ def socket_connect(dtype, host, port):
         retry += 1
         import time
         time.sleep(1)
-    raise InitException("failed to connect to %s:%s" % (host, port))
+    raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to %s:%s" % (host, port))
 
 
 def get_host_target_string(display_desc, port_key="port", prefix=""):
