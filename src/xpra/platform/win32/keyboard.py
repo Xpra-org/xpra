@@ -117,25 +117,35 @@ class Keyboard(KeyboardBase):
         name_buf = create_string_buffer(KL_NAMELENGTH)
         layout = None
         if GetKeyboardLayoutName(name_buf):
+            log("get_layout_spec() GetKeyboardLayoutName()=%s", bytestostr(name_buf.value))
             try:
                 #win32 API returns a hex string
                 ival = int(name_buf.value, 16)
             except ValueError:
                 log.warn("Warning: failed to parse keyboard layout code '%s'", bytestostr(name_buf.value))
             else:
-                log.info("keyboard layout code %#x", ival)
+                found = False
                 for val in (ival, ival & 0xffff):
                     kbdef = WIN32_KEYBOARDS.get(val)
+                    log("get_layout_spec() WIN32_KEYBOARDS[%#x]=%s", val, kbdef)
                     if kbdef:
+                        found = True
                         layout, descr = kbdef
                         if layout=="??":
-                            log.info("identified as '%s'", descr)
-                            log.warn("Warning: the X11 codename is not known")
-                            layout = "us"
-                        elif self.last_layout_message!=layout:
+                            log.warn("Warning: the X11 codename for %#x is not known", val)
+                            log.warn(" only identified as '%s'", descr)
+                            log.warn(" please file a bug report")
+                            layout = None
+                            continue
+                        if self.last_layout_message!=layout:
+                            log.info("keyboard layout code %#x", ival)
                             log.info("identified as '%s' : %s", descr, layout)
                             self.last_layout_message = layout
                         break
+                if not found and self.last_layout_message!=layout:
+                    log.warn("Warning: unknown keyboard layout %#x", val)
+                    log.warn(" please file a bug report")
+                    self.last_layout_message = layout
         layouts = []
         variant = None
         variants = None
@@ -158,12 +168,15 @@ class Keyboard(KeyboardBase):
             log("GetKeyboardLayout(0)=%#x", hkl)
             kbid = hkl & 0xffff
             if kbid in WIN32_LAYOUTS:
-                code, _, _, _, layout, variants = WIN32_LAYOUTS.get(kbid)
-                log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)", layout, variants, code, kbid, hkl)
-            if not layout:
+                code, _, _, _, layout0, variants = WIN32_LAYOUTS.get(kbid)
+                log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)", layout0, variants, code, kbid, hkl)
+            if not layout0:
                 log("unknown keyboard layout for kbid: %i (%#x)", kbid, hkl)
-            elif layout not in layouts:
-                layouts.append(layout)
+            elif layout0 not in layouts:
+                layouts.append(layout0)
+            #only override "layout" if unset:
+            if not layout and layout0:
+                layout = layout0
         except Exception as e:
             log.error("Error: failed to detect keyboard layout:")
             log.error(" %s", e)
