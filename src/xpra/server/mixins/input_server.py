@@ -155,7 +155,8 @@ class InputServer(StubServerMixin):
         keyname = bytestostr(keyname)
         modifiers = tuple(bytestostr(x) for x in modifiers)
         self.set_ui_driver(ss)
-        self.set_keyboard_layout_group(group)
+        if group>=0:
+            self.set_keyboard_layout_group(group)
         keycode = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, group)
         keylog("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
