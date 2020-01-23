@@ -489,7 +489,7 @@ class X11ServerCore(GTKServerBase):
             keylog("clearing keys pressed: %s", self.keys_pressed)
             with xsync:
                 for keycode in self.keys_pressed:
-                    X11Keyboard.xtest_fake_key(keycode, False)
+                    self.fake_key(keycode, False)
             self.keys_pressed = {}
         #this will take care of any remaining ones we are not aware of:
         #(there should not be any - but we want to be certain)
@@ -792,6 +792,9 @@ class X11ServerCore(GTKServerBase):
 
     def fake_key(self, keycode, press):
         keylog("fake_key(%s, %s)", keycode, press)
+        mink, maxk = X11Keyboard.get_minmax_keycodes()
+        if keycode<mink or keycode>maxk:
+            return
         with xsync:
             X11Keyboard.xtest_fake_key(keycode, press)
 
