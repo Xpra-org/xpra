@@ -867,13 +867,23 @@ fi
 
 
 %changelog
-* Tue Jan 14 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
+* Thu Jan 23 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
+- fix UDP with Python3
 - fix notification logging errors during shutdown
 - fix window stacking order with html5 client and override redirect windows
 - fix png/P and png/L decoding
 - fix very slow startup on Debian due to missing libfakeXinerama
 - fix display scaling notification warning
 - fix errors generating the tray title string
+- fix missing webp modules in 'clean' build target
+- fix some special characters with HTML5 client
+- fix initiate-moveresize with multiple clients
+- fix keyboard layout detection with MS Windows 10 clients
+- use correct location for appdata.xml
+- use Debian location for systemd service config file
+- ensure emacs, gvim and xxdiff always use 'text' mode
+- re-enable pulseaudio memfd (was wrongly disabled in v3.0.0)
+- remove remnants of GTK2 dependencies from non-GTK2 components
 - add missing entry to path information tool
 
 * Tue Jan 07 2020 Antoine Martin <antoine@xpra.org> 3.0.5-1xpra1
