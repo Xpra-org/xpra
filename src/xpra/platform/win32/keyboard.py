@@ -48,6 +48,7 @@ class Keyboard(KeyboardBase):
         self.num_lock_modifier = None
         self.altgr_modifier = None
         self.delayed_event = None
+        self.last_layout_message = None
         #workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
         #translate "period" with keyval=46 and keycode=110 to KP_Decimal:
         KEY_TRANSLATIONS[("period",     46,     110)]   = "KP_Decimal"
@@ -131,8 +132,9 @@ class Keyboard(KeyboardBase):
                             log.info("identified as '%s'", descr)
                             log.warn("Warning: the X11 codename is not known")
                             layout = "us"
-                        else:
+                        elif self.last_layout_message!=layout:
                             log.info("identified as '%s' : %s", descr, layout)
+                            self.last_layout_message = layout
                         break
         layouts = []
         variant = None
