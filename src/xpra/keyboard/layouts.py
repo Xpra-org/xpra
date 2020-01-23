@@ -164,6 +164,134 @@ WIN32_LAYOUTS = {
            58380: ("",    "North Africa",  "French",                   1252,   "fr", FR_VARIANTS),
            }
 
+#map win32 keyboard codes to x11 names:
+#based on
+#https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-language-pack-default-values
+WIN32_KEYBOARDS = {
+    0x0000041c  : "al",     #Albania
+    0x00000401  : "ar",     #Arabic (101)
+    0x00010401  : "ar",     #Arabic (102)
+    0x00020401  : "ar",     #Arabic (102) AZERTY
+    0x0000042b  : "am",     #Armenian Eastern
+    0x0002042b  : "am",     #Armenian Phonetic
+    0x0003042b  : "am",     #Armenian Typewriter
+    0x0001042b  : "am",     #Armenian Western
+    0x0000044d  : "in",     #Assamese - Inscript
+    0x0001042c  : "az",     #Azerbaijani (Standard)
+    0x0000082c  : "az",     #Azerbaijani Cyrillic
+    0x0000042c  : "az",     #Azerbaijani Latin
+    0x0000046d  : "ru",     #Bashkir
+    0x00000423  : "by",     #Belarusian
+    0x0001080c  : "be",     #Belgian (Comma)
+    0x00000813  : "be",     #Belgian (Period)
+    0x0000080c  : "be",     #Belgian French
+    0x00000445  : "bd",     #Bangla (Bangladesh)
+    0x00020445  : "bd",     #Bangla (India)
+    0x00010445  : "bd",     #Bangla (India - Legacy)
+    0x0000201a  : "ba",     #Bosnian (Cyrillic)
+    #0x000b0c00  : "",       #Buginese
+    0x00030402  : "bg",     #Bulgarian
+    0x00010402  : "bg",     #Bulgarian (Latin)
+    0x00020402  : "bg",     #Bulgarian (phonetic layout)
+    0x00040402  : "bg",     #Bulgarian (phonetic traditional)
+    0x00000402  : "bg",     #Bulgarian (Typewriter)
+    0x00001009  : "ca",     #Canadian French
+    0x00000c0c  : "ca",     #Canadian French (Legacy)
+    0x00011009  : "ca",     #Canadian Multilingual Standard
+    0x0000085f  : "fr",     #Central Atlas Tamazight
+    0x00000429  : "ku",     #Central Kurdish
+    0x0000045c  : "us",     #Cherokee Nation
+    0x0001045c  : "us",     #Cherokee Nation Phonetic
+    0x00000804  : "cn",     #Chinese (Simplified) - US Keyboard
+    0x00000404  : "cn",     #Chinese (Traditional) - US Keyboard
+    0x00000c04  : "cn",     #Chinese (Traditional, Hong Kong S.A.R.)
+    0x00001404  : "cn",     #Chinese (Traditional Macao S.A.R.) US Keyboard
+    0x00001004  : "cn",     #Chinese (Simplified, Singapore) - US keyboard
+    0x0000041a  : "hr",     #Croatian
+    0x00000405  : "cz",     #Czech
+    0x00010405  : "cz",     #Czech (QWERTY)
+    0x00020405  : "cz",     #Czech Programmers
+    0x00000406  : "dk",     #Danish
+    0x00000439  : "in",     #Devanagari-INSCRIPT
+    0x00000465  : "in",     #Divehi Phonetic
+    0x00010465  : "in",     #Divehi Typewriter
+    0x00000413  : "nl",     #Dutch
+    0x00000C51  : "dz",     #Dzongkha
+    0x00000425  : "ee",     #Estonian
+    0x00000438  : "fo",     #Faeroese
+    0x0000040b  : "fi",     #Finnish
+    0x0001083b  : "fi",     #Finnish with Sami
+    0x0000040c  : "fr",     #French
+    #0x00120c00  : "??",     #Futhark
+    0x00000437  : "ge",     #Georgian
+    0x00020437  : "ge",     #Georgian (Ergonomic)
+    0x00010437  : "ge",     #Georgian (QWERTY)
+    0x00030437  : "ge",     #Georgian Ministry of Education and Science Schools
+    0x00040437  : "ge",     #Georgian (Old Alphabets)
+    0x00000407  : "de",     #German
+    0x00010407  : "de",     #German (IBM)
+    #0x000c0c00  : "??",     #Gothic
+    0x00000408  : "gr",     #Greek
+    0x00010408  : "gr",     #Greek (220)
+    0x00030408  : "gr",     #Greek (220) Latin
+    0x00020408  : "gr",     #Greek (319)
+    0x00040408  : "gr",     #Greek (319) Latin
+    0x00050408  : "gr",     #Greek Latin
+    0x00060408  : "gr",     #Greek Polytonic
+    #0x0000046f  : "??",     #Greenlandic
+    #0x00000474  : "??",     #Guarani
+    0x00000447  : "in",     #Gujarati
+    0x00000468  : "gh",     #Hausa
+    0x0000040d  : "il",     #Hebrew
+    0x00010439  : "in",     #Hindi Traditional
+    0x0000040e  : "hu",     #Hungarian
+    0x0001040e  : "hu",     #Hungarian 101-key
+    0x0000040f  : "is",     #Icelandic
+    0x00000470  : "ng",     #Igbo
+    0x00004009  : "in",     #India
+    0x0000085d  : "ca",     #Inuktitut - Latin
+    0x0001045d  : "ca",     #Inuktitut - Naqittaut
+    0x00001809  : "ie",     #Ireland
+    0x00000410  : "it",     #Italian
+    0x00010410  : "it",     #Italian
+    0x00000411  : "jp",     #Japanese
+    #0x00110c00  : "??",     #Javanese
+    0x0000044b  : "in",     #Kannada
+    0x0000043f  : "kz",     #Kazakh
+    0x00000453  : "kh",     #Khmer
+    0x00010453  : "kh",     #Khmer (NIDA)
+    0x00000412  : "kr",     #Korean
+    0x00000440  : "kg",     #Kyrgyz Cyrillic
+    0x00000454  : "la",     #Lao
+    0x0000080a  : "latam",  #Latin American
+    0x00020426  : "lv",     #Latvian (Standard)
+    0x00010426  : "lv",     #Latvian (Legacy)
+    #0x00070c00  : "??",     #Lisu (Basic)
+    #0x00080c00  : "??",     #Lisu (Standard)
+    0x00010427  : "lt",     #Lithuanian
+    0x00000427  : "lt",     #Lithuanian IBM
+    0x00020427  : "lt",     #Lithuanian Standard
+    0x0000046e  : "de",     #Luxembourgish
+    0x0000042f  : "mk",     #Macedonia (FYROM)
+    0x0001042f  : "mk",     #Macedonia (FYROM) - Standard
+    0x0000044c  : "in",     #Malayalam
+    0x0000043a  : "mt",     #Maltese 47-Key
+    0x0001043a  : "mt",     #Maltese 48-key
+    0x00000481  : "mao",    #Maori
+    0x0000044e  : "in",     #Marathi
+    0x00000850  : "mn",     #Mongolian (Mongolian Script - Legacy)
+    0x00020850  : "mn",     #Mongolian (Mongolian Script - Standard)
+    0x00000450  : "mn",     #Mongolian Cyrillic
+    0x00010c00  : "mm",     #Myanmar
+    0x00090c00  : "??",     #N'ko
+    0x00000461  : "np",     #Nepali
+    0x00020c00  : "th",     #New Tai Lue
+    0x00000414  : "no",     #Norwegian
+    0x0000043b  : "no",     #Norwegian with Sami
+    0x00000448  : "in",     #Odia
+    0x000d0c00  : "in",     #Ol Chiki    
+    }
+
 # This is generated from the table above so we can
 # let the user choose his own layout.
 # (country,language) : (layout,variant)
