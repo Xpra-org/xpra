@@ -17,7 +17,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     envint, envbool, csv, parse_simple_dict,
-    repr_ellipsized, ellipsizer,
+    ellipsizer,
     DEFAULT_PORT,
     )
 
