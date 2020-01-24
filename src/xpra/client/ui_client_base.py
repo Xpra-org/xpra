@@ -305,7 +305,7 @@ class UIXpraClient(ClientBaseClass):
     def server_disconnect_warning(self, reason, *info):
         if self.exit_code is None:
             body = "\n".join(info)
-            if self.server_capabilities:
+            if self.connection_established:
                 title = "Xpra Session Disconnected: %s" % reason
                 self.exit_code = EXIT_CONNECTION_LOST
             else:

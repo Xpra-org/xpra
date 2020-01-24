@@ -33,10 +33,10 @@ class AudioClientTest(ClientMixinTest):
 			"platform.platform" : "platformX",
 			})
 		del x.server_capabilities["build.version"]
-		assert not x.parse_server_capabilities(), "should have failed when version is missing"
+		assert not x.parse_server_capabilities(x.server_capabilities), "should have failed when version is missing"
 		version = "0.1"
 		x.server_capabilities["build.version"] = version
-		assert not x.parse_server_capabilities(), "should have failed with version %s" % version
+		assert not x.parse_server_capabilities(x.server_capabilities), "should have failed with version %s" % version
 
 def main():
 	unittest.main()

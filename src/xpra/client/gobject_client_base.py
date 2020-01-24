@@ -540,7 +540,7 @@ class RequestStartClient(HelloRequestClient):
 
     def dots(self):
         errwrite(".")
-        return self.server_capabilities is None
+        return not self.connection_established
 
     def _process_connection_lost(self, packet):
         errwrite("\n")

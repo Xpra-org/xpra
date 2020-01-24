@@ -95,9 +95,10 @@ class ClientMixinTest(unittest.TestCase):
 		x.add_packet_handlers = self.add_packet_handlers
 		x.add_packet_handler = self.add_packet_handler
 		x.init_authenticated_packet_handlers()
-		x.server_capabilities = typedict(caps or {})
-		x.parse_server_capabilities()
-		x.process_ui_capabilities()
+		caps = typedict(caps or {})
+		x.server_capabilities = caps
+		x.parse_server_capabilities(caps)
+		x.process_ui_capabilities(caps)
 		assert x.get_caps() is not None
 		return x
 

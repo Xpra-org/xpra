@@ -122,6 +122,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_timer = 0
         self._aliases = {}
         #server state and caps:
+        self.connection_established = False
         self.server_capabilities = None
         self.completed_startup = False
         self.uuid = get_user_uuid()
@@ -359,7 +360,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.send("hello", hello)
 
     def verify_connected(self):
-        if not self.server_capabilities:
+        if not self.connection_established:
             #server has not said hello yet
             self.warn_and_quit(EXIT_TIMEOUT, "connection timed out")
 
@@ -560,7 +561,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #ie: ("disconnect", "version error", "incompatible version")
         info = tuple(nonl(bytestostr(x)) for x in packet[1:])
         reason = info[0]
-        if not self.server_capabilities:
+        if not self.connection_established:
             #server never sent hello to us - so disconnect is an error
             #(but we don't know which one - the info message may help)
             self.server_disconnect_warning("disconnected before the session could be established", *info)
@@ -796,11 +797,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
             return
         try:
-            netlog("processing hello from server: %s", ellipsizer(self.server_capabilities))
             caps = typedict(packet[1])
+            netlog("processing hello from server: %s", ellipsizer(caps))
             if not self.server_connection_established(caps):
                 self.warn_and_quit(EXIT_FAILURE, "failed to establish connection")
             else:
+                self.connection_established = True
                 self.server_capabilities = caps
         except Exception as e:
             netlog.info("error in hello packet", exc_info=True)

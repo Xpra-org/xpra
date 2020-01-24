@@ -15,7 +15,6 @@ class StubClientMixin:
     def __init__(self):
         self.exit_code = None
         self.start_time = int(time.time())
-        self.server_capabilities = typedict()
 
     def init(self, _opts, _extra_args=()):
         """
