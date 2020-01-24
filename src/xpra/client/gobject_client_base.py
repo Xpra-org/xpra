@@ -149,10 +149,10 @@ class CommandConnectClient(GObjectXpraClient):
         #* we don't care about sending anything back after hello
         log("server_capabilities: %s", ellipsizer(caps))
         log("protocol state: %s", self._protocol.save_state())
-        self.do_command()
+        self.do_command(caps)
         return True
 
-    def do_command(self):
+    def do_command(self, caps : typedict):
         raise NotImplementedError()
 
 
@@ -166,7 +166,7 @@ class SendCommandConnectClient(CommandConnectClient):
     def server_connection_established(self, caps):
         assert self.parse_encryption_capabilities(caps), "encryption failure"
         assert self.parse_network_capabilities(caps), "network capabilities failure"
-        return super().server_connection_established()
+        return super().server_connection_established(caps)
 
 
 class HelloRequestClient(SendCommandConnectClient):
@@ -186,7 +186,7 @@ class HelloRequestClient(SendCommandConnectClient):
     def hello_request(self):
         raise NotImplementedError()
 
-    def do_command(self):
+    def do_command(self, caps : typedict):
         self.quit(EXIT_OK)
 
     def _process_disconnect(self, packet):
@@ -249,11 +249,11 @@ class InfoXpraClient(CommandConnectClient):
     def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
 
-    def do_command(self):
-        if self.server_capabilities:
+    def do_command(self, caps : typedict):
+        if caps:
             if FLATTEN_INFO<2:
                 #compatibility mode:
-                c = flatten_dict(self.server_capabilities)
+                c = flatten_dict(caps)
                 for k in sorted_nicely(c.keys()):
                     v = c.get(k)
                     #FIXME: this is a nasty and horrible python3 workaround (yet again)
@@ -274,7 +274,7 @@ class InfoXpraClient(CommandConnectClient):
                     k = fixvalue(k)
                     log.info("%s=%s", k, nonl(v))
             else:
-                print_nested_dict(self.server_capabilities)
+                print_nested_dict(caps)
         self.quit(EXIT_OK)
 
 class IDXpraClient(InfoXpraClient):
@@ -312,10 +312,10 @@ class ConnectTestXpraClient(CommandConnectClient):
         #which sets the correct exit code, landing here is an error:
         self.quit(EXIT_FAILURE)
 
-    def do_command(self):
-        if self.server_capabilities:
-            ctr = self.server_capabilities.strget("connect_test_response")
-            log("do_command() expected connect test response='%s', got '%s'", self.value, ctr)
+    def do_command(self, caps : typedict):
+        if caps:
+            ctr = caps.strget("connect_test_response")
+            log("do_command(..) expected connect test response='%s', got '%s'", self.value, ctr)
             if ctr==self.value:
                 self.quit(EXIT_OK)
             else:
@@ -341,7 +341,7 @@ class MonitorXpraClient(SendCommandConnectClient):
         pass
         #self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
 
-    def do_command(self):
+    def do_command(self, caps : typedict):
         log.info("waiting for server events")
 
     def _process_server_event(self, packet):
@@ -373,8 +373,8 @@ class VersionXpraClient(HelloRequestClient):
         #don't bother checking anything - this could generate warnings
         return True
 
-    def do_command(self):
-        v = self.server_capabilities.get(b"version")
+    def do_command(self, caps : typedict):
+        v = caps.get(b"version")
         if not v:
             self.warn_and_quit(EXIT_FAILURE, "server did not provide the version information")
         else:
@@ -391,8 +391,8 @@ class ControlXpraClient(CommandConnectClient):
     def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not respond")
 
-    def do_command(self):
-        cr = self.server_capabilities.tupleget("command_response")
+    def do_command(self, caps : typedict):
+        cr = caps.tupleget("command_response")
         if cr is None:
             self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support control command")
             return
@@ -453,8 +453,8 @@ class PrintClient(SendCommandConnectClient):
     def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not respond")
 
-    def do_command(self):
-        printing = self.server_capabilities.boolget("printing")
+    def do_command(self, caps : typedict):
+        printing = caps.boolget("printing")
         if not printing:
             self.warn_and_quit(EXIT_UNSUPPORTED, "server does not support printing")
             return
@@ -485,7 +485,7 @@ class ExitXpraClient(HelloRequestClient):
             "request"       : "exit",
             }
 
-    def do_command(self):
+    def do_command(self, caps : typedict):
         self.idle_add(self.send, "exit-server")
 
 
@@ -498,7 +498,7 @@ class StopXpraClient(HelloRequestClient):
             "request"       : "stop",
             }
 
-    def do_command(self):
+    def do_command(self, caps : typedict):
         if not self.server_client_shutdown:
             log.error("Error: cannot shutdown this server")
             log.error(" the feature is disable on the server")
@@ -520,7 +520,7 @@ class DetachXpraClient(HelloRequestClient):
             "request"           : "detach",
             }
 
-    def do_command(self):
+    def do_command(self, caps : typedict):
         self.idle_add(self.send, "disconnect", DONE, "detaching")
         #not exiting the client here,
         #the server should disconnect us with the response

@@ -604,7 +604,7 @@ class TopSessionClient(MonitorXpraClient):
             ll=curses.ACS_LLCORNER, lr=curses.ACS_LRCORNER)     #@UndefinedVariable
 
 
-    def do_command(self):
+    def do_command(self, caps : typedict):
         self.send_info_request()
         self.timeout_add(REFRESH_RATE*1000, self.send_info_request)
 
