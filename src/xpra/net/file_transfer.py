@@ -10,7 +10,7 @@ import hashlib
 import uuid
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import monotonic_time, bytestostr, strtobytes, POSIX, WIN32
+from xpra.os_util import monotonic_time, bytestostr, strtobytes, umask_context, POSIX, WIN32
 from xpra.util import typedict, csv, nonl, envint, envbool, engs
 from xpra.scripts.config import parse_bool
 from xpra.simple_stats import std_unit
@@ -77,7 +77,8 @@ def safe_open_download_file(basefilename, mimetype):
         flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
     except AttributeError:
         pass
-    fd = os.open(filename, flags)
+    with umask_context(0o133):
+        fd = os.open(filename, flags)
     filelog("using filename '%s', file descriptor=%s", filename, fd)
     return filename, fd
 
