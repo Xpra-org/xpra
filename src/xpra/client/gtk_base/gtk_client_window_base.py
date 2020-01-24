@@ -469,11 +469,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self.MAX_VIEWPORT_DIMS, self.MAX_BACKING_DIMS)
 
 
-    def is_awt(self, metadata):
+    def is_awt(self, metadata) -> bool:
         wm_class = metadata.get("class-instance")
         return wm_class and len(wm_class)==2 and wm_class[0].startswith("sun-awt-X11")
 
-    def _is_popup(self, metadata):
+    def _is_popup(self, metadata) -> bool:
         #decide if the window type is POPUP or NORMAL
         if self._override_redirect:
             return True
@@ -495,14 +495,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return True
         return False
 
-    def _is_decorated(self, metadata):
+    def _is_decorated(self, metadata) -> bool:
         #decide if the window type is POPUP or NORMAL
         #(show window decorations or not)
         if self._override_redirect:
             return False
         return metadata.boolget("decorations", True)
 
-    def set_decorated(self, decorated):
+    def set_decorated(self, decorated : bool):
         was_decorated = self.get_decorated()
         if self._fullscreen and was_decorated and not decorated:
             #fullscreen windows aren't decorated anyway!

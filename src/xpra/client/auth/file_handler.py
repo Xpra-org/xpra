@@ -22,7 +22,7 @@ class Handler:
     def __repr__(self):
         return "file"
 
-    def get_digest(self):
+    def get_digest(self) -> str:
         return None
 
     def handle(self, packet) -> bool:

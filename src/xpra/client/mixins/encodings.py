@@ -130,7 +130,7 @@ class Encodings(StubClientMixin):
             self.encoding = e
 
 
-    def get_batch_caps(self):
+    def get_batch_caps(self) -> dict:
         #batch options:
         caps = {}
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
@@ -143,7 +143,7 @@ class Encodings(StubClientMixin):
         log("get_batch_caps()=%s", caps)
         return caps
 
-    def get_encodings_caps(self):
+    def get_encodings_caps(self) -> dict:
         if B_FRAMES:
             video_b_frames = ("h264", ) #only tested with dec_avcodec2
         else:

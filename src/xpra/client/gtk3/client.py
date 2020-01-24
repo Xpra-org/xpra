@@ -19,10 +19,10 @@ class XpraClient(GTKXpraClient):
     def __repr__(self):
         return "gtk3.client"
 
-    def client_type(self):
+    def client_type(self) -> str:
         return "Python/GTK3"
 
-    def client_toolkit(self):
+    def client_toolkit(self) -> str:
         if POSIX and not OSX:
             if is_Wayland():
                 return "GTK3 Wayland"
@@ -50,20 +50,20 @@ class XpraClient(GTKXpraClient):
                 log.warn(" %s", e)
         return ncs
 
-    def get_screen_resolution(self):
+    def get_screen_resolution(self) -> int:
         screen = Gdk.Screen.get_default()
         if not screen:
             #wayland?
             return -1
         return screen.get_resolution()
 
-    def get_xdpi(self):
+    def get_xdpi(self) -> int:
         xdpi = get_xdpi()
         if xdpi>0:
             return xdpi
         return self.get_screen_resolution()
 
-    def get_ydpi(self):
+    def get_ydpi(self) -> int:
         ydpi = get_ydpi()
         if ydpi>0:
             return ydpi

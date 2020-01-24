@@ -21,7 +21,7 @@ class Handler:
     def __repr__(self):
         return "gss"
 
-    def get_digest(self):
+    def get_digest(self) -> str:
         return "gss"
 
     def handle(self, packet) -> bool:

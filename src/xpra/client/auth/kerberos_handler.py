@@ -34,7 +34,7 @@ class Handler:
     def __repr__(self):
         return "kerberos"
 
-    def get_digest(self):
+    def get_digest(self) -> str:
         return "kerberos"
 
     def handle(self, packet) -> bool:

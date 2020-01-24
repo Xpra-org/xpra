@@ -162,7 +162,7 @@ class AudioClient(StubClientMixin):
         log("audio capabilities: %s", caps)
         return caps
 
-    def get_avsync_capabilities(self):
+    def get_avsync_capabilities(self) -> dict:
         if not self.av_sync:
             return {}
         return {

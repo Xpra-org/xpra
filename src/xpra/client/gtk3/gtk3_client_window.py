@@ -63,7 +63,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         except Exception as e:
             metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
 
-    def is_mapped(self):
+    def is_mapped(self) -> bool:
         return self.get_mapped()
 
     def get_drawing_area_geometry(self):

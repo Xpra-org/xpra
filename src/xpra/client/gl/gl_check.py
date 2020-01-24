@@ -35,7 +35,7 @@ gl_fatal_error = raise_fatal_error
 
 _version_warning_shown = False
 #support for memory views requires Python 2.7 and PyOpenGL 3.1
-def is_pyopengl_memoryview_safe(pyopengl_version, accel_version):
+def is_pyopengl_memoryview_safe(pyopengl_version, accel_version) -> bool:
     if accel_version is not None and pyopengl_version!=accel_version:
         #mismatch is not safe!
         return False
@@ -76,7 +76,7 @@ def check_functions(*functions):
     else:
         log("All the required OpenGL functions are available: %s " % csv(available))
 
-def get_max_texture_size():
+def get_max_texture_size() -> int:
     from OpenGL.GL import glGetInteger, GL_MAX_TEXTURE_SIZE
     texture_size = glGetInteger(GL_MAX_TEXTURE_SIZE)
     log("GL_MAX_TEXTURE_SIZE=%s", texture_size)
@@ -93,7 +93,7 @@ def get_max_texture_size():
     return min(rect_texture_size, texture_size)
 
 
-def check_PyOpenGL_support(force_enable):
+def check_PyOpenGL_support(force_enable) -> dict:
     props = {}
     try:
         if CRASH:

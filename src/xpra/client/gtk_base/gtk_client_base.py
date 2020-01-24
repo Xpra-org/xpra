@@ -684,7 +684,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return self._add_statusicon_tray(WindowClient.get_system_tray_classes(self))
 
 
-    def supports_system_tray(self):
+    def supports_system_tray(self) -> bool:
         #always True: we can always use Gtk.StatusIcon as fallback
         return True
 
@@ -708,7 +708,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return self.mask_to_names(modifiers_mask)
 
 
-    def make_hello(self):
+    def make_hello(self) -> dict:
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_types)>0
         capabilities["transparency"] = self.has_transparency()
@@ -790,7 +790,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return capabilities
 
 
-    def has_transparency(self):
+    def has_transparency(self) -> bool:
         screen = Gdk.Screen.get_default()
         if screen is None:
             return is_Wayland()

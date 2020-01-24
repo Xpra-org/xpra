@@ -21,7 +21,7 @@ class Handler:
     def __repr__(self):
         return "u2f"
 
-    def get_digest(self):
+    def get_digest(self) -> str:
         return "u2f"
 
     def handle(self, packet) -> bool:
@@ -55,7 +55,7 @@ class Handler:
         self.client.do_send_challenge_reply(bytes(sig), client_data.origin)
         return True
 
-    def get_key_handle(self):
+    def get_key_handle(self) -> bytes:
         key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")
         log("process_challenge_u2f XPRA_U2F_KEY_HANDLE=%s", key_handle_str)
         if not key_handle_str:
