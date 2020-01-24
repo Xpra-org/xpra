@@ -431,11 +431,15 @@ class KeyboardConfig(KeyboardConfigBase):
             if group:
                 levels.append(level+4)
             levels.append(level)
+            for i in range(4):
+                level = int(shift) + i*2
+                if level not in levels:
+                    levels.append(level)
             for level in levels:
                 keycode = self.keycode_translation.get((keyname, level))
                 if keycode:
-                    log("get_keycode(%s, %s, %s, %s)=%i (level=%i)",
-                        client_keycode, keyname, modifiers, group, keycode, level)
+                    log("get_keycode(%s, %s, %s, %s)=%i (level=%i, shift=%s, mode=%i)",
+                        client_keycode, keyname, modifiers, group, keycode, level, shift, mode)
                     break
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, client_keycode)
