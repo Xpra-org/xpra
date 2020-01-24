@@ -365,7 +365,7 @@ class FileTransferHandler(FileTransferAttributes):
         #basefilename should be utf8:
         try:
             base = basefilename.decode("utf8")
-        except:
+        except UnicodeDecodeError:
             base = bytestostr(basefilename)
         try:
             filename, fd = safe_open_download_file(base, mimetype)
