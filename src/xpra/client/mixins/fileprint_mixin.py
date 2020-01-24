@@ -1,9 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import envbool, csv
+from xpra.util import envbool, csv, typedict
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -47,19 +47,19 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         self.cleanup_printing()
         FileTransferHandler.cleanup(self)
 
-    def parse_server_capabilities(self):
-        self.parse_printing_capabilities()
-        self.parse_file_transfer_caps(self.server_capabilities)
+    def parse_server_capabilities(self, caps : typedict) -> bool:
+        self.parse_printing_capabilities(caps)
+        self.parse_file_transfer_caps(caps)
         return True
 
-    def parse_printing_capabilities(self):
+    def parse_printing_capabilities(self, caps : typedict):
         printlog("parse_printing_capabilities() client printing support=%s", self.printing)
         if self.printing:
-            server_printing = self.server_capabilities.boolget("printing")
+            server_printing = caps.boolget("printing")
             printlog("parse_printing_capabilities() server printing support=%s", server_printing)
             if server_printing:
-                self.printer_attributes = self.server_capabilities.strtupleget("printer.attributes",
-                                                                              ("printer-info", "device-uri"))
+                self.printer_attributes = caps.strtupleget("printer.attributes",
+                          	                                ("printer-info", "device-uri"))
                 self.timeout_add(1000, self.init_printing)
 
 

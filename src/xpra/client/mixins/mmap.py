@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
-from xpra.util import envbool
+from xpra.util import envbool, typedict
 from xpra.exit_codes import EXIT_MMAP_TOKEN_FAILURE
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.simple_stats import std_unit
@@ -59,8 +59,7 @@ class MmapClient(StubClientMixin):
         #subclasses should provide real values
         return 1024, 1024
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES

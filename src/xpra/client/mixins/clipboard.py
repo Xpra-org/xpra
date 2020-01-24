@@ -8,7 +8,7 @@ from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.gui import get_clipboard_native_class
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.util import flatten_dict
+from xpra.util import flatten_dict, typedict
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 
@@ -79,7 +79,7 @@ class ClipboardClient(StubClientMixin):
              })
         return caps
 
-    def parse_server_capabilities(self):
+    def parse_server_capabilities(self, c : typedict) -> bool:
         try:
             from xpra import clipboard
             assert clipboard
@@ -87,7 +87,6 @@ class ClipboardClient(StubClientMixin):
             log.warn("Warning: clipboard module is missing")
             self.clipboard_enabled = False
             return True
-        c = self.server_capabilities
         self.server_clipboard = c.boolget("clipboard")
         self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids", {})
         self.server_clipboard_direction = c.strget("clipboard-direction", "both")
@@ -121,7 +120,7 @@ class ClipboardClient(StubClientMixin):
             log.info("server clipboard does not include contents slice fix")
         return True
 
-    def process_ui_capabilities(self):
+    def process_ui_capabilities(self, caps : typedict):
         log("process_ui_capabilities() clipboard_enabled=%s", self.clipboard_enabled)
         if self.clipboard_enabled:
             ch = self.make_clipboard_helper()

@@ -9,7 +9,7 @@ from gi.repository import GLib
 from gi.repository import GObject
 
 from xpra.util import (
-    nonl, sorted_nicely, print_nested_dict, envint, flatten_dict,
+    nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, DONE, first_time,
     )
 from xpra.os_util import bytestostr, get_hex_uuid, POSIX, OSX
@@ -143,11 +143,11 @@ class CommandConnectClient(GObjectXpraClient):
         else:
             self.quit(EXIT_OK)
 
-    def server_connection_established(self):
+    def server_connection_established(self, caps : typedict):
         #don't bother parsing the network caps:
         #* it could cause errors if the caps are missing
         #* we don't care about sending anything back after hello
-        log("server_capabilities: %s", ellipsizer(self.server_capabilities))
+        log("server_capabilities: %s", ellipsizer(caps))
         log("protocol state: %s", self._protocol.save_state())
         self.do_command()
         return True
@@ -163,9 +163,9 @@ class SendCommandConnectClient(CommandConnectClient):
         So unlike CommandConnectClient, we do need the network and encryption to be setup.
     """
 
-    def server_connection_established(self):
-        assert self.parse_encryption_capabilities(), "encryption failure"
-        assert self.parse_network_capabilities(), "network capabilities failure"
+    def server_connection_established(self, caps):
+        assert self.parse_encryption_capabilities(caps), "encryption failure"
+        assert self.parse_network_capabilities(caps), "network capabilities failure"
         return super().server_connection_established()
 
 
@@ -558,12 +558,12 @@ class RequestStartClient(HelloRequestClient):
             "connect"                   : False,
             }
 
-    def server_connection_established(self):
+    def server_connection_established(self, caps : typedict):
         #the server should respond with the display chosen
         log("server_connection_established() exit_code=%s", self.exit_code)
-        display = self.server_capabilities.get("display")
+        display = caps.strget("display")
         if display:
-            mode = self.server_capabilities.get("mode")
+            mode = caps.strget("mode")
             session_type = {
                 "start"         : "seamless ",
                 "start-desktop" : "desktop ",
@@ -576,7 +576,7 @@ class RequestStartClient(HelloRequestClient):
                     log("writing display %s to displayfd=%s", display, self.displayfd)
                     write_displayfd(self.displayfd, display[1:])
             except OSError:
-                log("server_connection_established()", exc_info=True)
+                log("server_connection_established(..)", exc_info=True)
         if not self.exit_code:
             self.quit(0)
         return True

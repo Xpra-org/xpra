@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 from xpra.util import envint, AtomicInteger
 from xpra.os_util import monotonic_time
+from xpra.util import typedict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -39,8 +40,7 @@ class RPCClient(StubClientMixin):
         pass
 
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         self.server_dbus_proxy = c.boolget("dbus_proxy")
         #default for pre-0.16 servers:
         if self.server_dbus_proxy:
@@ -50,7 +50,7 @@ class RPCClient(StubClientMixin):
         self.server_rpc_types = c.strtupleget("rpc-types", default_rpc_types)
         return True
 
-    def process_ui_capabilities(self):
+    def process_ui_capabilities(self, caps : typedict):
         pass
 
 

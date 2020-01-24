@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -7,7 +7,7 @@
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.os_util import bytestostr, strtobytes
-from xpra.util import envbool, repr_ellipsized, make_instance, updict
+from xpra.util import envbool, repr_ellipsized, make_instance, updict, typedict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -57,8 +57,7 @@ class NotificationClient(StubClientMixin):
                 log.error("Error on notifier cleanup", exc_info=True)
 
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         self.server_notifications = c.boolget("notifications")
         self.server_notifications_close = c.boolget("notifications.close")
         self.notifications_enabled = self.client_supports_notifications

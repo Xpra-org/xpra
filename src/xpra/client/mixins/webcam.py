@@ -11,7 +11,7 @@ from xpra.log import Logger
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
 from xpra.os_util import OSEnvContext, monotonic_time, WIN32, BITS
-from xpra.util import envint, envbool, csv, XPRA_WEBCAM_NOTIFICATION_ID
+from xpra.util import envint, envbool, csv, typedict, XPRA_WEBCAM_NOTIFICATION_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
@@ -88,8 +88,7 @@ class WebcamForwarder(StubClientMixin):
         return {"webcam" : True}
 
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         self.server_webcam = c.boolget("webcam")
         self.server_webcam_encodings = c.strtupleget("webcam.encodings", ("png", "jpeg"))
         self.server_virtual_video_devices = c.intget("virtual-video-devices")

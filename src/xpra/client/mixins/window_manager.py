@@ -305,8 +305,7 @@ class WindowClient(StubClientMixin):
             }
 
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_cursors and self.client_supports_cursors

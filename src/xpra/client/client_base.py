@@ -359,7 +359,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.send("hello", hello)
 
     def verify_connected(self):
-        if self.server_capabilities is None:
+        if not self.server_capabilities:
             #server has not said hello yet
             self.warn_and_quit(EXIT_TIMEOUT, "connection timed out")
 
@@ -796,54 +796,54 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
             return
         try:
-            self.server_capabilities = typedict(packet[1])
             netlog("processing hello from server: %s", ellipsizer(self.server_capabilities))
-            if not self.server_connection_established():
+            caps = typedict(packet[1])
+            if not self.server_connection_established(caps):
                 self.warn_and_quit(EXIT_FAILURE, "failed to establish connection")
+            else:
+                self.server_capabilities = caps
         except Exception as e:
             netlog.info("error in hello packet", exc_info=True)
             self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)
 
 
-    def server_connection_established(self):
-        netlog("server_connection_established()")
-        if not self.parse_encryption_capabilities():
-            netlog("server_connection_established() failed encryption capabilities")
+    def server_connection_established(self, caps : typedict) -> bool:
+        netlog("server_connection_established(..)")
+        if not self.parse_encryption_capabilities(caps):
+            netlog("server_connection_established(..) failed encryption capabilities")
             return False
-        if not self.parse_server_capabilities():
-            netlog("server_connection_established() failed server capabilities")
+        if not self.parse_server_capabilities(caps):
+            netlog("server_connection_established(..) failed server capabilities")
             return False
-        if not self.parse_network_capabilities():
-            netlog("server_connection_established() failed network capabilities")
+        if not self.parse_network_capabilities(caps):
+            netlog("server_connection_established(..) failed network capabilities")
             return False
         #raise packet size if required:
         if self.file_transfer:
             self._protocol.max_packet_size = max(self._protocol.max_packet_size, self.file_size_limit*1024*1024)
-        netlog("server_connection_established() adding authenticated packet handlers")
+        netlog("server_connection_established(..) adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True
 
 
-    def parse_server_capabilities(self):
+    def parse_server_capabilities(self, caps : typedict) -> bool:
         for c in XpraClientBase.__bases__:
-            if not c.parse_server_capabilities(self):
+            if not c.parse_server_capabilities(self, caps):
                 return False
-        self.server_client_shutdown = self.server_capabilities.boolget("client-shutdown", True)
-        self.server_compressors = self.server_capabilities.strtupleget("compressors", ("zlib",))
+        self.server_client_shutdown = caps.boolget("client-shutdown", True)
+        self.server_compressors = caps.strtupleget("compressors", ("zlib",))
         return True
 
-    def parse_network_capabilities(self):
-        c = self.server_capabilities
+    def parse_network_capabilities(self, caps : typedict) -> bool:
         p = self._protocol
-        if not p or not p.enable_encoder_from_caps(c):
+        if not p or not p.enable_encoder_from_caps(caps):
             return False
-        p.enable_compressor_from_caps(c)
+        p.enable_compressor_from_caps(caps)
         p.accept()
-        p.parse_remote_caps(c)
+        p.parse_remote_caps(caps)
         return True
 
-    def parse_encryption_capabilities(self):
-        c = self.server_capabilities
+    def parse_encryption_capabilities(self, caps : typedict) -> bool:
         p = self._protocol
         if not p:
             return False
@@ -851,7 +851,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             #server uses a new cipher after second hello:
             key = self.get_encryption_key()
             assert key, "encryption key is missing"
-            if not self.set_server_encryption(c, key):
+            if not self.set_server_encryption(caps, key):
                 return False
         return True
 

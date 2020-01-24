@@ -12,7 +12,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
 from xpra.util import (
-    updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time,
+    updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time, typedict,
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
 from xpra.os_util import (
@@ -942,8 +942,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return c
 
 
-    def process_ui_capabilities(self):
-        UIXpraClient.process_ui_capabilities(self)
+    def process_ui_capabilities(self, caps : typedict):
+        UIXpraClient.process_ui_capabilities(self, caps)
         #this requires the "DisplayClient" mixin:
         if not hasattr(self, "screen_size_changed"):
             return

@@ -14,7 +14,7 @@ from xpra.platform.gui import (
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.os_util import monotonic_time
 from xpra.util import (
-    iround, envint, envfloat, envbool, log_screen_sizes, engs, flatten_dict,
+    iround, envint, envfloat, envbool, log_screen_sizes, engs, flatten_dict, typedict,
     XPRA_SCALING_NOTIFICATION_ID,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -218,8 +218,7 @@ class DisplayClient(StubClientMixin):
     #    caps["screens"] = len(sss)
 
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         self.server_display = c.strget("display")
         self.server_desktop_size = c.intpair("desktop_size")
         log("server desktop size=%s", self.server_desktop_size)
@@ -230,8 +229,7 @@ class DisplayClient(StubClientMixin):
         log("server has randr: %s", self.server_randr)
         return True
 
-    def process_ui_capabilities(self):
-        c = self.server_capabilities
+    def process_ui_capabilities(self, c : typedict):
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
         skip_vfb_size_check = False           #if we decide not to use scaling, skip warnings
         if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):

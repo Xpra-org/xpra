@@ -69,14 +69,14 @@ class StubClientMixin:
         """
         return {}
 
-    def parse_server_capabilities(self) -> bool:
+    def parse_server_capabilities(self, caps : typedict) -> bool:
         """
         Parse server attributes specified in the hello capabilities.
         This runs in a non-UI thread.
         """
         return True
 
-    def process_ui_capabilities(self):
+    def process_ui_capabilities(self, caps : typedict):
         """
         Parse server attributes specified in the hello capabilities.
         This runs in the UI thread.

@@ -373,20 +373,19 @@ class UIXpraClient(ClientBaseClass):
                 c.setup_connection(self, conn)
         return protocol
 
-    def server_connection_established(self):
-        if not XpraClientBase.server_connection_established(self):
+    def server_connection_established(self, caps : typedict):
+        if not XpraClientBase.server_connection_established(self, caps):
             return False
         #process the rest from the UI thread:
-        self.idle_add(self.process_ui_capabilities)
+        self.idle_add(self.process_ui_capabilities, caps)
         return True
 
 
-    def parse_server_capabilities(self):
-        for c in CLIENT_BASES:
-            if not c.parse_server_capabilities(self):
-                log.info("failed to parse server capabilities in %s", c)
-                return  False
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
+        for cb in CLIENT_BASES:
+            if not cb.parse_server_capabilities(self, c):
+                log.info("failed to parse server capabilities in %s", cb)
+                return False
         self.server_session_name = strtobytes(c.rawget("session_name", b"")).decode("utf-8")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
         self.server_platform = c.strget("platform")
@@ -453,17 +452,16 @@ class UIXpraClient(ClientBaseClass):
             log.info(msg)
         return True
 
-    def process_ui_capabilities(self):
+    def process_ui_capabilities(self, caps : typedict):
         for c in CLIENT_BASES:
             if c!=XpraClientBase:
-                c.process_ui_capabilities(self)
+                c.process_ui_capabilities(self, caps)
         #keyboard:
-        c = self.server_capabilities
         if self.keyboard_helper:
-            modifier_keycodes = c.dictget("modifier_keycodes", {})
+            modifier_keycodes = caps.dictget("modifier_keycodes", {})
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
-        self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))
+        self.key_repeat_delay, self.key_repeat_interval = caps.intpair("key_repeat", (-1,-1))
         self.handshake_complete()
 
 

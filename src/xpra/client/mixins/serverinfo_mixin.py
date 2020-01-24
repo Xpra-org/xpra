@@ -6,6 +6,7 @@
 
 from xpra.version_util import version_compat_check
 from xpra.os_util import bytestostr
+from xpra.util import typedict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.exit_codes import EXIT_INCOMPATIBLE_VERSION
 
@@ -24,8 +25,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform_platform = None
         self._remote_platform_linux_distribution = None
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         self._remote_machine_id = c.strget("machine_id")
         self._remote_uuid = c.strget("uuid")
         self._remote_version = c.strget("build.version", c.strget("version"))

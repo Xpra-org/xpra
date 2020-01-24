@@ -9,7 +9,7 @@ import re
 from collections import deque
 
 from xpra.os_util import monotonic_time, POSIX
-from xpra.util import envint, envbool, csv
+from xpra.util import envint, envbool, csv, typedict
 from xpra.exit_codes import EXIT_TIMEOUT
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
@@ -117,8 +117,7 @@ class NetworkState(StubClientMixin):
         caps["ping-echo-sourceid"] = True
         return caps
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         #make sure the server doesn't provide a start time in the future:
         import time
         self.server_start_time = min(time.time(), c.intget("start_time", -1))
@@ -128,7 +127,7 @@ class NetworkState(StubClientMixin):
                      self.server_bandwidth_limit_change, self.server_bandwidth_limit)
         return True
 
-    def process_ui_capabilities(self):
+    def process_ui_capabilities(self, caps : typedict):
         self.send_deflate_level()
         self.send_ping()
         if self.pings>0:

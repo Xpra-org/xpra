@@ -8,7 +8,7 @@ import traceback
 import logging
 
 from xpra.scripts.config import parse_bool
-from xpra.util import csv
+from xpra.util import csv, typedict
 from xpra.os_util import monotonic_time, strtobytes, bytestostr
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
@@ -40,8 +40,7 @@ class RemoteLogging(StubClientMixin):
             set_global_logging_handler(ll)
 
 
-    def parse_server_capabilities(self):
-        c = self.server_capabilities
+    def parse_server_capabilities(self, c : typedict) -> bool:
         if self.client_supports_remote_logging and c.boolget("remote-logging"):
             #check for debug:
             from xpra.log import is_debug_enabled
