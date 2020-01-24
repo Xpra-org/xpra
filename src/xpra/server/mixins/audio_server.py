@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -65,7 +65,7 @@ class AudioServer(StubServerMixin):
         self.cleanup_pulseaudio()
 
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> dict:
         info = {}
         if self.pulseaudio:
             info["pulseaudio"] = self.get_pulseaudio_info()
@@ -322,7 +322,7 @@ class AudioServer(StubServerMixin):
                  self.supports_microphone, csv(self.microphone_codecs))
         soundlog("init_sound_options sound properties=%s", self.sound_properties)
 
-    def get_pulseaudio_info(self):
+    def get_pulseaudio_info(self) -> dict:
         info = {
             "command"               : self.pulseaudio_command,
             "configure-commands"    : self.pulseaudio_configure_commands,

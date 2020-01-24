@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -170,7 +170,7 @@ class NetworkState(StubClientMixin):
 
     ######################################################################
     # network and status:
-    def server_ok(self):
+    def server_ok(self) -> bool:
         return self._server_ok
 
     def check_server_echo(self, ping_sent_time):

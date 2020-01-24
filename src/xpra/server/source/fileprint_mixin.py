@@ -21,7 +21,7 @@ PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xp
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         return bool(caps.boolget("file-transfer") or caps.boolget("printing"))
 
 
@@ -32,7 +32,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def cleanup(self):
         self.remove_printers()
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : dict):
         FileTransferHandler.parse_file_transfer_caps(self, c)
 
     def get_info(self) -> dict:
@@ -120,7 +120,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             if k not in self.printers:
                 self.setup_printer(k, props, attributes)
 
-    def choose_socket_path(self):
+    def choose_socket_path(self) -> str:
         assert self.unix_socket_paths
         for x in self.unix_socket_paths:
             if x.startswith("/tmp") or x.startswith("/var") or x.startswith("/run"):
@@ -162,7 +162,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         for k in tuple(self.printers_added):
             self.remove_printer(k)
 
-    def remove_printer(self, name):
+    def remove_printer(self, name : str):
         try:
             self.printers_added.remove(name)
         except KeyError:

@@ -526,7 +526,7 @@ class WindowModel(BaseWindowModel):
             children.append([xid]+list(geom))
         self._internal_set_property("children", children)
 
-    def resize_corral_window(self, x, y, w, h):
+    def resize_corral_window(self, x : int, y : int, w : int, h : int):
         #the client window may have been resized or moved (generally programmatically)
         #so we may need to update the corral_window to match
         cox, coy, cow, coh = self.corral_window.get_geometry()[:4]

@@ -9,7 +9,7 @@
 from math import sqrt
 from collections import deque
 
-from xpra.server.cystats import (
+from xpra.server.cystats import (                                           #@UnresolvedImport
     logp, calculate_time_weighted_average, calculate_size_weighted_average, #@UnresolvedImport
     calculate_for_target, time_weighted_average, queue_inspect,             #@UnresolvedImport
     )
@@ -85,7 +85,7 @@ class GlobalPerformanceStatistics:
         self.avg_congestion_send_speed = 0
         self.avg_frame_total_latency = 0
 
-    def record_latency(self, wid, decode_time, start_send_at, end_send_at, pixels, bytecount, latency):
+    def record_latency(self, wid : int, decode_time, start_send_at, end_send_at, pixels, bytecount, latency):
         now = monotonic_time()
         send_diff = now-start_send_at
         echo_diff = now-end_send_at

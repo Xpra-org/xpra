@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -60,7 +60,7 @@ class NetworkStateServer(StubServerMixin):
             self.source_remove(pt)
 
 
-    def get_info(self, _source=None):
+    def get_info(self, _source=None) -> dict:
         info = {
             "pings"             : self.pings,
             "bandwidth-limit"   : self.bandwidth_limit or 0,
@@ -73,7 +73,7 @@ class NetworkStateServer(StubServerMixin):
             info["cpuinfo"] = dict((k,v) for k,v in self.cpu_info.items() if k!="python_version")
         return info
 
-    def get_server_features(self, _source):
+    def get_server_features(self, _source) -> dict:
         return {
             "connection-data" : True,           #added in v2.3
             "network" : {
@@ -114,7 +114,7 @@ class NetworkStateServer(StubServerMixin):
                     log.warn(" this may not be enough to run a server")
                 else:
                     log.info("%.1fGB of system memory", self.mem_bytes/(1024.0**3))
-            except:
+            except Exception:
                 pass
 
     def init_cpuinfo(self):
@@ -169,7 +169,7 @@ class NetworkStateServer(StubServerMixin):
         else:
             bandwidthlog.info("bandwidth-limit changed to %sbps for client %s", std_unit(bandwidth_limit), client_id)
 
-    def send_ping(self):
+    def send_ping(self) -> bool:
         for ss in self._server_sources.values():
             ss.ping()
         return True

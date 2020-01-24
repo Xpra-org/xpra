@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.os_util import strtobytes
-from xpra.util import get_screen_info, envint, first_time, iround
+from xpra.util import get_screen_info, envint, first_time, iround, typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -50,7 +50,7 @@ class ClientDisplayMixin(StubSourceMixin):
             info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
         return info
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : typedict):
         self.randr_notify = c.boolget("randr_notify")
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:

@@ -40,7 +40,7 @@ etc
 class WindowsMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("windows")
 
 

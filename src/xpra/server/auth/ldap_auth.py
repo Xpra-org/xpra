@@ -40,10 +40,10 @@ class Authenticator(SysAuthenticatorBase):
         log("ldap auth: host=%s, port=%i, tls=%s, username_format=%s, cacert=%s, encoding=%s",
             self.host, self.port, self.tls, self.username_format, self.cacert, self.encoding)
 
-    def get_uid(self):
+    def get_uid(self) -> int:
         return self.uid
 
-    def get_gid(self):
+    def get_gid(self) -> int:
         return self.gid
 
     def __repr__(self):

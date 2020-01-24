@@ -113,7 +113,7 @@ def get_iv():
     #IV = "0000000000000000"
     return IV or get_hex_uuid()[:16]
 
-def get_iterations():
+def get_iterations() -> int:
     return DEFAULT_ITERATIONS
 
 
@@ -133,7 +133,7 @@ def new_cipher_caps(proto, cipher, encryption_key, padding_options):
          "cipher.padding.options"       : PADDING_OPTIONS,
          }
 
-def get_crypto_caps():
+def get_crypto_caps() -> dict:
     if not backend:
         return {}
     caps = {

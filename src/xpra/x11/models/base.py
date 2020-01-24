@@ -216,7 +216,7 @@ class BaseWindowModel(CoreX11WindowModel):
         self.last_unmap_serial = 0
         self._input_field = True            # The WM_HINTS input field
 
-    def serial_after_last_unmap(self, serial):
+    def serial_after_last_unmap(self, serial) -> bool:
         #"The serial member is set from the serial number reported in the protocol
         # but expanded from the 16-bit least-significant bits to a full 32-bit value"
         if serial>self.last_unmap_serial:
@@ -232,7 +232,7 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("state", frozenset(self._read_wm_state()))
         super()._read_initial_X11_properties()
 
-    def _guess_window_type(self):
+    def _guess_window_type(self) -> str:
         #query the X11 property directly,
         #in case the python property isn't set yet
         if not self.is_OR():
@@ -250,7 +250,7 @@ class BaseWindowModel(CoreX11WindowModel):
     # Actions
     ################################
 
-    def move_to_workspace(self, workspace):
+    def move_to_workspace(self, workspace : int):
         #we send a message to ourselves, we could also just update the property
         current = self.get_property("workspace")
         if current==workspace:

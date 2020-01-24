@@ -34,7 +34,7 @@ iface_ipmasks = {}
 bind_IPs = None
 
 
-def get_free_tcp_port():
+def get_free_tcp_port() -> int:
     s = socket.socket()
     s.bind(('', 0))
     port = s.getsockname()[1]
@@ -48,7 +48,7 @@ def get_interfaces():
         return []
     return netifaces.interfaces()           #@UndefinedVariable pylint: disable=no-member
 
-def get_interfaces_addresses():
+def get_interfaces_addresses() -> dict:
     d = {}
     netifaces = import_netifaces()
     if netifaces:
@@ -70,7 +70,7 @@ def get_interface(address):
                     return iface
     return None
 
-def get_gateways():
+def get_gateways() -> dict:
     netifaces = import_netifaces()
     if not netifaces:
         return {}
@@ -150,7 +150,7 @@ def do_get_bind_ifacemask(iface):
     log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
     return ipmasks
 
-def get_iface(ip):
+def get_iface(ip) -> str:
     log("get_iface(%s)", ip)
     if not ip:
         return None
@@ -297,7 +297,7 @@ def get_net_sys_config():
                 addproc("/proc/sys/net/ipv4/%s" % k,     "ipv4", k, int)
     return net_sys_config
 
-def get_net_config():
+def get_net_config() -> dict:
     config = {}
     try:
         from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY
@@ -312,7 +312,7 @@ def get_net_config():
     return config
 
 
-def get_ssl_info(show_constants=False):
+def get_ssl_info(show_constants=False) -> dict:
     try:
         import ssl
     except ImportError as e:
@@ -350,7 +350,7 @@ def get_ssl_info(show_constants=False):
     return info
 
 
-def get_network_caps():
+def get_network_caps() -> dict:
     from xpra.net.digest import get_digests
     from xpra.net.crypto import get_crypto_caps
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
@@ -370,7 +370,7 @@ def get_network_caps():
     return caps
 
 
-def get_info():
+def get_info() -> dict:
     i = get_network_caps()
     netifaces = import_netifaces()
     if netifaces:

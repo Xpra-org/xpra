@@ -11,7 +11,7 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "allow"
 
-    def get_password(self):
+    def get_password(self) -> str:
         return None
 
     def authenticate(self, _challenge_response=None, _client_salt=None) -> bool:

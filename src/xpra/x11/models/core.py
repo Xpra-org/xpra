@@ -322,7 +322,7 @@ class CoreX11WindowModel(WindowModelStub):
         if self._managed:
             self.emit("client-contents-changed", event)
 
-    def uses_XShm(self):
+    def uses_XShm(self) -> bool:
         c = self._composite
         return c and c.has_xshm()
 

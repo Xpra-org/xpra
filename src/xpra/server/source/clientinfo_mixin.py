@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -52,7 +52,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.proxy_version = None
         self.proxy_version = None
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : typedict):
         self.uuid = c.strget("uuid")
         self.session_id = c.strget("session-id")
         self.machine_id = c.strget("machine_id")
@@ -83,7 +83,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
         log("client uuid %s", self.uuid)
 
-    def get_connect_info(self):
+    def get_connect_info(self) -> list:
         cinfo = []
         #client platform / version info:
         pinfo = ""

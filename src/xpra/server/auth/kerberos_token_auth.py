@@ -23,10 +23,10 @@ class Authenticator(SysAuthenticatorBase):
         super().__init__(username, **kwargs)
         log("kerberos-token auth: service=%s, username=%s", self.service, username)
 
-    def get_uid(self):
+    def get_uid(self) -> int:
         return self.uid
 
-    def get_gid(self):
+    def get_gid(self) -> int:
         return self.gid
 
     def __repr__(self):

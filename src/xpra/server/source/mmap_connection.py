@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util import typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 
 class MMAP_Connection(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         #pre 2.3 clients;
         if caps.strget("mmap_file"):
             return True
@@ -45,7 +46,7 @@ class MMAP_Connection(StubSourceMixin):
             mmap.close()
 
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : typedict):
         import os
         from xpra.os_util import WIN32
         from xpra.log import Logger

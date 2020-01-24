@@ -148,10 +148,10 @@ class Connection:
         self.active = True
         self.timeout = 0
 
-    def set_nodelay(self, nodelay):
+    def set_nodelay(self, nodelay : bool):
         pass
 
-    def set_cork(self, cork):
+    def set_cork(self, cork : bool):
         pass
 
     def is_active(self) -> bool:
@@ -379,7 +379,7 @@ class SocketConnection(Connection):
     def get_socket_info(self) -> dict:
         return self.do_get_socket_info(self._socket)
 
-    def do_get_socket_info(self, s):
+    def do_get_socket_info(self, s) -> dict:
         if not s:
             return None
         info = {}

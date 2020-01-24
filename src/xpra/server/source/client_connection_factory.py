@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.server import server_features
-from xpra.util import merge_dicts
+from xpra.util import merge_dicts, typedict
 from xpra.log import Logger
 
 log = Logger("server")
@@ -126,7 +126,7 @@ def get_client_connection_class(caps):
                     log.error(" %s", e)
             return info
 
-        def parse_hello(self, c):
+        def parse_hello(self, c : typedict):
             self.ui_client = c.boolget("ui_client", True)
             self.wants_encodings = c.boolget("wants_encodings", self.ui_client)
             self.wants_display = c.boolget("wants_display", self.ui_client)

@@ -275,7 +275,7 @@ class subprocess_callee:
         INJECT_FAULT(proto)
 
 
-def exec_kwargs():
+def exec_kwargs() -> dict:
     kwargs = {}
     stderr = sys.stderr.fileno()
     if WIN32:
@@ -292,7 +292,7 @@ def exec_kwargs():
     kwargs["stderr"] = stderr
     return kwargs
 
-def exec_env(blacklist=("LS_COLORS", )):
+def exec_env(blacklist=("LS_COLORS", )) -> dict:
     env = os.environ.copy()
     env["XPRA_SKIP_UI"] = "1"
     env["XPRA_FORCE_COLOR_LOG"] = "1"

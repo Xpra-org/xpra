@@ -35,5 +35,5 @@ def unpack_header(buf):
 #'P' + protocol-flags + compression_level + packet_index + data_size
 _header_pack_struct = struct.Struct(b'!BBBBL')
 assert ord("P") == 80
-def pack_header(proto_flags, level, index, payload_size):
+def pack_header(proto_flags, level, index, payload_size) -> bytes:
     return _header_pack_struct.pack(80, proto_flags, level, index, payload_size)

@@ -27,12 +27,12 @@ _hash_funcs = {
 
 def check_host_key(hostname, key):
     try:
-         return do_check_host_key(hostname, key.get_name(), key.asbytes())
+        return do_check_host_key(hostname, key.get_name(), key.asbytes())
     except Exception as e:
         log("check_host_key(%r, %r)", hostname, key, exc_info=True)
         return "error checking sshfp record: %s" % e
 
-def do_check_host_key(hostname, keytype, keydata):
+def do_check_host_key(hostname, keytype, keydata) -> str:
     resolver = Resolver()
     resolver.use_edns(0, flags.DO, 1280)
     log("do_check_host_key(%s, %s, ..) resolver=%s", hostname, keytype, resolver)

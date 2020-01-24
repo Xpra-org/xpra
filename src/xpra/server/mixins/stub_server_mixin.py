@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util import typedict
+
 class StubServerMixin:
     """
     Base class for server mixins.
@@ -53,13 +55,13 @@ class StubServerMixin:
         Prepare to handle connections from the given sockets.
         """
 
-    def get_caps(self, _source):
+    def get_caps(self, _source) -> dict:
         """
         Capabilities provided by this mixin.
         """
         return {}
 
-    def get_server_features(self, _source):
+    def get_server_features(self, _source) -> dict:
         """
         Features provided by this mixin.
         (the difference with capabilities is that those will only
@@ -73,7 +75,7 @@ class StubServerMixin:
         this method will be called.
         """
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> dict:
         """
         Runtime information on this mixin, includes state and settings.
         Somewhat overlaps with the capabilities and features,
@@ -81,7 +83,7 @@ class StubServerMixin:
         """
         return {}
 
-    def get_ui_info(self, proto, client_uuids=None, *args):
+    def get_ui_info(self, proto, client_uuids=None, *args) -> dict:
         """
         Runtime information on this mixin,
         unlike get_info() this method will be called
@@ -94,7 +96,7 @@ class StubServerMixin:
         Register the packet types that this mixin can handle.
         """
 
-    def parse_hello(self, ss, caps, send_ui):
+    def parse_hello(self, ss, caps : typedict, send_ui):
         """
         Parse capabilities from a new connection.
         """

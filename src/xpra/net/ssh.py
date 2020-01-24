@@ -49,7 +49,7 @@ PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 assert PASSWORD_RETRY>=0
 
 
-def keymd5(k):
+def keymd5(k) -> str:
     import binascii
     f = bytestostr(binascii.hexlify(k.get_fingerprint()))
     s = "MD5"
@@ -59,7 +59,7 @@ def keymd5(k):
     return s
 
 
-def dialog_run(dialog):
+def dialog_run(dialog) -> int:
     from gi.repository import GLib
     if is_main_thread():
         force_focus()
@@ -87,7 +87,7 @@ def dialog_run(dialog):
     log("dialog_run(%s) code=%s", dialog, code)
     return code[0]
 
-def dialog_pass(title="Password Input", prompt="enter password", icon=""):
+def dialog_pass(title="Password Input", prompt="enter password", icon="") -> str:
     from xpra.client.gtk_base.pass_dialog import PasswordInputDialogWindow
     dialog = PasswordInputDialogWindow(title, prompt, icon)
     try:
@@ -97,7 +97,7 @@ def dialog_pass(title="Password Input", prompt="enter password", icon=""):
     finally:
         dialog.destroy()
 
-def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)):
+def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)) -> int:
     from xpra.client.gtk_base.confirm_dialog import ConfirmDialogWindow
     dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
     try:
@@ -107,7 +107,7 @@ def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)):
     return r
 
 
-def confirm_key(info=()):
+def confirm_key(info=()) -> bool:
     if SKIP_UI:
         return False
     from xpra.platform.paths import get_icon_filename
@@ -129,7 +129,7 @@ def confirm_key(info=()):
         sys.exit(128+signal.SIGINT)
     return v and v.lower() in ("y", "yes")
 
-def input_pass(prompt):
+def input_pass(prompt) -> str:
     if SKIP_UI:
         return None
     from xpra.platform.paths import get_icon_filename
@@ -175,7 +175,7 @@ class SSHSocketConnection(SocketConnection):
             return None
         return self._raw_socket.recv(n, socket.MSG_PEEK)
 
-    def get_socket_info(self):
+    def get_socket_info(self) -> dict:
         if not self._raw_socket:
             return {}
         return self.do_get_socket_info(self._raw_socket)
@@ -196,7 +196,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
         super().__init__(ssh_channel, None, None, peername, target, info)
         self.process = None
 
-    def error_is_closed(self, e):
+    def error_is_closed(self, e) -> bool:
         p = self.process
         if p:
             #if the process has terminated,
@@ -205,7 +205,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
                 return True
         return super().error_is_closed(e)
 
-    def get_socket_info(self):
+    def get_socket_info(self) -> dict:
         p = self.process
         if not p:
             return {}

@@ -77,7 +77,7 @@ class SysAuthenticatorBase:
     def get_gid(self) -> int:
         raise NotImplementedError()
 
-    def requires_challenge(self):
+    def requires_challenge(self) -> bool:
         return True
 
     def get_challenge(self, digests):

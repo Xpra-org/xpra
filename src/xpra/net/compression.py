@@ -132,7 +132,7 @@ _COMPRESSORS = {
     "none"  : nocompress,
     }
 
-def get_compression_caps():
+def get_compression_caps() -> dict:
     caps = {}
     _lzo = {"" : use_lzo}
     if lzo_version:
@@ -271,7 +271,7 @@ class InvalidCompressionException(Exception):
     pass
 
 
-def get_compression_type(level):
+def get_compression_type(level) -> str:
     if level & LZ4_FLAG:
         return "lz4"
     if level & LZO_FLAG:

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -14,7 +14,7 @@ from threading import Lock, Event
 from queue import Queue
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
-from xpra.util import repr_ellipsized, csv, envint, envbool
+from xpra.util import repr_ellipsized, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException,may_log_packet    #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
@@ -259,7 +259,7 @@ class Protocol:
     def accept(self):
         pass
 
-    def parse_remote_caps(self, caps):
+    def parse_remote_caps(self, caps : typedict):
         for k,v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
 
@@ -443,7 +443,7 @@ class Protocol:
                 items.insert(0, frame_header)
         self.raw_write(packet_type, items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
 
-    def make_xpra_header(self, _packet_type, proto_flags, level, index, payload_size):
+    def make_xpra_header(self, _packet_type, proto_flags, level, index, payload_size) -> bytes:
         return pack_header(proto_flags, level, index, payload_size)
 
     def noframe_header(self, _packet_type, _items):
@@ -626,7 +626,7 @@ class Protocol:
         may_log_packet(True, packet_type, packet)
         return packets
 
-    def set_compression_level(self, level):
+    def set_compression_level(self, level : int):
         #this may be used next time encode() is called
         assert 0<=level<=10, "invalid compression level: %s (must be between 0 and 10" % level
         self.compression_level = level

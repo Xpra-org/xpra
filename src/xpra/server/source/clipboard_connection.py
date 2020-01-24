@@ -9,7 +9,7 @@ from collections import deque
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
-from xpra.util import envint
+from xpra.util import envint, typedict
 from xpra.os_util import monotonic_time
 from xpra.log import Logger
 
@@ -22,7 +22,7 @@ MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 class ClipboardConnection(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("clipboard")
 
 
@@ -41,7 +41,7 @@ class ClipboardConnection(StubSourceMixin):
     def cleanup(self):
         self.cancel_clipboard_progress_timer()
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : typedict):
         self.clipboard_enabled = c.boolget("clipboard", False)
         self.clipboard_notifications = c.boolget("clipboard.notifications")
         log("client clipboard: enabled=%s, notifications=%s",
@@ -82,7 +82,7 @@ class ClipboardConnection(StubSourceMixin):
             self.clipboard_progress_timer = None
             self.source_remove(cpt)
 
-    def send_clipboard_progress(self, count):
+    def send_clipboard_progress(self, count : int):
         if not self.clipboard_notifications or not self.hello_sent or self.clipboard_progress_timer:
             return
         #always set "pending" to the latest value:

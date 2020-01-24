@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import envint
+from xpra.util import envint, typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -17,7 +17,7 @@ DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 class AVSyncMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         if not (caps.boolget("sound.send") or caps.boolget("sound.receive")):
             #no audio!
             return False
@@ -51,7 +51,7 @@ class AVSyncMixin(StubSourceMixin):
                 },
             }
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : typedict):
         av_sync = c.boolget("av-sync")
         self.av_sync_enabled = self.av_sync and av_sync
         self.set_av_sync_delay(int(self.av_sync_enabled) * c.intget("av-sync.delay.default", DEFAULT_AV_SYNC_DELAY))

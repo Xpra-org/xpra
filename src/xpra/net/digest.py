@@ -38,7 +38,7 @@ def get_digests():
         pass
     return digests
 
-def get_digest_module(digest):
+def get_digest_module(digest : str):
     log("get_digest_module(%s)", digest)
     if not digest or not digest.startswith("hmac"):
         return None
@@ -51,7 +51,7 @@ def get_digest_module(digest):
     except AttributeError:
         return None
 
-def choose_digest(options):
+def choose_digest(options) -> str:
     assert len(options)>0, "no digest options"
     log("choose_digest(%s)", options)
     #prefer stronger hashes:

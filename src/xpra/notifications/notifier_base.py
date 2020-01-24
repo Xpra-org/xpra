@@ -34,7 +34,7 @@ class NotifierBase:
                     summary, body, actions, hints, timeout, icon):
         pass
 
-    def get_icon_string(self, nid, app_icon, icon):
+    def get_icon_string(self, nid : int, app_icon, icon):
         if app_icon and not os.path.isabs(app_icon):
             #safe to use
             return app_icon
@@ -57,7 +57,7 @@ class NotifierBase:
             return temp.name
         return ""
 
-    def clean_notification(self, nid):
+    def clean_notification(self, nid : int):
         try:
             temp_file = self.temp_files.pop(nid)
         except KeyError:

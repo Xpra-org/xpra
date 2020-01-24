@@ -297,7 +297,7 @@ class WindowClient(StubClientMixin):
             })
         return caps
 
-    def get_window_caps(self):
+    def get_window_caps(self) -> dict:
         return {
             #implemented in the gtk client:
             "min-size"                  : self.min_window_size,
@@ -795,7 +795,9 @@ class WindowClient(StubClientMixin):
             from xpra.child_reaper import getChildReaper
             import subprocess
             try:
-                proc = subprocess.Popen("xpra_signal_listener", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn=os.setsid)
+                proc = subprocess.Popen("xpra_signal_listener",
+                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                        preexec_fn=os.setsid)
             except OSError as e:
                 log("assign_signal_watcher_pid(%s, %s)", wid, pid, exc_info=True)
                 log.error("Error: cannot execute signal listener")
@@ -812,10 +814,14 @@ class WindowClient(StubClientMixin):
                     if source:
                         proc.stdout_io_watch = None
                         self.source_remove(source)
-                getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=watcher_terminated)
+                getChildReaper().add_process(proc, "signal listener for remote process %s" % pid,
+                                             command="xpra_signal_listener", ignore=True, forget=True,
+                                             callback=watcher_terminated)
                 log("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
-                proc.stdout_io_watch = GLib.io_add_watch(proc.stdout, GLib.PRIORITY_DEFAULT, GLib.IO_IN, self.signal_watcher_event, proc, pid, wid)
+                proc.stdout_io_watch = GLib.io_add_watch(proc.stdout,
+                                                         GLib.PRIORITY_DEFAULT, GLib.IO_IN,
+                                                         self.signal_watcher_event, proc, pid, wid)
         if proc:
             self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
             return proc.pid
@@ -1455,10 +1461,10 @@ class WindowClient(StubClientMixin):
     def fsy(self, v):
         """ convert Y coordinate from server to client """
         return v
-    def sx(self, v):
+    def sx(self, v) -> int:
         """ convert X coordinate from server to client """
         return iround(v)
-    def sy(self, v):
+    def sy(self, v) -> int:
         """ convert Y coordinate from server to client """
         return iround(v)
     def srect(self, x, y, w, h):
@@ -1468,10 +1474,10 @@ class WindowClient(StubClientMixin):
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
-    def cx(self, v):
+    def cx(self, v) -> int:
         """ convert X coordinate from client to server """
         return iround(v)
-    def cy(self, v):
+    def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
         return iround(v)
     def crect(self, x, y, w, h):

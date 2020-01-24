@@ -63,13 +63,13 @@ class WindowServer(StubServerMixin):
         self._focus(None, 0, [])
 
 
-    def get_server_features(self, _source):
+    def get_server_features(self, _source) -> dict:
         return {
             "window_refresh_config" : True,     #v4 clients assume this is available
             "window-filters"        : True,     #v4 clients assume this is available
             }
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> dict:
         return {
             "state" : {
                 "windows" : sum(int(window.is_managed()) for window in tuple(self._id_to_window.values())),
@@ -77,7 +77,7 @@ class WindowServer(StubServerMixin):
             "filters" : tuple((uuid,repr(f)) for uuid, f in self.window_filters),
             }
 
-    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args):
+    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args) -> dict:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
@@ -128,7 +128,7 @@ class WindowServer(StubServerMixin):
         self.send_initial_cursors(ss, share_count>0)
 
 
-    def is_shown(self, _window):
+    def is_shown(self, _window) -> bool:
         return True
 
 
@@ -343,7 +343,7 @@ class WindowServer(StubServerMixin):
     def _process_configure_window(self, proto, packet):
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
-    def _get_window_dict(self, wids):
+    def _get_window_dict(self, wids) -> dict:
         wd = {}
         for wid in wids:
             window = self._id_to_window.get(wid)
@@ -397,7 +397,7 @@ class WindowServer(StubServerMixin):
     def _focus(self, _server_source, wid, modifiers):
         focuslog("_focus(%s,%s)", wid, modifiers)
 
-    def get_focus(self):
+    def get_focus(self) -> int:
         #can be overriden by subclasses that do manage focus
         #(ie: not shadow servers which only have a single window)
         #default: no focus

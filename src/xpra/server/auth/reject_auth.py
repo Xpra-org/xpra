@@ -17,7 +17,7 @@ class Authenticator:
         self.prompt = kwargs.pop("prompt", "password")
         self.passed = False
 
-    def requires_challenge(self):
+    def requires_challenge(self) -> bool:
         return True
 
     def get_challenge(self, digests):

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import envint, IDLE_TIMEOUT, XPRA_IDLE_NOTIFICATION_ID
+from xpra.util import envint, typedict, IDLE_TIMEOUT, XPRA_IDLE_NOTIFICATION_ID
 from xpra.os_util import monotonic_time
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -41,7 +41,7 @@ class IdleMixin(StubSourceMixin):
                 }
 
 
-    def parse_client_caps(self, _c):
+    def parse_client_caps(self, _c : typedict):
         #start the timer
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()

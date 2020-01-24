@@ -20,7 +20,7 @@ NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 class AudioMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("sound.send") or caps.boolget("sound.receive")
 
 
@@ -91,7 +91,7 @@ class AudioMixin(StubSourceMixin):
         return flatten_dict({"sound" : sound_props})
 
 
-    def audio_loop_check(self, mode="speaker"):
+    def audio_loop_check(self, mode="speaker") -> bool:
         log("audio_loop_check(%s)", mode)
         from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning_messages
         if ALLOW_SOUND_LOOP:

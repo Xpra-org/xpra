@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -28,7 +28,7 @@ class LoggingServer(StubServerMixin):
     def init(self, opts):
         self.remote_logging = not (opts.remote_logging or "").lower() in FALSE_OPTIONS
 
-    def get_server_features(self, _source=None):
+    def get_server_features(self, _source=None) -> dict:
         return {
             "remote-logging"            : self.remote_logging,
             "remote-logging.multi-line" : True,

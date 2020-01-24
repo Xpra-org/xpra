@@ -98,7 +98,7 @@ def do_yaml(data):
     return yaml_encode(data), FLAGS_YAML
 
 
-def get_packet_encoding_caps():
+def get_packet_encoding_caps() -> dict:
     r = {"" : use_rencode}
     if has_rencode:
         assert rencode_version is not None
@@ -146,7 +146,7 @@ def get_encoder(e):
     assert e in get_enabled_encoders(), "%s is not available" % e
     return _ENCODERS[e]
 
-def get_encoder_name(e):
+def get_encoder_name(e) -> str:
     assert e in _ENCODERS.values(), "invalid encoder: %s" % e
     for k,v in _ENCODERS.items():
         if v==e:
@@ -154,7 +154,7 @@ def get_encoder_name(e):
     raise Exception("impossible bug!")
 
 
-def get_packet_encoding_type(protocol_flags):
+def get_packet_encoding_type(protocol_flags) -> str:
     if protocol_flags & FLAGS_RENCODE:
         return "rencode"
     if protocol_flags & FLAGS_YAML:

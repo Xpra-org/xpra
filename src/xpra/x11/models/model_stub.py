@@ -40,7 +40,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     # Setup and teardown
     #########################################
 
-    def is_managed(self):
+    def is_managed(self) -> bool:
         return self._managed
 
     def unmanage(self, _exiting=False):
@@ -92,7 +92,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
             return metalog.info
         return metalog.debug
 
-    def _updateprop(self, name, value):
+    def _updateprop(self, name : str, value):
         """ Updates the property and fires notify(),
             but only if the value has changed
             and if the window has finished setting up and it is still managed.
@@ -111,7 +111,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         l("updateprop(%s, %s) unchanged", name, value)
         return False
 
-    def get(self, name, default_value=None):
+    def get(self, name : str, default_value=None):
         """ Allows us the avoid defining all the attributes we may ever query,
             returns the default value if the property does not exist.
         """
@@ -127,18 +127,18 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
 
 
     #temporary? / convenience access methods:
-    def is_OR(self):
+    def is_OR(self) -> bool:
         """ Is this an override-redirect window? """
         return self.get("override-redirect", False)
 
-    def is_tray(self):
+    def is_tray(self) -> bool:
         """ Is this a tray window? """
         return self.get("tray", False)
 
-    def is_shadow(self):
+    def is_shadow(self) -> bool:
         """ Is this a shadow instead of a real window? """
         return False
 
-    def has_alpha(self):
+    def has_alpha(self) -> bool:
         """ Does the pixel data have an alpha channel? """
         return self.get("has-alpha", False)

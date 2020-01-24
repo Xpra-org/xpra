@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -73,7 +73,7 @@ class EncodingServer(StubServerMixin):
             "auto-video-encoding"   : True,     #from v4.0, clients assume this is available
             }
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> dict:
         info = {
             "encodings" : self.get_encoding_info(),
             "video"     : getVideoHelper().get_info(),
@@ -82,7 +82,7 @@ class EncodingServer(StubServerMixin):
             info.setdefault("encoding", {}).setdefault(k, {})["version"] = v
         return info
 
-    def get_encoding_info(self):
+    def get_encoding_info(self) -> dict:
         return  {
              ""                     : self.encodings,
              "core"                 : self.core_encodings,

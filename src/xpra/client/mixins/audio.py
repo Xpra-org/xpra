@@ -146,7 +146,7 @@ class AudioClient(StubClientMixin):
         updict(d, "sound", self.get_audio_capabilities())
         return d
 
-    def get_audio_capabilities(self):
+    def get_audio_capabilities(self) -> dict:
         if not self.sound_properties:
             return {}
         #we don't know if the server supports new codec names,

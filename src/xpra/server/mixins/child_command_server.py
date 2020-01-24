@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -153,7 +153,7 @@ class ChildCommandServer(StubServerMixin):
                 log("error closing watch manager %s", watch_manager, exc_info=True)
 
 
-    def get_server_features(self, _source):
+    def get_server_features(self, _source) -> dict:
         return {
             "start-new-commands"        : self.start_new_commands,
             "exit-with-children"        : self.exit_with_children,
@@ -171,7 +171,7 @@ class ChildCommandServer(StubServerMixin):
         from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
         return load_xdg_menu_data(force_reload)
 
-    def get_caps(self, source):
+    def get_caps(self, source) -> dict:
         caps = {}
         if not source:
             return caps
@@ -212,7 +212,7 @@ class ChildCommandServer(StubServerMixin):
             if source.xdg_menu_update:
                 source.send_setting_change("xdg-menu", xdg_menu or {})
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> dict:
         info = {
             "start"                     : self.start_commands,
             "start-child"               : self.start_child_commands,
@@ -242,7 +242,7 @@ class ChildCommandServer(StubServerMixin):
         return env
 
 
-    def get_full_child_command(self, cmd, use_wrapper=True):
+    def get_full_child_command(self, cmd, use_wrapper=True) -> list:
         #make sure we have it as a list:
         if not isinstance(cmd, (list, tuple)):
             import shlex
@@ -308,7 +308,7 @@ class ChildCommandServer(StubServerMixin):
     def add_process(self, process, name, command, ignore=False, callback=None):
         return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
-    def is_child_alive(self, proc):
+    def is_child_alive(self, proc) -> bool:
         return proc is not None and proc.poll() is None
 
     def reaper_exit_check(self):

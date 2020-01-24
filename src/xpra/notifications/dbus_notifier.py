@@ -90,17 +90,17 @@ class DBUS_Notifier(NotifierBase):
         except Exception:
             log.error("Error: dbus notify failed", exc_info=True)
 
-    def _find_nid(self, actual_id):
+    def _find_nid(self, actual_id : int):
         aid = int(actual_id)
         for k,v in self.actual_notification_id.items():
             if v==aid:
                 return k
         return None
 
-    def noparse_hints(self, h):
+    def noparse_hints(self, h) -> dict:
         return h
 
-    def parse_hints(self, h):
+    def parse_hints(self, h) -> dict:
         hints = {}
         for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
             v = h.get(x)
@@ -130,7 +130,7 @@ class DBUS_Notifier(NotifierBase):
         return hints
 
 
-    def NotificationClosed(self, actual_id, reason):
+    def NotificationClosed(self, actual_id : int, reason):
         nid = self._find_nid(actual_id)
         reason_str = {
              1  : "expired",
@@ -148,7 +148,7 @@ class DBUS_Notifier(NotifierBase):
             if self.closed_cb:
                 self.closed_cb(nid, int(reason), reason_str)
 
-    def ActionInvoked(self, actual_id, action):
+    def ActionInvoked(self, actual_id : int, action):
         nid = self._find_nid(actual_id)
         log("ActionInvoked(%s, %s) nid=%s", actual_id, action, nid)
         if nid:
@@ -181,7 +181,7 @@ class DBUS_Notifier(NotifierBase):
         log.error(" %s", dbus_error)
         return False
 
-    def close_notify(self, nid):
+    def close_notify(self, nid : int):
         actual_id = self.actual_notification_id.get(nid)
         if actual_id is None:
             log("close_notify(%i) actual notification not found, already closed?", nid)
@@ -189,7 +189,7 @@ class DBUS_Notifier(NotifierBase):
         log("close_notify(%i) actual id=%s", nid, actual_id)
         self.do_close(nid, actual_id)
 
-    def do_close(self, nid, actual_id):
+    def do_close(self, nid : int, actual_id : int):
         log("do_close_notify(%i)", actual_id)
         def CloseNotificationReply():
             try:

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -53,13 +53,13 @@ class ClipboardServer(StubServerMixin):
             self.parse_hello_ui_clipboard(ss)
 
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> dict:
         if self._clipboard_helper is None:
             return {}
         return {"clipboard" : self._clipboard_helper.get_info()}
 
 
-    def get_server_features(self, server_source=None):
+    def get_server_features(self, server_source=None) -> dict:
         clipboard = self._clipboard_helper is not None
         log("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s",
             self._clipboard_helper, self._clipboard_client, server_source, clipboard)

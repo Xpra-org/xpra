@@ -123,7 +123,7 @@ class TrayClient(StubClientMixin):
         log("make_tray%s tray classes=%s", args, tc)
         return make_instance(tc, self, *args)
 
-    def get_tray_title(self):
+    def get_tray_title(self) -> list:
         t = []
         if self.session_name or self.server_session_name:
             t.append(self.session_name or self.server_session_name)

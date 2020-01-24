@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util import typedict
+
 """
 Base class for client-connection mixins.
 Defines the default interface methods that each mixin may override.
@@ -14,7 +16,7 @@ class StubSourceMixin:
     Is this mixin needed for the caps given?
     """
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         return True
 
     def __init__(self, *_args):
@@ -41,7 +43,7 @@ class StubSourceMixin:
         """
         return False
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : typedict):
         """
         Parse client attributes specified in the hello capabilities.
         """

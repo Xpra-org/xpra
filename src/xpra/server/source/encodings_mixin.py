@@ -34,7 +34,7 @@ Runs the encode thread.
 class EncodingsMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         return bool(caps.strtupleget("encodings"))
 
 
@@ -224,7 +224,7 @@ class EncodingsMixin(StubSourceMixin):
             self.source_remove(ct)
 
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : typedict):
         #batch options:
         def batch_value(prop, default, minv=None, maxv=None):
             assert default is not None
@@ -408,7 +408,7 @@ class EncodingsMixin(StubSourceMixin):
     # Functions used by the server to request something
     # (window events, stats, user requests, etc)
     #
-    def set_auto_refresh_delay(self, delay, window_ids):
+    def set_auto_refresh_delay(self, delay : int, window_ids):
         if window_ids is not None:
             wss = (self.window_sources.get(wid) for wid in window_ids)
         else:
@@ -417,7 +417,7 @@ class EncodingsMixin(StubSourceMixin):
             if ws is not None:
                 ws.set_auto_refresh_delay(delay)
 
-    def set_encoding(self, encoding, window_ids, strict=False):
+    def set_encoding(self, encoding : str, window_ids, strict=False):
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
@@ -483,24 +483,24 @@ class EncodingsMixin(StubSourceMixin):
         return info
 
 
-    def set_min_quality(self, min_quality):
+    def set_min_quality(self, min_quality : int):
         for ws in tuple(self.all_window_sources()):
             ws.set_min_quality(min_quality)
 
-    def set_quality(self, quality):
+    def set_quality(self, quality : int):
         for ws in tuple(self.all_window_sources()):
             ws.set_quality(quality)
 
-    def set_min_speed(self, min_speed):
+    def set_min_speed(self, min_speed : int):
         for ws in tuple(self.all_window_sources()):
             ws.set_min_speed(min_speed)
 
-    def set_speed(self, speed):
+    def set_speed(self, speed : int):
         for ws in tuple(self.all_window_sources()):
             ws.set_speed(speed)
 
 
-    def update_batch(self, wid, window, batch_props):
+    def update_batch(self, wid : int, window, batch_props):
         ws = self.window_sources.get(wid)
         if ws:
             if "reset" in batch_props:
@@ -513,7 +513,7 @@ class EncodingsMixin(StubSourceMixin):
                     setattr(ws.batch_config, x, batch_props.intget(x))
             log("batch config updated for window %s: %s", wid, ws.batch_config)
 
-    def make_batch_config(self, wid, window):
+    def make_batch_config(self, wid : int, window):
         batch_config = self.default_batch_config.clone()
         batch_config.wid = wid
         #scale initial delay based on window size

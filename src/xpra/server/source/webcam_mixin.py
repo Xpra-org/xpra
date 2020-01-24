@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import POSIX, OSX, bytestostr
-from xpra.util import envint, csv
+from xpra.util import envint, csv, typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -33,7 +33,7 @@ Handle webcam forwarding.
 class WebcamMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps):
+    def is_needed(cls, caps : typedict) -> bool:
         #the 'webcam' capability was only added in v4,
         #so we have to enabled the mixin:
         try:
@@ -72,7 +72,7 @@ class WebcamMixin(StubSourceMixin):
             }
 
 
-    def get_device_options(self, device_id):
+    def get_device_options(self, device_id : int):
         if not POSIX or OSX or not self.webcam_enabled:
             return {}
         if self.webcam_device:

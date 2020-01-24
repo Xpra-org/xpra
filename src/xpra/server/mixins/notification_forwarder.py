@@ -37,12 +37,12 @@ class NotificationForwarder(StubServerMixin):
             self.notifications_forwarder = None
             start_thread(nf.release, "notifier-release", daemon=True)
 
-    def get_info(self, _source=None):
+    def get_info(self, _source=None) -> dict:
         if not self.notifications_forwarder:
             return {}
         return {"notifications" : self.notifications_forwarder.get_info()}
 
-    def get_server_features(self, _source=None):
+    def get_server_features(self, _source=None) -> dict:
         return {
             "notifications"                : self.notifications,
             "notifications.close"          : self.notifications,    #added in v2.3

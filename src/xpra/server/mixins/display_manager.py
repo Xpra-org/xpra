@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -44,7 +44,7 @@ class DisplayManager(StubServerMixin):
         self.reset_icc_profile()
 
 
-    def get_caps(self, source):
+    def get_caps(self, source) -> dict:
         root_w, root_h = self.get_root_window_size()
         return {
             "bell"          : self.bell,
@@ -52,7 +52,7 @@ class DisplayManager(StubServerMixin):
             "desktop_size"  : self._get_desktop_size_capability(source, root_w, root_h),
             }
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> dict:
         return {
             "display": {
                 "randr" : self.randr,

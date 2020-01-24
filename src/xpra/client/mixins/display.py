@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -141,7 +141,7 @@ class DisplayClient(StubClientMixin):
             }))
         return caps
 
-    def get_dpi_caps(self):
+    def get_dpi_caps(self) -> dict:
         #command line (or config file) override supplied:
         caps = {}
         dpi = 0
@@ -167,14 +167,14 @@ class DisplayClient(StubClientMixin):
         log("get_dpi_caps()=%s", caps)
         return caps
 
-    def get_scaling_caps(self):
+    def get_scaling_caps(self) -> dict:
         return {
             "" : True,
             "enabled"   : self.xscale!=1 or self.yscale!=1,
             "values"    : (int(1000*self.xscale), int(1000*self.yscale)),
             }
 
-    def get_screen_caps(self):
+    def get_screen_caps(self) -> dict:
         caps = {
             "antialias"    : get_antialias_info(),
             "cursor" : {
@@ -298,13 +298,13 @@ class DisplayClient(StubClientMixin):
             log("maximum packet size set to %i", p.max_packet_size)
 
 
-    def has_transparency(self):
+    def has_transparency(self) -> bool:
         return False
 
-    def get_icc_info(self):
+    def get_icc_info(self) -> dict:
         return get_icc_info()
 
-    def get_display_icc_info(self):
+    def get_display_icc_info(self) -> dict:
         return get_display_icc_info()
 
     def _process_show_desktop(self, packet):
@@ -377,10 +377,10 @@ class DisplayClient(StubClientMixin):
     def fsy(self, v):
         """ convert Y coordinate from server to client """
         return v*self.yscale
-    def sx(self, v):
+    def sx(self, v) -> int:
         """ convert X coordinate from server to client """
         return iround(self.fsx(v))
-    def sy(self, v):
+    def sy(self, v) -> int:
         """ convert Y coordinate from server to client """
         return iround(self.fsy(v))
     def srect(self, x, y, w, h):
@@ -390,10 +390,10 @@ class DisplayClient(StubClientMixin):
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
-    def cx(self, v):
+    def cx(self, v) -> int:
         """ convert X coordinate from client to server """
         return iround(v/self.xscale)
-    def cy(self, v):
+    def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
         return iround(v/self.yscale)
     def crect(self, x, y, w, h):
@@ -482,10 +482,10 @@ class DisplayClient(StubClientMixin):
         #update the max packet size (may have gone up):
         self.set_max_packet_size()
 
-    def get_xdpi(self):
+    def get_xdpi(self) -> int:
         return get_xdpi()
 
-    def get_ydpi(self):
+    def get_ydpi(self) -> int:
         return get_ydpi()
 
 

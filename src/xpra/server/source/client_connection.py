@@ -95,7 +95,7 @@ class ClientConnection(StubSourceMixin):
         self.queue_encode = self.start_queue_encode
         self.protocol.set_packet_source(self.next_packet)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return  "%s(%i : %s)" % (type(self).__name__, self.counter, self.protocol)
 
     def init_state(self):
@@ -123,7 +123,7 @@ class ClientConnection(StubSourceMixin):
         self.wants_default_cursor = False
 
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.close_event.isSet()
 
     def cleanup(self):
@@ -187,7 +187,7 @@ class ClientConnection(StubSourceMixin):
                 ws.bandwidth_limit = max(MIN_BANDWIDTH//10, bandwidth_limit*weight//total_weight)
 
 
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, c : typedict):
         #general features:
         self.info_namespace = c.boolget("info-namespace")
         self.send_notifications = c.boolget("notifications")
@@ -218,7 +218,7 @@ class ClientConnection(StubSourceMixin):
         if file_transfer:
             self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
 
-    def get_socket_bandwidth_limit(self):
+    def get_socket_bandwidth_limit(self) -> int:
         p = self.protocol
         if not p:
             return 0
@@ -250,7 +250,7 @@ class ClientConnection(StubSourceMixin):
         self.queue_encode(item)
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
-    def encode_queue_size(self):
+    def encode_queue_size(self) -> int:
         ewq = self.encode_work_queue
         if ewq is None:
             return 0
@@ -433,13 +433,13 @@ class ClientConnection(StubSourceMixin):
                             summary, body, expire_timeout, icon, actions, hints)
         return True
 
-    def notify_close(self, nid):
+    def notify_close(self, nid : int):
         if not self.send_notifications or self.suspended  or not self.hello_sent:
             return
         self.send_more("notify_close", nid)
 
 
-    def set_deflate(self, level):
+    def set_deflate(self, level : int):
         self.send("set_deflate", level)
 
 

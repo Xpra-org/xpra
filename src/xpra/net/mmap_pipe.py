@@ -21,14 +21,14 @@ MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 Utility functions for communicating via mmap
 """
 
-def get_socket_group(socket_filename):
+def get_socket_group(socket_filename) -> int:
     if isinstance(socket_filename, str) and os.path.exists(socket_filename):
         s = os.stat(socket_filename)
         return s.st_gid
     log.warn("Warning: missing valid socket filename to set mmap group")
     return -1
 
-def xpra_group():
+def xpra_group() -> int:
     if POSIX:
         try:
             username = os.getgroups()
@@ -55,7 +55,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
     mmap_filename = filename
     mmap_temp_file = None
     delete = True
-    def validate_size(size):
+    def validate_size(size : int):
         assert size>=64*1024*1024, "mmap size is too small: %sB (minimum is 64MB)" % std_unit(size)
         assert size<=4*1024*1024*1024, "mmap is too big: %sB (maximum is 4GB)" % std_unit(size)
     try:
