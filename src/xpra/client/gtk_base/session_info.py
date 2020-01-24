@@ -172,12 +172,11 @@ class SessionInfo(Gtk.Window):
         tb.new_row("Operating System", slabel(LOCAL_PLATFORM_NAME), slabel(SERVER_PLATFORM_NAME))
         scaps = self.client.server_capabilities
         tb.new_row("Xpra", slabel(XPRA_VERSION), slabel(self.client._remote_version or "unknown"))
-        cl_rev, cl_ch, cl_date = "unknown", "", ""
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
             from xpra.src_info import REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch      #@UnresolvedImport
-        except:
-            pass
+        except ImportError:
+            cl_rev, cl_ch, cl_date, cl_time = "unknown", "", "", ""
         def make_version_str(version):
             if version and isinstance(version, (tuple, list)):
                 version = ".".join(bytestostr(x) for x in version)
