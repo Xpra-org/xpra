@@ -867,8 +867,9 @@ fi
 
 
 %changelog
-* Thu Jan 23 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
+* Sat Jan 25 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
 - fix UDP with Python3
+- fix key mapping issues with non-X11 clients and non-US layouts
 - fix notification logging errors during shutdown
 - fix window stacking order with html5 client and override redirect windows
 - fix png/P and png/L decoding
@@ -879,6 +880,8 @@ fi
 - fix some special characters with HTML5 client
 - fix initiate-moveresize with multiple clients
 - fix keyboard layout detection with MS Windows 10 clients
+- remove executable file permissions on files uploaded to the server
+- blacklist 'Intel(R) UHD Graphics 620'
 - use correct location for appdata.xml
 - use Debian location for systemd service config file
 - ensure emacs, gvim and xxdiff always use 'text' mode
