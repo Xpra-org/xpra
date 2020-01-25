@@ -444,7 +444,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         client_keycode, keyname, modifiers, group, keycode, level, shift, mode)
                     break
             if keycode is None:
-                keycode = self.keycode_translation.get(keyname, client_keycode)
+                keycode = self.keycode_translation.get(keyname, -1)
                 log("get_keycode(%s, %s)=%i (keyname translation)", client_keycode, keyname, keycode)
         return keycode
 
