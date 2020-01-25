@@ -418,7 +418,7 @@ class KeyboardConfig(KeyboardConfigBase):
         else:
             #non-native: try harder to find matching keysym
             #first, try to honour shift state:
-            shift = "shift" in modifiers
+            shift = ("shift" in modifiers) ^ ("lock" in modifiers)
             mode = 0
             for mod in modifiers:
                 names = self.keynames_for_mod.get(mod, [])
