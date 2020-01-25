@@ -418,6 +418,16 @@ class KeyboardConfig(KeyboardConfigBase):
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
             log("get_keycode(%s, %s, %s)=%s (native keymap)", client_keycode, keyname, modifiers, keycode)
         else:
+            """
+            from man xmodmap:
+            The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
+            hex or octal and can be determined by running the xev program).
+            Up to eight keysyms may be attached to a key, however the last four are not used in any major
+            X server implementation.
+            The first keysym is used when no modifier key is pressed in conjunction with this key,
+            the second with Shift, the third when the Mode_switch key is used with this key and
+            the fourth when both the Mode_switch and Shift keys are used.
+            """
             #non-native: try harder to find matching keysym
             #first, try to honour shift state:
             shift = ("shift" in modifiers) ^ ("lock" in modifiers)
