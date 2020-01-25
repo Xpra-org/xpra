@@ -266,6 +266,9 @@ GI_MODULES="Gst GObject GLib GModule Gtk Gdk GtkosxApplication GL Gio Pango cair
 for t in ${GI_MODULES}; do
 	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
 done
+echo " * add Adwaita theme"
+#gtk-mac-bundler doesn't do it properly, so do it ourselves:
+rsync -rpl ${JHBUILD_PREFIX}/share/icons/Adwaita ${RSCDIR}/share/icons/
 if [ "$STRIP_NUMPY" == "1" ]; then
 	echo " * trim numpy"
 	pushd $LIBDIR/python/numpy
