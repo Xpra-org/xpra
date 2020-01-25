@@ -411,6 +411,8 @@ class KeyboardConfig(KeyboardConfigBase):
         if not self.enabled:
             log("ignoring keycode since keyboard is turned off")
             return -1
+        if keyname=="0xffffff":
+            return -1
         keycode = None
         if self.xkbmap_query:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
