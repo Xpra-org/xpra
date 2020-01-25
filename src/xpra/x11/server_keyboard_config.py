@@ -415,6 +415,8 @@ class KeyboardConfig(KeyboardConfigBase):
         if not self.enabled:
             log("ignoring keycode since keyboard is turned off")
             return -1
+        if keyname=="0xffffff":
+            return -1
         keycode = None
         if self.xkbmap_query:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
@@ -422,7 +424,7 @@ class KeyboardConfig(KeyboardConfigBase):
         else:
             #non-native: try harder to find matching keysym
             #first, try to honour shift state:
-            shift = "shift" in modifiers
+            shift = ("shift" in modifiers) ^ ("lock" in modifiers)
             mode = 0
             for mod in modifiers:
                 names = self.keynames_for_mod.get(mod, [])
@@ -446,7 +448,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         client_keycode, keyname, modifiers, group, keycode, level, shift, mode)
                     break
             if keycode is None:
-                keycode = self.keycode_translation.get(keyname, client_keycode)
+                keycode = self.keycode_translation.get(keyname, -1)
                 log("get_keycode(%s, %s)=%i (keyname translation)", client_keycode, keyname, keycode)
         return keycode
 
