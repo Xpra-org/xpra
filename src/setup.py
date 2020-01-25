@@ -1148,7 +1148,7 @@ if WIN32:
                             "libvisual-0.4", "p11-kit", "pkcs11"])
             add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
                               "p11-kit", "xml",
-                              {"icons"  : ["hicolor"]},
+                              {"icons"  : ["hicolor", "Adwaita"]},
                               {"locale" : ["en"]},
                               {"themes" : ["Default"]}
                              ])
