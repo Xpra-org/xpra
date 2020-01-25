@@ -73,7 +73,10 @@ class ToolboxGUI(Gtk.Window):
         icon_name = "applications-utilities"
         self.set_icon_name(icon_name)
         icon_theme = Gtk.IconTheme.get_default()
-        pixbuf = icon_theme.load_icon(icon_name, 96, 0) or get_pixbuf("xpra")
+        try:
+            pixbuf = icon_theme.load_icon(icon_name, 96, 0)
+        except Exception:
+            pixbuf = get_pixbuf("xpra")
         if pixbuf:
             self.set_icon(pixbuf)
         add_close_accel(self, self.quit)
