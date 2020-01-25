@@ -233,9 +233,11 @@ class AvahiPublisher:
         def error_handler(*args):
             log("error_handler%s", args)
             log.warn("Warning: failed to update mDNS TXT record")
-            log.warn(" with '%s'", txt_strs)
             log.warn(" for name '%s'", self.name)
             log.warn(" host=%s, port=%s", self.host, self.port)
+            log.warn(" with new data:")
+            for k,v in txt_strs.items():
+                log.warn(" * %s=%s", k, v)
         txt_array = avahi.dict_to_txt_array(txt_strs)
         self.group.UpdateServiceTxt(self.interface,
             avahi.PROTO_UNSPEC, dbus.UInt32(0), self.name, self.stype, self.domain,
