@@ -158,9 +158,9 @@
 
 	<distutils id="python3-packaging" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/5a/2f/449ded84226d0e2fda8da9252e5ee7731bdf14cd338f622dfcd9934e0377/packaging-19.2.tar.gz"
-			hash="sha256:28b924174df7a2fa32c1953825ff29c61e2f5e082343165438812f00d3a7fc47"
-			version="19.2"/>
+			module="/packages/7b/d5/199f982ae38231995276421377b72f4a25d8251f4fa56f6be7cfcd9bb022/packaging-20.1.tar.gz"
+			hash="sha256:e665345f9eef0c621aa0bf2f8d78cf6d21904eef16a93f020240b704a57f1334"
+			version="20.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
