@@ -109,15 +109,27 @@ class HelpCommand(ArgsControlCommand):
 
 class DebugControl(ArgsControlCommand):
     def __init__(self):
-        super().__init__("debug", "usage: 'debug enable category', 'debug disable category' or 'debug status'", min_args=1)
+        super().__init__("debug",
+                         "usage: 'debug enable category', 'debug disable category', 'debug status' or 'debug mark'",
+                         min_args=1)
 
     def run(self, *args):
         if len(args)==1 and args[0]=="status":
             from xpra.log import get_all_loggers
             return "logging is enabled for: %s" % str(list([str(x) for x in get_all_loggers() if x.is_debug_enabled()]))
+        log_cmd = args[0]
+        if log_cmd=="mark":
+            for _ in range(10):
+                log.info("*"*80)
+            if len(args)>1:
+                log.info("mark: %s", " ".join(args[1:]))
+            else:
+                log.info("mark")
+            for _ in range(10):
+                log.info("*"*80)
+            return "mark inserted into logfile"
         if len(args)<2:
             self.raise_error("not enough arguments")
-        log_cmd = args[0]
         if log_cmd not in ("enable", "disable"):
             self.raise_error("only 'enable' and 'disable' verbs are supported")
         #support both separate arguments and csv:
