@@ -798,7 +798,7 @@ def get_default_pulseaudio_command():
         "--log-level=2", "--log-target=stderr",
         ]
     from xpra.util import envbool
-    MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", True)
+    MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", False)
     if not MEMFD:
         cmd.append("--enable-memfd=no")
     return cmd
