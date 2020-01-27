@@ -14,7 +14,7 @@ from xpra.scripts.main import InitException, InitExit, shellquote, host_target_s
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.gui import force_focus
 from xpra.platform import get_username
-from xpra.scripts.config import TRUE_OPTIONS
+from xpra.scripts.config import parse_bool
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import (
     EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE,
@@ -25,7 +25,7 @@ from xpra.os_util import (
     setsid, nomodule_context, umask_context, is_main_thread,
     WIN32, OSX, POSIX,
     )
-from xpra.util import envint, envbool, nonl, engs
+from xpra.util import envint, envbool, nonl, engs, csv
 from xpra.log import Logger
 
 log = Logger("network", "ssh")
@@ -234,6 +234,7 @@ def ssh_paramiko_connect_to(display_desc):
     socket_dir = display_desc.get("socket_dir")
     display = display_desc.get("display")
     display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
+    paramiko_config = display_desc.get("paramiko-config", {})
     keyfiles = None
     socket_info = {
             "host"  : host,
@@ -273,7 +274,8 @@ def ssh_paramiko_connect_to(display_desc):
                     do_ssh_paramiko_connect_to(transport, host,
                                                username, password,
                                                host_config or ssh_config.lookup("*"),
-                                               keyfiles)
+                                               keyfiles,
+                                               paramiko_config)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
                     conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
@@ -305,7 +307,8 @@ def ssh_paramiko_connect_to(display_desc):
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
                                        proxy_host_config or ssh_config.lookup("*"),
-                                       keyfiles)
+                                       keyfiles,
+                                       paramiko_config)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
 
@@ -319,7 +322,8 @@ def ssh_paramiko_connect_to(display_desc):
             do_ssh_paramiko_connect_to(transport, host,
                                        username, password,
                                        host_config or ssh_config.lookup("*"),
-                                       keyfiles)
+                                       keyfiles,
+                                       paramiko_config)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
 
             peername = (host, port)
@@ -347,7 +351,8 @@ def ssh_paramiko_connect_to(display_desc):
             raise InitExit(EXIT_SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
         do_ssh_paramiko_connect_to(transport, host, username, password,
                                    host_config or ssh_config.lookup("*"),
-                                   keyfiles)
+                                   keyfiles,
+                                   paramiko_config)
         chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
         conn.target = host_target_string("ssh", username, host, port, display)
@@ -363,19 +368,33 @@ class nogssapi_context(nomodule_context):
         super().__init__("gssapi")
 
 
-def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None, keyfiles=None):
+def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None, keyfiles=None, paramiko_config=None):
     from paramiko import SSHException, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
-    log("do_ssh_paramiko_connect_to%s", (transport, host, username, password, host_config, keyfiles))
+    log("do_ssh_paramiko_connect_to%s", (transport, host, username, password, host_config, keyfiles, paramiko_config))
     log("SSH transport %s", transport)
     if not keyfiles:
         keyfiles = [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_rsa", "id_dsa")]
 
+    def configvalue(key):
+        #if the paramiko config has a setting, honour it:
+        if paramiko_config and key in paramiko_config:
+            return paramiko_config.get(key)
+        #fallback to the value from the host config:
+        return host_config.get(key)
+    def configbool(key, default_value=True):
+        return parse_bool(key, configvalue(key), default_value)
+    def configint(key, default_value=0):
+        v = configvalue(key)
+        if v is None:
+            return default_value
+        return int(v)
+
     host_key = transport.get_remote_server_key()
     assert host_key, "no remote server key"
     log("remote_server_key=%s", keymd5(host_key))
-    if VERIFY_HOSTKEY:
+    if configbool("verify-hostkey", VERIFY_HOSTKEY):
         host_keys = HostKeys()
         host_keys_filename = None
         KNOWN_HOSTS = get_ssh_known_hosts_files()
@@ -401,16 +420,14 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
             log("%s host key '%s' OK for host '%s'", keyname(), keymd5(host_key), host)
         else:
             dnscheck = ""
-            if host_config:
-                verifyhostkeydns = host_config.get("verifyhostkeydns")
-                if verifyhostkeydns and verifyhostkeydns.lower() in TRUE_OPTIONS:
-                    try:
-                        from xpra.net.sshfp import check_host_key
-                        dnscheck = check_host_key(host, host_key)
-                    except ImportError as e:
-                        log("verifyhostkeydns failed", exc_info=True)
-                        log.warn("Warning: cannot check SSHFP DNS records")
-                        log.warn(" %s", e)
+            if configbool("verifyhostkeydns"):
+                try:
+                    from xpra.net.sshfp import check_host_key
+                    dnscheck = check_host_key(host, host_key)
+                except ImportError as e:
+                    log("verifyhostkeydns failed", exc_info=True)
+                    log.warn("Warning: cannot check SSHFP DNS records")
+                    log.warn(" %s", e)
             log("dnscheck=%s", dnscheck)
             def adddnscheckinfo(q):
                 if dnscheck is not True:
@@ -437,7 +454,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
 keymd5(host_key),
 ]
                 adddnscheckinfo(qinfo)
-                if VERIFY_STRICT:
+                if configbool("stricthostkeychecking", VERIFY_STRICT):
                     log.warn("Host key verification failed.")
                     #TODO: show alert with no option to accept key
                     qinfo += [
@@ -469,7 +486,7 @@ keymd5(host_key),
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
 
-            if ADD_KEY:
+            if configbool("addkey", ADD_KEY):
                 try:
                     if not host_keys_filename:
                         #the first one is the default,
@@ -497,6 +514,8 @@ keymd5(host_key),
                     log.error(" %s", e)
                 except Exception as e:
                     log.error("cannot add key", exc_info=True)
+    else:
+        log("ssh host key verification skipped")
 
 
     def auth_agent():
@@ -614,34 +633,52 @@ keymd5(host_key),
         for x in banner.splitlines():
             log.info(" %s", x)
 
-    log("starting authentication")
+    if paramiko_config and "auth" in paramiko_config:
+        auth = paramiko_config.get("auth", "").split("+")
+        AUTH_OPTIONS = ("none", "agent", "key", "password")
+        if any(a for a in auth if a not in AUTH_OPTIONS):
+            raise InitExit(EXIT_SSH_FAILURE, "invalid ssh authentication module specified: %s" %
+                           csv(a for a in auth if a not in AUTH_OPTIONS))
+    else:
+        auth = []
+        if configbool("noneauthentication", NONE_AUTH):
+            auth.append("none")
+        if configbool("agentauthentication", AGENT_AUTH):
+            auth.append("agent")
+        # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
+        if configbool("keyauthentication", KEY_AUTH):
+            auth.append("key")
+        if configbool("passwordauthentication", PASSWORD_AUTH):
+            auth.append("password")
+    #def doauth(authtype):
+    #    return authtype in auth and not transport.is_authenticated()
+
+    log("starting authentication, authentication methods: %s", auth)
     # per the RFC we probably should do none first always and read off the supported
     # methods, however, the current code seems to work fine with OpenSSH
-    if not transport.is_authenticated() and NONE_AUTH:
-        auth_none()
-
-    if not transport.is_authenticated() and AGENT_AUTH:
-        auth_agent()
-
-    # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
-    if not transport.is_authenticated() and KEY_AUTH:
-        auth_publickey()
-
-    if not transport.is_authenticated() and PASSWORD_AUTH:
-        auth_interactive()
-
-    if not transport.is_authenticated() and PASSWORD_AUTH and password:
-        auth_password()
-
-    if not transport.is_authenticated() and PASSWORD_AUTH and not password:
-        for _ in range(1+PASSWORD_RETRY):
-            password = input_pass("please enter the SSH password for %s@%s:" % (username, host))
-            if not password:
-                break
-            auth_password()
-            if transport.is_authenticated():
-                break
-
+    while not transport.is_authenticated() and auth:
+        a = auth.pop(0)
+        log("auth=%s", a)
+        if a=="none":
+            auth_none()
+        elif a=="agent":
+            auth_agent()
+        elif a=="key":
+            auth_publickey()
+        elif a=="password":
+            auth_interactive()
+            if not transport.is_authenticated():
+                if password:
+                    auth_password()
+                else:
+                    tries = configint("numberofpasswordprompts", PASSWORD_RETRY)
+                    for _ in range(1+tries):
+                        password = input_pass("please enter the SSH password for %s@%s:" % (username, host))
+                        if not password:
+                            break
+                        auth_password()
+                        if transport.is_authenticated():
+                            break
     if not transport.is_authenticated():
         transport.close()
         raise InitExit(EXIT_CONNECTION_FAILED, "SSH Authentication on %s failed" % host)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -18,7 +18,7 @@ import shlex
 import traceback
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import csv, envbool, envint, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
+from xpra.util import csv, envbool, envint, nonl, pver, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS
 from xpra.exit_codes import (
     EXIT_STR,
     EXIT_OK, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED,
@@ -627,23 +627,23 @@ def find_session_by_name(opts, session_name):
 def parse_ssh_string(ssh_setting):
     if is_debug_enabled("ssh"):
         get_util_logger().debug("parse_ssh_string(%s)" % ssh_setting)
-    ssh_cmd = ssh_setting
-    from xpra.platform.features import DEFAULT_SSH_COMMAND
-    if ssh_setting=="auto":
+    ssh_cmd = shlex.split(ssh_setting)
+    if ssh_cmd[0]=="auto":
         #try paramiko:
         try:
             from xpra.net.ssh import nogssapi_context
             with nogssapi_context():
                 import paramiko
             assert paramiko
-            ssh_cmd = "paramiko"
+            ssh_cmd = ["paramiko"]
             if is_debug_enabled("ssh"):
                 get_util_logger().info("using paramiko")
         except ImportError as e:
             if is_debug_enabled("ssh"):
                 get_util_logger().info("no paramiko: %s" % e)
-            ssh_cmd = DEFAULT_SSH_COMMAND
-    return shlex.split(ssh_cmd)
+            from xpra.platform.features import DEFAULT_SSH_COMMAND
+            ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
+    return ssh_cmd
 
 def add_ssh_args(username, password, host, ssh_port, is_putty=False, is_paramiko=False):
     args = []
@@ -910,9 +910,12 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         #maybe restrict to win32 only?
         ssh_cmd = ssh[0].lower()
         is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-        is_paramiko = ssh_cmd=="paramiko"
+        is_paramiko = ssh_cmd.split(":")[0]=="paramiko"
         if is_paramiko:
+            ssh[0] = "paramiko"
             desc["is_paramiko"] = is_paramiko
+            if opts.ssh.find(":")>0:
+                desc["paramiko-config"] = parse_simple_dict(opts.ssh.split(":", 1)[1])
         if is_putty:
             desc["is_putty"] = True
             #special env used by plink:
