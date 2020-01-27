@@ -563,7 +563,8 @@ class ServerBaseControlCommands(StubServerMixin):
             elif press in ("0", "unpress"):
                 press = False
             else:
-                raise ControlError("if present, the press argument must be one of: %s", ("1", "press", "0", "unpress"))
+                raise ControlError("if present, the press argument must be one of: %s" %
+                                   csv(("1", "press", "0", "unpress")))
         self.fake_key(keycode, press)
 
     def control_command_sound_output(self, *args):
@@ -575,11 +576,11 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_workspace(self, wid, workspace):
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError("window %s does not exist", wid)
+            raise ControlError("window %s does not exist" % wid)
         if "workspace" not in window.get_property_names():
-            raise ControlError("cannot set workspace on window %s", window)
+            raise ControlError("cannot set workspace on window %s" % window)
         if workspace<0:
-            raise ControlError("invalid workspace value: %s", workspace)
+            raise ControlError("invalid workspace value: %s" % workspace)
         window.set_property("workspace", workspace)
         return "window %s moved to workspace %s" % (wid, workspace)
 
