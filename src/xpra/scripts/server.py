@@ -604,9 +604,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 stderr.write("Entering daemon mode; "
                          + "any further errors will be reported to:\n"
                          + ("  %s\n" % log_filename0))
+                stderr.flush()
             except IOError:
                 #we tried our best, logging another error won't help
                 pass
+            os.environ["XPRA_SERVER_LOG"] = log_filename0
 
     #warn early about this:
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
@@ -712,7 +714,12 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                                  username, uid, gid, extra_expand)
         if log_filename0 != log_filename1:
             # we now have the correct log filename, so use it:
-            os.rename(log_filename0, log_filename1)
+            try:
+                os.rename(log_filename0, log_filename1)
+            except (OSError, IOError):
+                pass
+            else:
+                os.environ["XPRA_SERVER_LOG"] = log_filename1
             if odisplay_name!=display_name:
                 #this may be used by scripts, let's try not to change it:
                 noerr(stderr.write, "Actual display used: %s\n" % display_name)
@@ -720,6 +727,12 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             noerr(stderr.flush)
         noerr(stdout.close)
         noerr(stderr.close)
+    else:
+        #server log does not exist:
+        try:
+            del os.environ["XPRA_SERVER_LOG"]
+        except KeyError:
+            pass
     #we should not be using stdout or stderr from this point:
     del stdout
     del stderr
