@@ -101,7 +101,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("reset-video-region",    "reset video region heuristics",    min_args=1, max_args=1, validation=[int]),
             ArgsControlCommand("lock-batch-delay",      "set a specific batch delay for a window",       min_args=2, max_args=2, validation=[int, int]),
             ArgsControlCommand("unlock-batch-delay",    "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",  min_args=1, max_args=1, validation=[int]),
-            ArgsControlCommand("remove-window-filters", "remove all window filters",        min_args=0, max_args=1),
+            ArgsControlCommand("remove-window-filters", "remove all window filters",        min_args=0, max_args=0),
             ArgsControlCommand("add-window-filter",     "add a window filter",              min_args=4, max_args=5),
             ):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
@@ -297,7 +297,7 @@ class ServerBaseControlCommands(StubServerMixin):
         return "%s of '%s' to %s initiated" % (command_type, filename, client_uuids)
 
 
-    def control_command_remove_window_filters(self, client_uuids=""):
+    def control_command_remove_window_filters(self):
         #modify the existing list object,
         #which is referenced by all the sources
         l = len(self.window_filters)
