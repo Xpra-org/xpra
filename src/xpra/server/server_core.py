@@ -1081,6 +1081,7 @@ class ServerCore:
             if http and self._html:
                 self.start_http_socket(socktype, ssl_conn, True, peek_data)
             else:
+                ssl_conn._socket.settimeout(self._socket_timeout)
                 log_new_connection(ssl_conn, socket_info)
                 self.make_protocol(socktype, ssl_conn)
             return
@@ -1129,9 +1130,9 @@ class ServerCore:
             self.new_conn_err(conn, sock, socktype, socket_info, network_protocol, "invalid packet header, %s" % msg)
             return
 
-        #not sure why python3 fails to set the timeout here:
-        if conn.socktype!="ssl":
-            sock.settimeout(self._socket_timeout)
+        #get the new socket object as we may have wrapped it with ssl:
+        sock = getattr(conn, "_socket", sock)
+        sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
         proto = self.make_protocol(socktype, conn)
         if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:
