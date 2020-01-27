@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,8 +11,8 @@ import os.path
 import hashlib
 
 from xpra.simple_stats import to_std_unit
-from xpra.os_util import bytestostr, WIN32
-from xpra.util import engs, repr_ellipsized
+from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32
+from xpra.util import engs, repr_ellipsized, XPRA_FILETRANSFER_NOTIFICATION_ID
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -62,7 +62,10 @@ class FilePrintServer(StubServerMixin):
     def get_server_features(self, _source):
         f = self.file_transfer.get_file_transfer_features()
         f["printer.attributes"] = ("printer-info", "device-uri")
-        f.update(self.file_transfer.get_file_transfer_features())
+        ftf = self.file_transfer.get_file_transfer_features()
+        if self.file_transfer.file_transfer:
+            ftf["request-file"] = True
+        f.update(ftf)
         return f
 
     def get_info(self, _proto):
@@ -76,7 +79,10 @@ class FilePrintServer(StubServerMixin):
             d.update(get_info())
         info = {"printing" : d}
         if self.file_transfer.file_transfer:
-            info["file"] = self.file_transfer.get_info()
+            fti = self.file_transfer.get_info()
+            if self.file_transfer.file_transfer:
+                fti["request-file"] = True
+            info["file"] = fti
         return info
 
 
@@ -268,6 +274,40 @@ class FilePrintServer(StubServerMixin):
             return
         ss._process_send_data_response(packet)
 
+    def _process_request_file(self, proto, packet):
+        ss = self.get_server_source(proto)
+        if not ss:
+            printlog.warn("Warning: invalid client source for send-data-response packet")
+            return
+        try:
+            argf = packet[1].decode("utf-8")
+        except UnicodeDecodeError:
+            argf = bytestostr(packet[1])
+        openit = packet[2]
+        filename = os.path.abspath(osexpand(argf))
+        if not os.path.exists(filename):
+            filelog.warn("Warning: the file requested does not exist:")
+            filelog.warn(" %s", filename)
+            ss.may_notify(XPRA_FILETRANSFER_NOTIFICATION_ID,
+                          "File not found", "The file requested does not exist:\n%s" % filename,
+                           icon_name="file")
+            return
+        try:
+            stat = os.stat(filename)
+            filelog("os.stat(%s)=%s", filename, stat)
+        except os.error:
+            filelog("os.stat(%s)", filename, exc_info=True)
+        else:
+            file_size_MB = stat.st_size//1024//1024
+            if file_size_MB>self.file_transfer.file_size_limit or file_size_MB>ss.file_size_limit:
+                ss.may_notify(XPRA_FILETRANSFER_NOTIFICATION_ID,
+                              "File too large",
+                              "The file requested is too large to send:\n%s\nis %iMB" % (argf, file_size_MB),
+                               icon_name="file")
+                return
+        data = load_binary_file(filename)
+        ss.send_file(filename, "", data, len(data), openit=openit)
+
 
     def init_packet_handlers(self):
         if self.file_transfer.printing:
@@ -283,3 +323,5 @@ class FilePrintServer(StubServerMixin):
                 "send-data-request":                    self._process_send_data_request,
                 "send-data-response":                   self._process_send_data_response,
               }, False)
+        if self.file_transfer.file_transfer:
+            self.add_packet_handler("request-file",     self._process_request_file, False)

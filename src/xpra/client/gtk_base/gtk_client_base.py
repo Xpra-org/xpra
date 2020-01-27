@@ -480,6 +480,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_size_dialog = None
             fsd.destroy()
 
+    def download_server_log(self, *args):
+        self.send_request_file("${XPRA_SERVER_LOG}", self.open_files)
+
     def show_file_upload(self, *args):
         if self.file_dialog:
             self.file_dialog.present()

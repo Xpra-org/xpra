@@ -34,6 +34,7 @@ HIDE_DISABLED_MENU_ENTRIES = OSX
 SHOW_TITLE_ITEM = envbool("XPRA_SHOW_TITLE_ITEM", True)
 SHOW_VERSION_CHECK = envbool("XPRA_SHOW_VERSION_CHECK", True)
 SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
+SHOW_SERVER_LOG = envbool("XPRA_SHOW_SERVER_LOG", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
@@ -1499,6 +1500,8 @@ class GTKTrayMenuBase:
             menu.append(self.make_servertransfersmenuitem())
         if SHOW_UPLOAD:
             menu.append(self.make_uploadmenuitem())
+        if SHOW_SERVER_LOG:
+            menu.append(self.make_serverlogmenuitem())
         if SHOW_SHUTDOWN:
             menu.append(self.make_shutdownmenuitem())
         server_menu_item.show_all()
@@ -1558,6 +1561,19 @@ class GTKTrayMenuBase:
                 self.upload.set_tooltip_text("Send a file to the server")
         self.client.after_handshake(enable_upload)
         return self.upload
+
+
+    def make_serverlogmenuitem(self):
+        self.download = self.menuitem("Download Server Log", "download.png", cb=self.client.download_server_log)
+        def enable_download(*args):
+            log("enable_download%s server_file_transfer=%s", args, self.client.remote_file_transfer)
+            set_sensitive(self.download, self.client.remote_file_transfer)
+            if not self.client.remote_file_transfer:
+                self.upload.set_tooltip_text("Not supported by the server")
+            else:
+                self.upload.set_tooltip_text("Download the server log")
+        self.client.after_handshake(enable_download)
+        return self.download
 
 
     def make_shutdownmenuitem(self):

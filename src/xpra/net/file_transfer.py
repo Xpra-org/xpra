@@ -555,6 +555,10 @@ class FileTransferHandler(FileTransferAttributes):
         return True
 
 
+    def send_request_file(self, filename, openit=True):
+        self.send("request-file", filename, openit)
+
+
     def _process_open_url(self, packet):
         url, send_id = packet[1:3]
         if not self.open_url:
