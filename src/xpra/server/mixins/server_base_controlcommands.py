@@ -259,6 +259,12 @@ class ServerBaseControlCommands(StubServerMixin):
         sources = self._control_get_sources(client_uuids)
         if not sources:
             raise ControlError("no clients found matching: %s" % client_uuids)
+        def checksize(file_size):
+            file_size_MB = file_size//1024//1024
+            if file_size_MB>self.file_transfer.file_size_limit:
+                raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (
+                    filename, file_size_MB, self.file_transfer.file_size_limit))
+
         #find the file and load it:
         actual_filename = os.path.abspath(os.path.expanduser(filename))
         try:
@@ -266,6 +272,8 @@ class ServerBaseControlCommands(StubServerMixin):
             log("os.stat(%s)=%s", actual_filename, stat)
         except os.error:
             log("os.stat(%s)", actual_filename, exc_info=True)
+        else:
+            checksize(stat.st_size)
         if not os.path.exists(actual_filename):
             raise ControlError("file '%s' does not exist" % filename)
         data = load_binary_file(actual_filename)
@@ -274,9 +282,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #verify size:
         file_size = len(data)
         file_size_MB = file_size//1024//1024
-        if file_size_MB>self.file_transfer.file_size_limit:
-            raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (
-                filename, file_size_MB, self.file_transfer.file_size_limit))
+        checksize(file_size)
         #send it to each client:
         for ss in sources:
             #ie: ServerSource.file_transfer (found in FileTransferAttributes)
