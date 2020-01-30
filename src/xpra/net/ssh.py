@@ -672,7 +672,7 @@ keymd5(host_key),
                     auth_password()
                 else:
                     tries = configint("numberofpasswordprompts", PASSWORD_RETRY)
-                    for _ in range(1+tries):
+                    for _ in range(tries):
                         password = input_pass("please enter the SSH password for %s@%s:" % (username, host))
                         if not password:
                             break
