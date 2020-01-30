@@ -26,6 +26,7 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio = False
         opts.pulseaudio_command = "/bin/true"
         opts.pulseaudio_configure_commands = []
+        opts.av_sync = True
         self._test_mixin_class(AudioServer, opts, {
             "sound.receive" : True,
             "sound.decoders" : CODEC_ORDER,
