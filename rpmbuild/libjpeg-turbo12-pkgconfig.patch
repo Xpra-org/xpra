@@ -1,0 +1,67 @@
+diff --git a/Makefile.am b/Makefile.am
+index 728e30f..8717d3c 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -10,6 +10,8 @@ endif
+ 
+ nodist_include_HEADERS = jconfig.h
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = pkgscripts/libjpeg.pc pkgscripts/libturbojpeg.pc
+ 
+ HDRS = jchuff.h jdct.h jdhuff.h jerror.h jinclude.h jmemsys.h jmorecfg.h \
+ 	jpegint.h jpeglib.h jversion.h jsimd.h jsimddct.h jpegcomp.h
+diff --git a/configure.ac b/configure.ac
+index 8e75dce..534558c 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -21,6 +21,8 @@ AC_PROG_INSTALL
+ AC_PROG_LIBTOOL
+ AC_PROG_LN_S
+ 
++PKG_PROG_PKG_CONFIG
++
+ # Check whether compiler supports pointers to undefined structures
+ AC_MSG_CHECKING(whether compiler supports pointers to undefined structures)
+ AC_TRY_COMPILE([ typedef struct undefined_structure * undef_struct_ptr; ], ,
+@@ -411,6 +413,8 @@ AC_CONFIG_FILES([pkgscripts/makemacpkg:release/makemacpkg.in])
+ AC_CONFIG_FILES([pkgscripts/Description.plist:release/Description.plist.in])
+ AC_CONFIG_FILES([pkgscripts/Info.plist:release/Info.plist.in])
+ AC_CONFIG_FILES([pkgscripts/uninstall:release/uninstall.in])
++AC_CONFIG_FILES([pkgscripts/libjpeg.pc:release/libjpeg.pc.in])
++AC_CONFIG_FILES([pkgscripts/libturbojpeg.pc:release/libturbojpeg.pc.in])
+ if test "x$with_turbojpeg" != "xno"; then
+ AC_CONFIG_FILES([tjbenchtest])
+ fi
+diff --git a/release/libjpeg.pc.in b/release/libjpeg.pc.in
+new file mode 100644
+index 0000000..40795f7
+--- /dev/null
++++ b/release/libjpeg.pc.in
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libjpeg
++Description: A SIMD-accelerated JPEG codec that provides the libjpeg API
++Version: @PACKAGE_VERSION@
++Libs: -L${libdir} -ljpeg
++Cflags: -I${includedir}
+diff --git a/release/libturbojpeg.pc.in b/release/libturbojpeg.pc.in
+new file mode 100644
+index 0000000..7d4b656
+--- /dev/null
++++ b/release/libturbojpeg.pc.in
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libturbojpeg
++Description: A SIMD-accelerated JPEG codec that provides the TurboJPEG API
++Version: @PACKAGE_VERSION@
++Libs: -L${libdir} -lturbojpeg
++Cflags: -I${includedir}
