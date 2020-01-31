@@ -172,7 +172,6 @@ class SessionInfo(Gtk.Window):
                                            cattr("_remote_platform_platform"),
                                            cattr("_remote_platform_linux_distribution"))
         tb.new_row("Operating System", slabel(LOCAL_PLATFORM_NAME), slabel(SERVER_PLATFORM_NAME))
-        scaps = self.client.server_capabilities
         tb.new_row("Xpra", slabel(XPRA_VERSION), slabel(cattr("_remote_version", "unknown")))
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
@@ -184,6 +183,7 @@ class SessionInfo(Gtk.Window):
                 version = ".".join(bytestostr(x) for x in version)
             return bytestostr(version or "unknown")
         def server_info(*prop_names):
+            scaps = self.client.server_capabilities
             for x in prop_names:
                 k = strtobytes(x)
                 v = dictlook(scaps, k)
@@ -787,16 +787,16 @@ class SessionInfo(Gtk.Window):
         self.client_microphone_codecs_label.set_size_request(lw, -1)
         self.server_microphone_codecs_label.set_size_request(lw, -1)
         #sound/video codec table:
-        scaps = self.client.server_capabilities
         def codec_info(enabled, codecs):
             if not enabled:
                 return "n/a"
             return ", ".join(codecs or ())
         if mixin_features.audio:
-            self.server_speaker_codecs_label.set_text(codec_info(scaps.boolget("sound.send", False), scaps.strtupleget("sound.encoders")))
-            self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
-            self.server_microphone_codecs_label.set_text(codec_info(scaps.boolget("sound.receive", False), scaps.strtupleget("sound.decoders")))
-            self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
+            c = self.client
+            self.server_speaker_codecs_label.set_text(codec_info(c.server_sound_send, c.server_sound_encoders))
+            self.client_speaker_codecs_label.set_text(codec_info(c.speaker_allowed, c.speaker_codecs))
+            self.server_microphone_codecs_label.set_text(codec_info(c.server_sound_receive, c.server_sound_decoders))
+            self.client_microphone_codecs_label.set_text(codec_info(c.microphone_allowed, c.microphone_codecs))
         def encliststr(v):
             v = list(v)
             try:
@@ -804,24 +804,22 @@ class SessionInfo(Gtk.Window):
             except ValueError:
                 pass
             return csv(sorted(v))
-        se = scaps.strtupleget("encodings.core", scaps.strtupleget("encodings"))
+        se = ()
+        if mixin_features.encoding:
+            se = self.client.server_core_encodings
         self.server_encodings_label.set_text(encliststr(se))
         if mixin_features.encoding:
             self.client_encodings_label.set_text(encliststr(self.client.get_core_encodings()))
         else:
             self.client_encodings_label.set_text("n/a")
 
-        def get_encoder_list(caps):
-            from xpra.net import packet_encoding
-            return [x for x in packet_encoding.ALL_ENCODERS if typedict(caps).rawget(x)]
-        self.client_packet_encoders_label.set_text(", ".join(get_encoder_list(get_network_caps())))
-        self.server_packet_encoders_label.set_text(", ".join(get_encoder_list(self.client.server_capabilities)))
+        from xpra.net.packet_encoding import get_enabled_encoders
+        self.client_packet_encoders_label.set_text(csv(get_enabled_encoders()))
+        self.server_packet_encoders_label.set_text(csv(self.client.server_packet_encoders))
 
-        def get_compressor_list(caps):
-            from xpra.net import compression
-            return [x for x in compression.ALL_COMPRESSORS if typedict(caps).rawget(x)]
-        self.client_packet_compressors_label.set_text(", ".join(get_compressor_list(get_network_caps())))
-        self.server_packet_compressors_label.set_text(", ".join(get_compressor_list(self.client.server_capabilities)))
+        from xpra.net.compression import get_enabled_compressors
+        self.client_packet_compressors_label.set_text(csv(get_enabled_compressors()))
+        self.server_packet_compressors_label.set_text(csv(self.client.server_packet_compressors))
         return False
 
     def populate_connection(self):
