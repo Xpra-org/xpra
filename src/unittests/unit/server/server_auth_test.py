@@ -9,7 +9,7 @@ import unittest
 
 from xpra.os_util import pollwait, strtobytes, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED, EXIT_NO_AUTHENTICATION
-from unit.server_test_util import ServerTestUtil, log
+from unit.server_test_util import ServerTestUtil, estr, log
 
 
 class ServerAuthTest(ServerTestUtil):
@@ -40,7 +40,8 @@ class ServerAuthTest(ServerTestUtil):
         if client.poll() is None:
             client.terminate()
         server.terminate()
-        assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, r)
+        assert r==exit_code, "expected info client to return %s but got %s" % (
+            estr(exit_code), estr(r))
 
     def test_fail(self):
         self._test_auth("fail", "", EXIT_FAILURE)

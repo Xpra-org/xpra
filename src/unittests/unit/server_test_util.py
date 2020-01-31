@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import sys
 import time
 import subprocess
 
 from unit.process_test_util import ProcessTestUtil
 from xpra.util import envint
 from xpra.os_util import pollwait, bytestostr, POSIX, WIN32
+from xpra.exit_codes import EXIT_STR
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
@@ -20,6 +20,13 @@ log = Logger("test")
 
 SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
 STOP_WAIT_TIMEOUT = envint("XPRA_STOP_WAIT_TIMEOUT", 20)
+
+
+def estr(r):
+    s = EXIT_STR.get(r)
+    if s:
+        return "%s : %s" % (r, s)
+    return str(r)
 
 
 class ServerTestUtil(ProcessTestUtil):
