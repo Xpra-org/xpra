@@ -123,7 +123,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._aliases = {}
         #server state and caps:
         self.connection_established = False
-        self.server_capabilities = None
         self.completed_startup = False
         self.uuid = get_user_uuid()
         self.session_id = uuid.uuid4().hex
@@ -803,7 +802,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 self.warn_and_quit(EXIT_FAILURE, "failed to establish connection")
             else:
                 self.connection_established = True
-                self.server_capabilities = caps
         except Exception as e:
             netlog.info("error in hello packet", exc_info=True)
             self.warn_and_quit(EXIT_FAILURE, "error processing hello packet from server: %s" % e)

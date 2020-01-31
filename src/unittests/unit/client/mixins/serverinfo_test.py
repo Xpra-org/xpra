@@ -21,7 +21,7 @@ class AudioClientTest(ClientMixinTest):
 			x.warn_and_quit = warn_and_quit
 			return x
 		opts = AdHocStruct()
-		x = self._test_mixin_class(_ServerInfoMixin, opts, {
+		caps = {
 			"machine_id" : "123",
 			"uuid"	: "some-uuid",
 			"build.version"	: "3.0",
@@ -31,12 +31,13 @@ class AudioClientTest(ClientMixinTest):
 			"platform" : "linux2",
 			"platform.release" : "dunno",
 			"platform.platform" : "platformX",
-			})
-		del x.server_capabilities["build.version"]
-		assert not x.parse_server_capabilities(x.server_capabilities), "should have failed when version is missing"
+			}
+		x = self._test_mixin_class(_ServerInfoMixin, opts, caps)
+		del caps["build.version"]
+		assert not x.parse_server_capabilities(caps), "should have failed when version is missing"
 		version = "0.1"
-		x.server_capabilities["build.version"] = version
-		assert not x.parse_server_capabilities(x.server_capabilities), "should have failed with version %s" % version
+		caps["build.version"] = version
+		assert not x.parse_server_capabilities(caps), "should have failed with version %s" % version
 
 def main():
 	unittest.main()
