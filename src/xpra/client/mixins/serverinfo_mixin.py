@@ -18,23 +18,36 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_uuid = None
         self._remote_version = None
         self._remote_revision = None
+        self._remote_modifications = 0
+        self._remote_build_date = ""
+        self._remote_build_time = ""
         self._remote_hostname = None
         self._remote_display = None
         self._remote_platform = None
         self._remote_platform_release = None
         self._remote_platform_platform = None
         self._remote_platform_linux_distribution = None
+        self._remote_python_version = ""
+        self._remote_lib_versions = {}
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         self._remote_machine_id = c.strget("machine_id")
         self._remote_uuid = c.strget("uuid")
         self._remote_version = c.strget("build.version", c.strget("version"))
         self._remote_revision = c.strget("build.revision", c.strget("revision"))
+        self._remote_modifications = c.intget("build.local_modifications", 0)
+        self._remote_build_date = c.strget("build.date")
+        self._remote_build_time = c.strget("build.time")
         self._remote_hostname = c.strget("hostname")
         self._remote_display = c.strget("display")
         self._remote_platform = c.strget("platform")
         self._remote_platform_release = c.strget("platform.release")
         self._remote_platform_platform = c.strget("platform.platform")
+        self._remote_python_version = c.strget("python.version")
+        for x in ("glib", "gobject", "gtk", "gdk", "cairo", "pango", "sound.gst", "sound.pygst"):
+            v = c.rawget("%s.version" % x, None)
+            if v is not None:
+                self._remote_lib_versions[x] = v
         #linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
         pld = c.tupleget("platform.linux_distribution")
         if pld and len(pld)==3:
