@@ -165,13 +165,15 @@ class SessionInfo(Gtk.Window):
             return "\n".join(s)
         distro = get_linux_distribution()
         LOCAL_PLATFORM_NAME = make_os_str(sys.platform, platform.release(), platform.platform(), distro)
-        SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform,
-                                           self.client._remote_platform_release,
-                                           self.client._remote_platform_platform,
-                                           self.client._remote_platform_linux_distribution)
+        def cattr(name, default_value=""):
+            return getattr(self.client, name, default_value)
+        SERVER_PLATFORM_NAME = make_os_str(cattr("_remote_platform"),
+                                           cattr("_remote_platform_release"),
+                                           cattr("_remote_platform_platform"),
+                                           cattr("_remote_platform_linux_distribution"))
         tb.new_row("Operating System", slabel(LOCAL_PLATFORM_NAME), slabel(SERVER_PLATFORM_NAME))
         scaps = self.client.server_capabilities
-        tb.new_row("Xpra", slabel(XPRA_VERSION), slabel(self.client._remote_version or "unknown"))
+        tb.new_row("Xpra", slabel(XPRA_VERSION), slabel(cattr("_remote_version", "unknown")))
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
             from xpra.src_info import REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch      #@UnresolvedImport
@@ -206,7 +208,7 @@ class SessionInfo(Gtk.Window):
                 return bytestostr(date)
             return "%s %s" % (bytestostr(date), bytestostr(time))
         tb.new_row("Revision", slabel(make_revision_str(cl_rev, cl_ch)),
-                               slabel(make_revision_str(self.client._remote_revision, server_version_info("build.local_modifications"))))
+                               slabel(make_revision_str(cattr("_remote_revision"), server_version_info("build.local_modifications"))))
         tb.new_row("Build date", slabel(make_datetime(cl_date, cl_time)),
                                  slabel(make_datetime(server_info("build_date", "build.date"), server_info("build.time"))))
         gtk_version_info = get_gtk_version_info()
@@ -332,11 +334,9 @@ class SessionInfo(Gtk.Window):
             tb.new_row("Server Endpoint", slabel(self.connection.target))
         if mixin_features.display and self.client.server_display:
             tb.new_row("Server Display", slabel(prettify_plug_name(self.client.server_display)))
-        hostname = scaps.strget("hostname")
-        if hostname:
-            tb.new_row("Server Hostname", slabel(hostname))
-        if self.client.server_platform:
-            tb.new_row("Server Platform", slabel(self.client.server_platform))
+        tb.new_row("Server Hostname", slabel(cattr("_remote_hostname")))
+        if cattr("server_platform"):
+            tb.new_row("Server Platform", slabel(cattr("server_platform")))
         self.server_load_label = slabel()
         tb.new_row("Server Load", self.server_load_label, label_tooltip="Average over 1, 5 and 15 minutes")
         self.session_started_label = slabel()
