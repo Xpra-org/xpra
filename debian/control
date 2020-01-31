@@ -102,8 +102,6 @@ Recommends: python3-dbus
         ,python3-xdg
 #hope that this will allow our status icon to be shown:
         ,gir1.2-appindicator3-0.1
-#better debug output:
-        ,python3-cpuinfo
 # ffmpeg based codecs:
 #stretch:        ,ffmpeg-xpra
 #xenial:        ,ffmpeg-xpra
@@ -181,6 +179,8 @@ Suggests: openssh-server
         ,python3-lzo
 # AES encryption:
         ,python3-cryptography
+#better debug output:
+#        ,python3-cpuinfo
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .

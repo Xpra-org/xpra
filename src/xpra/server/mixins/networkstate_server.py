@@ -11,7 +11,7 @@ from time import sleep
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.simple_stats import std_unit
-from xpra.os_util import livefds, POSIX, WIN32
+from xpra.os_util import livefds, POSIX
 from xpra.util import envbool, envint, detect_leaks, typedict
 from xpra.log import Logger
 
@@ -23,7 +23,7 @@ DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 
 MIN_BANDWIDTH_LIMIT = envint("XPRA_MIN_BANDWIDTH_LIMIT", 1024*1024)
 MAX_BANDWIDTH_LIMIT = envint("XPRA_MAX_BANDWIDTH_LIMIT", 10*1024*1024*1024)
-
+CPUINFO = envbool("XPRA_CPUINFO", False)
 
 """
 Mixin for adding client / network state monitoring functions:
@@ -118,8 +118,7 @@ class NetworkStateServer(StubServerMixin):
                 pass
 
     def init_cpuinfo(self):
-        if WIN32:
-            #crashes on win32!
+        if not CPUINFO:
             return
         #this crashes if not run from the UI thread!
         try:

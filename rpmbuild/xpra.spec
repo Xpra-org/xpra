@@ -176,7 +176,7 @@ Recommends:         python3-gssapi
 Recommends:         python3-ldap
 Recommends:         python3-ldap3
 Recommends:         python3-brotli
-Recommends:         python3-cpuinfo
+Suggests:           python3-cpuinfo
 Requires:			libwebp
 BuildRequires:		libwebp-devel
 BuildRequires:		turbojpeg-devel
