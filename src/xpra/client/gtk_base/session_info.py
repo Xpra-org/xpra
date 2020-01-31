@@ -270,16 +270,20 @@ class SessionInfo(Gtk.Window):
         tb.new_row("OpenGL Mode", self.opengl_buffering)
         self.window_rendering = slabel()
         tb.new_row("Window Rendering", self.window_rendering)
-        self.server_mmap_icon = Gtk.Image()
-        tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
-        self.server_clipboard_icon = Gtk.Image()
-        tb.new_row("Clipboard", self.server_clipboard_icon)
-        self.server_notifications_icon = Gtk.Image()
-        tb.new_row("Notifications", self.server_notifications_icon)
-        self.server_bell_icon = Gtk.Image()
-        tb.new_row("Bell", self.server_bell_icon)
-        self.server_cursors_icon = Gtk.Image()
-        tb.new_row("Cursors", self.server_cursors_icon)
+        if mixin_features.mmap:
+            self.server_mmap_icon = Gtk.Image()
+            tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
+        if mixin_features.clipboard:
+            self.server_clipboard_icon = Gtk.Image()
+            tb.new_row("Clipboard", self.server_clipboard_icon)
+        if mixin_features.notifications:
+            self.server_notifications_icon = Gtk.Image()
+            tb.new_row("Notifications", self.server_notifications_icon)
+        if mixin_features.windows:
+            self.server_bell_icon = Gtk.Image()
+            tb.new_row("Bell", self.server_bell_icon)
+            self.server_cursors_icon = Gtk.Image()
+            tb.new_row("Cursors", self.server_cursors_icon)
 
         # Codecs Table:
         vbox = self.vbox_tab("encoding.png", "Codecs", self.populate_codecs)
@@ -761,13 +765,16 @@ class SessionInfo(Gtk.Window):
         self.client_display.set_text(display_info)
         self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
 
-        scaps = self.client.server_capabilities
         self.show_window_renderers()
-        self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
-        self.bool_icon(self.server_clipboard_icon,      scaps.boolget("clipboard", False))
-        self.bool_icon(self.server_notifications_icon,  scaps.boolget("notifications", False))
-        self.bool_icon(self.server_bell_icon,           scaps.boolget("bell", False))
-        self.bool_icon(self.server_cursors_icon,        scaps.boolget("cursors", False))
+        if mixin_features.mmap:
+            self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
+        if mixin_features.clipboard:
+            self.bool_icon(self.server_clipboard_icon, self.client.server_clipboard)
+        if mixin_features.notifications:
+            self.bool_icon(self.server_notifications_icon, self.client.server_notifications)
+        if mixin_features.windows:
+            self.bool_icon(self.server_bell_icon, self.client.server_bell)
+            self.bool_icon(self.server_cursors_icon, self.client.server_cursors)
 
     def populate_codecs(self):
         #clamp the large labels so they will overflow vertically:
