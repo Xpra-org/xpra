@@ -208,8 +208,6 @@ Recommends: python-dbus
 #bionic:        ,python-appindicator
 #disco:        ,python-appindicator
 #eoan:        ,python-appindicator
-#better debug output:
-        ,python3-cpuinfo
 Suggests:
 # for webcam support:
         python-pyinotify
@@ -292,6 +290,8 @@ Suggests:
         ,python3-lzo
 # AES encryption:
         ,python3-cryptography
+#better debug output:
+#        ,python3-cpuinfo
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
