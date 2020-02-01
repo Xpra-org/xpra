@@ -1676,7 +1676,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if is_gtk3():
             context.rectangle(0, 0, w, h)
         else:
-            context.rectangle(gdk.Rectangle(0, 0, w, h))
+            rect = gdk.Rectangle()
+            rect.width = w
+            rect.height = h
+            context.rectangle(rect)
         context.fill()
         #add spinner:
         dim = min(w/3.0, h/3.0, 100.0)
