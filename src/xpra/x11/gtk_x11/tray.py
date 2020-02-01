@@ -261,7 +261,10 @@ class SystemTray(GObject.GObject):
         X11Window.Reparent(xwin, xtray, 0, 0)
         X11Window.MapRaised(xwin)
         log("dock_tray(%#x) new tray container window %#x", xid, xtray)
-        tray_window.invalidate_rect(Gdk.Rectangle(width=w, height=h), True)
+        rect = Gdk.Rectangle()
+        rect.width = w
+        rect.height = h
+        tray_window.invalidate_rect(rect, True)
         X11Window.send_xembed_message(xwin, XEMBED_EMBEDDED_NOTIFY, 0, xtray, XEMBED_VERSION)
 
     def move_resize(self, window, x, y, w, h):
