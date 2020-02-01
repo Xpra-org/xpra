@@ -417,6 +417,7 @@ class AudioClient(StubClientMixin):
         #not shown in the UI, so don't bother with emitting a signal:
         #self.emit("speaker-changed")
     def sound_sink_error(self, sound_sink, error):
+        log("sound_sink_error(%s, %s) exit_code=%s, current sink=%s", sound_sink, error, self.exit_code, self.sound_sink)
         if self.exit_code is not None:
             #exiting
             return
