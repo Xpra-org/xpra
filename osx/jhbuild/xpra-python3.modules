@@ -39,19 +39,6 @@
 		</after>
 	</distutils>
 
-	<distutils id="python3-enum34" python3="1">
-		<branch repo="pypi.python.org"
-			module="/packages/bf/3e/31d502c25302814a7c2f1d3959d2a3b3f78e509002ba91aea64993936876/enum34-1.1.6.tar.gz"
-			hash="sha256:8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1"
-			version="1.1.6"/>
-		<dependencies>
-			<dep package="python3"/>
-		</dependencies>
-		<after>
-			<dep package="python3"/>
-		</after>
-	</distutils>
-
 	<distutils id="python3-enum-compat" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/41/46/8ed2368976d934652d8f33f1fdd86f5580fab45e890c90a848e83097a093/enum-compat-0.0.3.tar.gz"
@@ -194,7 +181,6 @@
 			<dep package="python3-cffi"/>
 			<dep package="python3-six"/>
 			<dep package="python3-asn1crypto"/>
-			<dep package="python3-enum34"/>
 			<dep package="python3-parsing"/>
 			<dep package="python3-packaging"/>
 		</dependencies>
