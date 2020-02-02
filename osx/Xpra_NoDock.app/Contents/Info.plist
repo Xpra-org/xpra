@@ -31,7 +31,7 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>10.10</string>
 	<key>LSUIElement</key>
-	<string>1</string>
+	<true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
