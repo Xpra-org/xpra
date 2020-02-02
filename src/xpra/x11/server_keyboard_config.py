@@ -416,7 +416,7 @@ class KeyboardConfig(KeyboardConfigBase):
         keycode = None
         if self.xkbmap_query:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
-            log("get_keycode(%s, %s, %s)=%s (native keymap)", client_keycode, keyname, modifiers, keycode)
+            log("get_keycode(%s, '%s', %s)=%s (native keymap)", client_keycode, keyname, modifiers, keycode)
         else:
             """
             from man xmodmap:
@@ -450,12 +450,12 @@ class KeyboardConfig(KeyboardConfigBase):
             for level in levels:
                 keycode = self.keycode_translation.get((keyname, level))
                 if keycode:
-                    log("get_keycode(%s, %s, %s, %s)=%i (level=%i, shift=%s, mode=%i)",
+                    log("get_keycode(%s, '%s', %s, %s)=%i (level=%i, shift=%s, mode=%i)",
                         client_keycode, keyname, modifiers, group, keycode, level, shift, mode)
                     break
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, -1)
-                log("get_keycode(%s, %s)=%i (keyname translation)", client_keycode, keyname, keycode)
+                log("get_keycode(%s, '%s')=%i (keyname translation)", client_keycode, keyname, keycode)
         return keycode
 
 

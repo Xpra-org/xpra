@@ -698,7 +698,7 @@
 			   	pasteboard.on("input", function(e) {
 			   		var txt = pasteboard.val();
 			   		pasteboard.val("");
-			   		cdebug("keyboard", "oninput:", txt);
+			   		cdebug("keyboard", "oninput: '"+txt+"'");
 			   		if (!client.topwindow) {
 			   			return;
 			   		}
