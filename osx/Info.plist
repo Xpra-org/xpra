@@ -27,7 +27,7 @@
 	<key>CFBundleSignature</key>
 	<string>xpra</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright 2012-2018 Antoine Martin antoine@xpra.org, GNU General Public License.</string>
+	<string>Copyright 2012-2020 Antoine Martin antoine@xpra.org, GNU General Public License.</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.10</string>
 	<key>LSUIElement</key>
