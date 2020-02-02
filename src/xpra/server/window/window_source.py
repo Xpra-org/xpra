@@ -1207,7 +1207,7 @@ class WindowSource(WindowIconSource):
         cf = (100+cv*500)/100.0    #high congestion value -> very high delay
         #bandwidth limit is used to set a minimum on the delay
         min_delay = int(max(100*cf, self.auto_refresh_delay, 50 * sizef, self.batch_config.delay*4))
-        bwl = self.bandwidth_limit
+        bwl = self.bandwidth_limit or 0
         if bwl>0:
             #1Mbps -> 1s, 10Mbps -> 0.1s
             min_delay = max(min_delay, 1000*1000*1000//bwl)
