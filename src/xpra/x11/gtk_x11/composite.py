@@ -86,7 +86,11 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, GObject.GObject
         listening = []
         e = None
         try:
-            root = self.client_window.get_screen().get_root_window()
+            screen = self.client_window.get_screen()
+            if not screen:
+                log("cannot set pixmap on client window - maybe deleted?")
+                return
+            root = screen.get_root_window()
             gdkworld = None
             world = get_world_window()
             if world:
