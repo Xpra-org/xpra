@@ -867,7 +867,7 @@ fi
 
 
 %changelog
-* Sat Jan 25 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
+* Sun Feb 02 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
 - fix UDP with Python3
 - fix key mapping issues with non-X11 clients and non-US layouts
 - fix notification logging errors during shutdown
@@ -880,6 +880,13 @@ fi
 - fix some special characters with HTML5 client
 - fix initiate-moveresize with multiple clients
 - fix keyboard layout detection with MS Windows 10 clients
+- fix control commands argument error handling
+- fix unit tests
+- fix window repaint issues: system tray, Python 2 non-opengl window spinners
+- fix server errors during client connection cleanup
+- fix spacebar and other characters with tablet input devices (ie: mobile browsers)
+- disable cpuinfo module - known to cause problems on various platforms
+- ignore error and continue when loading version information from invalid builds
 - remove executable file permissions on files uploaded to the server
 - blacklist 'Intel(R) UHD Graphics 620'
 - use correct location for appdata.xml

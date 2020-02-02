@@ -1,26 +1,33 @@
 xpra (3.0.6-1) UNRELEASED; urgency=low
-  - fix UDP with Python3
-  - fix key mapping issues with non-X11 clients and non-US layouts
-  - fix notification logging errors during shutdown
-  - fix window stacking order with html5 client and override redirect windows
-  - fix png/P and png/L decoding
-  - fix very slow startup on Debian due to missing libfakeXinerama
-  - fix display scaling notification warning
-  - fix errors generating the tray title string
-  - fix missing webp modules in 'clean' build target
-  - fix some special characters with HTML5 client
-  - fix initiate-moveresize with multiple clients
-  - fix keyboard layout detection with MS Windows 10 clients
-  - remove executable file permissions on files uploaded to the server
-  - blacklist 'Intel(R) UHD Graphics 620'
-  - use correct location for appdata.xml
-  - use Debian location for systemd service config file
-  - ensure emacs, gvim and xxdiff always use 'text' mode
-  - re-enable pulseaudio memfd (was wrongly disabled in v3.0.0)
-  - remove remnants of GTK2 dependencies from non-GTK2 components
-  - add missing entry to path information tool
+  * fix UDP with Python3
+  * fix key mapping issues with non-X11 clients and non-US layouts
+  * fix notification logging errors during shutdown
+  * fix window stacking order with html5 client and override redirect windows
+  * fix png/P and png/L decoding
+  * fix very slow startup on Debian due to missing libfakeXinerama
+  * fix display scaling notification warning
+  * fix errors generating the tray title string
+  * fix missing webp modules in 'clean' build target
+  * fix some special characters with HTML5 client
+  * fix initiate-moveresize with multiple clients
+  * fix keyboard layout detection with MS Windows 10 clients
+  * fix control commands argument error handling
+  * fix unit tests
+  * fix window repaint issues: system tray, Python 2 non-opengl window spinners
+  * fix server errors during client connection cleanup
+  * fix spacebar and other characters with tablet input devices (ie: mobile browsers)
+  * disable cpuinfo module - known to cause problems on various platforms
+  * ignore error and continue when loading version information from invalid builds
+  * remove executable file permissions on files uploaded to the server
+  * blacklist 'Intel(R) UHD Graphics 620'
+  * use correct location for appdata.xml
+  * use Debian location for systemd service config file
+  * ensure emacs, gvim and xxdiff always use 'text' mode
+  * re-enable pulseaudio memfd (was wrongly disabled in v3.0.0)
+  * remove remnants of GTK2 dependencies from non-GTK2 components
+  * add missing entry to path information tool
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 25 Jan 2020 13:26:56 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 02 Feb 2020 16:35:34 +0700
 
 xpra (3.0.5-1) UNRELEASED; urgency=low
   * fix missing undecorated opengl windows on win32 with GTK3 (correct fix)
