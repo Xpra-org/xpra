@@ -1621,6 +1621,7 @@ KEYSYM_TO_UNICODE = {
 };
 
 CHAR_TO_NAME = {
+	" "					: "space",
 	};
 //console.debug("KEYSYM_TO_UNICODE=", KEYSYM_TO_UNICODE);
 for (var keysym in KEYSYM_TO_UNICODE) {

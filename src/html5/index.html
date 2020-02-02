@@ -705,14 +705,24 @@
 			   		for (var i = 0, len = txt.length; i < len; i++) {
 			   			var str = txt[i];
 			   			var keycode = str.charCodeAt(0);
+						var keyname = str;
+						if (str in CHAR_TO_NAME) {
+							keyname = CHAR_TO_NAME[str];
+							if (keyname.includes("_")) {
+								//ie: Thai_dochada
+								var lang = keyname.split("_")[0];
+								key_language = KEYSYM_TO_LAYOUT[lang];
+								client._check_browser_language(key_language);
+							}
+						}
 				   		try {
 				   			modifiers = [];
 				   			keyval = keycode;
 				   			group = 0;
-							packet = ["key-action", client.topwindow, str, true, modifiers, keyval, str, keycode, group];
+							packet = ["key-action", client.topwindow, keyname, true, modifiers, keyval, str, keycode, group];
 							cdebug("keyboard", packet);
 							client.send(packet);
-							packet = ["key-action", client.topwindow, str, false, modifiers, keyval, str, keycode, group];
+							packet = ["key-action", client.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
 							cdebug("keyboard", packet);
 							client.send(packet);
 				   		}
