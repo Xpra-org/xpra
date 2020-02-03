@@ -14,14 +14,14 @@ xpra \- viewer for remote, persistent X applications
 .SH SYNOPSIS
 .PD 0
 .HP \w'xpra\ 'u
-\fBxpra\fP \fBstart\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP |
-\fBxpra\fP \fBstart-desktop\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart-desktop\fP \fIssh:HOST:DISPLAY\fP
+\fBxpra\fP \fBstart\fP [CONNECTIONSTRING] |
+\fBxpra\fP \fBstart-desktop\fP [CONNECTIONSTRING]
 [\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBattach\fP [CONNECTIONSTRING]
 [\fBOPTIONS..\fP]
 .HP
-\fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
+\fBxpra\fP \fBshadow\fP [CONNECTIONSTRING]
 [\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBproxy\fP [\fI:DISPLAY\fP]
@@ -29,7 +29,7 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBstop\fP | \fBxpra\fP \fBexit\fP | \fBxpra\fP \fBdetach\fP |
 \fBxpra\fP \fBscreenshot\fP \fIfilename\fP | \fBxpra\fP \fBversion\fP |
-\fBxpra\fP \fBinfo\fP [CONNECTIONSTRING]
+\fBxpra\fP \fBinfo\fP [CONNECTIONSTRING] |
 \fBxpra\fP \fBtop\fP [CONNECTIONSTRING]
 [\fBOPTIONS..\fP]
 .HP
@@ -49,10 +49,10 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBlist-mdns\fP
 .HP
-\fBxpra\fP \fBupgrade\fP \fI:[DISPLAY]\fP [...any options accepted by
+\fBxpra\fP \fBupgrade\fP \fI[:DISPLAY]\fP [...any options accepted by
 \fBxpra start\fP...]
 .HP
-\fBxpra\fP \fBupgrade-desktop\fP \fI:[DISPLAY]\fP [...any options accepted by
+\fBxpra\fP \fBupgrade-desktop\fP \fI[:DISPLAY]\fP [...any options accepted by
 \fBxpra start-desktop\fP...]
 .PD
 .\" --------------------------------------------------------------------
@@ -105,7 +105,7 @@ and from that host xpra will set up an SSH connection to the xpra server.
 
 .P
 For backwards compatibility, SSH mode also supports the syntax:
-\fBssh:[USERNAME[:PASSWORD]@HOST:DISPLAY\fP but this form does not
+\fBssh:[USERNAME[:PASSWORD]@]HOST:DISPLAY\fP but this form does not
 support specifying the SSH port number.
 Older versions also used the form \fBprotocol:host:port\fP, but users
 are encouraged to move to a more standard URI format using \fB://\fP as
@@ -132,7 +132,7 @@ No window will appear until you attach with \fBxpra attach\fP.
 The start child commands will inherit an environment tailored
 for running under xpra.
 .TP
-\fBxpra start\fP \fIssh:bigbox:7 --start=xterm\fP
+\fBxpra start\fP \fIssh://bigbox/7 --start=xterm\fP
 Start an xpra server on \fIbigbox\fP with an xterm in it,
 and connect to it.
 .TP
@@ -158,7 +158,7 @@ configuration directory set this value.
 Attach to the xpra server that is using local display number \fI:7\fP.
 Any apps running on that server will appear on your screen.
 .TP
-\fBxpra attach\fP \fIssh://foo@frodo:7\fP
+\fBxpra attach\fP \fIssh://foo@frodo/7\fP
 Use ssh to attach to the xpra server that is running on machine
 \fIfrodo\fP as user \fIfoo\fP and using display \fI:7\fP.
 Any apps running on that server will appear on your local screen.
@@ -217,7 +217,7 @@ attach\fP, \fBxpra detach\fP, \fBxpra stop\fP, \fBxpra exit\fP,
 \fBxpra version\fP, \fBxpra info\fP, \fBxpra list\fP or \fBxpra screenshot\fP then you
 can use a display of the form
 \fB:\fP\fIDISPLAY\fP to refer to a server on the local host, or one of
-the form \fBssh:\fP\fI[USER@]HOST\fP\fB:\fP\fIDISPLAY\fP to refer to a server
+the form \fBssh://\fP\fI[USER@]HOST\fP\fB/\fP\fIDISPLAY\fP to refer to a server
 on a remote host; xpra will automatically connect to the remote host
 using \fBssh\fP(1).  Generally, if you have only one xpra session
 running on a machine (which you can verify by running \fBxpra list\fP
@@ -236,16 +236,15 @@ If the xpra server was given the \fB--bind-tcp\fP, \fB--bind-ssl\fP
 \fB--bind-udp\fP=\fI[HOST]:PORT\fP,
 \fB--bind-ws\fP, \fB--bind-wss\fP or \fB--bind-vsock\fP option
 when started then you can also connect
-to it using a display of the form \fBtcp://HOST:PORT\fP,
-\fBudp://HOST:PORT\fP, \fBssl://HOST:PORT\fP,
-\fBws://HOST:PORT\fP, \fBwss://HOST:PORT\fP or \fBvsock://HOST:PORT\fP.
-(Notice that \fBssh:\fP takes an optional \fIdisplay\fP number,
-while those take a required \fIport\fP number.)
+to it using a display of the form \fBtcp://HOST:PORT[/DISPLAY]\fP,
+\fBudp://HOST:PORT[/DISPLAY]\fP, \fBssl://HOST:PORT[/DISPLAY]\fP,
+\fBws://HOST:PORT[/DISPLAY]\fP, \fBwss://HOST:PORT[/DISPLAY]\fP or
+\fBvsock://HOST:PORT[/DISPLAY]\fP.
 .\" --------------------------------------------------------------------
 .SH SUBCOMMANDS
 .SS xpra start
 This command starts a new xpra server, including any necessary setup.
-(When starting a remote server with the \fBssh:HOST:DISPLAY\fP syntax,
+(When starting a remote server with the \fBssh://HOST/DISPLAY\fP syntax,
 the new session will also be attached.)
 .SS xpra start-desktop
 Starts a nested X11 server, all child commands will be started in the
@@ -650,7 +649,7 @@ or named-pipe (on MS Windows) for each \fBbind\fP option specified.
 This option can be specified multiple times to specify multiple
 socket locations.
 These sockets support local connections with the \fB:7\fP-style display
-address, and remote connections with the \fBssh://frodo:7\fP-style
+address, and remote connections with the \fBssh://frodo/7\fP-style
 display address.
 
 Local sockets may also process HTTP / Websocket connections
@@ -1528,7 +1527,7 @@ For example, if you want to use arcfour encryption, then you should run
 .\" produces fine output in the terminal, at least:
 .RS
 .RS
-\fBxpra attach --ssh\fP=\fI"ssh -c arcfour" ssh://frodo:7\fP
+\fBxpra attach --ssh\fP=\fI"ssh -c arcfour" ssh://frodo/7\fP
 
 .RE
 \fINote:\fP Don't bother to enable ssh compression; this
@@ -1650,7 +1649,9 @@ There is a global configuration file in \fI/etc\fP or \fI/usr/local/etc\fP,
 and each user may override those defaults by creating the file \fI.xpra/xpra.conf\fP.
 You can also split the options into multiple files by placing them
 in a \fIconf.d\fP directory with the \fI.conf\fP extension.
-Xpra uses the directory \fI~/.xpra\fP to store a number of files.
+Depending on OS and version,
+xpra uses the directory \fI~/.xpra\fP or \fI/run/<uid>/xpra\fP
+to store a number of files.
 (The examples below are given for the display \fI:7\fP.)
 .TP
 \fI~/.xpra/:7\fP
@@ -1691,5 +1692,5 @@ misdirected).
 Send any questions or bugs reports to http://xpra.org/trac/
 .\" --------------------------------------------------------------------
 .SH SEE ALSO
-\fBscreen\fP(1)
+\fBscreen\fP(1),
 \fBwinswitch_applet\fP(1)
