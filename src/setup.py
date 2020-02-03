@@ -359,7 +359,7 @@ if gtk3_ENABLED or sound_ENABLED:
 
 external_excludes = [
                     #Tcl/Tk
-                    "Tkconstants", "Tkinter", "tcl",
+                    "Tkconstants", "tkinter", "tcl",
                     #PIL bits that import TK:
                     "PIL._tkinter_finder", "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
                     #formats we don't use:
