@@ -1129,7 +1129,7 @@ if WIN32:
                      )
         if gtk3_ENABLED:
             add_DLLs('atk',
-                     'dbus', 'dbus-glib',
+                     #'dbus', 'dbus-glib',
                      'gdk', 'gdk_pixbuf', 'gtk',
                      'cairo-gobject', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
                      'harfbuzz', 'harfbuzz-gobject',
@@ -1137,8 +1137,6 @@ if WIN32:
                      'intl',
                      'p11-kit',
                      'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
-            #these are missing in newer aio installers (sigh):
-            do_add_DLLs('javascriptcoregtk')
             if opengl_ENABLED:
                 do_add_DLLs('gdkglext', 'gtkglext')
 
@@ -1164,17 +1162,16 @@ if WIN32:
         if gtk3_ENABLED:
             add_gi("Atk-1.0",
                    "Notify-0.7",
-                   "fontconfig-2.0", "freetype2-2.0",
                    "GDesktopEnums-3.0", "Soup-2.4",
                    "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0",
                    "HarfBuzz-0.0",
-                   "Libproxy-1.0", "libxml2-2.0",
-                   "cairo-1.0", "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
+                   "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
                    "Rsvg-2.0",
-                   "win32-1.0")
-            if opengl_ENABLED:
-                add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
-            add_DLLs('visual', 'curl', 'soup', 'openjpeg')
+                   )
+            #we no longer support GtkGL:
+            #if opengl_ENABLED:
+            #    add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
+            add_DLLs('curl', 'soup')
 
         if client_ENABLED:
             #svg pixbuf loader:
