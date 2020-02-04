@@ -1137,8 +1137,6 @@ if WIN32:
                      'intl',
                      'p11-kit',
                      'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
-            if opengl_ENABLED:
-                do_add_DLLs('gdkglext', 'gtkglext')
 
         if gtk3_ENABLED:
             add_dir('etc', ["fonts", "gtk-3.0", "pango", "pkcs11"])     #add "dbus-1"?
