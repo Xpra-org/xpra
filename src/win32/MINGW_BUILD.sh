@@ -350,6 +350,10 @@ popd > /dev/null
 
 echo "* Generating gdk pixbuf loaders.cache"
 gdk-pixbuf-query-loaders.exe "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders/*" | sed 's+".*dist/+"+g' > dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
+echo "* Generating icons and theme cache"
+for itheme in `ls dist/share/icons/`; do
+	gtk-update-icon-cache.exe -t -i "dist/share/icons/${itheme}"
+done
 
 echo "* Generating HTML Manual Page"
 groff.exe -mandoc -Thtml < man/xpra.1 > ${DIST}/manual.html
