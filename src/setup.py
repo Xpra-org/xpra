@@ -27,7 +27,7 @@ from xpra.os_util import (
     is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_RedHat,
     )
 
-if sys.version<'3.6':
+if sys.version_info<(3, 6):
     raise Exception("xpra no longer supports Python versions older than 3.6")
 #we don't support versions of Python without the new ssl code:
 if not hasattr(ssl, "SSLContext"):
@@ -674,7 +674,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         for eif in eifd:
             add_to_keywords(kw, 'extra_compile_args', eif)
     if sys.version_info>=(3,7):
-        #we'll switch to the "new" buffer interface after we drop support for Python 2.7
+        #we'll switch to the "new" buffer interface eventually
         #until then, silence those deprecation warnings:
         add_to_keywords(kw, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     if PIC_ENABLED:
