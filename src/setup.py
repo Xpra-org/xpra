@@ -1063,12 +1063,18 @@ if WIN32:
                     #recurse down:
                     add_dir(os.path.join(base, d), sub)
 
+        def add_gi_typelib(*libs):
+            if verbose_ENABLED:
+                print("add_gi_typelib(%s)" % str(libs))
+            add_dir('lib',      {"girepository-1.0":    ["%s.typelib" % x for x in libs]})
+        def add_gi_gir(*libs):
+            if verbose_ENABLED:
+                print("add_gi_gir(%s)" % str(libs))
+            add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
         #convenience method for adding GI libs and "typelib" and "gir":
         def add_gi(*libs):
-            if verbose_ENABLED:
-                print("add_gi(%s)" % str(libs))
-            add_dir('lib',      {"girepository-1.0":    ["%s.typelib" % x for x in libs]})
-            add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
+            add_gi_typelib(*libs)
+            add_gi_gir(*libs)
 
         def add_DLLs(*dll_names):
             try:
@@ -1139,9 +1145,9 @@ if WIN32:
                      'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
 
         if gtk3_ENABLED:
-            add_dir('etc', ["fonts", "gtk-3.0", "pango", "pkcs11"])     #add "dbus-1"?
+            add_dir('etc', ["fonts", "gtk-3.0", "pkcs11"])     #add "dbus-1"?
             add_dir('lib', ["gdk-pixbuf-2.0", "gtk-3.0",
-                            "libvisual-0.4", "p11-kit", "pkcs11"])
+                            "p11-kit", "pkcs11"])
             add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
                               "p11-kit", "xml",
                               {"locale" : ["en"]},
@@ -1155,7 +1161,7 @@ if WIN32:
             #causes warnings:
             #add_dir('lib', ["gio"])
             packages.append("gi")
-            add_gi("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0",
+            add_gi_typelib("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0",
                    "GObject-2.0")
         if gtk3_ENABLED:
             add_gi("Atk-1.0",
@@ -1176,7 +1182,7 @@ if WIN32:
             add_DLLs("rsvg", "croco")
 
         if sound_ENABLED:
-            add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
+            add_dir("share", ["gst-plugins-base", "gstreamer-1.0"])
             add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
                    "GstTag-1.0")
             add_DLLs('gstreamer', 'orc-test')
@@ -1187,14 +1193,14 @@ if WIN32:
                       ):
                 add_DLLs('gst%s' % p)
             #DLLs needed by the plugins:
-            add_DLLs("faac", "faad", "flac", "mad", "mpg123")
+            add_DLLs("faac", "faad", "flac", "mpg123")      #"mad" is no longer included?
             #add the gstreamer plugins we need:
             GST_PLUGINS = ("app",
                            "cutter",
                            #muxers:
                            "gdp", "matroska", "ogg", "isomp4",
                            "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
-                           "coreelements", "directsound", "directsoundsink", "directsoundsrc", "wasapi",
+                           "coreelements", "directsound", "directsoundsrc", "wasapi",
                            #codecs:
                            "opus", "opusparse", "flac", "lame", "mad", "mpg123", "speex", "faac", "faad",
                            "volume", "vorbis", "wavenc", "wavpack", "wavparse",
