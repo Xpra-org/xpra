@@ -1202,9 +1202,10 @@ if WIN32:
                            "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
                            "coreelements", "directsound", "directsoundsrc", "wasapi",
                            #codecs:
-                           "opus", "opusparse", "flac", "lame", "mad", "mpg123", "speex", "faac", "faad",
+                           "opus", "opusparse", "flac", "lame", "mpg123", "speex", "faac", "faad",
                            "volume", "vorbis", "wavenc", "wavpack", "wavparse",
                            "autodetect",
+                           #no longer available: "mad"
                            #untested: a52dec, voaacenc
                            )
             add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
