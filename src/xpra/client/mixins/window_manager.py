@@ -651,7 +651,8 @@ class WindowClient(StubClientMixin):
         else:
             from xpra.codecs.pillow.decoder import open_only
             img = open_only(data, ("png", ))
-            assert img.mode in ("RGB", "RGBA"), "invalid image mode: %s" % img.mode
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGBA")
             has_alpha = img.mode=="RGBA"
             rowstride = width * (3+int(has_alpha))
         icon = img
