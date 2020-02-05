@@ -1,3 +1,23 @@
+v1.0.15 (2020-02-05)
+======================
+	-- fix crashes on X11 displays lacking RandR support
+	-- fix clients not exposing webcam capability flag
+	-- fix DPI value from the command line with desktop-scaling
+	-- fix minor RPM packaging issues, add CentOS 8
+	-- fix null bytes in X11 error text properly
+	-- fix GDK window scaling setting wrongly propagated to the server
+	-- fix GDK scaling causing window painting issues (force off)
+	-- fix unresponsive appindicator system tray
+	-- fix NVENC error when pynvml is not installed
+	-- fix NVENC temporary failure retry code path
+	-- fix build errors caused by pygtk bindings build warnings
+	-- fix race condition error during window cleanup
+	-- fix CUDA reset_state function
+	-- support CUDA 10.2
+	-- support parallel installations of a newer python3 package
+	-- disable CSD on MS Windows (GTK3 CSD bug workaround)
+
+
 v1.0.14 (2019-10-06)
 ======================
 	-- fix html5 clipboard wrongly disabled

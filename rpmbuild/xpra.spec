@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.14
+%define version 1.0.15
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -458,6 +458,24 @@ fi
 
 
 %changelog
+* Wed Feb 05 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
+- fix crashes on X11 displays lacking RandR support
+- fix clients not exposing webcam capability flag
+- fix DPI value from the command line with desktop-scaling
+- fix minor RPM packaging issues, add CentOS 8
+- fix null bytes in X11 error text properly
+- fix GDK window scaling setting wrongly propagated to the server
+- fix GDK scaling causing window painting issues (force off)
+- fix unresponsive appindicator system tray
+- fix NVENC error when pynvml is not installed
+- fix NVENC temporary failure retry code path
+- fix build errors caused by pygtk bindings build warnings
+- fix race condition error during window cleanup
+- fix CUDA reset_state function
+- support CUDA 10.2
+- support parallel installations of a newer python3 package
+- disable CSD on MS Windows (GTK3 CSD bug workaround)
+
 * Sun Oct 06 2019 Antoine Martin <antoine@devloop.org.uk> 1.0.14-1
 - fix html5 clipboard wrongly disabled
 - fix html5 handling of websocket frames with more than one packet
@@ -608,7 +626,7 @@ fi
 - remove outdated option from the man page, fix missing paragraphs
 - disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
 
-* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.14-1
+* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
 - fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
 - fix errors with some unauthenticated connections
