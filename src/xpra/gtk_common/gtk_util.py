@@ -124,9 +124,9 @@ def enable_alpha(window) -> bool:
     if WIN32:
         l = alphalog
     else:
-        l = alphalog.error
+        l = alphalog.warn
     if visual is None or (not WIN32 and not screen.is_composited()):
-        l("Error: cannot handle window transparency")
+        l("Warning: cannot handle window transparency")
         if visual is None:
             l(" no RGBA visual")
         else:
