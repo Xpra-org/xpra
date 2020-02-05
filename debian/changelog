@@ -16,6 +16,10 @@ xpra (3.0.6-1) UNRELEASED; urgency=low
   * fix window repaint issues: system tray, Python 2 non-opengl window spinners
   * fix server errors during client connection cleanup
   * fix spacebar and other characters with tablet input devices (ie: mobile browsers)
+  * fix unhelpful backtraces when client application windows are lost
+  * fix MS Windows packaging workarounds for TK
+  * fix for crashes on X11 displays lacking RandR support
+  * man page connection string fixes
   * disable cpuinfo module - known to cause problems on various platforms
   * ignore error and continue when loading version information from invalid builds
   * remove executable file permissions on files uploaded to the server
@@ -27,7 +31,7 @@ xpra (3.0.6-1) UNRELEASED; urgency=low
   * remove remnants of GTK2 dependencies from non-GTK2 components
   * add missing entry to path information tool
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 02 Feb 2020 16:35:34 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 05 Feb 2020 19:04:31 +0700
 
 xpra (3.0.5-1) UNRELEASED; urgency=low
   * fix missing undecorated opengl windows on win32 with GTK3 (correct fix)

@@ -867,7 +867,7 @@ fi
 
 
 %changelog
-* Sun Feb 02 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
+* Wed Feb 05 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
 - fix UDP with Python3
 - fix key mapping issues with non-X11 clients and non-US layouts
 - fix notification logging errors during shutdown
@@ -885,6 +885,10 @@ fi
 - fix window repaint issues: system tray, Python 2 non-opengl window spinners
 - fix server errors during client connection cleanup
 - fix spacebar and other characters with tablet input devices (ie: mobile browsers)
+- fix unhelpful backtraces when client application windows are lost
+- fix MS Windows packaging workarounds for TK
+- fix for crashes on X11 displays lacking RandR support
+- man page connection string fixes
 - disable cpuinfo module - known to cause problems on various platforms
 - ignore error and continue when loading version information from invalid builds
 - remove executable file permissions on files uploaded to the server
