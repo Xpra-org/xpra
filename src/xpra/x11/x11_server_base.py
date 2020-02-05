@@ -288,13 +288,14 @@ class X11ServerBase(GTKServerBase):
                 "XTest"                 : X11Keyboard.hasXTest(),
                 })
         #randr:
-        try:
-            with xsync:
-                sizes = RandR.get_screen_sizes()
-                if self.randr and len(sizes)>=0:
-                    sinfo["randr"] = {"options" : list(reversed(sorted(sizes)))}
-        except:
-            pass
+        if self.randr:
+            try:
+                with xsync:
+                    sizes = RandR.get_screen_sizes()
+                    if self.randr and len(sizes)>=0:
+                        sinfo["randr"] = {"options" : list(reversed(sorted(sizes)))}
+            except:
+                pass
         return info
 
 
@@ -390,12 +391,13 @@ class X11ServerBase(GTKServerBase):
     def get_max_screen_size(self):
         from xpra.x11.gtk2.models import MAX_WINDOW_SIZE
         max_w, max_h = self.root_window.get_size()
-        with xsync:
-            sizes = RandR.get_screen_sizes()
-        if self.randr and len(sizes)>=1:
-            for w,h in sizes:
-                max_w = max(max_w, w)
-                max_h = max(max_h, h)
+        if self.randr:
+            with xsync:
+                sizes = RandR.get_screen_sizes()
+            if len(sizes)>=1:
+                for w,h in sizes:
+                    max_w = max(max_w, w)
+                    max_h = max(max_h, h)
         if max_w>MAX_WINDOW_SIZE or max_h>MAX_WINDOW_SIZE:
             screenlog.warn("maximum size is very large: %sx%s, you may encounter window sizing problems", max_w, max_h)
         screenlog("get_max_screen_size()=%s", (max_w, max_h))
