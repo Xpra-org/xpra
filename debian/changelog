@@ -19,6 +19,7 @@ xpra (3.0.6-1) UNRELEASED; urgency=low
   * fix unhelpful backtraces when client application windows are lost
   * fix MS Windows packaging workarounds for TK
   * fix for crashes on X11 displays lacking RandR support
+  * fix handling of non 24/32-bit png window icons
   * man page connection string fixes
   * disable cpuinfo module - known to cause problems on various platforms
   * ignore error and continue when loading version information from invalid builds
