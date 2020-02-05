@@ -260,7 +260,7 @@ def get_python_execfile_command():
         return shlex.split(envvalue)
     return do_get_python_execfile_command()
 def do_get_python_execfile_command():
-    return ["python"]
+    return ["python3"]
 
 
 platform_import(globals(), "paths", True,
