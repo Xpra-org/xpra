@@ -407,14 +407,15 @@ class X11ServerCore(GTKServerBase):
                 "XTest"                 : X11Keyboard.hasXTest(),
                 })
         #randr:
-        with xlog:
-            sizes = RandR.get_xrr_screen_sizes()
-            if self.randr and len(sizes)>=0:
-                sinfo["randr"] = {
-                    ""          : True,
-                    "options"   : tuple(reversed(sorted(sizes))),
-                    "exact"     : self.randr_exact_size,
-                    }
+        if self.randr:
+            with xlog:
+                sizes = RandR.get_xrr_screen_sizes()
+                if len(sizes)>=0:
+                    sinfo["randr"] = {
+                        ""          : True,
+                        "options"   : tuple(reversed(sorted(sizes))),
+                        "exact"     : self.randr_exact_size,
+                        }
         return info
 
 
@@ -524,14 +525,15 @@ class X11ServerCore(GTKServerBase):
 
     def get_max_screen_size(self):
         max_w, max_h = self.root_window.get_geometry()[2:4]
-        sizes = RandR.get_xrr_screen_sizes()
-        if self.randr and len(sizes)>=1:
-            for w,h in sizes:
-                max_w = max(max_w, w)
-                max_h = max(max_h, h)
-        if max_w>MAX_WINDOW_SIZE or max_h>MAX_WINDOW_SIZE:
-            screenlog.warn("maximum size is very large: %sx%s, you may encounter window sizing problems", max_w, max_h)
-        screenlog("get_max_screen_size()=%s", (max_w, max_h))
+        if self.randr:
+            sizes = RandR.get_xrr_screen_sizes()
+            if self.randr and len(sizes)>=1:
+                for w,h in sizes:
+                    max_w = max(max_w, w)
+                    max_h = max(max_h, h)
+            if max_w>MAX_WINDOW_SIZE or max_h>MAX_WINDOW_SIZE:
+                screenlog.warn("maximum size is very large: %sx%s, you may encounter window sizing problems", max_w, max_h)
+            screenlog("get_max_screen_size()=%s", (max_w, max_h))
         return max_w, max_h
 
 
@@ -580,6 +582,8 @@ class X11ServerCore(GTKServerBase):
         return self.do_get_best_screen_size(desired_w, desired_h, bigger)
 
     def do_get_best_screen_size(self, desired_w, desired_h, bigger=True):
+        if not self.randr:
+            return desired_w, desired_h
         screen_sizes = RandR.get_xrr_screen_sizes()
         if (desired_w, desired_h) in screen_sizes:
             return desired_w, desired_h
