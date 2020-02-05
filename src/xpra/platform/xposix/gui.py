@@ -356,6 +356,7 @@ def get_desktop_names():
 
 
 def get_vrefresh():
+    v = -1
     try:
         from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
         randr = RandRBindings()
@@ -363,7 +364,6 @@ def get_vrefresh():
             v = randr.get_vrefresh()
     except Exception as e:
         screenlog.warn("failed to get VREFRESH: %s", e)
-        v = -1
     screenlog("get_vrefresh()=%s", v)
     return v
 
