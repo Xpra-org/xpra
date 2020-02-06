@@ -75,6 +75,8 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", True)
 
+FAKE_SUSPEND_RESUME = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
+
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 
@@ -238,6 +240,9 @@ class WindowClient(StubClientMixin):
     def run(self):
         #we decode pixel data in this thread
         self._draw_thread.start()
+        if FAKE_SUSPEND_RESUME:
+            self.timeout_add(FAKE_SUSPEND_RESUME*1000, self.suspend)
+            self.timeout_add(FAKE_SUSPEND_RESUME*1000*2, self.resume)
 
 
     def cleanup(self):
