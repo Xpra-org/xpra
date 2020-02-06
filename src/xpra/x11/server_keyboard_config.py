@@ -440,11 +440,18 @@ class KeyboardConfig(KeyboardConfigBase):
                         break
             level = int(shift) + int(mode)*2
             levels = []
+            #first, match with group if set:
             if group:
                 levels.append(level+4)
+            #then try exact match without group:
             levels.append(level)
-            for i in range(4):
+            #try default group:
+            for i in range(2):
                 level = int(shift) + i*2
+                if level not in levels:
+                    levels.append(level)
+            #catch all:
+            for level in range(8):
                 if level not in levels:
                     levels.append(level)
             for level in levels:
@@ -452,7 +459,24 @@ class KeyboardConfig(KeyboardConfigBase):
                 if keycode:
                     log("get_keycode(%s, '%s', %s, %s)=%i (level=%i, shift=%s, mode=%i)",
                         client_keycode, keyname, modifiers, group, keycode, level, shift, mode)
+                    if (level & 1) ^ shift:
+                        #shift state does not match
+                        if "shift" in modifiers:
+                            modifiers.pop("shift")
+                        else:
+                            modifiers.append("shift")
+                    if (level & 2) ^ mode:
+                        #try to set / unset mode:
+                        for mod, keynames in self.keynames_for_mod.items():
+                            if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
+                                #found mode switch modified
+                                if mod in modifiers:
+                                    modifiers.remove(mod)
+                                else:
+                                    modifiers.append(mod)
+                                break
                     break
+            #this should not find anything new?:
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, -1)
                 log("get_keycode(%s, '%s')=%i (keyname translation)", client_keycode, keyname, keycode)

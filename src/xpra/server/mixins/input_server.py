@@ -153,7 +153,7 @@ class InputServer(StubServerMixin):
         if ss is None:
             return
         keyname = bytestostr(keyname)
-        modifiers = tuple(bytestostr(x) for x in modifiers)
+        modifiers = list(bytestostr(x) for x in modifiers)
         self.set_ui_driver(ss)
         if group>=0:
             self.set_keyboard_layout_group(group)
