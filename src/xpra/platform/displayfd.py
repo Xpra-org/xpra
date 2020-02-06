@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
 from xpra.log import Logger
-from xpra.os_util import monotonic_time, strtobytes
+from xpra.os_util import monotonic_time
 from xpra.util import envint
 
 DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
@@ -15,7 +15,7 @@ DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
 def write_displayfd(w_pipe, display, timeout=10):
     import select   #@UnresolvedImport
     import errno
-    buf = b"%s\n" % strtobytes(display)
+    buf = ("%s\n" % display).encode("ascii")
     limit = monotonic_time()+timeout
     log = Logger("util")
     log("write_displayfd%s", (w_pipe, display, timeout))
