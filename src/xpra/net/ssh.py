@@ -26,12 +26,11 @@ from xpra.os_util import (
     WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, nonl, engs, csv
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 
 log = Logger("network", "ssh")
 
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
-SSH_DEBUG = envbool("XPRA_SSH_DEBUG", False)
 WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2**27-1)
 TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
@@ -814,7 +813,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 del display_desc["password"]
         if env:
             kwargs["env"] = env
-        if SSH_DEBUG:
+        if is_debug_enabled("ssh"):
             log.info("executing ssh command: %s" % (" ".join("\"%s\"" % x for x in cmd)))
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
