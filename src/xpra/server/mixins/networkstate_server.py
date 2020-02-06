@@ -169,8 +169,10 @@ class NetworkStateServer(StubServerMixin):
             bandwidthlog.info("bandwidth-limit changed to %sbps for client %s", std_unit(bandwidth_limit), client_id)
 
     def send_ping(self) -> bool:
+        from xpra.server.source.networkstate_mixin import NetworkStateMixin
         for ss in self._server_sources.values():
-            ss.ping()
+            if isinstance(ss, NetworkStateMixin):
+                ss.ping()
         return True
 
     def _process_ping_echo(self, proto, packet):
