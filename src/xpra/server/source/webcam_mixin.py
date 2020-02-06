@@ -35,7 +35,9 @@ class WebcamMixin(StubSourceMixin):
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
         #the 'webcam' capability was only added in v4,
-        #so we have to enabled the mixin:
+        #so we have to enable the mixin by default:
+        if not caps.boolget("webcam", True):
+            return False
         try:
             from xpra.codecs.pillow.decoder import HEADERS
             assert HEADERS

@@ -121,7 +121,9 @@ class CommandConnectClient(GObjectXpraClient):
         self.printing = False
         #don't bother with many of these things for one-off commands:
         for x in ("ui_client", "wants_aliases", "wants_encodings",
-                  "wants_versions", "wants_features", "wants_sound", "windows"):
+                  "wants_versions", "wants_features", "wants_sound", "windows",
+                  "webcam",
+                  ):
             self.hello_extra[x] = False
 
     def setup_connection(self, conn):
