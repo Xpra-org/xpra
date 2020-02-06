@@ -16,6 +16,12 @@ GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 
 class IdleMixin(StubSourceMixin):
 
+    @classmethod
+    def is_needed(cls, caps : typedict) -> bool:
+        #the 'keyboard' and 'mouse' capability were only added in v4,
+        #so we have to enable the mixin by default:
+        return caps.boolget("keyboard", True) or caps.boolget("mouse", True) or caps.boolget("windows", False)
+
     def __init__(self):
         self.idle_timeout = 0
 
