@@ -49,7 +49,7 @@ from xpra.make_thread import start_thread
 from xpra.util import (
     first_time,
     csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
-    ellipsizer, dump_all_frames, nonl, envint, envbool, envfloat,
+    ellipsizer, repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
     )
@@ -1324,7 +1324,7 @@ class ServerCore:
     def guess_header_protocol(self, v):
         c = int(v[0])
         s = bytestostr(v)
-        netlog("guess_header_protocol(%r) first char=%#x", ellipsizer(s), c)
+        netlog("guess_header_protocol(%r) first char=%#x", repr_ellipsized(s), c)
         if c==0x16:
             return "ssl", "SSL packet?"
         if s[:4]=="SSH-":
