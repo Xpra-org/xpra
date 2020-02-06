@@ -18,6 +18,12 @@ Manage input devices (keyboard, mouse, etc)
 """
 class InputMixin(StubSourceMixin):
 
+    @classmethod
+    def is_needed(cls, caps : typedict) -> bool:
+        #the 'input' capability was only added in v4,
+        #so we have to enable the mixin by default:
+        return caps.boolget("keyboard", True) or caps.boolget("mouse", True)
+
     def init_state(self):
         self.pointer_relative = False
         self.keyboard_config = None

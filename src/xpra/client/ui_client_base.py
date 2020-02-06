@@ -352,6 +352,7 @@ class UIXpraClient(ClientBaseClass):
             "share"                     : self.client_supports_sharing,
             "lock"                      : self.client_lock,
             })
+        caps.update({"mouse" : True})
         caps.update(self.get_keyboard_caps())
         for c in CLIENT_BASES:
             caps.update(c.get_caps(self))

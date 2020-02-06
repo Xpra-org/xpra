@@ -122,7 +122,7 @@ class CommandConnectClient(GObjectXpraClient):
         #don't bother with many of these things for one-off commands:
         for x in ("ui_client", "wants_aliases", "wants_encodings",
                   "wants_versions", "wants_features", "wants_sound", "windows",
-                  "webcam",
+                  "webcam", "keyboard", "mouse",
                   ):
             self.hello_extra[x] = False
 
