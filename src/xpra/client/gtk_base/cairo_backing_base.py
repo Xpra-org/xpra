@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from gi.repository import GLib, Gdk
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
 from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
-from xpra.os_util import memoryview_to_bytes, strtobytes
+from xpra.os_util import memoryview_to_bytes
 from xpra.util import envbool
 from xpra.log import Logger
 
@@ -156,7 +156,7 @@ class CairoBackingBase(WindowBackingBase):
             oformat = "RGB"
         #use frombytes rather than frombuffer to be compatible with python3 new-style buffers
         #this is slower, but since this codepath is already dreadfully slow, we don't care
-        bdata = strtobytes(memoryview_to_bytes(img_data))
+        bdata = memoryview_to_bytes(img_data)
         src_format = rgb_format.replace("X", "A")
         try:
             img = Image.frombytes(oformat, (width,height), bdata, "raw", src_format, rowstride, 1)
