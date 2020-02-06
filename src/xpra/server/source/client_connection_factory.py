@@ -57,7 +57,7 @@ def get_client_connection_class(caps):
     CC_BASES = []
     for c in CC:
         r = c.is_needed(caps)
-        log("get_client_connection_class(..) %s enabled=%s", c, r)
+        log("get_client_connection_class(..) %s enabled=%s", c.__name__.split(".")[-1], r)
         if r:
             CC_BASES.append(c)
     from xpra.server.source.client_connection import ClientConnection
