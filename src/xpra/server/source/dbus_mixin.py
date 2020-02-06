@@ -5,12 +5,19 @@
 # later version. See the file COPYING for details.
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.util import typedict
 
 
 """
 Expose the ClientConnection using a dbus service
 """
 class DBUS_Mixin(StubSourceMixin):
+
+    @classmethod
+    def is_needed(cls, caps : typedict) -> bool:
+        #the DBUSSource we create is only useful if the client
+        #supports one of the mixins it exposes:
+        return caps.boolget("windows", False) or caps.boolget("sound", False)
 
     def __init__(self):
         self.dbus_control = False
