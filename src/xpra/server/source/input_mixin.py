@@ -20,7 +20,7 @@ class InputMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        #the 'input' capability was only added in v4,
+        #the 'keyboard' and 'mouse' capability were only added in v4,
         #so we have to enable the mixin by default:
         return caps.boolget("keyboard", True) or caps.boolget("mouse", True)
 
