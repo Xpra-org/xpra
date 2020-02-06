@@ -7,7 +7,7 @@
 import os
 import time
 
-from xpra.util import envbool, envint, CLIENT_PING_TIMEOUT
+from xpra.util import envbool, envint, typedict, CLIENT_PING_TIMEOUT
 from xpra.os_util import monotonic_time, POSIX
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -19,6 +19,12 @@ PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 
 
 class NetworkStateMixin(StubSourceMixin):
+
+    @classmethod
+    def is_needed(cls, caps : typedict) -> bool:
+        #the 'network-state' capability were only added in v4,
+        #so we have to enable the mixin by default:
+        return caps.boolget("network-state", True)
 
     def init_state(self):
         self.last_ping_echoed_time = 0
