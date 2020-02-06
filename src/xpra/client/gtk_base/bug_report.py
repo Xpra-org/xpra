@@ -15,7 +15,6 @@ from xpra.gtk_common.gtk_util import (
     choose_file, get_gtk_version_info,
     )
 from xpra.util import nonl, envint, repr_ellipsized
-from xpra.os_util import strtobytes
 from xpra.log import Logger
 
 log = Logger("util")
@@ -328,7 +327,7 @@ class BugReport:
                 info.compress_type = zipfile.ZIP_DEFLATED
                 #very poorly documented:
                 info.external_attr = 0o644 << 16
-                info.comment = strtobytes(tooltip)
+                info.comment = str(tooltip).encode("utf8")
                 zf.writestr(info, s)
         finally:
             zf.close()
