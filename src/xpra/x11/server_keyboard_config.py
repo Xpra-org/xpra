@@ -462,7 +462,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     if (level & 1) ^ shift:
                         #shift state does not match
                         if "shift" in modifiers:
-                            modifiers.pop("shift")
+                            modifiers.remove("shift")
                         else:
                             modifiers.append("shift")
                     if (level & 2) ^ mode:
