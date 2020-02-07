@@ -107,10 +107,10 @@
 	</cmake>
 
 	<autotools id="gmplib" autogen-sh="configure">
-		<branch module="/download/gmp/gmp-6.1.2.tar.xz"
-			version="6.1.2"
-			hash="sha256:87b565e89a9a684fe4ebeeddb8399dce2599f9c9049854ca8c0dfbdea0e21912"
-			checkoutdir="gmp-6.1.2"
+		<branch module="/download/gmp/gmp-6.2.0.tar.xz"
+			version="6.2.0"
+			hash="sha256:258e6cd51b3fbdfc185c716d55f82c08aff57df0c6fbd143cf6ed561267a1526"
+			checkoutdir="gmp-6.2.0"
 			repo="gmplib.org"/>
 	</autotools>
 
