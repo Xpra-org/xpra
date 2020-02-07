@@ -1172,6 +1172,9 @@ if WIN32:
                    "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
                    "Rsvg-2.0",
                    )
+            add_gi_typelib("cairo-1.0",
+                           "fontconfig-2.0", "freetype2-2.0",
+                           "libproxy-1.0", "libxml2-2.0")
             #we no longer support GtkGL:
             #if opengl_ENABLED:
             #    add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
