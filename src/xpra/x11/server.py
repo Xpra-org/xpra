@@ -829,6 +829,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #x_root, y_root, direction, button, source_indication = event.data
         wid = self._window_to_id[window]
         #find clients that handle windows:
+        from xpra.server.source.windows_mixin import WindowsMixin
         wsources = [ss for ss in self._server_sources.values() if isinstance(ss, WindowsMixin)]
         if not wsources:
             return
