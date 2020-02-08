@@ -597,7 +597,7 @@ def log_new_connection(conn, socket_info=""):
     try:
         peername = sock.getpeername()
     except socket.error:
-        peername = str(address)
+        peername = address
     try:
         sockname = sock.getsockname()
     except AttributeError:
@@ -608,7 +608,7 @@ def log_new_connection(conn, socket_info=""):
     if peername:
         frominfo = pretty_socket(peername)
         log.info("New %s connection received", socktype)
-        log.info(" from '%s'", frominfo)
+        log.info(" from '%s'", pretty_socket(frominfo))
         if socket_info:
             log.info(" on '%s'", pretty_socket(socket_info))
     elif socktype=="unix-domain":
