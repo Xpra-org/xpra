@@ -258,7 +258,7 @@ def ssh_paramiko_connect_to(display_desc):
             host_config = ssh_config.lookup(host)
             if host_config:
                 host = host_config.get("hostname", host)
-                username = host_config.get("username", username)
+                username = host_config.get("user", username)
                 port = host_config.get("port", port)
                 try:
                     port = int(port)
