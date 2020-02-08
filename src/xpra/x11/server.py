@@ -813,7 +813,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         #x_root, y_root, direction, button, source_indication = event.data
         wid = self._window_to_id[window]
         #find clients that handle windows:
-        wsources = [ss for ss in self._server_sources.values() is isinstance(ss, WindowsMixin)]
+        wsources = [ss for ss in self._server_sources.values() if isinstance(ss, WindowsMixin)]
         if not wsources:
             return
         #prefer the "UI driver" if we find it:
