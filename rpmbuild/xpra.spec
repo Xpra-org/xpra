@@ -63,7 +63,7 @@ exit 1
 
 Name:				xpra
 Version:			%{version}
-Release:			0%{?revision_no}xpra1%{?dist}
+Release:			0%{?revision_no}xpra2%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
@@ -867,6 +867,12 @@ fi
 
 
 %changelog
+* Sat Feb 08 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra2
+- fix 'User' not honoured in ssh_config
+- fix X11 server initiate move-resize
+- prettier format for new connection information
+- Debian packaging: prefer python3 installations
+
 * Wed Feb 05 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra1
 - fix UDP with Python3
 - fix key mapping issues with non-X11 clients and non-US layouts

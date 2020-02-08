@@ -1,3 +1,11 @@
+xpra (3.0.6-2) UNRELEASED; urgency=low
+  * fix 'User' not honoured in ssh_config
+  * fix X11 server initiate move-resize
+  * prettier format for new connection information
+  * Debian packaging: prefer python3 installations
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 08 Feb 2020 22:53:01 +0700
+
 xpra (3.0.6-1) UNRELEASED; urgency=low
   * fix UDP with Python3
   * fix key mapping issues with non-X11 clients and non-US layouts
