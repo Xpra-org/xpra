@@ -233,12 +233,19 @@ def ssh_paramiko_connect_to(display_desc):
     socket_dir = display_desc.get("socket_dir")
     display = display_desc.get("display")
     display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
-    paramiko_config = display_desc.get("paramiko-config", {})
-    keyfiles = None
+    paramiko_config = display_desc.copy()
+    paramiko_config.update(display_desc.get("paramiko-config", {}))
     socket_info = {
             "host"  : host,
             "port"  : port,
             }
+    def get_keyfiles(config_name="key"):
+        keyfiles = host_config.get("identityfile") or get_default_keyfiles()
+        keyfile = paramiko_config.get(config_name)
+        if keyfile:
+            keyfiles.insert(0, keyfile)
+        return keyfiles
+
     with nogssapi_context():
         from paramiko import SSHConfig, ProxyCommand
         ssh_config = SSHConfig()
@@ -258,12 +265,12 @@ def ssh_paramiko_connect_to(display_desc):
                 except ValueError:
                     raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % port)
                 proxycommand = host_config.get("proxycommand")
-                keyfiles = host_config.get("identityfile")
                 if proxycommand:
                     sock = ProxyCommand(proxycommand)
                     from xpra.child_reaper import getChildReaper
                     cmd = getattr(sock, "cmd", [])
                     getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True)
+                    proxy_keys = get_keyfiles("proxy_key")
                     log("found proxycommand='%s' for host '%s'", proxycommand, host)
                     from paramiko.client import SSHClient
                     ssh_client = SSHClient()
@@ -273,7 +280,7 @@ def ssh_paramiko_connect_to(display_desc):
                     do_ssh_paramiko_connect_to(transport, host,
                                                username, password,
                                                host_config or ssh_config.lookup("*"),
-                                               keyfiles,
+                                               proxy_keys,
                                                paramiko_config)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
@@ -286,6 +293,8 @@ def ssh_paramiko_connect_to(display_desc):
                     from paramiko.ssh_exception import ProxyCommandFailure
                     bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
                     return conn
+
+        keys = get_keyfiles()
         from xpra.scripts.main import socket_connect
         from paramiko.transport import Transport
         from paramiko import SSHException
@@ -294,6 +303,7 @@ def ssh_paramiko_connect_to(display_desc):
             proxy_port = display_desc.get("proxy_port", 22)
             proxy_username = display_desc.get("proxy_username", username)
             proxy_password = display_desc.get("proxy_password", password)
+            proxy_keys = get_keyfiles("proxy_key")
             sock = socket_connect(dtype, proxy_host, proxy_port)
             middle_transport = Transport(sock)
             middle_transport.use_compression(False)
@@ -306,7 +316,7 @@ def ssh_paramiko_connect_to(display_desc):
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
                                        proxy_host_config or ssh_config.lookup("*"),
-                                       keyfiles,
+                                       proxy_keys,
                                        paramiko_config)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ('localhost', 0))
@@ -321,10 +331,9 @@ def ssh_paramiko_connect_to(display_desc):
             do_ssh_paramiko_connect_to(transport, host,
                                        username, password,
                                        host_config or ssh_config.lookup("*"),
-                                       keyfiles,
+                                       keys,
                                        paramiko_config)
             chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
-
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
             conn.target = "%s via %s" % (
@@ -350,7 +359,7 @@ def ssh_paramiko_connect_to(display_desc):
             raise InitExit(EXIT_SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
         do_ssh_paramiko_connect_to(transport, host, username, password,
                                    host_config or ssh_config.lookup("*"),
-                                   keyfiles,
+                                   keys,
                                    paramiko_config)
         chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
@@ -367,14 +376,19 @@ class nogssapi_context(nomodule_context):
         super().__init__("gssapi")
 
 
+def get_default_keyfiles():
+    dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
+    if dkf is not None:
+        return [x for x in dkf.split(":") if x]
+    return [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_rsa", "id_dsa")]
+
+
 def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=None, keyfiles=None, paramiko_config=None):
     from paramiko import SSHException, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
     log("do_ssh_paramiko_connect_to%s", (transport, host, username, password, host_config, keyfiles, paramiko_config))
     log("SSH transport %s", transport)
-    if not keyfiles:
-        keyfiles = [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_rsa", "id_dsa")]
 
     def configvalue(key):
         #if the paramiko config has a setting, honour it:

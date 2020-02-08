@@ -645,7 +645,7 @@ def parse_ssh_string(ssh_setting):
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
-def add_ssh_args(username, password, host, ssh_port, is_putty=False, is_paramiko=False):
+def add_ssh_args(username, password, host, ssh_port, key, is_putty=False, is_paramiko=False):
     args = []
     if password and is_putty:
         args += ["-pw", password]
@@ -659,6 +659,13 @@ def add_ssh_args(username, password, host, ssh_port, is_putty=False, is_paramiko
             args += ["-p", str(ssh_port)]
     if not is_paramiko:
         args += ["-T", host]
+        if key:
+            key_path = os.path.abspath(key)
+            if WIN32 and is_putty:
+                # tortoise plink works with either slash, backslash needs too much escaping
+                # because of the weird way it's passed through as a ProxyCommand
+                key_path = "\"" + key.replace("\\", "/") + "\""
+            args += ["-i", key_path]
     return args
 
 def add_ssh_proxy_args(username, password, host, ssh_port, pkey, ssh, is_putty=False, is_paramiko=False):
@@ -666,14 +673,10 @@ def add_ssh_proxy_args(username, password, host, ssh_port, pkey, ssh, is_putty=F
     proxyline = ssh
     if is_putty:
         proxyline += ["-nc", "%host:%port"]
-        if pkey:
-            # tortoise plink works with either slash, backslash needs too much escaping
-            # because of the weird way it's passed through as a ProxyCommand
-            proxyline += [ "-i", "\"" + pkey.replace("\\", "/") + "\""]
     elif not is_paramiko:
         proxyline += ["-W", "%h:%p"]
     # the double quotes are in case the password has something like "&"
-    proxyline += add_ssh_args(username, password, host, ssh_port, is_putty, is_paramiko)
+    proxyline += add_ssh_args(username, password, host, ssh_port, pkey, is_putty, is_paramiko)
     if is_putty:
         args += ["-proxycmd", " ".join(proxyline)]
     elif not is_paramiko:
@@ -693,7 +696,7 @@ def parse_proxy_attributes(display_name):
     if not reout:
         return display_name, {}
     try:
-        desc_tmp = dict()
+        desc_tmp = {}
         # This one should *always* return a host, and should end with an optional numeric port
         hostport = reout.group("hostport")
         hostport_match = re.match(r"(?P<host>[^:]+)($|:(?P<port>\d+)$)", hostport)
@@ -794,7 +797,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         error_cb("unknown format for protocol separator '%s' in display name: %s" % (psep, display_name))
     afterproto = display_name[pos:]         #ie: "host:port/DISPLAY"
     separator = psep[-1]                    #ie: "/"
-    parts = afterproto.split(separator)     #ie: "host:port", "DISPLAY"
+    parts = afterproto.split(separator, 1)     #ie: "host:port", "DISPLAY"
 
     def parse_username_and_password(s):
         ppos = s.find(":")
@@ -873,19 +876,26 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         return username, password, host, port
 
     def parse_remote_display(s):
-        if s:
-            #strip anything after "?" or "#"
-            #TODO: parse those attributes
-            for x in ("?", "#"):
-                s = s.split(x)[0]
-            try:
-                assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
-                display = ":" + s       #ie: ":10.0"
-            except ValueError:
-                display = s             #ie: "tcp://somehost:10000/"
-            desc["display"] = display
-            opts.display = display
-            desc["display_as_args"] = [display]
+        if not s:
+            return
+        parts = s.split("?", 1)
+        s = parts[0].split("#")[0]
+        try:
+            assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
+            display = ":" + s       #ie: ":10.0"
+        except ValueError:
+            display = s             #ie: "tcp://somehost:10000/"
+        desc["display"] = display
+        opts.display = display
+        desc["display_as_args"] = [display]
+        if len(parts)==2:
+            #parse extra attributes
+            d = parse_simple_dict(parts[1], "&")
+            for k,v in d.items():
+                if k in desc:
+                    warn("Warning: cannot override '%s' with URI" % k)
+                else:
+                    desc[k] = v
 
     if protocol=="ssh":
         desc.update({
@@ -895,14 +905,9 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                  })
         desc["display"] = None
         desc["display_as_args"] = []
+        host = parts[0]
         if len(parts)>1:
-            #ssh:HOST:DISPLAY or ssh/HOST/DISPLAY
-            host = separator.join(parts[0:-1])
-            if parts[-1]:
-                parse_remote_display(parts[-1])
-        else:
-            #ssh:HOST or ssh/HOST
-            host = parts[0]
+            parse_remote_display(parts[1])
         #ie: ssh=["/usr/bin/ssh", "-v"]
         ssh = parse_ssh_string(opts.ssh)
         full_ssh = ssh[:]
@@ -929,7 +934,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             opts.username = username
         if ssh_port and ssh_port!=22:
             desc["ssh-port"] = ssh_port
-        full_ssh += add_ssh_args(username, password, host, ssh_port, is_putty, is_paramiko)
+        key = desc.get("key", None) 
+        full_ssh += add_ssh_args(username, password, host, ssh_port, key, is_putty, is_paramiko)
         if "proxy_host" in desc:
             proxy_username = desc.get("proxy_username", "")
             proxy_password = desc.get("proxy_password", "")
