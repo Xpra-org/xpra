@@ -1288,7 +1288,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             opts.ssl_server_verify_mode = "none"
         if dtype in ("ssl", "wss"):
             from xpra.net.socket_util import ssl_wrap_socket_fn
-            wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
+            wrap_socket = ssl_wrap_socket_fn(opts, server_side=False, overrides=display_desc)
             sock = wrap_socket(sock)
             assert sock, "failed to wrap socket %s" % sock
             conn._socket = sock

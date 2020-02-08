@@ -693,6 +693,10 @@ SSL_ATTRIBUTES = (
     "options", "ciphers",
     )
 def ssl_wrap_socket_fn(opts, server_side=True, overrides={}):
+    args = get_ssl_attributes(opts, server_side, overrides)
+    return _ssl_wrap_socket_fn(**args)
+
+def get_ssl_attributes(opts, server_side=True, overrides={}):
     args = {
         "server_side"   : server_side,
         }
@@ -703,8 +707,7 @@ def ssl_wrap_socket_fn(opts, server_side=True, overrides={}):
         if v is None:
             v = getattr(opts, ssl_attr)
         args[attr] = v
-    print("_ssl_wrap_socket_fn(%s)" % (args,))
-    return _ssl_wrap_socket_fn(**args)
+    return args
 
 def _ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
                         protocol="TLSv1_2",
