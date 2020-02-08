@@ -255,8 +255,10 @@ def ssh_paramiko_connect_to(display_desc):
         if os.path.exists(user_config_file):
             with open(user_config_file) as f:
                 ssh_config.parse(f)
+            log("parsed user config '%s': %i hosts found", user_config_file, len(ssh_config.get_hostnames()))
             host_config = ssh_config.lookup(host)
             if host_config:
+                log("got host config for '%s': %s", host, host_config)
                 host = host_config.get("hostname", host)
                 username = host_config.get("user", username)
                 port = host_config.get("port", port)
