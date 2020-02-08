@@ -685,23 +685,39 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     return aps
 
 
-def ssl_wrap_socket_fn(opts, server_side=True):
-    if server_side:
-        verify_mode = opts.ssl_client_verify_mode
-    else:
-        verify_mode = opts.ssl_server_verify_mode
-    return _ssl_wrap_socket_fn(opts.ssl_cert, opts.ssl_key, opts.ssl_ca_certs, opts.ssl_ca_data,
-                               opts.ssl_protocol, verify_mode, opts.ssl_verify_flags,
-                               opts.ssl_check_hostname, opts.ssl_server_hostname,
-                               opts.ssl_options, opts.ssl_ciphers, server_side)
+SSL_ATTRIBUTES = (
+    "cert", "key", "ca_certs", "ca_data",
+    "protocol",
+    "client_verify_mode", "server_verify_mode", "verify_flags",
+    "check_hostname", "server_hostname",
+    "options", "ciphers",
+    )
+def ssl_wrap_socket_fn(opts, server_side=True, overrides={}):
+    args = {
+        "server_side"   : server_side,
+        }
+    for attr in SSL_ATTRIBUTES:
+        ssl_attr = "ssl_%s" % attr          #ie: "ssl_ca_certs"
+        option = ssl_attr.replace("_", "-") #ie: "ssl-ca-certs"
+        v = overrides.get(option)
+        if v is None:
+            v = getattr(opts, ssl_attr)
+        args[attr] = v
+    print("_ssl_wrap_socket_fn(%s)" % (args,))
+    return _ssl_wrap_socket_fn(**args)
 
 def _ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
-                        protocol="TLSv1_2", verify_mode="none", verify_flags="X509_STRICT",
+                        protocol="TLSv1_2",
+                        client_verify_mode="optional", server_verify_mode="required", verify_flags="X509_STRICT",
                         check_hostname=False, server_hostname=None,
                         options="ALL,NO_COMPRESSION", ciphers="DEFAULT",
                         server_side=True):
     if server_side and not cert:
         raise InitException("you must specify an 'ssl-cert' file to use 'bind-ssl' sockets")
+    if server_side:
+        verify_mode = client_verify_mode
+    else:
+        verify_mode = server_verify_mode
     from xpra.log import Logger
     ssllog = Logger("ssl")
     ssllog("ssl_wrap_socket_fn(.., %s)", server_side)
