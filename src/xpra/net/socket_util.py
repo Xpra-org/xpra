@@ -722,7 +722,7 @@ def _ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
     if proto is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
         raise InitException("invalid ssl-protocol '%s', must be one of: %s" % (protocol, csv(values)))
-    ssllog("ssl_wrap_socket_fn: protocol=%#x", protocol)
+    ssllog("ssl_wrap_socket_fn: protocol=%#x", proto)
     #ca_data may be hex encoded:
     if ca_data:
         import binascii
