@@ -692,24 +692,25 @@ SSL_ATTRIBUTES = (
     "check_hostname", "server_hostname",
     "options", "ciphers",
     )
-def ssl_wrap_socket_fn(opts, server_side=True, overrides={}):
-    args = get_ssl_attributes(opts, server_side, overrides)
-    return _ssl_wrap_socket_fn(**args)
 
-def get_ssl_attributes(opts, server_side=True, overrides={}):
+def get_ssl_attributes(opts, server_side=True, overrides=None):
     args = {
         "server_side"   : server_side,
         }
     for attr in SSL_ATTRIBUTES:
         ssl_attr = "ssl_%s" % attr          #ie: "ssl_ca_certs"
         option = ssl_attr.replace("_", "-") #ie: "ssl-ca-certs"
-        v = overrides.get(option)
+        v = (overrides or {}).get(option)
         if v is None:
             v = getattr(opts, ssl_attr)
         args[attr] = v
     return args
 
-def _ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
+def ssl_wrap_socket(sock, **kwargs):
+    fn = get_ssl_wrap_socket_fn(**kwargs)
+    return fn(sock)
+
+def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
                         protocol="TLSv1_2",
                         client_verify_mode="optional", server_verify_mode="required", verify_flags="X509_STRICT",
                         check_hostname=False, server_hostname=None,
@@ -830,6 +831,7 @@ def _ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
         raise InitException("cannot check hostname with verify mode %s" % verify_mode)
     wrap_socket = context.wrap_socket
     def do_wrap_socket(tcp_socket):
+        assert tcp_socket
         ssllog("do_wrap_socket(%s)", tcp_socket)
         if WIN32:
             #on win32, setting the tcp socket to blocking doesn't work?

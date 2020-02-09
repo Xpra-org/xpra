@@ -1151,12 +1151,13 @@ def socket_connect(dtype, host, port):
             if dtype!="udp":
                 from xpra.net.bytestreams import SOCKET_TIMEOUT
                 sock.settimeout(SOCKET_TIMEOUT)
+            log = Logger("network")
             try:
+                log("socket.connect(%s)", sockaddr)
                 sock.connect(sockaddr)
                 sock.settimeout(None)
                 return sock
             except Exception as e:
-                log = Logger("network")
                 log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
         if monotonic_time()-start>=CONNECT_TIMEOUT:
             break
@@ -1287,9 +1288,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         if strict_host_check is False:
             opts.ssl_server_verify_mode = "none"
         if dtype in ("ssl", "wss"):
-            from xpra.net.socket_util import ssl_wrap_socket_fn
-            wrap_socket = ssl_wrap_socket_fn(opts, server_side=False, overrides=display_desc)
-            sock = wrap_socket(sock)
+            from xpra.net.socket_util import ssl_wrap_socket, get_ssl_attributes
+            kwargs = get_ssl_attributes(opts, server_side=False, overrides=display_desc)
+            sock = ssl_wrap_socket(sock, **kwargs)
             assert sock, "failed to wrap socket %s" % sock
             conn._socket = sock
             conn.timeout = SOCKET_TIMEOUT

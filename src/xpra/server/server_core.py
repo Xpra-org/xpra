@@ -210,7 +210,7 @@ class ServerCore:
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
         self._rfb_upgrade = 0
-        self._ssl_wrap_socket = None
+        self._ssl_attributes = {}
         self._accept_timeout = SOCKET_TIMEOUT + 1
         self.ssl_mode = None
         self._html = False
@@ -314,22 +314,16 @@ class ServerCore:
         if self.ssl_mode in TRUE_OPTIONS or opts.bind_ssl or opts.bind_wss:
             need_ssl = True
         elif opts.bind_tcp or opts.bind_ws:
-            if self.ssl_mode=="auto" and opts.ssl_cert:
+            if self.ssl_mode=="auto":
                 need_ssl = True
             elif self.ssl_mode=="tcp" and opts.bind_tcp:
                 need_ssl = True
             elif self.ssl_mode=="www":
                 need_ssl = True
-        if not need_ssl:
-            return
-        from xpra.net.socket_util import ssl_wrap_socket_fn
-        try:
-            self._ssl_wrap_socket = ssl_wrap_socket_fn(opts, server_side=True)
-            log("init_ssl() wrap_socket_fn=%s", self._ssl_wrap_socket)
-        except Exception as e:
-            log("SSL error", exc_info=True)
-            cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
-            raise InitException("cannot create SSL sockets, check your certificate paths (%s): %s" % (cpaths, e)) from None
+        if need_ssl:
+            from xpra.net.socket_util import get_ssl_attributes
+            self._ssl_attributes = get_ssl_attributes(opts, True)
+        netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
 
     def server_ready(self):
         return True
@@ -799,7 +793,7 @@ class ServerCore:
             #cannot be accessed remotely
             return ()
         ssh_access = get_ssh_port()>0   #and opts.ssh.lower().strip() not in FALSE_OPTIONS
-        ssl = bool(self._ssl_wrap_socket)
+        ssl = bool(self._ssl_attributes)
         #only available with the RFBServer
         rfb_upgrades = getattr(self, "_rfb_upgrade", False)
         socktypes = [socktype]
@@ -981,7 +975,7 @@ class ServerCore:
             return True
         #from here on, we run in a thread, so we can poll (peek does)
         start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True,
-                     args=(conn, socket_info))
+                     args=(conn, socket_info, socket_options))
         return True
 
     def new_conn_err(self, conn, sock, socktype, socket_info, network_protocol,
@@ -1014,7 +1008,7 @@ class ServerCore:
         except OSError:
             log("close_connection()", exc_info=True)
 
-    def handle_new_connection(self, conn, socket_info):
+    def handle_new_connection(self, conn, socket_info, socket_options):
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
@@ -1029,7 +1023,7 @@ class ServerCore:
         sock.settimeout(self._socket_timeout)
 
         netlog("handle_new_connection%s sockname=%s, target=%s",
-               (conn, sock, address, socktype, peername, socket_info), sockname, target)
+               (conn, socket_info, socket_options), sockname, target)
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
         peek_data, line1 = None, None
@@ -1038,9 +1032,9 @@ class ServerCore:
             peek_data, line1 = peek_connection(conn)
 
         def ssl_wrap():
-            if not self._ssl_wrap_socket:
+            if not self._ssl_attributes:
                 raise Exception("no ssl support")
-            ssl_sock = self._ssl_wrap_socket(sock)
+            ssl_sock = self._ssl_wrap_socket(sock, socket_options)
             ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
@@ -1063,7 +1057,7 @@ class ServerCore:
                                       "packet looks like a plain %s packet" % packet_type)
                     return
             #always start by wrapping with SSL:
-            assert self._ssl_wrap_socket
+            assert self._ssl_attributes
             ssl_conn = ssl_wrap()
             if not ssl_conn:
                 return
@@ -1089,7 +1083,7 @@ class ServerCore:
         if socktype=="ws":
             if peek_data:
                 if (self.ssl_mode not in FALSE_OPTIONS) and peek_data[0] in ("\x16", 0x16):
-                    if not self._ssl_wrap_socket:
+                    if not self._ssl_attributes:
                         netlog.warn("Warning: cannot upgrade to SSL socket")
                         return
                     ssllog("ws socket receiving ssl, upgrading")
@@ -1111,12 +1105,12 @@ class ServerCore:
                 return
             peek_data = None
 
-        if (socktype=="tcp" and (self._tcp_proxy or self._ssl_wrap_socket or self.ssh_upgrade)) or \
+        if (socktype=="tcp" and (self._tcp_proxy or self._ssl_attributes or self.ssh_upgrade)) or \
             (socktype in ("tcp", "unix-domain", "named-pipe") and self._html):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websocket adapter:
             try:
-                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, peek_data, line1)
+                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, peek_data, line1, socket_options)
                 netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, peek_data)
                 if not cont:
                     return
@@ -1138,6 +1132,28 @@ class ServerCore:
         if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
+
+    def _ssl_wrap_socket(self, sock, socket_options):
+        netlog("ssl_wrap_socket(%s, %s)", sock, socket_options)
+        try:
+            from xpra.net.socket_util import ssl_wrap_socket
+            kwargs = self._ssl_attributes.copy()
+            if socket_options:
+                for k,v in socket_options.items():
+                    #options use '-' but attributes and parameters use '_':
+                    k = k.replace("-", "_")
+                    if k.startswith("ssl_"):
+                        k = k[4:]
+                    kwargs[k] = v
+            ssl_sock = ssl_wrap_socket(sock, **kwargs)
+            log("_ssl_wrap_socket_fn(%s)=%s", kwargs, ssl_sock)
+            return ssl_sock
+        except Exception as e:
+            log("SSL error", exc_info=True)
+            ssl_paths = [kwargs.get(x) for x in ("ssl-cert", "ssl-key")]
+            cpaths = csv("'%s'" % x for x in ssl_paths if x)
+            raise InitException("cannot create SSL sockets, check your certificate paths (%s): %s" % (cpaths, e)) from None
+
 
     def handle_ssh_connection(self, conn):
         from xpra.server.ssh import make_ssh_server_connection, log as sshlog
@@ -1246,7 +1262,7 @@ class ServerCore:
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
 
-    def may_wrap_socket(self, conn, socktype, peek_data=b"", line1=b""):
+    def may_wrap_socket(self, conn, socktype, peek_data=b"", line1=b"", socket_options=None):
         """
             Returns:
             * a flag indicating if we should continue processing this connection
@@ -1269,13 +1285,13 @@ class ServerCore:
             first_char = peek_data[0]
         netlog("may_wrap_socket(..) first char=%#x / %r", first_char, chr(first_char))
         netlog("may_wrap_socket(..) upgrade options: ssh=%s, ssl=%s, http/ws=%s, tcp proxy=%s",
-               self.ssh_upgrade, bool(self._ssl_wrap_socket), self._html, bool(self._tcp_proxy))
+               self.ssh_upgrade, bool(self._ssl_attributes), self._html, bool(self._tcp_proxy))
         if self.ssh_upgrade and peek_data[:4]==b"SSH-":
             conn = self.handle_ssh_connection(conn)
             return conn is not None, conn, None
-        if self._ssl_wrap_socket and first_char==0x16:
+        if self._ssl_attributes and first_char==0x16:
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
-            sock = self._ssl_wrap_socket(sock)
+            sock = self._ssl_wrap_socket(sock, socket_options)
             if sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
                 ssllog("ignoring SSL EOF error")
@@ -1316,7 +1332,7 @@ class ServerCore:
         netlog("invalid_header(%s, %s bytes: '%s', %s)",
                proto, len(data or ""), msg, ellipsizer(data))
         netlog(" input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
-               proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
+               proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_attributes))
         info = self.guess_header_protocol(data)[1]
         err = "invalid packet format, %s" % info
         proto.gibberish(err, data)
