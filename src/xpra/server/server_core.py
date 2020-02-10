@@ -1110,7 +1110,7 @@ class ServerCore:
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websocket adapter:
             try:
-                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, peek_data, line1, socket_options)
+                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, socket_options, peek_data, line1)
                 netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, peek_data)
                 if not cont:
                     return
@@ -1263,7 +1263,7 @@ class ServerCore:
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
 
-    def may_wrap_socket(self, conn, socktype, peek_data=b"", line1=b"", socket_options=None):
+    def may_wrap_socket(self, conn, socktype, socket_options, peek_data=b"", line1=b""):
         """
             Returns:
             * a flag indicating if we should continue processing this connection
