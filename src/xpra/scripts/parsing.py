@@ -1316,7 +1316,7 @@ def do_validate_encryption(auth, tcp_auth,
     pass_key = os.environ.get("XPRA_PASSWORD")
     from xpra.net.crypto import ENCRYPTION_CIPHERS
     if not ENCRYPTION_CIPHERS:
-        raise InitException("cannot use encryption: no ciphers available (a crypto library must be installed)")
+        raise InitException("cannot use encryption: no ciphers available (the python-cryptography library must be installed)")
     if encryption=="help" or tcp_encryption=="help":
         raise InitInfo("the following encryption ciphers are available: %s" % csv(ENCRYPTION_CIPHERS))
     if encryption and encryption not in ENCRYPTION_CIPHERS:
