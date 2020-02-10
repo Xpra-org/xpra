@@ -962,7 +962,7 @@ class ServerCore:
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn = NamedPipeConnection(listener.pipe_name, handle, socket_options)
             netlog.info("New %s connection received on %s", socktype, conn.target)
-            return self.make_protocol(socktype, conn)
+            return self.make_protocol(socktype, conn, socket_options)
 
         conn = accept_connection(socktype, listener, self._socket_timeout, socket_options)
         if conn is None:
@@ -1073,11 +1073,11 @@ class ServerCore:
                     peek_data, line1 = peek_connection(ssl_conn)
                     http = line1.find(b"HTTP/")>0
             if http and self._html:
-                self.start_http_socket(socktype, ssl_conn, True, peek_data)
+                self.start_http_socket(socktype, ssl_conn, socket_options, True, peek_data)
             else:
                 ssl_conn._socket.settimeout(self._socket_timeout)
                 log_new_connection(ssl_conn, socket_info)
-                self.make_protocol(socktype, ssl_conn)
+                self.make_protocol(socktype, ssl_conn, socket_options)
             return
 
         if socktype=="ws":
@@ -1092,7 +1092,7 @@ class ServerCore:
                     self.new_conn_err(conn, sock, socktype, socket_info, "xpra",
                                       "packet looks like a plain xpra packet")
                     return
-            self.start_http_socket(socktype, conn, False, peek_data)
+            self.start_http_socket(socktype, conn, socket_options, False, peek_data)
             return
 
         if socktype=="rfb" and not peek_data:
@@ -1128,7 +1128,7 @@ class ServerCore:
         sock = getattr(conn, "_socket", sock)
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
-        proto = self.make_protocol(socktype, conn)
+        proto = self.make_protocol(socktype, conn, socket_options)
         if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
@@ -1217,7 +1217,7 @@ class ServerCore:
                 pass
 
 
-    def make_protocol(self, socktype, conn, protocol_class=Protocol):
+    def make_protocol(self, socktype, conn, socket_options, protocol_class=Protocol):
         """ create a new xpra Protocol instance and start it """
         def xpra_protocol_class(conn):
             """ adds xpra protocol tweaks after creating the instance """
@@ -1225,11 +1225,11 @@ class ServerCore:
             protocol.large_packets.append(b"info-response")
             protocol.receive_aliases.update(self._aliases)
             return protocol
-        return self.do_make_protocol(socktype, conn, xpra_protocol_class)
+        return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class)
 
-    def do_make_protocol(self, socktype, conn, protocol_class):
+    def do_make_protocol(self, socktype, conn, socket_options, protocol_class):
         """ create a new Protocol instance and start it """
-        netlog("make_protocol(%s, %s, %s)", socktype, conn, protocol_class)
+        netlog("make_protocol(%s, %s, %s, %s)", socktype, conn, socket_options, protocol_class)
         socktype = socktype.lower()
         protocol = protocol_class(conn)
         protocol.socket_type = socktype
@@ -1239,9 +1239,11 @@ class ServerCore:
         protocol.keyfile = None
         if socktype=="tcp":
             #special case for legacy encryption code:
-            protocol.encryption = self.tcp_encryption
-            protocol.keyfile = self.tcp_encryption_keyfile
+            protocol.encryption = socket_options.get("encryption", self.tcp_encryption)
+            protocol.keyfile = socket_options.get("encryption-keyfile", self.tcp_encryption_keyfile)
             if protocol.encryption:
+                from xpra.net.crypto import crypto_backend_init
+                crypto_backend_init()
                 from xpra.net.crypto import (
                     ENCRYPT_FIRST_PACKET,
                     DEFAULT_IV,
@@ -1318,7 +1320,7 @@ class ServerCore:
             http = line1.find(b"HTTP/")>0
             is_ssl = False
         if http and self._html:
-            self.start_http_socket(socktype, conn, is_ssl, peek_data)
+            self.start_http_socket(socktype, conn, socket_options, is_ssl, peek_data)
             return False, conn, None
         if self._tcp_proxy:
             netlog.info("New tcp proxy connection received from %s", frominfo)
@@ -1357,14 +1359,14 @@ class ServerCore:
             "/Info"         : self.http_info_request,
             }
 
-    def start_http_socket(self, socktype, conn, is_ssl=False, peek_data=""):
+    def start_http_socket(self, socktype, conn, socket_options, is_ssl=False, peek_data=""):
         frominfo = pretty_socket(conn.remote)
         line1 = b""
         if peek_data:
             line1 = peek_data.splitlines()[0]
         http_proto = "http"+["","s"][int(is_ssl)]
-        netlog("start_http_socket(%s, %s, %s, ..) http proto=%s, line1=%r",
-               socktype, conn, is_ssl, http_proto, bytestostr(line1))
+        netlog("start_http_socket(%s, %s, %s, %s, ..) http proto=%s, line1=%r",
+               socktype, conn, socket_options, is_ssl, http_proto, bytestostr(line1))
         if line1.startswith(b"GET ") or line1.startswith(b"POST "):
             parts = bytestostr(line1).split(" ")
             httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
@@ -1377,11 +1379,11 @@ class ServerCore:
         #we start a new thread,
         #only so that the websocket handler thread is named correctly:
         start_thread(self.start_http, "%s-for-%s" % (tname, frominfo),
-                     daemon=True, args=(socktype, conn, is_ssl, req_info, line1, conn.remote))
+                     daemon=True, args=(socktype, conn, socket_options, is_ssl, req_info, line1, conn.remote))
 
-    def start_http(self, socktype, conn, is_ssl, req_info, line1, frominfo):
-        httplog("start_http(%s, %s, %s, %s, %s, %s) www dir=%s, headers dir=%s",
-                socktype, conn, is_ssl, req_info, line1, frominfo,
+    def start_http(self, socktype, conn, socket_options, is_ssl, req_info, line1, frominfo):
+        httplog("start_http(%s, %s, %s, %s, %s, %s, %s) www dir=%s, headers dir=%s",
+                socktype, conn, socket_options, is_ssl, req_info, line1, frominfo,
                 self._www_dir, self._http_headers_dir)
         try:
             from xpra.net.websockets.handler import WebSocketRequestHandler
@@ -1391,7 +1393,7 @@ class ServerCore:
                 from xpra.net.websockets.protocol import WebSocketProtocol
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 newsocktype = "ws%s" % ["","s"][int(is_ssl)]
-                self.make_protocol(newsocktype, conn, WebSocketProtocol)
+                self.make_protocol(newsocktype, conn, WebSocketProtocol, socket_options)
             scripts = self.get_http_scripts()
             conn.socktype = "wss" if is_ssl else "ws"
             WebSocketRequestHandler(sock, frominfo, new_websocket_client,
@@ -1715,7 +1717,9 @@ class ServerCore:
             padding = c.strget("cipher.padding", DEFAULT_PADDING)
             padding_options = c.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
             if cipher not in ENCRYPTION_CIPHERS:
-                authlog.warn("unsupported cipher: %s", cipher)
+                authlog.warn("Warning: unsupported cipher: %s", cipher)
+                if ENCRYPTION_CIPHERS:
+                    authlog.warn(" should be: %s", csv(ENCRYPTION_CIPHERS))
                 auth_failed("unsupported cipher")
                 return
             encryption_key = self.get_encryption_key(proto.authenticators, proto.keyfile)
