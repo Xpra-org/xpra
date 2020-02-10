@@ -7,7 +7,7 @@
 import os
 
 from xpra.util import envbool, typedict
-from xpra.os_util import get_machine_id, bytestostr
+from xpra.os_util import get_machine_id
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -116,9 +116,10 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             #prefer sockets in public paths:
             attributes["socket-path"] = self.choose_socket_path()
         log("printer attributes: %s", attributes)
-        for k,props in printers.items():
-            if k not in self.printers:
-                self.setup_printer(k, props, attributes)
+        for name,props in printers.items():
+            printer = name.decode("utf8")
+            if printer not in self.printers:
+                self.setup_printer(printer, props, attributes)
 
     def choose_socket_path(self) -> str:
         assert self.unix_socket_paths
@@ -128,12 +129,12 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         return self.unix_socket_paths[0]
 
 
-    def setup_printer(self, name, props, attributes):
+    def setup_printer(self, printer, props, attributes):
         from xpra.platform.pycups_printing import add_printer
         props = typedict(props)
         info = props.strget("printer-info", "")
         attrs = attributes.copy()
-        attrs["remote-printer"] = name
+        attrs["remote-printer"] = printer
         attrs["remote-device-uri"] = props.strget("device-uri")
         location = PRINTER_LOCATION_STRING
         if self.hostname:
@@ -142,18 +143,17 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 #ie: on FOO (via xpra)
                 location = "on %s (%s)" % (self.hostname, PRINTER_LOCATION_STRING)
         try:
-            printer = name.decode("utf8")
             def printer_added():
                 #once the printer has been added, register it in the list
                 #(so it will be removed on exit)
                 log.info("the remote printer '%s' has been configured", printer)
-                self.printers[name] = props
-                self.printers_added.add(name)
+                self.printers[printer] = props
+                self.printers_added.add(printer)
             add_printer(printer, props, info, location, attrs, success_cb=printer_added)
         except Exception as e:
-            log.warn("Warning: failed to add virtual printer '%s'", bytestostr(name))
+            log.warn("Warning: failed to add virtual printer '%s'", printer)
             log.warn(" %s", e)
-            log("setup_printer(%s, %s, %s)", name, props, attributes, exc_info=True)
+            log("setup_printer(%s, %s, %s)", printer, props, attributes, exc_info=True)
 
     def remove_printers(self):
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
