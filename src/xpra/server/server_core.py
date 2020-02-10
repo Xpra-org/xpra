@@ -957,7 +957,7 @@ class ServerCore:
         socket_info = self.socket_info.get(listener)
         assert socktype, "cannot find socket type for %s" % listener
         #TODO: just like add_listen_socket above, this needs refactoring
-        socket_options = self.socket_options.get(listener)
+        socket_options = self.socket_options.get(listener, {})
         if socktype=="named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn = NamedPipeConnection(listener.pipe_name, handle, socket_options)
@@ -1100,7 +1100,7 @@ class ServerCore:
             return
 
         if socktype=="ssh":
-            conn = self.handle_ssh_connection(conn)
+            conn = self.handle_ssh_connection(conn, socket_options)
             if not conn:
                 return
             peek_data = None
@@ -1138,13 +1138,12 @@ class ServerCore:
         try:
             from xpra.net.socket_util import ssl_wrap_socket
             kwargs = self._ssl_attributes.copy()
-            if socket_options:
-                for k,v in socket_options.items():
-                    #options use '-' but attributes and parameters use '_':
-                    k = k.replace("-", "_")
-                    if k.startswith("ssl_"):
-                        k = k[4:]
-                    kwargs[k] = v
+            for k,v in socket_options.items():
+                #options use '-' but attributes and parameters use '_':
+                k = k.replace("-", "_")
+                if k.startswith("ssl_"):
+                    k = k[4:]
+                kwargs[k] = v
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
             log("_ssl_wrap_socket_fn(%s)=%s", kwargs, ssl_sock)
             return ssl_sock
@@ -1155,7 +1154,7 @@ class ServerCore:
             raise InitException("cannot create SSL sockets, check your certificate paths (%s): %s" % (cpaths, e)) from None
 
 
-    def handle_ssh_connection(self, conn):
+    def handle_ssh_connection(self, conn, socket_options):
         from xpra.server.ssh import make_ssh_server_connection, log as sshlog
         socktype = conn.socktype_wrapped
         none_auth = not self.auth_classes[socktype]
@@ -1192,7 +1191,7 @@ class ServerCore:
                     if not r:
                         return False
             return True
-        return make_ssh_server_connection(conn, none_auth=none_auth, password_auth=ssh_password_authenticate)
+        return make_ssh_server_connection(conn, socket_options, none_auth=none_auth, password_auth=ssh_password_authenticate)
 
     def try_upgrade_to_rfb(self, proto):
         self.cancel_upgrade_to_rfb_timer(proto)
@@ -1287,7 +1286,7 @@ class ServerCore:
         netlog("may_wrap_socket(..) upgrade options: ssh=%s, ssl=%s, http/ws=%s, tcp proxy=%s",
                self.ssh_upgrade, bool(self._ssl_attributes), self._html, bool(self._tcp_proxy))
         if self.ssh_upgrade and peek_data[:4]==b"SSH-":
-            conn = self.handle_ssh_connection(conn)
+            conn = self.handle_ssh_connection(conn, socket_options)
             return conn is not None, conn, None
         if self._ssl_attributes and first_char==0x16:
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint

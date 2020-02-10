@@ -233,8 +233,8 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
 
-def make_ssh_server_connection(conn, none_auth=False, password_auth=None):
-    log("make_ssh_server_connection%s", (conn, none_auth, password_auth))
+def make_ssh_server_connection(conn, socket_options, none_auth=False, password_auth=None):
+    log("make_ssh_server_connection%s", (conn, socket_options, none_auth, password_auth))
     ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth)
     DoGSSAPIKeyExchange = False
     sock = conn._socket
@@ -251,51 +251,68 @@ def make_ssh_server_connection(conn, none_auth=False, password_auth=None):
             conn.close()
         except Exception:
             log("%s.close()", conn)
-    ssh_key_dirs = get_ssh_conf_dirs()
-    log("ssh key dirs=%s", ssh_key_dirs)
     try:
         t = paramiko.Transport(sock, gss_kex=DoGSSAPIKeyExchange)
-        t.set_gss_host(socket.getfqdn(""))
+        gss_host = socket_options.get("ssh-gss-host", socket.getfqdn(""))
+        t.set_gss_host(gss_host)
+        #load host keys:
+        PREFIX = "ssh_host_"
+        SUFFIX = "_key"
         host_keys = {}
-        log("trying to load ssh host keys from: %s", csv(ssh_key_dirs))
-        for d in ssh_key_dirs:
-            fd = osexpand(d)
-            log("osexpand(%s)=%s", d, fd)
-            if not os.path.exists(fd) or not os.path.isdir(fd):
-                log("ssh host key directory '%s' is invalid", fd)
-                continue
-            for f in os.listdir(fd):
-                PREFIX = "ssh_host_"
-                SUFFIX = "_key"
-                if f.startswith(PREFIX) and f.endswith(SUFFIX):
-                    ff = os.path.join(fd, f)
-                    keytype = f[len(PREFIX):-len(SUFFIX)]
-                    if keytype:
-                        keyclass = getattr(paramiko, "%sKey" % keytype.upper(), None)
-                        if keyclass is None:
-                            #Ed25519Key
-                            keyclass = getattr(paramiko, "%s%sKey" % (keytype[:1].upper(), keytype[1:]), None)
-                        if keyclass is None:
-                            log("key type %s is not supported, cannot load '%s'", keytype, ff)
-                            continue
-                        log("loading %s key from '%s' using %s", keytype, ff, keyclass)
-                        try:
-                            host_key = keyclass(filename=ff)
-                            if host_key not in host_keys:
-                                host_keys[host_key] = ff
-                                t.add_server_key(host_key)
-                        except IOError as e:
-                            log("cannot add host key '%s'", ff, exc_info=True)
-                        except paramiko.SSHException as e:
-                            log("error adding host key '%s'", ff, exc_info=True)
-                            log.error("Error: cannot add %s host key '%s':", keytype, ff)
-                            log.error(" %s", e)
-        if not host_keys:
-            log.error("Error: cannot start SSH server,")
-            log.error(" no readable SSH host keys found in:")
-            log.error(" %s", csv(ssh_key_dirs))
-            close()
-            return None
+        def add_host_key(fd, f):
+            ff = os.path.join(fd, f)
+            keytype = f[len(PREFIX):-len(SUFFIX)]
+            if not keytype:
+                log.warn("Warning: unknown host key format '%s'", f)
+                return False
+            keyclass = getattr(paramiko, "%sKey" % keytype.upper(), None)
+            if keyclass is None:
+                #Ed25519Key
+                keyclass = getattr(paramiko, "%s%sKey" % (keytype[:1].upper(), keytype[1:]), None)
+            if keyclass is None:
+                log("key type %s is not supported, cannot load '%s'", keytype, ff)
+                return False
+            log("loading %s key from '%s' using %s", keytype, ff, keyclass)
+            try:
+                host_key = keyclass(filename=ff)
+                if host_key not in host_keys:
+                    host_keys[host_key] = ff
+                    t.add_server_key(host_key)
+                    return True
+            except IOError as e:
+                log("cannot add host key '%s'", ff, exc_info=True)
+            except paramiko.SSHException as e:
+                log("error adding host key '%s'", ff, exc_info=True)
+                log.error("Error: cannot add %s host key '%s':", keytype, ff)
+                log.error(" %s", e)
+            return False
+        host_key = socket_options.get("ssh-host-key")
+        if host_key:
+            d, f = os.path.split(host_key)
+            if f.startswith(PREFIX) and f.endswith(SUFFIX):
+                add_host_key(d, f)
+            if not host_keys:
+                log.error("Error: failed to load host key '%s'", host_key)
+                close()
+                return None
+        else:
+            ssh_key_dirs = get_ssh_conf_dirs()
+            log("trying to load ssh host keys from: %s", csv(ssh_key_dirs))
+            for d in ssh_key_dirs:
+                fd = osexpand(d)
+                log("osexpand(%s)=%s", d, fd)
+                if not os.path.exists(fd) or not os.path.isdir(fd):
+                    log("ssh host key directory '%s' is invalid", fd)
+                    continue
+                for f in os.listdir(fd):
+                    if f.startswith(PREFIX) and f.endswith(SUFFIX):
+                        add_host_key(fd, f)
+            if not host_keys:
+                log.error("Error: cannot start SSH server,")
+                log.error(" no readable SSH host keys found in:")
+                log.error(" %s", csv(ssh_key_dirs))
+                close()
+                return None
         log("loaded host keys: %s", tuple(host_keys.values()))
         t.start_server(server=ssh_server)
     except (paramiko.SSHException, EOFError) as e:
