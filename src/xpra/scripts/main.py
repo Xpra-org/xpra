@@ -21,7 +21,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.util import csv, envbool, envint, unsetenv, repr_ellipsized, nonl, pver, DEFAULT_PORT, DEFAULT_PORTS
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
-    get_util_logger, getuid, getgid,
+    get_util_logger, getuid, getgid, pollwait,
     monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON2, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
@@ -299,7 +299,15 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 systemd_run = False
             else:
                 from xpra.os_util import is_systemd_pid1
-                systemd_run = is_systemd_pid1()
+                if is_systemd_pid1():
+                    cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
+                    proc = Popen(cmd, stdin=None, stdout=None, stderr=None, shell=False)
+                    r = pollwait(proc, timeout=1)
+                    if r is None:
+                        proc.terminate()
+                    systemd_run = r==0
+                else:
+                    systemd_run = False
         if systemd_run:
             #check if we have wrapped it already (or if disabled via env var)
             if SYSTEMD_RUN:
