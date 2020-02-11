@@ -1393,7 +1393,7 @@ class ServerCore:
                 from xpra.net.websockets.protocol import WebSocketProtocol
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 newsocktype = "ws%s" % ["","s"][int(is_ssl)]
-                self.make_protocol(newsocktype, conn, WebSocketProtocol, socket_options)
+                self.make_protocol(newsocktype, conn, socket_options, WebSocketProtocol)
             scripts = self.get_http_scripts()
             conn.socktype = "wss" if is_ssl else "ws"
             WebSocketRequestHandler(sock, frominfo, new_websocket_client,
@@ -2178,7 +2178,7 @@ class ServerCore:
             sockname = sock.getsockname()
             conn = UDPSocketConnection(sock, sockname, (host, port), (host, port), socktype)
             conn.timeout = SOCKET_TIMEOUT
-            protocol = self.do_make_protocol(socktype, conn, udp_protocol_class)
+            protocol = self.do_make_protocol(socktype, conn, {}, udp_protocol_class)
             self._udp_protocols[uuid] = protocol
         else:
             #update remote address in case the client is roaming:

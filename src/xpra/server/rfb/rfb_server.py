@@ -71,7 +71,7 @@ class RFBServer:
                 auth = auths[0]
             return RFBProtocol(self, conn, auth,
                                self.process_rfb_packet, self.get_rfb_pixelformat, self.session_name or "Xpra Server")
-        p = self.do_make_protocol("rfb", conn, rfb_protocol_class)
+        p = self.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
         p.send_protocol_handshake()
 
     def process_rfb_packet(self, proto, packet):
