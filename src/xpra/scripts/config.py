@@ -773,15 +773,11 @@ def get_default_key_shortcuts():
 def get_default_systemd_run():
     if WIN32 or OSX:
         return "no"
-    #don't use systemd-run on CentOS / RedHat
-    #(it causes failures with "Failed to create bus connection: No such file or directory")
-    if is_CentOS() or is_RedHat():
-        return "no"
-    if is_Fedora():
-        return "no"
     #systemd-run was previously broken in Fedora 26:
     #https://github.com/systemd/systemd/issues/3388
     #but with newer kernels, it is working again..
+    #now that we test it before using it,
+    #it should be safe to leave it on auto: 
     return "auto"
 
 def get_default_pulseaudio_command():
