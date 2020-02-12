@@ -29,7 +29,6 @@ if SOCKET_CORK:
 SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY", None)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
-SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
 #this is more proper but would break the proxy server:
 SOCKET_SHUTDOWN = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS = envint("XPRA_LOG_TIMEOUTS", 1)

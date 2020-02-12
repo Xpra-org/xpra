@@ -41,10 +41,7 @@ def get_full_sound_command():
 
 
 def get_sound_wrapper_env():
-    env = {
-        #no need to add our ssl hooks for the sound subprocess:
-        "XPRA_SSL_PEEK" : "0"
-        }
+    env = {}
     if WIN32:
         #disable bencoder to skip warnings with the py3k Sound subapp
         env["XPRA_USE_BENCODER"] = "0"
