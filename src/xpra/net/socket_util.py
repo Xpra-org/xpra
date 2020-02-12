@@ -169,18 +169,22 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS):
     log = get_network_logger()
     log("peek_connection(%s, %i)", conn, timeout)
     PEEK_SIZE = 8192
-    start = monotonic_time()
     peek_data = b""
-    while not peek_data and int(1000*(monotonic_time()-start))<timeout:
+    start = monotonic_time()
+    elapsed = 0
+    while elapsed<=timeout:
         try:
             peek_data = conn.peek(PEEK_SIZE)
+            if peek_data:
+                break
         except OSError:
-            pass
+            log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
         except ValueError:
             log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
             break
-        if not peek_data:
-            sleep(timeout/4000.0)
+        sleep(timeout/4000.0)
+        elapsed = int(1000*(monotonic_time()-start))
+        log("peek: elapsed=%s, timeout=%s", elapsed, timeout)
     line1 = b""
     log("socket %s peek: got %i bytes", conn, len(peek_data))
     if peek_data:
