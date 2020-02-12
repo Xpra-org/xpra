@@ -11,7 +11,7 @@ from ctypes import (
 from gi.repository import GLib
 
 from xpra.platform.win32.common import (
-    WNDCLASSEX, GetLastError, ERROR_ACCESS_DENIED, WNDPROC, LPCWSTR, LPWSTR,
+    WNDCLASSEX, GetLastError, ERROR_ACCESS_DENIED, WNDPROC, LPCWSTR, LPWSTR, LPCSTR,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
@@ -19,7 +19,8 @@ from xpra.platform.win32.common import (
     GlobalLock, GlobalUnlock, GlobalAlloc, GlobalFree,
     WideCharToMultiByte, MultiByteToWideChar,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
-    SetClipboardData)
+    SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA,
+    )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
 from xpra.clipboard.clipboard_core import (
@@ -51,6 +52,17 @@ CLIPBOARD_EVENTS = {
     win32con.WM_RENDERFORMAT        : "RENDERFORMAT",
     win32con.WM_SIZECLIPBOARD       : "SIZECLIPBOARD",
     win32con.WM_VSCROLLCLIPBOARD    : "WM_VSCROLLCLIPBOARD",
+    }
+
+CLIPBOARD_FORMATS = {
+    win32con.CF_BITMAP      : "CF_BITMAP",
+    win32con.CF_DIB         : "CF_DIB",
+    win32con.CF_DIBV5       : "CF_DIBV5",
+    win32con.CF_ENHMETAFILE : "CF_ENHMETAFILE",
+    win32con.CF_METAFILEPICT: "CF_METAFILEPICT",
+    win32con.CF_OEMTEXT     : "CF_OEMTEXT",
+    win32con.CF_TEXT        : "CF_TEXT",
+    win32con.CF_UNICODETEXT : "CF_UNICODETEXT",
     }
 
 #initialize the window we will use
@@ -250,32 +262,61 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
 
     def get_clipboard_text(self, callback, errback):
+        def format_name(fmt):
+            name = CLIPBOARD_FORMATS.get(fmt)
+            if name:
+                return name
+            ulen = 128
+            buf = LPCSTR(b" "*ulen)
+            r = GetClipboardFormatNameA(fmt, buf, ulen-1)
+            if r==0:
+                return str(fmt)
+            return (buf.value[:r]).decode("latin1")
         def get_text():
-            data_handle = GetClipboardData(win32con.CF_UNICODETEXT)
+            formats = []
+            fmt = 0
+            while True:
+                fmt = EnumClipboardFormats(fmt)
+                if fmt:
+                    formats.append(fmt)
+                else:
+                    break
+            log("clipboard formats: %s", csv(format_name(x) for x in formats))
+            data_handle = None
+            #for fmt in (win32con.CF_UNICODETEXT, win32con.CF_TEXT, win32con.CF_OEMTEXT):
+            for fmt in (win32con.CF_TEXT, win32con.CF_OEMTEXT):
+                data_handle = GetClipboardData(fmt)
+                if data_handle:
+                    break
             if not data_handle:
-                errback("no data handle")
+                errback("no matching format in %s" % csv(format_name(x) for x in formats))
                 return
             data = GlobalLock(data_handle)
             if not data:
                 errback("failed to lock handle")
                 return
+            log("got data handle for format '%s'", format_name(fmt))
             try:
-                wstr = cast(data, LPCWSTR)
-                ulen = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, None, 0, None, None)
-                if ulen>MAX_CLIPBOARD_PACKET_SIZE:
-                    errback("too much data")
-                    return
-                buf = create_string_buffer(ulen)
-                l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
-                if l>0:
-                    if buf.raw[l-1:l]==b"\0":
-                        s = buf.raw[:l-1]
+                if fmt==win32con.CF_UNICODETEXT:
+                    wstr = cast(data, LPCWSTR)
+                    ulen = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, None, 0, None, None)
+                    if ulen>MAX_CLIPBOARD_PACKET_SIZE:
+                        errback("too much data")
+                        return
+                    buf = create_string_buffer(ulen)
+                    l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
+                    if l>0:
+                        if buf.raw[l-1:l]==b"\0":
+                            s = buf.raw[:l-1]
+                        else:
+                            s = buf.raw[:l]
+                        log("got %i bytes of data: %s", len(s), ellipsizer(s))
+                        callback(strtobytes(s))
                     else:
-                        s = buf.raw[:l]
-                    log("got %i bytes of data: %s", len(s), ellipsizer(s))
-                    callback(strtobytes(s))
+                        errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))
                 else:
-                    errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))
+                    astr = cast(data, LPCSTR)
+                    return astr.value.decode("latin1")
             finally:
                 GlobalUnlock(data)
         self.with_clipboard_lock(get_text, errback)
