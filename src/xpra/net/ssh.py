@@ -239,8 +239,8 @@ def ssh_paramiko_connect_to(display_desc):
             "host"  : host,
             "port"  : port,
             }
-    def get_keyfiles(config_name="key"):
-        keyfiles = host_config.get("identityfile") or get_default_keyfiles()
+    def get_keyfiles(host_config, config_name="key"):
+        keyfiles = (host_config or {}).get("identityfile") or get_default_keyfiles()
         keyfile = paramiko_config.get(config_name)
         if keyfile:
             keyfiles.insert(0, keyfile)
@@ -272,7 +272,7 @@ def ssh_paramiko_connect_to(display_desc):
                     from xpra.child_reaper import getChildReaper
                     cmd = getattr(sock, "cmd", [])
                     getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True)
-                    proxy_keys = get_keyfiles("proxy_key")
+                    proxy_keys = get_keyfiles(host_config, "proxy_key")
                     log("found proxycommand='%s' for host '%s'", proxycommand, host)
                     from paramiko.client import SSHClient
                     ssh_client = SSHClient()
@@ -296,7 +296,7 @@ def ssh_paramiko_connect_to(display_desc):
                     bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
                     return conn
 
-        keys = get_keyfiles()
+        keys = get_keyfiles(host_config)
         from xpra.scripts.main import socket_connect
         from paramiko.transport import Transport
         from paramiko import SSHException
@@ -305,7 +305,7 @@ def ssh_paramiko_connect_to(display_desc):
             proxy_port = display_desc.get("proxy_port", 22)
             proxy_username = display_desc.get("proxy_username", username)
             proxy_password = display_desc.get("proxy_password", password)
-            proxy_keys = get_keyfiles("proxy_key")
+            proxy_keys = get_keyfiles(host_config, "proxy_key")
             sock = socket_connect(dtype, proxy_host, proxy_port)
             middle_transport = Transport(sock)
             middle_transport.use_compression(False)
@@ -397,7 +397,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
         if paramiko_config and key in paramiko_config:
             return paramiko_config.get(key)
         #fallback to the value from the host config:
-        return host_config.get(key)
+        return (host_config or {}).get(key)
     def configbool(key, default_value=True):
         return parse_bool(key, configvalue(key), default_value)
     def configint(key, default_value=0):
