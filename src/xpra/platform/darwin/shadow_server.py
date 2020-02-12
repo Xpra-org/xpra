@@ -29,7 +29,7 @@ ALPHA = {
          CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
    }
 
-BTYPES = tuple(str, bytes, memoryview, bytearray)
+BTYPES = tuple((str, bytes, memoryview, bytearray))
 
 #ensure that picture_encode can deal with pixels as NSCFData:
 def patch_picture_encode():
