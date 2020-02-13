@@ -249,13 +249,13 @@ def create_sockets(opts, error_cb):
         "wss"   : bind_wss,
         "rfb"   : bind_rfb,
         }.items():
-        log("setting up %s sockets: %s", socktype, defs)
+        log("setting up %s sockets: %s", socktype, csv(defs.items()))
         for (host, iport), options in defs.items():
             add_tcp_socket(socktype, host, iport, options)
-    log("setting up UDP sockets: %s", csv(bind_udp))
+    log("setting up UDP sockets: %s", csv(bind_udp.items()))
     for (host, iport), options in bind_udp.items():
         add_udp_socket("udp", host, iport, options)
-    log("setting up vsock sockets: %s", csv(bind_vsock))
+    log("setting up vsock sockets: %s", csv(bind_vsock.items()))
     for (cid, iport), options in bind_vsock.items():
         sock = setup_vsock_socket(cid, iport)
         sockets[sock] = options
