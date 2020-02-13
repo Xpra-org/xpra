@@ -261,7 +261,7 @@ def create_sockets(opts, error_cb):
     for host, iport in bind_rfb:
         add_tcp_socket("rfb", host, iport)
     log("setting up vsock sockets: %s", csv(bind_vsock))
-    for cid, iport in bind_vsock.items():
+    for cid, iport in bind_vsock:
         sock = setup_vsock_socket(cid, iport)
         sockets.append(sock)
 
