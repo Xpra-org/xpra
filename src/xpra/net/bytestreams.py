@@ -33,14 +33,6 @@ SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
 SOCKET_SHUTDOWN = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS = envint("XPRA_LOG_TIMEOUTS", 1)
 
-#on some platforms (ie: OpenBSD), reading and writing from sockets
-#raises an IOError but we should continue if the error code is EINTR
-#this wrapper takes care of it.
-#EWOULDBLOCK can also be hit with the proxy server when we handover the socket
-CONTINUE_ERRNO = {
-            errno.EINTR         : "EINTR",
-            errno.EWOULDBLOCK   : "EWOULDBLOCK"
-            }
 ABORT = {
          errno.ENXIO            : "ENXIO",
          errno.ECONNRESET       : "ECONNRESET",
@@ -71,12 +63,7 @@ def can_retry(e):
     if isinstance(e, BrokenPipeError):
         raise ConnectionClosedException(e) from None
     if isinstance(e, OSError):
-        global CONTINUE_ERRNO
         code = e.args[0]
-        can_continue = CONTINUE_ERRNO.get(code)
-        if can_continue:
-            return can_continue
-
         #SSL pollution - see ticket #1927
         if code=="The read operation timed out":
             return str(code)
