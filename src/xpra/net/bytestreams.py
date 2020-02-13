@@ -458,7 +458,7 @@ def get_socket_options(sock, level, options) -> dict:
     return opts
 
 
-class SSLPeekFile:
+class SocketPeekFile:
     def __init__(self, fileobj, peeked, update_peek):
         self.fileobj = fileobj
         self.peeked = peeked
@@ -495,7 +495,8 @@ class SSLPeekFile:
             return peeked[:read]
         return self.fileobj.readline(limit)
 
-class SSLSocketWrapper:
+
+class SocketPeekWrapper:
     def __init__(self, sock):
         self.socket = sock
         self.peeked = b""
@@ -510,7 +511,7 @@ class SSLSocketWrapper:
     def makefile(self, mode, bufsize=None):
         fileobj = self.socket.makefile(mode, bufsize)
         if self.peeked and mode and mode.startswith("r"):
-            return SSLPeekFile(fileobj, self.peeked, self._update_peek)
+            return SocketPeekFile(fileobj, self.peeked, self._update_peek)
         return fileobj
 
     def _update_peek(self, peeked):
@@ -535,7 +536,14 @@ class SSLSocketWrapper:
         return self.socket.recv(bufsize, flags)
 
 
-class SSLSocketConnection(SocketConnection):
+class PeekableSocketConnection(SocketConnection):
+
+    def enable_peek(self):
+        assert not isinstance(self._socket, SocketPeekWrapper)
+        self._socket = SocketPeekWrapper(self._socket)
+
+
+class SSLSocketConnection(PeekableSocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
     def can_retry(self, e) -> bool:
@@ -550,10 +558,6 @@ class SSLSocketConnection(SocketConnection):
         if code in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
             return True
         return super().can_retry(e)
-
-    def enable_peek(self):
-        assert not isinstance(self._socket, SSLSocketWrapper)
-        self._socket = SSLSocketWrapper(self._socket)
 
     def get_info(self) -> dict:
         i = SocketConnection.get_info(self)
