@@ -256,7 +256,7 @@ def create_sockets(opts, error_cb):
     for (host, iport), options in bind_udp.items():
         add_udp_socket("udp", host, iport, options)
     log("setting up vsock sockets: %s", csv(bind_vsock))
-    for (cid, iport), options in bind_vsock:
+    for (cid, iport), options in bind_vsock.items():
         sock = setup_vsock_socket(cid, iport)
         sockets[sock] = options
 
