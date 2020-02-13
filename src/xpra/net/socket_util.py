@@ -26,6 +26,7 @@ WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 GROUP = os.environ.get("XPRA_GROUP", "xpra")
 PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
 PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
+PEEK_SIZE = envint("XPRA_PEEK_SIZE", 8192)
 
 
 network_logger = None
@@ -165,16 +166,15 @@ def accept_connection(socktype, listener, timeout=None, socket_options=None):
     log("accept_connection(%s, %s, %s)=%s", listener, socktype, timeout, conn)
     return conn
 
-def peek_connection(conn, timeout=PEEK_TIMEOUT_MS):
+def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
     log = get_network_logger()
     log("peek_connection(%s, %i)", conn, timeout)
-    PEEK_SIZE = 8192
     peek_data = b""
     start = monotonic_time()
     elapsed = 0
     while elapsed<=timeout:
         try:
-            peek_data = conn.peek(PEEK_SIZE)
+            peek_data = conn.peek(size)
             if peek_data:
                 break
         except OSError:
