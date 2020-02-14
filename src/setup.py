@@ -682,7 +682,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if debug_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', '-g')
         add_to_keywords(kw, 'extra_compile_args', '-ggdb')
-        if get_gcc_version()>=[4, 8]:
+        if get_gcc_version()>=[4, 8] and not WIN32:
             add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
             add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     if rpath and kw.get("libraries"):
