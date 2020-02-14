@@ -67,8 +67,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.guess_session_name()
 
     def run(self):
-        from gi.repository import GLib
-        GLib.timeout_add(1000, self.notify_startup_complete)
+        if NOTIFY_STARTUP:
+            from gi.repository import GLib
+            GLib.timeout_add(1000, self.notify_startup_complete)
         return super().run()
 
     def cleanup(self):
@@ -164,7 +165,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 break
             except Exception:
                 notifylog("failed to instantiate %s", x, exc_info=True)
-        self.notify_startup()
+        if NOTIFY_STARTUP:
+            self.notify_startup()
 
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants
