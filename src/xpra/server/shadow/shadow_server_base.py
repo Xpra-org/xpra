@@ -165,8 +165,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 break
             except Exception:
                 notifylog("failed to instantiate %s", x, exc_info=True)
-        if NOTIFY_STARTUP:
-            self.notify_startup()
 
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants
@@ -195,9 +193,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def get_notification_tray(self):
         return None
-
-    def notify_startup(self):
-        self.do_notify_startup("Xpra shadow server is starting up")
 
     def notify_startup_complete(self):
         self.do_notify_startup("Xpra shadow server is ready", replaces_nid=XPRA_STARTUP_NOTIFICATION_ID)
