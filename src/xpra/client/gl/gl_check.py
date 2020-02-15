@@ -126,8 +126,10 @@ def check_PyOpenGL_support(force_enable) -> dict:
         if gl_version_str is None:
             raise_fatal_error("OpenGL version is missing - cannot continue")
             return  {}
-        gl_major = int(bytestostr(gl_version_str)[0])
-        gl_minor = int(bytestostr(gl_version_str)[2])
+        #b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
+        vparts = bytestostr(gl_version_str).split(".")
+        gl_major = int(vparts[0])
+        gl_minor = int(vparts[1])
         props["opengl"] = gl_major, gl_minor
         MIN_VERSION = (1,1)
         if (gl_major, gl_minor) < MIN_VERSION:
