@@ -241,7 +241,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                 xvfb_cmd += ["-displayfd", str(w_pipe)]
                 xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
                 def preexec():
-                    setsid()
+                    os.setpgrp()
                     if getuid()==0 and uid:
                         setuidgid(uid, gid)
                     close_fds([0, 1, 2, r_pipe, w_pipe])
