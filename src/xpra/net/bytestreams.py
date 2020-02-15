@@ -58,14 +58,10 @@ def can_retry(e):
     if isinstance(e, BrokenPipeError):
         raise ConnectionClosedException(e) from None
     if isinstance(e, OSError):
-        code = e.args[0]
-        #SSL pollution - see ticket #1927
-        if code=="The read operation timed out":
-            return str(code)
-
         if isinstance(e, CAN_RETRY_EXCEPTIONS):
             return str(e)
 
+        code = e.args[0]
         abort = ABORT.get(code, code)
         if abort is not None:
             err = getattr(e, "errno", None)
