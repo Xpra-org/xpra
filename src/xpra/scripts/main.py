@@ -2115,6 +2115,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         close_fds = True
         preexec_fn = None
         if POSIX:
+            preexec_fn = os.setpgrp
             cmd.append("--daemon=yes")
             cmd.append("--systemd-run=no")
             if getuid()==0 and (uid!=0 or gid!=0):
@@ -2127,6 +2128,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                 cmd.append("--displayfd=%s" % w_pipe)
                 close_fds = False
                 def no_close_pipes():
+                    os.setpgrp()
                     from xpra.os_util import close_fds as osclose_fds
                     try:
                         for fd in (r_pipe, w_pipe):
