@@ -1134,7 +1134,7 @@ class ServerCore:
             self.socket_rfb_upgrade_timer[proto] = t
 
     def _ssl_wrap_socket(self, sock, socket_options):
-        netlog("ssl_wrap_socket(%s, %s)", sock, socket_options)
+        ssllog("ssl_wrap_socket(%s, %s)", sock, socket_options)
         try:
             from xpra.net.socket_util import ssl_wrap_socket
             kwargs = self._ssl_attributes.copy()
@@ -1145,10 +1145,10 @@ class ServerCore:
                     k = k[4:]
                 kwargs[k] = v
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
-            log("_ssl_wrap_socket_fn(%s)=%s", kwargs, ssl_sock)
+            ssllog("_ssl_wrap_socket_fn(%s)=%s", kwargs, ssl_sock)
             return ssl_sock
         except Exception as e:
-            log("SSL error", exc_info=True)
+            ssllog("SSL error", exc_info=True)
             ssl_paths = [kwargs.get(x) for x in ("ssl-cert", "ssl-key")]
             cpaths = csv("'%s'" % x for x in ssl_paths if x)
             raise InitException("cannot create SSL sockets, check your certificate paths (%s): %s" % (cpaths, e)) from None
