@@ -1,3 +1,10 @@
+xpra (3.0.7-1) UNRELEASED; urgency=low
+  * fix systemd-run errors: verify it does work before trying to use it
+  * fix debug builds compilation error on MS Windows
+  * fix server crashes on SIGINT: shutdown cleanly
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 15 Feb 2020 21:31:43 +0700
+
 xpra (3.0.6-2) UNRELEASED; urgency=low
   * fix 'User' not honoured in ssh_config
   * fix X11 server initiate move-resize

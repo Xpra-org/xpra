@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.6
+%define version 3.0.7
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -867,6 +867,11 @@ fi
 
 
 %changelog
+* Sat Feb 15 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
+- fix systemd-run errors: verify it does work before trying to use it
+- fix debug builds compilation error on MS Windows
+- fix server crashes on SIGINT: shutdown cleanly
+
 * Sat Feb 08 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra2
 - fix 'User' not honoured in ssh_config
 - fix X11 server initiate move-resize

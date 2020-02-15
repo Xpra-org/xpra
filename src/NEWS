@@ -1,3 +1,10 @@
+v3.0.7 (2020-02-15)
+======================
+	-- fix systemd-run errors: verify it does work before trying to use it
+	-- fix debug builds compilation error on MS Windows
+	-- fix server crashes on SIGINT: shutdown cleanly
+
+
 v3.0.6 (2020-02-05)
 ======================
 	-- fix UDP with Python3
