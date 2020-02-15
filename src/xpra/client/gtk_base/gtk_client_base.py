@@ -57,7 +57,7 @@ missing_cursor_names = set()
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
 #on win32, the named cursors work, but they are hard to see
 #when using the Adwaita theme
-USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", not WIN32)
+USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", not WIN32 and not is_Wayland())
 EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
