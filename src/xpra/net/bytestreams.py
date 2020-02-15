@@ -38,7 +38,6 @@ ABORT = {
          errno.ECONNRESET       : "ECONNRESET",
          errno.EPIPE            : "EPIPE",
          }
-continue_wait = 0
 
 
 PROTOCOL_STR = {}
@@ -49,10 +48,6 @@ for x in dir(socket):
     if x.startswith("SOCK_"):
         FAMILY_STR[getattr(socket, x)] = x
 
-
-def set_continue_wait(v):
-    global continue_wait
-    continue_wait = v
 
 CAN_RETRY_EXCEPTIONS = ()
 CLOSED_EXCEPTIONS = ()
@@ -81,8 +76,6 @@ def can_retry(e):
     return False
 
 def untilConcludes(is_active_cb, can_retry_cb, f, *a, **kw):
-    global continue_wait
-    wait = 0
     while is_active_cb():
         try:
             return f(*a, **kw)
@@ -94,10 +87,6 @@ def untilConcludes(is_active_cb, can_retry_cb, f, *a, **kw):
             e = None
             if not retry:
                 raise
-            if wait>0:
-                time.sleep(wait/1000.0)     #wait is in milliseconds, sleep takes seconds
-            if wait<continue_wait:
-                wait += 1
 
 
 def pretty_socket(s):

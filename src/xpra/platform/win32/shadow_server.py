@@ -346,10 +346,6 @@ class ShadowServer(GTKShadowServerBase):
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT)==0:
             raise InitException("all the monitors must use the same display format")
         el = get_win32_event_listener()
-        from xpra.net.bytestreams import set_continue_wait
-        #on win32, we want to wait just a little while,
-        #to prevent servers spinning wildly on non-blocking sockets:
-        set_continue_wait(5)
         #TODO: deal with those messages?
         el.add_event_callback(win32con.WM_POWERBROADCAST,   self.power_broadcast_event)
         #el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
