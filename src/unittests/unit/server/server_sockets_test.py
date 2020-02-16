@@ -61,6 +61,7 @@ class ServerSocketsTest(ServerTestUtil):
 	def test_tcp_socket(self):
 		port = get_free_tcp_port()
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "tcp://127.0.0.1:%i/" % port, EXIT_OK)
+		port = get_free_tcp_port()
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
 	def test_ws_socket(self):
