@@ -11,7 +11,7 @@ import tempfile
 
 from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
-from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST, EXIT_SSL_FAILURE
+from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_SSL_FAILURE
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr
 
@@ -171,7 +171,7 @@ class ServerSocketsTest(ServerTestUtil):
 			#tell the client:
 			self._test_connect(args, "none", args, None, ":", EXIT_OK)
 			#if the client doesn't know about the socket location, it should fail:
-			self._test_connect(args, "none", [], None, ":", EXIT_CONNECTION_LOST)
+			self._test_connect(args, "none", [], None, ":", EXIT_CONNECTION_FAILED)
 			#use the exact path to the socket:
 			from xpra.platform.dotxpra_common import PREFIX
 			self._test_connect(args, "none", [], None, "socket:"+os.path.join(tmpdir, PREFIX))
