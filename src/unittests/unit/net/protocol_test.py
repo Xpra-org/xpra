@@ -150,7 +150,7 @@ class ProtocolTest(unittest.TestCase):
         p.enable_compressor("lz4")
         #catch network packets before we write them:
         data = []
-        def raw_write(items, *_args):
+        def raw_write(_packet_type, items, *_args):
             for item in items:
                 data.append(item)
         p.raw_write = raw_write
