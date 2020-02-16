@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
-from xpra.util import AdHocStruct
+from xpra.util import AdHocStruct, typedict
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class AudioClientTest(ClientMixinTest):
+class ServerInfoClientTest(ClientMixinTest):
 
 	def test_audio(self):
 		def _ServerInfoMixin():
@@ -21,7 +21,7 @@ class AudioClientTest(ClientMixinTest):
 			x.warn_and_quit = warn_and_quit
 			return x
 		opts = AdHocStruct()
-		caps = {
+		caps = typedict({
 			"machine_id" : "123",
 			"uuid"	: "some-uuid",
 			"build.version"	: "3.0",
@@ -31,7 +31,7 @@ class AudioClientTest(ClientMixinTest):
 			"platform" : "linux2",
 			"platform.release" : "dunno",
 			"platform.platform" : "platformX",
-			}
+			})
 		x = self._test_mixin_class(_ServerInfoMixin, opts, caps)
 		del caps["build.version"]
 		assert not x.parse_server_capabilities(caps), "should have failed when version is missing"
