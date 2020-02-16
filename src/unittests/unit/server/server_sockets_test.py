@@ -11,7 +11,7 @@ import tempfile
 
 from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
-from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_SSL_FAILURE
+from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr
 
@@ -140,10 +140,10 @@ class ServerSocketsTest(ServerTestUtil):
 			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_OK, noverify)
 
 			#self signed cert should fail without noverify:
-			test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_SSL_FAILURE)
-			test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_SSL_FAILURE)
-			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_SSL_FAILURE)
-			test_connect("wss://127.0.0.1:%i/" % wss_port, EXIT_SSL_FAILURE)
+			test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+			test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+			test_connect("wss://127.0.0.1:%i/" % wss_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
 
 		finally:
 			shutil.rmtree(tmpdir)
