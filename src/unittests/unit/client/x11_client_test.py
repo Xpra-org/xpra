@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import os
 import time
 import unittest
 from xpra.util import envint
+from xpra.exit_codes import EXIT_STR
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from unit.client.x11_client_test_util import X11ClientTestUtil, log
 
@@ -21,9 +22,11 @@ class X11ClientTest(X11ClientTestUtil):
 		log("starting test server on %s", display)
 		server = self.check_start_server(display, "--start=xterm", "--sharing=%s" % sharing)
 		xvfb1, client1 = self.run_client(display, "--sharing=%s" % sharing, *client_args)
-		assert pollwait(client1, CLIENT_TIMEOUT) is None
+		r = pollwait(client1, CLIENT_TIMEOUT)
+		assert r is None, "client1 exited with code %s" % EXIT_STR.get(r, r)
 		xvfb2, client2 = self.run_client(display, "--sharing=%s" % sharing, *client_args)
-		assert pollwait(client2, CLIENT_TIMEOUT) is None
+		r = pollwait(client2, CLIENT_TIMEOUT)
+		assert r is None, "client2 exited with code %s" % EXIT_STR.get(r, r)
 		if not sharing:
 			#starting a second client should disconnect the first when not sharing
 			assert pollwait(client1, 2) is not None, "the first client should have been disconnected (sharing off)"
