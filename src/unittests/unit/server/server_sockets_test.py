@@ -11,7 +11,7 @@ import tempfile
 
 from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
-from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST, EXIT_SSL_FAILURE, EXIT_STR
+from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST, EXIT_CONNECTION_FAILED, EXIT_SSL_FAILURE, EXIT_STR, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log
 
@@ -27,7 +27,7 @@ class ServerSocketsTest(ServerTestUtil):
 
 	def start_server(self, *args):
 		server_proc = self.run_xpra(["start", "--no-daemon"]+list(args))
-		if pollwait(server_proc, 5) is not None:
+		if pollwait(server_proc, 10) is not None:
 			r = server_proc.poll()
 			raise Exception("server failed to start with args=%s, returned %s" % (args, estr(r)))
 		return server_proc
@@ -61,6 +61,7 @@ class ServerSocketsTest(ServerTestUtil):
 		server.terminate()
 		if r!=exit_code:
 			raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
+		pollwait(server, 10)
 
 	def test_default_socket(self):
 		self._test_connect([], "allow", [], b"hello", ":", EXIT_OK)
@@ -68,6 +69,7 @@ class ServerSocketsTest(ServerTestUtil):
 	def test_tcp_socket(self):
 		port = get_free_tcp_port()
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "tcp://127.0.0.1:%i/" % port, EXIT_OK)
+		port = get_free_tcp_port()
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
 	def test_ws_socket(self):
@@ -145,10 +147,10 @@ class ServerSocketsTest(ServerTestUtil):
 			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_OK, noverify)
 
 			#self signed cert should fail without noverify:
-			test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_SSL_FAILURE)
-			test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_SSL_FAILURE)
-			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_SSL_FAILURE)
-			test_connect("wss://127.0.0.1:%i/" % wss_port, EXIT_SSL_FAILURE)
+			test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+			test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
+			test_connect("wss://127.0.0.1:%i/" % wss_port, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE)
 
 		finally:
 			shutil.rmtree(tmpdir)
