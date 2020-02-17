@@ -98,7 +98,8 @@ cdef decode_dict(const unsigned char *x, unsigned int f, int l):
 
 #cdef const char *DIGITS = '0123456789'
 cdef decode(const unsigned char *x, unsigned int f, size_t l, unsigned char *what):
-    assert f<l, "cannot decode past the end of the string!"
+    if f>=l:
+        raise IndexError("cannot decode past the end of the string!")
     cdef char c = x[f]
     if c==b'l':
         return decode_list(x, f, l)
