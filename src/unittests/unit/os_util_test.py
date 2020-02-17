@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,9 +8,16 @@ import time
 import unittest
 
 from xpra.os_util import (
-    strtobytes, bytestostr, memoryview_to_bytes,
+    strtobytes, bytestostr, memoryview_to_bytes, hexstr,
     OSEnvContext,
+    POSIX,
     monotonic_time, get_rand_chars,
+    is_main_thread,
+    getuid, getgid, get_shell_for_uid, get_username_for_uid, get_home_for_uid,
+    get_hex_uuid, get_int_uuid, get_user_uuid,
+    is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_Arch, is_CentOS, is_RedHat, is_WSL,
+    is_unity, is_gnome, is_kde,
+    livefds,
     )
 
 
@@ -29,8 +36,58 @@ class TestOSUtil(unittest.TestCase):
         mvs = bytestostr(mvb)
         assert mvs==str_value
 
+    def test_livefds(self):
+        assert len(livefds())>=2
+
+    def test_distribution_variant(self):
+        is_Ubuntu()
+        is_Debian()
+        is_Raspbian()
+        is_Fedora()
+        is_Arch()
+        is_CentOS()
+        is_RedHat()
+        is_WSL()
+
+    def test_de(self):
+        is_unity()
+        is_gnome()
+        is_kde()
+
+    def test_uuid(self):
+        assert len(get_hex_uuid())==32
+        assert isinstance(get_int_uuid(), int)
+        assert get_int_uuid()!=0
+        assert get_user_uuid()!=0
+
+    def test_posix_wrappers(self):
+        if not POSIX:
+            return
+        assert isinstance(getuid(), int)
+        assert isinstance(getgid(), int)
+        def isstr(v):
+            assert v
+            assert isinstance(v, str)
+        isstr(get_shell_for_uid(getuid()))
+        isstr(get_username_for_uid(getuid()))
+        isstr(get_home_for_uid(getuid()))
+        assert not get_shell_for_uid(999999999)
+
+
+    def test_memoryview_to_bytes(self):
+        assert memoryview_to_bytes(b"bar")==b"bar"
+        assert memoryview_to_bytes(memoryview(b"foo"))==b"foo"
+        assert memoryview_to_bytes(bytearray(b"foo"))==b"foo"
+        assert memoryview_to_bytes(u"foo")==b"foo"
+
+    def test_hexstr(self):
+        assert hexstr("01")=="3031"
+
+    def test_bytes(self):
+        assert strtobytes(b"hello")==b"hello"
 
     def test_strs(self):
+        assert bytestostr(u"foo")==u"foo"
         for l in (1, 16, 255):
             zeroes  = chr(0)*l
             ones    = chr(1)*l
@@ -64,6 +121,19 @@ class TestOSUtil(unittest.TestCase):
         for l in (0, 1, 512):
             v = get_rand_chars(l)
             assert len(v)==l
+
+    def test_is_main_thread(self):
+        assert is_main_thread()
+        result = []
+        def notmainthread():
+            result.append(is_main_thread())
+        from threading import Thread
+        t = Thread(target=notmainthread)
+        t.start()
+        t.join()
+        assert len(result)==1
+        assert result[0] is False
+
 
 def main():
     unittest.main()
