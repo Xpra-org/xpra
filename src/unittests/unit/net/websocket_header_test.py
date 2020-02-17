@@ -4,12 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import time
 import unittest
-from gi.repository import GLib
 
-from xpra.util import csv, envint, envbool
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi
 from xpra.log import Logger
 
@@ -30,6 +26,20 @@ class WebsocketHeaderTest(unittest.TestCase):
         for l in (0, 10, 125, 126, 65535, 65536):
             rt(0, b"\0"*l)
 
+
+    def test_invalid_decode(self):
+        for l in (0, 10, 125, 126, 65535, 65536):
+            for has_mask in (True, False):
+                payload = b"\0"*l
+                h = encode_hybi_header(0, len(payload), has_mask, True)
+                if has_mask:
+                    packet = h+b"9"*4+payload
+                else:
+                    packet = h+payload
+                v = decode_hybi(packet)
+                assert v
+                v = decode_hybi(packet[-1:])
+                assert v is None
 
 def main():
     unittest.main()
