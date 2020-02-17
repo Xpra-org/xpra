@@ -130,7 +130,7 @@ def encode_dict(x,r):
 
 encode_func = {
     int     : encode_int,
-    str     : encode_string,
+    str     : encode_unicode,
     list    : encode_list,
     tuple   : encode_list,
     dict    : encode_dict,
