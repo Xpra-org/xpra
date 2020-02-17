@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@
 
 import unittest
 
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, POSIX, OSX
 from xpra.util import AdHocStruct
 from xpra.client.mixins.audio import AudioClient
 from xpra.sound.gstreamer_util import CODEC_ORDER
@@ -129,8 +129,16 @@ class AudioClientReceiveTest(AudioClientTestUtil):
 
 
 def main():
-	if not WIN32:
-		unittest.main()
+	if WIN32:
+		return
+	if POSIX and not OSX: 
+		#verify that pulseaudio is running:
+		#otherwise the tests will fail
+		#ie: during rpmbuild
+		from subprocess import getstatusoutput
+		if getstatusoutput("pactl info")[0]!=0:
+			return
+	unittest.main()
 
 
 if __name__ == '__main__':
