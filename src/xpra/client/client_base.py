@@ -158,7 +158,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         for ch_name in ch:
             if ch_name=="none":
                 continue
-            elif ch_name=="all":
+            if ch_name=="all":
                 items = ALL_AUTH_HANDLERS
                 ierror = authlog
             else:
