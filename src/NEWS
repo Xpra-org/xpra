@@ -1,8 +1,10 @@
-v3.0.7 (2020-02-15)
+v3.0.7 (2020-02-17)
 ======================
 	-- fix systemd-run errors: verify it does work before trying to use it
 	-- fix debug builds compilation error on MS Windows
 	-- fix server crashes on SIGINT: shutdown cleanly
+	-- fix file authentication handler using a default password filename
+	-- fix unit tests failures
 
 
 v3.0.6 (2020-02-05)

@@ -867,10 +867,12 @@ fi
 
 
 %changelog
-* Sat Feb 15 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
+* Mon Feb 17 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
 - fix systemd-run errors: verify it does work before trying to use it
 - fix debug builds compilation error on MS Windows
 - fix server crashes on SIGINT: shutdown cleanly
+- fix file authentication handler using a default password filename
+- fix unit tests failures
 
 * Sat Feb 08 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra2
 - fix 'User' not honoured in ssh_config
