@@ -127,16 +127,22 @@ def check_PyOpenGL_support(force_enable) -> dict:
             raise_fatal_error("OpenGL version is missing - cannot continue")
             return  {}
         #b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
-        vparts = bytestostr(gl_version_str).split(".")
-        gl_major = int(vparts[0])
-        gl_minor = int(vparts[1])
-        props["opengl"] = gl_major, gl_minor
-        MIN_VERSION = (1,1)
-        if (gl_major, gl_minor) < MIN_VERSION:
-            raise_fatal_error("OpenGL output requires version %s or greater, not %s.%s" %
-                              (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
+        log("GL_VERSION=%s", bytestostr(gl_version_str))
+        vparts = bytestostr(gl_version_str).split(" ", 1)[0].split(".")
+        try:
+            gl_major = int(vparts[0])
+            gl_minor = int(vparts[1])
+        except (IndexError, ValueError) as e:
+            log("failed to parse gl version '%s': %s", bytestostr(gl_version_str), e)
+            log(" assuming this is at least 1.1 to continue")
         else:
-            log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
+            props["opengl"] = gl_major, gl_minor
+            MIN_VERSION = (1,1)
+            if (gl_major, gl_minor) < MIN_VERSION:
+                raise_fatal_error("OpenGL output requires version %s or greater, not %s.%s" %
+                                  (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
+            else:
+                log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
 
         from OpenGL import version as OpenGL_version
         pyopengl_version = OpenGL_version.__version__
