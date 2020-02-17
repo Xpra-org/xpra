@@ -4,11 +4,10 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import POSIX, OSX, WIN32
+x11_get_server_time = None
 if POSIX and (not OSX or WIN32):
     from gi.repository import GdkX11  #pylint: disable=wrong-import-position
     x11_get_server_time = GdkX11.x11_get_server_time
-else:
-    x11_get_server_time = None
 from xpra.x11.gtk3 import gdk_bindings  #@UnresolvedImport, @UnusedImport
 
 get_pywindow                = gdk_bindings.get_pywindow
