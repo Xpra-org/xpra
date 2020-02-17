@@ -14,12 +14,13 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 class MixinsTest(ClientMixinTest):
 
 	def test_mmap(self):
-		opts = AdHocStruct()
-		opts.mmap = "on"
-		opts.mmap_group = False
-		self._test_mixin_class(MmapClient, opts, {
-			"mmap.enabled"		: True,
-			})
+		for mmap in ("on", "/tmp/mmap-test-file"):
+			opts = AdHocStruct()
+			opts.mmap = mmap
+			opts.mmap_group = False
+			self._test_mixin_class(MmapClient, opts, {
+				"mmap.enabled"		: True,
+				})
 
 	def make_caps(self, caps):
 		d = ClientMixinTest.make_caps(self, caps)
