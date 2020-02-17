@@ -247,6 +247,22 @@ class TestBencoderFunctions:
     def test_nested_dicts(self):
         self.t(nested_dicts, nested_dicts_output)
 
+    def test_invalid_bdecode(self):
+        def f(v):
+            try:
+                self.decode(v)
+            except ValueError:
+                pass
+            else:
+                raise Exception("decode should have failed for '%s' (%s)" % (v, type(v)))
+        f(b"")
+        f(b"XX")        #invalid type code
+        f(b"i-0e")      #invalid number
+        f(b"li1ei2eXXe")#invalid element in list
+        f(b"di1eXXe")   #invalid value in dict
+        f(b"dXXi2ee")   #invalid key in dict
+        f(b"s")         #input too short
+
 
 class TestBencoder(unittest.TestCase, TestBencoderFunctions):
 
