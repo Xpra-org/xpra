@@ -73,6 +73,8 @@ class TestAuth(unittest.TestCase):
     def _test_module(self, module):
         a = self._init_auth(module)
         assert a
+        assert str(a)
+        assert repr(a)
         if a.requires_challenge():
             challenge = a.get_challenge(get_digests())
             assert challenge
