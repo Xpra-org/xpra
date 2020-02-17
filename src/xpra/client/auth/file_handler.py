@@ -17,7 +17,6 @@ class Handler:
             if client.password_file:
                 self.password_file = client.password_file[0]
                 client.password_file = client.password_file[1:]
-            self.password_file = "password.txt"
 
     def __repr__(self):
         return "file"
