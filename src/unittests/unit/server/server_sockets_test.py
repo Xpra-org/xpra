@@ -9,11 +9,14 @@ import shutil
 import unittest
 import tempfile
 
-from xpra.util import repr_ellipsized
+from xpra.util import repr_ellipsized, envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr
+
+
+CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 20)
 
 
 class ServerSocketsTest(ServerTestUtil):
@@ -33,7 +36,7 @@ class ServerSocketsTest(ServerTestUtil):
 		#we should always be able to get the version:
 		uri = uri_prefix + str(display_no)
 		client = self.run_xpra(["version", uri] + server_args)
-		if pollwait(client, 5)!=0:
+		if pollwait(client, CONNECT_WAIT)!=0:
 			r = client.poll()
 			if client.poll() is None:
 				client.terminate()
@@ -46,7 +49,7 @@ class ServerSocketsTest(ServerTestUtil):
 			cmd += ["--password-file=%s" % f.name]
 			cmd += ["--challenge-handlers=file:filename=%s" % f.name]
 		client = self.run_xpra(cmd)
-		r = pollwait(client, 10)
+		r = pollwait(client, CONNECT_WAIT)
 		if f:
 			f.close()
 		if client.poll() is None:
@@ -125,7 +128,7 @@ class ServerSocketsTest(ServerTestUtil):
 			def test_connect(uri, exit_code, *client_args):
 				cmd = ["info", uri] + list(client_args)
 				client = self.run_xpra(cmd)
-				r = pollwait(client, 5)
+				r = pollwait(client, CONNECT_WAIT)
 				if client.poll() is None:
 					client.terminate()
 				assert r==exit_code, "expected info client to return %s but got %s" % (estr(exit_code), estr(client.poll()))
