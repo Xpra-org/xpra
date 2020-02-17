@@ -51,6 +51,8 @@ class TestAuth(unittest.TestCase):
         auth_module = __import__(pmod, globals(), locals(), ["%s_auth" % name], 0)
         mod = getattr(auth_module, "%s_auth" % name, None)
         assert mod, "cannot load '%s_auth' from %s" % (name, pmod)
+        assert str(mod)
+        assert repr(mod)
         return mod
 
     def _init_auth(self, mod_name, username="foo", **kwargs):
