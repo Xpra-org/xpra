@@ -13,7 +13,7 @@ SRC_DIR=`dirname $UNITTESTS_DIR`
 
 INSTALL_ROOT="$SRC_DIR/dist/python3"
 pushd $SRC_DIR
-python3 ./setup.py install --with-scripts --home=$INSTALL_ROOT || die "failed to build"
+python3 ./setup.py install --with-scripts --home=$INSTALL_ROOT --without-minify || die "failed to build"
 popd
 
 export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:.
@@ -22,5 +22,9 @@ export XPRA_COMMAND=$INSTALL_ROOT/bin/xpra
 export XPRA_CONF_DIR=$INSTALL_ROOT/etc/xpra/
 
 pushd $UNITTESTS_DIR
-python3 ./unit/run.py "$@"
+coverage erase
+./unit/run.py "$@"
+coverage report -m
+coverage html
+xdg-open ./htmlcov/index.html
 popd

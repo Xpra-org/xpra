@@ -9,7 +9,20 @@ import os.path
 import subprocess
 
 
+COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1")=="1"
+
+
 def main():
+    #`python -c \"import os, my_project; print os.path.dirname(my_project.__file__)\
+    if COVERAGE:
+        #only include xpra in the report,
+        #and to do that, we need the path to the module (weird):
+        import xpra
+        xpra_mod_dir = os.path.dirname(xpra.__file__)
+        run_cmd = ["coverage", "run", "-a", "--include=%s/*" % xpra_mod_dir]
+    else:
+        run_cmd = ["python3"]
+
     paths = []
     #ie: unit_dir = "/path/to/Xpra/trunk/src/unittests/unit"
     unit_dir = os.path.abspath(os.path.dirname(__file__))
@@ -33,7 +46,7 @@ def main():
         #ie: "unit.version_util_test"
         name = p[len(unittests_dir)+1:-3].replace(os.path.sep, ".")
         write("running %s\n" % name)
-        cmd = ["python3", p]
+        cmd = run_cmd + [p]
         try:
             proc = subprocess.Popen(cmd)
         except OSError:
