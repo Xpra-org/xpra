@@ -97,8 +97,6 @@ def bdecode(x):
             raise ValueError("invalid type identifier: %s" % (xs[0]))
         r, l = fn(xs, 0)
     except (IndexError, KeyError):
-        import traceback
-        traceback.print_exc()
         raise ValueError
     return r, l
 

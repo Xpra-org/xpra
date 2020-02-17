@@ -122,8 +122,6 @@ def bdecode(x):
     try:
         return decode(s, f, l, "bencoded string")
     except (IndexError, KeyError):
-        import traceback
-        traceback.print_exc()
         raise ValueError
 
 # Encoding functions:
