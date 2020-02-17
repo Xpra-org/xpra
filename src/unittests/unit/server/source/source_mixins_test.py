@@ -14,6 +14,23 @@ from xpra.os_util import POSIX, OSX, get_util_logger
 
 class SourceMixinsTest(unittest.TestCase):
 
+    def test_stub(self):
+        from xpra.server.source.stub_source_mixin import StubSourceMixin
+        assert StubSourceMixin.is_needed(typedict())
+        s = StubSourceMixin()
+        s.init_state()
+        s.init_from(None, None)
+        assert not s.is_closed()
+        s.parse_client_caps(typedict())
+        assert s.get_caps() is not None
+        assert s.get_info() is not None
+        s.user_event()
+        s.may_notify()
+        s.queue_encode(("item",))
+        s.send_more(("packet-type", 0))
+        s.send_async(("packet-type", 0))
+        s.cleanup()
+
     def test_clientinfo(self):
         from xpra.server.source.clientinfo_mixin import ClientInfoMixin
         x = ClientInfoMixin()
