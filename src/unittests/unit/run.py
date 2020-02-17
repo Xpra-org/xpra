@@ -13,7 +13,6 @@ COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1")=="1"
 
 
 def main():
-    #`python -c \"import os, my_project; print os.path.dirname(my_project.__file__)\
     if COVERAGE:
         #only include xpra in the report,
         #and to do that, we need the path to the module (weird):
