@@ -707,12 +707,13 @@ def find_lib(libname):
 
 def pollwait(process, timeout=5):
     start = monotonic_time()
+    v = None
     while monotonic_time()-start<timeout:
         v = process.poll()
         if v is not None:
-            return v
+            break
         time.sleep(0.1)
-    return None
+    return v
 
 def which(command):
     from distutils.spawn import find_executable
