@@ -127,7 +127,7 @@ class ServerSocketsTest(ServerTestUtil):
 			server = self.start_server(display, *server_args)
 
 			#test it with openssl client:
-			for port in (tcp_port, ssl_port):
+			for port in (tcp_port, ssl_port, ws_port, wss_port):
 				openssl_verify_command = ("openssl", "s_client", "-connect", "127.0.0.1:%i" % port, "-CAfile", certfile)
 				devnull = os.open(os.devnull, os.O_WRONLY)
 				openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
