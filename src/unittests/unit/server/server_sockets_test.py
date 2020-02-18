@@ -16,10 +16,15 @@ from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr
 
 
-CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 20)
+CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 60)
 
 
 class ServerSocketsTest(ServerTestUtil):
+
+	def get_run_env(self):
+		env = super().get_run_env()
+		env["XPRA_CONNECT_TIMEOUT"] = CONNECT_WAIT
+		return env
 
 	def start_server(self, *args):
 		server_proc = self.run_xpra(["start", "--no-daemon"]+list(args))
@@ -38,7 +43,7 @@ class ServerSocketsTest(ServerTestUtil):
 		client = self.run_xpra(["version", uri] + server_args)
 		if pollwait(client, CONNECT_WAIT)!=0:
 			r = client.poll()
-			if client.poll() is None:
+			if r is None:
 				client.terminate()
 			raise Exception("version client failed to connect, returned %s" % estr(r))
 		#try to connect
@@ -52,7 +57,7 @@ class ServerSocketsTest(ServerTestUtil):
 		r = pollwait(client, CONNECT_WAIT)
 		if f:
 			f.close()
-		if client.poll() is None:
+		if r is None:
 			client.terminate()
 		server.terminate()
 		if r!=exit_code:
