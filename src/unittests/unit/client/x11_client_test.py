@@ -12,7 +12,7 @@ from xpra.exit_codes import EXIT_STR
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from unit.client.x11_client_test_util import X11ClientTestUtil, log
 
-CLIENT_TIMEOUT = envint("XPRA_TEST_CLIENT_TIMEOUT", 5)
+CLIENT_TIMEOUT = envint("XPRA_TEST_CLIENT_TIMEOUT", 20)
 
 
 class X11ClientTest(X11ClientTestUtil):
