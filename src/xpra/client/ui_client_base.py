@@ -209,7 +209,7 @@ class UIXpraClient(ClientBaseClass):
                     #some platforms don't detect the vrefresh correctly
                     #(ie: macos in virtualbox?), so use a sane default:
                     v = 60
-                self._mouse_position_delay = 1000//v
+                self._mouse_position_delay = 1000//v//2
                 log("mouse delay: %s", self._mouse_position_delay)
             except Exception:
                 log("failed to calculate automatic delay", exc_info=True)
