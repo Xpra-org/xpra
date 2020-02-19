@@ -20,6 +20,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     init_x11_filter,
     cleanup_x11_filter,
     )
+from xpra.gtk_common.error import XError
 from xpra.clipboard.clipboard_core import (
     ClipboardProtocolHelperCore, ClipboardProxyCore, TEXT_TARGETS,
     must_discard, must_discard_extra, _filter_targets,
@@ -432,15 +433,22 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
             requestor, target, prop, dtype, dformat, repr_ellipsized(bytestostr(data)), time)
         #answer the selection request:
-        with xsync:
-            xid = get_xwindow(requestor)
-            if data is not None:
-                X11Window.XChangeProperty(xid, prop, dtype, dformat, data)
-            else:
-                #maybe even delete the property?
-                #X11Window.XDeleteProperty(xid, prop)
-                prop = None
-            X11Window.sendSelectionNotify(xid, self._selection, target, prop, time)
+        try:
+            with xsync:
+                xid = get_xwindow(requestor)
+                if data is not None:
+                    X11Window.XChangeProperty(xid, prop, dtype, dformat, data)
+                else:
+                    #maybe even delete the property?
+                    #X11Window.XDeleteProperty(xid, prop)
+                    prop = None
+                X11Window.sendSelectionNotify(xid, self._selection, target, prop, time)
+        except XError as e:
+            log("failed to set selection", exc_info=True)
+            log.warn("Warning: failed to set selection for target '%s'", target)
+            log.warn(" on requestor %s", self.get_wininfo(xid))
+            log.warn(" property '%s'", prop)
+            log.warn(" %s", e)
 
     def got_contents(self, target, dtype=None, dformat=None, data=None):
         #if this is the special target 'TARGETS', cache the result:
