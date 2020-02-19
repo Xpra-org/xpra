@@ -48,8 +48,8 @@ def main():
         cmd = run_cmd + [p]
         try:
             proc = subprocess.Popen(cmd)
-        except OSError:
-            write("failed to execute %s" % p)
+        except OSError as e:
+            write("failed to execute %s: %s" % (p, e))
             return 1
         v = proc.wait()
         if v!=0:
