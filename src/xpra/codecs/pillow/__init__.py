@@ -29,5 +29,4 @@ for x in ("Image", "PngImagePlugin", "WebPImagePlugin", "JpegImagePlugin"):
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 assert PIL is not None and Image is not None
-PIL_VERSION = PIL.PILLOW_VERSION
 Image.init()

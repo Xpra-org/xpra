@@ -1,18 +1,18 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
 from io import BytesIO
+import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
 
 from xpra.util import envbool
 from xpra.os_util import bytestostr
 from xpra.net.compression import Compressed
 from xpra.log import Logger
-from xpra.codecs.pillow import PIL_VERSION
 
 log = Logger("encoder", "pillow")
 
@@ -21,7 +21,7 @@ ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,j
 
 
 def get_version():
-    return PIL_VERSION
+    return PIL.__version__
 
 def get_type():
     return "pillow"

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,6 @@ from io import BytesIO
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 
-from xpra.codecs.pillow import PIL_VERSION
 from xpra.util import csv
 from xpra.log import Logger
 
@@ -67,7 +66,7 @@ def open_only(data, types=("png", "jpeg", "webp")):
 
 
 def get_version():
-    return PIL_VERSION
+    return PIL.__version__
 
 def get_type():
     return "pillow"
