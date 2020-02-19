@@ -397,6 +397,7 @@ class InputServer(StubServerMixin):
         pass
 
 
+    #FIXME: we should not be overriding this method here
     def send_hello(self, server_source, _root_w, _root_h, key_repeat, _server_cipher):
         capabilities = self.make_hello(server_source)
         if key_repeat:
