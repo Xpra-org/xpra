@@ -11,7 +11,7 @@ from ctypes import (
 from gi.repository import GLib
 
 from xpra.platform.win32.common import (
-    WNDCLASSEX, GetLastError, ERROR_ACCESS_DENIED, WNDPROC, LPCWSTR, LPWSTR, LPCSTR,
+    WNDCLASSEX, GetLastError, WNDPROC, LPCWSTR, LPWSTR, LPCSTR,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
@@ -19,7 +19,7 @@ from xpra.platform.win32.common import (
     GlobalLock, GlobalUnlock, GlobalAlloc, GlobalFree,
     WideCharToMultiByte, MultiByteToWideChar,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
-    SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA,
+    SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
     )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
@@ -162,23 +162,20 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
     def with_clipboard_lock(self, success_callback, failure_callback, retries=5, delay=5):
         r = OpenClipboard(self.window)
-        log("OpenClipboard(%#x)=%s", self.window, r)
         if r:
+            log("OpenClipboard(%#x)=%s", self.window, r)
             try:
                 success_callback()
                 return
             finally:
                 CloseClipboard()
-        if GetLastError()!=ERROR_ACCESS_DENIED:
-            failure_callback("OpenClipboard: access denied")
-            return
-        log("clipboard lock: access denied")
+        log("OpenClipboard(%#x)=%s, owner=%#x", self.window, WinError(GetLastError()), GetClipboardOwner())
         if retries<=0:
             failure_callback("OpenClipboard: too many failed attemps, giving up")
             return
         #try again later:
         GLib.timeout_add(delay, self.with_clipboard_lock,
-                         success_callback, failure_callback, retries-1, delay)
+                         success_callback, failure_callback, retries-1, delay+5)
 
     def clear(self):
         def clear_error(error_text=""):
