@@ -364,6 +364,8 @@ class X11ServerCore(GTKServerBase):
                     capabilities["screen-sizes"] = sizes
             if self.default_cursor_image and source.wants_default_cursor:
                 capabilities["cursor.default"] = self.default_cursor_image
+            if self.opengl_props:
+                capabilities["opengl"] = self.opengl_props
         return capabilities
 
     def do_get_info(self, proto, server_sources):

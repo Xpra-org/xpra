@@ -223,9 +223,11 @@ class SessionInfo(Gtk.Window):
         tb.new_row("pygst", slabel(make_version_str(pygst_version)), server_vinfo("sound.pygst"))
         def gllabel(prop="opengl", default_value="n/a"):
             return slabel(make_version_str(self.client.opengl_props.get(prop, default_value)))
-        tb.new_row("OpenGL", gllabel("opengl", "n/a"), slabel(server_version_info("opengl.opengl")))
-        tb.new_row("OpenGL Vendor", gllabel("vendor", ""), slabel(server_version_info("opengl.vendor")))
-        tb.new_row("PyOpenGL", gllabel("pyopengl", "n/a"), slabel(server_version_info("opengl.pyopengl")))
+        def sgllabel(prop="opengl", default_value="n/a"):
+            return slabel(make_version_str(typedict(self.client.server_opengl).strget(prop, default_value)))
+        tb.new_row("OpenGL", gllabel("opengl", "n/a"), sgllabel("opengl"))
+        tb.new_row("OpenGL Vendor", gllabel("vendor", ""), sgllabel("vendor"))
+        tb.new_row("PyOpenGL", gllabel("pyopengl", "n/a"), sgllabel("pyopengl"))
 
         # Features Table:
         vbox = self.vbox_tab("features.png", "Features", self.populate_features)

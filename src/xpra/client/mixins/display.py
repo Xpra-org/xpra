@@ -63,6 +63,7 @@ class DisplayClient(StubClientMixin):
         self.server_max_desktop_size = None
         self.server_display = None
         self.server_randr = False
+        self.server_opengl = None
 
 
     def init(self, opts):
@@ -227,6 +228,7 @@ class DisplayClient(StubClientMixin):
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = c.boolget("resize_screen")
         log("server has randr: %s", self.server_randr)
+        self.server_opengl = c.dictget("opengl")
         return True
 
     def process_ui_capabilities(self, c : typedict):
