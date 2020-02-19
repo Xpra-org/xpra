@@ -35,6 +35,7 @@ from xpra.platform.win32.comtypes_util import QuietenLogging
 #depending on how xpra was packaged, or even run from the source directory:
 dirs = [app_dir, os.path.join(app_dir, "win32"), os.path.join(app_dir, "share", "xpra")]
 filenames = [os.environ.get("XPRA_DIRECTSHOW_TLB")] + [os.path.join(d, "DirectShow.tlb") for d in dirs]
+directshow_tlb = None
 for filename in filenames:
     if filename and os.path.exists(filename):
         directshow_tlb = filename
