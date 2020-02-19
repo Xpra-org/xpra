@@ -32,8 +32,14 @@ from xpra.platform.win32.comtypes_util import QuietenLogging
 
 
 #try to load directshow tlb from various directories,
-#depending on how xpra was packaged, or even run from the source directory:
-dirs = [app_dir, os.path.join(app_dir, "win32"), os.path.join(app_dir, "share", "xpra")]
+#depending on how xpra was packaged, installed locally,
+#or even run from the source directory:
+dirs = [
+    app_dir,
+    os.path.join(app_dir, "win32"),
+    os.path.join(app_dir, "share", "xpra"),
+    os.path.join(os.environ.get("MINGW_PREFIX", ""), "share", "xpra"),
+    ]
 filenames = [os.environ.get("XPRA_DIRECTSHOW_TLB")] + [os.path.join(d, "DirectShow.tlb") for d in dirs]
 directshow_tlb = None
 for filename in filenames:
