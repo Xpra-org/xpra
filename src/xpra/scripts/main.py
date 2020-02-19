@@ -1122,8 +1122,11 @@ def single_display_match(dir_servers, error_cb, nomatch="cannot find any live se
 
 
 def connect_or_fail(display_desc, opts):
+    from xpra.net.bytestreams import ConnectionClosedException
     try:
         return connect_to(display_desc, opts)
+    except ConnectionClosedException as e: 
+        raise InitExit(EXIT_CONNECTION_FAILED, "%s" % e) from None
     except InitException:
         raise
     except InitExit:
