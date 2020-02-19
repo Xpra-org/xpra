@@ -39,6 +39,19 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-coverage" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/6d/1d/d44ed71d9a254453f4dd296cadf497957454995a35defcc7a7424caec89d/coverage-5.0.3.tar.gz"
+			hash="sha256:77afca04240c40450c331fa796b3eab6f1e15c5ecf8bf2b8bee9706cd5452fef"
+			version="5.0.3"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 	<distutils id="python3-enum-compat" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/41/46/8ed2368976d934652d8f33f1fdd86f5580fab45e890c90a848e83097a093/enum-compat-0.0.3.tar.gz"
@@ -733,6 +746,7 @@
 	<metamodule id="meta-osx-xpra-python3-deps">
 		<dependencies>
 		  <dep package="python3-setuptools"/>
+		  <dep package="python3-coverage"/>
 		  <dep package="python3-enum-compat"/>
 		  <dep package="python3-zeroconf"/>
 		  <dep package="python3-netifaces"/>
