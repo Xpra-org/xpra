@@ -305,7 +305,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     proc = Popen(cmd, stdin=None, stdout=None, stderr=None, shell=False)
                     r = pollwait(proc, timeout=1)
                     if r is None:
-                        proc.terminate()
+                        try:
+                            proc.terminate()
+                        except:
+                            pass
                     systemd_run = r==0
                 else:
                     systemd_run = False
