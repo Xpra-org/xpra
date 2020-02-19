@@ -408,7 +408,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         return "GTK3 X11 desktop"
 
     def make_hello(self, source):
-        capabilities = X11ServerBase.make_hello(self, source)
+        capabilities = super().make_hello(source)
         if source.wants_features:
             capabilities.update({
                                  "pointer.grabs"    : True,
