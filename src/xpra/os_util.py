@@ -416,7 +416,7 @@ def livefds():
     live = set()
     try:
         MAXFD = os.sysconf("SC_OPEN_MAX")
-    except ValueError:
+    except (ValueError, AttributeError):
         MAXFD = 256
     for fd in range(0, MAXFD):
         try:
