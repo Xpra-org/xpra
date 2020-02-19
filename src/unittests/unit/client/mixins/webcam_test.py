@@ -22,14 +22,16 @@ class WebcamTest(ClientMixinTest):
 			"virtual-video-devices" : 1,
 			})
 		x = self.mixin
-		if x.webcam_forwarding>0:
-			self.glib.timeout_add(2500, x.stop_sending_webcam)
-			self.glib.timeout_add(5000, self.stop)
-			self.main_loop.run()
-			assert len(self.packets)>2
-			self.verify_packet(0, ("webcam-start", 0, ))
-			self.verify_packet(1, ("webcam-frame", 0, ))
-			self.verify_packet(-1, ("webcam-stop", 0, ))
+		if not x.webcam_device:
+			print("no webcam device found, test skipped")
+			return
+		self.glib.timeout_add(2500, x.stop_sending_webcam)
+		self.glib.timeout_add(5000, self.stop)
+		self.main_loop.run()
+		assert len(self.packets)>2
+		self.verify_packet(0, ("webcam-start", 0, ))
+		self.verify_packet(1, ("webcam-frame", 0, ))
+		self.verify_packet(-1, ("webcam-stop", 0, ))
 
 def main():
 	unittest.main()
