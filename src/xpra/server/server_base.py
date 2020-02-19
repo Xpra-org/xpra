@@ -480,7 +480,7 @@ class ServerBase(ServerBaseClass):
         return f
 
     def make_hello(self, source):
-        capabilities = ServerCore.make_hello(self, source)
+        capabilities = super().make_hello(source)
         for c in SERVER_BASES:
             if c!=ServerCore:
                 merge_dicts(capabilities, c.get_caps(self, source))
