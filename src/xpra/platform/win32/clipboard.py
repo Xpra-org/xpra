@@ -9,11 +9,11 @@ from ctypes import (
     WinError, FormatError,
     )
 from xpra.platform.win32.common import (
-    WNDCLASSEX, GetLastError, ERROR_ACCESS_DENIED, WNDPROC, LPCWSTR, LPWSTR,
+    WNDCLASSEX, GetLastError, WNDPROC, LPCWSTR, LPWSTR,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
-    OpenClipboard, EmptyClipboard, CloseClipboard, GetClipboardData,
+    OpenClipboard, EmptyClipboard, CloseClipboard, GetClipboardData, GetClipboardOwner,
     GlobalLock, GlobalUnlock, GlobalAlloc, GlobalFree,
     WideCharToMultiByte, MultiByteToWideChar,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
@@ -152,23 +152,20 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
     def with_clipboard_lock(self, success_callback, failure_callback, retries=5, delay=5):
         r = OpenClipboard(self.window)
-        log("OpenClipboard(%#x)=%s", self.window, r)
         if r:
+            log("OpenClipboard(%#x)=%s", self.window, r)
             try:
                 success_callback()
                 return
             finally:
                 CloseClipboard()
-        if GetLastError()!=ERROR_ACCESS_DENIED:
-            failure_callback("OpenClipboard: access denied")
-            return
-        log("clipboard lock: access denied")
+        log("OpenClipboard(%#x)=%s, owner=%#x", self.window, WinError(GetLastError()), GetClipboardOwner())
         if retries<=0:
             failure_callback("OpenClipboard: too many failed attemps, giving up")
             return
         #try again later:
         glib.timeout_add(delay, self.with_clipboard_lock,
-                         success_callback, failure_callback, retries-1, delay)
+                         success_callback, failure_callback, retries-1, delay+5)
 
     def clear(self):
         def clear_error(error_text=""):
