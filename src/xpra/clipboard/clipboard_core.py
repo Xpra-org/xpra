@@ -442,9 +442,9 @@ class ClipboardProtocolHelperCore:
         if dtype is None or data is None or (dformat==0 and not data):
             no_contents()
             return
-        log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
         truncated = 0
         if self.max_clipboard_send_size > 0:
+            log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
             max_send_datalen = self.max_clipboard_send_size * 8 // get_format_size(dformat)
             if len(data) > max_send_datalen:
                 truncated = len(data) - max_send_datalen
