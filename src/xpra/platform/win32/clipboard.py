@@ -313,7 +313,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                         errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))
                 else:
                     astr = cast(data, LPCSTR)
-                    return astr.value.decode("latin1")
+                    callback(astr.value.decode("latin1"))
             finally:
                 GlobalUnlock(data)
         self.with_clipboard_lock(get_text, errback)
