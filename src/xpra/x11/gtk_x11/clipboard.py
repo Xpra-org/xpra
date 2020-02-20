@@ -293,20 +293,20 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     log("claim(%i) we already own the '%s' selection", time, self._selection)
                     return
                 setsel = X11Window.XSetSelectionOwner(self.xid, self._selection, time)
-                log("claim_selection: set selection owner returned %s, owner=%#x",
-                    setsel, X11Window.XGetSelectionOwner(self._selection))
-                event_mask = StructureNotifyMask
-                log("claim_selection: sending message to root window")
                 owner = X11Window.XGetSelectionOwner(self._selection)
                 self.owned = owner==self.xid
+                log("claim_selection: set selection owner returned %s, owner=%#x, owned=%s",
+                    setsel, owner, self.owned)
+                event_mask = StructureNotifyMask
                 if not self.owned:
                     log.warn("Warning: we failed to get ownership of the '%s' clipboard selection", self._selection)
-                else:
-                    #send announcement:
-                    root = get_default_root_window()
-                    root_xid = root.get_xid()
-                    X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER",
-                                      CurrentTime, self._selection, self.xid)
+                    return
+                #send announcement:
+                log("claim_selection: sending message to root window")
+                root = get_default_root_window()
+                root_xid = root.get_xid()
+                X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER",
+                                  CurrentTime, self._selection, self.xid)
                 log("claim_selection: done, owned=%s", self.owned)
         except Exception:
             log("failed to claim selection '%s'", self._selection, exc_info=True)
