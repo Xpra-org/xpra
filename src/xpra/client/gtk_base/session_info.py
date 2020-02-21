@@ -224,7 +224,7 @@ class SessionInfo(Gtk.Window):
         def gllabel(prop="opengl", default_value="n/a"):
             return slabel(make_version_str(self.client.opengl_props.get(prop, default_value)))
         def sgllabel(prop="opengl", default_value="n/a"):
-            return slabel(make_version_str(typedict(self.client.server_opengl).strget(prop, default_value)))
+            return slabel(make_version_str(typedict(self.client.server_opengl or {}).strget(prop, default_value)))
         tb.new_row("OpenGL", gllabel("opengl", "n/a"), sgllabel("opengl"))
         tb.new_row("OpenGL Vendor", gllabel("vendor", ""), sgllabel("vendor"))
         tb.new_row("PyOpenGL", gllabel("pyopengl", "n/a"), sgllabel("pyopengl"))
