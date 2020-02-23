@@ -1436,14 +1436,14 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
+    if is_Fedora() or is_CentOS() or is_RedHat() or FREEBSD:
+        libexec = "libexec"
+    else:
+        libexec = "lib"
     if LINUX:
         if scripts_ENABLED:
             scripts += ["scripts/xpra_udev_product_version", "scripts/xpra_signal_listener"]
         libexec_scripts = []
-        if is_Fedora() or is_CentOS() or is_RedHat():
-            libexec = "libexec"
-        else:
-            libexec = "lib"
         if xdg_open_ENABLED:
             libexec_scripts += ["scripts/xdg-open", "scripts/gnome-open", "scripts/gvfs-open"]
         if server_ENABLED:
