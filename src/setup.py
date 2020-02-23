@@ -165,7 +165,7 @@ html5_brotli_ENABLED = DEFAULT
 minify_ENABLED = html5_ENABLED
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
-xdg_open_ENABLED        = LINUX and DEFAULT
+xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
 vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
@@ -1481,14 +1481,14 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
+    if is_Fedora() or is_CentOS() or is_RedHat() or FREEBSD:
+        libexec = "libexec"
+    else:
+        libexec = "lib"
     if LINUX:
         if scripts_ENABLED:
             scripts += ["scripts/xpra_udev_product_version", "scripts/xpra_signal_listener"]
         libexec_scripts = []
-        if is_Fedora() or is_CentOS() or is_RedHat():
-            libexec = "libexec"
-        else:
-            libexec = "lib"
         if xdg_open_ENABLED:
             libexec_scripts += ["scripts/xdg-open", "scripts/gnome-open", "scripts/gvfs-open"]
         if server_ENABLED:
@@ -1497,7 +1497,7 @@ else:
             add_data_files("%s/xpra/" % libexec, libexec_scripts)
     if data_ENABLED:
         man_path = "share/man"
-        if OPENBSD:
+        if OPENBSD or FREEBSD:
             man_path = "man"
         add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1"])
         add_data_files("share/applications",  glob.glob("xdg/*.desktop"))
@@ -1551,7 +1551,10 @@ else:
 
             if printing_ENABLED and POSIX:
                 #install "/usr/lib/cups/backend" with 0700 permissions:
-                copytodir("cups/xpraforwarder", "lib/cups/backend", chmod=0o700)
+                lib_cups = "lib/cups"
+                if FREEBSD:
+                    lib_cups = "libexec/cups"
+                copytodir("cups/xpraforwarder", "%s/backend" % lib_cups, chmod=0o700)
 
             if x11_ENABLED:
                 #install xpra_Xdummy if we need it:
