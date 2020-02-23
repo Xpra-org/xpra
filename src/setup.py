@@ -1506,7 +1506,10 @@ else:
 
             if printing_ENABLED and POSIX:
                 #install "/usr/lib/cups/backend" with 0700 permissions:
-                copytodir("cups/xpraforwarder", "lib/cups/backend", chmod=0o700)
+                lib_cups = "lib/cups"
+                if FREEBSD:
+                    lib_cups = "libexec/cups"
+                copytodir("cups/xpraforwarder", "%s/backend" % lib_cups, chmod=0o700)
 
             if x11_ENABLED:
                 #install xpra_Xdummy if we need it:
