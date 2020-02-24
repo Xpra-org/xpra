@@ -153,6 +153,8 @@ Recommends: python3-dbus
 #bionic:		,gnome-shell-extension-appindicator
 #disco:        ,gnome-shell-extension-appindicator
 #eoan:        ,gnome-shell-extension-appindicator
+#most of the examples use an xterm:
+        ,xterm
 Suggests: openssh-server
 # to make the system tray work again (sigh):
 		,gnome-shell-extension-top-icons-plus
