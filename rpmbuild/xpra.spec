@@ -104,7 +104,6 @@ Requires(post):		openssl
 Requires(post):		systemd-units
 Requires(preun):	systemd-units
 Requires(postun):	systemd-units
-Recommends:		which
 Recommends:		libfakeXinerama
 Recommends:		mesa-dri-drivers
 Recommends:		redhat-menus
