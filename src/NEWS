@@ -1,10 +1,17 @@
-v3.0.7 (2020-02-17)
+v3.0.7 (2020-02-26)
 ======================
 	-- fix systemd-run errors: verify it does work before trying to use it
 	-- fix debug builds compilation error on MS Windows
 	-- fix server crashes on SIGINT: shutdown cleanly
 	-- fix file authentication handler using a default password filename
 	-- fix unit tests failures
+	-- fix directshow errors on local mingw installations
+	-- fix opengl properties missing from server hello packet
+	-- fix MS Windows clipboard access denied errors
+	-- fix X11 clipboard error handling: continue processing
+	-- fix FreeBSD builds
+	-- fix MS Windows packaging missing a codec DLL
+	-- fix HMAC hashes exposed, keep only valid options
 
 
 v3.0.6 (2020-02-05)

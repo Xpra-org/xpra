@@ -867,12 +867,20 @@ fi
 
 
 %changelog
-* Mon Feb 17 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
+* Wed Feb 26 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
 - fix systemd-run errors: verify it does work before trying to use it
 - fix debug builds compilation error on MS Windows
 - fix server crashes on SIGINT: shutdown cleanly
 - fix file authentication handler using a default password filename
 - fix unit tests failures
+- fix directshow errors on local mingw installations
+- fix opengl properties missing from server hello packet
+- fix MS Windows clipboard access denied errors
+- fix X11 clipboard error handling: continue processing
+- fix FreeBSD builds
+- fix MS Windows packaging missing a codec DLL
+- fix HMAC hashes exposed, keep only valid options
+
 
 * Sat Feb 08 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra2
 - fix 'User' not honoured in ssh_config
