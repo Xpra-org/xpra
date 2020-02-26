@@ -13,11 +13,14 @@ from xpra.os_util import strtobytes, memoryview_to_bytes, hexstr
 
 log = Logger("network", "crypto")
 
+BLACKLISTED_HASHES = ("sha1", "md5")
+
 
 def get_digests():
     digests = ["xor"]
     avail = hashlib.algorithms_available
-    digests += ["hmac+%s" % x for x in tuple(reversed(sorted([x for x in avail if not x.startswith("shake_")])))]
+    digests += ["hmac+%s" % x for x in tuple(reversed(sorted([
+        x for x in avail if not x.startswith("shake_") and x not in BLACKLISTED_HASHES])))]
     try:
         from xpra.net import d3des
         assert d3des
@@ -43,7 +46,7 @@ def choose_digest(options) -> str:
     assert len(options)>0, "no digest options"
     log("choose_digest(%s)", options)
     #prefer stronger hashes:
-    for h in ("sha512", "sha384", "sha256", "sha224", "sha1", "md5"):
+    for h in ("sha512", "sha384", "sha256", "sha224"):
         hname = "hmac+%s" % h
         if hname in options:
             return hname

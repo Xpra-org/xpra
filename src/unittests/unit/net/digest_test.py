@@ -34,7 +34,7 @@ class TestDigest(unittest.TestCase):
             verify_digest(digest, password, salt, d)
 
     def test_choose_digest(self):
-        for h in ("hmac+sha512", "hmac+sha384", "hmac+sha256", "hmac+sha224", "hmac+sha1", "hmac+md5",
+        for h in ("hmac+sha512", "hmac+sha384", "hmac+sha256", "hmac+sha224",
                   "xor", "des"):
             assert choose_digest((h,))==h
             assert choose_digest((h, "hmac+sha512"))=="hmac+sha512"
