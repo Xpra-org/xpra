@@ -80,7 +80,7 @@ def gendigest(digest, password, salt):
         return memoryview_to_bytes(v)
     digestmod = get_digest_module(digest)
     if not digestmod:
-        log("invalid digest module '%s': %s", digest)
+        log("invalid digest module '%s'", digest)
         return None
         #warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
     v = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=digestmod).hexdigest()
