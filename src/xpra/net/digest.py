@@ -19,7 +19,8 @@ BLACKLISTED_HASHES = ("sha1", "md5")
 def get_digests():
     digests = ["xor"]
     digests += ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))
-                if not x.startswith("shake_") and x not in BLACKLISTED_HASHES]
+                if not x.startswith("shake_") and x not in BLACKLISTED_HASHES
+                and getattr(hashlib, x, None) is not None]
     try:
         from xpra.net import d3des
         assert d3des
@@ -38,7 +39,8 @@ def get_digest_module(digest : str):
         return None
     try:
         return getattr(hashlib, digest_module)
-    except AttributeError:
+    except AttributeError as e:
+        log("no '%s' attribute in hashlib: %s", digest_module, e)
         return None
 
 def choose_digest(options) -> str:
