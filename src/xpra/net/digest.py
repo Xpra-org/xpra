@@ -18,9 +18,8 @@ BLACKLISTED_HASHES = ("sha1", "md5")
 
 def get_digests():
     digests = ["xor"]
-    avail = hashlib.algorithms_available
-    digests += ["hmac+%s" % x for x in tuple(reversed(sorted([
-        x for x in avail if not x.startswith("shake_") and x not in BLACKLISTED_HASHES])))]
+    digests += ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))
+                if not x.startswith("shake_") and x not in BLACKLISTED_HASHES]
     try:
         from xpra.net import d3des
         assert d3des
