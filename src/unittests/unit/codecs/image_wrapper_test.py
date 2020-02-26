@@ -15,8 +15,11 @@ SHOW_PERF = envbool("XPRA_SHOW_PERF")
 class TestImageWrapper(unittest.TestCase):
 
     def test_sub_image(self):
+        X = 0
+        Y = 0
         W = 640
         H = 480
+        D = 24
         buf = bytearray(W*H*4)
         #the pixel value is derived from the sum of its coordinates (modulo 256)
         for x in range(W):
@@ -24,7 +27,17 @@ class TestImageWrapper(unittest.TestCase):
                 #4 bytes per pixel:
                 for i in range(4):
                     buf[y*(W*4) + x*4 + i] = (x+y) % 256
-        img = ImageWrapper(0, 0, W, H, buf, "RGBX", 24, W*4, planes=ImageWrapper.PACKED, thread_safe=True)
+        img = ImageWrapper(X, Y, W, H, buf, "RGBX", D, W*4, planes=ImageWrapper.PACKED, thread_safe=True)
+        #verify attributes:
+        assert img.get_x()==X
+        assert img.get_y()==Y
+        assert img.get_width()==W
+        assert img.get_height()==H
+        assert img.get_depth()==D
+        assert img.get_bytesperpixel()==4
+        assert img.get_rowstride()==W*4
+        assert img.get_size()==W*4*H
+        assert img.has_pixels()
         #print("image pixels head=%s" % (binascii.hexlify(img.get_pixels()[:128]), ))
         for x in range(3):
             SW, SH = 6, 6
@@ -60,6 +73,29 @@ class TestImageWrapper(unittest.TestCase):
             total += end-start
         if SHOW_PERF:
             print("image wrapper sub image %ix%i copy speed: %iMB/s" % (W//2, H//2, N*(W//2*4*H//2)/total/1024/1024))
+        #invalid sub-image should fail:
+        for x, y, w, h in (
+            (-1, 0, 1, 1),
+            (0, -1, 1, 1),
+            (0, 0, 0, 1),
+            (0, 0, 1, 0),
+            (1, 0, W, 1),
+            (0, 1, 1, H),
+            ):
+            try:
+                img.get_sub_image(x, y, w, h)
+            except Exception:
+                pass
+            else:
+                raise Exception("sub image of %s with coords %s should have failed" % (img, (x, y, w, h)))
+        #freeze is a no-op in the default wrapper:
+        assert img.freeze() is False
+        img.clone_pixel_data()
+
+    def test_restride(self):
+        #restride of planar is not supported:
+        img = ImageWrapper(0, 0, 1, 1, ["0", "0", "0"], "YUV420P", 24, 1, planes=ImageWrapper.PLANAR_3, thread_safe=True)
+        assert img.restride(1) is False
 
 
 def main():
