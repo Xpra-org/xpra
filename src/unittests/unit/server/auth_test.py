@@ -52,12 +52,13 @@ class TestAuth(unittest.TestCase):
         mod = getattr(auth_module, "%s_auth" % name, None)
         assert mod, "cannot load '%s_auth' from %s" % (name, pmod)
         assert str(mod)
-        assert repr(mod)
         return mod
 
     def _init_auth(self, mod_name, username="foo", **kwargs):
         mod = self.a(mod_name)
-        return self.do_init_auth(mod, username, **kwargs)
+        a = self.do_init_auth(mod, username, **kwargs)
+        assert repr(a)
+        return a
 
     def do_init_auth(self, module, username="foo", **kwargs):
         try:
