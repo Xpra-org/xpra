@@ -8,9 +8,9 @@ import os
 import sys
 
 from xpra.util import obsc
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
-assert init and log #tests will disable logging from here
+assert log #tests will disable logging from here
 
 LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
 
