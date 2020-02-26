@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import socket
 
 from xpra.util import envint, obsc
 from xpra.os_util import bytestostr
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
 from xpra.log import is_debug_enabled, enable_debug_for
 
 LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)
@@ -117,7 +117,6 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv):
-    from xpra.util import xor
     from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context
     with program_context("LDAP-Password-Auth", "LDAP-Password-Authentication"):

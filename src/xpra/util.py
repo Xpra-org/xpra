@@ -804,9 +804,6 @@ def nonl(x):
         return None
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
 
-def xor(s1,s2):
-    return b"".join(b"%c" % (a ^ b) for a,b in zip(s1,s2))
-
 def engs(v):
     if isinstance(v, int):
         l = v

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import os
 import sys
 
 from xpra.util import obsc
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
 assert log #tests will disable logging from here
 
@@ -101,7 +101,6 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv):
-    from xpra.util import xor
     from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context
     with program_context("LDAP3-Password-Auth", "LDAP3-Password-Authentication"):
