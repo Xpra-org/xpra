@@ -1228,6 +1228,10 @@ if WIN32:
                                   ]
             external_includes += ["urllib", "http.cookiejar", "http.client"]
 
+        if dec_avcodec2_ENABLED:
+            #why isn't this one picked up automatically?
+            add_DLLs("x265")
+
         #hopefully, cx_Freeze will fix this horror:
         #(we shouldn't have to deal with DLL dependencies)
         import site
