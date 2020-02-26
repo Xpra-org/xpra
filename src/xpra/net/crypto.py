@@ -41,13 +41,6 @@ def get_padding_options():
 PADDING_OPTIONS = get_padding_options()
 
 
-try:
-    from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-    xor = xor_str
-except Exception:
-    log("no accelerated xor", exc_info=True)
-
-
 ENCRYPTION_CIPHERS = []
 backend = False
 def crypto_backend_init():
