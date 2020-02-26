@@ -16,9 +16,6 @@ log = Logger("network", "crypto")
 
 def get_digests():
     digests = ["xor"]
-    #this is the legacy name for "hmac+md5":
-    if "md5" in hashlib.algorithms_available:
-        digests.append("hmac")
     avail = hashlib.algorithms_available
     digests += ["hmac+%s" % x for x in tuple(reversed(sorted([x for x in avail if not x.startswith("shake_")])))]
     try:
@@ -36,7 +33,7 @@ def get_digest_module(digest : str):
     try:
         digest_module = digest.split("+")[1]        #ie: "hmac+sha512" -> "sha512"
     except IndexError:
-        digest_module = "md5"
+        return None
     try:
         return getattr(hashlib, digest_module)
     except AttributeError:
@@ -50,9 +47,6 @@ def choose_digest(options) -> str:
         hname = "hmac+%s" % h
         if hname in options:
             return hname
-    #legacy name for "hmac+md5":
-    if "hmac" in options:
-        return "hmac"
     if "xor" in options:
         return "xor"
     if "des" in options:
