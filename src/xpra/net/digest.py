@@ -21,8 +21,9 @@ def get_digests():
         digests.append("hmac")
     #python versions older than 2.7.9 may not have this attribute:
     #(in which case, your options will be more limited)
-    if hashlib.algorithms_available:
-        digests += ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))]
+    avail = getattr(hashlib, "algorithms_available", None)
+    if avail:
+        digests += ["hmac+%s" % x for x in tuple(reversed(sorted([x for x in avail if not x.startswith("shake_")])))]
     try:
         from xpra.net import d3des
         assert d3des
