@@ -1227,6 +1227,10 @@ if WIN32:
             for p in ("app", "audio", "base", "codecparsers", "fft", "net", "video",
                       "pbutils", "riff", "sdp", "rtp", "rtsp", "tag", "uridownloader",
                       #I think 'coreelements' needs those (otherwise we would exclude them):
+
+        if dec_avcodec2_ENABLED:
+            #why isn't this one picked up automatically?
+            add_DLLs("x265")
                       "basecamerabinsrc", "mpegts", "photography",
                       ):
                 add_DLLs('gst%s' % p)
