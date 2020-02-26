@@ -117,9 +117,13 @@ class TestAuth(unittest.TestCase):
         a = self._init_auth("reject")
         assert a.requires_challenge()
         c, mac = a.get_challenge(get_digests())
+        assert a.get_uid()==-1
+        assert a.get_gid()==-1
+        assert a.get_password() is None
         assert c and mac
         assert not a.get_sessions()
         assert not a.get_passwords()
+        assert a.choose_salt_digest("xor")=="xor"
         for x in (None, "bar"):
             assert not a.authenticate(x, c)
             assert not a.authenticate(x, x)

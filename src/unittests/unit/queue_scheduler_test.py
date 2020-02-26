@@ -46,6 +46,25 @@ class QueueSchedulerTest(unittest.TestCase):
         qs.run()
         assert not calls
 
+    def test_invalid_remove(self):
+        qs = QueueScheduler()
+        qs.source_remove(-1)
+
+    def test_stop_queue(self):
+        qs = QueueScheduler()
+        qs.idle_add(qs.stop_main_queue)
+        qs.run()
+
+    def test_timer_repeat(self):
+        times = list(range(10))
+        def timer_fn():
+            times.pop()
+            return len(times)>0
+        qs = QueueScheduler()
+        qs.timeout_add(1, timer_fn)
+        qs.timeout_add(100, qs.stop)
+        qs.run()
+        assert not times
 
 def main():
     unittest.main()
