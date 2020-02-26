@@ -37,11 +37,11 @@ def grok_modifier_map(display, meanings):
             keycode = keycodes[i * max_keypermod + j]
             if keycode:
                 entries = keymap.get_entries_for_keycode(keycode)
-                if entries is None:
+                if entries is None:     # pragma: no cover
                     # This keycode has no entry in the keymap:
                     continue
                 found, _, keyvals = entries
-                if not found:
+                if not found:           # pragma: no cover
                     continue
                 for keyval in keyvals:
                     keyval_name = Gdk.keyval_name(keyval)
