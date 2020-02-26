@@ -43,6 +43,7 @@ class ImageWrapper:
         self.freed = False
         self.timestamp = int(monotonic_time()*1000)
         self.palette = palette
+        assert x>=0 and y>=0 and width>0 and height>0
 
     def _cn(self):
         try:
