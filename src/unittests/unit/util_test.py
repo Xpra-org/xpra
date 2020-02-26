@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util import AtomicInteger, MutableInteger, typedict, log_screen_sizes, updict, pver, std, alnum, nonl, xor
+from xpra.util import AtomicInteger, MutableInteger, typedict, log_screen_sizes, updict, pver, std, alnum, nonl
 
 
 class TestIntegerClasses(unittest.TestCase):
@@ -166,9 +166,6 @@ class TestModuleFunctions(unittest.TestCase):
     def test_nonl(self):
         self.assertEqual(nonl("\n\r"), "\\n\\r")
         self.assertEqual(nonl("A\nB\rC"), "A\\nB\\rC")
-
-    def test_xor(self):
-        self.assertEqual(xor(b"A", b"a"), xor(b"B", b"b"))
 
 
 def main():
