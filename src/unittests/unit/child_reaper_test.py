@@ -38,7 +38,8 @@ class TestChildReaper(unittest.TestCase):
 
         #now check for the forget option:
         proc = subprocess.Popen(["sleep", "60"])
-        cr.add_process(proc, "sleep 60", "sleep 60", False, True, None)
+        procinfo = cr.add_process(proc, "sleep 60", "sleep 60", False, True, None)
+        assert repr(procinfo)
         count +=1
         assert cr.check() is True, "sleep process terminated too quickly"
         i = cr.get_info()
@@ -58,6 +59,8 @@ class TestChildReaper(unittest.TestCase):
         if children!=count:
             raise Exception("expected the sleep process to have been forgotten (%s children)" % count +
             "but got %s children instead in the reaper records" % children)
+        reaper_cleanup()
+        #can run again:
         reaper_cleanup()
 
 

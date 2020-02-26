@@ -180,7 +180,7 @@ class TestAuth(unittest.TestCase):
         self._test_hmac_auth("password", password, value=password)
 
 
-    def _test_file_auth(self, mod_name, genauthdata):
+    def _test_file_auth(self, mod_name, genauthdata, display_count=0):
         #no file, no go:
         a = self._init_auth(mod_name)
         assert a.requires_challenge()
@@ -214,6 +214,12 @@ class TestAuth(unittest.TestCase):
                         digestmod = get_digest_module(mac)
                         verify = hmac.HMAC(password, auth_salt, digestmod=digestmod).hexdigest()
                         assert a.authenticate(verify, client_salt), "%s failed" % a.authenticate
+                        if display_count>0:
+                            sessions = a.get_sessions()
+                            assert len(sessions)>=3
+                            displays = sessions[2]
+                            assert len(displays)==display_count, "expected %i displays but got %i : %s" % (
+                                display_count, len(sessions), sessions)
                         assert not a.authenticate(verify, client_salt), "authenticated twice!"
                         passwords = a.get_passwords()
                         assert len(passwords)==1, "expected just one password in file, got %i" % len(passwords)
@@ -221,6 +227,7 @@ class TestAuth(unittest.TestCase):
                     elif muck==1:
                         for verify in ("whatever", None, "bad"):
                             assert not a.authenticate(verify, client_salt)
+        return a
 
     def test_file(self):
         def genfiledata(_a):
@@ -232,7 +239,7 @@ class TestAuth(unittest.TestCase):
         def genfiledata(a):
             password = uuid.uuid4().hex
             return password, "%s|%s|||" % (a.username, password)
-        self._test_file_auth("multifile", genfiledata)
+        self._test_file_auth("multifile", genfiledata, 1)
 
     def test_sqlite(self):
         from xpra.server.auth.sqlite_auth import main as sqlite_main
