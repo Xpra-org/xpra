@@ -62,7 +62,7 @@ def choose_digest(options) -> str:
     raise ValueError("no known digest options found in '%s'" % csv(options))
 
 def gendigest(digest, password, salt):
-    assert digest and password and salt
+    assert password and salt
     salt = memoryview_to_bytes(salt)
     password = strtobytes(password)
     if digest=="des":
