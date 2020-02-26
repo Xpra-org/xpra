@@ -40,9 +40,9 @@ class X11ClipboardTestUtil(X11ClientTestUtil):
 		time.sleep(wait)
 		new_value = self.get_clipboard_value(display2)
 		if synced:
-			assert new_value==value, "clipboard contents do not match, expected '%s' but got '%s'" % (value, new_value)
+			assert new_value==value, "clipboard contents for %s do not match, expected '%s' but got '%s'" % (selection, value, new_value)
 		else:
-			assert new_value!=value, "clipboard contents match but synchronization was not expected: value='%s'" % value
+			assert new_value!=value, "clipboard contents for %s match but synchronization was not expected: value='%s'" % (selection, value)
 		if SANITY_CHECKS and display2!=display1:
 			#verify that the value has not changed on the original display:
 			new_value = self.get_clipboard_value(display1)
