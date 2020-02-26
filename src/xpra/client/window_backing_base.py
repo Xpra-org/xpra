@@ -26,10 +26,7 @@ from xpra.common import (
     StaticGravity,
     GRAVITY_STR,
     )
-try:
-    from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
-except ImportError:
-    from xpra.util import xor as xor_str
+from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 from xpra.log import Logger
 
 log = Logger("paint")

@@ -7,18 +7,11 @@ import os
 import hmac
 import hashlib
 
-from xpra.util import csv, xor
+from xpra.util import csv
 from xpra.log import Logger
 from xpra.os_util import strtobytes, memoryview_to_bytes, hexstr
 
 log = Logger("network", "crypto")
-
-
-try:
-    from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-    xor = xor_str
-except Exception:
-    log("no accelerated xor", exc_info=True)
 
 
 def get_digests():
@@ -82,7 +75,8 @@ def gendigest(digest, password, salt):
         #kerberos and gss use xor because we need to use the actual token
         #at the other end
         salt = salt.ljust(len(password), b"\x00")[:len(password)]
-        v = xor(password, salt)
+        from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
+        v = xor_str(password, salt)
         return memoryview_to_bytes(v)
     digestmod = get_digest_module(digest)
     if not digestmod:
