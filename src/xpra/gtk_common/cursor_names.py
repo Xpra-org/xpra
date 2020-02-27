@@ -24,5 +24,3 @@ for x in (
         v = getattr(Gdk.CursorType, x)
         cursor_names[v] = x
         cursor_types[x] = v
-    else:
-        print("cannot find %s in %s" % (x, Gdk.CursorType))
