@@ -4,11 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import tempfile
 import unittest
 
-from xpra.os_util import load_binary_file
 from xpra.x11.fakeXinerama import save_fakeXinerama_config, find_libfakeXinerama, cleanup_fakeXinerama
 
 class FakeXineramaTest(unittest.TestCase):
