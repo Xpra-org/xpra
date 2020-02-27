@@ -97,8 +97,8 @@ class StubClientMixin:
         Register the packet types that this mixin can handle.
         """
 
-    def add_packet_handler(self, packet_type : str, handler : callable, main_thread=True):
+    def add_packet_handler(self, packet_type : str, handler : callable, main_thread=True):  # pragma: no cover
         raise NotImplementedError()
 
-    def add_packet_handlers(self, defs, main_thread=True):
+    def add_packet_handlers(self, defs, main_thread=True):  # pragma: no cover
         raise NotImplementedError()
