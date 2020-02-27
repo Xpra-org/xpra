@@ -10,6 +10,7 @@ import unittest
 
 from xpra.os_util import pollwait, OSX, POSIX
 from unit.server_test_util import ServerTestUtil
+from xpra.codecs.image_wrapper import ImageWrapper
 
 
 class ShadowServerTest(ServerTestUtil):
@@ -28,6 +29,8 @@ class ShadowServerTest(ServerTestUtil):
 
 	def test_root_window_model(self):
 		from xpra.server.shadow.root_window_model import RootWindowModel
+		W = 640
+		H = 480
 		class FakeDisplay:
 			def get_name(self):
 				return "fake-display"
@@ -38,12 +41,20 @@ class ShadowServerTest(ServerTestUtil):
 			def get_screen(self):
 				return FakeScreen()
 			def get_geometry(self):
-				return (0, 0, 640, 480)
+				return (0, 0, W, H)
 		class FakeCapture:
 			def take_screenshot(self):
-				return None
-		rwm = RootWindowModel(FakeRootWindow(), FakeCapture())
+				return self.get_image(0, 0, W, H)
+			def get_image(self, x, y, w, h):
+				pixels = "0"*w*4*h
+				return ImageWrapper(x, y, w, h, pixels, "BGRA", 32, w*4, 4, ImageWrapper.PACKED, True, None)
+			def get_info(self):
+				return {"type" : "fake"}
+		capture = FakeCapture()
+		window = FakeRootWindow()
+		rwm = RootWindowModel(window, FakeCapture())
 		assert repr(rwm)
+		assert rwm.get_info()
 		rwm.get_default_window_icon(32)
 		for prop in ("title", "class-instance", "size-hints", "icons"):
 			rwm.get_property(prop)
@@ -58,6 +69,11 @@ class ShadowServerTest(ServerTestUtil):
 			"content-type"		: "desktop",
 			}.items():
 			assert rwm.get_property(prop)==value
+		rwm.suspend()
+		rwm.unmanage(True)
+		assert rwm.take_screenshot()
+		assert rwm.get_image(10, 10, 20, 20)
+
 
 def main():
 	if POSIX and not OSX:
