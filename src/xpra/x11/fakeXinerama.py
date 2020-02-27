@@ -67,10 +67,10 @@ def save_fakeXinerama_config(supported=True, source="", ss=()):
         return delfile("cannot save fake xinerama settings: no display found")
     if len(ss)>1:
         return delfile("cannot save fake xinerama settings: more than one display found")
-    if len(ss)==2 and isinstance(ss[0], int) and isinstance(ss[1], int):
+    display_info = ss[0]
+    if len(display_info)==2 and isinstance(display_info[0], int) and isinstance(display_info[1], int):
         #just WxH, not enough display information
         return delfile("cannot save fake xinerama settings: missing display data from client %s" % source)
-    display_info = ss[0]
     if len(display_info)<10:
         return delfile("cannot save fake xinerama settings: incomplete display data from client %s" % source)
     #display_name, width, height, width_mm, height_mm, \
