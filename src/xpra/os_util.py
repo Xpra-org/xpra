@@ -275,7 +275,7 @@ def load_os_release_file() -> bytes:
     if os_release_file_data is False:
         try:
             os_release_file_data = load_binary_file("/etc/os-release")
-        except OSError:
+        except OSError: # pragma: no cover
             os_release_file_data = None
     return os_release_file_data
 
@@ -345,7 +345,7 @@ def get_loaded_kernel_modules(*modlist):
     loaded = []
     if LINUX and os.path.exists("/sys/module"):
         for mod in modlist:
-            if os.path.exists("/sys/module/%s" % mod):
+            if os.path.exists("/sys/module/%s" % mod):  # pragma: no cover
                 loaded.append(mod)
     return loaded
 
@@ -370,7 +370,7 @@ def get_generic_os_name() -> str:
             }.items():
         if sys.platform.startswith(k):
             return v
-    return sys.platform
+    return sys.platform     # pragma: no cover
 
 
 def filedata_nocrlf(filename) -> str:
@@ -386,7 +386,7 @@ def load_binary_file(filename) -> bytes:
     try:
         with open(filename, "rb") as f:
             return f.read()
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         get_util_logger().warn("Warning: failed to load '%s':", filename)
         get_util_logger().warn(" %s", e)
         return None
@@ -811,23 +811,3 @@ def get_peercred(sock):
         #use getpeereid
         #then pwd to get the gid?
     return None
-
-
-def main():
-    sp = sys.platform
-    log = get_util_logger()
-    log.info("platform_name(%s)=%s", sp, platform_name(sp, ""))
-    if LINUX:
-        log.info("linux_distribution=%s", get_linux_distribution())
-        log.info("Ubuntu=%s", is_Ubuntu())
-        log.info("Unity=%s", is_unity())
-        log.info("Fedora=%s", is_Fedora())
-        log.info("systemd=%s", is_systemd_pid1())
-    log.info("get_machine_id()=%s", get_machine_id())
-    log.info("get_user_uuid()=%s", get_user_uuid())
-    log.info("get_hex_uuid()=%s", get_hex_uuid())
-    log.info("get_int_uuid()=%s", get_int_uuid())
-
-
-if __name__ == "__main__":
-    main()
