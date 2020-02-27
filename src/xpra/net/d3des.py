@@ -367,20 +367,3 @@ def desfunc(block, keys):
     leftt &= 0xffffffff
     right &= 0xffffffff
     return pack('>II', right, leftt)
-
-
-def main():
-    key = bytearray.fromhex('0123456789abcdef')
-    plain = bytearray.fromhex('0123456789abcdef')
-    cipher = bytearray.fromhex('6e09a37726dd560c')
-    ek = deskey(key, False)
-    dk = deskey(key, True)
-    assert desfunc(plain, ek) == cipher
-    assert desfunc(desfunc(plain, ek), dk) == plain
-    assert desfunc(desfunc(plain, dk), ek) == plain
-    print('test succeeded.')
-
-
-# test
-if __name__ == '__main__':
-    main()
