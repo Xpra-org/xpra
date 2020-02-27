@@ -25,7 +25,7 @@ def get_digests():
         from xpra.net import d3des
         assert d3des
         digests.append("des")
-    except (ImportError, TypeError):
+    except (ImportError, TypeError):    # pragma: no cover
         pass
     return digests
 
