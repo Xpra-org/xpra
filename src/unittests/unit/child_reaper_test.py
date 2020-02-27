@@ -16,6 +16,9 @@ cr = getChildReaper()
 class TestChildReaper(unittest.TestCase):
 
     def test_sigchld(self):
+        #no-op:
+        reaper_cleanup()
+
         log.logger.setLevel(logging.ERROR)
         #one that exits before we add the process, one that takes longer:
         TEST_CHILDREN = (["echo"], ["sleep", "0.5"])
@@ -45,6 +48,9 @@ class TestChildReaper(unittest.TestCase):
         i = cr.get_info()
         children = i.get("children").get("total")
         assert children==count, "expected %s children recorded, but got %s" % (count, children)
+        #trying to claim it is dead when it is not:
+        #(this will print some warnings)
+        cr.add_dead_pid(proc.pid)
         proc.terminate()
         #now wait for the sleep process to exit:
         for _ in range(10):

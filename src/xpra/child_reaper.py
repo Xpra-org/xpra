@@ -195,7 +195,7 @@ class ChildReaper:
             #forget it:
             try:
                 self._proc_info.remove(procinfo)
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 log("failed to remove %s from proc info list", procinfo, exc_info=True)
         log("updated procinfo=%s", procinfo)
         self.check()
