@@ -48,7 +48,7 @@ class ImageWrapper:
     def _cn(self):
         try:
             return type(self).__name__
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             return type(self)
 
     def __repr__(self):
