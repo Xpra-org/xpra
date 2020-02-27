@@ -62,6 +62,8 @@ class TestChildReaper(unittest.TestCase):
         reaper_cleanup()
         #can run again:
         reaper_cleanup()
+        #nothing for an invalid pid:
+        assert cr.get_proc_info(-1) is None
 
 
 def main():
