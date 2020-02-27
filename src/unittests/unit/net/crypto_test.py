@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,7 +9,10 @@ import unittest
 from xpra.os_util import monotonic_time, hexstr
 from xpra.util import envbool
 
-from xpra.net.crypto import DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE, DEFAULT_IV
+from xpra.net.crypto import (
+    DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE, DEFAULT_IV,
+    validate_backend,
+    )
 
 SHOW_PERF = envbool("XPRA_SHOW_PERF", True)
 
@@ -107,6 +110,9 @@ class TestCrypto(unittest.TestCase):
         print("  Overall:")
         for i in RANGE:
             self.do_test_perf(i, 10, 10)
+
+    def test_crypto(self):
+        validate_backend(self.backend)
 
 
 def main():
