@@ -71,7 +71,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
-        def noop(*args):
+        def noop(*args):    # pragma: no cover
             log("ignoring packet: %s", args)
         #ignore the following packet types without error:
         #(newer servers should avoid sending us any of those)
@@ -133,7 +133,7 @@ class CommandConnectClient(GObjectXpraClient):
         return protocol
 
     def timeout(self, *_args):
-        log.warn("timeout!")
+        log.warn("timeout!")    # pragma: no cover
 
 
     def _process_connection_lost(self, _packet):
@@ -185,7 +185,7 @@ class HelloRequestClient(SendCommandConnectClient):
     def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
-    def hello_request(self):
+    def hello_request(self):        # pragma: no cover
         raise NotImplementedError()
 
     def do_command(self, caps : typedict):
