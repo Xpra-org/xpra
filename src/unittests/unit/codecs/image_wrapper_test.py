@@ -31,6 +31,8 @@ class TestImageWrapper(unittest.TestCase):
         #verify attributes:
         assert img.get_x()==X
         assert img.get_y()==Y
+        assert img.get_target_x()==X
+        assert img.get_target_y()==Y
         assert img.get_width()==W
         assert img.get_height()==H
         assert img.get_depth()==D
