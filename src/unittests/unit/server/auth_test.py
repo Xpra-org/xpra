@@ -239,7 +239,7 @@ class TestAuth(unittest.TestCase):
     def test_multifile(self):
         def genfiledata(a):
             password = uuid.uuid4().hex
-            return password, "%s|%s|||" % (a.username, password)
+            return password, "#comment\n%s|%s|||\notheruser|otherpassword" % (a.username, password)
         self._test_file_auth("multifile", genfiledata, 1)
 
     def test_sqlite(self):
