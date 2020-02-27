@@ -17,7 +17,7 @@ class DisplayClientTest(ClientMixinTest):
 		opts = AdHocStruct()
 		opts.encoding = ""
 		opts.encodings = ["rgb", "png"]
-		opts.quality = 0
+		opts.quality = 1
 		opts.min_quality = 20
 		opts.speed = 0
 		opts.min_speed = 20
