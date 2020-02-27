@@ -212,6 +212,13 @@ class SourceMixinsTest(unittest.TestCase):
             assert i
             avi = i.get("av-sync")
             assert avi and avi.get("enabled", not e)==e
+            av.set_av_sync_delay(10)
+            av.sound_control_av_sync_delta("100")
+            try:
+                av.sound_control_av_sync_delta("invalid")
+            except Exception:
+                pass
+            assert av.get_info().get("av-sync").get("delta")==100
 
 
 def main():
