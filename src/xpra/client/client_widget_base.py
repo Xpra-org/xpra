@@ -55,20 +55,20 @@ class ClientWidgetBase:
         backing.init(ww, wh, bw, bh)
         return backing
 
-    def workspace_changed(self):
+    def workspace_changed(self):            # pragma: no cover
         pass
 
-    def set_cursor_data(self, cursor_data):
+    def set_cursor_data(self, cursor_data): # pragma: no cover
         pass
 
-    def new_backing(self, _w, _h):
+    def new_backing(self, _w, _h):          # pragma: no cover
         raise NotImplementedError("override me!")
 
-    def is_OR(self):
+    def is_OR(self):                        # pragma: no cover
         return False
 
-    def is_tray(self):
+    def is_tray(self):                      # pragma: no cover
         return False
 
-    def is_GL(self):
+    def is_GL(self):                        # pragma: no cover
         return False
