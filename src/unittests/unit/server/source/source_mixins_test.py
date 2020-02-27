@@ -91,6 +91,12 @@ class SourceMixinsTest(unittest.TestCase):
         assert x.get_connect_info()
         assert x.get_info()
         c = typedict()
+        c.update({
+            "session-type"      : "test",
+            "opengl"            : {"renderer" : "fake"},
+            "proxy"             : True,
+            "proxy.hostname"    : "some-hostname",
+            })
         x.parse_client_caps(c)
         assert x.get_connect_info()
         assert x.get_info()
