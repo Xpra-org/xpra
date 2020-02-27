@@ -76,7 +76,7 @@ _features_list_ = [
                    "OPEN_COMMAND",
                    "SOCKET_OPTIONS",
                    "IP_OPTIONS",
-                   "TCP_OPTONS",
+                   "TCP_OPTIONS",
                    ]
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,
