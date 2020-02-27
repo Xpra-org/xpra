@@ -38,8 +38,10 @@ class WebsocketHeaderTest(unittest.TestCase):
                     packet = h+payload
                 v = decode_hybi(packet)
                 assert v
-                v = decode_hybi(packet[-1:])
+                v = decode_hybi(packet[:-1])
                 assert v is None
+                v = decode_hybi(packet[:int(has_mask)*4])
+                assert v is None, "got %s" % (v,)
 
 def main():
     unittest.main()
