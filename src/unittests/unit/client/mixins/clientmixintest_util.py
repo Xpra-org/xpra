@@ -92,14 +92,12 @@ class ClientMixinTest(unittest.TestCase):
 		x.setup_connection(conn)
 		x.send = self.send
 		x.send_now = self.send
-		x.add_packet_handlers = self.add_packet_handlers
-		x.add_packet_handler = self.add_packet_handler
 		x.init_authenticated_packet_handlers()
-		caps = typedict(caps or {})
+		caps = self.make_caps()
 		x.parse_server_capabilities(caps)
 		x.process_ui_capabilities(caps)
 		assert x.get_caps() is not None
 		return x
 
-	def make_caps(self, caps):
+	def make_caps(self, caps=None):
 		return typedict(caps or {})
