@@ -109,6 +109,10 @@ class TestImageWrapper(unittest.TestCase):
         img.set_palette(())
         img.set_pixels("1"*10)
         assert img.allocate_buffer(0, 1)==0
+        assert img.get_palette()==()
+        assert img.is_thread_safe()
+        assert img.get_gpu_buffer() is None
+        img.set_rowstride(20)
 
 
 def main():
