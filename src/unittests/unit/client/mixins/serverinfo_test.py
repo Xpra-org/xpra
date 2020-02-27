@@ -14,10 +14,11 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 class ServerInfoClientTest(ClientMixinTest):
 
 	def test_audio(self):
+		waq = []
 		def _ServerInfoMixin():
 			x = ServerInfoMixin()
-			def warn_and_quit(*_args):
-				pass
+			def warn_and_quit(*args):
+				waq.append(args)
 			x.warn_and_quit = warn_and_quit
 			return x
 		opts = AdHocStruct()
@@ -31,6 +32,7 @@ class ServerInfoClientTest(ClientMixinTest):
 			"platform" : "linux2",
 			"platform.release" : "dunno",
 			"platform.platform" : "platformX",
+			"platform.linux_distribution" : ('Linux Fedora', 20, 'Heisenbug'),
 			})
 		x = self._test_mixin_class(_ServerInfoMixin, opts, caps)
 		del caps["build.version"]
@@ -38,6 +40,7 @@ class ServerInfoClientTest(ClientMixinTest):
 		version = "0.1"
 		caps["build.version"] = version
 		assert not x.parse_server_capabilities(caps), "should have failed with version %s" % version
+
 
 def main():
 	unittest.main()
