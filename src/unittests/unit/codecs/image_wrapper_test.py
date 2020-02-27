@@ -107,6 +107,9 @@ class TestImageWrapper(unittest.TestCase):
         img.set_timestamp(img.get_timestamp()+1)
         img.set_pixel_format("RGBA")
         img.set_palette(())
+        img.set_pixels("1"*10)
+        assert img.allocate_buffer(0, 1)==0
+
 
 def main():
     unittest.main()
