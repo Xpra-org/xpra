@@ -45,20 +45,12 @@ def sanitize_size_hints(size_hints):
         if v is not None:
             try:
                 w,h = v
+                int(w)
+                int(h)
             except (ValueError, TypeError):
                 w,h = None,None
             if (w is None or h is None) or w>=MAX_WINDOW_SIZE or h>=MAX_WINDOW_SIZE:
                 log("clearing invalid size hint value for %s: %s", attr, v)
-                del size_hints[attr]
-    for attr in ("minimum-aspect-ratio", "maximum-aspect-ratio"):
-        v = size_hints.get(attr)
-        if v is not None:
-            try:
-                w,h = v
-            except (ValueError, TypeError):
-                w,h = None,None
-            if (not w or not h) or w>=MAX_WINDOW_SIZE or h>=MAX_WINDOW_SIZE:
-                log.warn("Warning: clearing invalid size hint value for %s: %s", attr, v)
                 del size_hints[attr]
     #if max-size is smaller than min-size (bogus), clamp it..
     mins = size_hints.get("minimum-size")
