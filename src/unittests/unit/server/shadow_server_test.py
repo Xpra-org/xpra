@@ -9,8 +9,8 @@ import socket
 import unittest
 
 from xpra.os_util import pollwait, OSX, POSIX
-from unit.server_test_util import ServerTestUtil
 from xpra.codecs.image_wrapper import ImageWrapper
+from unit.server_test_util import ServerTestUtil
 
 
 class ShadowServerTest(ServerTestUtil):
@@ -50,7 +50,6 @@ class ShadowServerTest(ServerTestUtil):
 				return ImageWrapper(x, y, w, h, pixels, "BGRA", 32, w*4, 4, ImageWrapper.PACKED, True, None)
 			def get_info(self):
 				return {"type" : "fake"}
-		capture = FakeCapture()
 		window = FakeRootWindow()
 		rwm = RootWindowModel(window, FakeCapture())
 		assert repr(rwm)
@@ -73,6 +72,10 @@ class ShadowServerTest(ServerTestUtil):
 		rwm.unmanage(True)
 		assert rwm.take_screenshot()
 		assert rwm.get_image(10, 10, 20, 20)
+		rwm.geometry = (10, 10, W, H)
+		img = rwm.get_image(10, 10, 20, 20)
+		assert img.get_target_x()==10
+		assert img.get_target_y()==10
 
 
 def main():
