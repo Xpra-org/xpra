@@ -96,9 +96,17 @@ class TestImageWrapper(unittest.TestCase):
 
     def test_restride(self):
         #restride of planar is not supported:
-        img = ImageWrapper(0, 0, 1, 1, ["0", "0", "0"], "YUV420P", 24, 1, planes=ImageWrapper.PLANAR_3, thread_safe=True)
-        assert img.restride(1) is False
-
+        img = ImageWrapper(0, 0, 1, 1, ["0"*10, "0"*10, "0"*10, "0"*10], "YUV420P", 24, 10, 3, planes=ImageWrapper.PLANAR_4)
+        img.set_planes(ImageWrapper.PLANAR_3)
+        assert img.may_restride() is False
+        img = ImageWrapper(0, 0, 1, 1, "0"*10, "BGRA", 24, 10, 4, planes=ImageWrapper.PACKED)
+        assert img.may_restride() is True
+        #restride bigger:
+        img.restride(20)
+        #change more attributes:
+        img.set_timestamp(img.get_timestamp()+1)
+        img.set_pixel_format("RGBA")
+        img.set_palette(())
 
 def main():
     unittest.main()
