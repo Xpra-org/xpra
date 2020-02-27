@@ -25,9 +25,9 @@ class AuthHandlersTest(unittest.TestCase):
 	def do_test_handler(self, client, success, password, handler_class, **kwargs):
 		h = handler_class(client, **kwargs)
 		assert repr(h)
-		server_salt = "0"*32
-		digest = "xor"
-		salt_digest = "xor"
+		server_salt = kwargs.pop("server-salt", "0"*32)
+		digest = kwargs.pop("digest", "xor")
+		salt_digest = kwargs.pop("salt-digest", "xor")
 		packet = ("challenge", server_salt, "", digest, salt_digest)
 		assert h.handle(packet)==success
 		if success:
@@ -48,7 +48,7 @@ class AuthHandlersTest(unittest.TestCase):
 			client.send_challenge_reply(packet, password)
 			return True
 		client.do_process_challenge_prompt = rec
-		self.do_test_handler(client, True, password, Handler)
+		self.do_test_handler(client, True, password, Handler, digest="gss:token-type")
 
 	def test_env_handler(self):
 		from xpra.client.auth.env_handler import Handler
