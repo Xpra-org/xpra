@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
 from xpra.platform import (
+    platform_import,
     init, clean, threaded_server_init,
     program_context,
     set_default_name,
@@ -25,7 +26,8 @@ class PlatformInfoTest(unittest.TestCase):
         init()
         t = start_thread(threaded_server_init, "server-init")
         t.join()
-        with program_context():
+        with program_context() as p:
+            assert repr(p)
             assert get_application_name()=="platform-info-test"
             assert get_prgname()=="platform info test"
 
@@ -41,6 +43,15 @@ class PlatformInfoTest(unittest.TestCase):
         assert get_username()
         clean()
 
+    def test_fail_import(self):
+        where = {}
+        platform_import(where, "invalid name", False, "foo")
+        try:
+            platform_import(where, "invalid name", True, "bar")
+        except ImportError:
+            pass
+        else:
+            raise Exception("should have failed to import invalid name")
 
 def main():
     unittest.main()
