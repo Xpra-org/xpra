@@ -23,7 +23,7 @@ def init(prgname=None, appname=None):
         do_init()
 
 #platforms can override this
-def do_init():
+def do_init():  # pragma: no cover
     pass
 
 def threaded_server_init():
@@ -71,7 +71,7 @@ def clean():
         do_clean()
 
 #platforms can override this
-def do_clean():
+def do_clean(): # pragma: no cover
     pass
 
 
@@ -85,11 +85,8 @@ def set_name(prgname=None, appname=None):
 
 #platforms can override this
 def set_prgname(name):
-    try:
-        from gi.repository import GLib
-        GLib.set_prgname(name)
-    except Exception:
-        pass
+    from gi.repository import GLib
+    GLib.set_prgname(name)
 
 def get_prgname():
     global _prgname
@@ -98,11 +95,8 @@ def get_prgname():
 
 #platforms can override this
 def set_application_name(name):
-    try:
-        from gi.repository import GLib
-        GLib.set_application_name(name)
-    except Exception:
-        pass
+    from gi.repository import GLib
+    GLib.set_application_name(name)
 
 def get_application_name():
     global _appname
@@ -116,7 +110,7 @@ def do_get_username():
     try:
         import pwd
         return pwd.getpwuid(os.getuid()).pw_name
-    except Exception:
+    except Exception:   # pragma: no cover
         try:
             import getpass
             return getpass.getuser()
@@ -127,13 +121,13 @@ def do_get_username():
 
 def platform_import(where, pm, required, *imports):
     from xpra.os_util import OSX, POSIX
-    if os.name == "nt":
+    if os.name == "nt": # pragma: no cover
         p = "win32"
-    elif OSX:
+    elif OSX:           # pragma: no cover
         p = "darwin"
-    elif POSIX:
+    elif POSIX:         # pragma: no cover
         p = "xposix"
-    else:
+    else:               # pragma: no cover
         raise OSError("Unknown OS %s" % (os.name))
 
     module = "xpra.platform.%s" % p
