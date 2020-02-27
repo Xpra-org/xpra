@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import unittest
 
 from xpra.util import AdHocStruct
@@ -14,13 +15,19 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 class MixinsTest(ClientMixinTest):
 
 	def test_mmap(self):
-		for mmap in ("on", "/tmp/mmap-test-file"):
+		for mmap in ("off", "on",
+					"/tmp/xpra-mmap-test-file-%i" % os.getpid(),
+					"/tmp/xpra-fail-mmap-test-file-%i" % os.getpid(),
+					):
 			opts = AdHocStruct()
 			opts.mmap = mmap
 			opts.mmap_group = False
-			self._test_mixin_class(MmapClient, opts, {
+			m = self._test_mixin_class(MmapClient, opts, {
 				"mmap.enabled"		: True,
 				})
+			fail = bool(m.mmap_filename) and m.mmap_filename.find("fail")>=0
+			assert m.mmap_enabled == (mmap!="off" and not fail)
+			assert len(self.exit_codes)==int(fail)
 
 	def make_caps(self, caps=None):
 		d = super().make_caps(caps)
@@ -31,6 +38,8 @@ class MixinsTest(ClientMixinTest):
 			"mmap.token_bytes"	: x.mmap_token_bytes,
 			"mmap.token_index"	: x.mmap_token_index,
 			})
+		if x.mmap_filename and x.mmap_filename.find("fail")>=0:
+			d["mmap.token_index"] = x.mmap_token_index-10
 		return d
 
 
