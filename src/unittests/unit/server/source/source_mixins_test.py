@@ -76,6 +76,12 @@ class SourceMixinsTest(unittest.TestCase):
     def test_networkstate(self):
         from xpra.server.source.networkstate_mixin import NetworkStateMixin
         self._test_mixin_class(NetworkStateMixin)
+        x = NetworkStateMixin()
+        x.init_from(None, None)
+        x.init_state()
+        x.protocol = None
+        #x.ping()
+        x.check_ping_echo_timeout(0, 0)
 
     def test_windows(self):
         from xpra.server.source.windows_mixin import WindowsMixin
