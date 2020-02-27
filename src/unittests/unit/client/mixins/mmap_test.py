@@ -22,10 +22,11 @@ class MixinsTest(ClientMixinTest):
 				"mmap.enabled"		: True,
 				})
 
-	def make_caps(self, caps):
-		d = ClientMixinTest.make_caps(self, caps)
+	def make_caps(self, caps=None):
+		d = super().make_caps(caps)
 		x = self.mixin
 		d.update({
+			"mmap_enabled"		: True,
 			"mmap.token"		: x.mmap_token,
 			"mmap.token_bytes"	: x.mmap_token_bytes,
 			"mmap.token_index"	: x.mmap_token_index,
