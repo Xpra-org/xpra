@@ -11,7 +11,7 @@ import unittest
 from xpra.os_util import load_binary_file
 from xpra.platform.displayfd import write_displayfd, read_displayfd
 
-class PlatformInfoTest(unittest.TestCase):
+class DisplayFDTest(unittest.TestCase):
 
     def test_write(self):
         temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test")
