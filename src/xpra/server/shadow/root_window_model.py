@@ -159,11 +159,11 @@ class RootWindowModel:
             return default_value
 
 
-    def managed_connect(self, *args):
+    def managed_connect(self, *args):   # pragma: no cover
         log.warn("ignoring managed signal connect request: %s", args)
 
-    def connect(self, *args):
+    def connect(self, *args):           # pragma: no cover
         log.warn("ignoring signal connect request: %s", args)
 
-    def disconnect(self, *args):
+    def disconnect(self, *args):        # pragma: no cover
         log.warn("ignoring signal disconnect request: %s", args)
