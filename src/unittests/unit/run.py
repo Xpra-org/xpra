@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
 
 #runs all the files in "unit/" that end in "test.py"
 
@@ -19,6 +19,14 @@ def main():
         import xpra
         xpra_mod_dir = os.path.dirname(xpra.__file__)
         run_cmd = ["coverage", "run", "-a", "--include=%s/*" % xpra_mod_dir]
+        #make sure we continue to use coverage to run sub-commands:
+        def which(command):
+            from distutils.spawn import find_executable
+            try:
+                return find_executable(command)
+            except Exception:
+                return command
+        os.environ["XPRA_COMMAND"] = " ".join(run_cmd+[which("xpra")])
     else:
         run_cmd = ["python3"]
 

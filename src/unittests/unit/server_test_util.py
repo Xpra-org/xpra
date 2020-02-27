@@ -91,7 +91,7 @@ class ServerTestUtil(ProcessTestUtil):
         exe = bytestostr(xpra_cmd[0])
         if exe.endswith(".exe"):
             exe = exe[:-4]
-        if not (exe.endswith("python") or exe.endswith(pyexename)):
+        if not (exe.endswith("python") or exe.endswith(pyexename) or exe=="coverage"):
             #prepend python / python3:
             cmd = [pyexename] + xpra_cmd + cls.default_xpra_args
         return cmd
