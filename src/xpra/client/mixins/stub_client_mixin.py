@@ -28,7 +28,7 @@ class StubClientMixin:
         run the main loop.
         """
 
-    def quit(self, exit_code):
+    def quit(self, exit_code):  # pragma: no cover
         """
         Terminate the client with the given exit code.
         (the exit code is ignored if we already have one)
