@@ -396,7 +396,7 @@ def parse_xkbmap_query(xkbmap_query):
         m = opt_re.match(line)
         if m:
             v = m.group(2).strip()
-            if v!=",":
+            if v.strip(","):
                 settings[m.group(1)] = v
     return settings
 
