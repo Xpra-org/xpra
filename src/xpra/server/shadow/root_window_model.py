@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -144,9 +144,9 @@ class RootWindowModel:
                     icon = (w, h, "png", icon_data)
                     icons = (icon,)
                     return icons
-            except Exception:
+            except Exception:   # pragma: no cover
                 log("failed to return window icon")
-            return ()
+                return ()
         if prop=="content-type":
             return "desktop"
         raise ValueError("invalid property: %s" % prop)
