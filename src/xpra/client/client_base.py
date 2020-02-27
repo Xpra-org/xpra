@@ -702,7 +702,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 self.auth_error(EXIT_PASSWORD_REQUIRED,
                                 "this server requires authentication and no password is available")
             return
-        server_salt = bytestostr(packet[1])
         if self.encryption:
             assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
             server_cipher = typedict(packet[2])
@@ -714,6 +713,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 return
         #all server versions support a client salt,
         #they also tell us which digest to use:
+        server_salt = bytestostr(packet[1])
         digest = bytestostr(packet[3])
         actual_digest = digest.split(":", 1)[0]
         l = len(server_salt)
