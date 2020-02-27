@@ -43,9 +43,12 @@ class AuthHandlersTest(unittest.TestCase):
 	def test_prompt(self):
 		from xpra.client.auth.prompt_handler import Handler
 		client = FakeClient()
-		h = Handler(client)
-		packet = ("something", 0, 1, )
-		#h.handle(packet)
+		password = "prompt-password"
+		def rec(packet, _prompt):
+			client.send_challenge_reply(packet, password)
+			return True
+		client.do_process_challenge_prompt = rec
+		self.do_test_handler(client, True, password, Handler)
 
 	def test_env_handler(self):
 		from xpra.client.auth.env_handler import Handler
