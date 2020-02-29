@@ -625,10 +625,11 @@ class CoreX11WindowModel(WindowModelStub):
             return True
         if event.message_type=="":
             log("empty message type: %s", event)
-            if first_time("empty-x11-window-message-type-%#x" % event.window):
-                log.warn("Warning: empty message type received for window %#x:", event.window)
+            if first_time("empty-x11-window-message-type-%#x" % event.window.get_xid()):
+                log.warn("Warning: empty message type received for window %#x:", event.window.get_xid())
                 log.warn(" %s", event)
                 log.warn(" further messages will be silently ignored")
+            return True
         #not handled:
         return False
 
