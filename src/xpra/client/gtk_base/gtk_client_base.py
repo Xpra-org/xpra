@@ -1165,7 +1165,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.opengl_enabled = not self.opengl_enabled
         opengllog("opengl_toggled: %s", self.opengl_enabled)
         #now replace all the windows with new ones:
-        for wid, window in self._id_to_window.items():
+        for wid, window in tuple(self._id_to_window.items()):
             self.reinit_window(wid, window)
         opengllog("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)
         self.reinit_window_icons()
