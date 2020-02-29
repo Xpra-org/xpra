@@ -147,9 +147,6 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.send_clipboard_token_handler = send_clipboard_token_handler
         ClipboardProxyCore.__init__(self, selection)
 
-    def set_want_targets(self, want_targets):
-        self._want_targets = want_targets
-
     def with_clipboard_lock(self, success_callback, failure_callback, retries=5, delay=5):
         r = OpenClipboard(self.window)
         if r:
