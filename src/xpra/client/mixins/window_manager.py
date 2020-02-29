@@ -875,7 +875,9 @@ class WindowClient(StubClientMixin):
     def deiconify_windows(self):
         log("deiconify_windows()")
         for window in self._id_to_window.values():
-            window.deiconify()
+            deiconify = getattr(window, "deiconify", None)
+            if deiconify:
+                deiconify()
 
 
     def resize_windows(self, new_size_fn):
