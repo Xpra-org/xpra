@@ -26,7 +26,7 @@ class X11Event:
         for k,v in self.__dict__.items():
             if k in ("name", "display", "type"):
                 continue
-            elif k=="serial":
+            if k=="serial":
                 d[k] = "%#x" % v
             else:
                 fn = REPR_FUNCTIONS.get(type(v), str)
