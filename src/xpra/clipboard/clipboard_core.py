@@ -537,6 +537,7 @@ class ClipboardProxyCore:
         #clients that need a new token for every owner-change: (ie: win32 and osx)
         #(forces the client to request new contents - prevents stale clipboard data)
         self._greedy_client = False
+        self._want_targets = False
         #semaphore to block the sending of the token when we change the owner ourselves:
         self._block_owner_change = False
         self._last_emit_token = 0
@@ -561,6 +562,10 @@ class ClipboardProxyCore:
     def set_direction(self, can_send : bool, can_receive : bool):
         self._can_send = can_send
         self._can_receive = can_receive
+
+    def set_want_targets(self, want_targets):
+        self._want_targets = want_targets
+
 
     def get_info(self) -> dict:
         info = {
