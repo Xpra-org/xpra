@@ -8,7 +8,7 @@ import os
 import signal
 from gi.repository import GObject, Gdk, GLib
 
-from xpra.util import envbool
+from xpra.util import envbool, first_time
 from xpra.os_util import bytestostr
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -623,6 +623,12 @@ class CoreX11WindowModel(WindowModelStub):
             #this is overriden in WindowModel, skipped everywhere else:
             geomlog("_NET_MOVERESIZE_WINDOW skipped on %s (data=%s)", self, event.data)
             return True
+        if event.message_type=="":
+            log("empty message type: %s", event)
+            if first_time("empty-x11-window-message-type-%#x" % event.window):
+                log.warn("Warning: empty message type received for window %#x:", event.window)
+                log.warn(" %s", event)
+                log.warn(" further messages will be silently ignored")
         #not handled:
         return False
 
