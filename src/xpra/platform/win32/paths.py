@@ -131,19 +131,13 @@ def do_get_desktop_background_paths():
 
 
 def do_get_download_dir():
-    #TODO: use "FOLDERID_Downloads":
-    # FOLDERID_Downloads = "{374DE290-123F-4565-9164-39C4925E467B}"
-    # maybe like here:
-    # https://gist.github.com/mkropat/7550097
-    #from win32com.shell import shell, shellcon
-    #shell.SHGetFolderPath(0, shellcon.CSIDL_MYDOCUMENTS, None, 0)
     try:
+        #values found here: https://stackoverflow.com/a/48706260
         import winreg   #@UnresolvedImport @Reimport
-        #use the internet explorer registry key:
-        #HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer
-        key_path = 'Software\\Microsoft\\Internet Explorer'
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)    #@UndefinedVariable
-        DOWNLOAD_PATH = winreg.QueryValueEx(key, 'Download Directory')[0]               #@UndefinedVariable
+        sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
+        downloads_guid = '{374DE290-123F-4565-9164-39C4925E467B}'
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, sub_key) as key:
+            DOWNLOAD_PATH = winreg.QueryValueEx(key, downloads_guid)[0]
     except Exception:
         get_util_logger()("do_get_download_dir()", exc_info=True)
         #fallback to what the documentation says is the default:
