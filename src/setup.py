@@ -1153,10 +1153,9 @@ if WIN32:
                               {"locale" : ["en"]},
                               {"themes" : ["Default"]}
                              ])
-            ICONS = ["48x48", "scalable", "cursors"]
-            #THEME = "hicolor"
-            THEME = "Adwaita"
-            add_dir("share/icons/"+THEME, ICONS)
+            ICONS = ["24x24", "48x48", "scalable", "cursors", "index.theme"]
+            for theme in ("Adwaita", ): #"hicolor"
+                add_dir("share/icons/"+theme, ICONS)
         if gtk3_ENABLED or sound_ENABLED:
             #causes warnings:
             #add_dir('lib', ["gio"])
