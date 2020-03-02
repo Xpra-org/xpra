@@ -369,6 +369,9 @@ if [ "${BUNDLE_PUTTY}" == "1" ]; then
 		fi
 	fi
 	cp -fn "${TORTOISESVN}/bin/TortoisePlink.exe" "${DIST}/Plink.exe"
+	for dll in vcruntime140.dll msvcp140.dll vcruntime140_1.dll; do
+		cp "/c/Windows/System32/$dll" "${DIST}/"
+	done
 	#are we meant to include those DLLs?
 	#rsync -rplogt "${TORTOISESVN}/bin/"*dll "${DIST}/"
 fi
