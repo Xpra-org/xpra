@@ -85,6 +85,8 @@ def set_name(prgname=None, appname=None):
 
 #platforms can override this
 def set_prgname(name):
+    if not name:
+        return
     from gi.repository import GLib
     GLib.set_prgname(name)
 
@@ -95,6 +97,8 @@ def get_prgname():
 
 #platforms can override this
 def set_application_name(name):
+    if not name:
+        return
     from gi.repository import GLib
     GLib.set_application_name(name)
 
