@@ -3,17 +3,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.platform import program_context
+from xpra.platform.gui import force_focus
+from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING, add_close_accel  #pylint: disable=wrong-import-position
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
 
-from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING  #pylint: disable=wrong-import-position
-from xpra.gtk_common.gtk_util import add_close_accel
-from xpra.platform.gui import force_focus
 
-
-def main():
+def make_grab_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(600, 200)
 	window.connect("delete_event", Gtk.main_quit)
@@ -90,15 +90,19 @@ def main():
 	vbox.add(event_label)
 
 	window.add(vbox)
+	return window
 
-	def show_with_focus():
-		force_focus()
-		window.show_all()
-		window.present()
-	add_close_accel(window, Gtk.main_quit)
-	GLib.idle_add(show_with_focus)
-	Gtk.main()
-	return 0
+def main():
+	with program_context("grabs", "Grabs"):
+		w = make_grab_window()
+		def show_with_focus():
+			force_focus()
+			w.show_all()
+			w.present()
+		add_close_accel(w, Gtk.main_quit)
+		GLib.idle_add(show_with_focus)
+		Gtk.main()
+		return 0
 
 
 if __name__ == "__main__":

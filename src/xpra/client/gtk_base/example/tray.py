@@ -3,15 +3,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#test application for tray and menu
+from xpra.platform import program_context
+from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
+from xpra.platform.paths import get_icon_filename
+from xpra.gtk_common.gtk_util import scaled_image
+from xpra.log import Logger
+
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk, GdkPixbuf
-
-from xpra.gtk_common.gtk_util import scaled_image
-from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
-from xpra.platform.paths import get_icon_filename
-from xpra.log import Logger
 
 log = Logger("client")
 
@@ -177,12 +177,13 @@ class FakeApplication:
 
 
 def main():
-    import signal
-    def signal_handler(*_args):
-        Gtk.main_quit()
-    signal.signal(signal.SIGINT, signal_handler)
-    FakeApplication()
-    Gtk.main()
+    with program_context("tray", "Tray"):
+        import signal
+        def signal_handler(*_args):
+            Gtk.main_quit()
+        signal.signal(signal.SIGINT, signal_handler)
+        FakeApplication()
+        Gtk.main()
 
 
 if __name__ == "__main__":

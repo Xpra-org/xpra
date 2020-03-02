@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 #pylint: disable=wrong-import-position
 
@@ -12,13 +15,13 @@ from xpra.util import (
 	MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, \
 	MOVERESIZE_MOVE, MOVERESIZE_CANCEL,
 	)
-
 from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform import program_context
 
 
 width = 400
 height = 200
-def main():
+def make_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(width, height)
 	window.connect("delete_event", Gtk.main_quit)
@@ -86,10 +89,15 @@ def main():
 		add_button(x, y, direction)
 
 	window.add(table)
-	window.show_all()
-	add_close_accel(window, Gtk.main_quit)
-	Gtk.main()
-	return 0
+	return window
+
+def main():
+	with program_context("initiate-moveresize", "Initiate Move-Resize"):
+		w = make_window()
+		w.show_all()
+		add_close_accel(w, Gtk.main_quit)
+		Gtk.main()
+		return 0
 
 
 if __name__ == "__main__":

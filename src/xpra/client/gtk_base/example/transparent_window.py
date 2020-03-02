@@ -3,15 +3,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import cairo
+from xpra.platform import program_context
+from xpra.platform.gui import force_focus
+from xpra.gtk_common.gtk_util import add_close_accel
 
+import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
-
-from xpra.gtk_common.gtk_util import add_close_accel
-from xpra.platform.gui import force_focus
 
 
 class TransparentWindow(Gtk.Window):
@@ -61,15 +61,16 @@ class TransparentWindow(Gtk.Window):
         cr.stroke()
 
 def main():
-    import signal
-    def signal_handler(*_args):
-        Gtk.main_quit()
-    signal.signal(signal.SIGINT, signal_handler)
-    w = TransparentWindow()
-    add_close_accel(w, Gtk.main_quit)
-    GLib.idle_add(w.show_with_focus)
-    Gtk.main()
-    return 0
+    with program_context("transparent-window", "Transparent Window"):
+        import signal
+        def signal_handler(*_args):
+            Gtk.main_quit()
+        signal.signal(signal.SIGINT, signal_handler)
+        w = TransparentWindow()
+        add_close_accel(w, Gtk.main_quit)
+        GLib.idle_add(w.show_with_focus)
+        Gtk.main()
+        return 0
 
 
 if __name__ == "__main__":

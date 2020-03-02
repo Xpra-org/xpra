@@ -4,12 +4,14 @@
 
 import sys
 
+from xpra.platform import program_context
+from xpra.platform.gui import force_focus
+from xpra.gtk_common.gtk_util import add_close_accel
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
-from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
 
 
 class TestForm(object):
@@ -66,10 +68,11 @@ class TestForm(object):
 			self.label.set_text("Unexpected event: %s" % event)
 
 def main():
-	w = TestForm()
-	add_close_accel(w.window, Gtk.main_quit)
-	GLib.idle_add(w.show_with_focus)
-	Gtk.main()
+	with program_context("clicks", "Clicks"):
+		w = TestForm()
+		add_close_accel(w.window, Gtk.main_quit)
+		GLib.idle_add(w.show_with_focus)
+		Gtk.main()
 
 
 if __name__ == "__main__":

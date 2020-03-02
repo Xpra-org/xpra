@@ -3,6 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.platform import program_context
+from xpra.gtk_common.gtk_util import add_close_accel
+
 from OpenGL.GL import (
     glClear, glClearColor, glViewport,
     glColor3f, glFlush, glRectf, GL_COLOR_BUFFER_BIT,
@@ -12,7 +15,6 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
 
-from xpra.gtk_common.gtk_util import add_close_accel
 
 
 SIZE = 1600, 1200
@@ -139,11 +141,15 @@ class ColorTest:
         paint_block(M//8, M//8, M//8)
         paint_block(M//16, M//16, M//16)
 
+def main():
+    with program_context("gl-colors-gradient", "OpenGL Colors Gradient"):
+        import signal
+        def signal_handler(*_args):
+            Gtk.main_quit()
+        signal.signal(signal.SIGINT, signal_handler)
+        ColorTest()
+        Gtk.main()
+
 
 if __name__ == '__main__':
-    import signal
-    def signal_handler(*_args):
-        Gtk.main_quit()
-    signal.signal(signal.SIGINT, signal_handler)
-    ColorTest()
-    Gtk.main()
+    main()

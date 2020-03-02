@@ -3,12 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.os_util import POSIX, OSX
+from xpra.platform import program_context
 if POSIX and not OSX:
     from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
 from xpra.platform.gui import force_focus
+from xpra.gtk_common.gtk_util import add_close_accel
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -36,11 +37,12 @@ class BellWindow(Gtk.Window):
         system_bell(self.get_window(), 0, 100, 2000, 1000, 0, 0, "test")
 
 def main():
-    w = BellWindow()
-    add_close_accel(w, Gtk.main_quit)
-    GLib.idle_add(w.show_with_focus)
-    Gtk.main()
-    return 0
+    with program_context("bell", "Bell"):
+        w = BellWindow()
+        add_close_accel(w, Gtk.main_quit)
+        GLib.idle_add(w.show_with_focus)
+        Gtk.main()
+        return 0
 
 
 if __name__ == "__main__":

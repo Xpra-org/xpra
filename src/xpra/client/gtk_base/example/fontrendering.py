@@ -3,14 +3,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import cairo
+from xpra.platform import program_context
+from xpra.platform.gui import force_focus
+from xpra.gtk_common.gtk_util import add_close_accel
 
+import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import PangoCairo, Gtk, GLib
 
-from xpra.gtk_common.gtk_util import add_close_accel
-from xpra.platform.gui import force_focus
 
 FONT = "Serif 27"
 PATTERN = "%f"
@@ -136,14 +137,15 @@ class FontWindow(Gtk.Window):
 
 
 def main():
-    import signal
-    def signal_handler(*_args):
-        Gtk.main_quit()
-    signal.signal(signal.SIGINT, signal_handler)
-    w = FontWindow()
-    add_close_accel(w, Gtk.main_quit)
-    GLib.idle_add(w.show_with_focus)
-    Gtk.main()
+    with program_context("font-rendering", "Font Rendering"):
+        import signal
+        def signal_handler(*_args):
+            Gtk.main_quit()
+        signal.signal(signal.SIGINT, signal_handler)
+        w = FontWindow()
+        add_close_accel(w, Gtk.main_quit)
+        GLib.idle_add(w.show_with_focus)
+        Gtk.main()
 
 
 if __name__ == "__main__":
