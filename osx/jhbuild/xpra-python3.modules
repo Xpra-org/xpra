@@ -519,9 +519,9 @@
 
 	<distutils id="python3-decorator" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/dc/c3/9d378af09f5737cfd524b844cd2fbb0d2263a35c11d712043daab290144d/decorator-4.4.1.tar.gz"
-			hash="sha256:54c38050039232e1db4ad7375cfce6748d7b41c29e95a081c8a6d2c30364a2ce"
-			version="4.4.1">
+			module="/packages/da/93/84fa12f2dc341f8cf5f022ee09e109961055749df2d0c75c5f98746cfe6c/decorator-4.4.2.tar.gz"
+			hash="sha256:e3a62f0520172440ca0dcc823749319382e377f37f140a0b99ef45fecb84bfe7"
+			version="4.4.2">
 		</branch>
 		<dependencies>
 			<dep package="python3"/>
@@ -732,9 +732,9 @@
 
 	<distutils id="python3-idna" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/ad/13/eb56951b6f7950cadb579ca166e448ba77f9d24efc03edd7e55fa57d04b7/idna-2.8.tar.gz"
-			hash="sha256:c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407"
-			version="2.8"/>
+			module="/packages/cb/19/57503b5de719ee45e83472f339f617b0c01ad75cba44aba1e4c97c2b0abd/idna-2.9.tar.gz"
+			hash="sha256:7588d1c14ae4c77d74036e8c22ff447b26d0fde8f007354fd48a7814db15b7cb"
+			version="2.9"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
