@@ -8,6 +8,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Pango, GLib	#pylint: disable=wrong-import-position
 
+from xpra.os_util import POSIX, OSX
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.platform.gui import force_focus
 
@@ -45,7 +46,7 @@ def main():
 	window.connect("focus-in-event", focus_in)
 	window.connect("focus-out-event", focus_out)
 	window.connect("notify::has-toplevel-focus", has_toplevel_focus)
-	if os.name=="posix":
+	if POSIX and not OSX:
 		from xpra.gtk_common.error import xlog
 		from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 		from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter
