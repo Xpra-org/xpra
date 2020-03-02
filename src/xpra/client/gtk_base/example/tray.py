@@ -62,6 +62,7 @@ class FakeApplication:
         self.client_supports_bell = True
         self.client_supports_sharing = True
         self.client_lock = False
+        self.download_server_log = None
         self.remote_file_transfer = True
         self.remote_file_transfer_ask = True
         self.notifications_enabled = False
@@ -170,6 +171,9 @@ class FakeApplication:
     def xpra_tray_geometry(self, *args):
         log("xpra_tray_geometry%s geometry=%s", args, self.tray.get_geometry())
 
+
+    def disconnect_and_quit(self, *args):
+        Gtk.main_quit()
 
 
 def main():

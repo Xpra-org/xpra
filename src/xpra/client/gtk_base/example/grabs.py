@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -6,6 +9,8 @@ gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
 
 from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING  #pylint: disable=wrong-import-position
+from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
 
 
 def main():
@@ -13,8 +18,8 @@ def main():
 	window.set_size_request(600, 200)
 	window.connect("delete_event", Gtk.main_quit)
 	window.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
-	vbox = Gtk.VBox(False, 0)
-	hbox = Gtk.HBox(False, 0)
+	vbox = Gtk.VBox(homogeneous=False, spacing=0)
+	hbox = Gtk.HBox(homogeneous=False, spacing=0)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=10)
 
 	def keyevent_info(event):
@@ -85,7 +90,13 @@ def main():
 	vbox.add(event_label)
 
 	window.add(vbox)
-	window.show_all()
+
+	def show_with_focus():
+		force_focus()
+		window.show_all()
+		window.present()
+	add_close_accel(window, Gtk.main_quit)
+	GLib.idle_add(show_with_focus)
 	Gtk.main()
 	return 0
 

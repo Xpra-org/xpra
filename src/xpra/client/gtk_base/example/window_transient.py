@@ -1,16 +1,21 @@
 #!/usr/bin/env python
+# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib	#pylint: disable=wrong-import-position
-from xpra.gtk_common.gtk_util import get_default_root_window
+
+from xpra.gtk_common.gtk_util import get_default_root_window, add_close_accel
+from xpra.platform.gui import force_focus
 
 
 def main():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(400, 300)
 	window.connect("delete_event", Gtk.main_quit)
-	vbox = Gtk.VBox(False, 0)
+	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 
 	btn = Gtk.Button(label="Create Transient")
 	def create_transient(*_args):
@@ -42,7 +47,12 @@ def main():
 	vbox.pack_start(btn, expand=False, fill=False, padding=10)
 
 	window.add(vbox)
-	window.show_all()
+	def show_with_focus():
+		force_focus()
+		window.show_all()
+		window.present()
+	add_close_accel(window, Gtk.main_quit)
+	GLib.idle_add(show_with_focus)
 	Gtk.main()
 	return 0
 

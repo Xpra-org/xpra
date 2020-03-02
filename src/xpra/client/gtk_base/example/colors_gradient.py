@@ -8,9 +8,10 @@ import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 
 from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
 
 
 class ColorGradientWindow(Gtk.Window):
@@ -28,7 +29,11 @@ class ColorGradientWindow(Gtk.Window):
         #self.connect('resize', changed)
         self.connect("destroy", Gtk.main_quit)
         self.connect("key_press_event", self.on_key_press)
+
+    def show_with_focus(self):
+        force_focus()
         self.show_all()
+        super().present()
 
     def configure_event(self, *_args):
         self.queue_draw()
@@ -120,6 +125,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     w = ColorGradientWindow()
     add_close_accel(w, Gtk.main_quit)
+    GLib.idle_add(w.show_with_focus)
     Gtk.main()
 
 

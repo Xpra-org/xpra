@@ -8,9 +8,10 @@ import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 
 from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
 
 
 class ColorPlainWindow(Gtk.Window):
@@ -23,7 +24,11 @@ class ColorPlainWindow(Gtk.Window):
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
         self.connect("draw", self.area_draw)
         self.connect("destroy", Gtk.main_quit)
+
+    def show_with_focus(self):
+        force_focus()
         self.show_all()
+        super().present()
 
     def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
@@ -65,6 +70,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     w = ColorPlainWindow()
     add_close_accel(w, Gtk.main_quit)
+    GLib.idle_add(w.show_with_focus)
     Gtk.main()
 
 

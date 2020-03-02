@@ -1,8 +1,15 @@
 #!/usr/bin/env python
+# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk   #pylint: disable=wrong-import-position
+from gi.repository import Gtk, GLib   #pylint: disable=wrong-import-position
+
+from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
+
 
 opacity = 50
 
@@ -22,7 +29,12 @@ def main():
     win.add(btn)
     change_opacity()
 
-    win.show_all()
+    def show_with_focus():
+        force_focus()
+        win.show_all()
+        win.present()
+    add_close_accel(win, Gtk.main_quit)
+    GLib.idle_add(show_with_focus)
     Gtk.main()
     return 0
 

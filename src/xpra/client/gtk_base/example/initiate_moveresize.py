@@ -13,6 +13,9 @@ from xpra.util import (
 	MOVERESIZE_MOVE, MOVERESIZE_CANCEL,
 	)
 
+from xpra.gtk_common.gtk_util import add_close_accel
+
+
 width = 400
 height = 200
 def main():
@@ -84,6 +87,7 @@ def main():
 
 	window.add(table)
 	window.show_all()
+	add_close_accel(window, Gtk.main_quit)
 	Gtk.main()
 	return 0
 

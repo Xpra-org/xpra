@@ -6,7 +6,10 @@ from collections import deque
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Pango	#pylint: disable=wrong-import-position
+from gi.repository import Gtk, Pango, GLib	#pylint: disable=wrong-import-position
+
+from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
 
 
 def main():
@@ -58,6 +61,12 @@ def main():
 			with xlog:
 				X11WindowBindings().selectFocusChange(xid)
 
+	def show_with_focus(self):
+		force_focus()
+		window.show_all()
+		window.present()
+	add_close_accel(window, Gtk.main_quit)
+	GLib.idle_add(show_with_focus)
 	Gtk.main()
 	return 0
 

@@ -8,10 +8,11 @@ from xpra.os_util import POSIX
 if POSIX:
     from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
+from xpra.platform.gui import force_focus
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 
 class BellWindow(Gtk.Window):
@@ -24,15 +25,20 @@ class BellWindow(Gtk.Window):
         btn = Gtk.Button(label="default bell")
         btn.connect('clicked', self.bell)
         self.add(btn)
+
+    def show_with_focus(self):
+        force_focus()
         self.show_all()
-        add_close_accel(self, Gtk.main_quit)
+        super().present()
 
     def bell(self, *_args):
         from xpra.platform.gui import system_bell
         system_bell(self.get_window(), 0, 100, 2000, 1000, 0, 0, "test")
 
 def main():
-    BellWindow()
+    w = BellWindow()
+    add_close_accel(w, Gtk.main_quit)
+    GLib.idle_add(w.show_with_focus)
     Gtk.main()
     return 0
 

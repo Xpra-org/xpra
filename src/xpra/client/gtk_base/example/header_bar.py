@@ -2,7 +2,10 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gio   #pylint: disable=wrong-import-position
+from gi.repository import Gtk, Gio, GLib   #pylint: disable=wrong-import-position
+
+from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
 
 
 class HeaderBarWindow(Gtk.Window):
@@ -27,25 +30,32 @@ class HeaderBarWindow(Gtk.Window):
         Gtk.StyleContext.add_class(box.get_style_context(), "linked")
 
         button = Gtk.Button()
-        button.add(Gtk.Arrow(Gtk.ArrowType.LEFT, Gtk.ShadowType.NONE))
+        button.add(Gtk.Arrow(arrow_type=Gtk.ArrowType.LEFT, shadow_type=Gtk.ShadowType.NONE))
         box.add(button)
 
         button = Gtk.Button()
-        button.add(Gtk.Arrow(Gtk.ArrowType.RIGHT, Gtk.ShadowType.NONE))
+        button.add(Gtk.Arrow(arrow_type=Gtk.ArrowType.RIGHT, shadow_type=Gtk.ShadowType.NONE))
         box.add(button)
 
         hb.pack_start(box)
 
         self.add(Gtk.TextView())
 
+    def show_with_focus(self):
+        force_focus()
+        self.show_all()
+        super().present()
+
+
 def main():
     import signal
     def signal_handler(*_args):
         Gtk.main_quit()
     signal.signal(signal.SIGINT, signal_handler)
-    win = HeaderBarWindow()
-    win.connect("delete-event", Gtk.main_quit)
-    win.show_all()
+    w = HeaderBarWindow()
+    w.connect("delete-event", Gtk.main_quit)
+    add_close_accel(w, Gtk.main_quit)
+    GLib.idle_add(w.show_with_focus)
     Gtk.main()
 
 

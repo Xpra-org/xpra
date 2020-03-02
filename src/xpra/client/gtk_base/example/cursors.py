@@ -3,9 +3,11 @@
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position
+from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
 
 from xpra.gtk_common.cursor_names import cursor_types  #pylint: disable=wrong-import-position
+from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
 
 width = 400
 height = 200
@@ -31,7 +33,12 @@ def main():
 		window.get_window().set_cursor(cursor)
 
 	cursor_combo.connect("changed", change_cursor)
-	window.show_all()
+	def show_with_focus():
+		force_focus()
+		window.show_all()
+		window.present()
+	add_close_accel(window, Gtk.main_quit)
+	GLib.idle_add(show_with_focus)
 	Gtk.main()
 	return 0
 

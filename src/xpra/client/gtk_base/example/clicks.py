@@ -8,6 +8,8 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
+from xpra.platform.gui import force_focus
+from xpra.gtk_common.gtk_util import add_close_accel
 
 
 class TestForm(object):
@@ -31,9 +33,12 @@ class TestForm(object):
 		self.eventbox.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
 		self.eventbox.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
 		vbox.pack_start(self.eventbox, True, True, 0)
-
 		self.window.add(vbox)
+
+	def show_with_focus(self):
+		force_focus()
 		self.window.show_all()
+		self.window.present()
 
 	def show_click_settings(self):
 		root = Gdk.get_default_root_window()
@@ -61,7 +66,9 @@ class TestForm(object):
 			self.label.set_text("Unexpected event: %s" % event)
 
 def main():
-	TestForm()
+	w = TestForm()
+	add_close_accel(w.window, Gtk.main_quit)
+	GLib.idle_add(w.show_with_focus)
 	Gtk.main()
 
 

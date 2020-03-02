@@ -1,9 +1,15 @@
 #!/usr/bin/env python
+# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk	#pylint: disable=wrong-import-position
+from gi.repository import Gtk, Gdk, GLib	#pylint: disable=wrong-import-position
+
+from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.platform.gui import force_focus
 
 
 def main():
@@ -97,9 +103,13 @@ def main():
 		print("window_state(%s, %s)" % (widget, event))
 		print("flags: %s" % [STATES[x] for x in STATES.keys() if x & event.new_window_state])
 	window.connect("window-state-event", window_state)
-
 	window.add(vbox)
-	window.show_all()
+	def show_with_focus():
+		force_focus()
+		window.show_all()
+		window.present()
+	add_close_accel(window, Gtk.main_quit)
+	GLib.idle_add(show_with_focus)
 	Gtk.main()
 	return 0
 
