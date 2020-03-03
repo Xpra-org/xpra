@@ -234,7 +234,7 @@ class InputServer(StubServerMixin):
             delay_ms = min(1500, max(250, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             now = monotonic_time()
-            self.key_repeat_timer = self.timeout_add(0, self._key_repeat_timeout, now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
+            self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout, now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
 
     def _key_repeat_timeout(self, when, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod):
         self.key_repeat_timer = None
