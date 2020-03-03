@@ -21,6 +21,7 @@ from xpra.x11.xkbhelper import (
     get_modifiers_from_meanings, get_modifiers_from_keycodes,
     clear_modifiers, set_modifiers, map_missing_modifiers,
     clean_keyboard_state,
+    DEBUG_KEYSYMS,
     )
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.log import Logger
@@ -371,6 +372,8 @@ class KeyboardConfig(KeyboardConfigBase):
         for _, keyname, keycode, _, _ in get_gtk_keymap():
             if keyname not in self.keycode_translation:
                 self.keycode_translation[keyname] = keycode
+                if keyname in DEBUG_KEYSYMS:
+                    log.info("add_gtk_keynames: %s=%s", keyname, keycode)
 
     def set_default_keymap(self):
         """ assign a default keymap based on the current X11 server keymap
