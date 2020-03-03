@@ -29,6 +29,7 @@ log = Logger("keyboard")
 X11Keyboard = X11KeyboardBindings()
 
 MAP_MISSING_MODIFIERS = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
+SIMULATE_MODIFIERS = envbool("XPRA_SIMULATE_MODIFIERS", True)
 
 ALL_X11_MODIFIERS = {
                     "shift"     : 0,
@@ -422,6 +423,8 @@ class KeyboardConfig(KeyboardConfigBase):
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
             log("get_keycode(%s, %s, %s)=%s (native keymap)", client_keycode, keyname, modifiers, keycode)
         else:
+            if SIMULATE_MODIFIERS:
+                return self.do_get_keycode_new(client_keycode, keyname, pressed, modifiers, group)
             #non-native: try harder to find matching keysym
             #first, try to honour shift state:
             shift = ("shift" in modifiers) ^ ("lock" in modifiers)
@@ -450,6 +453,61 @@ class KeyboardConfig(KeyboardConfigBase):
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, -1)
                 log("get_keycode(%s, %s)=%i (keyname translation)", client_keycode, keyname, keycode)
+        return keycode
+
+    def do_get_keycode_new(self, client_keycode, keyname, pressed, modifiers, group):
+        #non-native: try harder to find matching keysym
+        #first, try to honour shift state:
+        shift = ("shift" in modifiers) ^ ("lock" in modifiers)
+        mode = 0
+        for mod in modifiers:
+            names = self.keynames_for_mod.get(mod, [])
+            for name in names:
+                if name in ("ISO_Level3_Shift", "Mode_switch"):
+                    mode = 1
+                    break
+        level = int(shift) + int(mode)*2
+        levels = []
+        #first, match with group if set:
+        if group:
+            levels.append(level+4)
+        #then try exact match without group:
+        levels.append(level)
+        #try default group:
+        for i in range(2):
+            level = int(shift) + i*2
+            if level not in levels:
+                levels.append(level)
+        #catch all:
+        for level in range(8):
+            if level not in levels:
+                levels.append(level)
+        for level in levels:
+            keycode = self.keycode_translation.get((keyname, level))
+            if keycode:
+                log("get_keycode(%s, '%s', %s, %s)=%i (level=%i, shift=%s, mode=%i)",
+                    client_keycode, keyname, modifiers, group, keycode, level, shift, mode)
+                if (level & 1) ^ shift:
+                    #shift state does not match
+                    if "shift" in modifiers:
+                        modifiers.remove("shift")
+                    else:
+                        modifiers.append("shift")
+                if (level & 2) ^ mode:
+                    #try to set / unset mode:
+                    for mod, keynames in self.keynames_for_mod.items():
+                        if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
+                            #found mode switch modified
+                            if mod in modifiers:
+                                modifiers.remove(mod)
+                            else:
+                                modifiers.append(mod)
+                            break
+                break
+        #this should not find anything new?:
+        if keycode is None:
+            keycode = self.keycode_translation.get(keyname, -1)
+            log("get_keycode(%s, '%s')=%i (keyname translation)", client_keycode, keyname, keycode)
         return keycode
 
 
