@@ -346,42 +346,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log("parse_border(%s)=%s", self.border_str, self.border)
 
 
-    def parse_scaling(self, desktop_scaling):
-        #The screen may be using a scale factor:
-        if desktop_scaling=="auto":
-            scale_factor = self.get_screen_scaling()
-            if scale_factor is not None:
-                self.initial_scaling = scale_factor, scale_factor
-                self.xscale, self.yscale = self.initial_scaling
-                return
-        super().parse_scaling(desktop_scaling)
-
-    def get_screen_scaling(self):
-        #The screen may be using a scale factor:
-        screen = Gdk.Screen.get_default()
-        screenlog("get_screen_scaling() screen=%s", screen)
-        if not screen:
-            return None
-        n = screen.get_n_monitors()
-        if n<1:
-            return None
-        scale_factors = []
-        screenlog("%i monitors", n)
-        for i in range(n):
-            try:
-                scale_factor = screen.get_monitor_scale_factor(i)
-            except Exception as e:
-                log("no scale factor: %s", e)
-                scale_factor = -1
-            screenlog("get_monitor_scale_factor(%i)=%s", i, scale_factor)
-            scale_factors.append(scale_factor)
-        scale_factor = scale_factors[0]
-        if any(v!=scale_factor for v in scale_factors):
-            #not all screens use the same scale factor:
-            return None
-        return scale_factor
-
-
     def show_server_commands(self, *_args):
         if not self.server_commands_info:
             log.warn("Warning: cannot show server commands")
