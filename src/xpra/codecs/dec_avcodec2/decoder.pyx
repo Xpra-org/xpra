@@ -494,7 +494,6 @@ cdef class Decoder:
         cdef AVPacket avpkt
         cdef AVFrameWrapper framewrapper
         cdef AVFrame *av_frame
-        cdef AVFrame *av_frame
         cdef object img
         assert self.codec_ctx!=NULL, "no codec context! (not initialized or already closed)"
         assert self.codec!=NULL
