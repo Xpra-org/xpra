@@ -202,7 +202,8 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
     #generate the translation map:
     trans = {}
     for keycode, defs in keycodes.items():
-        for keysym,i in tuple(defs):             #ie: ('1', 0) or ('A', 1), etc
+        for bkeysym, i in tuple(defs):             #ie: (b'1', 0) or (b'A', 1), etc
+            keysym = bytestostr(bkeysym)
             x11_keycode = find_keycode(keycode, keysym, i)
             if x11_keycode:
                 trans[(keycode, keysym)] = x11_keycode
