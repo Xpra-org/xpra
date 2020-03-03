@@ -379,6 +379,17 @@ class KeyboardConfig(KeyboardConfigBase):
                 self.keycode_translation[keyname] = keycode
                 if keyname in DEBUG_KEYSYMS:
                     log.info("add_gtk_keynames: %s=%s", keyname, keycode)
+        #some keys may still be missing with GTK2:
+        for keyname, equiv in {
+            "dead_perispomeni"  : "dead_tilde",
+            }.items():
+            if keyname not in self.keycode_translation:
+                keycode = self.keycode_translation.get(equiv)
+                if keycode:
+                    self.keycode_translation[keyname] = keycode
+                    if keyname in DEBUG_KEYSYMS:
+                        log.info("add_gtk_keynames: %s=%s", keyname, keycode)
+
 
     def set_default_keymap(self):
         """ assign a default keymap based on the current X11 server keymap
