@@ -246,7 +246,7 @@ class DisplayClient(StubClientMixin):
         if not self.server_is_desktop and not skip_vfb_size_check and self.server_max_desktop_size:
             avail_w, avail_h = self.server_max_desktop_size
             root_w, root_h = self.get_root_size()
-            log("validating server_max_desktop_size=%s vs root size",
+            log("validating server_max_desktop_size=%s vs root size=%s",
                 self.server_max_desktop_size, (root_w, root_h))
             if self.cx(root_w)!=root_w or self.cy(root_h)!=root_h:
                 log(" root size scaled to %s", (self.cx(root_w), self.cy(root_h)))
