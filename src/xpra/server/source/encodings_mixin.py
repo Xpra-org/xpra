@@ -279,7 +279,7 @@ class EncodingsMixin(StubSourceMixin):
         self.window_icon_encodings = c.strlistget("encodings.window-icon", ["premult_argb32"])
         #try both spellings for older versions:
         for x in ("encodings", "encoding",):
-            self.rgb_formats = c.strtupleget(x+".rgb_formats", self.rgb_formats)
+            self.rgb_formats = c.strlistget(x+".rgb_formats", self.rgb_formats)
         #skip all other encoding related settings if we don't send pixels:
         if not send_ui:
             log("windows/pixels forwarding is disabled for this client")
