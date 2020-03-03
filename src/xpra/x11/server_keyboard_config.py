@@ -369,6 +369,7 @@ class KeyboardConfig(KeyboardConfigBase):
         #add the keynames we find via gtk
         #since we may rely on finding those keynames from the client
         #(used with non native keymaps)
+        log("add_gtk_keynames() gtk keymap=%s", get_gtk_keymap())
         for _, keyname, keycode, _, _ in get_gtk_keymap():
             if keyname not in self.keycode_translation:
                 self.keycode_translation[keyname] = keycode
