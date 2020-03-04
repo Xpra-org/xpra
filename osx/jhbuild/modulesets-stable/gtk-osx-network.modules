@@ -74,7 +74,7 @@
   <autotools id="gnutls" autogen-sh="configure"
              autogenargs="--disable-gtk-doc-html --without-p11-kit">
     <branch repo="gnutls" version="3.6.12"
-    		hash="sha256:bfacf16e342949ffd977a9232556092c47164bd26e166736cf3459a870506c4b"
+            hash="sha256:bfacf16e342949ffd977a9232556092c47164bd26e166736cf3459a870506c4b"
             module="gcrypt/gnutls/v3.6/gnutls-3.6.12.tar.xz"/>
     <dependencies>
       <dep package="libunistring"/>
@@ -86,7 +86,7 @@
 
   <autotools id="libgcrypt" autogen-sh="configure">
     <branch repo="gnutls" version="1.8.5"
-    		hash="sha256:3b4a2a94cb637eff5bdebbcaf46f4d95c4f25206f459809339cdada0eb577ac3"
+            hash="sha256:3b4a2a94cb637eff5bdebbcaf46f4d95c4f25206f459809339cdada0eb577ac3"
             module="gcrypt/libgcrypt/libgcrypt-1.8.5.tar.bz2"/>
   </autotools>
 
@@ -103,7 +103,7 @@
 
   <autotools id="libpsl" autogen-sh='configure'>
     <branch repo="github-tarball" version="0.21.0"
-    		hash="sha256:055aa87ec166c7afb985d0816c07ff440e1eb899881a318c51c69a0aeea8e279"
+            hash="sha256:055aa87ec166c7afb985d0816c07ff440e1eb899881a318c51c69a0aeea8e279"
             module="rockdaboot/libpsl/archive/libpsl-0.21.0.tar.gz" />
   </autotools>
   
