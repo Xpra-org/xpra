@@ -465,6 +465,19 @@ EnumClipboardFormats.argtypes = [UINT]
 CountClipboardFormats = user32.CountClipboardFormats
 CountClipboardFormats.restype = c_int
 CountClipboardFormats.argtypes = []
+GetWindowTextA = user32.GetWindowTextA
+GetWindowTextA.restype = c_int
+GetWindowTextA.argtypes = [HWND, LPSTR, c_int]
+GetWindowTextW = user32.GetWindowTextW
+GetWindowTextW.restype = c_int
+GetWindowTextW.argtypes = [HWND, LPWSTR, c_int]
+GetWindowTextLengthA = user32.GetWindowTextLengthA
+GetWindowTextLengthA.restype = c_int
+GetWindowTextLengthA.argtypes = [HWND]
+GetWindowTextLengthW = user32.GetWindowTextLengthW
+GetWindowTextLengthW.restype = c_int
+GetWindowTextLengthW.argtypes = [HWND]
+
 
 class PROCESS_INFORMATION(Structure):
     _fields_ = (
