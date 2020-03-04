@@ -27,7 +27,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
-from xpra.util import csv, ellipsizer
+from xpra.util import csv, ellipsizer, envint
 from xpra.os_util import bytestostr, strtobytes
 
 CP_UTF8 = 65001
@@ -64,6 +64,10 @@ CLIPBOARD_FORMATS = {
     win32con.CF_TEXT        : "CF_TEXT",
     win32con.CF_UNICODETEXT : "CF_UNICODETEXT",
     }
+
+RETRY = envint("XPRA_CLIPBOARD_RETRY", 5)
+DELAY = envint("XPRA_CLIPBOARD_INITIAL_DELAY", 5)
+
 
 #initialize the window we will use
 #for communicating with the OS clipboard API:
@@ -157,13 +161,16 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.send_clipboard_token_handler = send_clipboard_token_handler
         super().__init__(selection)
 
-    def with_clipboard_lock(self, success_callback, failure_callback, retries=5, delay=5):
+    def with_clipboard_lock(self, success_callback, failure_callback, retries=RETRY, delay=DELAY):
+        log("with_clipboard_lock%s", (success_callback, failure_callback, retries, delay))
         r = OpenClipboard(self.window)
         if r:
             log("OpenClipboard(%#x)=%s", self.window, r)
             try:
-                success_callback()
-                return
+                r = success_callback()
+                log("%s()=%s", success_callback, r)
+                if r:
+                    return
             finally:
                 CloseClipboard()
         log("OpenClipboard(%#x)=%s, owner=%#x", self.window, WinError(GetLastError()), GetClipboardOwner())
@@ -276,41 +283,52 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 else:
                     break
             log("clipboard formats: %s", csv(format_name(x) for x in formats))
+            matching = tuple(fmt for fmt in formats if fmt in (
+                win32con.CF_UNICODETEXT, win32con.CF_TEXT, win32con.CF_OEMTEXT)
+            )
+            log("supported formats: %s", csv(format_name(x) for x in matching))
+            if not matching:
+                errback("no supported formats")
+                return True
             data_handle = None
-            #for fmt in (win32con.CF_UNICODETEXT, win32con.CF_TEXT, win32con.CF_OEMTEXT):
-            for fmt in (win32con.CF_TEXT, win32con.CF_OEMTEXT):
+            for fmt in matching:
                 data_handle = GetClipboardData(fmt)
+                log("GetClipboardData(%s)=%#x", format_name(fmt), data_handle)
                 if data_handle:
                     break
             if not data_handle:
-                errback("no matching format in %s" % csv(format_name(x) for x in formats))
-                return
+                errback("failed to get data handle using %s" % csv(format_name(x) for x in formats))
+                return False
             data = GlobalLock(data_handle)
             if not data:
-                errback("failed to lock handle")
-                return
-            log("got data handle for format '%s'", format_name(fmt))
+                errback("failed to lock data handle %#x" % data_handle)
+                return False
+            log("got data handle lock %#x for format '%s'", data, format_name(fmt))
             try:
                 if fmt==win32con.CF_UNICODETEXT:
                     wstr = cast(data, LPCWSTR)
                     ulen = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, None, 0, None, None)
                     if ulen>MAX_CLIPBOARD_PACKET_SIZE:
-                        errback("too much data")
-                        return
+                        errback("too much unicode data: %i bytes" % ulen)
+                        return True
                     buf = create_string_buffer(ulen)
                     l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
-                    if l>0:
-                        if buf.raw[l-1:l]==b"\0":
-                            s = buf.raw[:l-1]
-                        else:
-                            s = buf.raw[:l]
-                        log("got %i bytes of data: %s", len(s), ellipsizer(s))
-                        callback(strtobytes(s))
-                    else:
+                    if l==0:
                         errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))
-                else:
-                    astr = cast(data, LPCSTR)
-                    callback(astr.value.decode("latin1"))
+                        return True
+                    if buf.raw[l-1:l]==b"\0":
+                        s = buf.raw[:l-1]
+                    else:
+                        s = buf.raw[:l]
+                    log("got %i bytes of UNICODE data: %s", len(s), ellipsizer(s))
+                    callback(strtobytes(s))
+                    return True
+                #CF_TEXT or CF_OEMTEXT:
+                astr = cast(data, LPCSTR)
+                s = astr.value.decode("latin1")
+                log("got %i bytes of TEXT data: %s", len(s), ellipsizer(s))
+                callback(s)
+                return True
             finally:
                 GlobalUnlock(data)
         self.with_clipboard_lock(get_text, errback)
@@ -319,71 +337,56 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         log.warn("Warning: cannot set clipboard value")
         log.warn(" %s", msg)
 
-    def set_clipboard_text(self, text, retry=5):
-        log("set_clipboard_text(%s, %i)", text, retry)
-        r = self.do_set_clipboard_text(text)
-        if not r:
-            if retry>0:
-                GLib.timeout_add(5, self.set_clipboard_text, text, retry-1)
-            else:
-                self.set_err("failed to set clipboard buffer")
-
-
-    def do_set_clipboard_text(self, text):
+    def set_clipboard_text(self, text):
         #convert to wide char
         #get the length in wide chars:
         wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), None, 0)
         if not wlen:
             self.set_err("failed to prepare to convert to wide char")
-            return False
+            return True
         log("MultiByteToWideChar wlen=%i", wlen)
         #allocate some memory for it:
         l = (wlen+1)*2
         buf = GlobalAlloc(GMEM_MOVEABLE, l)
         if not buf:
             self.set_err("failed to allocate %i bytes of global memory" % l)
-            return False
+            return True
         log("GlobalAlloc buf=%#x", buf)
         locked = GlobalLock(buf)
         if not locked:
             self.set_err("failed to lock buffer %#x" % buf)
             GlobalFree(buf)
-            return False
+            return True
         try:
             locked_buf = cast(locked, LPWSTR)
             r = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), locked_buf, wlen)
             if not r:
                 self.set_err("failed to convert to wide char")
-                return False
+                GlobalFree(buf)
+                return True
         finally:
             GlobalUnlock(locked)
         #we're going to alter the clipboard ourselves,
         #ignore messages until we're done:
         self._block_owner_change = True
-        #def empty_error():
-        #    self.set_err("failed to empty the clipboard")
-        #self.with_clipboard_lock(EmptyClipboard, empty_error)
         def cleanup():
             GlobalFree(buf)
             GLib.idle_add(self.remove_block)
-        ret = [False]
-        def do_set_data():
+        def set_clipboard_data():
             if not EmptyClipboard():
                 self.set_err("failed to empty the clipboard")
+                return False
             if not SetClipboardData(win32con.CF_UNICODETEXT, buf):
-                #no need to warn here
-                #set_clipboard_text() will try again
-                return
+                return False
             log("SetClipboardData(..) done")
             cleanup()
-            ret[0] = True
-        def set_error(error_text=""):
+            return True
+        def set_clipboard_error(error_text=""):
             log.error("Error: failed to set clipboard data")
             if error_text:
                 log.error(" %s", error_text)
             cleanup()
-        self.with_clipboard_lock(do_set_data, set_error)
-        return ret[0]
+        self.with_clipboard_lock(set_clipboard_data, set_clipboard_error)
 
 
     def __repr__(self):
