@@ -67,16 +67,16 @@
 	</autotools>
 
 	<autotools id="pcre" autogenargs="--enable-utf8" autogen-sh="configure">
-		<branch module="/pub/pcre/pcre-8.42.tar.gz"
-			version="8.42"
-			hash="sha256:69acbc2fbdefb955d42a4c606dfde800c2885711d2979e356c0636efde9ec3b5"
+		<branch module="/pub/pcre/pcre-8.44.tar.gz"
+			version="8.44"
+			hash="sha256:aecafd4af3bd0f3935721af77b889d9024b2e01d96b58471bd91a3063fb47728"
 			repo="ftp.pcre.org"/>
 	</autotools>
 
 	<autotools id="grep" autogen-sh="configure">
-		<branch module="/gnu/grep/grep-3.3.tar.xz"
-			version="3.3"
-			hash="sha256:b960541c499619efd6afe1fa795402e4733c8e11ebf9fafccc0bb4bccdc5b514"
+		<branch module="/gnu/grep/grep-3.4.tar.xz"
+			version="3.4"
+			hash="sha256:58e6751c41a7c25bfc6e9363a41786cff3ba5709cf11d5ad903cf7cce31cc3fb"
 			repo="ftp.gnu.org"/>
 		<dependencies>
 			<dep package="pcre"/>
@@ -107,10 +107,10 @@
 	</cmake>
 
 	<autotools id="gmplib" autogen-sh="configure">
-		<branch module="/download/gmp/gmp-6.1.2.tar.xz"
-			version="6.1.2"
-			hash="sha256:87b565e89a9a684fe4ebeeddb8399dce2599f9c9049854ca8c0dfbdea0e21912"
-			checkoutdir="gmp-6.1.2"
+		<branch module="/download/gmp/gmp-6.2.0.tar.xz"
+			version="6.2.0"
+			hash="sha256:258e6cd51b3fbdfc185c716d55f82c08aff57df0c6fbd143cf6ed561267a1526"
+			checkoutdir="gmp-6.2.0"
 			repo="gmplib.org"/>
 	</autotools>
 
