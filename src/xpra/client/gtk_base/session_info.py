@@ -1198,8 +1198,14 @@ class SessionInfo(Gtk.Window):
                 filename = filenames[0]
                 surface = graph.surface
                 log("saving surface %s to %s", surface, filename)
-                with open(filename, "wb") as f:
-                    surface.write_to_png(f)
+                from io import BytesIO
+                b = BytesIO()
+                surface.write_to_png(b)
+                def save_file():
+                    with open(filename, "wb") as f:
+                        f.write(b.getvalue())
+                from xpra.make_thread import start_thread
+                start_thread(save_file, "save-graph")
         elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.CLOSE, Gtk.ResponseType.DELETE_EVENT):
             log("closed/cancelled")
         else:
