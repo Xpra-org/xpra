@@ -848,7 +848,7 @@ def get_defaults():
 
     if POSIX and not OSX:
         from xpra.x11.fakeXinerama import find_libfakeXinerama
-        fake_xinerama = find_libfakeXinerama()
+        fake_xinerama = find_libfakeXinerama() or "no"
     else:
         fake_xinerama = "no"
 
