@@ -1196,6 +1196,8 @@ class SessionInfo(Gtk.Window):
         if response == Gtk.ResponseType.OK:
             if len(filenames)==1:
                 filename = filenames[0]
+                if not filename.lower().endswith(".png"):
+                    filename += ".png"
                 surface = graph.surface
                 log("saving surface %s to %s", surface, filename)
                 from io import BytesIO
