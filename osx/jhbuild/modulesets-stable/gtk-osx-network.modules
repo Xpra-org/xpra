@@ -109,8 +109,8 @@
   
   <autotools id="libsoup" autogen-sh="configure"
              autogenargs="set_more_warnings=no --enable-introspection=no">
-    <branch module="libsoup/2.68/libsoup-2.68.3.tar.xz" version="2.68.3"
-            hash="sha256:534bb08e35b0ff3702f3adfde87d3441e27c12f9f5ec351f056fe04cba02bafb">
+    <branch module="libsoup/2.68/libsoup-2.68.4.tar.xz" version="2.68.4"
+            hash="sha256:2d50b12922cc516ab6a7c35844d42f9c8a331668bbdf139232743d82582b3294">
     </branch>
     <dependencies>
       <dep package="libpsl"/>
