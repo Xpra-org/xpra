@@ -59,7 +59,7 @@ class ToolboxGUI(Gtk.Window):
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
-        hb.props.title = "Xpra"
+        hb.props.title = title
         button = Gtk.Button()
         icon = Gio.ThemedIcon(name="help-about")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
