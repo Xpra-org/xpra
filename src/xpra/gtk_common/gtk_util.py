@@ -490,14 +490,20 @@ def get_screen_info(display, screen) -> dict:
     sinfo = info.setdefault("settings", {})
     try:
         for x, gtype in {
-            "antialias" : GObject.TYPE_INT,
-            "dpi"       : GObject.TYPE_INT,
-            "hinting"   : GObject.TYPE_INT,
-            "hintstyle" : GObject.TYPE_STRING,
-            "rgba"      : GObject.TYPE_STRING,
+            #NET:
+            "enable-event-sounds"   : GObject.TYPE_INT,
+            "icon-theme-name"       : GObject.TYPE_STRING,
+            "sound-theme-name"      : GObject.TYPE_STRING,
+            "theme-name"            : GObject.TYPE_STRING,
+            #Xft:
+            "xft-antialias" : GObject.TYPE_INT,
+            "xft-dpi"       : GObject.TYPE_INT,
+            "xft-hinting"   : GObject.TYPE_INT,
+            "xft-hintstyle" : GObject.TYPE_STRING,
+            "xft-rgba"      : GObject.TYPE_STRING,
             }.items():
             try:
-                v = get_setting("gtk-xft-"+x, gtype)
+                v = get_setting("gtk-"+x, gtype)
             except Exception:
                 log("failed to query screen '%s'", x, exc_info=True)
                 continue
