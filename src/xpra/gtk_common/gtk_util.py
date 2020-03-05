@@ -509,6 +509,8 @@ def get_screen_info(display, screen) -> dict:
                 continue
             if v is None:
                 v = ""
+            if x.startswith("xft-"):
+                x = x[4:]
             sinfo[x] = v
     except:
         pass
