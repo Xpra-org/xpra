@@ -66,7 +66,7 @@ CLIPBOARD_FORMATS = {
     }
 
 RETRY = envint("XPRA_CLIPBOARD_RETRY", 5)
-DELAY = envint("XPRA_CLIPBOARD_INITIAL_DELAY", 5)
+DELAY = envint("XPRA_CLIPBOARD_INITIAL_DELAY", 10)
 
 
 #initialize the window we will use
@@ -173,9 +173,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     return
             finally:
                 CloseClipboard()
-        log("OpenClipboard(%#x)=%s, owner=%#x", self.window, WinError(GetLastError()), GetClipboardOwner())
+        e = WinError(GetLastError())
+        log("OpenClipboard(%#x)=%s, owner=%#x", self.window, e, GetClipboardOwner())
         if retries<=0:
-            failure_callback("OpenClipboard: too many failed attemps, giving up")
+            failure_callback("OpenClipboard: too many failed attempts (%s), giving up" % e)
             return
         #try again later:
         GLib.timeout_add(delay, self.with_clipboard_lock,
@@ -288,7 +289,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             )
             log("supported formats: %s", csv(format_name(x) for x in matching))
             if not matching:
-                errback("no supported formats")
+                errback("no supported formats, only: %s", csv(format_name(x) for x in formats))
                 return True
             data_handle = None
             for fmt in matching:
