@@ -215,8 +215,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("got_text(%s)", ellipsizer(text))
             got_contents(target, 8, text)
         def errback(error_text=""):
-            log.error("Error: failed to get clipboard data")
+            log("errback(%s)", error_text)
             if error_text:
+                log.error("Error: failed to get clipboard data")
                 log.error(" %s", error_text)
             got_contents("text/plain", 8, b"")
         self.get_clipboard_text(got_text, errback)
@@ -289,7 +290,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             )
             log("supported formats: %s", csv(format_name(x) for x in matching))
             if not matching:
-                errback("no supported formats, only: %s", csv(format_name(x) for x in formats))
+                log("no supported formats, only: %s", csv(format_name(x) for x in formats))
+                errback()
                 return True
             data_handle = None
             for fmt in matching:
@@ -310,7 +312,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     wstr = cast(data, LPCWSTR)
                     ulen = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, None, 0, None, None)
                     if ulen>MAX_CLIPBOARD_PACKET_SIZE:
-                        errback("too much unicode data: %i bytes" % ulen)
+                        errback("unicode data is too large: %i bytes" % ulen)
                         return True
                     buf = create_string_buffer(ulen)
                     l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
@@ -327,6 +329,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 #CF_TEXT or CF_OEMTEXT:
                 astr = cast(data, LPCSTR)
                 s = astr.value.decode("latin1")
+                ulen = len(s)
+                if ulen>MAX_CLIPBOARD_PACKET_SIZE:
+                    errback("text data is too large: %i characters" % ulen)
+                    return True
                 log("got %i bytes of TEXT data: %s", len(s), ellipsizer(s))
                 callback(s)
                 return True
@@ -383,8 +389,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             cleanup()
             return True
         def set_clipboard_error(error_text=""):
-            log.error("Error: failed to set clipboard data")
+            log("set_clipboard_error(%s)", error_text)
             if error_text:
+                log.error("Error: failed to set clipboard data")
                 log.error(" %s", error_text)
             cleanup()
         self.with_clipboard_lock(set_clipboard_data, set_clipboard_error)
