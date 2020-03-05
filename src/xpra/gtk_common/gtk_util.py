@@ -484,32 +484,29 @@ def get_screen_info(display, screen) -> dict:
             return v.get_value()
         return None
     sinfo = info.setdefault("settings", {})
-    try:
-        for x, gtype in {
-            #NET:
-            "enable-event-sounds"   : GObject.TYPE_INT,
-            "icon-theme-name"       : GObject.TYPE_STRING,
-            "sound-theme-name"      : GObject.TYPE_STRING,
-            "theme-name"            : GObject.TYPE_STRING,
-            #Xft:
-            "xft-antialias" : GObject.TYPE_INT,
-            "xft-dpi"       : GObject.TYPE_INT,
-            "xft-hinting"   : GObject.TYPE_INT,
-            "xft-hintstyle" : GObject.TYPE_STRING,
-            "xft-rgba"      : GObject.TYPE_STRING,
-            }.items():
-            try:
-                v = get_setting("gtk-"+x, gtype)
-            except Exception:
-                log("failed to query screen '%s'", x, exc_info=True)
-                continue
-            if v is None:
-                v = ""
-            if x.startswith("xft-"):
-                x = x[4:]
-            sinfo[x] = v
-    except:
-        pass
+    for x, gtype in {
+        #NET:
+        "enable-event-sounds"   : GObject.TYPE_INT,
+        "icon-theme-name"       : GObject.TYPE_STRING,
+        "sound-theme-name"      : GObject.TYPE_STRING,
+        "theme-name"            : GObject.TYPE_STRING,
+        #Xft:
+        "xft-antialias" : GObject.TYPE_INT,
+        "xft-dpi"       : GObject.TYPE_INT,
+        "xft-hinting"   : GObject.TYPE_INT,
+        "xft-hintstyle" : GObject.TYPE_STRING,
+        "xft-rgba"      : GObject.TYPE_STRING,
+        }.items():
+        try:
+            v = get_setting("gtk-"+x, gtype)
+        except Exception:
+            log("failed to query screen '%s'", x, exc_info=True)
+            continue
+        if v is None:
+            v = ""
+        if x.startswith("xft-"):
+            x = x[4:]
+        sinfo[x] = v
     return info
 
 def get_monitor_info(_display, screen, i) -> dict:
