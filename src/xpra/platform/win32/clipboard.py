@@ -176,7 +176,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         e = WinError(GetLastError())
         log("OpenClipboard(%#x)=%s, owner=%#x", self.window, e, GetClipboardOwner())
         if retries<=0:
-            failure_callback("OpenClipboard: too many failed attempts (%s), giving up" % e)
+            failure_callback("OpenClipboard: too many failed attempts, giving up")
             return
         #try again later:
         GLib.timeout_add(delay, self.with_clipboard_lock,
