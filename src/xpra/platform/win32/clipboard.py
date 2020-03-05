@@ -297,11 +297,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 if data_handle:
                     break
             if not data_handle:
-                errback("failed to get data handle using %s" % csv(format_name(x) for x in formats))
+                log("no valid data handle using %s (may try again)", csv(format_name(x) for x in matching))
                 return False
             data = GlobalLock(data_handle)
             if not data:
-                errback("failed to lock data handle %#x" % data_handle)
+                log("failed to lock data handle %#x (may try again)", data_handle)
                 return False
             log("got data handle lock %#x for format '%s'", data, format_name(fmt))
             try:
