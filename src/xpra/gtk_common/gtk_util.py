@@ -471,10 +471,6 @@ def get_screen_info(display, screen) -> dict:
                     val = fn()
             if val is not None:
                 vinfo.setdefault(name, {})[x] = vdict.get(val, val)
-    try:
-        visual("rgb", screen.get_rgb_visual())
-    except:
-        pass    #not in gtk3?
     visual("rgba", screen.get_rgba_visual())
     visual("system_visual", screen.get_system_visual())
     if SHOW_ALL_VISUALS:
