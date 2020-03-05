@@ -2585,9 +2585,10 @@ def run_showconfig(options, args):
             from xpra.platform.pycups_printing import get_printer_definition
             for mimetype in ("pdf", "postscript"):
                 pdef = get_printer_definition(mimetype)
-                #ie: d.pdf_printer = "/usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd"
-                setattr(d, "%s_printer" % mimetype, pdef)
-        except:
+                if pdef:
+                    #ie: d.pdf_printer = "/usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd"
+                    setattr(d, "%s_printer" % mimetype, pdef)
+        except Exception:
             pass
     VIRTUAL = ["mode"]       #no such option! (it's a virtual one for the launch by config files)
     #hide irrelevant options:
