@@ -122,6 +122,7 @@ Recommends:
         ,cups-filters
         ,cups-common
         ,cups-pdf
+        ,cups-daemon
 #for ssh transport:
         ,openssh-client
 #for using SSH passwords from the GUI launcher:
