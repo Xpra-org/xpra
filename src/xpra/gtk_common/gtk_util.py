@@ -481,20 +481,25 @@ def get_screen_info(display, screen) -> dict:
         for i, v in enumerate(screen.list_visuals()):
             visual(i, v)
     #Gtk.settings
-    def get_setting(key):
-        #try string first, then int
-        for t in (GObject.TYPE_STRING, GObject.TYPE_INT):
-            v = GObject.Value()
-            v.init(t)
-            if screen.get_setting(key, v):
-                return v.get_value()
+    def get_setting(key, gtype):
+        v = GObject.Value()
+        v.init(gtype)
+        if screen.get_setting(key, v):
+            return v.get_value()
         return None
     sinfo = info.setdefault("settings", {})
     try:
-        for x in ("antialias", "dpi", "hinting", "hintstyle", "rgba"):
+        for x, gtype in {
+            "antialias" : GObject.TYPE_INT,
+            "dpi"       : GObject.TYPE_INT,
+            "hinting"   : GObject.TYPE_INT,
+            "hintstyle" : GObject.TYPE_STRING,
+            "rgba"      : GObject.TYPE_STRING,
+            }.items():
             try:
-                v = get_setting("gtk-xft-"+x)
-            except:
+                v = get_setting("gtk-xft-"+x, gtype)
+            except Exception:
+                log("failed to query screen '%s'", x, exc_info=True)
                 continue
             if v is None:
                 v = ""
