@@ -867,7 +867,12 @@ fi
 
 
 %changelog
-* Wed Feb 26 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
+* Thu Mar 05 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
+- fix avcodec2 race condition crash
+- fix clipboard sharing with the MacOS shadow server
+- fix errors when re-initializing windows (ie: toggling OpenGL on or off)
+- fix deiconification error when there are system trays forwarded
+- fix missing alpha channel when some windows are first shown
 - fix systemd-run errors: verify it does work before trying to use it
 - fix debug builds compilation error on MS Windows
 - fix server crashes on SIGINT: shutdown cleanly
@@ -880,7 +885,18 @@ fi
 - fix FreeBSD builds
 - fix MS Windows packaging missing a codec DLL
 - fix HMAC hashes exposed, keep only valid options
-
+- fix parsing of client display information in legacy format
+- fix validation of size-hints
+- fix some empty keyboard layout group strings parsed as non-empty
+- fix keyboard-sync mode not being honoured by servers
+- fix keyboard raw mode
+- fix missing 'perispomeni' key mapping with Python 2 servers
+- add missing debug logging to keyboard mapping
+- more reliable lookup of keycodes when translating (non-X11 clients)
+- add missing dependency for printer forwarding on Debian
+- more correct code for locating the 'Downloads' folder on MS Windows
+- library updates: Python 3.8.2, etc
+- packaging workarounds for setuptools breakage
 
 * Sat Feb 08 2020 Antoine Martin <antoine@xpra.org> 3.0.6-1xpra2
 - fix 'User' not honoured in ssh_config
