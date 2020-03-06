@@ -431,10 +431,16 @@ class KeyboardConfig(KeyboardConfigBase):
             return -1
         if self.xkbmap_raw:
             return client_keycode
+        def klog(msg, *args):
+            if keyname in DEBUG_KEYSYMS:
+                l = log.info
+            else:
+                l = log
+            l("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
         keycode = None
         if self.xkbmap_query:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
-            log("get_keycode(%s, '%s', %s)=%s (native keymap)", client_keycode, keyname, modifiers, keycode)
+            klog("=%s (native keymap)", keycode)
         else:
             """
             from man xmodmap:
@@ -475,8 +481,7 @@ class KeyboardConfig(KeyboardConfigBase):
             for level in levels:
                 keycode = self.keycode_translation.get((keyname, level))
                 if keycode:
-                    log("get_keycode(%s, '%s', %s, %s)=%i (level=%i, shift=%s, mode=%i)",
-                        client_keycode, keyname, modifiers, group, keycode, level, shift, mode)
+                    klog("=%i (level=%i, shift=%s, mode=%i)", keycode, level, shift, mode)
                     if (level & 1) ^ shift:
                         #shift state does not match
                         if "shift" in modifiers:
@@ -497,7 +502,7 @@ class KeyboardConfig(KeyboardConfigBase):
             #this should not find anything new?:
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, -1)
-                log("get_keycode(%s, '%s')=%i (keyname translation)", client_keycode, keyname, keycode)
+                klog("=%i (keyname translation)", keycode)
         return keycode
 
 
