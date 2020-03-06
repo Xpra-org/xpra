@@ -388,9 +388,21 @@ class KeyboardConfig(KeyboardConfigBase):
             #keycodes:
             keycode_to_keynames = X11Keyboard.get_keycode_mappings()
             self.keycode_translation = {}
+            #prefer keycodes that don't use the lowest level+mode:
+            default_for_keyname = {}
             for keycode, keynames in keycode_to_keynames.items():
-                for keyname in keynames:
-                    self.keycode_translation[keyname] = keycode
+                for i, keyname in enumerate(keynames):
+                    self.keycode_translation[(keyname, i)] = keycode
+                    if keyname in DEBUG_KEYSYMS:
+                        log.info("set_default_keymap: %s=%s", (keyname, i), keycode)
+                    kd = default_for_keyname.get(keyname)
+                    if kd is None or kd[1]>i:
+                        default_for_keyname[keyname] = (keycode, i)
+            for keyname, kd in default_for_keyname.items():
+                keycode = kd[0]
+                self.keycode_translation[keyname] = keycode
+                if keyname in DEBUG_KEYSYMS:
+                    log.info("set_default_keymap: %s=%s", keyname, keycode)
             self.add_gtk_keynames()
             log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
             #modifiers:
