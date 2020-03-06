@@ -894,7 +894,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             else:
                 cursor_pixbuf = pixbuf
         if SAVE_CURSORS:
-            cursor_pixbuf.save("cursor-%#x.png" % serial, "png")
+            cursor_pixbuf.savev("cursor-%#x.png" % serial, "png", [], [])
         #clamp to pixbuf size:
         w = cursor_pixbuf.get_width()
         h = cursor_pixbuf.get_height()
