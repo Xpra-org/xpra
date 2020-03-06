@@ -502,8 +502,7 @@ class X11ServerCore(GTKServerBase):
             self.keys_pressed = {}
         #this will take care of any remaining ones we are not aware of:
         #(there should not be any - but we want to be certain)
-        with xswallow:
-            X11Keyboard.unpress_all_keys()
+        clean_keyboard_state()
 
 
     def get_cursor_sizes(self):
