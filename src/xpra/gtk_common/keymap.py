@@ -32,12 +32,13 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
     keycodes=[]
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
-        log("get_entries_for_keycode(%s)=%s", i, entries)
         if not entries:
             continue
         found, keys, keyvals = entries
         if not found:
+            log("get_entries_for_keycode(%s)=()", i)
             continue
+        added = []
         for j, key in enumerate(keys):
             keyval = keyvals[j]
             keycode = key.keycode
@@ -45,7 +46,10 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
             name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
             group = key.group or 0
             if name not in ignore_keys:
-                keycodes.append((keyval or 0, name or "", keycode or 0, group, key.level or 0))
+                kdef = keyval or 0, name or "", keycode or 0, group, key.level or 0
+                keycodes.append(kdef)
+                added.append(kdef)
+        log("keycode %3i: %s", i, added)
     log("get_gtk_keymap(%s)=%s (keymap=%s)", ignore_keys, keycodes, keymap)
     return keycodes
 
