@@ -497,6 +497,7 @@ class X11ServerCore(GTKServerBase):
         #this will take care of any remaining ones we are not aware of:
         #(there should not be any - but we want to be certain)
         with xswallow:
+            self.set_keyboard_layout_group(0)
             X11Keyboard.unpress_all_keys()
 
 
