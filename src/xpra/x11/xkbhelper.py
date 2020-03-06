@@ -50,6 +50,8 @@ def clean_keyboard_state():
     with xlog:
         X11Keyboard.ungrab_all_keys()
     with xlog:
+        X11Keyboard.set_layout_group(0)
+    with xlog:
         X11Keyboard.unpress_all_keys()
 
 ################################################################################
