@@ -15,6 +15,7 @@ Build-Depends: debhelper (>= 8)
 #xenial:              ,uglifyjs
 #bionic:              ,uglifyjs
 #eoan:              ,uglifyjs
+#focal:              ,uglifyjs
               ,brotli
               ,libjs-jquery
               ,libjs-jquery-ui
@@ -34,6 +35,9 @@ Build-Depends: debhelper (>= 8)
 #eoan:              ,libavcodec-dev
 #eoan:              ,libavformat-dev
 #eoan:              ,libswscale-dev
+#focal:              ,libavcodec-dev
+#focal:              ,libavformat-dev
+#focal:              ,libswscale-dev
 #stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
 #buster:              ,libavformat-dev
@@ -78,6 +82,7 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 #bionic:        ,libturbojpeg
 #disco:        ,libturbojpeg
 #eoan:        ,libturbojpeg
+#focal:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
 # for notifications forwarding and dbus server / proxying:
@@ -111,6 +116,8 @@ Recommends: python3-dbus
 #disco:        ,libswscale5
 #eoan:        ,libavcodec58
 #eoan:        ,libswscale5
+#focal:        ,libavcodec58
+#focal:        ,libswscale5
 #buster:        ,libavcodec57
 #buster:        ,libswscale4
 # x264:
@@ -130,6 +137,7 @@ Recommends: python3-dbus
 #bionic:        ,libwebp6
 #disco:        ,libwebp6
 #eoan:        ,libwebp6
+#focal:        ,libwebp6
 #buster:        ,libwebp6
 # audio-related:
         ,gstreamer1.0-pulseaudio
@@ -154,6 +162,7 @@ Recommends: python3-dbus
 #bionic:		,gnome-shell-extension-appindicator
 #disco:        ,gnome-shell-extension-appindicator
 #eoan:        ,gnome-shell-extension-appindicator
+#focal:        ,gnome-shell-extension-appindicator
 #most of the examples use an xterm:
         ,xterm
 Suggests: openssh-server
@@ -170,6 +179,7 @@ Suggests: openssh-server
 #bionic:        ,gnome-shell-extension-top-icons-plus
 #disco:        ,gnome-shell-extension-top-icons-plus
 #eoan:        ,gnome-shell-extension-top-icons-plus
+#focal:        ,gnome-shell-extension-top-icons-plus
 # for webcam support:
         ,python3-pyinotify
         ,python3-opencv
