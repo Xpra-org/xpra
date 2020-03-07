@@ -36,7 +36,7 @@ fake-xinerama = %(fake_xinerama)s
 # xvfb = Xvfb -nolisten tcp -noreset \
 #        +extension GLX +extension Composite \
 #        -auth $XAUTHORITY \
-#        -screen 0 5760x2560x24+32
+#        -screen 0 7680x4320x24+32
 # - With Xorg 1.12 or newer and the dummy driver:
 # xvfb = /usr/bin/Xorg -noreset -nolisten tcp \
 #        +extension GLX +extension RANDR +extension RENDER \
