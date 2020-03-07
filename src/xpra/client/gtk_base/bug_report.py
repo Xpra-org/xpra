@@ -325,8 +325,9 @@ class BugReport:
         basenoext = os.path.splitext(os.path.basename(filename))[0]
         data = self.get_data()
         import zipfile
-        zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)
+        zf = None
         try:
+            zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)
             for title, tooltip, dtype, s in data:
                 cfile = os.path.join(basenoext, title.replace(" ", "_")+"."+dtype)
                 info = zipfile.ZipInfo(cfile, date_time=time.localtime(time.time()))
@@ -352,5 +353,15 @@ class BugReport:
                             os.unlink(temp.name)
                 else:
                     zf.writestr(info, str(s))
+        except OSError as e:
+            log("do_save(%s) failed to save zip file", filename, exc_info=True)
+            dialog = Gtk.MessageDialog(self.window, 0, Gtk.MessageType.WARNING,
+                                       Gtk.ButtonsType.CLOSE, "Failed to save ZIP file")
+            dialog.format_secondary_text("%s" % e)
+            def close(*args):
+                dialog.destroy()
+            dialog.connect("response", close)
+            dialog.show_all()
         finally:
-            zf.close()
+            if zf:
+                zf.close()
