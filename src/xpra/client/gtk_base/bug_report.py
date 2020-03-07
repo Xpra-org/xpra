@@ -62,11 +62,6 @@ class BugReport:
             logo_button.set_image(image)
             hbox.pack_start(logo_button, expand=False, fill=False)
 
-        label = Gtk.Label("Xpra Bug Report Tool")
-        label.modify_font(Pango.FontDescription("sans 14"))
-        hbox.pack_start(label, expand=True, fill=True)
-        vbox.pack_start(hbox)
-
         #the box containing all the input:
         ibox = Gtk.VBox(False, 0)
         ibox.set_spacing(3)
