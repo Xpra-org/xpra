@@ -14,6 +14,7 @@ from xpra.gtk_common.gtk_util import (
     get_display_info, get_default_root_window,
     choose_file, get_gtk_version_info,
     )
+from xpra.os_util import hexstr
 from xpra.util import nonl, envint, repr_ellipsized
 from xpra.log import Logger
 
@@ -201,8 +202,7 @@ class BugReport:
             hbox.pack_start(btn)
             return btn
 
-        #clipboard does not work in gtk3..
-        #btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
+        btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
         btn("Save", "Save Bug Report", self.save_clicked, "download.png")
         btn("Cancel", "", self.close, "quit.png")
 
@@ -223,12 +223,14 @@ class BugReport:
 
     def hide(self):
         log("hide()")
-        self.window.hide()
+        if self.window:
+            self.window.hide()
 
     def close(self, *args):
         log("close%s", args)
-        self.hide()
-        self.window = None
+        if self.window:
+            self.hide()
+            self.window = None
         return True
 
     def destroy(self, *args):
@@ -257,8 +259,8 @@ class BugReport:
         return None
 
 
-    def get_text_data(self):
-        log("get_text_data() collecting bug report data")
+    def get_data(self):
+        log("get_data() collecting bug report data")
         data = []
         tb = self.description.get_buffer()
         buf = tb.get_text(*tb.get_bounds(), include_hidden_chars=False)
@@ -292,18 +294,22 @@ class BugReport:
             elif isinstance(value, (list, tuple)):
                 s = os.linesep.join(str(x) for x in value)
             else:
-                s = str(value)
+                s = value
             log("%s (%s) %s: %s", title, tooltip, dtype, repr_ellipsized(s))
             data.append((title, tooltip, dtype, s))
             time.sleep(STEP_DELAY)
         return data
 
     def copy_clicked(self, *_args):
-        data = self.get_text_data()
-        text = os.linesep.join("%s: %s%s%s%s" % (title, tooltip, os.linesep, v, os.linesep)
+        data = self.get_data()
+        def cdata(v):
+            if isinstance(v, bytes):
+                return hexstr(v)
+            return str(v)
+        text = os.linesep.join("%s: %s%s%s%s" % (title, tooltip, os.linesep, cdata(v), os.linesep)
                                for (title,tooltip,dtype,v) in data if dtype=="txt")
-        clipboard = Gtk.clipboard_get(Gdk.SELECTION_CLIPBOARD)
-        clipboard.set_text(text)
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        clipboard.set_text(text, len(text))
         log.info("%s characters copied to clipboard", len(text))
 
     def save_clicked(self, *_args):
@@ -317,7 +323,7 @@ class BugReport:
         if not filename.lower().endswith(".zip"):
             filename = filename+".zip"
         basenoext = os.path.splitext(os.path.basename(filename))[0]
-        data = self.get_text_data()
+        data = self.get_data()
         import zipfile
         zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)
         try:
@@ -328,6 +334,23 @@ class BugReport:
                 #very poorly documented:
                 info.external_attr = 0o644 << 16
                 info.comment = str(tooltip).encode("utf8")
-                zf.writestr(info, s)
+                if isinstance(s, bytes):
+                    try:
+                        try:
+                            import tempfile
+                            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".screenshot", delete=False)
+                            with temp:
+                                temp.write(s)
+                                temp.flush()
+                        except OSError as e:
+                            log.error("Error: cannot create mmap file:")
+                            log.error(" %s", e)
+                        else:
+                            zf.write(temp.name, cfile, zipfile.ZIP_STORED, 0)
+                    finally:
+                        if temp:
+                            os.unlink(temp.name)
+                else:
+                    zf.writestr(info, str(s))
         finally:
             zf.close()
