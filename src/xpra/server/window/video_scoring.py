@@ -20,7 +20,8 @@ SUBSAMPLING_QUALITY_LOSS = {
     }
 
 
-def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_quality=100, min_quality=0) -> int:
+def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
+                      target_quality : int=100, min_quality : int=0) -> int:
     quality = encoder_spec.quality
     #any colourspace convertion will lose at least some quality (due to rounding)
     #(so add 0.2 to the value we get from calculating the degradation using get_subsampling_divs)
@@ -48,7 +49,8 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_qualit
             qscore *= 2.0
     return int(qscore)
 
-def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=100, min_speed=0) -> int:
+def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
+                    target_speed : int=100, min_speed : int=0) -> int:
     #when subsampling, add the speed gains to the video encoder
     #which now has less work to do:
     mult = {
@@ -76,11 +78,12 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=10
         sscore = max(0, sscore - mss)
     return max(0, min(100, sscore))
 
-def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
-                       target_quality, min_quality,
-                       target_speed, min_speed,
+def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
+                       width : int, height : int, scaling,
+                       target_quality : int, min_quality : int,
+                       target_speed : int, min_speed : int,
                        current_csce, current_ve,
-                       score_delta, ffps, detection=True):
+                       score_delta : int, ffps : int, detection=True):
     """
         Given an optional csc step (csc_format and csc_spec), and
         and a required encoding step (encoder_spec and width/height),
@@ -196,7 +199,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
              cpu_score, gpu_score, score)
     return score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec
 
-def get_encoder_dimensions(encoder_spec, width, height, scaling=(1,1)):
+def get_encoder_dimensions(encoder_spec, width : int, height : int, scaling=(1,1)):
     """
         Given a csc and encoder specs and dimensions, we calculate
         the dimensions that we would use as output.
