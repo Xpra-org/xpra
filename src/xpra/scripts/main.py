@@ -2641,7 +2641,7 @@ def vstr(otype, v):
     if isinstance(v, str):
         return "'%s'" % nonl(v)
     if isinstance(v, (tuple, list)):
-        return csv(vstr(x) for x in v)
+        return csv(vstr(otype, x) for x in v)
     return str(v)
 
 def run_showsetting(options, args):
