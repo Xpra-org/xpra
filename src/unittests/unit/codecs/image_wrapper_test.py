@@ -40,6 +40,9 @@ class TestImageWrapper(unittest.TestCase):
         assert img.get_rowstride()==W*4
         assert img.get_size()==W*4*H
         assert img.has_pixels()
+        assert len(img.get_geometry())==5
+        assert img.get_pixel_format()=="RGBX"
+        assert img.get_planes()==ImageWrapper.PACKED
         #print("image pixels head=%s" % (binascii.hexlify(img.get_pixels()[:128]), ))
         for x in range(3):
             SW, SH = 6, 6
@@ -96,8 +99,12 @@ class TestImageWrapper(unittest.TestCase):
 
     def test_restride(self):
         #restride of planar is not supported:
-        img = ImageWrapper(0, 0, 1, 1, ["0"*10, "0"*10, "0"*10, "0"*10], "YUV420P", 24, 10, 3, planes=ImageWrapper.PLANAR_4)
+        img = ImageWrapper(0, 0, 1, 1, ["0"*10, "0"*10, "0"*10, "0"*10],
+                           "YUV420P", 24, 10, 3, planes=ImageWrapper.PLANAR_4)
         img.set_planes(ImageWrapper.PLANAR_3)
+        img.clone_pixel_data()
+        assert img.may_restride() is False
+        img = ImageWrapper(0, 0, 1, 1, "0"*4, "BGRA", 24, 4, 4, planes=ImageWrapper.PACKED)
         assert img.may_restride() is False
         img = ImageWrapper(0, 0, 1, 1, "0"*10, "BGRA", 24, 10, 4, planes=ImageWrapper.PACKED)
         assert img.may_restride() is True
