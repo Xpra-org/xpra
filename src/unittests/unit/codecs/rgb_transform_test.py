@@ -21,8 +21,8 @@ class RGBTransformTest(unittest.TestCase):
         stride = W*4
         if fmt=="BGR565":
             stride = W*2
-        len = stride*H
-        return ImageWrapper(X, Y, W, H, bytes(buf[:len]), fmt, D, stride, planes=ImageWrapper.PACKED)
+        l = stride*H
+        return ImageWrapper(X, Y, W, H, memoryview(bytes(buf[:l])), fmt, D, stride, planes=ImageWrapper.PACKED)
 
     def test_rgb_reformat(self):
         buf = bytearray(W*H*4)
@@ -38,7 +38,10 @@ class RGBTransformTest(unittest.TestCase):
                 r = rgb_reformat(img, to_fmt, transparency)
                 #print("%s to %s (transparency=%s)" % (from_fmt, to_fmt, transparency))
                 assert r is True, "rgb_reformat%s=%s" % ((img, to_fmt, transparency), r)
-
+                img = self.make_test_image(from_fmt, buf)
+                transparency = to_fmt.find("A")>=0
+                r = rgb_reformat(img, (), transparency)
+                assert r is False
 
 def main():
     unittest.main()
