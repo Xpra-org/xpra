@@ -2612,7 +2612,7 @@ def run_showconfig(options, args):
             HIDDEN += ["lpadmin", "daemon", "mmap-group", "mdns"]
         if not OSX:
             HIDDEN += ["dock-icon", "swap-keys"]
-    for opt in sorted(OPTION_TYPES.keys()):
+    for opt, otype in sorted(OPTION_TYPES.items()):
         if opt in VIRTUAL:
             continue
         i = log.info
@@ -2627,14 +2627,16 @@ def run_showconfig(options, args):
         dv = getattr(d, k)
         cv = getattr(options, k, dv)
         if cv!=dv:
-            w("%-20s  (used)   = %-32s  %s", opt, vstr(cv), type(cv))
-            w("%-20s (default) = %-32s  %s", opt, vstr(dv), type(dv))
+            w("%-20s  (used)   = %-32s  %s", opt, vstr(otype, cv), type(cv))
+            w("%-20s (default) = %-32s  %s", opt, vstr(otype, dv), type(dv))
         else:
-            i("%-20s           = %s", opt, vstr(cv))
+            i("%-20s           = %s", opt, vstr(otype, cv))
 
-def vstr(v):
+def vstr(otype, v):
     #just used to quote all string values
     if v is None:
+        if otype==bool:
+            return "auto"
         return ""
     if isinstance(v, str):
         return "'%s'" % nonl(v)

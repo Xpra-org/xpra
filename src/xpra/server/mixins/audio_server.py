@@ -67,7 +67,7 @@ class AudioServer(StubServerMixin):
 
     def get_info(self, _proto) -> dict:
         info = {}
-        if self.pulseaudio:
+        if self.pulseaudio is not False:
             info["pulseaudio"] = self.get_pulseaudio_info()
         if self.sound_properties:
             info["sound"] = self.sound_properties
