@@ -5,6 +5,8 @@
 
 def verify_gdk_display(display_name):
     # Now we can safely load gtk and connect:
+    import gi
+    gi.require_version("Gdk", "3.0")
     from gi.repository import Gdk
     display = Gdk.Display.open(display_name)
     if not display:
