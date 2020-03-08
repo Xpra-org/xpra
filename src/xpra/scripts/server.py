@@ -417,7 +417,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     if upgrading or upgrading_desktop or shadowing:
         #there should already be one running
-        opts.pulseaudio = False
+        #so change None ('auto') to False
+        if opts.pulseaudio is None:
+            opts.pulseaudio = False
 
     #get the display name:
     if shadowing and not extra_args:
