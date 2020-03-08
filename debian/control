@@ -15,6 +15,7 @@ Build-Depends: debhelper (>= 8)
 #xenial:              ,uglifyjs
 #bionic:              ,uglifyjs
 #eoan:              ,uglifyjs
+#focal:              ,uglifyjs
               ,brotli
               ,libjs-jquery
               ,libjs-jquery-ui
@@ -45,6 +46,9 @@ Build-Depends: debhelper (>= 8)
 #eoan:              ,libavcodec-dev
 #eoan:              ,libavformat-dev
 #eoan:              ,libswscale-dev
+#focal:              ,libavcodec-dev
+#focal:              ,libavformat-dev
+#focal:              ,libswscale-dev
 #stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
 #buster:              ,libavformat-dev
@@ -75,6 +79,7 @@ Depends: python3-xpra | python2-xpra,
 #bionic:        ,libturbojpeg
 #disco:        ,libturbojpeg
 #eoan:        ,libturbojpeg
+#focal:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
 Recommends:
@@ -89,6 +94,8 @@ Recommends:
 #disco:        ,libswscale5
 #eoan:        ,libavcodec58
 #eoan:        ,libswscale5
+#focal:        ,libavcodec58
+#focal:        ,libswscale5
 #buster:        ,libavcodec57
 #buster:        ,libswscale4
 # x264:
@@ -108,6 +115,7 @@ Recommends:
 #bionic:        ,libwebp6
 #disco:        ,libwebp6
 #eoan:        ,libwebp6
+#focal:        ,libwebp6
 #buster:        ,libwebp6
 # audio-related:
         ,gstreamer1.0-pulseaudio
@@ -132,6 +140,7 @@ Recommends:
 #bionic:		,gnome-shell-extension-appindicator
 #disco:        ,gnome-shell-extension-appindicator
 #eoan:        ,gnome-shell-extension-appindicator
+#focal:        ,gnome-shell-extension-appindicator
 Suggests: openssh-server
 # to make the system tray work again (sigh):
 		,gnome-shell-extension-top-icons-plus
@@ -148,6 +157,7 @@ Suggests: openssh-server
 #eoan:        ,gnome-shell-extension-top-icons-plus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
+#focal:        ,gnome-shell-extension-top-icons-plus
  .
  This package contains all the files and dependencies common to both the
  Python 2 (xpra) and Python 3 builds (python3-xpra).
