@@ -16,8 +16,8 @@ class TestX11Keyboard(unittest.TestCase):
         INTPAIRS = (0, "foo", (1,))
         sanitize_size_hints(None)
         for attr, values in {
-            "min-aspect"    : (0, -1, MAX_ASPECT),
-            "max-aspect"    : (0, -1, MAX_ASPECT),
+            "min-aspect"    : (0, -1, MAX_ASPECT, "foo"),
+            "max-aspect"    : (0, -1, MAX_ASPECT, "foo"),
             "minimum-aspect-ratio"  : ((0, 1), (0, 0), (MAX_ASPECT, 1), "foo"),
             "maximum-aspect-ratio"  : ((0, 1), (0, 0), (MAX_ASPECT, 1), "foo"),
             "maximum-size"  : INTPAIRS,
@@ -37,12 +37,13 @@ class TestX11Keyboard(unittest.TestCase):
         sanitize_size_hints(hints)
         assert hints.get("minimum-size") is None
         assert hints.get("maximum-size") is None
-        hints = {
-            "minimum-size"  : (100, 100),
-            "maximum-size"  : (50, 50),
-            }
-        sanitize_size_hints(hints)
-        assert hints.get("minimum-size")==hints.get("maximum-size")
+        for mins, maxs in ((100, 50), (512, 128), (512, 256),):
+            hints = {
+                "minimum-size"  : (mins, mins),
+                "maximum-size"  : (maxs, maxs),
+                }
+            sanitize_size_hints(hints)
+            assert hints.get("minimum-size")==hints.get("maximum-size")
 
 def main():
     #can only work with an X11 server
