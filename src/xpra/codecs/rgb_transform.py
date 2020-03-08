@@ -49,10 +49,9 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
     if supports_transparency:
-        modes = PIL_conv.get(pixel_format)
+        modes = PIL_conv.get(pixel_format, ())
     else:
-        modes = PIL_conv_noalpha.get(pixel_format)
-    assert modes, "no PIL conversion from %s" % (pixel_format)
+        modes = PIL_conv_noalpha.get(pixel_format, ())
     target_rgb = [(im,om) for (im,om) in modes if om in rgb_formats]
     if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)

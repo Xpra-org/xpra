@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.rgb_transform import rgb_reformat
+from xpra.codecs import rgb_transform
 
 X = 0
 Y = 0
@@ -25,6 +25,9 @@ class RGBTransformTest(unittest.TestCase):
         return ImageWrapper(X, Y, W, H, memoryview(bytes(buf[:l])), fmt, D, stride, planes=ImageWrapper.PACKED)
 
     def test_rgb_reformat(self):
+        rgb_reformat = rgb_transform.rgb_reformat
+        save_PIL_conv = rgb_transform.PIL_conv
+        save_PIL_conv_noalpha = rgb_transform.PIL_conv_noalpha
         buf = bytearray(W*H*4)
         for from_fmt, to_fmts in {
             "BGRA"  : ("RGB", "RGBX", "RGBA"),
@@ -33,15 +36,22 @@ class RGBTransformTest(unittest.TestCase):
             "BGR565": ("RGBA", "RGBX", "RGB"),
             }.items():
             for to_fmt in to_fmts:
-                img = self.make_test_image(from_fmt, buf)
-                transparency = to_fmt.find("A")>=0
-                r = rgb_reformat(img, to_fmt, transparency)
-                #print("%s to %s (transparency=%s)" % (from_fmt, to_fmt, transparency))
-                assert r is True, "rgb_reformat%s=%s" % ((img, to_fmt, transparency), r)
-                img = self.make_test_image(from_fmt, buf)
-                transparency = to_fmt.find("A")>=0
-                r = rgb_reformat(img, (), transparency)
-                assert r is False
+                for pillow in (True, False):
+                    if pillow:
+                        rgb_transform.PIL_conv = save_PIL_conv
+                        rgb_transform.PIL_conv_noalpha = save_PIL_conv_noalpha
+                    else:
+                        rgb_transform.PIL_conv = {}
+                        rgb_transform.PIL_conv_noalpha = {}
+                    img = self.make_test_image(from_fmt, buf)
+                    transparency = to_fmt.find("A")>=0
+                    r = rgb_reformat(img, to_fmt, transparency)
+                    #print("%s to %s (transparency=%s)" % (from_fmt, to_fmt, transparency))
+                    assert r is True, "rgb_reformat%s=%s" % ((img, to_fmt, transparency), r)
+                    img = self.make_test_image(from_fmt, buf)
+                    transparency = to_fmt.find("A")>=0
+                    r = rgb_reformat(img, (), transparency)
+                    assert r is False
 
 def main():
     unittest.main()
