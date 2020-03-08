@@ -17,7 +17,7 @@ except ImportError:
     rectangle = None
 
 
-class TestVersionUtilModule(unittest.TestCase):
+class TestVideoSubregion(unittest.TestCase):
 
     def test_eq(self):
         log = video_subregion.sslog
