@@ -1,20 +1,32 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import time
 import logging
 import unittest
 import subprocess
 
+from xpra.os_util import OSEnvContext
+from xpra import child_reaper
 from xpra.child_reaper import getChildReaper, reaper_cleanup, log
 
 
 class TestChildReaper(unittest.TestCase):
 
-    def test_sigchld(self):
+    def test_childreaper(self):
+        for polling in (True, False):
+            with OSEnvContext():
+                os.environ["XPRA_USE_PROCESS_POLLING"] = str(int(polling))
+                self.do_test_child_reaper()
+
+
+    def do_test_child_reaper(self):
+        #force reset singleton:
+        child_reaper.singleton = None
         #no-op:
         reaper_cleanup()
 

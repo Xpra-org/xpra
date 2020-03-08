@@ -19,9 +19,6 @@ from xpra.log import Logger
 
 log = Logger("server", "util", "exec")
 
-USE_PROCESS_POLLING = not POSIX or envbool("XPRA_USE_PROCESS_POLLING")
-POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
-
 
 singleton = None
 def getChildReaper():
@@ -77,7 +74,9 @@ class ChildReaper:
         log("ChildReaper(%s)", quit_cb)
         self._quit = quit_cb
         self._proc_info = []
+        USE_PROCESS_POLLING = not POSIX or envbool("XPRA_USE_PROCESS_POLLING")
         if USE_PROCESS_POLLING:
+            POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
             log("using process polling every %s seconds", POLL_DELAY)
             GLib.timeout_add(POLL_DELAY*1000, self.poll)
         else:
