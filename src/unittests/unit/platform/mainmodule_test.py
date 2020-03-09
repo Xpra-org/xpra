@@ -18,6 +18,8 @@ from xpra.platform import (
     command_error, command_info,
     )
 from xpra.make_thread import start_thread
+from xpra.os_util import WIN32
+
 
 class PlatformInfoTest(unittest.TestCase):
 
@@ -31,6 +33,10 @@ class PlatformInfoTest(unittest.TestCase):
             assert get_application_name()=="platform-info-test"
             assert get_prgname()=="platform info test"
 
+        if WIN32:   # pragma: no cover
+            #we can check for command_error and command_info
+            #on win32 because those trigger dialogs
+            return
         calls = []
         def ccall(*args):
             calls.append(args)
