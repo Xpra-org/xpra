@@ -26,7 +26,9 @@ def main():
                 return find_executable(command)
             except Exception:
                 return command
-        os.environ["XPRA_COMMAND"] = " ".join(run_cmd+[which("xpra")])
+        xpra_cmd = os.environ.get("XPRA_COMMAND", which("xpra"))
+        if xpra_cmd.find("coverage")<0:
+            os.environ["XPRA_COMMAND"] = " ".join(run_cmd+[xpra_cmd])
     else:
         run_cmd = ["python3"]
 
