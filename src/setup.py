@@ -368,7 +368,9 @@ external_excludes = [
                     "curses", "pdb",
                     "tty",
                     "setuptools", "doctest"
-                    "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
+                    "nose", "pytest", "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
+                    "Cython", "cython", "pyximport",
+                    "pydoc_data",
                     ]
 if not html5_ENABLED and not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
