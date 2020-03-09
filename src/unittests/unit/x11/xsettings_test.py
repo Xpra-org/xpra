@@ -7,9 +7,10 @@
 import os
 import struct
 import unittest
+import binascii
 
 from xpra.util import AdHocStruct
-from xpra.os_util import OSEnvContext
+from xpra.os_util import OSEnvContext, hexstr
 
 
 class XSettingsTest(unittest.TestCase):
@@ -43,12 +44,37 @@ class XSettingsTest(unittest.TestCase):
                     )
                 serial = 2
                 data = set_settings(disp, (serial, settings))
+                print("data=%s", hexstr(data))
                 assert data
                 #parse it back:
                 v = get_settings(disp, data)
                 rserial, rsettings = v
                 assert rserial==serial
                 assert len(rsettings)==len(settings)
+        #test error handling:
+        for settings in (
+            (
+                #invalid color causes exception
+                (XSettingsTypeColor, "bad-color", (128, ), 0),
+            ),
+            (
+                #invalid setting type is skipped with an error message:
+                (255, "invalid-setting-type", 0, 0),
+            ),
+            ):
+            serial = 3
+            data = set_settings(disp, (serial, settings))
+            assert data
+            v = get_settings(disp, data)
+            rserial, rsettings = v
+            assert rserial==serial
+            assert len(rsettings)==0
+        #parsing an invalid data type (9) should fail:
+        hexdata = b"000000000200000001000000090004007374723100000000010000003100000000"
+        data = binascii.unhexlify(hexdata)
+        v = get_settings(disp, data)
+        rserial, rsettings = v
+        assert len(rsettings)==0
 
 
 def main():
