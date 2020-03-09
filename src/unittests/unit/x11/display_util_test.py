@@ -9,12 +9,12 @@ import unittest
 
 from unit.server_test_util import ServerTestUtil
 from xpra.os_util import POSIX, OSX, OSEnvContext
-from xpra.x11.gtk3.gdk_display_util import verify_gdk_display
 
 
 class TestDisplayUtil(ServerTestUtil):
 
     def test_display(self):
+        from xpra.x11.gtk3.gdk_display_util import verify_gdk_display
         with OSEnvContext():
             os.environ["GDK_BACKEND"] = "x11"
             try:
