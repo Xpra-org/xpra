@@ -93,5 +93,5 @@ def main():
         print_nested_dict(d)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     main()
