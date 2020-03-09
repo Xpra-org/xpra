@@ -140,13 +140,13 @@ def set_settings(disp, d):
                 red, blue, green, alpha = value
                 x += struct.pack(b"=HHHH", red, blue, green, alpha)
             else:
-                log.error("Error: invalid type %i for xsetting property '%s'", setting_type, prop_name)
+                log.error("Error: invalid type %i for xsetting property '%s'", setting_type, bytestostr(prop_name))
                 continue
             log("set_settings(..) %s -> %s", setting, tuple(x))
             all_bin_settings.append(x)
         except Exception as e:
             log("set_settings(%s, %s)", disp, d, exc_info=True)
-            log.error("Error processing XSettings property %s:", prop_name)
+            log.error("Error processing XSettings property %s:", bytestostr(prop_name))
             log.error(" type=%s, value=%s", XSettingsNames.get(setting_type, "INVALID!"), value)
             log.error(" %s", e)
     #header
@@ -194,5 +194,5 @@ def main(): # pragma: no cover
             return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
