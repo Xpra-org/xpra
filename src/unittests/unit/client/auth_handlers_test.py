@@ -29,7 +29,9 @@ class AuthHandlersTest(unittest.TestCase):
 		digest = kwargs.pop("digest", "xor")
 		salt_digest = kwargs.pop("salt-digest", "xor")
 		packet = ("challenge", server_salt, "", digest, salt_digest)
-		assert h.handle(packet)==success
+		r = h.handle(packet)
+		assert r==success, "expected %s(%s) to return %s but got %s (handler class=%s)" % (
+			h.handle, packet, success, r, handler_class)
 		if success:
 			passwords = h.client.challenge_reply_passwords
 			assert len(passwords)==1
@@ -69,17 +71,21 @@ class AuthHandlersTest(unittest.TestCase):
 	def test_file_handler(self):
 		from xpra.client.auth.file_handler import Handler
 		password = b"password"
-		f = tempfile.NamedTemporaryFile(prefix="test-client-file-auth", delete=False)
-		f.file.write(password)
-		f.file.flush()
-		self._test_handler(True, password, Handler, filename=f.name)
-		#using the default password file from the client:
-		client = FakeClient()
-		client.password_file = [f.name]
-		self.do_test_handler(client, True, password, Handler)
-		#remove file, auth should fail:
-		os.unlink(f.name)
-		self._test_handler(False, None, Handler, filename=f.name)
+		try:
+			f = None
+			f = tempfile.NamedTemporaryFile(prefix="test-client-file-auth", delete=False)
+			f.file.write(password)
+			f.file.flush()
+			f.close()
+			self._test_handler(True, password, Handler, filename=f.name)
+			#using the default password file from the client:
+			client = FakeClient()
+			client.password_file = [f.name]
+			self.do_test_handler(client, True, password, Handler)
+		finally:
+			#remove file, auth should fail:
+			os.unlink(f.name)
+			self._test_handler(False, None, Handler, filename=f.name)
 
 	def test_uri_handler(self):
 		from xpra.client.auth.uri_handler import Handler
