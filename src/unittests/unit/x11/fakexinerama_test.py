@@ -6,21 +6,26 @@
 
 import unittest
 
-from xpra.x11.fakeXinerama import save_fakeXinerama_config, find_libfakeXinerama, cleanup_fakeXinerama
+from xpra.os_util import POSIX, OSX
+
 
 class FakeXineramaTest(unittest.TestCase):
 
     def test_find(self):
+        from xpra.x11.fakeXinerama import find_libfakeXinerama
         assert find_libfakeXinerama()
 
     def test_config(self):
+        from xpra.x11.fakeXinerama import save_fakeXinerama_config, cleanup_fakeXinerama
         ss = ()
         save_fakeXinerama_config(True, "", ss)
         cleanup_fakeXinerama()
 
 
 def main():
-    unittest.main()
+    #can only work with an X11 server
+    if POSIX and not OSX:
+        unittest.main()
 
 if __name__ == '__main__':
     main()
