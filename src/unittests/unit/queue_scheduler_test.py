@@ -62,7 +62,7 @@ class QueueSchedulerTest(unittest.TestCase):
             return len(times)>0
         qs = QueueScheduler()
         qs.timeout_add(1, timer_fn)
-        qs.timeout_add(100, qs.stop)
+        qs.timeout_add(500, qs.stop)
         qs.run()
         assert not times
 
