@@ -10,10 +10,8 @@ import logging
 import weakref
 # This module is used by non-GUI programs and thus must not import gtk.
 
-from xpra.os_util import bytestostr
-
-LOG_PREFIX = bytestostr(os.environ.get("XPRA_LOG_PREFIX", ""))
-LOG_FORMAT = bytestostr(os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s"))
+LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", "")
+LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s")
 NOPREFIX_FORMAT = "%(message)s"
 
 DEBUG_MODULES = os.environ.get("XPRA_DEBUG_MODULES", "").split(",")
