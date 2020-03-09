@@ -39,10 +39,10 @@ DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
 if POSIX:
     DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
-else:
+else: # pragma: no cover
     DEFAULT_POSTSCRIPT_PRINTER = ""
 DEFAULT_PULSEAUDIO = None   #auto
-if OSX or WIN32:
+if OSX or WIN32: # pragma: no cover
     DEFAULT_PULSEAUDIO = False
 
 
@@ -73,7 +73,7 @@ def get_xorg_bin():
         if os.path.exists(p):
             return p
     #look for it in $PATH:
-    for x in os.environ.get("PATH").split(os.pathsep):
+    for x in os.environ.get("PATH").split(os.pathsep): # pragma: no cover
         xorg = os.path.join(x, "Xorg")
         if os.path.isfile(xorg):
             return xorg
@@ -85,7 +85,7 @@ def get_Xdummy_confdir():
     xrd = get_runtime_dir()
     if xrd:
         base = "${XDG_RUNTIME_DIR}/xpra"
-    else:
+    else:   # pragma: no cover
         base = "${HOME}/.xpra"
     return base+"/xorg.conf.d/$PID"
 
@@ -121,11 +121,11 @@ def get_Xvfb_command():
 
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None):
     #returns the xvfb command to use
-    if WIN32:
+    if WIN32:   # pragma: no cover
         return ""
-    if OSX:
+    if OSX:     # pragma: no cover
         return get_Xvfb_command()
-    if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:
+    if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:  # pragma: no cover
         warn("Warning: sorry, no support for Xdummy on %s" % sys.platform)
         return get_Xvfb_command()
 
@@ -173,24 +173,25 @@ def OpenGL_safety_check():
     #based on the code found here:
     #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
     #because it used to cause hard VM crashes when we probe the GL driver!
-    try:
-        from ctypes import cdll
-        if cdll.LoadLibrary("VBoxHook.dll"):
-            return "VirtualBox is present (VBoxHook.dll)"
-    except (ImportError, OSError):
-        pass
-    try:
+    if WIN32:   # pragma: no cover
         try:
-            f = None
-            f = open("\\\\.\\VBoxMiniRdrDN", "r")
-            return True, "VirtualBox is present (VBoxMiniRdrDN)"
-        finally:
-            if f:
-                f.close()
-    except Exception as e:
-        import errno
-        if e.args[0]==errno.EACCES:
-            return "VirtualBox is present (VBoxMiniRdrDN)"
+            from ctypes import cdll
+            if cdll.LoadLibrary("VBoxHook.dll"):
+                return "VirtualBox is present (VBoxHook.dll)"
+        except (ImportError, OSError):
+            pass
+        try:
+            try:
+                f = None
+                f = open("\\\\.\\VBoxMiniRdrDN", "r")
+                return True, "VirtualBox is present (VBoxMiniRdrDN)"
+            finally:
+                if f:
+                    f.close()
+        except Exception as e:
+            import errno
+            if e.args[0]==errno.EACCES:
+                return "VirtualBox is present (VBoxMiniRdrDN)"
     return None
 
 
