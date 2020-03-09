@@ -20,12 +20,11 @@ import struct
 
 from xpra.log import Logger
 from xpra.util import envbool
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr, hexstr
 
 
 log = Logger("x11", "xsettings")
 
-DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
 BLACKLISTED_XSETTINGS = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
                                        "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule").split(",")
 
@@ -53,6 +52,7 @@ XSettingsNames = {
 XSETTINGS_CACHE = {}
 def get_settings(disp, d):
     global XSETTINGS_CACHE
+    DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
     #parse xsettings according to
     #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
@@ -67,7 +67,8 @@ def get_settings(disp, d):
         return cache
     settings = []
     pos = 12
-    while n_settings>len(settings) and d:
+    while n_settings>len(settings):
+        log("get_settings(..) pos=%i (len=%i), data=%s", pos, len(d), hexstr(d[pos:]))
         istart = pos
         #parse header:
         setting_type, _, name_len = struct.unpack(b"=BBH", d[pos:pos+4])
@@ -156,7 +157,7 @@ def set_settings(disp, d):
     return  v
 
 
-def main():
+def main(): # pragma: no cover
     from xpra.platform.gui import init as gui_init
     from xpra.os_util import POSIX
     from xpra.platform import program_context
