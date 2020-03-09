@@ -36,7 +36,7 @@ BIG_ENDIAN    = 1
 def get_local_byteorder():
     if sys.byteorder=="little":
         return LITTLE_ENDIAN
-    return BIG_ENDIAN
+    return BIG_ENDIAN   # pragma: no cover
 
 #the 3 types of settings supported:
 XSettingsTypeInteger = 0
