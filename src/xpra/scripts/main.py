@@ -2139,7 +2139,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                     try:
                         for fd in (r_pipe, w_pipe):
                             os.set_inheritable(fd, True)
-                    except:
+                    except OSError:
                         log.error("no_close_pipes()", exc_info=True)
                     osclose_fds([0, 1, 2, r_pipe, w_pipe])
                 preexec_fn = no_close_pipes
