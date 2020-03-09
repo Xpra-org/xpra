@@ -200,7 +200,7 @@ class ImageWrapper:
             assert planes>0
             self.pixels = [clone_plane(pixels[i]) for i in range(planes)]
         self.thread_safe = True
-        if self.freed:
+        if self.freed:  # pragma: no cover
             #could be a race since this can run threaded
             self.free()
 
