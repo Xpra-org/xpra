@@ -137,7 +137,7 @@ def set_settings(disp, d):
                 x += b'\0'*pad_len
             elif setting_type==XSettingsTypeColor:
                 red, blue, green, alpha = value
-                x = struct.pack(b"=HHHH", red, blue, green, alpha)
+                x += struct.pack(b"=HHHH", red, blue, green, alpha)
             else:
                 log.error("Error: invalid type %i for xsetting property '%s'", setting_type, prop_name)
                 continue
