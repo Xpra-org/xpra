@@ -72,7 +72,6 @@ class AuthHandlersTest(unittest.TestCase):
 		from xpra.client.auth.file_handler import Handler
 		password = b"password"
 		try:
-			f = None
 			f = tempfile.NamedTemporaryFile(prefix="test-client-file-auth", delete=False)
 			f.file.write(password)
 			f.file.flush()

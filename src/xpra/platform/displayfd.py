@@ -6,7 +6,7 @@
 import os
 
 from xpra.log import Logger
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, POSIX
 from xpra.util import envint
 
 DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
@@ -22,8 +22,11 @@ def write_displayfd(w_pipe, display, timeout=10):
     while buf and monotonic_time()<limit:
         try:
             timeout = max(0, limit-monotonic_time())
-            w = select.select([], [w_pipe], [], timeout)[1]
-            log("select.select(..) writeable=%s", w)
+            if POSIX:
+                w = select.select([], [w_pipe], [], timeout)[1]
+                log("select.select(..) writeable=%s", w)
+            else:
+                w = [w_pipe]
             if w_pipe in w:
                 count = os.write(w_pipe, buf)
                 buf = buf[count:]
@@ -55,8 +58,11 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     while monotonic_time()<limit and len(buf)<8 and (proc is None or proc.poll() is None):
         try:
             timeout = max(0, limit-monotonic_time())
-            r = select.select([r_pipe], [], [], timeout)[0]
-            log("readable=%s", r)
+            if POSIX:
+                r = select.select([r_pipe], [], [], timeout)[0]
+                log("readable=%s", r)
+            else:
+                r = [r_pipe]
             if r_pipe in r:
                 v = os.read(r_pipe, 8)
                 buf += v

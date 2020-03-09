@@ -14,28 +14,34 @@ from xpra.platform.displayfd import write_displayfd, read_displayfd
 class DisplayFDTest(unittest.TestCase):
 
     def test_write(self):
-        temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test")
-        fd = temp.file.fileno()
-        display = ":999"
-        write_displayfd(fd, display)
-        #read what was written:
-        readback = load_binary_file(temp.name).decode().rstrip("\n")
-        assert readback==display, "expected %s but got %s" % (display, readback)
-        #file descriptor is already closed,
-        #so this throws an exception
+        temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test", delete=False)
         try:
-            temp.close()
-        except OSError:
-            pass
+            fd = temp.file.fileno()
+            display = ":999"
+            write_displayfd(fd, display)
+            #read what was written:
+            readback = load_binary_file(temp.name).decode().rstrip("\n")
+            assert readback==display, "expected %s but got %s" % (display, readback)
+            #file descriptor is already closed,
+            #so this throws an exception
+        finally:
+            try:
+                temp.close()
+            except OSError:
+                pass
 
     def test_read(self):
         display = ":999"
-        f = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test", delete=False)
-        f.write((display+"\n").encode())
-        f.close()
-        fd = os.open(f.name, os.O_RDONLY)
-        d = read_displayfd(fd).decode().rstrip("\n")
-        assert d==display, "expected %s but got %s" % (display, d)
+        try:
+            f = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test", delete=False)
+            f.write((display+"\n").encode())
+            f.close()
+            fd = os.open(f.name, os.O_RDONLY)
+            d = read_displayfd(fd).decode().rstrip("\n")
+            os.close(fd)
+            assert d==display, "expected %s but got %s" % (display, d)
+        finally:
+            os.unlink(f.name)
 
 
 def main():
