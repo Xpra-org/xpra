@@ -72,6 +72,11 @@ class TestVideoScoring(unittest.TestCase):
         test_csc_spec.speed = 20
         test_csc_spec.setup_cost = 10
         test_csc_spec.get_runtime_factor = lambda : 10
+        test_csc_spec.codec_class = AdHocStruct
+        current_csc = AdHocStruct()
+        current_csc.get_dst_format = lambda : "BGRA"
+        current_csc.get_src_height = lambda : 1080
+        current_csc.get_src_width = lambda : 1920
         for rgb_format in ("BGRA", "RGB"):
             for csc_spec in (None, test_csc_spec):
                 for can_scale in (True, False):
@@ -94,7 +99,7 @@ class TestVideoScoring(unittest.TestCase):
                                            1920, 1080, scaling,
                                            100, 10,
                                            100, 10,
-                                           None, None,
+                                           current_csc, None,
                                            0, 10, True)
                             if can_scale is False and scaling!=(1, 1):
                                 assert s is None
