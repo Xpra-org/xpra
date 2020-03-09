@@ -26,7 +26,7 @@ def main():
                 return find_executable(command)
             except Exception:
                 return command
-        xpra_cmd = os.environ.get("XPRA_COMMAND", which("xpra"))
+        xpra_cmd = os.environ.get("XPRA_COMMAND", which("xpra")) or "xpra"
         if xpra_cmd.find("coverage")<0:
             os.environ["XPRA_COMMAND"] = " ".join(run_cmd+[xpra_cmd])
     else:
@@ -59,7 +59,7 @@ def main():
         try:
             proc = subprocess.Popen(cmd)
         except OSError as e:
-            write("failed to execute %s: %s" % (p, e))
+            write("failed to execute %s using %s: %s" % (p, cmd, e))
             return 1
         v = proc.wait()
         if v!=0:
