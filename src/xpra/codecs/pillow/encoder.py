@@ -105,6 +105,8 @@ def encode(coding, image, quality, speed, supports_transparency):
                 palette.append((g>>8) & 0xFF)
                 palette.append((b>>8) & 0xFF)
             bpp = 8
+        else:
+            assert pixel_format in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"), "invalid pixel format '%s'" % pixel_format
         #PIL cannot use the memoryview directly:
         if isinstance(pixels, memoryview):
             pixels = pixels.tobytes()
@@ -193,7 +195,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         pil_fmt = "PNG"
     buf = BytesIO()
     im.save(buf, pil_fmt, **kwargs)
-    if SAVE_TO_FILE:
+    if SAVE_TO_FILE:    # pragma: no cover
         filename = "./%s.%s" % (time.time(), pil_fmt)
         im.save(filename, pil_fmt)
         log.info("saved %s to %s", coding, filename)
@@ -220,7 +222,7 @@ def selftest(full=False):
                         assert v, "encode output was empty!"
                         cdata = v[1].data
                         log("encode(%s)=%s", (encoding, img, q, s, alpha), hexstr(cdata))
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             l = log.warn
             l("Pillow error saving %s with quality=%s, speed=%s, alpha=%s", encoding, q, s, alpha)
             l(" %s", e, exc_info=True)
