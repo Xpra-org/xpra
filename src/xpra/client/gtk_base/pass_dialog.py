@@ -110,7 +110,7 @@ def show_pass_dialog(argv):
     prompt = arg(1)
     icon = arg(2)
     app = PasswordInputDialogWindow(title, prompt, icon)
-    register_os_signals(app.quit)
+    register_os_signals(app.quit, "Password Dialog")
     gui_ready()
     app.show()
     r = app.run()

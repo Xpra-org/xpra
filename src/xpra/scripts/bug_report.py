@@ -26,7 +26,7 @@ def main(argv=()):
         app = BugReport()
         app.close = app.quit
         app.init(True)
-        register_os_signals(app.quit)
+        register_os_signals(app.quit, "Bug Report")
         try:
             from xpra.platform.gui import ready as gui_ready
             gui_ready()

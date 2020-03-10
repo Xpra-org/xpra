@@ -1151,7 +1151,7 @@ def do_main(argv):
                 client.cleanup()
             GLib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
             GLib.timeout_add(1000, app.set_info_color, True)
-        register_os_signals(handle_signal)
+        register_os_signals(handle_signal, "Client Launcher")
         has_file = len(args) == 1
         if has_file:
             app.update_options_from_file(args[0])

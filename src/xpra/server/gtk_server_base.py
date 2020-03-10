@@ -63,7 +63,7 @@ class GTKServerBase(ServerBase):
         keymap.connect("keys-changed", self._keys_changed)
 
     def install_signal_handlers(self, callback):
-        register_os_signals(callback)
+        register_os_signals(callback, "%s Server" % self.get_server_mode())
         register_SIGUSR_signals(GLib.idle_add)
 
     def signal_quit(self, signum, frame=None):

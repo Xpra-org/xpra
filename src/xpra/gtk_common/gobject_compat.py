@@ -9,7 +9,7 @@ import sys
 
 
 _glib_unix_signals = {}
-def register_os_signals(callback):
+def register_os_signals(callback, commandtype=""):
     from xpra.os_util import SIGNAMES, POSIX, get_util_logger
     from gi.repository import GLib
     import signal
@@ -17,7 +17,10 @@ def register_os_signals(callback):
         try:
             sys.stderr.write("\n")
             sys.stderr.flush()
-            get_util_logger().info("got signal %s", SIGNAMES.get(signum, signum))
+            cstr = ""
+            if commandtype:
+                cstr = commandtype+" "
+            get_util_logger().info("%sgot signal %s", cstr, SIGNAMES.get(signum, signum))
         except OSError:
             pass
         callback(signum)

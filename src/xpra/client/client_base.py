@@ -228,7 +228,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             try:
                 sys.stderr.write("\n")
                 sys.stderr.flush()
-                log.info("got signal %s", SIGNAMES.get(signum, signum))
+                log.info("client got signal %s", SIGNAMES.get(signum, signum))
             except Exception:
                 pass
             self.handle_app_signal(signum)

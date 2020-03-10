@@ -98,7 +98,7 @@ def show_confirm_dialog(argv):
         buttons.append((label, code))
         n += 2
     app = ConfirmDialogWindow(title, prompt, info, icon, buttons)
-    register_os_signals(app.quit)
+    register_os_signals(app.quit, "Dialog")
     gui_ready()
     force_focus()
     app.show_all()

@@ -86,7 +86,7 @@ class subprocess_callee:
         self.wrapped_object = wrapped_object
         self.send_queue = Queue()
         self.protocol = None
-        register_os_signals(self.handle_signal)
+        register_os_signals(self.handle_signal, self.name)
         self.setup_mainloop()
 
     def setup_mainloop(self):
@@ -203,7 +203,7 @@ class subprocess_callee:
     def handle_signal(self, sig):
         """ This is for OS signals SIGINT and SIGTERM """
         #next time, just stop:
-        register_os_signals(self.signal_stop)
+        register_os_signals(self.signal_stop, self.name)
         signame = SIGNAMES.get(sig, sig)
         log("handle_signal(%s) calling stop from main thread", signame)
         self.send("signal", signame)

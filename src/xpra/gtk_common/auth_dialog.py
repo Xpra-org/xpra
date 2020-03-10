@@ -57,7 +57,7 @@ class AuthDialog(Gtk.Window):
         hbox.add(self.btn("Accept", Gtk.STOCK_OK, self.accept))
         self.vbox.add(al)
 
-        register_os_signals(self.app_signal)
+        register_os_signals(self.app_signal, "Authentication Dialog")
         self.show_all()
 
     def btn(self, label, stock_icon, callback):

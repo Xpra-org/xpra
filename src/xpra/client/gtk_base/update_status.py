@@ -165,7 +165,7 @@ def main():
         from xpra.gtk_common.gobject_compat import register_os_signals
         app = UpdateStatusWindow()
         app.close = app.quit
-        register_os_signals(app.quit)
+        register_os_signals(app.quit, "Version Check")
         try:
             gui_ready()
             app.show()

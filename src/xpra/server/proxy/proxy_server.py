@@ -110,7 +110,7 @@ class ProxyServer(ServerCore):
 
     def install_signal_handlers(self, callback):
         from xpra.gtk_common.gobject_compat import register_os_signals
-        register_os_signals(callback)
+        register_os_signals(callback, "Proxy Server")
 
 
     def make_dbus_server(self):

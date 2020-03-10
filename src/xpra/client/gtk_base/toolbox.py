@@ -184,7 +184,7 @@ def main():
         enable_color()
         init()
         gui = ToolboxGUI()
-        register_os_signals(gui.app_signal)
+        register_os_signals(gui.app_signal, "Xpra Toolbox")
         ready()
         if OSX:
             from xpra.platform.darwin.gui import wait_for_open_handlers
