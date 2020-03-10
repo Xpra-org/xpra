@@ -68,10 +68,8 @@ class TestPillow(unittest.TestCase):
                              thread_safe=True, palette=None)
         try:
             encode("png", image, 10, 10, True)
-        except Exception as e:
-            print("%s" % (e))
-            import traceback
-            traceback.print_stack()
+        except Exception:
+            pass
         else:
             raise Exception("should not be able to process '%s'" % pixel_format)
 
