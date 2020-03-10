@@ -25,6 +25,12 @@ class TestVideoSubregion(unittest.TestCase):
         def refresh_cb(window, regions):
             log("refresh_cb(%s, %s)", window, regions)
         r = video_subregion.VideoSubregion(GLib.timeout_add, GLib.source_remove, refresh_cb, 150, True)
+        assert repr(r)
+        r.set_detection(True)
+        r.set_region(0, 0, 10, 10)
+        r.set_detection(False)
+        r.set_region(0, 0, 0, 0)
+        r.set_detection(True)
 
         ww = 1024
         wh = 768
@@ -106,7 +112,9 @@ class TestVideoSubregion(unittest.TestCase):
             r.identify_video_subregion(ww, wh, 100, last_damage_events)
             m = rectangle.merge_all([rectangle.rectangle(*v1[1:]), rectangle.rectangle(*v2[1:])])
             assert r.rectangle and r.rectangle==m, "expected %s but got %s for N1=%i, N2=%i" % (m, r.rectangle, N1, N2)
-
+        r.set_enabled(False)
+        r.remove_refresh_region(rectangle.rectangle(0, 0, 10, 10))
+        r.cleanup()
 
     def test_cases(self):
         from xpra.server.window.video_subregion import scoreinout   #, sslog
