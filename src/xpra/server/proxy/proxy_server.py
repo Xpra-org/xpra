@@ -430,6 +430,7 @@ class ProxyServer(ServerCore):
         def start_proxy_process():
             log("start_proxy_process()")
             message_queue = MQueue()
+            client_conn = None
             try:
                 #no other packets should be arriving until the proxy instance responds to the initial hello packet
                 def unexpected_packet(packet):
@@ -472,7 +473,8 @@ class ProxyServer(ServerCore):
             finally:
                 #now we can close our handle on the connection:
                 log("handover complete: closing connection from proxy server")
-                client_conn.close()
+                if client_conn:
+                    client_conn.close()
                 server_conn.close()
                 log("sending socket-handover-complete")
                 message_queue.put("socket-handover-complete")
