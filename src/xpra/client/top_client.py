@@ -282,7 +282,7 @@ class TopSessionClient(MonitorXpraClient):
         self.update_screen()
 
     def run(self):
-        register_os_signals(self.signal_handler)
+        register_os_signals(self.signal_handler, "Top Client")
         return super().run()
 
     def signal_handler(self, *_args):
