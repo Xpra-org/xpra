@@ -58,6 +58,14 @@ class X11ClipboardTestUtil(X11ClientTestUtil):
 		assert pollwait(client, 2) is None, "client has exited with return code %s" % client.poll()
 		client_display = xvfb.display
 
+		#wait for client to own the clipboard:
+		cmd = self.get_xpra_cmd()+["info", server_display]
+		for _ in range(10):
+			out = self.get_command_output(cmd)
+			if out.find(b"clipboard.client=")>0:
+				break
+			time.sleep(1)
+
 		if SANITY_CHECKS:
 			log("sanity checks")
 			#xclip sanity check: retrieve from the same display:
