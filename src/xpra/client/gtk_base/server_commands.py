@@ -206,7 +206,7 @@ class ServerCommandsWindow:
         return None
 
 
-def main():
+def main(): # pragma: no cover
     from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready, init as gui_init
     gui_init()
@@ -261,6 +261,6 @@ def main():
         return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     v = main()
     sys.exit(v)

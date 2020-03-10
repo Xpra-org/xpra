@@ -496,7 +496,7 @@ class StartSession(Gtk.Window):
         exec_command(cmd)
 
 
-def main():
+def main(): # pragma: no cover
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
@@ -518,6 +518,6 @@ def main():
         return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     r = main()
     sys.exit(r)

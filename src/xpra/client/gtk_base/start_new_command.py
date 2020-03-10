@@ -182,7 +182,7 @@ class StartNewCommand:
             self.run_callback(command, self.share is None or self.share.get_active())
 
 
-def main():
+def main(): # pragma: no cover
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     from xpra.platform import program_context
     gui_init()
@@ -206,6 +206,6 @@ def main():
         return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     v = main()
     sys.exit(v)

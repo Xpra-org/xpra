@@ -505,12 +505,12 @@ def do_main(opts):
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code
 
-def main():
+def main(): # pragma: no cover
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
     return do_main(opts)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     r = main()
     sys.exit(r)

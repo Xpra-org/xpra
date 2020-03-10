@@ -137,7 +137,7 @@ class AppindicatorTray(TrayBase):
         TrayBase.cleanup(self)
 
 
-def main():
+def main(): # pragma: no cover
     from xpra.platform import program_context
     with program_context("AppIndicator-Test", "AppIndicator Test"):
         if "-v" in sys.argv:
@@ -157,5 +157,5 @@ def main():
         Gtk.main()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
