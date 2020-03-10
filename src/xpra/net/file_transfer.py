@@ -41,17 +41,17 @@ def basename(filename):
     #we can't use os.path.basename,
     #because the remote end may have sent us a filename
     #which is using a different pathsep
+    tmp = filename
     for sep in ("\\", "/", os.sep):
-        i = filename.rfind(sep) + 1
-        filename = filename[i:]
-    if not WIN32:
-        return filename
-    #many characters aren't allowed at all on win32:
-    tmp = ""
-    for char in filename:
-        if ord(char)<32 or char in ("<", ">", ":", "\"", "|", "?", "*"):
-            char = "_"
-        tmp += char
+        i = tmp.rfind(sep) + 1
+        tmp = tmp[i:]
+    if WIN32:   # pragma: no cover
+        #many characters aren't allowed at all on win32:
+        tmp = ""
+        for char in filename:
+            if ord(char)<32 or char in ("<", ">", ":", "\"", "|", "?", "*"):
+                char = "_"
+            tmp += char
     return tmp
 
 def safe_open_download_file(basefilename, mimetype):
