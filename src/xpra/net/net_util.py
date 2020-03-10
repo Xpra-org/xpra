@@ -213,7 +213,7 @@ def get_iface(ip) -> str:
 if_nametoindex = None
 if_indextoname = None
 
-if WIN32:
+if WIN32:   # pragma: no cover
     def int_if_nametoindex(iface):
         #IPv6 addresses give us the interface as a string:
         #fe80:....%11, so try to convert "11" into 11
@@ -307,7 +307,7 @@ def get_net_config() -> dict:
                 }
         if SOCKET_NODELAY is not None:
             config["socket.nodelay"] = SOCKET_NODELAY
-    except Exception:
+    except Exception:   # pragma: no cover
         log("get_net_config()", exc_info=True)
     return config
 
@@ -315,7 +315,7 @@ def get_net_config() -> dict:
 def get_ssl_info(show_constants=False) -> dict:
     try:
         import ssl
-    except ImportError as e:
+    except ImportError as e:    # pragma: no cover
         log("no ssl: %s", e)
         return {}
     info = {}
@@ -392,7 +392,7 @@ def get_info() -> dict:
     return i
 
 
-def main():
+def main(): # pragma: no cover
     from xpra.os_util import POSIX
     from xpra.util import print_nested_dict, csv
     from xpra.platform import program_context
@@ -505,5 +505,5 @@ def main():
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
