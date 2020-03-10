@@ -354,32 +354,41 @@ class ServerCore:
         self._upgrading = upgrading
         self._closing = True
         self.cleanup()
+        w = get_worker()
         def quit_timer():
-            w = get_worker()
             log("quit_timer() worker=%s", w)
             if w and w.is_alive():
                 #wait up to 1 second for the worker thread to exit
                 try:
                     w.wait(1)
-                except:
+                except Exception:
                     pass
                 if w.is_alive():
                     #still alive, force stop:
                     stop_worker(True)
                     try:
                         w.wait(1)
-                    except:
+                    except Exception:
                         pass
             self.quit(upgrading)
-        stop_worker()
-        self.timeout_add(250, quit_timer)
+        if w:
+            stop_worker()
+            try:
+                w.join(0.05)
+            except Exception:
+                pass
+            if w.is_alive():
+                self.timeout_add(250, quit_timer)
+            else:
+                w = None
         def force_quit():
-            log.debug("force_quit()")
+            log("force_quit()")
             from xpra import os_util
             os_util.force_quit()
         self.timeout_add(5000, force_quit)
         log("clean_quit(..) quit timers scheduled")
-        dump_all_frames()
+        if not w:
+            self.quit(upgrading)
 
     def quit(self, upgrading=False):
         log("quit(%s)", upgrading)
