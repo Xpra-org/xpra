@@ -56,7 +56,11 @@ class ClipboardServer(StubServerMixin):
     def get_info(self, _proto) -> dict:
         if self._clipboard_helper is None:
             return {}
-        return {"clipboard" : self._clipboard_helper.get_info()}
+        ci = self._clipboard_helper.get_info()
+        cc = self._clipboard_client
+        if cc:
+            ci["client"] = cc.uuid
+        return {"clipboard" : ci}
 
 
     def get_server_features(self, server_source=None) -> dict:
