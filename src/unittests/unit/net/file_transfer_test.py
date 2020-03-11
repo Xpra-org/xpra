@@ -17,9 +17,12 @@ from xpra.net.file_transfer import (
 class TestVersionUtilModule(unittest.TestCase):
 
     def test_basename(self):
-        assert basename("hello")=="hello"
-        assert basename("/path/to/foo")=="foo"
-        assert basename("\\other\\path\\bar")=="bar"
+        def t(s, e):
+            r = basename(s)
+            assert r==e, "expected '%s' but got '%s' for '%s'" % (r, e, s)
+        t("hello", "hello")
+        t("/path/to/foo", "foo")
+        t("\\other\\path\\bar", "bar")
 
 
     def test_safe_open(self):
