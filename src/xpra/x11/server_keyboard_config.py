@@ -493,37 +493,38 @@ class KeyboardConfig(KeyboardConfigBase):
                 keycode = self.keycode_translation.get((keyname, level))
                 if keycode:
                     klog("=%i (level=%i, shift=%s, mode=%i)", keycode, level, shift, mode)
-                    if not self.xkbmap_raw:
-                        def toggle_modifier(mod):
-                            keynames = self.keynames_for_mod.get(mod)
-                            if keyname in keynames:
-                                kmlog("not toggling '%s' since '%s' should deal with it", mod, keyname)
-                                #the keycode we're returning is for this modifier,
-                                #assume that this will end up doing what is needed
-                                return
-                            if mod in modifiers:
-                                kmlog("removing '%s' from modifiers", mod)
-                                modifiers.remove(mod)
-                            else:
-                                kmlog("adding '%s' to modifiers", mod)
-                                modifiers.append(mod)
-                        if (level & 1) ^ shift:
-                            #shift state does not match
-                            #if the keysym we would match for this keycode is 'NoSymbol',
-                            #then we can probably ignore it ('NoSymbol' shows up as "")
-                            keysyms = self.keycode_mappings.get(keycode)
-                            level0 = levels[0]
-                            if len(keysyms)>level0 and keysyms[level0]=="":
-                                kmlog("not toggling 'shift' state for keysyms=%s", keysyms)
-                            else:
-                                toggle_modifier("shift")
-                        if (level & 2) ^ mode:
-                            #try to set / unset mode:
-                            for mod, keynames in self.keynames_for_mod.items():
-                                if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
-                                    #found mode switch modified
-                                    toggle_modifier(mod)
-                                    break
+                    if self.xkbmap_raw:
+                        break
+                    keysyms = self.keycode_mappings.get(keycode)
+                    level0 = levels[0]
+                    if len(keysyms)>level0 and keysyms[level0]=="":
+                        #if the keysym we would match for this keycode is 'NoSymbol',
+                        #then we can probably ignore it ('NoSymbol' shows up as "")
+                        kmlog("not toggling any modifiers state for keysyms=%s", keysyms)
+                        break
+                    def toggle_modifier(mod):
+                        keynames = self.keynames_for_mod.get(mod)
+                        if keyname in keynames:
+                            kmlog("not toggling '%s' since '%s' should deal with it", mod, keyname)
+                            #the keycode we're returning is for this modifier,
+                            #assume that this will end up doing what is needed
+                            return
+                        if mod in modifiers:
+                            kmlog("removing '%s' from modifiers", mod)
+                            modifiers.remove(mod)
+                        else:
+                            kmlog("adding '%s' to modifiers", mod)
+                            modifiers.append(mod)
+                    if (level & 1) ^ shift:
+                        #shift state does not match
+                        toggle_modifier("shift")
+                    if (level & 2) ^ mode:
+                        #try to set / unset mode:
+                        for mod, keynames in self.keynames_for_mod.items():
+                            if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
+                                #found mode switch modified
+                                toggle_modifier(mod)
+                                break
                     break
             #this should not find anything new?:
             if keycode is None:
