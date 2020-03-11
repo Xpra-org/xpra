@@ -45,6 +45,7 @@ def basename(filename):
     for sep in ("\\", "/", os.sep):
         i = tmp.rfind(sep) + 1
         tmp = tmp[i:]
+    filename = tmp
     if WIN32:   # pragma: no cover
         #many characters aren't allowed at all on win32:
         tmp = ""
