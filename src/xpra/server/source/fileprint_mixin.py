@@ -117,7 +117,10 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             attributes["socket-path"] = self.choose_socket_path()
         log("printer attributes: %s", attributes)
         for name,props in printers.items():
-            printer = name.decode("utf8")
+            try:
+                printer = name.decode("utf8")
+            except UnicodeDecodeError:
+                printer = name.decode("latin1")
             if printer not in self.printers:
                 self.setup_printer(printer, props, attributes)
 
@@ -169,11 +172,14 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             log("not removing printer '%s' - since we didn't add it", name)
         else:
             try:
-                printer = name.decode("utf8")
+                try:
+                    printer = name.decode("utf8")
+                except UnicodeDecodeError:
+                    printer = name.decode("latin1")
                 from xpra.platform.pycups_printing import remove_printer
                 remove_printer(printer)
                 log.info("removed remote printer '%s'", printer)
             except Exception as e:
                 log("remove_printer(%s)", printer, exc_info=True)
-                log.error("Error: failed to remove printer %s:", printer)
+                log.error("Error: failed to remove printer '%s':", name)
                 log.error(" %s", e)
