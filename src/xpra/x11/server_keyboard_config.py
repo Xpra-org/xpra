@@ -431,12 +431,14 @@ class KeyboardConfig(KeyboardConfigBase):
             return -1
         if self.xkbmap_raw:
             return client_keycode
-        def klog(msg, *args):
+        def kmlog(msg, *args):
             if keyname in DEBUG_KEYSYMS:
                 l = log.info
             else:
                 l = log
-            l("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
+            l(msg, *args)
+        def klog(msg, *args):
+            kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
         keycode = None
         if self.xkbmap_query:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
@@ -478,25 +480,33 @@ class KeyboardConfig(KeyboardConfigBase):
             for level in range(8):
                 if level not in levels:
                     levels.append(level)
+            kmlog("will try levels: %s", levels)
             for level in levels:
                 keycode = self.keycode_translation.get((keyname, level))
                 if keycode:
                     klog("=%i (level=%i, shift=%s, mode=%i)", keycode, level, shift, mode)
+                    def toggle_modifier(mod):
+                        keynames = self.keynames_for_mod.get(mod)
+                        if keyname in keynames:
+                            kmlog("not toggling '%s' since '%s' should deal with it", mod, keyname)
+                            #the keycode we're returning is for this modifier,
+                            #assume that this will end up doing what is needed
+                            return
+                        if mod in modifiers:
+                            kmlog("removing '%s' from modifiers", mod)
+                            modifiers.remove(mod)
+                        else:
+                            kmlog("adding '%s' to modifiers", mod)
+                            modifiers.append(mod)
                     if (level & 1) ^ shift:
                         #shift state does not match
-                        if "shift" in modifiers:
-                            modifiers.remove("shift")
-                        else:
-                            modifiers.append("shift")
+                        toggle_modifier("shift")
                     if (level & 2) ^ mode:
                         #try to set / unset mode:
                         for mod, keynames in self.keynames_for_mod.items():
                             if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
                                 #found mode switch modified
-                                if mod in modifiers:
-                                    modifiers.remove(mod)
-                                else:
-                                    modifiers.append(mod)
+                                toggle_modifier(mod)
                                 break
                     break
             #this should not find anything new?:
