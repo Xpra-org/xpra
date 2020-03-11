@@ -5,14 +5,17 @@
 import sys
 from collections import deque
 
+from xpra.util import csv
+from xpra.os_util import POSIX, OSX, bytestostr
+from xpra.platform import program_context
+from xpra.platform.gui import force_focus
+from xpra.platform.paths import get_icon
+
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import GLib, Pango, Gtk, Gdk
 
-from xpra.util import csv
-from xpra.os_util import POSIX, OSX, bytestostr
-from xpra.platform.paths import get_icon
 
 
 class KeyboardStateInfoWindow:
@@ -47,7 +50,6 @@ class KeyboardStateInfoWindow:
         vbox.add(self.keys)
 
         self.window.add(vbox)
-        self.window.show_all()
         GLib.timeout_add(100, self.populate_modifiers)
 
         self.key_events = deque(maxlen=35)
@@ -151,16 +153,21 @@ class KeyboardStateInfoWindow:
     def destroy(self, *_args):
         Gtk.main_quit()
 
+    def show_with_focus(self):
+        force_focus()
+        self.window.show_all()
+        self.window.present()
+
 
 def main():
-    from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Keyboard-Test", "Keyboard Test Tool"):
         enable_color()
         if POSIX and not OSX:
             from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
             init_gdk_display_source()
-        KeyboardStateInfoWindow()
+        w = KeyboardStateInfoWindow()
+        GLib.idle_add(w.show_with_focus)
         Gtk.main()
     return 0
 

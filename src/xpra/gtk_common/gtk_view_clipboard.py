@@ -6,16 +6,18 @@ import re
 import sys
 from collections import deque
 
+from xpra.platform import program_context
+from xpra.platform.gui import force_focus
+from xpra.platform.paths import get_icon
+from xpra.util import csv
+from xpra.gtk_common.gtk_util import TableBuilder, label
+from xpra.platform.features import CLIPBOARDS
+
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("Pango", "1.0")
-from gi.repository import Pango, Gtk, Gdk
-
-from xpra.util import csv
-from xpra.gtk_common.gtk_util import TableBuilder, label
-from xpra.platform.paths import get_icon
-from xpra.platform.features import CLIPBOARDS
+from gi.repository import Pango, Gtk, Gdk, GLib
 
 
 class ClipboardInstance:
@@ -232,13 +234,18 @@ class ClipboardStateInfoWindow:
     def destroy(self, *_args):
         Gtk.main_quit()
 
+    def show_with_focus(self):
+        force_focus()
+        self.window.show_all()
+        self.window.present()
+
 
 def main():
-    from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Clipboard-Test", "Clipboard Test Tool"):
         enable_color()
-        ClipboardStateInfoWindow()
+        w = ClipboardStateInfoWindow()
+        GLib.idle_add(w.show_with_focus)
         Gtk.main()
 
 
