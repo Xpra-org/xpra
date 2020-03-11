@@ -197,6 +197,7 @@ def selftest(_full=False):
             except Exception as e:
                 log("correctly raised exception for invalid input: %s", e)
         except Exception as e:
+            log("selftest:", exc_info=True)
             try:
                 #py2k:
                 datainfo = cdata.encode("string_escape")
