@@ -31,17 +31,17 @@ class Worker_Thread(Thread):
     def stop(self, force=False):
         if self.exit:
             return
-        items = tuple(self.items.queue)
+        items = tuple(x for x in tuple(self.items.queue) if x is not None)
         log("Worker_Thread.stop(%s) %i items still in work queue: %s", force, len(items), items)
         if force:
-            if self.items.qsize()>0:
-                log.warn("Worker stop: %s items in the queue will not be run!", self.items.qsize())
+            if items:
+                log.warn("Worker stop: %s items in the queue will not be run!", len(items))
                 self.items.put(None)
                 self.items = Queue()
             self.exit = True
         else:
-            if self.items.qsize()>0:
-                log.info("waiting for %s items in work queue to complete", self.items.qsize())
+            if items:
+                log.info("waiting for %s items in work queue to complete", len(items))
         self.items.put(None)
 
     def add(self, item):
