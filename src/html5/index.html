@@ -905,6 +905,49 @@
 				}
 				wait_for_time();
 			}
+
+			function init_audio(client) {
+				client.on_audio_state_change = function(newstate, details) {
+					if (client.audio_state == newstate) {
+						return;
+					}
+					client.audio_state = newstate;
+					var tooltip = "";
+					var data_icon = "";
+					if (newstate=="playing") {
+						data_icon = "volume_up";
+						tooltip = "audio playing,\nclick to stop";
+					}
+					else if (newstate=="waiting") {
+						data_icon = "volume_up";
+						tooltip = "audio buffering";
+					}
+					else {
+						data_icon = "volume_off";
+						tooltip = "audio off,\nclick to start";
+					}
+					clog("audio-state:", newstate);
+					$("#sound_button").attr("data-icon", data_icon);
+					$("#sound_button").attr("title", tooltip);
+				};
+				if (client.audio_enabled) {
+					$("#sound_button").click(function() {
+						clog("speaker icon clicked, audio_enabled=", client.audio_enabled);
+						if (client.audio_state=="playing" || client.audio_state=="waiting") {
+							client.on_audio_state_change("stopped", "user action");
+							client.close_audio();
+						}
+						else {
+							client.on_audio_state_change("waiting", "user action");
+							client._audio_start_stream();
+							client._sound_start_receiving();
+						}
+					})
+				}
+				else {
+					$("#sound_button").hide();
+				}
+			}
 			
 			function toggle_fullscreen() {
 				var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
@@ -984,46 +1027,7 @@
 			   		$('upload_link').removeAttr('href');
 			   	}
 				init_clock(client, getboolparam("clock", true));
-				client.on_audio_state_change = function(newstate, details) {
-					if (client.audio_state == newstate) {
-						return;
-					}
-					client.audio_state = newstate;
-					var tooltip = "";
-					var data_icon = "";
-					if (newstate=="playing") {
-						data_icon = "volume_up";
-						tooltip = "audio playing,\nclick to stop";
-					}
-					else if (newstate=="waiting") {
-						data_icon = "volume_up";
-						tooltip = "audio buffering";
-					}
-					else {
-						data_icon = "volume_off";
-						tooltip = "audio off,\nclick to start";
-					}
-					clog("audio-state:", newstate);
-					$("#sound_button").attr("data-icon", data_icon);
-					$("#sound_button").attr("title", tooltip);
-				};
-				if (client.audio_enabled) {
-					$("#sound_button").click(function() {
-						clog("speaker icon clicked, audio_enabled=", client.audio_enabled);
-						if (client.audio_state=="playing" || client.audio_state=="waiting") {
-							client.on_audio_state_change("stopped", "user action");
-							client.close_audio();
-						}
-						else {
-							client.on_audio_state_change("waiting", "user action");
-							client._audio_start_stream();
-							client._sound_start_receiving();
-						}
-					})
-				}
-				else {
-					$("#sound_button").hide();
-				}
+				init_audio(client);
 				document.addEventListener("visibilitychange", function (e) {
 					window_ids = Object.keys(client.id_to_window).map(Number);
 					clog("visibilitychange hidden=", document.hidden, "connected=", client.connected);
