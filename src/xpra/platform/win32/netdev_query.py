@@ -47,8 +47,8 @@ def get_interface_info(_fd, iface):
             log("get_interface_info(%s)", iface, exc_info=True)
             from xpra.util import first_time
             if first_time("win32-network-query"):
-                log.error("Error: failed to query network interface:")
-                log.error(" %s", e)
+                log.info("cannot query network interface:")
+                log.info(" %s", e)
         return {}
 
 
