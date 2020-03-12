@@ -1,24 +1,34 @@
-v3.0.7 (2020-03-05)
+v3.0.7 (2020-03-02)
 ======================
 	-- fix avcodec2 race condition crash
-	-- fix clipboard sharing with the MacOS shadow server
 	-- fix errors when re-initializing windows (ie: toggling OpenGL on or off)
 	-- fix deiconification error when there are system trays forwarded
 	-- fix missing alpha channel when some windows are first shown
 	-- fix systemd-run errors: verify it does work before trying to use it
 	-- fix debug builds compilation error on MS Windows
 	-- fix server crashes on SIGINT: shutdown cleanly
+	-- fix proxy server client connection setup error hanlder
 	-- fix file authentication handler using a default password filename
-	-- fix unit tests failures
 	-- fix directshow errors on local mingw installations
 	-- fix opengl properties missing from server hello packet
+	-- fix HTML5 sound-control errors when speaker forwarding is disabled
+	-- fix HTML5 "Terminate" options wrongly enabled in "Connect" mode
+	-- fix clipboard sharing with the MacOS shadow server
 	-- fix MS Windows clipboard access denied errors
 	-- fix X11 clipboard error handling: continue processing
+	-- fix unit tests failures (clipboard, etc)
+	-- fix bug report clipboard copy and screnshots
+	-- fix clipboard timeouts when a client disconnects
+	-- fix mdns cleanup done twice on server exit, causing errors
+	-- fix malformed XSettings due to invalid color data format
 	-- fix FreeBSD builds
-	-- fix MS Windows packaging missing a codec DLL
+	-- fix MS Windows packaging missing a codec DLL, Plink DLL
 	-- fix HMAC hashes exposed, keep only valid options
+	-- fix 'showconfig' output for boolean values set to 'auto'
 	-- fix parsing of client display information in legacy format
 	-- fix validation of size-hints
+	-- fix cursor saving debug code with GTK3
+	-- fix keyboard layout group not getting reset on client exit
 	-- fix some empty keyboard layout group strings parsed as non-empty
 	-- fix keyboard-sync mode not being honoured by servers
 	-- fix keyboard raw mode
@@ -26,7 +36,12 @@ v3.0.7 (2020-03-05)
 	-- add missing debug logging to keyboard mapping
 	-- more reliable lookup of keycodes when translating (non-X11 clients)
 	-- add missing dependency for printer forwarding on Debian
+	-- packaging for Ubuntu Focal Fossa
+	-- skip bundling some external test modules with binary installers
 	-- more correct code for locating the 'Downloads' folder on MS Windows
+	-- avoid spurious background worker warnings on exit
+	-- make unavoidable comtypes error less scary
+	-- add 'libreoffice' to the text mode whitelist
 	-- library updates: Python 3.8.2, etc
 	-- packaging workarounds for setuptools breakage
 
