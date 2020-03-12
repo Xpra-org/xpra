@@ -436,7 +436,6 @@ function fill_form(default_settings) {
 		var action = $(this).val();
 		set_exit_actions(action=="connect");
 	});
-	set_exit_actions(action=="connect" || action=="")
 	$('input:radio[value="'+action+'"]').click();
 
 	var encoding = getparam("encoding") || "auto";
@@ -567,6 +566,9 @@ function fill_form(default_settings) {
 	}
 	floating_menu_checkbox.change(set_menu_attributes_visibility);
 	set_menu_attributes_visibility();
+
+	//this may override default values (ie: terminate flags are off for connect mode):
+	set_exit_actions(action=="connect" || action=="")
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
