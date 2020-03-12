@@ -156,7 +156,7 @@ class ServerTestUtil(ProcessTestUtil):
         cmd = [subcommand]+list(connect_args)
         stopit = self.run_xpra(cmd)
         if pollwait(stopit, STOP_WAIT_TIMEOUT) is None:
-            log.warn("failed to stop %s:", server_proc)
+            log.warn("failed to stop server: %s", getattr(server_proc, "command", server_proc))
             self.show_proc_pipes(server_proc)
             self.show_proc_error(stopit, "stop server error")
         assert pollwait(server_proc, STOP_WAIT_TIMEOUT) is not None, "server process %s failed to exit" % server_proc
