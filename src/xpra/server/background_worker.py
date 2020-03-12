@@ -31,6 +31,8 @@ class Worker_Thread(Thread):
     def stop(self, force=False):
         if self.exit:
             return
+        items = tuple(self.items.queue)
+        log("Worker_Thread.stop(%s) %i items still in work queue: %s", force, len(items), items)
         if force:
             if self.items.qsize()>0:
                 log.warn("Worker stop: %s items in the queue will not be run!", self.items.qsize())
@@ -40,7 +42,6 @@ class Worker_Thread(Thread):
         else:
             if self.items.qsize()>0:
                 log.info("waiting for %s items in work queue to complete", self.items.qsize())
-        log("Worker_Thread.stop(%s) %s items in work queue", force, self.items)
         self.items.put(None)
 
     def add(self, item):
