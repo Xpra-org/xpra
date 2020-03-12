@@ -1008,15 +1008,17 @@
 					$("#sound_button").attr("title", tooltip);
 				};
 				$("#sound_button").click(function() {
-					clog("speaker icon clicked");
-					if (client.audio_state=="playing" || client.audio_state=="waiting") {
-						client.on_audio_state_change("stopped", "user action");
-						client.close_audio();
-					}
-					else {
-						client.on_audio_state_change("waiting", "user action");
-						client._audio_start_stream();
-						client._sound_start_receiving();
+					clog("speaker icon clicked, audio_enabled=", client.audio_enabled);
+					if (client.audio_enabled) {
+						if (client.audio_state=="playing" || client.audio_state=="waiting") {
+							client.on_audio_state_change("stopped", "user action");
+							client.close_audio();
+						}
+						else {
+							client.on_audio_state_change("waiting", "user action");
+							client._audio_start_stream();
+							client._sound_start_receiving();
+						}
 					}
 				})
 				document.addEventListener("visibilitychange", function (e) {
