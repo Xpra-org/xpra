@@ -5,7 +5,7 @@
 
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.clipboard.clipboard_core import ClipboardProtocolHelperCore
-from xpra.util import repr_ellipsized, envint
+from xpra.util import repr_ellipsized, envint, engs
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
 
@@ -113,3 +113,13 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
             (request_id, dtype, dformat, repr_ellipsized(str(data))), proxy, selection)
         if proxy:
             proxy.got_contents(target, dtype, dformat, data)
+
+    def client_reset(self):
+        super().client_reset()
+        #timeout all pending requests
+        cor = self._clipboard_outstanding_requests
+        if cor:
+            log.info("cancelling %i clipboard request%s", len(cor), engs(cor))
+            self._clipboard_outstanding_requests = {}
+            for request_id in cor:
+                self._clipboard_got_contents(request_id)
