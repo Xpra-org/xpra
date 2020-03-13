@@ -155,9 +155,9 @@ Suggests: openssh-server
 #bionic:        ,gnome-shell-extension-top-icons-plus
 #disco:        ,gnome-shell-extension-top-icons-plus
 #eoan:        ,gnome-shell-extension-top-icons-plus
+#focal:        ,gnome-shell-extension-top-icons-plus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
-#focal:        ,gnome-shell-extension-top-icons-plus
  .
  This package contains all the files and dependencies common to both the
  Python 2 (xpra) and Python 3 builds (python3-xpra).
