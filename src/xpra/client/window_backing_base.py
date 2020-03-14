@@ -488,8 +488,8 @@ class WindowBackingBase:
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     log.error("       "+v[0], *v[1:])
-        raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s) in %s" %
-                        (src_format, src_width, src_height, " or ".join(dst_format_options),
+        raise Exception("no csc module found for wid %i %s(%sx%s) to %s(%sx%s) in %s" %
+                        (self.wid, src_format, src_width, src_height, " or ".join(dst_format_options),
                          dst_width, dst_height, CSC_OPTIONS))
 
     def validate_csc_size(self, spec, src_width, src_height, dst_width, dst_height):
