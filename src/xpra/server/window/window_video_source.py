@@ -430,14 +430,14 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="no common video encodings")
         if self.is_tray:
             return nonvideo(100, "system tray")
+        text_hint = self.content_type=="text"
+        if text_hint and not TEXT_USE_VIDEO:
+            return nonvideo(info="text content-type")
 
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
         cwh = wh & self.height_mask
         video_hint = self.content_type=="video"
-        text_hint = self.content_type=="text"
-        if text_hint and not TEXT_USE_VIDEO:
-            return nonvideo(info="text content-type")
 
         rgbmax = self._rgb_auto_threshold
         videomin = cww*cwh // (1+video_hint*2)
