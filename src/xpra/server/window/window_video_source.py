@@ -453,7 +453,7 @@ class WindowVideoSource(WindowSource):
         if current_encoding!="auto" and current_encoding not in self.common_video_encodings:
             return nonvideo(info="%s not a supported video encoding" % current_encoding)
 
-        if cww*cwh<=MAX_NONVIDEO_PIXELS:
+        if cww*cwh<=MAX_NONVIDEO_PIXELS or cww<16 or cwh<16:
             return nonvideo(quality+30, "window is too small")
 
         if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
