@@ -331,13 +331,15 @@ class FileTransferHandler(FileTransferAttributes):
                 self.file_transfer, self.file_transfer_ask)
         filelog("accept_data: open-files=%s, open-files-ask=%s",
                 self.open_files, self.open_files_ask)
-        if printit:
-            return self.printing and not self.printing_ask
         if not self.file_transfer or self.file_transfer_ask:
-            return False
-        if openit:
-            return self.open_files and not self.open_files_ask
-        return True
+            return None
+        if printit and (not self.printing or self.printing_ask):
+            printit = False
+        if openit and (not self.open_files or self.open_files_ask):
+            #we can't ask in this implementation,
+            #so deny the request to open it:
+            openit = False
+        return (printit, openit)
 
     def _process_send_file(self, packet):
         #the remote end is sending us a file
@@ -345,9 +347,12 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = ""
         if len(packet)>=9:
             send_id = packet[8]
-        if not self.accept_data(send_id, b"file", basefilename, printit, openit):
+        r = self.accept_data(send_id, b"file", basefilename, printit, openit)
+        if r is None:
             filelog.warn("Warning: file transfer rejected for file '%s'", bytestostr(basefilename))
             return
+        #accept_data can override the flags:
+        printit, openit = r
         options = typedict(options)
         if printit:
             l = printlog

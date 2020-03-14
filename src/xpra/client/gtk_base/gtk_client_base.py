@@ -381,10 +381,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def do_ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
         timeout = self.remote_file_ask_timeout
-        def rec_answer(accept):
+        def rec_answer(accept, newopenit=openit):
             if int(accept)==1:
                 #record our response, so we will accept the file
-                self.data_send_requests[send_id] = (dtype, url, printit, openit)
+                self.data_send_requests[send_id] = (dtype, url, printit, newopenit)
             cb_answer(accept)
         self.file_ask_dialog = getOpenRequestsWindow()
         self.file_ask_dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
@@ -404,17 +404,21 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def accept_data(self, send_id, dtype, url, printit, openit):
         #check if we have accepted this file via the GUI:
-        r = self.data_send_requests.get(send_id)
+        r = self.data_send_requests.pop(send_id, None)
         if r:
-            del self.data_send_requests[send_id]
-            if r!=(dtype, url, printit, openit):
+            edtype = r[0]
+            eurl = r[1]
+            if edtype!=dtype or eurl!=url:
                 filelog.warn("Warning: the file attributes are different")
                 filelog.warn(" from the ones that were used to accept the transfer")
-                filelog.warn(" expected data type=%s, url=%s, print=%s, open=%s", *r)
-                filelog.warn(" received data type=%s, url=%s, print=%s, open=%s",
-                             dtype, url, printit, openit)
-                return False
-            return True
+                s = bytestostr
+                if edtype!=dtype:
+                    filelog.warn(" expected data type '%s' but got '%s'", s(edtype), s(dtype))
+                if eurl!=url:
+                    filelog.warn(" expected data type '%s' but got '%s'", s(eurl), s(url))
+                return None
+            #return the printit and openit flag we got from the UI:
+            return (r[2], r[3])
         from xpra.net.file_transfer import FileTransferHandler
         return FileTransferHandler.accept_data(self, send_id, dtype, url, printit, openit)
 

@@ -156,7 +156,10 @@ class OpenRequestsWindow:
                 self.window.resize(1, 1)
         def ok(*_args):
             remove_entry()
-            cb_answer(ACCEPT)
+            cb_answer(ACCEPT, False)
+        def okopen(*_args):
+            remove_entry()
+            cb_answer(ACCEPT, True)
         def remote(*_args):
             remove_entry()
             cb_answer(OPEN)
@@ -170,11 +173,10 @@ class OpenRequestsWindow:
         elif printit:
             hbox.pack_start(self.btn("Print", None, ok, "printer.png"))
         else:
+            hbox.pack_start(self.btn("Download", None, ok, "download.png"))
             if openit:
-                hbox.pack_start(self.btn("Download and Open", None, ok, "open.png"))
+                hbox.pack_start(self.btn("Download and Open", None, okopen, "open.png"))
                 hbox.pack_start(self.btn("Open on server", None, remote))
-            else:
-                hbox.pack_start(self.btn("Download", None, ok, "download.png"))
         return hbox
 
     def schedule_timer(self):
