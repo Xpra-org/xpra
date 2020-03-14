@@ -7,6 +7,8 @@
 
 import os.path
 import sys
+import gi
+gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
@@ -49,14 +51,14 @@ class OpenRequestsWindow:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
-        vbox = Gtk.VBox(False, 0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
 
         self.alignment = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
         vbox.pack_start(self.alignment, expand=True, fill=True)
 
         # Buttons:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
             b = self.btn(label, tooltip, callback, icon_name)
@@ -74,7 +76,7 @@ class OpenRequestsWindow:
         self.populate_table()
 
     def btn(self, label, tooltip, callback, icon_name=None):
-        btn = Gtk.Button(label)
+        btn = Gtk.Button(label=label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.set_tooltip_text(tooltip)
@@ -118,19 +120,21 @@ class OpenRequestsWindow:
         tb = TableBuilder(rows=1, columns=4, row_spacings=15)
         #generate a new table:
         self.table = tb.get_table()
+        def l(s=""):
+            return Gtk.Label(label=s)
         if not self.requests:
-            tb.add_row(Gtk.Label("No requests pending"))
+            tb.add_row(l("No requests pending"))
         else:
-            headers = [Gtk.Label("URL / Filename"), Gtk.Label(""), Gtk.Label("Expires in"), Gtk.Label("Action")]
+            headers = [l("URL / Filename"), l(), l("Expires in"), l("Action")]
             tb.add_row(*headers)
             for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
                 details = ""
                 if dtype==b"file" and filesize>0:
                     details = "%sB" % std_unit_dec(filesize)
-                expires_label = Gtk.Label()
+                expires_label = l()
                 self.expire_labels[expires_label] = expires
                 buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
-                items = (Gtk.Label(bytestostr(url)), Gtk.Label(details), expires_label, buttons)
+                items = (l(bytestostr(url)), l(details), expires_label, buttons)
                 tb.add_row(*items)
             self.update_expires_label()
         self.alignment.add(self.table)
