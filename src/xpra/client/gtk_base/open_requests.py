@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,6 +11,7 @@ from gi.repository import GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import monotonic_time, bytestostr, get_util_logger
+from xpra.net.file_transfer import ACCEPT, OPEN, DENY
 from xpra.simple_stats import std_unit_dec
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
@@ -144,7 +145,6 @@ class OpenRequestsWindow:
             else:
                 self.populate_table()
                 self.window.resize(1, 1)
-        from xpra.net.file_transfer import ACCEPT, OPEN, DENY
         def ok(*_args):
             remove_entry()
             cb_answer(ACCEPT)
@@ -155,7 +155,7 @@ class OpenRequestsWindow:
             remove_entry()
             cb_answer(DENY)
         hbox.pack_start(self.btn("Cancel", None, cancel, "close.png"))
-        if dtype==b"url":
+        if bytestostr(dtype)=="url":
             hbox.pack_start(self.btn("Open Locally", None, ok, "open.png"))
             hbox.pack_start(self.btn("Open on server", None, remote))
         elif printit:
