@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,6 +15,19 @@ if os.environ.get("XPRA_XDG_OPEN"):
 socket_path = os.environ.get("XPRA_SERVER_SOCKET")
 display = os.environ.get("DISPLAY", "unknown")
 if socket_path and os.path.exists(socket_path):
+    if len(sys.argv)!=2:
+        sys.stderr.write("xdg-open: invalid number of arguments\n")
+        sys.stderr.write("Try `xdg-open --help' for more information.\n")
+    arg = sys.argv[1]
+    if arg in ("--help", "--manual"):
+        sys.stderr.write("xdg-open { file | URL }\n")
+        sys.stderr.flush()
+        sys.exit(0)
+    if arg=="--version":
+        from xpra import __version__
+        sys.stdout.write("xpra xdg-open %s\n" % __version__)
+        sys.exit(0)
+
     #try to forward open commands:
     #sys.stderr.write("xdg-open: forwarding request to xpra server at '%s'\n" % (socket_path,))
     failed = 0
