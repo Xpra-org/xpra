@@ -6,7 +6,7 @@
 
 from xpra.version_util import version_compat_check
 from xpra.os_util import bytestostr
-from xpra.util import typedict
+from xpra.util import typedict, get_util_logger
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.exit_codes import EXIT_INCOMPATIBLE_VERSION
 
@@ -35,7 +35,12 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_uuid = c.strget("uuid")
         self._remote_version = c.strget("build.version", c.strget("version"))
         self._remote_revision = c.strget("build.revision", c.strget("revision"))
-        self._remote_modifications = c.intget("build.local_modifications", 0)
+        mods = c.rawget("build.local_modifications")
+        if mods and str(mods).find("dfsg")>=0:
+            get_util_logger().warn("Warning: the xpra server is running a buggy Debian version")
+            get_util_logger().warn(" those are usually out of date and unstable")
+        else:
+            self._remote_modifications = c.intget("build.local_modifications", 0)
         self._remote_build_date = c.strget("build.date")
         self._remote_build_time = c.strget("build.time")
         self._remote_hostname = c.strget("hostname")
