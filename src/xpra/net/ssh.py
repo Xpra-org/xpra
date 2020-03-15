@@ -557,13 +557,6 @@ keymd5(host_key),
                 log("no keyfile at '%s'", keyfile_path)
                 continue
             log("trying '%s'", keyfile_path)
-            key_data = load_binary_file(keyfile_path)
-            if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0:
-                log.warn("Warning: private key '%s'", keyfile_path)
-                log.warn(" this file seems to be using OpenSSH's own format")
-                log.warn(" please convert it to something more standard (ie: PEM)")
-                log.warn(" so it can be used with the paramiko backend")
-                log.warn(" or switch to the OpenSSH backend with '--ssh=ssh'")
             key = None
             import paramiko
             for pkey_classname in ("RSA", "DSS", "ECDSA", "Ed25519"):
@@ -590,6 +583,13 @@ keymd5(host_key),
                     break
                 except Exception as e:
                     log("auth_publickey() loading as %s", pkey_classname, exc_info=True)
+                    key_data = load_binary_file(keyfile_path)
+                    if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0 and paramiko.__version__<"2.7":
+                        log.warn("Warning: private key '%s'", keyfile_path)
+                        log.warn(" this file seems to be using OpenSSH's own format")
+                        log.warn(" please convert it to something more standard (ie: PEM)")
+                        log.warn(" so it can be used with the paramiko backend")
+                        log.warn(" or switch to the OpenSSH backend with '--ssh=ssh'")
             if key:
                 log("auth_publickey using %s as %s: %s", keyfile_path, pkey_classname, keymd5(key))
                 try:
