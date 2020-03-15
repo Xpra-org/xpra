@@ -137,7 +137,7 @@ class Protocol:
         self.read_buffer_size = READ_BUFFER_SIZE
         self.hangup_delay = 1000
         self._conn = conn
-        if FAKE_JITTER>0:
+        if FAKE_JITTER>0:   # pragma: no cover
             from xpra.net.fake_jitter import FakeJitter
             fj = FakeJitter(self.timeout_add, process_packet_cb, FAKE_JITTER)
             self._process_packet_cb =  fj.process_packet_cb
@@ -1176,7 +1176,7 @@ class Protocol:
         self._write_lock = None
         self._source_has_more = None
         self._conn = None       #should be redundant
-        def noop():
+        def noop(): # pragma: no cover
             pass
         self.source_has_more = noop
 

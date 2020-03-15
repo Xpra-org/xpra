@@ -92,6 +92,10 @@ class ProtocolTest(unittest.TestCase):
         #p = Protocol(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
         p.read_buffer_size = read_buffer_size
         p.hangup_delay = hangup_delay
+        assert p.get_info()
+        assert repr(p)
+        p.enable_default_compressor()
+        p.enable_default_encoder()
         return p
 
     def test_verify_packet(self):
