@@ -15,6 +15,7 @@ from xpra.gtk_common.gtk_util import (
     choose_file, get_gtk_version_info,
     JUSTIFY_LEFT, WIN_POS_CENTER, FILE_CHOOSER_ACTION_SAVE,
     )
+from xpra.platform.gui import force_focus
 from xpra.util import nonl, envint, repr_ellipsized
 from xpra.os_util import strtobytes, hexstr, PYTHON3
 from xpra.log import Logger
@@ -228,6 +229,7 @@ class BugReport(object):
         log("show()")
         if not self.window:
             self.setup_window()
+        force_focus()
         self.window.show_all()
         self.window.present()
 
