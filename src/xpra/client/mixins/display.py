@@ -148,7 +148,7 @@ class DisplayClient(StubClientMixin):
         dpi = 0
         if self.dpi>0:
             #scale it:
-            dpi = self.cx(self.cy(self.dpi))
+            dpi = iround((self.cx(self.dpi) + self.cy(self.dpi))/2.0)
         else:
             #not supplied, use platform detection code:
             #platforms may also provide per-axis dpi (later win32 versions do)
