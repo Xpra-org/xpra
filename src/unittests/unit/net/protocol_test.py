@@ -11,7 +11,7 @@ from gi.repository import GLib
 
 from xpra.util import csv, envint, envbool
 from xpra.os_util import monotonic_time
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import Protocol, verify_packet
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.log import Logger
@@ -93,6 +93,16 @@ class ProtocolTest(unittest.TestCase):
         p.read_buffer_size = read_buffer_size
         p.hangup_delay = hangup_delay
         return p
+
+    def test_verify_packet(self):
+        for x in (True, 1, "hello", {}, None):
+            assert verify_packet(x) is False
+        assert verify_packet(["foo", 1]) is True
+        assert verify_packet(["no-floats test", 1.1]) is False, "floats are not allowed"
+        assert verify_packet(["foo", [1,2,3], {1:2}]) is True
+        assert verify_packet(["foo", [None], {1:2}]) is False, "no None values"
+        assert verify_packet(["foo", [1,2,3], {object() : 2}]) is False
+        assert verify_packet(["foo", [1,2,3], {1 : 2.2}]) is False
 
     def test_invalid_data(self):
         self.do_test_invalid_data([b"\0"*1])
