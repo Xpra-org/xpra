@@ -161,8 +161,13 @@ class KeyboardStateInfoWindow:
 
 def main():
     from xpra.log import enable_color
+    from xpra.platform.gui import init, set_default_icon
     with program_context("Keyboard-Test", "Keyboard Test Tool"):
         enable_color()
+
+        set_default_icon("keyboard.png")
+        init()
+
         if POSIX and not OSX:
             from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
             init_gdk_display_source()

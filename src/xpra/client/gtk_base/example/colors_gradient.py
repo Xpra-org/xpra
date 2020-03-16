@@ -120,7 +120,11 @@ class ColorGradientWindow(Gtk.Window):
 
 
 def main():
+    from xpra.platform.gui import init, set_default_icon
     with program_context("colors-gradient", "Colors Gradient"):
+        set_default_icon("encoding.png")
+        init()
+
         import signal
         def signal_handler(*_args):
             Gtk.main_quit()

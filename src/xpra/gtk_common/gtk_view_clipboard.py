@@ -242,8 +242,13 @@ class ClipboardStateInfoWindow:
 
 def main():
     from xpra.log import enable_color
+    from xpra.platform.gui import init, set_default_icon
     with program_context("Clipboard-Test", "Clipboard Test Tool"):
         enable_color()
+
+        set_default_icon("clipboard.png")
+        init()
+
         w = ClipboardStateInfoWindow()
         GLib.idle_add(w.show_with_focus)
         Gtk.main()

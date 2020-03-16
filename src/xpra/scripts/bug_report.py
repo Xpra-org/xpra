@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,9 +11,10 @@ def main(argv=()):
     from xpra.platform import program_context
     from xpra.platform.gui import init, set_default_icon
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
-        set_default_icon("bugs.png")
         from xpra.log import enable_color
         enable_color()
+
+        set_default_icon("bugs.png")
         init()
 
         from xpra.log import enable_debug_for

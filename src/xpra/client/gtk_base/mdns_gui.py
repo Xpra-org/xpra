@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -106,8 +106,13 @@ def win32_bonjour_download_warning(gui):
 def do_main(opts):
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color
+    from xpra.platform.gui import init, set_default_icon
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
         enable_color()
+
+        set_default_icon("bugs.png")
+        init()
+
         if not get_listener_class():
             command_error("no mDNS support in this build")
             return 1

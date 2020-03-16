@@ -177,12 +177,15 @@ class ToolboxGUI(Gtk.Window):
 def main():
     from xpra.platform import program_context
     from xpra.log import enable_color
-    from xpra.platform.gui import init, ready
+    from xpra.platform.gui import init, ready, set_default_icon
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     gtk_main_quit_on_fatal_exceptions_enable()
     with program_context("Xpra-Toolbox", "Xpra Toolbox"):
         enable_color()
+
+        set_default_icon("toolbox.png")
         init()
+
         gui = ToolboxGUI()
         register_os_signals(gui.app_signal, "Xpra Toolbox")
         ready()
