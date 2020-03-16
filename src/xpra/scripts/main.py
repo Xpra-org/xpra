@@ -1965,6 +1965,10 @@ def no_gtk():
 
 
 def run_glprobe(opts, show=False):
+    if show:
+        from xpra.platform.gui import init, set_default_icon
+        set_default_icon("opengl.png")
+        init()
     props = do_run_glcheck(opts, show)
     if not props.get("success", False):
         return 3
