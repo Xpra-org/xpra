@@ -518,7 +518,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     if (level & 1) ^ shift:
                         #shift state does not match
                         toggle_modifier("shift")
-                    if (level & 2) ^ mode:
+                    if int(bool(level & 2)) ^ mode:
                         #try to set / unset mode:
                         for mod, keynames in self.keynames_for_mod.items():
                             if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
