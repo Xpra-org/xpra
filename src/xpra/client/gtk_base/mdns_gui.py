@@ -110,7 +110,7 @@ def do_main(opts):
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
         enable_color()
 
-        set_default_icon("bugs.png")
+        set_default_icon("mdns.png")
         init()
 
         if not get_listener_class():
