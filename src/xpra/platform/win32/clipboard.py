@@ -11,7 +11,8 @@ from ctypes import (
 from gi.repository import GLib
 
 from xpra.platform.win32.common import (
-    WNDCLASSEX, GetLastError, WNDPROC, LPCWSTR, LPWSTR, LPCSTR, DWORD,
+    WNDCLASSEX, GetLastError,
+    WNDPROC, LPCWSTR, LPWSTR, LPCSTR, DWORD, HANDLE,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
@@ -20,7 +21,7 @@ from xpra.platform.win32.common import (
     WideCharToMultiByte, MultiByteToWideChar,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
     SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
-    GetWindowThreadProcessId,
+    GetWindowThreadProcessId, QueryFullProcessImageNameA, OpenProcess, CloseHandle,
     )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
@@ -30,6 +31,7 @@ from xpra.clipboard.clipboard_core import (
     )
 from xpra.util import csv, ellipsizer, envint
 from xpra.os_util import bytestostr, strtobytes
+from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 
 CP_UTF8 = 65001
 MB_ERR_INVALID_CHARS = 0x00000008
@@ -115,6 +117,16 @@ class Win32Clipboard(ClipboardTimeoutHelper):
             GetWindowThreadProcessId(owner, byref(pid))
             if pid:
                 log("clipboard update comes from pid %s", pid.value)
+                proc_handle = OpenProcess(PROCESS_QUERY_INFORMATION, False, pid)
+                if proc_handle:
+                    try:
+                        size = DWORD(128)
+                        process_name = create_string_buffer(size.value+1)
+                        if QueryFullProcessImageNameA(proc_handle, 0, process_name, byref(size)):
+                            log("clipboard update comes from '%s' with pid %s",
+                                bytestostr(process_name.value), pid.value)
+                    finally:
+                        CloseHandle(proc_handle)
             for proxy in self._clipboard_proxies.values():
                 if not proxy._block_owner_change:
                     proxy.schedule_emit_token()

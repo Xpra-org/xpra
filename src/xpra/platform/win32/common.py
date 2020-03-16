@@ -219,6 +219,12 @@ MultiByteToWideChar.argtypes =  [UINT, DWORD, LPCSTR, c_int, LPWSTR, c_int]
 WTSGetActiveConsoleSessionId = kernel32.WTSGetActiveConsoleSessionId
 WTSGetActiveConsoleSessionId.restype = DWORD
 WTSGetActiveConsoleSessionId.argtypes = []
+QueryFullProcessImageNameA = kernel32.QueryFullProcessImageNameA
+QueryFullProcessImageNameA.restype = BOOL
+QueryFullProcessImageNameA.argtypes = [HANDLE, DWORD, LPSTR, PDWORD]
+OpenProcess = kernel32.OpenProcess
+OpenProcess.restype = HANDLE
+OpenProcess.argtypes = [DWORD, BOOL, DWORD]
 
 user32 = WinDLL("user32", use_last_error=True)
 RegisterClassExA = user32.RegisterClassExA
