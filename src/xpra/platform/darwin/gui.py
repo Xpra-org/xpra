@@ -67,6 +67,7 @@ try:
     Carbon_ctypes = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
     GetDblTime = Carbon_ctypes.GetDblTime
 except Exception:
+    log("GetDblTime not found", exc_info=True)
     GetDblTime = None
 
 
