@@ -37,6 +37,16 @@ def do_ready():
     pass
 
 
+_default_icon = "xpra.png"
+def set_default_icon(icon_filename):
+    global _default_icon
+    _default_icon = icon_filename
+
+def get_default_icon():
+    global _default_icon
+    return _default_icon
+
+
 def force_focus(duration=2000):
     #only implemented on macos
     pass

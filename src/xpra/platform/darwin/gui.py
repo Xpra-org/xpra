@@ -77,7 +77,9 @@ def do_init():
     if not osxapp:
         return  #not much else we can do here
     from xpra.platform.paths import get_icon
-    icon = get_icon("xpra.png")
+    from xpra.platform.gui import get_default_icon
+    filename = get_default_icon()
+    icon = get_icon(filename)
     log("do_init() icon=%s", icon)
     if icon:
         osxapp.set_dock_icon_pixbuf(icon)

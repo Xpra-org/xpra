@@ -9,9 +9,12 @@ import sys
 
 def main(argv=()):
     from xpra.platform import program_context
+    from xpra.platform.gui import init, set_default_icon
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
+        set_default_icon("bugs.png")
         from xpra.log import enable_color
         enable_color()
+        init()
 
         from xpra.log import enable_debug_for
         #logging init:
