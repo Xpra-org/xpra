@@ -11,7 +11,7 @@ from ctypes import (
 from gi.repository import GLib
 
 from xpra.platform.win32.common import (
-    WNDCLASSEX, GetLastError, WNDPROC, LPCWSTR, LPWSTR, LPCSTR,
+    WNDCLASSEX, GetLastError, WNDPROC, LPCWSTR, LPWSTR, LPCSTR, DWORD,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
@@ -20,6 +20,7 @@ from xpra.platform.win32.common import (
     WideCharToMultiByte, MultiByteToWideChar,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
     SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
+    GetWindowThreadProcessId,
     )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
@@ -110,6 +111,10 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         if msg in CLIPBOARD_EVENTS:
             log("clipboard event: %s, owner=%s, our window=%s", CLIPBOARD_EVENTS.get(msg), owner, self.window)
         if msg==WM_CLIPBOARDUPDATE and owner!=self.window:
+            pid = DWORD(0)
+            GetWindowThreadProcessId(owner, byref(pid))
+            if pid:
+                log("clipboard update comes from pid %s", pid.value)
             for proxy in self._clipboard_proxies.values():
                 if not proxy._block_owner_change:
                     proxy.schedule_emit_token()

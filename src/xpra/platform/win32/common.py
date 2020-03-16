@@ -312,6 +312,7 @@ IsWindowVisible = user32.IsWindowVisible
 GetWindowTextLengthW = user32.GetWindowTextLengthW
 GetWindowTextW = user32.GetWindowTextW
 GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+GetWindowThreadProcessId.argtypes = [HWND, LPDWORD]
 GetWindowThreadProcessId.restype = DWORD
 GetDesktopWindow = user32.GetDesktopWindow
 GetDesktopWindow.restype = HWND
