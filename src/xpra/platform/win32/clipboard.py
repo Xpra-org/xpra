@@ -106,9 +106,10 @@ class Win32Clipboard(ClipboardTimeoutHelper):
 
     def wnd_proc(self, hwnd, msg, wparam, lparam):
         r = DefWindowProcW(hwnd, msg, wparam, lparam)
+        owner = GetClipboardOwner()
         if msg in CLIPBOARD_EVENTS:
-            log("clipboard event: %s", CLIPBOARD_EVENTS.get(msg))
-        if msg==WM_CLIPBOARDUPDATE:
+            log("clipboard event: %s, owner=%s, our window=%s", CLIPBOARD_EVENTS.get(msg), owner, self.window)
+        if msg==WM_CLIPBOARDUPDATE and owner!=self.window:
             for proxy in self._clipboard_proxies.values():
                 if not proxy._block_owner_change:
                     proxy.schedule_emit_token()
