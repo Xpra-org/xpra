@@ -319,7 +319,6 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         #    self.set_err("failed to empty the clipboard")
         #self.with_clipboard_lock(EmptyClipboard, empty_error)
         def cleanup():
-            GlobalFree(buf)
             glib.idle_add(self.remove_block)
         ret = [False]
         def do_set_data():
