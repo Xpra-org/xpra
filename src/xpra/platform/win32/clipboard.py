@@ -12,7 +12,7 @@ from gi.repository import GLib
 
 from xpra.platform.win32.common import (
     WNDCLASSEX, GetLastError,
-    WNDPROC, LPCWSTR, LPWSTR, LPCSTR, DWORD, HANDLE,
+    WNDPROC, LPCWSTR, LPWSTR, LPCSTR, DWORD,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
@@ -75,6 +75,28 @@ DELAY = envint("XPRA_CLIPBOARD_INITIAL_DELAY", 10)
 #initialize the window we will use
 #for communicating with the OS clipboard API:
 
+def get_owner_info(owner, our_window):
+    if not owner:
+        return "unknown"
+    if owner==our_window:
+        return "our window (hwnd=%#x)" % our_window
+    pid = DWORD(0)
+    GetWindowThreadProcessId(owner, byref(pid))
+    if not pid:
+        return "unknown (hwnd=%#x)" % owner
+    #log("get_owner_info(%#x) pid=%s", owner, pid.value)
+    proc_handle = OpenProcess(PROCESS_QUERY_INFORMATION, False, pid)
+    if not proc_handle:
+        return "pid %i (hwnd=%#x)" % pid.value
+    try:
+        size = DWORD(256)
+        process_name = create_string_buffer(size.value+1)
+        if not QueryFullProcessImageNameA(proc_handle, 0, process_name, byref(size)):
+            return "pid %i" % pid.value
+        return "'%s' with pid %s (hwnd=%#x)" % (bytestostr(process_name.value), pid.value, owner)
+    finally:
+        CloseHandle(proc_handle)
+
 class Win32Clipboard(ClipboardTimeoutHelper):
     """
         Use Native win32 API to access the clipboard
@@ -109,24 +131,11 @@ class Win32Clipboard(ClipboardTimeoutHelper):
 
     def wnd_proc(self, hwnd, msg, wparam, lparam):
         r = DefWindowProcW(hwnd, msg, wparam, lparam)
-        owner = GetClipboardOwner()
         if msg in CLIPBOARD_EVENTS:
-            log("clipboard event: %s, owner=%s, our window=%s", CLIPBOARD_EVENTS.get(msg), owner, self.window)
+            owner = GetClipboardOwner()
+            log("clipboard event: %s, current owner: %s",
+                CLIPBOARD_EVENTS.get(msg), get_owner_info(owner, self.window))
         if msg==WM_CLIPBOARDUPDATE and owner!=self.window:
-            pid = DWORD(0)
-            GetWindowThreadProcessId(owner, byref(pid))
-            if pid:
-                log("clipboard update comes from pid %s", pid.value)
-                proc_handle = OpenProcess(PROCESS_QUERY_INFORMATION, False, pid)
-                if proc_handle:
-                    try:
-                        size = DWORD(128)
-                        process_name = create_string_buffer(size.value+1)
-                        if QueryFullProcessImageNameA(proc_handle, 0, process_name, byref(size)):
-                            log("clipboard update comes from '%s' with pid %s",
-                                bytestostr(process_name.value), pid.value)
-                    finally:
-                        CloseHandle(proc_handle)
             for proxy in self._clipboard_proxies.values():
                 if not proxy._block_owner_change:
                     proxy.schedule_emit_token()
@@ -190,9 +199,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 if r:
                     return
             finally:
-                CloseClipboard()
+                r = CloseClipboard()
+                log("CloseClipboard()=%s", r)
         e = WinError(GetLastError())
-        log("OpenClipboard(%#x)=%s, owner=%#x", self.window, e, GetClipboardOwner())
+        owner = GetClipboardOwner()
+        log("OpenClipboard(%#x)=%s, current owner: %s", self.window, e, get_owner_info(owner, self.window))
         if retries<=0:
             failure_callback("OpenClipboard: too many failed attempts, giving up")
             return
@@ -201,12 +212,19 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                          success_callback, failure_callback, retries-1, delay+5)
 
     def clear(self):
-        def clear_error(error_text=""):
-            log.warn("Warning: failed to clear the clipboard")
-            if error_text:
-                log.warn(" %s", error_text)
-        self.with_clipboard_lock(EmptyClipboard, clear_error)
+        self.with_clipboard_lock(self.empty_clipboard, self.clear_error)
 
+    def empty_clipboard(self):
+        r = EmptyClipboard()
+        log("EmptyClipboard()=%s", r)
+        return True
+
+    def clear_error(self, error_text=""):
+        log.warn("Warning: failed to clear the clipboard")
+        if error_text:
+            log.warn(" %s", error_text)
+
+    
     def do_emit_token(self):
         #TODO: if contents are not text,
         #send just the token
@@ -398,10 +416,15 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             GlobalFree(buf)
             GLib.idle_add(self.remove_block)
         def set_clipboard_data():
-            if not EmptyClipboard():
+            r = EmptyClipboard()
+            log("EmptyClipboard()=%s", r)
+            if not r:
                 self.set_err("failed to empty the clipboard")
                 return False
-            if not SetClipboardData(win32con.CF_UNICODETEXT, buf):
+            r = SetClipboardData(win32con.CF_UNICODETEXT, buf)
+            if not r:
+                e = WinError(GetLastError())
+                log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s (%s)", wlen, r, e)
                 return False
             log("SetClipboardData(..) done")
             cleanup()
