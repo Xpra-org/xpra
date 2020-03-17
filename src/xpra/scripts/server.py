@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -16,6 +16,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, FALSE_OPTIONS, parse_bool
+from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
     FDChangeCaptureContext,
@@ -390,7 +391,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     upgrading_desktop = mode == "upgrade-desktop"
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
-    clobber   = int(upgrading or upgrading_desktop) | int(use_display)*2
+    clobber   = int(upgrading or upgrading_desktop)*CLOBBER_UPGRADE | int(use_display)*CLOBBER_USE_DISPLAY
     start_vfb = not (shadowing or proxying or clobber)
 
     if not proxying and POSIX and not OSX:

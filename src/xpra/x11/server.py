@@ -15,6 +15,7 @@ from gi.repository import GObject, Gtk, Gdk, GdkPixbuf
 from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
+from xpra.common import CLOBBER_UPGRADE
 from xpra.server import server_features
 from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -220,7 +221,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return False
         #check for an existing window manager:
         from xpra.x11.gtk_x11.wm_check import wm_check
-        return wm_check(self.wm_name, self.clobber & 0x1)
+        return wm_check(self.wm_name, self.clobber & CLOBBER_UPGRADE)
 
     def setup(self):
         X11ServerBase.setup(self)

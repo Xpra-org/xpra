@@ -27,3 +27,6 @@ GRAVITY_STR = {
     SouthEastGravity : "SouthEast",
     StaticGravity    : "South",
     }
+
+CLOBBER_UPGRADE = 0x1
+CLOBBER_USE_DISPLAY = 0x2
