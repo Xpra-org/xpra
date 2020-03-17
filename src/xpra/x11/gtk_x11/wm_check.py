@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,6 +17,7 @@ X11Window = X11WindowBindings()
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
 def wm_check(wm_name, upgrading=False):
+    found_name = False
     with xsync:
         from gi.repository import Gdk
         display = Gdk.Display.get_default()
@@ -42,6 +43,10 @@ def wm_check(wm_name, upgrading=False):
             name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False)
             if upgrading and name and name==wm_name:
                 log.info("found previous Xpra instance")
+                found_name = True
+            elif not name:
+                log.warn("Warning: no window manager found")
+                log.warn(" on screen %s using window %#x", i, ewmh_wm.get_xid())
             else:
                 log.warn("Warning: found an existing window manager")
                 log.warn(" on screen %s using window %#x: %s", i, ewmh_wm.get_xid(), name or "unknown")
@@ -57,4 +62,7 @@ def wm_check(wm_name, upgrading=False):
                     log.warn(" you may set XPRA_FORCE_REPLACE_WM=1 to force xpra to continue")
                     log.warn(" at your own risk")
                     return False
+    if upgrading and not found_name:
+        log.error("Error: xpra server not found")
+        return False
     return True
