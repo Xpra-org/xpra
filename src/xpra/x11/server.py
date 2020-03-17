@@ -220,7 +220,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return False
         #check for an existing window manager:
         from xpra.x11.gtk_x11.wm_check import wm_check
-        return wm_check(self.wm_name, self.clobber)
+        return wm_check(self.wm_name, self.clobber & 0x1)
 
     def setup(self):
         X11ServerBase.setup(self)

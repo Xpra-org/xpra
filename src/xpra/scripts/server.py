@@ -390,7 +390,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     upgrading_desktop = mode == "upgrade-desktop"
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
-    clobber   = upgrading or upgrading_desktop or use_display
+    clobber   = int(upgrading or upgrading_desktop) | int(use_display)*2
     start_vfb = not (shadowing or proxying or clobber)
 
     if not proxying and POSIX and not OSX:
