@@ -9,7 +9,7 @@ from gi.repository import GObject, Gdk
 
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync, xswallow
-from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, GDKWindow
@@ -399,6 +399,9 @@ class Wm(GObject.GObject):
         remove_fallback_receiver("child-map-request-event", self)
         for win in tuple(self._windows.values()):
             win.unmanage(True)
+        with xswallow:
+            prop_del(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK")
+            prop_del(self._ewmh_window, "_NET_WM_NAME")
 
     def do_child_map_request_event(self, event):
         log("Found a potential client")
