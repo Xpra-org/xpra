@@ -409,3 +409,17 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True, log_errors=Tr
             log.error("")
         return False
     return True
+
+
+def main():
+    import sys
+    display = None
+    if len(sys.argv)>1:
+        display = strtobytes(sys.argv[1])
+    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
+    wait_for_x_server(display, VFB_WAIT)
+    print("OK")
+
+
+if __name__ == "__main__":
+    main()

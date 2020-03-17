@@ -25,7 +25,10 @@ def wait_for_x_server(display_name, int timeout):
     cdef Display * d
     cdef char* name
     cdef double start = monotonic_time()
-    name = display_name
+    if display_name is not None:
+        name = display_name
+    else:
+        name = NULL
     first_time = True
     while first_time or (monotonic_time() - start) < timeout:
         if not first_time:
