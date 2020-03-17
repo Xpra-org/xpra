@@ -413,7 +413,6 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         #ignore messages until we're done:
         self._block_owner_change = True
         def cleanup():
-            GlobalFree(buf)
             GLib.idle_add(self.remove_block)
         def set_clipboard_data():
             r = EmptyClipboard()
@@ -426,7 +425,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 e = WinError(GetLastError())
                 log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s (%s)", wlen, r, e)
                 return False
-            log("SetClipboardData(..) done")
+            log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s", wlen, r)
             cleanup()
             return True
         def set_clipboard_error(error_text=""):
