@@ -147,24 +147,24 @@ class OpenRequestsWindow:
 
     def action_buttons(self, cb_answer, send_id, dtype, printit, openit):
         hbox = Gtk.HBox()
-        def remove_entry():
+        def remove_entry(can_close=False):
             self.requests = [x for x in self.requests if x[1]!=send_id]
-            if not self.requests:
+            if not self.requests and can_close:
                 self.close()
             else:
                 self.populate_table()
                 self.window.resize(1, 1)
         def ok(*_args):
-            remove_entry()
+            remove_entry(False)
             cb_answer(ACCEPT, False)
         def okopen(*_args):
-            remove_entry()
+            remove_entry(True)
             cb_answer(ACCEPT, True)
         def remote(*_args):
-            remove_entry()
+            remove_entry(True)
             cb_answer(OPEN)
         def cancel(*_args):
-            remove_entry()
+            remove_entry(True)
             cb_answer(DENY)
         hbox.pack_start(self.btn("Cancel", None, cancel, "close.png"))
         if bytestostr(dtype)=="url":
