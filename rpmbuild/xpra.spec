@@ -462,6 +462,7 @@ PATH="`pwd`/../scripts/:$PATH" \
 XPRA_COMMAND="`pwd`/../scripts/xpra" \
 XPRA_CONF_DIR="`pwd`/../etc/xpra" \
 XPRA_TEST_COVERAGE=0 \
+GDK_BACKEND=x11 \
 %{__python3} ./unit/run.py
 popd
 %endif

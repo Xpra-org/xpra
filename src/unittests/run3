@@ -16,6 +16,9 @@ pushd $SRC_DIR
 python3 ./setup.py install --with-scripts --home=$INSTALL_ROOT --without-minify || die "failed to build"
 popd
 
+if [ `uname` == "Linux" ]; then
+	export "GDK_BACKEND=x11"
+fi
 export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:.
 export PATH=$INSTALL_ROOT/bin:$PATH
 export XPRA_COMMAND=$INSTALL_ROOT/bin/xpra
