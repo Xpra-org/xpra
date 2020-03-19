@@ -44,7 +44,6 @@ class XSettingsTest(unittest.TestCase):
                     )
                 serial = 2
                 data = set_settings(disp, (serial, settings))
-                print("data=%s", hexstr(data))
                 assert data
                 #parse it back:
                 v = get_settings(disp, data)
