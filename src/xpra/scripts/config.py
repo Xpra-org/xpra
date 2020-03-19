@@ -819,10 +819,8 @@ def get_default_pulseaudio_command():
     #we just don't disable it (because the option does not exist!):
     from xpra.util import envbool
     MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", False)
-    if not MEMFD:
-    if is_Ubuntu():
-        if not is_Ubuntu() or getUbuntuVersion()>=(18, 4):
-            cmd.append("--enable-memfd=no")
+    if not MEMFD and (not is_Ubuntu() or getUbuntuVersion()>=(18, 4)):
+        cmd.append("--enable-memfd=no")
     return cmd
 
 
