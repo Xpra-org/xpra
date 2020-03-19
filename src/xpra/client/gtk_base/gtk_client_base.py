@@ -808,7 +808,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if len(cursor_data)>=10 and cursor_types:
             cursor_name = bytestostr(cursor_data[9])
             if cursor_name and USE_LOCAL_CURSORS:
-                cursor = Gdk.Cursor.new_from_name(display, cursor_name)
+                try:
+                    cursor = Gdk.Cursor.new_from_name(display, cursor_name)
+                except TypeError:
+                    cursorlog("Gdk.Cursor.new_from_name%s", (display, cursor_name), exc_info=True)
+                    cursor = None
                 if cursor:
                     cursorlog("Gdk.Cursor.new_from_name(%s, %s)=%s", display, cursor_name, cursor)
                 else:
