@@ -115,7 +115,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
             proxy.got_contents(target, dtype, dformat, data)
 
     def client_reset(self):
-        super().client_reset()
+        ClipboardProtocolHelperCore.client_reset(self)
         #timeout all pending requests
         cor = self._clipboard_outstanding_requests
         if cor:
