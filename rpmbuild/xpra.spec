@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.7
+%define version 3.0.8
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -867,6 +867,22 @@ fi
 
 
 %changelog
+* Fri Mar 20 2020 Antoine Martin <antoine@xpra.org> 3.0.8-1xpra1
+- fix handling of dpi command line switch (correctly this time?)
+- fix bug report window not getting focus on MacOS
+- fix spurious ssh key warnings with newer versions of paramiko
+- fix AltGr mode with non-X11 clients
+- fix MS Windows clipboard update failures
+- fix MS Windows clipboard selection translation for outbound data
+- fix 'xpra upgrade' wrongly updating non-xpra displays
+- fix logging error in client geometry debugging output
+- fix clipboard reset with python2 builds
+- fix pulseaudio start command with Ubuntu Xenial
+- use python3 (if installed) by default on Ubuntu Xenial
+- don't use Xdummy on arm, too slow
+- don't show 'Download' button that we can't honour
+- try harder not to use video for tiny areas
+
 * Thu Mar 12 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
 - fix avcodec2 race condition crash
 - fix errors when re-initializing windows (ie: toggling OpenGL on or off)
