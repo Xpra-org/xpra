@@ -8,10 +8,14 @@ import time
 import unittest
 
 from xpra.util import AdHocStruct
-from unit.server.mixins.servermixintest_util import ServerMixinTest
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.mixins.logging_server import LoggingServer
+from unit.server.mixins.servermixintest_util import ServerMixinTest
 
+
+class nostr():
+    def __str__(self):
+        raise Exception("test format failure")
 
 class InputMixinTest(ServerMixinTest):
 
@@ -37,9 +41,6 @@ class InputMixinTest(ServerMixinTest):
         #multi-part:
         self.handle_packet(("logging", 20, ["multi", "messages"], time.time()))
         #invalid:
-        class nostr():
-            def __str__(self):
-                raise Exception("test format failure")
         self.handle_packet(("logging", 20, nostr(), time.time()))
 
 
