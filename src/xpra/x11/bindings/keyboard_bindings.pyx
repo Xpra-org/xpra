@@ -859,7 +859,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef KeySym keysym
         keycodes = self._get_keycodes_down()
         keys = {}
-        def get_keysym(keycode):
+        def get_keysyms(keycode):
+            keysyms = []
             for group in (0, 1):
                 for level in (0, 1):
                     keysym = XkbKeycodeToKeysym(self.display, keycode, 0, 0)
@@ -867,10 +868,10 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                         continue
                     key = XKeysymToString(keysym)
                     if key!=NULL:
-                        return bytestostr(key)
-            return ""
+                        keysyms.append(bytestostr(key))
+            return keysyms
         for keycode in keycodes:
-            keys[keycode] = get_keysym(keycode)
+            keys[keycode] = get_keysyms(keycode)
         return keys
 
     def unpress_all_keys(self):
