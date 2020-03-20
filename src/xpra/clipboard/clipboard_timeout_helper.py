@@ -55,7 +55,8 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     def _send_clipboard_token_handler(self, proxy, packet_data=()):
         if log.is_debug_enabled():
             log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
-        packet = ["clipboard-token", proxy._selection]
+        remote = self.local_to_remote(proxy._selection)
+        packet = ["clipboard-token", remote]
         if packet_data:
             #append 'TARGETS' unchanged:
             packet.append(packet_data[0])
