@@ -122,7 +122,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         self.window = CreateWindowExW(0, self.wndclass_handle, "Clipboard", style,
                                       0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
                                       win32con.HWND_MESSAGE, 0, self.wndclass.hInstance, None)
-        log("clipboard window=%s", self.window)
+        log("clipboard window=%#x", self.window)
         if not self.window:
             raise WinError()
         if not AddClipboardFormatListener(self.window):
