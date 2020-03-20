@@ -390,7 +390,8 @@ class X11ServerCore(GTKServerBase):
             with xlog:
                 info.setdefault("keyboard", {}).update({
                     "state"             : {
-                        "keys_pressed"   : tuple(self.keys_pressed.keys())
+                        "keys_pressed"  : tuple(self.keys_pressed.keys()),
+                        "keycodes-down" : X11Keyboard.get_keycodes_down(),
                         },
                     "fast-switching"    : True,
                     "layout-group"      : X11Keyboard.get_layout_group(),

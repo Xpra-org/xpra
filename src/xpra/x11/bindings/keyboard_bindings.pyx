@@ -859,13 +859,18 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef KeySym keysym
         keycodes = self._get_keycodes_down()
         keys = {}
+        def get_keysym(keycode):
+            for group in (0, 1):
+                for level in (0, 1):
+                    keysym = XkbKeycodeToKeysym(self.display, keycode, 0, 0)
+                    if keysym==NoSymbol:
+                        continue
+                    key = XKeysymToString(keysym)
+                    if key!=NULL:
+                        return bytestostr(key)
+            return ""
         for keycode in keycodes:
-            keysym = XkbKeycodeToKeysym(self.display, keycode, 0, 0)
-            if keysym==NoSymbol:
-                continue
-            key = XKeysymToString(keysym)
-            if key!=NULL:
-                keys[keycode] = bytestostr(key)
+            keys[keycode] = get_keysym(keycode)
         return keys
 
     def unpress_all_keys(self):
