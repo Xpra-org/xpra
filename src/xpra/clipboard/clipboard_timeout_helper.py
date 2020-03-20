@@ -71,17 +71,19 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
                         packet += [target, dtype, dformat, wire_encoding, wire_data]
                         claim = proxy._can_send
                         packet += [claim, CLIPBOARD_GREEDY]
+        log("send_clipboard_token_handler %s to %s", proxy._selection, remote)
         self.send(*packet)
 
     def _send_clipboard_request_handler(self, proxy, selection, target):
         log("send_clipboard_request_handler%s", (proxy, selection, target))
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
-        log("send_clipboard_request id=%s", request_id)
+        remote = self.local_to_remote(selection)
+        log("send_clipboard_request %s to %s, id=%s", selection, remote, request_id)
         timer = GLib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id, selection, target)
         self._clipboard_outstanding_requests[request_id] = (timer, selection, target)
         self.progress()
-        self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
+        self.send("clipboard-request", request_id, remote, target)
 
     def timeout_request(self, request_id, selection, target):
         try:

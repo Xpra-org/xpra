@@ -642,7 +642,7 @@ class ClipboardProxyCore:
     def do_schedule_emit_token(self):
         now = monotonic_time()
         elapsed = int((now-self._last_emit_token)*1000)
-        log("schedule_emit_token() elapsed=%i (max=%i)", elapsed, DELAY_SEND_TOKEN)
+        log("do_schedule_emit_token() selection=%s, elapsed=%i (max=%i)", self._selection, elapsed, DELAY_SEND_TOKEN)
         if elapsed>=DELAY_SEND_TOKEN:
             #enough time has passed
             self.emit_token()
