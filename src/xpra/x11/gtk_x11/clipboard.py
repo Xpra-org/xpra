@@ -540,9 +540,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.target_data = {}
         self.targets = ()
 
-    def get_contents(self, target, got_contents, time=0):
-        log("get_contents(%s, %s, %i) owned=%s, have-token=%s",
-            target, got_contents, time, self.owned, self._have_token)
+    def get_contents(self, target, got_contents):
+        log("get_contents(%s, %s) owned=%s, have-token=%s",
+            target, got_contents, self.owned, self._have_token)
         if target=="TARGETS":
             if self.targets:
                 xatoms = strings_to_xatoms(self.targets)
@@ -566,23 +566,23 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             request_id = self.local_request_counter
             self.local_request_counter += 1
             timer = GLib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
-            self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents, time)
+            self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents)
             log("requesting local XConvertSelection from %s as '%s' into '%s'", self.get_wininfo(owner), target, prop)
-            X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=time)
+            X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=CurrentTime)
 
     def timeout_get_contents(self, target, request_id):
         try:
             target_requests = self.local_requests.get(target)
             if target_requests is None:
                 return
-            timer, got_contents, time = target_requests.pop(request_id)
+            timer, got_contents = target_requests.pop(request_id)
             if not target_requests:
                 del self.local_requests[target]
         except KeyError:
             return
         GLib.source_remove(timer)
         log.warn("Warning: %s selection request for '%s' timed out", self._selection, target)
-        log.warn(" request %i at time=%i", request_id, time)
+        log.warn(" request %i", request_id)
         if target=="TARGETS":
             got_contents("ATOM", 32, b"")
         else:
@@ -647,10 +647,10 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def got_local_contents(self, target, dtype=None, dformat=None, data=None):
         data = self.filter_data(target, dtype, dformat, data)
         target_requests = self.local_requests.pop(target, {})
-        for timer, got_contents, time in target_requests.values():
+        for timer, got_contents in target_requests.values():
             if log.is_debug_enabled():
-                log("got_local_contents: calling %s%s, time=%i",
-                    got_contents, (dtype, dformat, ellipsizer(data)), time)
+                log("got_local_contents: calling %s%s",
+                    got_contents, (dtype, dformat, ellipsizer(data)))
             GLib.source_remove(timer)
             got_contents(dtype, dformat, data)
 
