@@ -1535,7 +1535,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
     elif mode=="control":
         from xpra.client.gobject_client_base import ControlXpraClient
         if len(extra_args)<=1:
-            error_cb("not enough arguments for 'control' mode")
+            error_cb("not enough arguments for 'control' mode, try 'help'")
         args = extra_args[1:]
         extra_args = extra_args[:1]
         app = ControlXpraClient(opts)
