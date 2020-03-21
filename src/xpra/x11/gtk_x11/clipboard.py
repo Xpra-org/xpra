@@ -302,7 +302,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 root = get_default_root_window()
                 root_xid = root.get_xid()
                 X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER",
-                                  CurrentTime, self._selection, self.xid)
+                                  time or CurrentTime, self._selection, self.xid)
                 log("claim_selection: done, owned=%s", self.owned)
         except Exception:
             log("failed to claim selection '%s'", self._selection, exc_info=True)
