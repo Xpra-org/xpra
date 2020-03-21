@@ -607,8 +607,12 @@ class ellipsizer:
         self.obj = obj
         self.limit = limit
     def __str__(self):
+        if self.obj is None:
+            return "None"
         return repr_ellipsized(self.obj, self.limit)
     def __repr__(self):
+        if self.obj is None:
+            return "None"
         return repr_ellipsized(self.obj, self.limit)
 
 def repr_ellipsized(obj, limit=100):
