@@ -546,7 +546,7 @@ class UIXpraClient(ClientBaseClass):
         return {"" : caps}
 
     def _process_control(self, packet):
-        command = packet[1]
+        command = bytestostr(packet[1])
         if command=="show_session_info":
             args = packet[2:]
             log("calling show_session_info%s on server request", args)
@@ -571,11 +571,11 @@ class UIXpraClient(ClientBaseClass):
             if len(args)<2:
                 log.warn("not enough arguments for debug control command")
                 return
-            log_cmd = args[0]
+            log_cmd = bytestostr(args[0])
             if log_cmd not in ("enable", "disable"):
                 log.warn("invalid debug control mode: '%s' (must be 'enable' or 'disable')", log_cmd)
                 return
-            categories = args[1:]
+            categories = tuple(bytestostr(x) for x in args[1:])
             from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
             if log_cmd=="enable":
                 add_debug_category(*categories)
@@ -585,7 +585,6 @@ class UIXpraClient(ClientBaseClass):
                 add_disabled_category(*categories)
                 loggers = disable_debug_for(*categories)
             log.info("%sd debugging for: %s", log_cmd, loggers)
-            return
         else:
             log.warn("received invalid control command from server: %s", command)
 
