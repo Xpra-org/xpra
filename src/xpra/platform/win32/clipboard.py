@@ -334,7 +334,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             data_handle = None
             for fmt in matching:
                 data_handle = GetClipboardData(fmt)
-                log("GetClipboardData(%s)=%#x", format_name(fmt), data_handle)
+                log("GetClipboardData(%s)=%#x", format_name(fmt), data_handle or 0)
                 if data_handle:
                     break
             if not data_handle:
