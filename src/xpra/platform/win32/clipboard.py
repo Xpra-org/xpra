@@ -24,7 +24,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
-from xpra.util import csv, repr_ellipsized
+from xpra.util import csv, repr_ellipsized, envbool
 from xpra.os_util import bytestostr, strtobytes
 from xpra.gtk_common.gobject_compat import import_glib
 
@@ -54,6 +54,9 @@ CLIPBOARD_EVENTS = {
     win32con.WM_SIZECLIPBOARD       : "SIZECLIPBOARD",
     win32con.WM_VSCROLLCLIPBOARD    : "WM_VSCROLLCLIPBOARD",
     }
+
+CONVERT_LINE_ENDINGS = envbool("XPRA_CONVERT_LINE_ENDINGS", True)
+
 
 #initialize the window we will use
 #for communicating with the OS clipboard API:
@@ -262,8 +265,12 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                         s = buf.raw[:l-1]
                     else:
                         s = buf.raw[:l]
+                    if CONVERT_LINE_ENDINGS:
+                        v = s.decode("utf8").replace("\r\n", "\n").encode("utf8")
+                    else:
+                        v = strtobytes(s)
                     log("got %i bytes of data: %s", len(s), repr_ellipsized(str(s)))
-                    callback(strtobytes(s))
+                    callback(v)
                 else:
                     errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))
             finally:
@@ -287,6 +294,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
     def do_set_clipboard_text(self, text):
         #convert to wide char
         #get the length in wide chars:
+        if CONVERT_LINE_ENDINGS:
+            text = text.decode("utf8").replace("\n", "\r\n").encode("utf8")
         wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), None, 0)
         if not wlen:
             self.set_err("failed to prepare to convert to wide char")
