@@ -29,7 +29,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
-from xpra.util import csv, ellipsizer, envint
+from xpra.util import csv, ellipsizer, envint, envbool
 from xpra.os_util import bytestostr, strtobytes
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 
@@ -70,7 +70,9 @@ CLIPBOARD_FORMATS = {
 
 RETRY = envint("XPRA_CLIPBOARD_RETRY", 5)
 DELAY = envint("XPRA_CLIPBOARD_INITIAL_DELAY", 10)
-
+CONVERT_LINE_ENDINGS = envbool("XPRA_CONVERT_LINE_ENDINGS", True)
+log("win32 clipboard: RETRY=%i, DELAY=%i, CONVERT_LINE_ENDINGS=%s",
+    RETRY, DELAY, CONVERT_LINE_ENDINGS)
 
 #initialize the window we will use
 #for communicating with the OS clipboard API:
@@ -360,11 +362,17 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     else:
                         s = buf.raw[:l]
                     log("got %i bytes of UNICODE data: %s", len(s), ellipsizer(s))
-                    callback(strtobytes(s))
+                    if CONVERT_LINE_ENDINGS:
+                        v = s.decode("utf8").replace("\r\n", "\n").encode("utf8")
+                    else:
+                        v = strtobytes(s)
+                    callback(v)
                     return True
                 #CF_TEXT or CF_OEMTEXT:
                 astr = cast(data, LPCSTR)
                 s = astr.value.decode("latin1")
+                if CONVERT_LINE_ENDINGS:
+                    s = s.replace("\r\n", "\n")
                 ulen = len(s)
                 if ulen>MAX_CLIPBOARD_PACKET_SIZE:
                     errback("text data is too large: %i characters" % ulen)
@@ -383,6 +391,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
     def set_clipboard_text(self, text):
         #convert to wide char
         #get the length in wide chars:
+        if CONVERT_LINE_ENDINGS:
+            text = text.decode("utf8").replace("\n", "\r\n").encode("utf8")
         wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), None, 0)
         if not wlen:
             self.set_err("failed to prepare to convert to wide char")
