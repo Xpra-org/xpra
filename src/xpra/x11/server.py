@@ -848,7 +848,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             frame = nws.inttupleget("frame", (0, 0, 0, 0))
             window.set_property("frame", frame)
         #boolean: but not a wm_state and renamed in the model... (iconic vs inconified!)
-        iconified = nws.boolget("iconified")
+        iconified = nws.boolget("iconified", None)
         if iconified is not None:
             if window.is_OR():
                 log("ignoring iconified=%s on OR window %s", iconified, window)
