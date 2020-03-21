@@ -226,7 +226,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if error_text:
             log.warn(" %s", error_text)
 
-    
+
     def do_emit_token(self):
         #TODO: if contents are not text,
         #send just the token
