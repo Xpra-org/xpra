@@ -889,7 +889,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if not window:
             windowlog("cannot map window %i: not found, already removed?", wid)
             return
-        assert not window.is_OR()
+        if window.is_OR():
+            windowlog.warn("Warning: received map event on OR window %s", wid)
+            return
         ss = self.get_server_source(proto)
         if ss is None:
             return
