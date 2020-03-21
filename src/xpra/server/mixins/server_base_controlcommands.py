@@ -351,7 +351,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_client(self, *args):
         self.all_send_client_command(*args)
-        return "client control command '%s' forwarded to clients" % str(args)
+        return "client control command %s forwarded to clients" % str(args)
 
     def control_command_client_property(self, wid, uuid, prop, value, conv=None):
         wid = int(wid)
