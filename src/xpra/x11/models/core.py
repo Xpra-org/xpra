@@ -509,10 +509,14 @@ class CoreX11WindowModel(WindowModelStub):
                         dtype, dformat = prop_type
                         ptype = PYTHON_TYPES.get(bytestostr(dtype))
                         if ptype:
-                            value = self.prop_get(name, ptype)
+                            value = self.prop_get(name, ptype, ignore_errors=True)
+                            if value is None:
+                                #retry using scalar type:
+                                value = self.prop_get(name, (ptype,), ignore_errors=True)
                             metalog("_handle_property_change(%s) value=%s", name, value)
-                            self.emit("x11-property-changed", (name, ptype, dformat, value))
-                            return
+                            if value:
+                                self.emit("x11-property-changed", (name, ptype, dformat, value))
+                                return
             except Exception:
                 metalog("_handle_property_change(%s)", name, exc_info=True)
             self.emit("x11-property-changed", (name, "", 0, ""))

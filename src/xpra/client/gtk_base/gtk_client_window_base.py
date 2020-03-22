@@ -893,6 +893,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 #remove prop
                 prop_del(gdk_window, prop_name)
             else:
+                if isinstance(value, (list, tuple)):
+                    dtype = (dtype, )
                 prop_set(gdk_window, prop_name, dtype, value)
         self.when_realized("x11-prop-%s" % prop_name, do_set_prop)
 
