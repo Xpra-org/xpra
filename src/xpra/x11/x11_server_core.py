@@ -264,24 +264,31 @@ class X11ServerCore(GTKServerBase):
 
 
     def set_keyboard_layout_group(self, grp):
-        keylog("set_keyboard_layout_group(%i) config=%s, current keyboard group=%s",
-               grp, self.keyboard_config, self.current_keyboard_group)
         if not self.keyboard_config:
+            keylog("set_keyboard_layout_group(%i) ignored, no config", grp)
             return
         if not self.keyboard_config.xkbmap_layout_groups:
+            keylog("set_keyboard_layout_group(%i) ignored, no layout groups support", grp)
             #not supported by the client that owns the current keyboard config,
             #so make sure we stick to the default group:
             grp = 0
+        if not X11Keyboard.hasXkb():
+            keylog("set_keyboard_layout_group(%i) ignored, no Xkb support", grp)
+            return
         if grp<0:
             grp = 0
-        if self.current_keyboard_group!=grp and X11Keyboard.hasXkb():
-            try:
-                with xsync:
-                    self.current_keyboard_group = X11Keyboard.set_layout_group(grp)
-            except XError as e:
-                keylog("set_keyboard_layout_group group=%s", grp, exc_info=True)
-                keylog.error("Error: failed to set keyboard layout group '%s'", grp)
-                keylog.error(" %s", e)
+        if self.current_keyboard_group!=grp:
+            keylog("set_keyboard_layout_group(%i) ignored, value unchanged", grp)
+            return
+        keylog("set_keyboard_layout_group(%i) config=%s, current keyboard group=%s",
+               grp, self.keyboard_config, self.current_keyboard_group)
+        try:
+            with xsync:
+                self.current_keyboard_group = X11Keyboard.set_layout_group(grp)
+        except XError as e:
+            keylog("set_keyboard_layout_group group=%s", grp, exc_info=True)
+            keylog.error("Error: failed to set keyboard layout group '%s'", grp)
+            keylog.error(" %s", e)
 
     def init_packet_handlers(self):
         GTKServerBase.init_packet_handlers(self)
