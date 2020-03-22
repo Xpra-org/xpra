@@ -8,6 +8,11 @@ import sys
 import os.path
 import socket
 import subprocess
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Pango", "1.0")
+gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Pango, GLib, Gtk, GdkPixbuf, Gio
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command

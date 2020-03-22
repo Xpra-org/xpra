@@ -74,6 +74,8 @@ def check_mdns(gui):
     return True
 
 def win32_bonjour_download_warning(gui):
+    import gi
+    gi.require_version("Pango", "1.0")
     from gi.repository import Pango
     dialog = Gtk.Dialog("Bonjour not found",
            gui,

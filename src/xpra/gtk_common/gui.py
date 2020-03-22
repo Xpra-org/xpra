@@ -7,6 +7,7 @@
 import sys
 import os.path
 import subprocess
+
 from gi.repository import GLib, Pango, Gtk, Gdk, Gio, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals

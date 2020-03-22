@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2009-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,6 +15,11 @@ This is a simple GUI for starting the xpra client.
 import os.path
 import sys
 import traceback
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Pango", "1.0")
+gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Pango, GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals

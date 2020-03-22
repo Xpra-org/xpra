@@ -242,6 +242,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             a.add(widget)
             a.set_padding(padding, padding, padding, padding)
             dialog.vbox.pack_start(a)
+        import gi
+        gi.require_version("Pango", "1.0")
         from gi.repository import Pango
         title = Gtk.Label("Server Authentication")
         title.modify_font(Pango.FontDescription("sans 14"))
