@@ -798,7 +798,7 @@ class WindowClient(StubClientMixin):
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
             from xpra.child_reaper import getChildReaper
-            from subprocess import Popen, PIPE
+            from subprocess import Popen, PIPE, STDOUT
             try:
                 proc = Popen("xpra_signal_listener",
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
