@@ -1043,11 +1043,9 @@ class ServerCore:
         def ssl_wrap():
             if not self._ssl_attributes:
                 raise Exception("no ssl support")
-            ssl_sock = self._ssl_wrap_socket(sock, socket_options)
+            ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:
-                #None means EOF! (we don't want to import ssl bits here)
-                ssllog("ignoring SSL EOF error")
                 return None
             ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype)
             ssllog("ssl_wrap()=%s", ssl_conn)
@@ -1142,8 +1140,8 @@ class ServerCore:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
 
-    def _ssl_wrap_socket(self, sock, socket_options):
-        ssllog("ssl_wrap_socket(%s, %s)", sock, socket_options)
+    def _ssl_wrap_socket(self, socktype, sock, socket_options):
+        ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
         try:
             from xpra.net.socket_util import ssl_wrap_socket
             kwargs = self._ssl_attributes.copy()
@@ -1152,15 +1150,25 @@ class ServerCore:
                 k = k.replace("-", "_")
                 if k.startswith("ssl_"):
                     k = k[4:]
-                kwargs[k] = v
+                    kwargs[k] = v
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
-            ssllog("_ssl_wrap_socket_fn(%s)=%s", kwargs, ssl_sock)
+            ssllog("_ssl_wrap_socket(%s, %s)=%s", sock, kwargs, ssl_sock)
+            if ssl_sock is None:
+                #None means EOF! (we don't want to import ssl bits here)
+                ssllog("ignoring SSL EOF error")
             return ssl_sock
         except Exception as e:
             ssllog("SSL error", exc_info=True)
-            ssl_paths = [kwargs.get(x) for x in ("ssl-cert", "ssl-key")]
+            ssl_paths = [socket_options.get(x, kwargs.get(x)) for x in ("ssl-cert", "ssl-key")]
             cpaths = csv("'%s'" % x for x in ssl_paths if x)
-            raise InitException("cannot create SSL sockets, check your certificate paths (%s): %s" % (cpaths, e)) from None
+            log.error("Error: failed to create SSL socket")
+            log.error(" from %s socket: %s", socktype, sock)
+            if not cpaths:
+                log.error(" no certificate paths specified")
+            else:
+                log.error(" check your certificate paths: %s", cpaths)
+            log.error(" %s", e)
+            return None
 
 
     def handle_ssh_connection(self, conn, socket_options):
@@ -1301,10 +1309,8 @@ class ServerCore:
             return conn is not None, conn, None
         if self._ssl_attributes and first_char==0x16:
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
-            sock = self._ssl_wrap_socket(sock, socket_options)
+            sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             if sock is None:
-                #None means EOF! (we don't want to import ssl bits here)
-                ssllog("ignoring SSL EOF error")
                 return False, None, None
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl")
             conn.socktype_wrapped = socktype

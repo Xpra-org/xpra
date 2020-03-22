@@ -721,7 +721,7 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
                         options="ALL,NO_COMPRESSION", ciphers="DEFAULT",
                         server_side=True):
     if server_side and not cert:
-        raise InitException("you must specify an 'ssl-cert' file to use 'bind-ssl' sockets")
+        raise InitException("you must specify an 'ssl-cert' file to use ssl sockets")
     if server_side:
         verify_mode = client_verify_mode
     else:
