@@ -725,8 +725,9 @@ def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
         _, keyname, _, _, _ = entry
         modifier = pref.get(keyname)
         if modifier:
-            keynames = matches.setdefault(modifier, set())
-            keynames.add(keyname)
+            keynames = matches.setdefault(modifier, [])
+            if keyname not in keynames:
+                keynames.add(keyname)
             all_keynames.add(keyname)
     if add_default_modifiers:
         #try to add missings ones (magic!)
@@ -736,10 +737,14 @@ def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
                 continue            #aleady defined
             if modifier not in matches:
                 #define it since it is completely missing
-                defaults.setdefault(modifier, set()).add(keyname)
+                keynames = defaults.setdefault(modifier, [])
+                if keyname not in keynames:
+                    keynames.append(keyname)
             elif modifier in ["shift", "lock", "control", "mod1", "mod2"] or keyname=="ISO_Level3_Shift":
                 #these ones we always add them, even if a record for this modifier already exists
-                matches.setdefault(modifier, set()).add(keyname)
+                keynames = matches.setdefault(modifier, [])
+                if keyname not in keynames:
+                    keynames.append(keyname)
         log("get_modifiers_from_keycodes(...) adding defaults: %s", defaults)
         matches.update(defaults)
     log("get_modifiers_from_keycodes(...)=%s", matches)
