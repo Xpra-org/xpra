@@ -250,6 +250,12 @@ def _from_utf8(_disp, v):
     return v.decode("UTF-8")
 
 
+def _from_long(_disp, v):
+    return struct.unpack(b"@L", v)[0]
+
+def _to_long(_disp, v):
+    return struct.pack(b"@L", v)
+
 
 PROP_TYPES = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list
@@ -259,18 +265,9 @@ PROP_TYPES = {
     # am not sufficiently clever to deal with COMPOUNT_TEXT.  Even knowing
     # that Xutf8TextPropertyToTextList exists.
     "latin1": (str, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
-    "state": (int, "WM_STATE", 32,
-            lambda _disp, c: struct.pack(b"@L", c),
-            lambda _disp, d: struct.unpack(b"@L", d)[0],
-            b""),
-    "u32": (int, "CARDINAL", 32,
-            lambda _disp, c: struct.pack(b"@L", c),
-            lambda _disp, d: struct.unpack(b"@L", d)[0],
-            b""),
-    "integer": (int, "INTEGER", 32,
-            lambda _disp, c: struct.pack(b"@L", c),
-            lambda _disp, d: struct.unpack(b"@L", d)[0],
-            b""),
+    "state": (int, "WM_STATE", 32, _to_long, _from_long, b""),
+    "u32": (int, "CARDINAL", 32, _to_long, _from_long, b""),
+    "integer": (int, "INTEGER", 32, _to_long, _from_long, b""),
     "strut": (NetWMStrut, "CARDINAL", 32,
               unsupported, NetWMStrut, None),
     "strut-partial": (NetWMStrut, "CARDINAL", 32,
