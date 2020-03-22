@@ -25,7 +25,7 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, pollwait,
-    monotonic_time, setsid, bytestostr, use_tty,
+    monotonic_time, bytestostr, use_tty,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
 from xpra.scripts.parsing import (
@@ -441,10 +441,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                             else:
                                 v = str(c)
                             cmd.append("--%s=%s" % (x, v))
-                    preexec_fn = None
-                    if POSIX and not OSX:
-                        preexec_fn = setsid
-                    proc = Popen(cmd, preexec_fn=preexec_fn, cwd=cwd, env=env)
+                    proc = Popen(cmd, cwd=cwd, env=env, start_new_session=POSIX and not OSX)
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)

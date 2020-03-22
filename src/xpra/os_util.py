@@ -67,12 +67,6 @@ def memoryview_to_bytes(v) -> bytes:
     return strtobytes(v)
 
 
-def setsid():
-    #run in a new session
-    if POSIX:
-        os.setsid()
-
-
 def getuid() -> int:
     if POSIX:
         return os.getuid()

@@ -14,7 +14,7 @@ import os.path
 from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.util import envbool, envint
 from xpra.os_util import (
-    setsid, shellsub, close_fds,
+    shellsub, close_fds,
     setuidgid, getuid, getgid,
     strtobytes, bytestostr, osexpand, monotonic_time,
     POSIX, OSX,
@@ -286,7 +286,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                 if getuid()==0 and (uid!=0 or gid!=0):
                     setuidgid(uid, gid)
                 else:
-                    setsid()
+                    os.setsid()
             log("xvfb_cmd=%s", xvfb_cmd)
             xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
                          stdin=PIPE, preexec_fn=preexec)
@@ -343,7 +343,7 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
     xauth_args = ["-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     try:
         def preexec():
-            setsid()
+            os.setsid()
             if getuid()==0 and uid:
                 setuidgid(uid, gid)
         xauth_cmd = ["xauth"]+xauth_args

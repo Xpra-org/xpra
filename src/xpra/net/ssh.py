@@ -22,7 +22,7 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     bytestostr, osexpand, monotonic_time, load_binary_file,
-    setsid, nomodule_context, umask_context, is_main_thread,
+    nomodule_context, umask_context, is_main_thread,
     WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, nonl, engs, csv
@@ -777,7 +777,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             kwargs["creationflags"] = flags
             kwargs["stderr"] = PIPE
         elif not display_desc.get("exit_ssh", False) and not OSX:
-            kwargs["preexec_fn"] = setsid
+            kwargs["start_new_session"] = True
         remote_xpra = display_desc["remote_xpra"]
         assert remote_xpra
         socket_dir = display_desc.get("socket_dir")

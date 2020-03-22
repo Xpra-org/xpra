@@ -109,11 +109,9 @@ def get_lpinfo_drv(make_and_model):
         log.error("Error: lpinfo command is not defined")
         return None
     command = shlex.split(LPINFO)+["--make-and-model", make_and_model, "-m"]
-    def preexec():
-        os.setsid()
     log("get_lpinfo_drv(%s) command=%s", make_and_model, command)
     try:
-        proc = Popen(command, stdout=PIPE, stderr=PIPE, preexec_fn=preexec)
+        proc = Popen(command, stdout=PIPE, stderr=PIPE, start_new_session=True)
     except Exception as e:
         log("get_lp_info_drv(%s) lpinfo command %s failed", make_and_model, command, exc_info=True)
         log.error("Error: lpinfo command failed to run")
@@ -241,10 +239,8 @@ def validate_setup():
 
 def exec_lpadmin(args, success_cb=None):
     command = shlex.split(LPADMIN)+args
-    def preexec():
-        os.setsid()
     log("exec_lpadmin(%s) command=%s", args, command)
-    proc = Popen(command, preexec_fn=preexec)
+    proc = Popen(command, start_new_session=True)
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
     cr = getChildReaper()
