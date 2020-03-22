@@ -626,8 +626,8 @@ class GTKTrayMenuBase(object):
         clipboardlog("set_new_remote_clipboard(%s)", remote_clipboard)
         ch = self.client.clipboard_helper
         local_clipboard = "CLIPBOARD"
-        ch._local_to_remote[local_clipboard] = remote_clipboard
-        ch._remote_to_local[remote_clipboard] = local_clipboard
+        ch._local_to_remote = {local_clipboard : remote_clipboard}
+        ch._remote_to_local = {remote_clipboard : local_clipboard}
         selections = [remote_clipboard]
         clipboardlog.info("server clipboard synchronization changed to %s selection", remote_clipboard)
         #tell the server what to look for:
@@ -641,12 +641,14 @@ class GTKTrayMenuBase(object):
         selection_menu = self.menuitem("Selection", None, "Choose which remote clipboard to connect to")
         selection_submenu = gtk.Menu()
         selection_menu.set_submenu(selection_submenu)
+        rc_setting = None
+        if len(ch._local_to_remote)==1:
+            rc_setting = tuple(ch._local_to_remote.values())[0]
         self.popup_menu_workaround(selection_submenu)
         for label in CLIPBOARD_LABELS:
             remote_clipboard = CLIPBOARD_LABEL_TO_NAME[label]
             selection_item = CheckMenuItem(label)
-            active = getattr(ch, "remote_clipboard", "CLIPBOARD")==remote_clipboard
-            selection_item.set_active(active)
+            selection_item.set_active(remote_clipboard==rc_setting)
             selection_item.set_draw_as_radio(True)
             def remote_clipboard_changed(item):
                 self.remote_clipboard_changed(item, selection_submenu)
