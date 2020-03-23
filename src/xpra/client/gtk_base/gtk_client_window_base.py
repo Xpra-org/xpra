@@ -887,14 +887,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         dtype = bytestostr(dtype)
         if dtype=="latin1":
             value = bytestostr(value)
+        if isinstance(value, (list, tuple)):
+            dtype = (dtype, )
         def do_set_prop():
             gdk_window = self.get_window()
             if not dtype and not dformat:
                 #remove prop
                 prop_del(gdk_window, prop_name)
             else:
-                if isinstance(value, (list, tuple)):
-                    dtype = (dtype, )
                 prop_set(gdk_window, prop_name, dtype, value)
         self.when_realized("x11-prop-%s" % prop_name, do_set_prop)
 
