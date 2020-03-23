@@ -199,10 +199,10 @@ class Win32EventListener:
                 else:
                     ut = "/ unexpected"
                 l("unknown %s message: %s / %#x / %#x", ut, event_name, int(wParam), int(lParam))
+            if msg==win32con.WM_DESTROY:
+                self.cleanup()
         elif self.hwnd and hWnd!=None:
             log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
-        if msg==win32con.WM_DESTROY:
-            self.cleanup()
         r = DefWindowProcW(hWnd, msg, wParam, lParam)
         log("DefWindowProc%s=%s", (hWnd, msg, wParam, lParam), r)
         return r
