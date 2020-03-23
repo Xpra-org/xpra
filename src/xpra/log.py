@@ -109,17 +109,19 @@ def get_loggers_for_categories(*cat):
     return list(matches)
 
 def enable_debug_for(*cat):
-    loggers = get_loggers_for_categories(*cat)
-    for l in loggers:
+    loggers = []
+    for l in get_loggers_for_categories(*cat):
         if not l.is_debug_enabled():
             l.enable_debug()
+            loggers.append(l)
     return loggers
 
 def disable_debug_for(*cat):
-    loggers = get_loggers_for_categories(*cat)
-    for l in loggers:
+    loggers = []
+    for l in get_loggers_for_categories(*cat):
         if l.is_debug_enabled():
             l.disable_debug()
+            loggers.append(l)
     return loggers
 
 
