@@ -45,17 +45,17 @@ class KeyboardConfigBase:
 
     def get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
         if not keyname and client_keycode<0:
-            return -1
+            return -1, group
         if not pressed:
-            keycode = self.pressed_translation.get(client_keycode)
-            if keycode:
+            r = self.pressed_translation.get(client_keycode)
+            if r:
                 #del self.pressed_translation[client_keycode]
-                return keycode
-        keycode = self.do_get_keycode(client_keycode, keyname, pressed, modifiers, group)
+                return r
+        keycode, group = self.do_get_keycode(client_keycode, keyname, pressed, modifiers, group)
         if pressed not in (None, -1):
             #keep track of it so we can unpress the same key:
-            self.pressed_translation[client_keycode] = keycode
-        return keycode
+            self.pressed_translation[client_keycode] = keycode, group
+        return keycode, group
 
     def do_get_keycode(self, _client_keycode, _keyname, _pressed, _modifiers, _group):
         from xpra.log import Logger

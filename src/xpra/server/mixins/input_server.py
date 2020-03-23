@@ -155,10 +155,10 @@ class InputServer(StubServerMixin):
         keyname = bytestostr(keyname)
         modifiers = list(bytestostr(x) for x in modifiers)
         self.set_ui_driver(ss)
+        keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, group)
+        keylog("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)
         if group>=0:
             self.set_keyboard_layout_group(group)
-        keycode = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, group)
-        keylog("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
         self._focus(ss, wid, None)
         ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
@@ -256,7 +256,9 @@ class InputServer(StubServerMixin):
         group = 0
         if len(packet)>=7:
             group = packet[6]
-        keycode = ss.get_keycode(client_keycode, keyname, modifiers, group)
+        keycode, group = ss.get_keycode(client_keycode, keyname, modifiers, group)
+        if group>=0:
+            self.set_keyboard_layout_group(group)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         ss.make_keymask_match(modifiers)
         if not ss.keyboard_config.sync:

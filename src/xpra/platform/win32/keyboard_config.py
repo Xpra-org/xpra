@@ -39,7 +39,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
         keycode = KEYCODES.get(keyname, -1)
         log("get_keycode%s=%s", (client_keycode, keyname, pressed, modifiers, group), keycode)
-        return keycode
+        return keycode, group
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         log("make_keymask_match%s", (modifier_list, ignored_modifier_keycode, ignored_modifier_keynames))

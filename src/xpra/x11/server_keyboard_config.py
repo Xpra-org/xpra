@@ -434,11 +434,11 @@ class KeyboardConfig(KeyboardConfigBase):
     def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
         if not self.enabled:
             log("ignoring keycode since keyboard is turned off")
-            return -1
+            return -1, group
         if keyname=="0xffffff":
-            return -1
+            return -1, group
         if self.xkbmap_raw:
-            return client_keycode
+            return client_keycode, group
         def kmlog(msg, *args):
             if keyname in DEBUG_KEYSYMS:
                 l = log.info
@@ -448,6 +448,7 @@ class KeyboardConfig(KeyboardConfigBase):
         def klog(msg, *args):
             kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
         keycode = None
+        rgroup = group
         if self.xkbmap_query:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
             klog("=%s (native keymap)", keycode)
@@ -525,12 +526,15 @@ class KeyboardConfig(KeyboardConfigBase):
                                 #found mode switch modified
                                 toggle_modifier(mod)
                                 break
+                    rgroup = level//4
+                    if rgroup!=group:
+                        kmlog("switching group from %i to %i", group, rgroup)
                     break
             #this should not find anything new?:
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, -1)
-                klog("=%i (keyname translation)", keycode)
-        return keycode
+                klog("=%i, %i (keyname translation)", keycode, rgroup)
+        return keycode, rgroup
 
 
     def get_current_mask(self):
