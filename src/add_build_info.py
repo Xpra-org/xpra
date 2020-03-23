@@ -287,7 +287,7 @@ def load_ignored_changed_files():
             ignored.append(s)
     return ignored
 
-def get_svn_props():
+def get_svn_props(warn=True):
     props = {
                 "REVISION" : "unknown",
                 "LOCAL_MODIFICATIONS" : "unknown"
@@ -352,7 +352,8 @@ def get_svn_props():
         if ignore:
             continue
         changes += 1
-        print("WARNING: found modified file: %s" % filename)
+        if warn:
+            print("WARNING: found modified file: %s" % filename)
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 

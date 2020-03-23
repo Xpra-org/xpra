@@ -11,6 +11,8 @@
 
 var Utilities = {
 	VERSION	: "4.0",
+	REVISION : "0",
+	LOCAL_MODIFICATIONS : "0",
 
 	exc : function() {
 		console.error.apply(console, arguments);

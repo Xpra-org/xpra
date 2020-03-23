@@ -56,6 +56,14 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
         print("minifying html5 client to '%s' using %s" % (install_dir, minifier))
     else:
         print("copying html5 client to '%s'" % (install_dir, ))
+    try:
+        from add_build_info import get_svn_props
+        svn_props = get_svn_props(False)
+        REVISION = svn_props.get("REVISION", 0)
+        LOCAL_MODIFICATIONS = svn_props.get("LOCAL_MODIFICATIONS", 0)
+    except ImportError:
+        REVISION  = 0
+        LOCAL_MODIFICATIONS = 0
     #those are used to replace the file we ship in source form
     #with one that is maintained by the distribution:
     symlinks = {
@@ -122,7 +130,14 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
             else:
                 r = -1
             if r!=0:
-                shutil.copyfile(src, dst)
+                with open(src, "rb") as f:
+                    js = f.read().decode("latin1")
+                if REVISION:
+                    js = js.replace('REVISION : "0",', 'REVISION : "%i",' % REVISION)
+                if LOCAL_MODIFICATIONS:
+                    js = js.replace('LOCAL_MODIFICATIONS : "0",', 'LOCAL_MODIFICATIONS : "%i",' % LOCAL_MODIFICATIONS)
+                with open(dst, "wb") as f:
+                    f.write(js.encode("latin1"))
                 os.chmod(dst, 0o644)
             if ftype not in ("png", ):
                 if gzip:
