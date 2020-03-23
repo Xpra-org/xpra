@@ -89,7 +89,7 @@ def get_owner_info(owner, our_window):
     #log("get_owner_info(%#x) pid=%s", owner, pid.value)
     proc_handle = OpenProcess(PROCESS_QUERY_INFORMATION, False, pid)
     if not proc_handle:
-        return "pid %i (hwnd=%#x)" % pid.value
+        return "pid %i (hwnd=%#x)" % (pid.value, owner)
     try:
         size = DWORD(256)
         process_name = create_string_buffer(size.value+1)
