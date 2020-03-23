@@ -16,7 +16,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, POSIX, is_Wayland
 from xpra.util import (
-    std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs,
+    std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs, csv,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
 from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_OK, EXIT_CONNECTION_LOST
@@ -568,25 +568,52 @@ class UIXpraClient(ClientBaseClass):
             #TODO: reset tray tooltip, session info title, etc..
         elif command=="debug":
             args = packet[2:]
-            if len(args)<2:
+            if not args:
                 log.warn("not enough arguments for debug control command")
+                return
+            from xpra.log import (
+                add_debug_category, add_disabled_category,
+                enable_debug_for, disable_debug_for,
+                get_all_loggers,
+                )
+            log_cmd = bytestostr(args[0])
+            if log_cmd=="status":
+                dloggers = [x for x in get_all_loggers() if x.is_debug_enabled()]
+                if dloggers:
+                    log.info("logging is enabled for:")
+                    for l in dloggers:
+                        log.info(" - %s", l)
+                else:
+                    log.info("logging is not enabled for any loggers")
                 return
             log_cmd = bytestostr(args[0])
             if log_cmd not in ("enable", "disable"):
                 log.warn("invalid debug control mode: '%s' (must be 'enable' or 'disable')", log_cmd)
                 return
-            categories = []
-            for x in args[1:]:
-                categories += [v.strip() for v in bytestostr(x).split(",")]
-            from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
-            if log_cmd=="enable":
-                add_debug_category(*categories)
-                loggers = enable_debug_for(*categories)
+            if len(args)<2:
+                log.warn("not enough arguments for '%s' debug control command" % log_cmd)
+                return
+            loggers = []
+            #each argument is a group
+            groups = [bytestostr(x) for x in args[1:]]
+            for group in groups:
+                #and each group is a list of categories
+                #preferably separated by "+",
+                #but we support "," for backwards compatibility:
+                categories = [v.strip() for v in group.replace("+", ",").split(",")]
+                if log_cmd=="enable":
+                    add_debug_category(*categories)
+                    loggers += enable_debug_for(*categories)
+                else:
+                    assert log_cmd=="disable"
+                    add_disabled_category(*categories)
+                    loggers += disable_debug_for(*categories)
+            if not loggers:
+                log.info("%s debugging, no new loggers matching: %s", log_cmd, csv(groups))
             else:
-                assert log_cmd=="disable"
-                add_disabled_category(*categories)
-                loggers = disable_debug_for(*categories)
-            log.info("%sd debugging for: %s", log_cmd, loggers)
+                log.info("%sd debugging for:", log_cmd)
+                for l in loggers:
+                    log.info(" - %s", l)
         else:
             log.warn("received invalid control command from server: %s", command)
 

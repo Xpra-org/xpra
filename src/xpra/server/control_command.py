@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
 from xpra.util import csv, engs
+from xpra.os_util import bytestostr
+
 log = Logger("util", "command")
 
 
@@ -132,20 +134,26 @@ class DebugControl(ArgsControlCommand):
             self.raise_error("not enough arguments")
         if log_cmd not in ("enable", "disable"):
             self.raise_error("only 'enable' and 'disable' verbs are supported")
-        #support both separate arguments and csv:
-        categories = []
-        for x in args[1:]:
-            categories += [v.strip() for v in x.split(",")]
         from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
-        if log_cmd=="enable":
-            add_debug_category(*categories)
-            loggers = enable_debug_for(*categories)
-        else:
-            assert log_cmd=="disable"
-            add_disabled_category(*categories)
-            loggers = disable_debug_for(*categories)
+        #each argument is a group
+        loggers = []
+        groups = args[1:]
+        for group in groups:
+            #and each group is a list of categories
+            #preferably separated by "+",
+            #but we support "," for backwards compatibility:
+            categories = [v.strip() for v in group.replace("+", ",").split(",")]
+            if log_cmd=="enable":
+                add_debug_category(*categories)
+                loggers += enable_debug_for(*categories)
+            else:
+                assert log_cmd=="disable"
+                add_disabled_category(*categories)
+                loggers += disable_debug_for(*categories)
         if not loggers:
-            log.info("no loggers matching: %s", csv(categories))
+            log.info("%s debugging, no new loggers matching: %s", log_cmd, csv(groups))
         else:
-            log.info("%sd debugging for: %s", log_cmd, csv(loggers))
+            log.info("%sd debugging for:", log_cmd)
+            for l in loggers:
+                log.info(" - %s", l)
         return "logging %sd for %s" % (log_cmd, csv(loggers))
