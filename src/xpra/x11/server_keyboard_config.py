@@ -462,7 +462,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 return self.do_get_keycode_new(client_keycode, keyname, pressed, modifiers, group)
             #non-native: try harder to find matching keysym
             #first, try to honour shift state:
-        rgroup = group
             shift = ("shift" in modifiers) ^ ("lock" in modifiers)
             mode = 0
             for mod in modifiers:
@@ -489,7 +488,7 @@ class KeyboardConfig(KeyboardConfigBase):
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, -1)
                 log("get_keycode(%s, %s)=%i (keyname translation)", client_keycode, keyname, keycode)
-        return keycode
+        return keycode, group
 
     def do_get_keycode_new(self, client_keycode, keyname, pressed, modifiers, group):
         #non-native: try harder to find matching keysym
@@ -527,6 +526,7 @@ class KeyboardConfig(KeyboardConfigBase):
             if level not in levels:
                 levels.append(level)
         kmlog("will try levels: %s", levels)
+        rgroup = group
         for level in levels:
             keycode = self.keycode_translation.get((keyname, level))
             if keycode:
