@@ -575,7 +575,9 @@ class UIXpraClient(ClientBaseClass):
             if log_cmd not in ("enable", "disable"):
                 log.warn("invalid debug control mode: '%s' (must be 'enable' or 'disable')", log_cmd)
                 return
-            categories = tuple(bytestostr(x) for x in args[1:])
+            categories = []
+            for x in args[1:]:
+                categories += [v.strip() for v in bytestostr(x).split(",")]
             from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
             if log_cmd=="enable":
                 add_debug_category(*categories)
