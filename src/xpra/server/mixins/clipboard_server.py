@@ -217,14 +217,16 @@ class ClipboardServer(StubServerMixin):
             log.warn(" but we do not support clipboard at all! Ignoring it.")
             return
         cc = self._clipboard_client
-        if cc!=ss or ss is None:
-            log.warn("Warning: received a request to change the clipboard status,")
-            log.warn(" but it does not come from the clipboard owner! Ignoring it.")
-            return
         cc.clipboard_enabled = clipboard_enabled
+        log("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
+        if cc!=ss or ss is None:
+            log("received a request to change the clipboard status,")
+            log(" but it does not come from the clipboard owner! Ignoring it.")
+            log(" from %s", cc)
+            log(" owner is %s", self._clipboard_client)
+            return
         if not clipboard_enabled:
             ch.enable_selections([])
-        log("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
 
     def clipboard_progress(self, local_requests, _remote_requests):
         assert self.clipboard
