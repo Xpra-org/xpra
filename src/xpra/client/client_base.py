@@ -940,16 +940,18 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             packet_type = packet[0]
             if packet_type!=int:
                 packet_type = bytestostr(packet_type)
-            may_log_packet(False, packet_type, packet)
+            def call_handler():
+                may_log_packet(False, packet_type, packet)
+                handler(packet)
             handler = self._packet_handlers.get(packet_type)
             if handler:
-                handler(packet)
+                call_handler()
                 return
             handler = self._ui_packet_handlers.get(packet_type)
             if not handler:
                 netlog.error("unknown packet type: %s", packet_type)
                 return
-            self.idle_add(handler, packet)
+            self.idle_add(call_handler)
         except Exception:
             netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
                          packet_type, handler, exc_info=True)

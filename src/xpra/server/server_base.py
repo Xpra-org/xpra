@@ -1004,22 +1004,24 @@ class ServerBase(ServerBaseClass):
         try:
             handler = None
             packet_type = bytestostr(packet[0])
-            may_log_packet(False, packet_type, packet)
+            def call_handler():
+                may_log_packet(False, packet_type, packet)
+                handler(proto, packet)
             if proto in self._server_sources:
                 handler = self._authenticated_ui_packet_handlers.get(packet_type)
                 if handler:
                     netlog("process ui packet %s", packet_type)
-                    self.idle_add(handler, proto, packet)
+                    self.idle_add(call_handler)
                     return
                 handler = self._authenticated_packet_handlers.get(packet_type)
                 if handler:
                     netlog("process non-ui packet %s", packet_type)
-                    handler(proto, packet)
+                    call_handler()
                     return
             handler = self._default_packet_handlers.get(packet_type)
             if handler:
                 netlog("process default packet %s", packet_type)
-                handler(proto, packet)
+                call_handler()
                 return
             def invalid_packet():
                 ss = self.get_server_source(proto)
