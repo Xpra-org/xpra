@@ -324,7 +324,11 @@ class OSXMenuHelper(GTKTrayMenuBase):
         #find the menu item matching the current settings,
         #and select it
         try:
-            label = CLIPBOARD_NAME_TO_LABEL.get(self.client.clipboard_helper.remote_clipboard)
+            ch = self.client.clipboard_helper
+            rc_setting = "Clipboard"
+            if len(ch._local_to_remote)==1:
+                rc_setting = tuple(ch._local_to_remote.values())[0]
+            label = CLIPBOARD_NAME_TO_LABEL.get(rc_setting)
             self.select_clipboard_menu_option(None, label, CLIPBOARD_LABELS)
         except Exception:
             clipboardlog("failed to select remote clipboard option in menu", exc_info=True)
