@@ -42,6 +42,7 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 sizeof_long = struct.calcsize(b'@L')
 
 BLACKLISTED_CLIPBOARD_CLIENTS = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
+log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
 def parse_translated_targets(v):
     trans = {}
     #we can't use ";" or "/" as separators
@@ -57,8 +58,13 @@ def parse_translated_targets(v):
         dst_targets = parts[1].split(",")
         trans[src_target] = dst_targets
     return trans
-TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRANSLATED_TARGETS",
-                                                             "text/plain;charset=utf-8:UTF8_STRING,text/plain#GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain"))
+DEFAULT_TRANSLATED_TARGETS = "#".join((
+    "text/plain;charset=utf-8:UTF8_STRING,text/plain,public.utf8-plain-text",
+    "UTF8_STRING:text/plain;charset=utf-8,text/plain,public.utf8-plain-text",
+    "GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain",
+    ))
+TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRANSLATED_TARGETS", DEFAULT_TRANSLATED_TARGETS))
+log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 
 
 def xatoms_to_strings(data):
@@ -391,16 +397,17 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 self.emit("send-clipboard-request", self._selection, "TARGETS")
             #when appending, the time may not be honoured
             #and we may reply with data from an older request
-            self.remote_requests.setdefault("TARGETS", []).append((requestor, prop, event.time))
+            self.remote_requests.setdefault("TARGETS", []).append((requestor, target, prop, event.time))
             return
 
+        req_target = target
         if self.targets and target not in self.targets:
             log.info("client %s is requesting an unknown target: '%s'", wininfo, target)
             translated_targets = TRANSLATED_TARGETS.get(target, ())
             can_translate = tuple(x for x in translated_targets if x in self.targets)
             if can_translate:
-                target = can_translate[0]
-                log.info(" using '%s' instead", target)
+                req_target = can_translate[0]
+                log.info(" using '%s' instead", req_target)
             else:
                 log.info(" valid targets: %s", csv(self.targets))
                 if must_discard_extra(target):
@@ -408,7 +415,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     nodata()
                     return
 
-        target_data = self.target_data.get(target)
+        target_data = self.target_data.get(req_target)
         if target_data and self._have_token:
             #we have it already
             dtype, dformat, data = target_data
@@ -418,9 +425,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, event.time)
             return
 
-        if target not in self.remote_requests:
-            self.emit("send-clipboard-request", self._selection, target)
-        self.remote_requests.setdefault(target, []).append((requestor, prop, event.time))
+        if req_target not in self.remote_requests:
+            self.emit("send-clipboard-request", self._selection, req_target)
+        self.remote_requests.setdefault(req_target, []).append((requestor, target, prop, event.time))
 
     def set_selection_response(self, requestor, target, prop, dtype, dformat, data, time=0):
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
@@ -453,11 +460,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         pending = self.remote_requests.pop(target, [])
         log("got_contents%s pending=%s",
             (target, dtype, dformat, ellipsizer(data)), csv(pending))
-        for requestor, prop, time in pending:
+        for requestor, actual_target, prop, time in pending:
             if log.is_debug_enabled():
-                log("setting response %s to property %s of window %s as %s",
-                     ellipsizer(data), prop, self.get_wininfo(requestor.get_xid()), dtype)
-            self.set_selection_response(requestor, target, prop, dtype, dformat, data, time)
+                log("setting response %s as '%s' on property '%s' of window %s as %s",
+                     ellipsizer(data), actual_target, prop, self.get_wininfo(requestor.get_xid()), dtype)
+            self.set_selection_response(requestor, actual_target, prop, dtype, dformat, data, time)
 
 
     ############################################################################
