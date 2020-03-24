@@ -181,7 +181,7 @@ class UDPProtocol(Protocol):
             #resend a new one
             self.cancel_control_timer()
             self.send_control()
-        self._add_packet_to_queue(packet, fail_cb=self.send_control_failed, synchronous=False)
+        self._add_packet_to_queue(packet, fail_cb=send_control_failed, synchronous=False)
         self.cancel = set()
         self.schedule_control()
         return False
