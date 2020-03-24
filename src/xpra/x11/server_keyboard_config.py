@@ -563,11 +563,14 @@ class KeyboardConfig(KeyboardConfigBase):
                             #found mode switch modified
                             toggle_modifier(mod)
                             break
+                rgroup = level//4
+                if rgroup!=group:
+                    kmlog("switching group from %i to %i", group, rgroup)
                 break
-            #this should not find anything new?:
-            if keycode is None:
-                keycode = self.keycode_translation.get(keyname, -1)
-                klog("=%i (keyname translation)", keycode)
+        #this should not find anything new?:
+        if keycode is None:
+            keycode = self.keycode_translation.get(keyname, -1)
+            klog("=%i (keyname translation)", keycode)
         return keycode, rgroup
 
 
