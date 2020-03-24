@@ -473,22 +473,15 @@ class KeyboardConfig(KeyboardConfigBase):
                     if name in ("ISO_Level3_Shift", "Mode_switch"):
                         mode = 1
                         break
-            level = int(shift) + int(mode)*2
             levels = []
-            #first, match with group if set:
-            if group:
-                levels.append(level+4)
-            #then try exact match without group:
-            levels.append(level)
-            #try default group:
-            for i in range(2):
-                level = int(shift) + i*2
-                if level not in levels:
-                    levels.append(level)
-            #catch all:
-            for level in range(8):
-                if level not in levels:
-                    levels.append(level)
+            #try to preserve the mode (harder to toggle):
+            for m in (int(bool(mode)), int(not mode)):
+                #try to preserve shift state:
+                for s in (int(bool(shift)), int(not shift)):
+                    #group is comparatively easier to toggle (one function call):
+                    for g in (int(bool(group)), int(not group)):
+                        level = int(g)*4 + int(m)*2 + int(s)*1
+                        levels.append(level)
             kmlog("will try levels: %s", levels)
             for level in levels:
                 keycode = self.keycode_translation.get((keyname, level))
