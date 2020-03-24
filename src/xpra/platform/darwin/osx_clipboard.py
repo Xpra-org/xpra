@@ -113,7 +113,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
 
     def get_clipboard_text(self):
         text = self.pasteboard.stringForType_(NSStringPboardType)
-        log("get_clipboard_text() NSStringPboardType=%s (%s)", text, type(text))
+        log("get_clipboard_text() NSStringPboardType='%s' (%s)", text, type(text))
         return str(text)
 
     def get_contents(self, target, got_contents):
