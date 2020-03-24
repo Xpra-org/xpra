@@ -64,8 +64,13 @@ def parse_translated_targets(v):
         dst_targets = parts[1].split(",")
         trans[src_target] = dst_targets
     return trans
-TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRANSLATED_TARGETS",
-                                                             "text/plain;charset=utf-8:UTF8_STRING,text/plain"))
+DEFAULT_TRANSLATED_TARGETS = "#".join((
+    "text/plain;charset=utf-8:UTF8_STRING,text/plain,public.utf8-plain-text",
+    "UTF8_STRING:text/plain;charset=utf-8,text/plain,public.utf8-plain-text",
+    "GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain",
+    ))
+TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRANSLATED_TARGETS", DEFAULT_TRANSLATED_TARGETS))
+log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 
 
 def xatoms_to_strings(data):
