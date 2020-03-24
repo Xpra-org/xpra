@@ -48,6 +48,7 @@ gllog = Logger("screen", "opengl")
 
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
+FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
 
 
 class XTestPointerDevice:
@@ -115,6 +116,8 @@ class X11ServerCore(GTKServerBase):
 
 
     def x11_init(self):
+        if FAKE_X11_INIT_ERROR:
+            raise Exception("fake x11 init error")
         self.init_fake_xinerama()
         with xlog:
             clean_keyboard_state()
