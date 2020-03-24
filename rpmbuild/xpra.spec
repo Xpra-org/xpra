@@ -867,20 +867,30 @@ fi
 
 
 %changelog
-* Fri Mar 20 2020 Antoine Martin <antoine@xpra.org> 3.0.8-1xpra1
+* Tue Mar 24 2020 Antoine Martin <antoine@xpra.org> 3.0.8-1xpra1
 - fix handling of dpi command line switch (correctly this time?)
 - fix bug report window not getting focus on MacOS
 - fix spurious ssh key warnings with newer versions of paramiko
-- fix AltGr mode with non-X11 clients
-- fix MS Windows clipboard update failures
-- fix MS Windows clipboard selection translation for outbound data
+- fix AltGr mode with non-X11 clients, layout-group changes
+- fix rare unexpected client exit on MS Windows
+- fix MS Windows clipboard:
+   update failures
+   selection translation for outbound data
+   convert CRLF line endings
+   reject invalid targets
+- Clipboard:
+   fix selection not shown as active in menus (MS Windows and MacOS)
+   fix spurious warnings when sharing a session
+   fix clipboard reset with python2 builds
 - fix 'xpra upgrade' wrongly updating non-xpra displays
 - fix logging error in client geometry debugging output
-- fix clipboard reset with python2 builds
 - fix pulseaudio start command with Ubuntu Xenial
+- fix spurious de-iconifications
+- fix handling of server control commands with python3 clients
 - use python3 (if installed) by default on Ubuntu Xenial
 - don't use Xdummy on arm, too slow
 - don't show 'Download' button that we can't honour
+- show all pressed keys according to X11 server in 'xpra info'
 - try harder not to use video for tiny areas
 
 * Thu Mar 12 2020 Antoine Martin <antoine@xpra.org> 3.0.7-1xpra1
