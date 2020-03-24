@@ -311,7 +311,8 @@ class XpraDesktopServer(DesktopServerBaseClass):
             add_event_receiver(root, self)
         add_catchall_receiver("xpra-motion-event", self)
         add_catchall_receiver("xpra-xkb-event", self)
-        X11Keyboard.selectBellNotification(True)
+        with xlog:
+            X11Keyboard.selectBellNotification(True)
 
     def do_cleanup(self):
         self.cancel_resize_timer()

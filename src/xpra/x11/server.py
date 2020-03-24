@@ -259,8 +259,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     self.root_overlay = None
 
         ### Create the WM object
-        from xpra.x11.gtk_x11.wm import Wm
-        self._wm = Wm(self.clobber, self.wm_name)
+        with xsync:
+            from xpra.x11.gtk_x11.wm import Wm
+            self._wm = Wm(self.clobber, self.wm_name)
         if server_features.windows:
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))

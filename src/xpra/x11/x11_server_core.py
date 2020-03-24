@@ -97,8 +97,7 @@ class X11ServerCore(GTKServerBase):
         super().init(opts)
 
     def server_init(self):
-        with xsync:
-            self.x11_init()
+        self.x11_init()
         from xpra.server import server_features
         if server_features.windows:
             from xpra.x11.x11_window_filters import init_x11_window_filters
@@ -116,20 +115,26 @@ class X11ServerCore(GTKServerBase):
 
 
     def x11_init(self):
-        clean_keyboard_state()
         self.init_fake_xinerama()
-        if not X11Keyboard.hasXFixes() and self.cursors:
-            log.error("Error: cursor forwarding support disabled")
-        if not X11Keyboard.hasXTest():
-            log.error("Error: keyboard and mouse disabled")
-        elif not X11Keyboard.hasXkb():
-            log.error("Error: limited keyboard support")
-        self.init_x11_atoms()
-        if self.randr:
-            self.init_randr()
-        self.init_cursor()
+        with xlog:
+            clean_keyboard_state()
+        with xlog:
+            if not X11Keyboard.hasXFixes() and self.cursors:
+                log.error("Error: cursor forwarding support disabled")
+            if not X11Keyboard.hasXTest():
+                log.error("Error: keyboard and mouse disabled")
+            elif not X11Keyboard.hasXkb():
+                log.error("Error: limited keyboard support")
+        with xsync:
+            self.init_x11_atoms()
+        with xlog:
+            if self.randr:
+                self.init_randr()
+        with xlog:
+            self.init_cursor()
         self.query_opengl()
-        self.x11_filter = init_x11_filter()
+        with xlog:
+            self.x11_filter = init_x11_filter()
         assert self.x11_filter
 
     def init_fake_xinerama(self):
