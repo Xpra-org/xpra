@@ -200,7 +200,7 @@ class UDPProtocol(Protocol):
         now = monotonic_time()
         max_time = now-self.jitter/1000.0
         missing = {}
-        for seqno, ip in self.pending_packets.items():
+        for seqno, ip in tuple(self.pending_packets.items()):
             start = ip.start_time
             if start>=max_time:
                 continue        #too recent, may still arrive
