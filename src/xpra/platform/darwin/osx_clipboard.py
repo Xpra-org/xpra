@@ -117,12 +117,18 @@ class OSXClipboardProxy(ClipboardProxyCore):
         return str(text)
 
     def get_contents(self, target, got_contents):
+        log("get_contents%s", (target, got_contents))
         if target=="TARGETS":
             #we only support text at the moment:
             got_contents("ATOM", 32, ["text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
             return
+        if target not in ("text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
+            #we don't know how to handle this target,
+            #return an empty response:
+            got_contents(target, 8, b"")
+            return
         text = self.get_clipboard_text()
-        got_contents("bytes", 8, text)
+        got_contents(target, 8, text)
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False):
         # the remote end now owns the clipboard
