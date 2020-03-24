@@ -61,7 +61,7 @@ def parse_translated_targets(v):
 DEFAULT_TRANSLATED_TARGETS = "#".join((
     "text/plain;charset=utf-8:UTF8_STRING,text/plain,public.utf8-plain-text",
     "UTF8_STRING:text/plain;charset=utf-8,text/plain,public.utf8-plain-text",
-    "GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain",
+    "GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain,public.utf8-plain-text",
     ))
 TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRANSLATED_TARGETS", DEFAULT_TRANSLATED_TARGETS))
 log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
@@ -464,6 +464,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             if log.is_debug_enabled():
                 log("setting response %s as '%s' on property '%s' of window %s as %s",
                      ellipsizer(data), actual_target, prop, self.get_wininfo(requestor.get_xid()), dtype)
+            if actual_target!=target and dtype==target:
+                dtype = actual_target
             self.set_selection_response(requestor, actual_target, prop, dtype, dformat, data, time)
 
 
