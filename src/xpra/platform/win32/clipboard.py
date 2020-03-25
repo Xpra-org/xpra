@@ -189,9 +189,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         log("get_contents%s", (target, got_contents))
         if target=="TARGETS":
             #we only support text at the moment:
-            got_contents("ATOM", 32, ["text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
+            got_contents("ATOM", 32, ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
             return
-        if target not in ("text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
+        if target not in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
             #we don't know how to handle this target,
             #return an empty response:
             got_contents(target, 8, b"")
@@ -203,7 +203,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log.error("Error: failed to get clipboard data")
             if error_text:
                 log.error(" %s", error_text)
-            got_contents("text/plain", 8, b"")
+            got_contents(target, 8, b"")
         self.get_clipboard_text(got_text, errback)
 
 
