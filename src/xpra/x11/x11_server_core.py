@@ -1016,6 +1016,7 @@ class X11ServerCore(GTKServerBase):
         device = self.get_pointer_device(deviceid)
         assert device, "pointer device %s not found" % deviceid
         try:
+            log("%s%s", device.click, (button, pressed, args))
             with xsync:
                 device.click(button, pressed, *args)
         except XError:
