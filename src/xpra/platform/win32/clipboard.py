@@ -257,7 +257,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             if error_text:
                 log.warn("Warning: failed to get clipboard data")
                 log.warn(" %s", error_text)
-            got_contents("text/plain", 8, b"")
+            got_contents(target, 8, b"")
         self.get_clipboard_text(got_text, errback)
 
 
