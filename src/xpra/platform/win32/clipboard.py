@@ -258,7 +258,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 log.warn("Warning: failed to get clipboard data")
                 log.warn(" %s", error_text)
             got_contents(target, 8, b"")
-        self.get_clipboard_text(got_text, errback)
+        utf8 = target.lower().find("utf")>=0
+        self.get_clipboard_text(utf8, got_text, errback)
 
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False):
@@ -302,7 +303,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             self.set_clipboard_text(data)
 
 
-    def get_clipboard_text(self, callback, errback):
+    def get_clipboard_text(self, utf8, callback, errback):
         def format_name(fmt):
             name = CLIPBOARD_FORMATS.get(fmt)
             if name:
@@ -323,10 +324,14 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 else:
                     break
             log("clipboard formats: %s", csv(format_name(x) for x in formats))
-            matching = tuple(fmt for fmt in formats if fmt in (
-                win32con.CF_UNICODETEXT, win32con.CF_TEXT, win32con.CF_OEMTEXT)
-            )
-            log("supported formats: %s", csv(format_name(x) for x in matching))
+            matching = []
+            for u in (utf8, not utf8):
+                if u:
+                    fmts = [win32con.CF_UNICODETEXT]
+                else:
+                    fmts = [win32con.CF_TEXT, win32con.CF_OEMTEXT]
+                matching += [fmt for fmt in formats if fmt in fmts]
+            log("supported formats: %s (prefer utf8: %s)", csv(format_name(x) for x in matching), utf8)
             if not matching:
                 log("no supported formats, only: %s", csv(format_name(x) for x in formats))
                 errback()
