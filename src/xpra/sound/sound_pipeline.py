@@ -284,11 +284,10 @@ class SoundPipeline(GObject.GObject):
         elif t == gst.MessageType.ERROR:
             self.pipeline.set_state(gst.State.NULL)
             err, details = message.parse_error()
-            gstlog.error("Gstreamer pipeline error:")
-            for l in err.splitlines():
-                gstlog.error(" %s", l)
-            if self.pipeline_str:
-                gstlog.error(" %s", self.pipeline_str)
+            gstlog.error("Gstreamer pipeline error: %s", err.message)
+            for l in err.args:
+                if l!=err.message:
+                    gstlog(" %s", l)
             try:
                 #prettify (especially on win32):
                 p = details.find("\\Source\\")
