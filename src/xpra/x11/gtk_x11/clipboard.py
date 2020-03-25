@@ -60,6 +60,8 @@ def parse_translated_targets(v):
     return trans
 DEFAULT_TRANSLATED_TARGETS = "#".join((
     "text/plain;charset=utf-8:UTF8_STRING,text/plain,public.utf8-plain-text",
+    "TEXT:text/plain,text/plain;charset=utf-8,UTF8_STRING,public.utf8-plain-text",
+    "STRING:text/plain,text/plain;charset=utf-8,UTF8_STRING,public.utf8-plain-text",
     "UTF8_STRING:text/plain;charset=utf-8,text/plain,public.utf8-plain-text",
     "GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain,public.utf8-plain-text",
     ))
