@@ -75,6 +75,8 @@ def noop():
 """
 class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
+    INSTALL_SIGNAL_HANDLERS = True
+
     def __init__(self):
         #this may be called more than once,
         #skip doing internal init again:
@@ -149,6 +151,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.init_challenge_handlers(opts.challenge_handlers)
         self.init_aliases()
+        if self.INSTALL_SIGNAL_HANDLERS:
+            self.install_signal_handlers()
+
 
     def init_challenge_handlers(self, challenge_handlers):
         #register the authentication challenge handlers:
@@ -212,6 +217,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         sys.stderr.flush()
         self.cleanup()
         force_quit(128 + signum)
+
     def handle_app_signal(self, signum, _frame=None):
         try:
             log.info("exiting")
@@ -234,6 +240,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.handle_app_signal(signum)
         signal.signal(signal.SIGINT, os_signal)
         signal.signal(signal.SIGTERM, os_signal)
+        register_SIGUSR_signals(self.idle_add)
 
     def signal_disconnect_and_quit(self, exit_code, reason):
         log("signal_disconnect_and_quit(%s, %s) exit_on_signal=%s", exit_code, reason, self.exit_on_signal)

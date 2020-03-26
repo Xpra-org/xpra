@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -17,8 +17,8 @@ gi.require_version('Pango', '1.0')
 from gi.repository import GLib, Gdk, Gtk
 
 from xpra.util import flatten_dict, envbool
-from xpra.os_util import monotonic_time, register_SIGUSR_signals, WIN32
-from xpra.gtk_common.gobject_compat import register_os_signals
+from xpra.os_util import monotonic_time, WIN32
+from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals
 from xpra.gtk_common.quit import (
     gtk_main_quit_really,
     gtk_main_quit_on_fatal_exceptions_enable,
@@ -63,8 +63,9 @@ class GTKServerBase(ServerBase):
         keymap.connect("keys-changed", self._keys_changed)
 
     def install_signal_handlers(self, callback):
-        register_os_signals(callback, "%s Server" % self.get_server_mode())
-        register_SIGUSR_signals(GLib.idle_add)
+        sstr = "%s Server" % self.get_server_mode()
+        register_os_signals(callback, sstr)
+        register_SIGUSR_signals(sstr)
 
     def signal_quit(self, signum, frame=None):
         gtk_main_quit_on_fatal_exceptions_disable()

@@ -37,7 +37,6 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     """
         Utility superclass for GObject clients
     """
-    INSTALL_SIGNAL_HANDLERS = True
     COMMAND_TIMEOUT = EXTRA_TIMEOUT
 
     def __init__(self):
@@ -49,12 +48,22 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def init(self, opts):
         XpraClientBase.init(self, opts)
-        if self.INSTALL_SIGNAL_HANDLERS:
-            self.install_signal_handlers()
         self.glib_init()
 
     def get_scheduler(self):
         return GLib
+
+
+    def install_signal_handlers(self):
+        #only register the glib signal handler
+        #once the main loop is running,
+        #before that we just trigger a KeyboardInterrupt
+        def do_install_signal_handlers():
+            sstr = "%s Client" % self.client_type()
+            from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals
+            register_os_signals(self.handle_app_signal, sstr)
+            register_SIGUSR_signals(sstr)
+        GLib.idle_add(do_install_signal_handlers)
 
 
     def setup_connection(self, conn):

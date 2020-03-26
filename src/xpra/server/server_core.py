@@ -39,6 +39,7 @@ from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name
 from xpra.platform.paths import get_app_dir
 from xpra.os_util import (
+    register_SIGUSR_signals,
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
     getuid, monotonic_time, hexstr,
@@ -409,6 +410,7 @@ class ServerCore:
             callback(signum)
         signal.signal(signal.SIGINT, os_signal)
         signal.signal(signal.SIGTERM, os_signal)
+        register_SIGUSR_signals(self.idle_add)
 
 
     def run(self):

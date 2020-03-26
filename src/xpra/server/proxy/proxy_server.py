@@ -16,7 +16,6 @@ from xpra.util import (
 from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
     getuid, getgid, WIN32, POSIX,
-    register_SIGUSR_signals,
     )
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -88,7 +87,6 @@ class ProxyServer(ServerCore):
         self.source_remove = GLib.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self._ws_timeout = PROXY_WS_TIMEOUT
-        register_SIGUSR_signals(GLib.idle_add)
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
@@ -109,8 +107,9 @@ class ProxyServer(ServerCore):
 
 
     def install_signal_handlers(self, callback):
-        from xpra.gtk_common.gobject_compat import register_os_signals
+        from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals
         register_os_signals(callback, "Proxy Server")
+        register_SIGUSR_signals("Proxy Server")
 
 
     def make_dbus_server(self):
@@ -184,6 +183,9 @@ class ProxyServer(ServerCore):
     def cleanup(self):
         self.stop_all_proxies()
         ServerCore.cleanup(self)
+        log("cleanup() frames remaining:")
+        from xpra.util import dump_all_frames
+        dump_all_frames(log)
 
     def do_quit(self):
         self.main_loop.quit()

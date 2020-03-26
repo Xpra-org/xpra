@@ -30,13 +30,6 @@ class XpraClient(GTKXpraClient):
         return "GTK3"
 
 
-    def install_signal_handlers(self):
-        #only register the glib signal handler
-        #once the main loop is running,
-        #before that we just trigger a KeyboardInterrupt
-        from gi.repository import GLib
-        GLib.idle_add(register_os_signals, self.handle_app_signal)
-
     def get_notifier_classes(self):
         ncs = GTKXpraClient.get_notifier_classes(self)
         if not OSX:
