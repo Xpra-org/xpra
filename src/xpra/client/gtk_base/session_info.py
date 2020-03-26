@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -596,7 +596,8 @@ class SessionInfo(Gtk.Window):
         return not self.is_closed
 
     def populate(self, *_args):
-        if self.is_closed or not self.connection:
+        conn = self.connection
+        if self.is_closed or not conn:
             return False
         self.client.send_ping()
         self.last_populate_time = monotonic_time()
@@ -604,8 +605,8 @@ class SessionInfo(Gtk.Window):
         self.show_opengl_state()
         self.show_window_renderers()
         #record bytecount every second:
-        self.net_in_bytecount.append(self.connection.input_bytecount)
-        self.net_out_bytecount.append(self.connection.output_bytecount)
+        self.net_in_bytecount.append(conn.input_bytecount)
+        self.net_out_bytecount.append(conn.output_bytecount)
         if mixin_features.audio and SHOW_SOUND_STATS:
             if self.client.sound_in_bytecount>0:
                 self.sound_in_bitcount.append(self.client.sound_in_bytecount * 8)
@@ -838,10 +839,19 @@ class SessionInfo(Gtk.Window):
             #no longer connected!
             return False
         c = p._conn
-        self.input_packets_label.set_text(std_unit_dec(p.input_packetcount))
-        self.input_bytes_label.set_text(std_unit_dec(c.input_bytecount))
-        self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
-        self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
+        if c:
+            self.input_packets_label.set_text(std_unit_dec(p.input_packetcount))
+            self.input_bytes_label.set_text(std_unit_dec(c.input_bytecount))
+            self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
+            self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
+        else:
+            for l in (
+                self.input_packets_label,
+                self.input_bytes_label,
+                self.output_packets_label,
+                self.output_bytes_label,
+                ):
+                l.set_text("n/a")
 
         if mixin_features.audio:
             def get_sound_info(supported, prop):
