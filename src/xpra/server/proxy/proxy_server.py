@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
+import time
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 from gi.repository import GLib
 
@@ -16,6 +17,7 @@ from xpra.util import (
 from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
     getuid, getgid, WIN32, POSIX,
+    monotonic_time,
     )
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -38,6 +40,7 @@ assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
 CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", getuid()!=0)
 STOP_PROXY_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_SOCKET_TYPES", "unix-domain,named-pipe").split(",")
 PROXY_INSTANCE_THREADED = envbool("XPRA_PROXY_INSTANCE_THREADED", False)
+PROXY_CLEANUP_GRACE_PERIOD = envfloat("XPRA_PROXY_CLEANUP_GRACE_PERIOD", "0.5")
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_PROXY_MAX_CONCURRENT_CONNECTIONS", 200)
 if WIN32:
@@ -153,32 +156,34 @@ class ProxyServer(ServerCore):
                 return "stopped proxy instance for display %s" % display
         raise ControlError("no proxy found for display %s" % display)
 
-    def stop_all_proxies(self):
+    def stop_all_proxies(self, force=False):
         instances = self.instances
         log("stop_all_proxies() will stop proxy instances: %s", instances)
         for instance in tuple(instances.keys()):
-            self.stop_proxy(instance)
-        self.instances = {}
+            self.stop_proxy(instance, force)
         log("stop_all_proxies() done")
 
-    def stop_proxy(self, instance):
+    def stop_proxy(self, instance, force=False):
         v = self.instances.get(instance)
         if not v:
             log.error("Error: proxy instance not found for %s", instance)
             return
         log("stop_proxy(%s) is_alive=%s", instance, instance.is_alive())
-        if not instance.is_alive():
+        if not instance.is_alive() and not force:
             return
         isprocess, _, mq = v
         log("stop_proxy(%s) %s", instance, v)
         #different ways of stopping for process vs threaded implementations:
         if isprocess:
             #send message:
-            mq.put_nowait("stop")
-            try:
-                mq.close()
-            except Exception as e:
-                log("%s() %s", mq.close, e)
+            if force:
+                instance.terminate()
+            else:
+                mq.put_nowait("stop")
+                try:
+                    mq.close()
+                except Exception as e:
+                    log("%s() %s", mq.close, e)
         else:
             #direct method call:
             instance.stop(None, "proxy server request")
@@ -187,9 +192,20 @@ class ProxyServer(ServerCore):
     def cleanup(self):
         self.stop_all_proxies()
         ServerCore.cleanup(self)
+        start = monotonic_time()
+        live = True
+        log("cleanup() proxy instances: %s", self.instances)
+        while monotonic_time()-start<PROXY_CLEANUP_GRACE_PERIOD and live:
+            live = tuple(x for x in tuple(self.instances.keys()) if x.is_alive())
+            if live:
+                log("cleanup() still %i proxies alive: %s", len(live), live)
+                time.sleep(0.1)
+        if live:
+            self.stop_all_proxies(True)
         log("cleanup() frames remaining:")
         from xpra.util import dump_all_frames
         dump_all_frames(log)
+
 
     def do_quit(self):
         self.main_loop.quit()
