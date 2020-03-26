@@ -174,7 +174,11 @@ class ProxyServer(ServerCore):
         #different ways of stopping for process vs threaded implementations:
         if isprocess:
             #send message:
-            mq.put("stop")
+            mq.put_nowait("stop")
+            try:
+                mq.close()
+            except Exception as e:
+                log("%s() %s", mq.close, e)
         else:
             #direct method call:
             instance.stop(None, "proxy server request")
