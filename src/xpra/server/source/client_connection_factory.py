@@ -84,7 +84,7 @@ def get_client_connection_class(caps):
                 except Exception as e:
                     log("%s.__init__(..)", bc, exc_info=True)
                     raise Exception("failed to initialize %s: %s" % (bc, e)) from None
-    
+
             for c in CC_BASES:
                 c.init_state(self)
             self.run()
