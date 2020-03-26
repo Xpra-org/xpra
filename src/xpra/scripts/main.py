@@ -2119,8 +2119,8 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         #useful for testing failures that cause the whole XDG_RUNTIME_DIR to get nuked
         #(and the log file with it):
         #cmd.append("--log-file=/tmp/proxy.log")
-        close_fds = True
         preexec_fn = None
+        pass_fds = ()
         if POSIX:
             preexec_fn = os.setpgrp
             cmd.append("--daemon=yes")
@@ -2133,19 +2133,9 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                 r_pipe, w_pipe = os.pipe()
                 log("subprocess displayfd pipes: %s", (r_pipe, w_pipe))
                 cmd.append("--displayfd=%s" % w_pipe)
-                close_fds = False
-                def no_close_pipes():
-                    os.setpgrp()
-                    from xpra.os_util import close_fds as osclose_fds
-                    try:
-                        for fd in (r_pipe, w_pipe):
-                            os.set_inheritable(fd, True)
-                    except OSError:
-                        log.error("no_close_pipes()", exc_info=True)
-                    osclose_fds([0, 1, 2, r_pipe, w_pipe])
-                preexec_fn = no_close_pipes
+                pass_fds = (r_pipe, w_pipe)
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
-        proc = Popen(cmd, close_fds=close_fds, env=env, cwd=cwd, preexec_fn=preexec_fn)
+        proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log("proc=%s", proc)
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd
