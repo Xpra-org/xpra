@@ -356,22 +356,7 @@ class ServerCore:
         self._closing = True
         self.cleanup()
         w = get_worker()
-        def quit_timer():
-            log("quit_timer() worker=%s", w)
-            if w and w.is_alive():
-                #wait up to 1 second for the worker thread to exit
-                try:
-                    w.wait(1)
-                except Exception:
-                    pass
-                if w.is_alive():
-                    #still alive, force stop:
-                    stop_worker(True)
-                    try:
-                        w.wait(1)
-                    except Exception:
-                        pass
-            self.quit(upgrading)
+        log("clean_quit: worker=%s", w)
         if w:
             stop_worker()
             try:
@@ -379,8 +364,26 @@ class ServerCore:
             except Exception:
                 pass
             if w.is_alive():
+                def quit_timer():
+                    log("quit_timer() worker=%s", w)
+                    if w and w.is_alive():
+                        #wait up to 1 second for the worker thread to exit
+                        try:
+                            w.wait(1)
+                        except Exception:
+                            pass
+                        if w.is_alive():
+                            #still alive, force stop:
+                            stop_worker(True)
+                            try:
+                                w.wait(1)
+                            except Exception:
+                                pass
+                    self.quit(upgrading)
                 self.timeout_add(250, quit_timer)
+                log("clean_quit(..) quit timers scheduled, worker=%s", w)
             else:
+                log("clean_quit(..) worker ended")
                 w = None
         def force_quit():
             log("force_quit()")
