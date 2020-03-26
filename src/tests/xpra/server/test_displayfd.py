@@ -9,7 +9,6 @@ import sys
 
 def main():
     from xpra.util import nonl
-    from xpra.os_util import close_fds
     from xpra.platform.displayfd import read_displayfd, parse_displayfd
     import subprocess
     r_pipe, w_pipe = os.pipe()
@@ -21,9 +20,7 @@ def main():
         "--start-via-proxy=no",
        "--displayfd=%s" % w_pipe,
        ]
-    def preexec_fn():
-        close_fds([0, 1, 2, r_pipe, w_pipe])
-    proc = subprocess.Popen(cmd, close_fds=False, preexec_fn=preexec_fn)
+    proc = subprocess.Popen(cmd, pass_fds=(w_pipe, ))
     print("Popen(%s)=%s" % (cmd, proc))
     buf = read_displayfd(r_pipe, timeout=30, proc=proc)
     print("read_displayfd(%i)='%s'" % (r_pipe, nonl(buf)))
