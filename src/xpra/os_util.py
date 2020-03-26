@@ -422,18 +422,6 @@ def livefds():
                 live.add(fd)
     return live
 
-def close_fds(excluding=(0, 1, 2)):
-    try:
-        MAXFD = os.sysconf("SC_OPEN_MAX")
-    except ValueError:
-        MAXFD = 256
-    for i in range(0, MAXFD):
-        if i not in excluding:
-            try:
-                os.close(i)
-            except OSError:
-                pass
-
 def get_all_fds():
     fd_dirs = ["/dev/fd", "/proc/self/fd"]
     fds = []

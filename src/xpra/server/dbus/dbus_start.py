@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import os
 from subprocess import Popen, PIPE
 
 from xpra.util import nonl
-from xpra.os_util import POSIX, bytestostr, close_fds
+from xpra.os_util import POSIX, bytestostr
 from xpra.scripts.server import _get_int, _get_str, _save_int, _save_str
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
