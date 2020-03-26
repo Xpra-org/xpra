@@ -244,10 +244,9 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                     os.setpgrp()
                     if getuid()==0 and uid:
                         setuidgid(uid, gid)
-                    close_fds([0, 1, 2, r_pipe, w_pipe])
                 try:
-                    xvfb = Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
-                                            stdin=PIPE, preexec_fn=preexec, cwd=cwd)
+                    xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
+                                 preexec_fn=preexec, cwd=cwd, pass_fds=(w_pipe,))
                 except OSError as e:
                     log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
                     raise InitException("failed to execute xvfb command %s: %s" % (xvfb_cmd, e)) from None
