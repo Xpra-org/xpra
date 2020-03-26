@@ -6,13 +6,13 @@
 #legacy compatibility file
 
 import sys
+import signal
 
 
 _glib_unix_signals = {}
-def register_os_signals(callback, commandtype=""):
+def register_os_signals(callback, commandtype="", signals=(signal.SIGINT, signal.SIGTERM)):
     from xpra.os_util import SIGNAMES, POSIX, get_util_logger
     from gi.repository import GLib
-    import signal
     def handle_signal(signum):
         try:
             sys.stderr.write("\n")
@@ -26,7 +26,7 @@ def register_os_signals(callback, commandtype=""):
         callback(signum)
     def os_signal(signum, _frame):
         GLib.idle_add(handle_signal, signum)
-    for signum in (signal.SIGINT, signal.SIGTERM):
+    for signum in signals:
         if POSIX:
             #replace the previous definition if we had one:
             global _glib_unix_signals
