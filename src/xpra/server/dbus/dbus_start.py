@@ -27,9 +27,6 @@ def start_dbus(dbus_launch):
         return 0, {}
     assert POSIX
     try:
-        def preexec():
-            os.setsid()
-            close_fds()
         env = dict((k,v) for k,v in os.environ.items() if k in (
             "PATH",
             "SSH_CLIENT", "SSH_CONNECTION",
@@ -40,7 +37,7 @@ def start_dbus(dbus_launch):
         import shlex
         cmd = shlex.split(dbus_launch)
         log("start_dbus(%s) env=%s", dbus_launch, env)
-        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, env=env, preexec_fn=preexec)
+        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, env=env, start_new_session=True)
         out = proc.communicate()[0]
         assert proc.poll()==0, "exit code is %s" % proc.poll()
         #parse and add to global env:
