@@ -76,6 +76,9 @@ class GTKServerBase(ServerBase):
         gtk_main_quit_on_fatal_exceptions_disable()
         gtk_main_quit_really()
         log("do_quit: gtk_main_quit_really done")
+        #from now on, we can't rely on the main loop:
+        from xpra.os_util import register_SIGUSR_signals
+        register_SIGUSR_signals()
 
     def do_cleanup(self):
         ServerBase.do_cleanup(self)

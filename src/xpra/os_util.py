@@ -390,7 +390,9 @@ def force_quit(status=1):
     os._exit(status)  #pylint: disable=protected-access
 
 
-def register_SIGUSR_signals(idle_add):
+def no_idle(fn, *args, **kwargs):
+    fn(*args, **kwargs)
+def register_SIGUSR_signals(idle_add=no_idle):
     if not os.name=="posix":
         return
     from xpra.util import dump_all_frames, dump_gc_frames

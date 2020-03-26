@@ -194,6 +194,9 @@ class ProxyServer(ServerCore):
     def do_quit(self):
         self.main_loop.quit()
         log.info("Proxy Server process ended")
+        #from now on, we can't rely on the main loop:
+        from xpra.os_util import register_SIGUSR_signals
+        register_SIGUSR_signals()
 
 
     def verify_connection_accepted(self, protocol):
