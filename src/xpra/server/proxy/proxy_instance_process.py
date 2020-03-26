@@ -117,10 +117,16 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         log.info("")
         log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
         QueueScheduler.stop(self)
-        self.message_queue.put(None, False)
+        self.message_queue.put_nowait(None)
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(None, SIGNAMES.get(signum, signum))
+        #from now on, we can't rely on the main loop:
+        from xpra.os_util import register_SIGUSR_signals
+        register_SIGUSR_signals()
+        #log.info("instance frames:")
+        #from xpra.util import dump_all_frames
+        #dump_all_frames(log.info)
 
 
     ################################################################################
