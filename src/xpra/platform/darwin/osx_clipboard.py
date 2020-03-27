@@ -88,7 +88,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
     def timer_clipboard_check(self):
         c = self.change_count
         self.update_change_count()
-        log("timer_clipboard_check() was %s, now %s", c, self.change_count)
+        log("timer_clipboard_check() was %s, now %s (have token: %s)", c, self.change_count, self._have_token)
         if c!=self.change_count:
             self.local_clipboard_changed()
 
