@@ -1,4 +1,4 @@
-v3.0.8 (2020-03-24)
+v3.0.8 (2020-03-27)
 ======================
 	-- fix handling of dpi command line switch (correctly this time?)
 	-- fix bug report window not getting focus on MacOS
@@ -7,18 +7,24 @@ v3.0.8 (2020-03-24)
 	-- fix rare unexpected client exit on MS Windows
 	-- fix MS Windows clipboard:
 	    update failures
-	    selection translation for outbound data
 	    convert CRLF line endings
-	    reject invalid targets
 	-- Clipboard:
 	    fix selection not shown as active in menus (MS Windows and MacOS)
 	    fix spurious warnings when sharing a session
 	    fix clipboard reset with python2 builds
+	    selection translation for outbound data
+	    support client applications that don't use TARGETS (ie: Motif)
+	    reject invalid targets
 	-- fix 'xpra upgrade' wrongly updating non-xpra displays
 	-- fix logging error in client geometry debugging output
 	-- fix pulseaudio start command with Ubuntu Xenial
 	-- fix spurious de-iconifications
 	-- fix handling of server control commands with python3 clients
+	-- fix UDP backport bug sending control packets
+	-- fix vfb getting killed on upgrade failure
+	-- fix proxy server cleanup: force forwarders to terminate
+	-- fix session info errors during client exit
+	-- fix printer cleanup errors with invalid UTF8 printer names
 	-- use python3 (if installed) by default on Ubuntu Xenial
 	-- don't use Xdummy on arm, too slow
 	-- don't show 'Download' button that we can't honour

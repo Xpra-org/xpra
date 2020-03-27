@@ -5,25 +5,32 @@ xpra (3.0.8-1) UNRELEASED; urgency=low
   * fix AltGr mode with non-X11 clients, layout-group changes
   * fix rare unexpected client exit on MS Windows
   * fix MS Windows clipboard:
-    update failures
-    selection translation for outbound data
-    convert CRLF line endings
-    reject invalid targets
+      update failures
+      convert CRLF line endings
   * Clipboard:
-    fix selection not shown as active in menus (MS Windows and MacOS)
-    fix spurious warnings when sharing a session
-    fix clipboard reset with python2 builds
+      fix selection not shown as active in menus (MS Windows and MacOS)
+      fix spurious warnings when sharing a session
+      fix clipboard reset with python2 builds
+      selection translation for outbound data
+      support client applications that don't use TARGETS (ie: Motif)
+      reject invalid targets
   * fix 'xpra upgrade' wrongly updating non-xpra displays
   * fix logging error in client geometry debugging output
   * fix pulseaudio start command with Ubuntu Xenial
   * fix spurious de-iconifications
   * fix handling of server control commands with python3 clients
+  * fix UDP backport bug sending control packets
+  * fix vfb getting killed on upgrade failure
+  * fix proxy server cleanup: force forwarders to terminate
+  * fix session info errors during client exit
+  * fix printer cleanup errors with invalid UTF8 printer names
   * use python3 (if installed) by default on Ubuntu Xenial
   * don't use Xdummy on arm, too slow
-  * don't use Xdummy on arm, too slow
   * don't show 'Download' button that we can't honour
+  * show all pressed keys according to X11 server in 'xpra info'
+  * try harder not to use video for tiny areas
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 24 Mar 2020 13:51:36 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 27 Mar 2020 12:50:29 +0700
 
 xpra (3.0.7-1) UNRELEASED; urgency=low
   * fix avcodec2 race condition crash
