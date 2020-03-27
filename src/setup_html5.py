@@ -7,7 +7,6 @@
 
 import sys
 import os.path
-import shutil
 
 
 def glob_recurse(srcdir):
@@ -57,13 +56,16 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
     else:
         print("copying html5 client to '%s'" % (install_dir, ))
     try:
-        from add_build_info import get_svn_props
-        svn_props = get_svn_props(False)
-        REVISION = svn_props.get("REVISION", 0)
-        LOCAL_MODIFICATIONS = svn_props.get("LOCAL_MODIFICATIONS", 0)
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
     except ImportError:
-        REVISION  = 0
-        LOCAL_MODIFICATIONS = 0
+        try:
+            from add_build_info import get_svn_props
+            svn_props = get_svn_props(False)
+            REVISION = svn_props.get("REVISION", 0)
+            LOCAL_MODIFICATIONS = svn_props.get("LOCAL_MODIFICATIONS", 0)
+        except ImportError:
+            REVISION  = 0
+            LOCAL_MODIFICATIONS = 0
     #those are used to replace the file we ship in source form
     #with one that is maintained by the distribution:
     symlinks = {
