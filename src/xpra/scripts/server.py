@@ -21,7 +21,7 @@ import traceback
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups, get_group_id
-from xpra.util import envint, envbool, csv, DEFAULT_PORT
+from xpra.util import envint, envbool, csv, DEFAULT_PORT, unsetenv
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
@@ -733,10 +733,6 @@ def daemonize(logfd):
 
 
 def sanitize_env():
-    def unsetenv(*varnames):
-        for x in varnames:
-            if x in os.environ:
-                del os.environ[x]
     #we don't want client apps to think these mean anything:
     #(if set, they belong to the desktop the server was started from)
     #TODO: simply whitelisting the env would be safer/better

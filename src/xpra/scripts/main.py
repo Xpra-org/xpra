@@ -22,7 +22,7 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.util import csv, envbool, envint, DEFAULT_PORT
+from xpra.util import csv, envbool, envint, DEFAULT_PORT, unsetenv
 from xpra.os_util import getuid, getgid, is_Ubuntu, getUbuntuVersion
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
@@ -134,6 +134,9 @@ def main(script_file, cmdline):
         from xpra.log import Logger
         log = Logger("util")
         log(msg, exc_info=True)
+
+    #some environment variables cause us problems if set:
+    unsetenv("GDK_SCALE")
 
     if envbool("XPRA_NOMD5", False):
         import hashlib

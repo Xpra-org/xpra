@@ -754,3 +754,11 @@ def envbool(name, d=False):
         return bool(int(os.environ.get(name, d)))
     except:
         return d
+
+def unsetenv(*varnames):
+    for x in varnames:
+        try:
+            del os.environ[x]
+        except KeyError:
+            pass
+
