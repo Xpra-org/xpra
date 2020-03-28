@@ -728,7 +728,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         def fake_send(*args):
             opengllog("fake_send(%s)", args)
         #now replace all the windows with new ones:
-        for wid, window in self._id_to_window.items():
+        for wid, window in tuple(self._id_to_window.items()):
             if window.is_tray():
                 #trays are never GL enabled, so don't bother re-creating them
                 #(might cause problems anyway if we did)
