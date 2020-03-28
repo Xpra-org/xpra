@@ -69,16 +69,17 @@
   </autotools>
 
   <autotools id="python" autogenargs="--enable-shared"
-	     autogen-sh="configure" supports-non-srcdir-builds="no">
+             supports-non-srcdir-builds="no" autogen-sh="autoreconf">
     <branch repo="python"
-	    module="2.7.13/Python-2.7.13.tar.xz" version="2.7.13"
-	    hash="sha256:35d543986882f78261f97787fd3e06274bfa6df29fac9b4a94f73930ff98f731">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/python2-test_grammar.py-typo.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/python2-linkflags.patch" strip="1"/>"/>
+           module="2.7.17/Python-2.7.17.tar.xz" version="2.7.17"
+           hash="sha256:4d43f033cdbd0aa7b7023c81b0e986fd11e653b5248dac9144d508f11812ba41">
+  <!-- related to https://bugs.python.org/issue11445 -->
+  <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/python-ldflags.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="gettext-runtime"/>
       <dep package='readline'/>
+      <dep package="openssl"/> <!-- For hashlib -->
     </dependencies>
     <after>
       <dep package="berkeleydb"/>
