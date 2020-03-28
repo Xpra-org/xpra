@@ -25,6 +25,7 @@ BLACKLIST = {
              "renderer" : ["Software Rasterizer",
                            "Mesa DRI Intel(R) Ivybridge Desktop",
                            "Mesa DRI Intel(R) Haswell Mobile",
+                           "Intel(R) UHD Graphics 620",
                            ]
              }
 
