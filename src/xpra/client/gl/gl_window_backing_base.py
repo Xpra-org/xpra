@@ -645,7 +645,10 @@ class GLWindowBackingBase(GTKWindowBacking):
             # black, no alpha:
             glClearColor(0.0, 0.0, 0.0, 1.0)
         if left or top or right or bottom:
-            glClear(GL_COLOR_BUFFER_BIT)
+            try:
+                glClear(GL_COLOR_BUFFER_BIT)
+            except:
+                log("ignoring glClear(GL_COLOR_BUFFER_BIT) error, buggy driver?", exc_info=True)
 
         #viewport for painting to window:
         glViewport(left, top, ww, wh)
