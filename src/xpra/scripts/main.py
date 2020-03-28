@@ -2657,7 +2657,7 @@ def run_showsetting(options, args):
     def show_settings():
         for setting in settings:
             value = config.get(setting)
-            log.info("%-20s: %-40s (%s)", setting, vstr(None, value), type(None, value))
+            log.info("%-20s: %-40s (%s)", setting, vstr(None, value), type(value))
 
     log.info("* default config:")
     show_settings()
