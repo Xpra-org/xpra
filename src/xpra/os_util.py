@@ -263,12 +263,15 @@ def is_X11():
         get_util_logger().debug("failed to load x11 bindings", exc_info=True)
         return True
 
-def is_Wayland():
-    backend = os.environ.get("GDK_BACKEND", "")
+def is_Wayland() -> bool:
+    return _is_Wayland(os.environ)
+
+def _is_Wayland(env : dict) -> bool:
+    backend = env.get("GDK_BACKEND", "")
     if backend=="wayland":
         return True
     return backend!="x11" and (
-        os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE")=="wayland"
+        bool(env.get("WAYLAND_DISPLAY")) or env.get("XDG_SESSION_TYPE")=="wayland"
         )
 
 
