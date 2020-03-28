@@ -816,6 +816,7 @@ class WindowVideoSource(WindowSource):
 
     def cancel_encode_from_queue(self):
         #free all items in the encode queue:
+        self.encode_from_queue_due = 0
         eqt = self.encode_from_queue_timer
         avsynclog("cancel_encode_from_queue() timer=%s for wid=%i", eqt, self.wid)
         if eqt:
@@ -838,10 +839,10 @@ class WindowVideoSource(WindowSource):
         #must be called from the UI thread for synchronization
         #we ensure that the timer will fire no later than av_delay
         #re-scheduling it if it was due later than that
-        due = time.time()+av_delay
+        due = time.time()+av_delay/1000.0
         if self.encode_from_queue_due==0 or due<self.encode_from_queue_due:
-            self.encode_from_queue_due = due
             self.cancel_encode_from_queue()
+            self.encode_from_queue_due = due
             def timer_encode_from_queue():
                 self.encode_from_queue_timer = None
                 self.encode_from_queue_due = 0
