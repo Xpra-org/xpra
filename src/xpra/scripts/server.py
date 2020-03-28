@@ -1129,7 +1129,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             error_cb("too many extra arguments (%i): only expected a display number" % len(extra_args))
         if len(extra_args) == 1:
             display_name = extra_args[0]
-            if not shadowing and not proxying:
+            if not shadowing and not proxying and not clobber:
                 display_name_check(display_name)
         else:
             if proxying:
