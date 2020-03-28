@@ -95,7 +95,7 @@ class ChildReaper:
         self._proc_info = []
         self._quit = None
 
-    def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
+    def add_process(self, process, name : str, command, ignore=False, forget=False, callback=None):
         pid = process.pid
         assert pid>0, "process has no pid!"
         procinfo = ProcInfo()
@@ -151,13 +151,13 @@ class ChildReaper:
         log("sigchld(%s, %s)", signum, frame_str)
         self.reap()
 
-    def get_proc_info(self, pid):
+    def get_proc_info(self, pid : int):
         for proc_info in tuple(self._proc_info):
             if proc_info.pid==pid:
                 return proc_info
         return None
 
-    def add_dead_pid(self, pid):
+    def add_dead_pid(self, pid : int):
         #find the procinfo for this pid:
         matches = [procinfo for procinfo in self._proc_info if procinfo.pid==pid and not procinfo.dead]
         log("add_dead_pid(%s) matches=%s", pid, matches)

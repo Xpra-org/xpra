@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,7 +35,7 @@ class QueueScheduler:
             except KeyError:
                 pass
 
-    def idle_add(self, fn, *args, **kwargs):
+    def idle_add(self, fn : callable, *args, **kwargs) -> int:
         tid = self.timer_id.increase()
         self.main_queue.put((self.idle_repeat_call, (tid, fn, args, kwargs), {}))
         #add an entry,
@@ -43,31 +43,31 @@ class QueueScheduler:
         self.timers[tid] = False
         return tid
 
-    def idle_repeat_call(self, tid, fn, args, kwargs):
+    def idle_repeat_call(self, tid : int, fn : callable, args, kwargs):
         if tid not in self.timers:
             return False    #cancelled
         return fn(*args, **kwargs)
 
-    def timeout_add(self, timeout, fn, *args, **kwargs):
+    def timeout_add(self, timeout : int, fn : callable, *args, **kwargs):
         tid = self.timer_id.increase()
         self.do_timeout_add(tid, timeout, fn, *args, **kwargs)
         return tid
 
-    def do_timeout_add(self, tid, timeout, fn, *args, **kwargs):
+    def do_timeout_add(self, tid : int, timeout : int, fn : callable, *args, **kwargs):
         #emulate glib's timeout_add using Timers
         args = (tid, timeout, fn, args, kwargs)
         t = Timer(timeout/1000.0, self.queue_timeout_function, args)
         self.timers[tid] = t
         t.start()
 
-    def queue_timeout_function(self, tid, timeout, fn, fn_args, fn_kwargs):
+    def queue_timeout_function(self, tid : int, timeout : int, fn : callable, fn_args, fn_kwargs):
         if tid not in self.timers:
             return      #cancelled
         #add to run queue:
         mqargs = [tid, timeout, fn, fn_args, fn_kwargs]
         self.main_queue.put((self.timeout_repeat_call, mqargs, {}))
 
-    def timeout_repeat_call(self, tid, timeout, fn, fn_args, fn_kwargs):
+    def timeout_repeat_call(self, tid : int, timeout : int, fn : callable, fn_args, fn_kwargs):
         #executes the function then re-schedules it (if it returns True)
         if tid not in self.timers:
             return False    #cancelled

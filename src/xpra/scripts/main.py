@@ -277,7 +277,7 @@ def systemd_run_wrap(mode, args, systemd_run_args):
         return 128+signal.SIGINT
 
 
-def isdisplaytype(args, dtype):
+def isdisplaytype(args, dtype) -> bool:
     return len(args)>0 and (args[0].startswith("%s/" % dtype) or args[0].startswith("%s:" % dtype))
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
@@ -1783,7 +1783,7 @@ def do_run_client(app):
         app.cleanup()
 
 
-def get_start_new_session_dict(opts, mode, extra_args):
+def get_start_new_session_dict(opts, mode, extra_args) -> dict:
     sns = {
            "mode"           : mode,     #ie: "start-desktop"
            }
@@ -1804,7 +1804,7 @@ def get_start_new_session_dict(opts, mode, extra_args):
         sns["chdir"] = os.getcwd()
     return sns
 
-def shellquote(s):
+def shellquote(s : str) -> str:
     return '"' + s.replace('"', '\\"') + '"'
 
 def strip_defaults_start_child(start_child, defaults_start_child):
@@ -1961,7 +1961,7 @@ def no_gtk():
     raise Exception("the Gtk module is already loaded: %s" % Gtk)
 
 
-def run_glprobe(opts, show=False):
+def run_glprobe(opts, show=False) -> int:
     if show:
         from xpra.platform.gui import init, set_default_icon
         set_default_icon("opengl.png")
@@ -1973,7 +1973,7 @@ def run_glprobe(opts, show=False):
         return 2
     return 0
 
-def do_run_glcheck(opts, show=False):
+def do_run_glcheck(opts, show=False) -> dict:
     #suspend all logging:
     saved_level = None
     log = Logger("opengl")
@@ -2623,7 +2623,7 @@ def run_showconfig(options, args):
         else:
             i("%-20s           = %s", opt, vstr(otype, cv))
 
-def vstr(otype, v):
+def vstr(otype, v) -> str:
     #just used to quote all string values
     if v is None:
         if otype==bool:
