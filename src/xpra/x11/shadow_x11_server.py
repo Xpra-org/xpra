@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.x11.x11_server_core import X11ServerCore
-from xpra.os_util import monotonic_time, is_Wayland, get_loaded_kernel_modules
-from xpra.util import envbool, envint, XPRA_DISPLAY_NOTIFICATION_ID
+from xpra.os_util import monotonic_time, _is_Wayland, get_loaded_kernel_modules
+from xpra.util import envbool, envint, nonl, XPRA_DISPLAY_NOTIFICATION_ID
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
+from xpra.scripts.main import saved_env
 from xpra.log import Logger
 
 log = Logger("x11", "shadow")
@@ -38,7 +39,7 @@ class XImageCapture:
         self.xshm = None
         self.xwindow = xwindow
         assert USE_XSHM and XImage.has_XShm(), "no XShm support"
-        if is_Wayland():
+        if _is_Wayland(saved_env):
             log.warn("Warning: shadow servers do not support Wayland")
             log.warn(" switch to X11")
 
@@ -169,18 +170,27 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def verify_capture(self, ss):
         #verify capture works:
+        log("verify_capture(%s)", ss)
         try:
             capture = GTKImageCapture(self.root)
             bdata = capture.take_screenshot()[-1]
             nid = XPRA_DISPLAY_NOTIFICATION_ID
+            title = body = ""
             if any(b!=0 for b in bdata):
                 log("verify_capture(%s) succeeded", ss)
-                return
-            log.warn("Warning: shadow screen capture is blank")
-            body = "The shadow display capture is blank"
-            if get_loaded_kernel_modules("vboxguest", "vboxvideo"):
-                body += "\nthis may be caused by the VirtualBox video driver."
-            ss.may_notify(nid, "Shadow Failure", body, icon_name="server")
+                if _is_Wayland(saved_env):
+                    title = "Wayland Session Warning"
+                    body = "Wayland sessions are not supported,\n"+\
+                            "the screen capture is likely to be empty"
+            else:
+                log.warn("Warning: shadow screen capture is blank")
+                body = "The shadow display capture is blank"
+                if get_loaded_kernel_modules("vboxguest", "vboxvideo"):
+                    body += "\nthis may be caused by the VirtualBox video driver."
+                title = "Shadow Capture Failure"
+            log("verify_capture: title='%s', body='%s'", ss, title, nonl(body))
+            if title and body:
+                ss.may_notify(nid, title, body, icon_name="server")
         except Exception as e:
             ss.may_notify(nid, "Shadow Error", "Error shadowing the display:\n%s" % e, icon_name="bugs")
 

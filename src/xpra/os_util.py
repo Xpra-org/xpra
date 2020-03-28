@@ -226,11 +226,14 @@ def is_X11() -> bool:
         return True
 
 def is_Wayland() -> bool:
-    backend = os.environ.get("GDK_BACKEND", "")
+    return _is_Wayland(os.environ)
+
+def _is_Wayland(env : dict) -> bool:
+    backend = env.get("GDK_BACKEND", "")
     if backend=="wayland":
         return True
     return backend!="x11" and (
-        bool(os.environ.get("WAYLAND_DISPLAY")) or os.environ.get("XDG_SESSION_TYPE")=="wayland"
+        bool(env.get("WAYLAND_DISPLAY")) or env.get("XDG_SESSION_TYPE")=="wayland"
         )
 
 
