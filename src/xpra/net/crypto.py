@@ -120,7 +120,7 @@ def get_digests():
     #python versions older than 2.7.9 may not have this attribute:
     #(in which case, your options will be more limited)
     if algorithms_available:
-        digests += ["hmac+%s" % x for x in tuple(reversed(sorted(algorithms_available))) if not x.startswith("shake_")]
+        digests += ["hmac+%s" % x for x in tuple(reversed(sorted(algorithms_available))) if not x.startswith("shake_") and getattr(hashlib, x, None) is not None]
     return digests
 
 def get_digest_module(digest):
