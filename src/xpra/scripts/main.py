@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.util import csv, envbool, envint, DEFAULT_PORT, unsetenv
-from xpra.os_util import getuid, getgid, is_Ubuntu, getUbuntuVersion
+from xpra.os_util import getuid, getgid, is_Ubuntu, getUbuntuVersion, pollwait
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -1205,7 +1205,15 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 systemd_run = False
             else:
                 from xpra.os_util import is_systemd_pid1
-                systemd_run = is_systemd_pid1()
+                if is_systemd_pid1():
+                    cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
+                    proc = Popen(cmd, stdin=None, stdout=None, stderr=None, shell=False)
+                    r = pollwait(proc, timeout=1)
+                    if r is None:
+                        proc.terminate()
+                    systemd_run = r==0
+                else:
+                    systemd_run = False
         if systemd_run:
             #check if we have wrapped it already (or if disabled via env var)
             wrapit = envbool("XPRA_SYSTEMD_RUN", True)
