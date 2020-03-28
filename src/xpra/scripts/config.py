@@ -678,6 +678,7 @@ def get_defaults():
     ssl_protocol = "TLSv1_2"
     if sys.version_info<(2, 7, 9):
         ssl_protocol = "SSLv23"
+    from xpra.os_util import is_Debian, is_Ubuntu
 
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
@@ -768,7 +769,7 @@ def get_defaults():
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
                     "use-display"       : False,
-                    "fake-xinerama"     : not OSX and not WIN32,
+                    "fake-xinerama"     : not OSX and not WIN32 and not is_Debian() and not is_Ubuntu(),
                     "resize-display"    : not OSX and not WIN32,
                     "tray"              : True,
                     "pulseaudio"        : not OSX and not WIN32,
