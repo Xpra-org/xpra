@@ -51,6 +51,7 @@ from xpra.x11.server_keyboard_config import KeyboardConfig
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 20)
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
+SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
 
 def window_name(window):
@@ -567,6 +568,8 @@ class X11ServerBase(GTKServerBase):
 
 
     def set_icc_profile(self):
+        if not SYNC_ICC:
+            return
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
         if len(ui_clients)!=1:
             screenlog("%i UI clients, not setting ICC profile")

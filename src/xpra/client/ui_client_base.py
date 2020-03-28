@@ -97,6 +97,7 @@ MAX_SCALING = float(os.environ.get("XPRA_MAX_SCALING", "8"))
 SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
+SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
 PYTHON3 = sys.version_info[0] == 3
 WIN32 = sys.platform.startswith("win")
@@ -1494,10 +1495,13 @@ class UIXpraClient(XpraClientBase):
             })
         capabilities.update({
                              "antialias"    : get_antialias_info(),
-                             "icc"          : self.get_icc_info(),
-                             "display-icc"  : self.get_display_icc_info(),
                              "cursor.size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
                              })
+        if SYNC_ICC:
+            capabilities.update({
+                             "icc"          : self.get_icc_info(),
+                             "display-icc"  : self.get_display_icc_info(),
+            })
         #generic rgb compression flags:
         for x in compression.ALL_COMPRESSORS:
             capabilities["encoding.rgb_%s" % x] = x in compression.get_enabled_compressors()
