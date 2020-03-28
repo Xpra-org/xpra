@@ -458,7 +458,8 @@ fi
 
 
 %changelog
-* Wed Feb 05 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
+* Sat Mar 28 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
+- fix avcodec2 race condition crash
 - fix crashes on X11 displays lacking RandR support
 - fix clients not exposing webcam capability flag
 - fix DPI value from the command line with desktop-scaling
@@ -472,7 +473,31 @@ fi
 - fix build errors caused by pygtk bindings build warnings
 - fix race condition error during window cleanup
 - fix CUDA reset_state function
+- fix remote logging failures with some message formats
+- fix slow / lost video screen updates
+- fix ghost dialog windows on MacOS and MS Windows
+- fix fullscreen / maximized window on macos
+- fix transient popup window workaround not firing
+- fix very slow startup on Debian due to missing libfakeXinerama
+- fix control commands argument error handling
+- fix systemd-run errors: verify it does work before trying to use it
+- fix HMAC hashes exposed, keep only valid options
+- fix some empty keyboard layout group strings parsed as non-empty
+- fix errors when re-initializing windows (ie: toggling OpenGL on or off)
+- fix deiconification error when there are system trays forwarded
+- fix malformed XSettings due to invalid color data format
+- fix handling of dpi command line switch
+- fix geometry debug logging error
+- fix session info errors during client exit
+- try harder not to use video for tiny areas
+- log CUDA device actually used - mutiple GPU setups
 - support CUDA 10.2
+- skip display number warnings when upgrading
+- more correct code for locating the 'Downloads' folder on MS Windows
+- disable GDK window scaling
+- ignore OpenGL clear errors with some buggy drivers
+- disable OpenGL on more ancient Intel chipsets
+- make it possible to disable colourspace synchronization
 - support parallel installations of a newer python3 package
 - disable CSD on MS Windows (GTK3 CSD bug workaround)
 
