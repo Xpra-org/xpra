@@ -185,7 +185,7 @@ def get_machine_id() -> str:
         v = uuid.getnode()
     return bytestostr(v).strip("\n\r")
 
-def get_user_uuid():
+def get_user_uuid() -> str:
     """
         Try to generate a uuid string which is unique to this user.
         (relies on get_machine_id to uniquely identify a machine)
@@ -215,7 +215,7 @@ except (ImportError, AssertionError):
     monotonic_time = time.time
 
 
-def is_X11():
+def is_X11() -> bool:
     if OSX or WIN32:
         return False
     try:
