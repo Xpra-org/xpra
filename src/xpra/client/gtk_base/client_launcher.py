@@ -145,7 +145,7 @@ class ApplicationWindow:
 
     def create_window(self):
         self.window = gtk.Window()
-        self.window.connect("destroy", self.destroy)
+        self.window.connect("delete-event", self.destroy)
         self.window.set_default_size(400, 260)
         self.window.set_border_width(20)
         self.window.set_title("Xpra Launcher")
@@ -1010,3 +1010,4 @@ def main():
 if __name__ == "__main__":
     v = main()
     sys.exit(v)
+        return False

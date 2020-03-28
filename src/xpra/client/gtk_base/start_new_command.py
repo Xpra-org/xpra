@@ -41,7 +41,7 @@ class StartNewCommand(object):
     def __init__(self, run_callback=None, can_share=False):
         self.run_callback = run_callback
         self.window = gtk.Window()
-        self.window.connect("destroy", self.close)
+        self.window.connect("delete-event", self.close)
         self.window.set_default_size(400, 150)
         self.window.set_border_width(20)
         self.window.set_title("Start New Command")
@@ -112,6 +112,7 @@ class StartNewCommand(object):
     def close(self, *args):
         log("close%s", args)
         self.hide()
+        return True
 
     def destroy(self, *args):
         log("destroy%s", args)
