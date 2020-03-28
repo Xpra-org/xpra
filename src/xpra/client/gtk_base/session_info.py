@@ -542,15 +542,16 @@ class SessionInfo(gtk.Window):
         return not self.is_closed
 
     def populate(self, *args):
-        if self.is_closed:
+        conn = self.connection
+        if self.is_closed or not conn:
             return False
         self.client.send_ping()
         self.last_populate_time = time.time()
 
         self.show_opengl_state()
         #record bytecount every second:
-        self.net_in_bytecount.append(self.connection.input_bytecount)
-        self.net_out_bytecount.append(self.connection.output_bytecount)
+        self.net_in_bytecount.append(conn.input_bytecount)
+        self.net_out_bytecount.append(conn.output_bytecount)
         if SHOW_SOUND_STATS:
             if self.client.sound_in_bytecount>0:
                 self.sound_in_bitcount.append(self.client.sound_in_bytecount * 8)
@@ -747,10 +748,19 @@ class SessionInfo(gtk.Window):
             #no longer connected!
             return False
         c = p._conn
-        self.input_packets_label.set_text(std_unit_dec(p.input_packetcount))
-        self.input_bytes_label.set_text(std_unit_dec(c.input_bytecount))
-        self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
-        self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
+        if c:
+            self.input_packets_label.set_text(std_unit_dec(p.input_packetcount))
+            self.input_bytes_label.set_text(std_unit_dec(c.input_bytecount))
+            self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
+            self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
+        else:
+            for l in (
+                self.input_packets_label,
+                self.input_bytes_label,
+                self.output_packets_label,
+                self.output_bytes_label,
+                ):
+                l.set_text("n/a")
 
         def get_sound_info(supported, prop):
             if not supported:
