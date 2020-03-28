@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -63,7 +63,9 @@ exit 1
 
 Name:				xpra
 Version:			%{version}
-Release:			1%{?revision_no}xpra2%{?dist}
+#Fedora-is-screwing-our-repo "solution",
+#use a revision number which will be higher:
+Release:			9%{?revision_no}xpra2%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
