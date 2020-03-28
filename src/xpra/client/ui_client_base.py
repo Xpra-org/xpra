@@ -681,6 +681,11 @@ class UIXpraClient(XpraClientBase):
         if self._suspended_at>0:
             elapsed = time.time()-self._suspended_at
             self._suspended_at = 0
+        self.send_refresh_all()
+        if elapsed<1:
+            #not really suspended
+            #happens on macos when switching workspace!
+            return
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", delta)
         #this will reset the refresh rate too:
