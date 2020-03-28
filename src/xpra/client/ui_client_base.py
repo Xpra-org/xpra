@@ -2793,7 +2793,7 @@ class UIXpraClient(XpraClientBase):
         #find a "transient-for" value using the pid to find a suitable window
         #if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
-        if override_redirect and pid>0 and metadata.intget("transient-for", 0)>0 is None and metadata.get("role")=="popup":
+        if override_redirect and pid>0 and metadata.intget("transient-for", 0)==0 and metadata.get("role")=="popup":
             tfor = None
             for twid, twin in self._id_to_window.items():
                 if not twin._override_redirect and twin._metadata.intget("pid", -1)==pid:
