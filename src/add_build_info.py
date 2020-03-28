@@ -275,18 +275,6 @@ def record_build_info(is_build=True):
     save_properties(props, BUILD_INFO_FILE)
 
 
-def load_ignored_changed_files():
-    ignored = []
-    with open("./ignored_changed_files.txt", "rU") as f:
-        for line in f:
-            s = line.strip()
-            if not s:
-                continue
-            if s[0] in ('!', '#'):
-                continue
-            ignored.append(s)
-    return ignored
-
 def get_svn_props(warn=True):
     props = {
                 "REVISION" : "unknown",
@@ -334,23 +322,6 @@ def get_svn_props(warn=True):
         if len(parts)!=2:
             continue
         filename = parts[1].strip()
-        ignore = False
-        for x in load_ignored_changed_files():
-            #use a normalized path ("/") that does not interfere with regexp:
-            norm_path = filename.replace(os.path.sep, "/")
-            if norm_path==x:
-                print("'%s' matches ignore list entry: '%s' exactly," % (filename, x))
-                print(" not counting it as a modified file")
-                ignore = True
-                break
-            rstr = r"^%s$" % x.replace("*", ".*")
-            regexp = re.compile(rstr)
-            if regexp.match(norm_path):
-                print("'%s' matches ignore list regexp: '%s', not counting it as a modified file" % (filename, x))
-                ignore = True
-                break
-        if ignore:
-            continue
         changes += 1
         if warn:
             print("WARNING: found modified file: %s" % filename)
