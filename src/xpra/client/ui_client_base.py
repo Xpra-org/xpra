@@ -2001,7 +2001,11 @@ class UIXpraClient(XpraClientBase):
             return
         self.in_remote_logging = True
         try:
-            data = self.compressed_wrapper("text", str(msg % args), level=1)
+            if args:
+                s = msg % args
+            else:
+                s = msg
+            data = self.compressed_wrapper("text", str(s), level=1)
             self.send("logging", level, data)
             exc_info = kwargs.get("exc_info")
             if exc_info:
