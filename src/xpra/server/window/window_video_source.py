@@ -375,7 +375,7 @@ class WindowVideoSource(WindowSource):
             #not doing video, bail out:
             return nonvideo()
 
-        if cww*cwh<=MAX_NONVIDEO_PIXELS:
+        if cww*cwh<=MAX_NONVIDEO_PIXELS or cww<16 or cwh<16:
             #window is too small!
             return nonvideo(quality+30)
 
