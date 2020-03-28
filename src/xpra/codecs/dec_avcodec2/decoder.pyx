@@ -19,7 +19,7 @@ WIN32 = sys.platform.startswith("win")
 
 
 ctypedef unsigned long size_t
-ctypedef unsigned char uint8_t
+from libc.stdint cimport uintptr_t, uint8_t
 
 
 cdef extern from "../../buffers/buffers.h":
