@@ -82,9 +82,10 @@ def do_get_download_dir():
     #from win32com.shell import shell, shellcon
     #shell.SHGetFolderPath(0, shellcon.CSIDL_MYDOCUMENTS, None, 0)
     try:
-        #use the internet explorer registry key:
-        #HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer
-        DOWNLOAD_PATH = get_registry_value(win32con.HKEY_CURRENT_USER, "Software\\Microsoft\\Internet Explorer", "Download Directory")
+        sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
+        downloads_guid = '{374DE290-123F-4565-9164-39C4925E467B}'
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, sub_key) as key:
+            DOWNLOAD_PATH = winreg.QueryValueEx(key, downloads_guid)[0]
     except:
         #fallback to what the documentation says is the default:
         DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")
