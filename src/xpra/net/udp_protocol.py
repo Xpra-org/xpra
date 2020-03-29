@@ -243,13 +243,13 @@ class UDPProtocol(Protocol):
         #first, we can free all the packets that have been processed by the other end:
         #(resend cache and fail callback)
         if last_seq>=0:
-            done = [x for x in self.fail_cb if x<=last_seq]
+            done = tuple(x for x in tuple(self.fail_cb.keys()) if x<=last_seq)
             for x in done:
                 try:
                     del self.fail_cb[x]
                 except KeyError:
                     pass
-            done = [x for x in self.resend_cache if x<=last_seq]
+            done = tuple(x for x in tuple(self.resend_cache.keys()) if x<=last_seq)
             for x in done:
                 try:
                     del self.resend_cache[x]
