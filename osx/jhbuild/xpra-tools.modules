@@ -137,6 +137,9 @@
 			repo="ftp.gnome.org">
 			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-mac-bundler-pangofix.patch" strip="1"/>
 		</branch>
+		<dependencies>
+			<dep package="python"/>
+		</dependencies>
 	</autotools>
 
 	<autotools id="lzo" autogen-sh="configure">
