@@ -25,7 +25,6 @@
 			<dep package="meta-osx-xpra-python3-deps"/>
 			<dep package="meta-osx-xpra-codec-deps"/>
 			<dep package="meta-osx-xpra-pkgtools"/>
-			<dep package="meta-osx-xpra-subversion"/>
 		</dependencies>
 	</metamodule>
 
