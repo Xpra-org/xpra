@@ -613,9 +613,9 @@
 
 	<distutils id="python3-pyobjc-core" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/3a/80/0cdb2130b86a984e4765beb93135aa9c2120fd64be1a27e1c7cb31c719bc/pyobjc-core-6.1.tar.gz"
-			hash="sha256:1a0fbf012fb575e0adf8c18cfd4453e657cc2c0deb2660c529bf524ba4c9149a"
-			version="6.1"/>
+			module="/packages/79/df/3c9f38e5dbc70b3ddafcaf114062e4449d1fe65f23f3ec4837f36a3f08ab/pyobjc-core-6.2.tar.gz"
+			hash="sha256:843b175e6bd6309c4457090ca52ca8e20cb1e6be19df1bc74d1ed1889f52149c"
+			version="6.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -626,9 +626,9 @@
 
 	<distutils id="python3-pyobjc-framework-cocoa" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/7a/99/bfac679ee346f344bca72ee315249e56f4f34bc974345f66d7810380ce7a/pyobjc-framework-Cocoa-6.1.tar.gz"
-			hash="sha256:c4077d2e6f96e4f3fd9780d66778cf51d27f414822498b24410e9df7a6a4d531"
-			version="6.1"/>
+			module="/packages/24/0e/2a4ffa707510e11af4b9c4f03c286b1e32e174211613c377ec3fdace6879/pyobjc-framework-Cocoa-6.2.tar.gz"
+			hash="sha256:e15bbf82bfe3a14dfd29c7465cc5d8edab16d546410239b7e1a4db62ded4a5b2"
+			version="6.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -639,9 +639,9 @@
 
 	<distutils id="python3-pyobjc-framework-quartz" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/8a/53/4caef6d7cb2730c8314cbc83eb1f87c218c0d5b6a4fd98990e3bd00cb2d7/pyobjc-framework-Quartz-6.1.tar.gz"
-			hash="sha256:dc96a7c8b22264579f5438e2f9fc6c7f905412c5b297a750acce00f50aa87ca5"
-			version="6.1"/>
+			module="/packages/a9/af/fb7a7264d3bf0147bdd1d01eeb4e8b1cac90f0613aca336b178771dcdec7/pyobjc-framework-Quartz-6.2.tar.gz"
+			hash="sha256:5133eef934143ed68014d73f7b3b8113441b3631d7a2c17f66839ea4b426c518"
+			version="6.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -652,9 +652,9 @@
 
 	<distutils id="python3-pyobjc-framework-avfoundation" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/a5/78/503e5e970a983f25dc3e8e06a3d99e99633289ff708d40e78ae966c2ca07/pyobjc-framework-AVFoundation-6.1.tar.gz"
-			hash="sha256:58a492716b8ee5b44ad99a63dbf2039f2e0e05707345c571c90134b0378ac9e5"
-			version="6.1"/>
+			module="/packages/51/b2/bb4031281e4727163c6057596077659d42ae46f426112476a939e52bba9e/pyobjc-framework-AVFoundation-6.2.tar.gz"
+			hash="sha256:3b6bab7607e3d7053f2dec36c7c48515d9b2fb20413130900b7ecc369f619594"
+			version="6.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -665,9 +665,9 @@
 
 	<distutils id="python3-pyobjc-framework-SystemConfiguration" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/0b/f9/906d02f190fc7936db8ee2045cfba578893479a12a717eed5fbd43572fc8/pyobjc-framework-SystemConfiguration-6.1.tar.gz"
-			hash="sha256:2d5da94f569fd0cdea981035b343a18275378c433e998a92926b788534320cbf"
-			version="6.1"/>
+			module="/packages/d8/b5/5e7dcdc1e548815a292bd8c51281983717a5f91fc928a602ae3bd9f3f180/pyobjc-framework-SystemConfiguration-6.2.tar.gz"
+			hash="sha256:99a4b127925ed99958b28ad6fae95f764fe821be62e033b48d7b2d71c28fe58b"
+			version="6.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
