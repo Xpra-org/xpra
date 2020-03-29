@@ -29,7 +29,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright 2012-2020 Antoine Martin antoine@xpra.org, GNU General Public License.</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.12</string>
+	<string>10.14</string>
 	<key>LSUIElement</key>
 	<false/>
 	<key>NSPrincipalClass</key>
