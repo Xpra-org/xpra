@@ -271,7 +271,10 @@ def ssh_paramiko_connect_to(display_desc):
                     sock = ProxyCommand(proxycommand)
                     from xpra.child_reaper import getChildReaper
                     cmd = getattr(sock, "cmd", [])
-                    getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True)
+                    def proxycommand_ended(proc):
+                        log("proxycommand_ended(%s) exit code=%s", proc, proc.poll())
+                    getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
+                                                 callback=proxycommand_ended)
                     proxy_keys = get_keyfiles(host_config, "proxy_key")
                     log("found proxycommand='%s' for host '%s'", proxycommand, host)
                     from paramiko.client import SSHClient
