@@ -869,22 +869,22 @@ fi
 
 
 %changelog
-* Fri Mar 27 2020 Antoine Martin <antoine@xpra.org> 3.0.8-1xpra1
+* Mon Mar 30 2020 Antoine Martin <antoine@xpra.org> 3.0.8-1xpra1
 - fix handling of dpi command line switch (correctly this time?)
 - fix bug report window not getting focus on MacOS
 - fix spurious ssh key warnings with newer versions of paramiko
 - fix AltGr mode with non-X11 clients, layout-group changes
 - fix rare unexpected client exit on MS Windows
 - fix MS Windows clipboard:
-  update failures
-  convert CRLF line endings
+    update failures
+    convert CRLF line endings
 - Clipboard:
-  fix selection not shown as active in menus (MS Windows and MacOS)
-  fix spurious warnings when sharing a session
-  fix clipboard reset with python2 builds
-  selection translation for outbound data
-  support client applications that don't use TARGETS (ie: Motif)
-  reject invalid targets
+    fix selection not shown as active in menus (MS Windows and MacOS)
+    fix spurious warnings when sharing a session
+    fix clipboard reset with python2 builds
+    selection translation for outbound data
+    support client applications that don't use TARGETS (ie: Motif)
+    reject invalid targets
 - fix 'xpra upgrade' wrongly updating non-xpra displays
 - fix logging error in client geometry debugging output
 - fix pulseaudio start command with Ubuntu Xenial
@@ -895,6 +895,10 @@ fi
 - fix proxy server cleanup: force forwarders to terminate
 - fix session info errors during client exit
 - fix printer cleanup errors with invalid UTF8 printer names
+- fix transient-for popup window workaround
+- fix missing libyuv csc module on MacOS
+- try to prevent conflicts with Fedora's packages
+- better detection of Wayland environments
 - use python3 (if installed) by default on Ubuntu Xenial
 - don't use Xdummy on arm, too slow
 - don't show 'Download' button that we can't honour
