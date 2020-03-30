@@ -11,7 +11,7 @@
 	<repository type="tarball" name="gmplib.org" href="http://gmplib.org/"/>
 	<repository type="tarball" name="www.mpfr.org" href="http://www.mpfr.org"/>
 	<repository type="tarball" name="download.oracle.com" href="http://download.oracle.com"/>
-	<repository type="tarball" name="xpra.org" href="http://xpra.org"/>
+	<repository type="tarball" name="xpra.org" href="https://xpra.org"/>
 	<repository type="tarball" name="storage.googleapis.com" href="http://storage.googleapis.com/"/>
 	<repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
 	<repository type="tarball" name="oberhumer.com" default="yes" href="http://www.oberhumer.com/"/>
@@ -88,7 +88,7 @@
 			version="0.2-1"
 			checkoutdir="bomutils-debian-0.2-1"
 			repo="github.com">
-			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/bomutils-jhbuild-changeprefix.patch" strip="0" />
+			<patch file="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/bomutils-jhbuild-changeprefix.patch" strip="0" />
 		</branch>
 	</autotools>
 
@@ -135,7 +135,7 @@
 		<branch module="/pub/gnome/sources/gtk-mac-bundler/0.7/gtk-mac-bundler-0.7.4.tar.xz"
 			version="0.7.4"
 			repo="ftp.gnome.org">
-			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-mac-bundler-pangofix.patch" strip="1"/>
+			<patch file="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-mac-bundler-pangofix.patch" strip="1"/>
 		</branch>
 		<dependencies>
 			<dep package="python"/>
