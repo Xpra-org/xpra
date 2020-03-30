@@ -266,7 +266,7 @@ def is_X11():
 def is_Wayland():
     return _is_Wayland(os.environ)
 
-def _is_Wayland(env : dict):
+def _is_Wayland(env):
     backend = env.get("GDK_BACKEND", "")
     if backend=="wayland":
         return True
