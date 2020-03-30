@@ -281,6 +281,7 @@ def ssh_paramiko_connect_to(display_desc):
                     from paramiko.client import SSHClient
                     ssh_client = SSHClient()
                     ssh_client.load_system_host_keys()
+                    log("ssh proxy command connect to %s", (host, port, sock))
                     ssh_client.connect(host, port, sock=sock)
                     transport = ssh_client.get_transport()
                     do_ssh_paramiko_connect_to(transport, host,
