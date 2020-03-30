@@ -7,7 +7,7 @@ index ed4948f0..8be3402a 100644
  INCLUDE ( CM_linux_packages.cmake )
  
 +# generate pkgconfig file:
-+INSTALL ( CODE "execute_process(COMMAND gen_pc.sh)")
++install ( CODE "execute_process(COMMAND sh ${PROJECT_SOURCE_DIR}/gen_pc.sh)")
 +
 Index: gen_pc.sh
 ===================================================================
