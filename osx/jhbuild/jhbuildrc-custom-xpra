@@ -1,6 +1,6 @@
 _gtk_osx_use_jhbuild_python = True
 
-setup_sdk(target="10.14", sdk_version="10.14", architectures=["x86_64"])
+setup_sdk(target="10.12", sdk_version="10.12", architectures=["x86_64"])
 os.environ["CC"] = "/usr/bin/gcc"
 os.environ["DYLD_LIBRARY_PATH"] = ""
 build_policy = "updated-deps"
