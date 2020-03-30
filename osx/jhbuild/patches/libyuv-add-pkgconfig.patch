@@ -13,8 +13,7 @@ Index: gen_pc.sh
 ===================================================================
 --- a/gen_pc.sh	(nonexistent)
 +++ b/gen_pc.sh	(working copy)
-@@ -0,0 +1,11 @@
-+gen_pc.sh 
+@@ -0,0 +1,10 @@
 +cat > ${JHBUILD_PREFIX}/lib/pkgconfig/libyuv.pc <<EOF
 +prefix=${JHBUILD_PREFIX}
 +libdir=${prefix}/lib
