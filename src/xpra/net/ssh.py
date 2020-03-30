@@ -268,6 +268,7 @@ def ssh_paramiko_connect_to(display_desc):
                     raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % port)
                 proxycommand = host_config.get("proxycommand")
                 if proxycommand:
+                    log("found proxycommand='%s' for host '%s'", proxycommand, host)
                     sock = ProxyCommand(proxycommand)
                     from xpra.child_reaper import getChildReaper
                     cmd = getattr(sock, "cmd", [])
@@ -276,7 +277,7 @@ def ssh_paramiko_connect_to(display_desc):
                     getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
                                                  callback=proxycommand_ended)
                     proxy_keys = get_keyfiles(host_config, "proxy_key")
-                    log("found proxycommand='%s' for host '%s'", proxycommand, host)
+                    log("proxy keys=%s", proxy_keys)
                     from paramiko.client import SSHClient
                     ssh_client = SSHClient()
                     ssh_client.load_system_host_keys()
