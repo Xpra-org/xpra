@@ -211,6 +211,7 @@
 			hash="sha256:490503d28d4b7c2c81f7495f4fab6974247f5d1e0722262f49c0fe9f21c4415a"
 			repo="xpra.org">
 			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/libyuv-nojpeg.patch" strip="1" />
+			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/libyuv-add-pkgconfig.patch" strip="1" />
 		</branch>
 	</cmake>
 
