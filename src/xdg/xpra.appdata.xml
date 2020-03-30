@@ -32,14 +32,14 @@
  </description>
  <screenshots>
   <screenshot type="default">
-   <image>http://xpra.org/screenshots/xpra-session-info.png</image>
+   <image>https://xpra.org/screenshots/xpra-session-info.png</image>
    <caption>The session information dialog showing bandwidth usage and latency</caption>
   </screenshot>
   <screenshot>
-   <image>http://xpra.org/screenshots/xpra-launcher.png</image>
+   <image>https://xpra.org/screenshots/xpra-launcher.png</image>
    <caption>The session launcher dialog running on Windows XP</caption>
   </screenshot>
  </screenshots>
- <url type="homepage">http://xpra.org/</url>
+ <url type="homepage">https://xpra.org/</url>
  <updatecontact>shifter-users@lists.devloop.org.uk</updatecontact>
 </component>

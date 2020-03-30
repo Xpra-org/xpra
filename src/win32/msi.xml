@@ -12,9 +12,9 @@
     <ProductName Detect="executable" Value="Xpra" />
     <Comments Detect="executable" Value="This installation was built with Inno Setup." />
     <Contact Detect="" Value="" />
-    <HelpLink Detect="" Value="http://xpra.org/trac/wiki/Usage" />
+    <HelpLink Detect="" Value="https://xpra.org/trac/wiki/Usage" />
     <UpdateLink Detect="" Value="" />
-    <AboutLink Detect="" Value="http://xpra.org/" />
+    <AboutLink Detect="" Value="https://xpra.org/" />
   </Installer>
   <WrappedInstaller>
     <Executable FileName="$CWD\$INPUT" SuccessCodes="" Impersonate="yes" />

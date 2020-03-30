@@ -49,7 +49,7 @@ scripts = []
 description = "multi-platform screen and application forwarding system"
 long_description = "Xpra is a multi platform persistent remote display server and client for " + \
             "forwarding applications and desktop screens. Also known as 'screen for X11'."
-url = "http://xpra.org/"
+url = "https://xpra.org/"
 
 
 XPRA_VERSION = xpra.__version__         #@UndefinedVariable
@@ -60,7 +60,7 @@ setup_options = {
                  "author"           : "Antoine Martin",
                  "author_email"     : "antoine@xpra.org",
                  "url"              : url,
-                 "download_url"     : "http://xpra.org/src/",
+                 "download_url"     : "https://xpra.org/src/",
                  "description"      : description,
                  "long_description" : long_description,
                  "data_files"       : data_files,
@@ -1618,7 +1618,7 @@ else:
                 "CFBundleName"              : "Xpra",
                 "CFBundleTypeRole"          : "Viewer",
                 },
-            "CFBundleGetInfoString" : "%s-r%s (c) 2012-2018 http://xpra.org/" % (XPRA_VERSION, REVISION),
+            "CFBundleGetInfoString" : "%s-r%s (c) 2012-2020 https://xpra.org/" % (XPRA_VERSION, REVISION),
             "CFBundleIdentifier"            : "org.xpra.xpra",
             }
         #Note: despite our best efforts, py2app will not copy all the modules we need
