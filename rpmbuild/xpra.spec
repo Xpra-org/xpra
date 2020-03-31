@@ -44,9 +44,9 @@ Release:			0%{?revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
-URL:				http://xpra.org/
+URL:				https://xpra.org/
 Packager:			Antoine Martin <antoine@xpra.org>
-Vendor:				http://xpra.org/
+Vendor:				https://xpra.org/
 Source:				xpra-%{version}.tar.bz2
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
@@ -457,7 +457,7 @@ export XPRA_TEST_DEBUG=1
 
 %if 0%{?run_tests}
 pushd xpra-%{version}/unittests
-PYTHONPATH="%{buildroot}%{python3_sitearch}:." \
+PYTHONPATH="%{python3_sitearch}:%{buildroot}%{python3_sitearch}:`pwd`" \
 PATH="`pwd`/../scripts/:$PATH" \
 XPRA_COMMAND="`pwd`/../scripts/xpra" \
 XPRA_CONF_DIR="`pwd`/../etc/xpra" \
@@ -587,7 +587,29 @@ fi
 
 %changelog
 * Wed Sep 18 2019 Antoine Martin <antoine@xpra.org> 4.0-1
-- TODO
+- Drop support for:
+	Python 2, GTK2
+	legacy versions (pre 1.0)
+	weak authentication
+- Network, per socket options:
+	authentication and encryption
+	ssl
+	ssh
+- make it easier to send files from the server
+- xpra toolbox subcommand
+- xpra help subcommand
+- xpra top new features
+- faster startup
+- signal handling fixes
+- smoother window resizing
+- refactoring and testing
+	unit tests coverage
+	completely skip loading unused features at runtime
+	get rid of capabilities data after parsing it
+	better module dependency separation
+	don't convert to a string before we need it
+- more useful window and tray title
+- make it easier to source environment	
 
 * Tue Mar 19 2019 Antoine Martin <antoine@xpra.org> 3.0-1
 - Python 3 port complete, now the default: #1571, #2195

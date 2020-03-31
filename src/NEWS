@@ -1,3 +1,30 @@
+v4.0 (2020-03-31)
+======================
+	-- Drop support for:
+		Python 2, GTK2
+		legacy versions (pre 1.0)
+		weak authentication
+	-- Network, per socket options:
+		authentication and encryption
+		ssl
+		ssh
+	-- make it easier to send files from the server
+	-- xpra toolbox subcommand
+	-- xpra help subcommand
+	-- xpra top new features
+	-- faster startup
+	-- signal handling fixes
+	-- smoother window resizing
+	-- refactoring and testing
+		unit tests coverage
+		completely skip loading unused features at runtime
+		get rid of capabilities data after parsing it
+		better module dependency separation
+		don't convert to a string before we need it
+	-- more useful window and tray title
+	-- make it easier to source environment	
+
+
 v3.0 (2019-09-21)
 ======================
 	-- Python 3 port complete, now the default: #1571, #2195
