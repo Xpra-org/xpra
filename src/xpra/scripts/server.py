@@ -476,6 +476,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         write_runner_shell_scripts,
         find_log_dir,
         create_input_devices,
+        source_env,
         )
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
@@ -621,6 +622,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     sockets = create_sockets(opts, error_cb)
 
     sanitize_env()
+    os.environ.update(source_env(opts.source))
     if POSIX:
         if xrd:
             os.environ["XDG_RUNTIME_DIR"] = xrd

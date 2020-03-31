@@ -12,6 +12,7 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import monotonic_time, bytestostr, OSX, WIN32, POSIX
 from xpra.util import envint, csv
 from xpra.scripts.parsing import parse_env
+from xpra.server.server_util import source_env
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -42,7 +43,8 @@ class ChildCommandServer(StubServerMixin):
         self.exit_with_children = False
         self.start_after_connect_done = False
         self.start_new_commands = False
-        self.start_env = []
+        self.source_env = {}
+        self.start_env = {}
         self.exec_cwd = None
         self.exec_wrapper = None
         self.terminate_children = False
@@ -74,6 +76,7 @@ class ChildCommandServer(StubServerMixin):
             import shlex
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
         self.child_reaper = getChildReaper()
+        self.source_env = source_env(opts.source_start)
         self.start_env = parse_env(opts.start_env)
 
     def threaded_setup(self):
@@ -236,6 +239,7 @@ class ChildCommandServer(StubServerMixin):
     def get_child_env(self):
         #subclasses may add more items (ie: fakexinerama)
         env = os.environ.copy()
+        env.update(self.source_env)
         env.update(self.start_env)
         if self.child_display:
             env["DISPLAY"] = self.child_display

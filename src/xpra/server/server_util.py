@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,26 @@ from xpra.util import envbool
 from xpra.os_util import OSX, shellsub, getuid, get_util_logger, osexpand, umask_context
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
+
+
+def source_env(source=()) -> dict:
+    log = get_util_logger()
+    env = {}
+    for f in source:
+        e = env_from_sourcing(f)
+        log("source_env %s=%s", f, e)
+        env.update(e)
+    return env
+
+
+# returns a dictionary of the environment variables resulting from sourcing a file
+def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
+    import json
+    import subprocess
+    source = '%ssource %s' % ("set -a && " if include_unexported_variables else "", file_to_source_path)
+    dump = '/usr/bin/python -c "import os, json;print(json.dumps(dict(os.environ)))"'
+    pipe = subprocess.Popen(['/bin/bash', '-c', '%s && %s' % (source, dump)], stdout=subprocess.PIPE)
+    return json.loads(pipe.stdout.read())
 
 
 def sh_quotemeta(s):

@@ -603,6 +603,8 @@ OPTION_TYPES = {
                     "compressors"       : list,
                     "packet-encoders"   : list,
                     "key-shortcut"      : list,
+                    "source"            : list,
+                    "source-start"      : list,
                     "start"             : list,
                     "start-child"       : list,
                     "start-after-connect"       : list,
@@ -663,6 +665,7 @@ OPTIONS_ADDED_SINCE_V1 = [
     "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit",
     "forward-xdg-open", "modal-windows", "bandwidth-detection",
     "bind-ssh", "ssh-auth", "ssh-upgrade",
+    "source", "source-start",
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
@@ -733,7 +736,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "auth", "vsock-auth", "tcp-auth", "udp-auth", "ws-auth", "wss-auth", "ssl-auth", "ssh-auth", "rfb-auth",
     "bind", "bind-vsock", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-ssh", "bind-rfb",
     "rfb-upgrade", "bandwidth-limit",
-    "start", "start-child",
+    "start", "start-child", "source", "source-start",
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
@@ -1031,6 +1034,8 @@ def get_defaults():
                     "ssh-auth"          : [],
                     "rfb-auth"          : [],
                     "password-file"     : [],
+                    "source"            : [],
+                    "source-start"      : [],
                     "start"             : [],
                     "start-child"       : [],
                     "start-after-connect"       : [],
