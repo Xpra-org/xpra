@@ -41,6 +41,8 @@ def register_os_signals(callback, commandtype="", signals=(signal.SIGINT, signal
             signal.signal(signum, os_signal)
 
 def register_SIGUSR_signals(commandtype="Server"):
+    if not POSIX:
+        return
     log = get_util_logger()
     def sigusr1(_sig):
         log.info("SIGUSR1")
