@@ -22,6 +22,7 @@ def source_env(source=()) -> dict:
     return env
 
 
+# credit: https://stackoverflow.com/a/47080959/428751
 # returns a dictionary of the environment variables resulting from sourcing a file
 def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     import json
