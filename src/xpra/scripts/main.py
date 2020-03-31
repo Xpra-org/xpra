@@ -572,7 +572,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode=="transparent-window":
             from xpra.client.gtk_base.example import transparent_window
             return transparent_window.main()
-        elif mode == "initenv" and POSIX:
+        elif mode == "initenv":
             if not POSIX:
                 raise InitExit(EXIT_UNSUPPORTED, "initenv is not supported on this OS")
             from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts
