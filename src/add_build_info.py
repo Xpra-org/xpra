@@ -260,13 +260,18 @@ def record_build_info(is_build=True):
         #record pkg-config versions:
         PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
         for pkg in ("libc",
-                    "vpx", "libvpx", "x264", "x265", "webp",
+                    "vpx", "vpx", "x264", "x265", "webp", "yuv", "nvenc", "nvfbc",
                     "avcodec", "avutil", "swscale",
                     "nvenc",
                     "x11", "xrandr", "xtst", "xfixes", "xkbfile", "xcomposite", "xdamage", "xext",
-                    "gtk+-3.0", "pycairo", "pygobject-2.0", "pygtk-2.0", ):
+                    "gobject-introspection-1.0",
+                    "gtk+-3.0", "py3cairo", "pygobject-3.0", "gtk+-x11-3.0",
+                    "python3",
+                    ):
             #fugly magic for turning the package atom into a legal variable name:
-            pkg_name = pkg.lstrip("lib").replace("+", "").split("-")[0]
+            pkg_name = pkg.lstrip("lib").replace("+", "").replace("-", "_")
+            if pkg_name.split("_")[-1].rstrip("0123456789.")=="":
+                pkg_name = "_".join(pkg_name.split("_")[:-1])
             cmd = [PKG_CONFIG, "--modversion", pkg]
             returncode, out, _ = get_status_output(cmd)
             if returncode==0:
