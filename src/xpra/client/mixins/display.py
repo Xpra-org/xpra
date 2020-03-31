@@ -5,13 +5,14 @@
 
 import os
 
-from xpra.exit_codes import EXIT_INTERNAL_ERROR
+from xpra.exit_codes import EXIT_INTERNAL_ERROR, EXIT_NO_DISPLAY
 from xpra.platform.features import REINIT_WINDOWS
 from xpra.platform.gui import (
     get_antialias_info, get_icc_info, get_display_icc_info, show_desktop, get_cursor_size,
     get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
+    can_access_display,
     )
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.scripts.config import FALSE_OPTIONS, InitExit
 from xpra.os_util import monotonic_time
 from xpra.util import (
     iround, envint, envfloat, envbool, log_screen_sizes, engs, flatten_dict, typedict,
@@ -48,6 +49,8 @@ class DisplayClient(StubClientMixin):
     __signals__ = ["scaling-changed"]
 
     def __init__(self):
+        if not can_access_display():
+            raise InitExit(EXIT_NO_DISPLAY, "cannot access display")
         StubClientMixin.__init__(self)
         self.dpi = 0
         self.can_scale = False
