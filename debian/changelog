@@ -26,6 +26,7 @@ xpra (3.0.8-1) UNRELEASED; urgency=low
   * fix printer cleanup errors with invalid UTF8 printer names
   * fix transient-for popup window workaround
   * fix missing libyuv csc module on MacOS
+  * fix unicode errors saving xpra runner shell script with python3
   * try to prevent conflicts with Fedora's packages
   * better detection of Wayland environments
   * use python3 (if installed) by default on Ubuntu Xenial
@@ -34,7 +35,7 @@ xpra (3.0.8-1) UNRELEASED; urgency=low
   * show all pressed keys according to X11 server in 'xpra info'
   * try harder not to use video for tiny areas
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 30 Mar 2020 12:36:24 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 31 Mar 2020 16:02:41 +0700
 
 xpra (3.0.7-1) UNRELEASED; urgency=low
   * fix avcodec2 race condition crash

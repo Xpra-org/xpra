@@ -869,7 +869,7 @@ fi
 
 
 %changelog
-* Mon Mar 30 2020 Antoine Martin <antoine@xpra.org> 3.0.8-1xpra1
+* Tue Mar 31 2020 Antoine Martin <antoine@xpra.org> 3.0.8-1xpra1
 - fix handling of dpi command line switch (correctly this time?)
 - fix bug report window not getting focus on MacOS
 - fix spurious ssh key warnings with newer versions of paramiko
@@ -897,6 +897,7 @@ fi
 - fix printer cleanup errors with invalid UTF8 printer names
 - fix transient-for popup window workaround
 - fix missing libyuv csc module on MacOS
+- fix unicode errors saving xpra runner shell script with python3
 - try to prevent conflicts with Fedora's packages
 - better detection of Wayland environments
 - use python3 (if installed) by default on Ubuntu Xenial
