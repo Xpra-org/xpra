@@ -11,7 +11,7 @@ Url:            https://www.xpra.org/trac/wiki/FakeXinerama
 Summary:        Fake Xinerama library for exposing virtual screens to X11 client applications
 License:        MIT
 Group:          System Environment/Libraries
-Source:         http://xpra.org/src/libfakeXinerama-%{version}.tar.bz2
+Source:         https://xpra.org/src/libfakeXinerama-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 BuildRequires:  gcc

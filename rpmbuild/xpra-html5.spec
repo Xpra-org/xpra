@@ -13,9 +13,9 @@ License: 		GPL
 Summary:		Xpra HTML5 client
 Group:			Networking
 BuildArch:		noarch
-URL:			http://xpra.org/
+URL:			https://xpra.org/
 Packager:		Antoine Martin <antoine@xpra.org>
-Vendor:			http://xpra.org/
+Vendor:			https://xpra.org/
 Source:			%{name}-%{version}.tar.bz2
 BuildRoot:		%{_tmppath}/%{name}-%{version}-root
 

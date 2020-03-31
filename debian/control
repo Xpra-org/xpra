@@ -48,9 +48,9 @@ Build-Depends: debhelper (>= 8)
               ,libpam-dev
 X-Python-Version: >= 3.6
 Standards-Version: 3.9.3
-Homepage: http://xpra.org/
-Vcs-Svn: http://xpra.org/svn/Xpra/
-Vcs-Browser: http://xpra.org/trac/browser/
+Homepage: https://xpra.org/
+Vcs-Svn: https://xpra.org/svn/Xpra/
+Vcs-Browser: https://xpra.org/trac/browser/
 
 
 Package: xpra

@@ -5,7 +5,7 @@ Release: 1%{?dist}
 License: LGPL
 Group: Applications/Multimedia
 
-Source: http://xpra.org/src/gst-plugin-timestamp-%{version}.tar.xz
+Source: https://xpra.org/src/gst-plugin-timestamp-%{version}.tar.xz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires: gstreamer1-devel
