@@ -22,6 +22,7 @@ from xpra.util import csv, envbool, envint, nonl, pver, parse_simple_dict, DEFAU
 from xpra.exit_codes import (
     EXIT_STR,
     EXIT_OK, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED,
+    EXIT_NO_DISPLAY,
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, pollwait,
@@ -284,6 +285,11 @@ def systemd_run_wrap(mode, args, systemd_run_args):
 def isdisplaytype(args, dtype) -> bool:
     return len(args)>0 and (args[0].startswith("%s/" % dtype) or args[0].startswith("%s:" % dtype))
 
+def check_display():
+    from xpra.platform.gui import can_access_display
+    if not can_access_display():
+        raise InitExit(EXIT_NO_DISPLAY, "cannot access display")
+
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
     if POSIX and getuid()==0 and options.uid==0 and mode!="proxy" and not NO_ROOT_WARNING:
@@ -484,16 +490,21 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode == "list-mdns" and supports_mdns:
             return run_list_mdns(error_cb, args)
         elif mode == "mdns-gui" and supports_mdns:
+            check_display()
             return run_mdns_gui(error_cb, options)
         elif mode == "sessions":
+            check_display()
             return run_sessions_gui(error_cb, options)
         elif mode == "launcher":
+            check_display()
             from xpra.client.gtk_base.client_launcher import main as launcher_main
             return launcher_main(["xpra"]+args)
         elif mode == "gui":
+            check_display()
             from xpra.gtk_common.gui import main as gui_main        #@Reimport
             return gui_main()
         elif mode == "bug-report":
+            check_display()
             from xpra.scripts.bug_report import main as bug_main    #@Reimport
             bug_main(["xpra"]+args)
         elif mode in (
@@ -510,39 +521,50 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             from xpra.sound.wrapper import run_sound
             return run_sound(mode, error_cb, options, args)
         elif mode=="_dialog":
+            check_display()
             return run_dialog(args)
         elif mode=="_pass":
+            check_display()
             return run_pass(args)
         elif mode=="send-file":
+            check_display()
             return run_send_file(args)
         elif mode=="opengl":
+            check_display()
             return run_glcheck(options)
         elif mode=="opengl-probe":
+            check_display()
             return run_glprobe(options)
         elif mode=="opengl-test":
+            check_display()
             return run_glprobe(options, True)
         elif mode=="encoding":
             from xpra.codecs import loader
             return loader.main()
         elif mode=="webcam":
+            check_display()
             from xpra.scripts import show_webcam
             return show_webcam.main()
         elif mode=="clipboard-test":
+            check_display()
             from xpra.gtk_common import gtk_view_clipboard
             return gtk_view_clipboard.main()
         elif mode=="keyboard":
             from xpra.platform import keyboard
             return keyboard.main()
         elif mode=="keyboard-test":
+            check_display()
             from xpra.gtk_common import gtk_view_keyboard
             return gtk_view_keyboard.main()
         elif mode=="keymap":
             from xpra.gtk_common import keymap
             return keymap.main()
         elif mode=="gtk-info":
+            check_display()
             from xpra.scripts import gtk_info
             return gtk_info.main()
         elif mode=="gui-info":
+            check_display()
             from xpra.platform import gui
             return gui.main()
         elif mode=="network-info":
@@ -558,18 +580,23 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             from xpra.scripts import version
             return version.main()
         elif mode=="toolbox":
+            check_display()
             from xpra.client.gtk_base import toolbox
             return toolbox.main()
         elif mode=="colors-test":
+            check_display()
             from xpra.client.gtk_base.example import colors
             return colors.main()
         elif mode=="colors-gradient-test":
+            check_display()
             from xpra.client.gtk_base.example import colors_gradient
             return colors_gradient.main()
         elif mode=="transparent-colors":
+            check_display()
             from xpra.client.gtk_base.example import transparent_colors
             return transparent_colors.main()
         elif mode=="transparent-window":
+            check_display()
             from xpra.client.gtk_base.example import transparent_window
             return transparent_window.main()
         elif mode == "initenv":

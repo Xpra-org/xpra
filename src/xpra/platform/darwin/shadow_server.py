@@ -9,7 +9,7 @@ import Quartz.CoreGraphics as CG    #@UnresolvedImport
 from xpra.util import envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.scripts.config import InitExit
-from xpra.exit_codes import EXIT_FAILURE, EXIT_NO_DISPLAY
+from xpra.scripts.main import check_display
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
@@ -72,8 +72,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def __init__(self):
         #sanity check:
-        if not can_access_display():
-            raise InitExit(EXIT_NO_DISPLAY, "cannot access display")
+        check_display()
         image = CG.CGWindowListCreateImage(CG.CGRectInfinite,
                     CG.kCGWindowListOptionOnScreenOnly,
                     CG.kCGNullWindowID,
