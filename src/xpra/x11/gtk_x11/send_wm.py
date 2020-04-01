@@ -18,7 +18,7 @@ SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
 def send_wm_take_focus(target, timestamp):
     xid = target.get_xid()
-    log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", xid, timestamp)
+    log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", xid, int(timestamp or 0))
     if timestamp<0:
         timestamp = CurrentTime    #better than nothing...
     elif timestamp>0xFFFFFFFF:
