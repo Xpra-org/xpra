@@ -424,7 +424,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def schedule_recheck_focus(self):
         if self.recheck_focus_timer==0:
-            self.recheck_focus_timer = self.idle_add(self.recheck_focus)
+            self.recheck_focus_timer = self.timeout_add(5, self.recheck_focus)
         return True
 
     def do_xpra_focus_out_event(self, event):
