@@ -1,4 +1,9 @@
 xpra (3.0.8-1) UNRELEASED; urgency=low
+  * rebuilt with ssh run-xpra script fix
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 01 Apr 2020 10:11:00 +0700
+
+xpra (3.0.8-1) UNRELEASED; urgency=low
   * fix handling of dpi command line switch (correctly this time?)
   * fix bug report window not getting focus on MacOS
   * fix spurious ssh key warnings with newer versions of paramiko

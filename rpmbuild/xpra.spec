@@ -65,7 +65,7 @@ Name:				xpra
 Version:			%{version}
 #Fedora-is-screwing-our-repo "solution",
 #use a revision number which will be higher:
-Release:			9%{?revision_no}xpra2%{?dist}
+Release:			10%{?revision_no}xpra2%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
@@ -869,6 +869,9 @@ fi
 
 
 %changelog
+* Wed Apr 01 2020 Antoine Martin <antoine@xpra.org> 3.0.8-2xpra1
+- rebuilt with ssh run-xpra script fix
+
 * Tue Mar 31 2020 Antoine Martin <antoine@xpra.org> 3.0.8-1xpra1
 - fix handling of dpi command line switch (correctly this time?)
 - fix bug report window not getting focus on MacOS
