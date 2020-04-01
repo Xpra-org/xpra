@@ -109,7 +109,7 @@ def do_main(opts):
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color
     from xpra.platform.gui import init, set_default_icon
-    with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
+    with program_context("xpra-session-browser", "Xpra Session Browser"):
         enable_color()
 
         set_default_icon("mdns.png")

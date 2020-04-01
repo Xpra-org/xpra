@@ -96,6 +96,7 @@ class GUI(Gtk.Window):
         add_close_accel(self, self.quit)
         add_window_accel(self, 'F1', self.show_about)
         self.connect("delete_event", self.quit)
+        self.set_wmclass("xpra-gui", "Xpra-GUI")
 
         self.vbox = Gtk.VBox(False, 10)
         self.add(self.vbox)
@@ -503,7 +504,7 @@ def main(): # pragma: no cover
     from xpra.platform.gui import init, ready
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     gtk_main_quit_on_fatal_exceptions_enable()
-    with program_context("Xpra-GUI", "Xpra GUI"):
+    with program_context("xpra-gui", "Xpra GUI"):
         enable_color()
         init()
         gui = GUI()
