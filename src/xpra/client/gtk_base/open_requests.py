@@ -10,9 +10,11 @@ import subprocess
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gtk, GdkPixbuf
+gi.require_version("Pango", "1.0")
+from gi.repository import GLib, Gtk, GdkPixbuf, Pango
 
 from xpra.gtk_common.gobject_compat import register_os_signals
+from xpra.util import envint
 from xpra.os_util import monotonic_time, bytestostr, get_util_logger, WIN32, OSX
 from xpra.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
@@ -24,6 +26,8 @@ from xpra.gtk_common.gtk_util import (
 from xpra.platform.paths import get_icon_dir, get_download_dir
 
 log = get_util_logger()
+
+URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 480)
 
 
 _instance = None
@@ -125,8 +129,13 @@ class OpenRequestsWindow:
         tb = TableBuilder(rows=1, columns=4, row_spacings=15)
         #generate a new table:
         self.table = tb.get_table()
-        def l(s=""):
-            return Gtk.Label(label=s)
+        def l(s="", maxw=0):
+            label = Gtk.Label(label=s)
+            if maxw>0:
+                label.set_line_wrap(True)
+                label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                label.set_size_request(maxw, -1)
+            return label
         if not self.requests:
             tb.add_row(l("No requests pending"))
         else:
@@ -139,7 +148,7 @@ class OpenRequestsWindow:
                 expires_label = l()
                 self.expire_labels[expires_label] = expires
                 buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
-                items = (l(bytestostr(url)), l(details), expires_label, buttons)
+                items = (l(bytestostr(url), URI_MAX_WIDTH), l(details), expires_label, buttons)
                 tb.add_row(*items)
             self.update_expires_label()
         self.alignment.add(self.table)
