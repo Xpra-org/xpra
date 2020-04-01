@@ -378,12 +378,13 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 s = astr.value.decode("latin1")
                 if CONVERT_LINE_ENDINGS:
                     s = s.replace("\r\n", "\n")
-                ulen = len(s)
+                b = s.encode("latin1")
+                ulen = len(b)
                 if ulen>MAX_CLIPBOARD_PACKET_SIZE:
                     errback("text data is too large: %i characters" % ulen)
                     return True
-                log("got %i bytes of TEXT data: %s", len(s), ellipsizer(s))
-                callback(s)
+                log("got %i bytes of TEXT data: %s", len(b), ellipsizer(b))
+                callback(b)
                 return True
             finally:
                 GlobalUnlock(data)
