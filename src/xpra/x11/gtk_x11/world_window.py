@@ -95,6 +95,7 @@ class WorldWindow(Gtk.Window):
         global world_window
         assert world_window is None, "a world window already exists! (%s)" % world_window
         world_window = self
+        self.window = None
         super().__init__()
         self.set_screen(screen)
         self.set_title("Xpra-WorldWindow")
