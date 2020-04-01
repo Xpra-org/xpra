@@ -27,7 +27,7 @@ from xpra.platform.paths import get_icon_dir, get_download_dir
 
 log = get_util_logger()
 
-URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 480)
+URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 320)
 
 
 _instance = None
