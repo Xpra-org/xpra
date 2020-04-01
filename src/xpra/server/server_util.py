@@ -83,18 +83,18 @@ if PYTHON3:
             script.append(b"_XPRA_PYTHON=%s\n" % (sh_quotemeta(sys.executable.encode()),))
             script.append(b"_XPRA_SCRIPT=%s\n" % (sh_quotemeta(xpra_file.encode()),))
             script.append(b"""
-    if which "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
-        # Happypath:
-        exec "$_XPRA_PYTHON" "$_XPRA_SCRIPT" "$@"
-    else
-        cat >&2 <<END
-        Could not find one or both of '$_XPRA_PYTHON' and '$_XPRA_SCRIPT'
-        Perhaps your environment has changed since the xpra server was started?
-        I'll just try executing 'xpra' with current PATH, and hope...
-    END
-        exec xpra "$@"
-    fi
-    """)
+if which "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
+    # Happypath:
+    exec "$_XPRA_PYTHON" "$_XPRA_SCRIPT" "$@"
+else
+    cat >&2 <<END
+    Could not find one or both of '$_XPRA_PYTHON' and '$_XPRA_SCRIPT'
+    Perhaps your environment has changed since the xpra server was started?
+    I'll just try executing 'xpra' with current PATH, and hope...
+END
+    exec xpra "$@"
+fi
+""")
         return b"".join(script)
 
 else:
@@ -169,18 +169,18 @@ else:
             script.append("_XPRA_PYTHON=%s\n" % (sh_quotemeta(sys.executable),))
             script.append("_XPRA_SCRIPT=%s\n" % (sh_quotemeta(xpra_file),))
             script.append("""
-    if which "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
-        # Happypath:
-        exec "$_XPRA_PYTHON" "$_XPRA_SCRIPT" "$@"
-    else
-        cat >&2 <<END
-        Could not find one or both of '$_XPRA_PYTHON' and '$_XPRA_SCRIPT'
-        Perhaps your environment has changed since the xpra server was started?
-        I'll just try executing 'xpra' with current PATH, and hope...
-    END
-        exec xpra "$@"
-    fi
-    """)
+if which "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
+    # Happypath:
+    exec "$_XPRA_PYTHON" "$_XPRA_SCRIPT" "$@"
+else
+    cat >&2 <<END
+    Could not find one or both of '$_XPRA_PYTHON' and '$_XPRA_SCRIPT'
+    Perhaps your environment has changed since the xpra server was started?
+    I'll just try executing 'xpra' with current PATH, and hope...
+END
+    exec xpra "$@"
+fi
+""")
         return "".join(script).encode()
 
 def write_runner_shell_scripts(contents, overwrite=True):
