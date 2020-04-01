@@ -129,13 +129,8 @@ class OpenRequestsWindow:
         tb = TableBuilder(rows=1, columns=4, row_spacings=15)
         #generate a new table:
         self.table = tb.get_table()
-        def l(s="", maxw=0):
-            label = Gtk.Label(label=s)
-            if maxw>0:
-                label.set_line_wrap(True)
-                label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
-                label.set_size_request(maxw, -1)
-            return label
+        def l(s=""):
+            return Gtk.Label(label=s)
         if not self.requests:
             tb.add_row(l("No requests pending"))
         else:
@@ -148,7 +143,16 @@ class OpenRequestsWindow:
                 expires_label = l()
                 self.expire_labels[expires_label] = expires
                 buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
-                items = (l(bytestostr(url), URI_MAX_WIDTH), l(details), expires_label, buttons)
+                s = bytestostr(url)
+                main_label = l(s)
+                if dtype==b"url" and s.find("?")>0 and len(s)>48:
+                    parts = s.split("?", 1)
+                    main_label.set_label(parts[0]+"?..")
+                    main_label.set_tooltip_text(s)
+                main_label.set_line_wrap(True)
+                main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                main_label.set_size_request(URI_MAX_WIDTH, -1)
+                items = (main_label, l(details), expires_label, buttons)
                 tb.add_row(*items)
             self.update_expires_label()
         self.alignment.add(self.table)
