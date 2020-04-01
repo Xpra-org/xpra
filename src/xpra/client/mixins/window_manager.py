@@ -1256,6 +1256,7 @@ class WindowClient(StubClientMixin):
                 self._focused = None
 
     def send_lost_focus(self):
+        focuslog("send_lost_focus() focused=%s", self._focused)
         self.lost_focus_timer = None
         #check that a new window has not gained focus since:
         if self._focused is None:
