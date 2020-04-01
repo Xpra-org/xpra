@@ -98,6 +98,7 @@ CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
+FOCUS_RECHECK_DELAY = envint("XPRA_FOCUS_RECHECK_DELAY", 5)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -424,7 +425,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def schedule_recheck_focus(self):
         if self.recheck_focus_timer==0:
-            self.recheck_focus_timer = self.timeout_add(5, self.recheck_focus)
+            self.recheck_focus_timer = self.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
         return True
 
     def do_xpra_focus_out_event(self, event):
