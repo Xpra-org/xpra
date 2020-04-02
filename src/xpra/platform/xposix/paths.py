@@ -164,5 +164,5 @@ def do_get_xpra_command():
     #try to use the same "xpra" executable that launched this server,
     #whilst also preserving the python interpreter version:
     if sys.argv and sys.argv[0].lower().endswith("/xpra"):
-        return ["python3", sys.argv[0]]
+        return ["python%i.%i" % (sys.version_info.major, sys.version_info.minor), sys.argv[0]]
     return ["xpra"]
