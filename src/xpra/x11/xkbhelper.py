@@ -189,11 +189,12 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
             return None
         #no other option, use it:
         if len(keycodes)==1:
-            return keycodes[0]
+            keycode = keycodes[0]
+            return rlog(keycode, "single match: %s" % csv(x11_keycodes.get(keycode)))
         for keycode in keycodes:
             defs = x11_keycodes.get(keycode)
             if keysym in DEBUG_KEYSYMS:
-                log.info("x11 keycode %i: %s", keycode, defs)
+                log.info("server x11 keycode %i: %s", keycode, defs)
             assert defs, "bug: keycode %i not found in %s" % (keycode, x11_keycodes)
             if len(defs)>i and defs[i]==keysym:
                 return rlog(keycode, "exact index match")
@@ -204,6 +205,8 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
     #generate the translation map:
     trans = {}
     for keycode, defs in keycodes.items():
+        if bool(set(DEBUG_KEYSYMS) & set(bytestostr(d[0]) for d in defs)):
+            log.info("client keycode=%i, defs=%s", keycode, defs)
         for bkeysym, i in tuple(defs):             #ie: (b'1', 0) or (b'A', 1), etc
             keysym = bytestostr(bkeysym)
             x11_keycode = find_keycode(keycode, keysym, i)
