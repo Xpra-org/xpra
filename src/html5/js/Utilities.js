@@ -451,7 +451,7 @@ const Utilities = {
 		const rawLength = raw.length;
 		const array = new Uint8Array(new ArrayBuffer(rawLength));
 
-		for(i = 0; i < rawLength; i++) {
+		for (let i = 0; i < rawLength; i++) {
 			array[i] = raw.charCodeAt(i);
 		}
 		return array;

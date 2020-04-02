@@ -194,10 +194,10 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 
 		//verify the header format:
 		if (this.header[0] !== ord("P")) {
-			msg = "invalid packet header format: " + this.header[0];
+			let msg = "invalid packet header format: " + this.header[0];
 			if (this.header.length>1) {
 				msg += ": ";
-				for (c in this.header) {
+				for (const c in this.header) {
 					msg += String.fromCharCode(c);
 				}
 			}
