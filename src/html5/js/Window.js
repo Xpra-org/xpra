@@ -271,14 +271,14 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.updateCSSGeometry();
 	// now read all metadata
 	this.update_metadata(metadata);
-};
+}
 
 XpraWindow.prototype._init_2d_canvas = function() {
 	this.offscreen_canvas = document.createElement("canvas");
 	this.updateCanvasGeometry();
 	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('2d');
 	this.offscreen_canvas_ctx.imageSmoothingEnabled = false;
-}
+};
 
 XpraWindow.prototype.swap_buffers = function() {
 	//the up to date canvas is what we'll draw on screen:
@@ -286,7 +286,7 @@ XpraWindow.prototype.swap_buffers = function() {
 	this.draw_canvas = this.offscreen_canvas;
 	this._init_2d_canvas();
 	this.offscreen_canvas_ctx.drawImage(this.draw_canvas, 0, 0);
-}
+};
 
 XpraWindow.prototype.set_spinner = function(state) {
 	if(state) {
@@ -294,7 +294,7 @@ XpraWindow.prototype.set_spinner = function(state) {
 	} else {
 		this.spinnerdiv.css("display", "table");
 	}
-}
+};
 
 XpraWindow.prototype.ensure_visible = function() {
 	if (this.client.server_is_desktop || this.client.server_is_shadow) {
@@ -329,7 +329,7 @@ XpraWindow.prototype.ensure_visible = function() {
 		return false;
 	}
 	return true;
-}
+};
 
 XpraWindow.prototype.updateCanvasGeometry = function() {
 	// set size of both canvas if needed
@@ -345,7 +345,7 @@ XpraWindow.prototype.updateCanvasGeometry = function() {
 	if(this.offscreen_canvas.height != this.h) {
 		this.offscreen_canvas.height = this.h;
 	}
-}
+};
 
 XpraWindow.prototype.updateCSSGeometry = function() {
 	// set size of canvas
@@ -366,7 +366,7 @@ XpraWindow.prototype.updateCSSGeometry = function() {
 	jQuery(this.div).css('left', this.outerX);
 	jQuery(this.div).css('top', this.outerY);
 	this.debug("geometry", "updateCSSGeometry() left=", this.outerX, ", top=", this.outerY, ", width=", this.outerW, ", height=", this.outerH);
-}
+};
 
 XpraWindow.prototype.updateFocus = function() {
 	if(this.focused) {
@@ -377,7 +377,7 @@ XpraWindow.prototype.updateFocus = function() {
 		// set not in focus style
 		jQuery(this.div).removeClass("windowinfocus");
 	}
-}
+};
 
 /**
  * Mouse: delegate to client, telling it which window triggered the event.
@@ -404,7 +404,7 @@ XpraWindow.prototype.on_mousescroll = function(e) {
 	this.mouse_scroll_cb(this.client, e, this);
 	//e.preventDefault();
 	return false;
-}
+};
 
 /**
  * toString allows us to identify windows by their unique window id.
@@ -444,7 +444,7 @@ XpraWindow.prototype.update_zindex = function() {
 		z += 2500;
 	}
 	jQuery(this.div).css('z-index', z);
-}
+};
 
 
 /**
@@ -592,7 +592,7 @@ XpraWindow.prototype.apply_size_constraints = function() {
 		jQuery(this.div).resizable("option", "maxHeight", maxh);
 	}
 	//TODO: aspectRatio, grid
-}
+};
 
 
 /**
@@ -619,7 +619,7 @@ XpraWindow.prototype.save_geometry = function() {
 			"w"	: this.w,
 			"h" : this.h};
 	this.debug("geometry", "save_geometry() saved-geometry=", this.saved_geometry);
-}
+};
 /**
  * Restores the saved geometry (if it exists).
  */
@@ -724,7 +724,7 @@ XpraWindow.prototype._set_decorated = function(decorated) {
 		jQuery(this.div).removeClass("window");
 		jQuery(this.div).addClass("undecorated");
 	}
-}
+};
 
 /**
  * Either:
@@ -798,7 +798,7 @@ XpraWindow.prototype.handle_moved = function(e) {
 	this.ensure_visible();
 	// tell remote we have moved window
 	this.geometry_cb(this);
-}
+};
 
 /**
  * The "screen" has been resized, we may need to resize our window to match
@@ -844,7 +844,7 @@ XpraWindow.prototype.recenter = function(force_update_geometry) {
 	if (this.x<0 || this.y<0) {
 		this.warn("window does not fit in canvas, offsets: ", x, y);
 	}
-}
+};
 
 
 XpraWindow.prototype.match_screen_size = function() {
@@ -954,7 +954,7 @@ XpraWindow.prototype.initiate_moveresize = function(mousedown_event, x_root, y_r
 			resize_widget.trigger({ type: "mousedown", which: 1, pageX: pageX, pageY: pageY });
 		}
 	}
-}
+};
 
 
 /**
@@ -1024,7 +1024,7 @@ XpraWindow.prototype.eos = function() {
 	this._close_jsmpeg();
 	this._close_broadway();
 	this._close_video();
-}
+};
 
 
 /**
@@ -1077,7 +1077,7 @@ XpraWindow.prototype._broadway_paint = function(buffer, enc_width, enc_height, w
 
 XpraWindow.prototype._close_broadway = function() {
 	this.broadway_decoder = null;
-}
+};
 
 
 XpraWindow.prototype._close_video = function() {
@@ -1099,7 +1099,7 @@ XpraWindow.prototype._close_video = function() {
 		this.video.remove();
 		this.video = null;
 	}
-}
+};
 
 XpraWindow.prototype._push_video_buffers = function() {
 	this.debug("draw", "_push_video_buffers()");
@@ -1150,7 +1150,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 	this.video.addEventListener('error', function() { me.error("video error"); });
 	this.video.src = window.URL.createObjectURL(this.media_source);
 	//this.video.src = "https://html5-demos.appspot.com/static/test.webm"
-	this.video_buffers = []
+	this.video_buffers = [];
 	this.video_buffers_count = 0;
 	this.video_source_ready = false;
 
@@ -1198,7 +1198,7 @@ XpraWindow.prototype._non_video_paint = function(coding) {
 		const height = this.video.getAttribute("height");
 		this.offscreen_canvas_ctx.drawImage(this.video, 0, 0, width, height);
 	}
-}
+};
 
 
 /**
@@ -1211,7 +1211,7 @@ XpraWindow.prototype.paint = function paint() {
 	const item = Array.prototype.slice.call(arguments);
 	this.paint_queue.push(item);
 	this.may_paint_now();
-}
+};
 
 /**
  * Pick items from the paint_queue
@@ -1226,7 +1226,7 @@ XpraWindow.prototype.may_paint_now = function paint() {
 		this.do_paint.apply(this, item);
 		now = Utilities.monotonicTime();
 	}
-}
+};
 
 const DEFAULT_BOX_COLORS = {
         "png"     : "yellow",
@@ -1257,7 +1257,7 @@ XpraWindow.prototype.get_jsmpeg_renderer = function get_jsmpeg_renderer() {
 		//}
 	}
 	return this.jsmpeg_renderer;
-}
+};
 
 XpraWindow.prototype._close_jsmpeg = function _close_jsmpeg() {
 	if (this.jsmpeg_renderer!=null) {
@@ -1265,7 +1265,7 @@ XpraWindow.prototype._close_jsmpeg = function _close_jsmpeg() {
 	}
 	//decoder doesn't need cleanup?
 	this.jsmpeg_decoder = null;
-}
+};
 
 XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
 	this.debug("draw", "do_paint(", img_data.length, " bytes of ", ("zlib" in options?"zlib ":""), coding, " data ", width, "x", height, " at ", x, ",", y, ") focused=", this.focused);
@@ -1359,7 +1359,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			j.onerror = function () {
 				paint_error("failed to load into image tag:", coding);
 				me.may_paint_now();
-			}
+			};
 			j.src = "data:image/"+coding+";base64," + Utilities.ArrayBufferToBase64(img_data);
 		}
 		else if (coding=="mpeg1") {
@@ -1378,11 +1378,11 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 					const canvas = jsmpeg_renderer.canvas;
 					me.offscreen_canvas_ctx.drawImage(canvas, x, y, width, height);
 					paint_box("olive", x, y, width, height);
-				}
+				};
 				renderer.resize = function resize(newWidth, newHeight) {
 					const jsmpeg_renderer = me.get_jsmpeg_renderer();
 					jsmpeg_renderer.resize(newWidth, newHeight);
-				}
+				};
 				this.jsmpeg_decoder.connect(renderer);
 			}
 			const pts = frame;

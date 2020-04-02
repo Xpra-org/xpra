@@ -90,7 +90,7 @@ $(function() {
 			}
 		});
 		return notification_button;
-	}
+	};
 
 	window.cancelNotificationTimer = function(nid) {
 		const timer = window.notification_timers[nid];

@@ -1646,7 +1646,7 @@ KEYSYM_TO_LAYOUT = {
 	"Armenian"	: "am",
 	"Georgian"	: "ge",
 	"braille"	: "brai",
-}
+};
 
 
 /**
@@ -1738,10 +1738,10 @@ for (i=1; i<=24; i++) {
 	CHARCODE_TO_NAME[111+i] = "F"+i;
 }
 //overrides: only for 'de' layout?
-CHARCODE_TO_NAME[192] = "dead_circumflex"
-CHARCODE_TO_NAME[219] = "backtick"
-CHARCODE_TO_NAME[221] = "dead_acute"
-CHARCODE_TO_NAME[220] = "dead_circumflex"
+CHARCODE_TO_NAME[192] = "dead_circumflex";
+CHARCODE_TO_NAME[219] = "backtick";
+CHARCODE_TO_NAME[221] = "dead_acute";
+CHARCODE_TO_NAME[220] = "dead_circumflex";
 
 
 /**

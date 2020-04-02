@@ -48,7 +48,7 @@ SOFTWARE.
 			ul.classList.remove("-hide");
 			ul.parentElement.classList.remove("-active");
 			return;
-		};
+		}
 
         if(ul.classList.contains("-visible")){
 			return;

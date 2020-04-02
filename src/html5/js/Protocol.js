@@ -53,34 +53,34 @@ XpraProtocolWorkerHost.prototype.open = function(uri) {
 		default:
 			console.error("got unknown command from worker");
 			console.error(e.data);
-		};
+		}
 	}, false);
-}
+};
 
 XpraProtocolWorkerHost.prototype.close = function() {
 	this.worker.postMessage({'c': 'c'});
-}
+};
 
 XpraProtocolWorkerHost.prototype.terminate = function() {
 	this.worker.postMessage({'c': 't'});
-}
+};
 
 XpraProtocolWorkerHost.prototype.send = function(packet) {
 	this.worker.postMessage({'c': 's', 'p': packet});
-}
+};
 
 XpraProtocolWorkerHost.prototype.set_packet_handler = function(callback, ctx) {
 	this.packet_handler = callback;
 	this.packet_ctx = ctx;
-}
+};
 
 XpraProtocolWorkerHost.prototype.set_cipher_in = function(caps, key) {
 	this.worker.postMessage({'c': 'z', 'p': caps, 'k': key});
-}
+};
 
 XpraProtocolWorkerHost.prototype.set_cipher_out = function(caps, key) {
 	this.worker.postMessage({'c': 'x', 'p': caps, 'k': key});
-}
+};
 
 
 
@@ -139,7 +139,7 @@ XpraProtocol.prototype.open = function(uri) {
 				me.process_receive_queue();
 			}, this.process_interval);
 	};
-}
+};
 
 XpraProtocol.prototype.close = function() {
 	if (this.websocket) {
@@ -150,7 +150,7 @@ XpraProtocol.prototype.close = function() {
 		this.websocket.close();
 		this.websocket = null;
 	}
-}
+};
 
 XpraProtocol.prototype.protocol_error = function(msg) {
 	console.error("protocol error:", msg);
@@ -163,12 +163,12 @@ XpraProtocol.prototype.protocol_error = function(msg) {
 	this.rQ = [];
 	//and just tell the client to close (it may still try to re-connect):
 	this.packet_handler(['close', msg]);
-}
+};
 
 XpraProtocol.prototype.process_receive_queue = function() {
 	while (this.websocket && this.do_process_receive_queue()) {
 	}
-}
+};
 
 XpraProtocol.prototype.do_process_receive_queue = function() {
 	let i = 0, j = 0;
@@ -372,7 +372,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		}
 	}
 	return this.rQ.length>0;
-}
+};
 
 XpraProtocol.prototype.process_send_queue = function() {
 	while(this.sQ.length !== 0 && this.websocket) {
@@ -398,7 +398,7 @@ XpraProtocol.prototype.process_send_queue = function() {
 			const padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
 			for (let i = padding_size - 1; i >= 0; i--) {
 				bdata += String.fromCharCode(padding_size);
-			};
+			}
 			this.cipher_out.update(forge.util.createBuffer(bdata));
 			bdata = this.cipher_out.output.getBytes();
 		}
@@ -427,7 +427,7 @@ XpraProtocol.prototype.process_send_queue = function() {
 			this.websocket.send((new Uint8Array(header)).buffer);
 		}
 	}
-}
+};
 
 XpraProtocol.prototype.process_message_queue = function() {
 	while(this.mQ.length !== 0){
@@ -440,7 +440,7 @@ XpraProtocol.prototype.process_message_queue = function() {
 		const raw_draw_buffer = (packet[0] === 'draw') && (packet[6] !== 'scroll');
 		postMessage({'c': 'p', 'p': packet}, raw_draw_buffer ? [packet[7].buffer] : []);
 	}
-}
+};
 
 XpraProtocol.prototype.send = function(packet) {
 	this.sQ[this.sQ.length] = packet;
@@ -448,12 +448,12 @@ XpraProtocol.prototype.send = function(packet) {
 	setTimeout(function() {
 		me.process_send_queue();
 		}, this.process_interval);
-}
+};
 
 XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
 	this.packet_handler = callback;
 	this.packet_ctx = ctx;
-}
+};
 
 XpraProtocol.prototype.set_cipher_in = function(caps, key) {
 	this.cipher_in_block_size = 32;
@@ -462,7 +462,7 @@ XpraProtocol.prototype.set_cipher_in = function(caps, key) {
 	// start the cipher
 	this.cipher_in = forge.cipher.createDecipher('AES-CBC', secret);
 	this.cipher_in.start({iv: caps['cipher.iv']});
-}
+};
 
 XpraProtocol.prototype.set_cipher_out = function(caps, key) {
 	this.cipher_out_block_size = 32;
@@ -471,7 +471,7 @@ XpraProtocol.prototype.set_cipher_out = function(caps, key) {
 	// start the cipher
 	this.cipher_out = forge.cipher.createCipher('AES-CBC', secret);
 	this.cipher_out.start({iv: caps['cipher.iv']});
-}
+};
 
 
 /*
@@ -521,7 +521,7 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 			break;
 		default:
 			postMessage({'c': 'l', 't': 'got unknown command from host'});
-		};
+		}
 	}, false);
 	// tell host we are ready
 	postMessage({'c': 'r'});
